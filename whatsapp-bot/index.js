@@ -31,7 +31,7 @@ const {
 const PANOLAR_URL =
   process.env.PANOLAR_URL ||
   "https://melihbilgili.github.io/arbor-panolar/index.html";
-const MODEL = process.env.MODEL || "claude-sonnet-4-20250514";
+const MODEL = process.env.MODEL || "claude-sonnet-5";
 const MAX_CONTEXT_CHARS = parseInt(process.env.MAX_CONTEXT_CHARS || "70000", 10);
 const CONTEXT_TTL_MS = parseInt(process.env.CONTEXT_TTL_MS || "600000", 10); // 10 dk
 const GRAPH_VERSION = process.env.GRAPH_VERSION || "v20.0";
