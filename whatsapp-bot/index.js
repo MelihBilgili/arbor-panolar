@@ -29,6 +29,7 @@ const {
   PANOLAR_PW,
   SEARCH_API_KEY,
   MAIL_WEBHOOK_URL,
+  OPENAI_API_KEY,
 } = process.env;
 
 const INT_MAIL = process.env.INT_MAIL || "int@arbor.com.tr";
@@ -304,7 +305,28 @@ async function downloadWhatsAppMedia(mediaId) {
   let mediaType = (meta.mime_type || "image/jpeg").split(";")[0].trim();
   const ok = ["image/jpeg", "image/png", "image/gif", "image/webp"];
   if (!ok.includes(mediaType)) mediaType = "image/jpeg";
-  return { data: buf.toString("base64"), mediaType };
+  return { data: buf.toString("base64"), mediaType, buffer: buf };
+}
+
+// ---- Ses/video → metin (OpenAI Whisper) ----
+async function transcribeMedia(buffer, mediaType, kind) {
+  const ext =
+    kind === "video" ? "mp4" :
+    (mediaType || "").includes("mpeg") ? "mp3" :
+    (mediaType || "").includes("mp4") || (mediaType || "").includes("m4a") ? "m4a" :
+    (mediaType || "").includes("wav") ? "wav" :
+    (mediaType || "").includes("webm") ? "webm" : "ogg";
+  const form = new FormData();
+  form.append("file", new Blob([buffer], { type: mediaType || "application/octet-stream" }), "media." + ext);
+  form.append("model", "whisper-1");
+  const r = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + OPENAI_API_KEY },
+    body: form,
+  });
+  if (!r.ok) throw new Error("Whisper HTTP " + r.status + " " + (await r.text()).slice(0, 200));
+  const d = await r.json();
+  return (d.text || "").trim();
 }
 
 // ---- WhatsApp'a yanıt gönder ----
@@ -355,23 +377,19 @@ app.post("/webhook", async (req, res) => {
       return;
     }
     let content, histText;
-    if (msg.type === "text") {
+    const t = msg.type;
+    const docMime = (msg.document?.mime_type || "");
+    if (t === "text") {
       content = msg.text.body;
       histText = msg.text.body;
-    } else if (
-      msg.type === "image" ||
-      (msg.type === "document" && (msg.document?.mime_type || "").startsWith("image/"))
-    ) {
-      const media = msg.type === "image" ? msg.image : msg.document;
+    } else if (t === "image" || (t === "document" && docMime.startsWith("image/"))) {
+      const media = t === "image" ? msg.image : msg.document;
       const caption = media.caption || "";
       try {
         const img = await downloadWhatsAppMedia(media.id);
-        const promptText =
-          caption ||
-          "Bu görseli oku: içindeki metni/veriyi aktar; gerekiyorsa pano verisine göre yorumla.";
         content = [
           { type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } },
-          { type: "text", text: promptText },
+          { type: "text", text: caption || "Bu görseli oku: içindeki metni/veriyi aktar; gerekiyorsa pano verisine göre yorumla." },
         ];
         histText = "[görsel] " + caption;
       } catch (e) {
@@ -379,8 +397,42 @@ app.post("/webhook", async (req, res) => {
         await sendWhatsApp(from, "Görseli okuyamadım (indirme hatası). Tekrar gönderir misin?");
         return;
       }
+    } else if (t === "document" && docMime.startsWith("application/pdf")) {
+      const caption = msg.document.caption || "";
+      const fname = msg.document.filename || "";
+      try {
+        const pdf = await downloadWhatsAppMedia(msg.document.id);
+        content = [
+          { type: "document", source: { type: "base64", media_type: "application/pdf", data: pdf.data } },
+          { type: "text", text: caption || "Bu PDF'i oku; içeriğini özetle ve önemli veri/noktaları aktar." },
+        ];
+        histText = "[pdf] " + (caption || fname);
+      } catch (e) {
+        console.error("PDF indirilemedi:", e.message);
+        await sendWhatsApp(from, "PDF'i okuyamadım (indirme hatası). Tekrar gönderir misin?");
+        return;
+      }
+    } else if (t === "audio" || t === "voice" || t === "video") {
+      const media = msg[t] || msg.audio || msg.video;
+      if (!OPENAI_API_KEY) {
+        await sendWhatsApp(from, "Sesli mesaj ve videoyu çözebilmem için OpenAI (Whisper) anahtarı gerekiyor. Railway'e OPENAI_API_KEY ekleyince aktifleşir.");
+        return;
+      }
+      try {
+        const mf = await downloadWhatsAppMedia(media.id);
+        const transcript = await transcribeMedia(mf.buffer, mf.mediaType, t);
+        if (!transcript) { await sendWhatsApp(from, "Kayıtta anlaşılır bir konuşma bulamadım."); return; }
+        const label = t === "video" ? "video" : "ses";
+        const cap = media.caption ? media.caption + "\n\n" : "";
+        content = cap + "(" + label + " kaydının çözümü) " + transcript;
+        histText = "[" + label + "] " + transcript.slice(0, 60);
+      } catch (e) {
+        console.error("Ses/video çözülemedi:", e.message);
+        await sendWhatsApp(from, "Ses/videoyu çözemedim: " + e.message);
+        return;
+      }
     } else {
-      await sendWhatsApp(from, "Şu an yalnızca metin ve görsel mesajlarını işleyebiliyorum.");
+      await sendWhatsApp(from, "Bu mesaj tipini işleyemiyorum. Metin, görsel, PDF, sesli mesaj ve video gönderebilirsin.");
       return;
     }
     const reply = await askClaude(from, content, histText);
