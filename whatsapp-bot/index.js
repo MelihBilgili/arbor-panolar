@@ -1,18 +1,19 @@
-// index.js — WhatsApp ⇄ Claude botu (Arbor "Business" asistanı, canlı pano verisiyle)
-// Genel Kural 36. SIR İÇERMEZ — tüm anahtar/şifreler process.env'den okunur (.env + Railway Variables).
+// index.js — WhatsApp ⇄ Claude botu (Arbor "Business" asistanı, canlı pano + araçlar)
+// Genel Kural 36. SIR İÇERMEZ — tüm anahtar/şifreler process.env'den okunur (Railway Variables).
 //
-// Yaptığı iş:
-//   1) WhatsApp Cloud API webhook (GET doğrulama + POST mesaj alma)
-//   2) Gelen mesajı, GÜNCEL pano verisiyle birlikte Claude'a iletir
-//   3) Canlı veri = arbor-panolar GitHub Pages'teki şifreli index.html'i PANOLAR_PW ile
-//      çözerek (AES-256-GCM / PBKDF2-SHA256, panolar_deploy.py ile birebir) elde edilir
-//   4) Claude'un yanıtını WhatsApp'tan geri gönderir
+// Yetenekler:
+//   1) WhatsApp Cloud API webhook (GET doğrulama + POST mesaj)
+//   2) Her mesajda GÜNCEL pano verisi (arbor-panolar Pages, PANOLAR_PW ile çözülür) bağlam olur
+//   3) Çok-turlu konuşma hafızası (numara bazlı, TTL'li)
+//   4) ARAÇLAR (env varsa aktif, yoksa atıl):
+//        - web_ara       → SEARCH_API_KEY (Brave Search)
+//        - mail_gonder   → MAIL_WEBHOOK_URL (Zapier Catch Hook)
+//        - gundem_ekle   → MAIL_WEBHOOK_URL (int@arbor'a not maili)
+//   5) Mail/gündem aksiyonları ÖNCE onay ister (system prompt kuralı)
 //
-// Gereken env (Railway Variables + yerel .env, ikisi AYNI):
-//   ANTHROPIC_API_KEY, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID, VERIFY_TOKEN, PANOLAR_PW
-// İsteğe bağlı env:
-//   PANOLAR_URL (varsayılan aşağıda), MODEL, MAX_CONTEXT_CHARS, CONTEXT_TTL_MS,
-//   GRAPH_VERSION, ALLOWED_NUMBERS (virgülle ayrık; boşsa herkese açık — GÜVENLİK için doldur)
+// Zorunlu env: ANTHROPIC_API_KEY, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID, VERIFY_TOKEN, PANOLAR_PW
+// İsteğe bağlı: SEARCH_API_KEY, MAIL_WEBHOOK_URL, INT_MAIL, MODEL, ALLOWED_NUMBERS,
+//   PANOLAR_URL, MAX_CONTEXT_CHARS, CONTEXT_TTL_MS, MEMORY_TTL_MS, MAX_HISTORY, GRAPH_VERSION
 
 const express = require("express");
 const crypto = require("node:crypto");
@@ -26,16 +27,20 @@ const {
   WHATSAPP_PHONE_NUMBER_ID,
   VERIFY_TOKEN,
   PANOLAR_PW,
+  SEARCH_API_KEY,
+  MAIL_WEBHOOK_URL,
 } = process.env;
 
+const INT_MAIL = process.env.INT_MAIL || "int@arbor.com.tr";
 const PANOLAR_URL =
   process.env.PANOLAR_URL ||
   "https://melihbilgili.github.io/arbor-panolar/index.html";
 const MODEL = process.env.MODEL || "claude-sonnet-5";
 const MAX_CONTEXT_CHARS = parseInt(process.env.MAX_CONTEXT_CHARS || "70000", 10);
 const CONTEXT_TTL_MS = parseInt(process.env.CONTEXT_TTL_MS || "600000", 10); // 10 dk
+const MEMORY_TTL_MS = parseInt(process.env.MEMORY_TTL_MS || "1800000", 10); // 30 dk
+const MAX_HISTORY = parseInt(process.env.MAX_HISTORY || "8", 10); // son 8 tur
 const GRAPH_VERSION = process.env.GRAPH_VERSION || "v20.0";
-// Varsayılan: Melih'in numarası (+90 532 205 92 77). ALLOWED_NUMBERS env'i verilirse onu kullanır.
 const ALLOWED = (process.env.ALLOWED_NUMBERS || "905322059277")
   .split(",")
   .map((s) => s.replace(/\D/g, ""))
@@ -47,8 +52,13 @@ const SYSTEM_BASE =
   "Aşağıdaki '=== GÜNCEL PANO VERİSİ ===' bloğunda şirketin canlı panoları yer alır: " +
   "Gündem, Açık Mailler, PEM/PRJ Sevke Hazır, Yıllık İcmal, AÜP, AÜP Mail, satış yorumları " +
   "(SO/FA/AK), Prosedür, Teklif Kuralları, Özgül Mukayese. " +
-  "Soruları YALNIZCA bu veriye dayanarak yanıtla; tarih, sayı ve isimleri panodaki gibi ver. " +
-  "Panoda olmayan bir şey sorulursa 'panoda bu bilgi yok' de — asla uydurma. " +
+  "Pano sorularını YALNIZCA bu veriye dayanarak yanıtla; tarih, sayı ve isimleri panodaki gibi ver. " +
+  "Panoda olmayan şirket-içi bir şey sorulursa 'panoda bu bilgi yok' de — asla uydurma. " +
+  "Konuşma geçmişini hatırlarsın; önceki mesajlara atıfla tutarlı ol. " +
+  "Araçların olabilir (web araması, mail gönderme, gündem notu ekleme). " +
+  "MAIL GÖNDERMEDEN veya GÜNDEM NOTU EKLEMEDEN ÖNCE ne yapacağını (alıcı, konu, içerik/madde) " +
+  "kısaca özetle ve kullanıcıdan açık ONAY iste; yalnızca kullanıcı 'evet/onayla' dedikten sonra aracı çağır. " +
+  "Web aramasını yalnız panoda olmayan güncel/şirket-dışı bilgiler için kullan. " +
   "Token/şifre/anahtar gibi gizli bilgileri asla paylaşma.";
 
 // ---- Şifreli pano verisini çöz (panolar_deploy.py GATE ile birebir uyumlu) ----
@@ -97,28 +107,170 @@ async function getBusinessContext() {
   return text;
 }
 
-// ---- Claude'a sor ----
-async function askClaude(userText, contextText) {
-  const system = contextText
-    ? SYSTEM_BASE + "\n\n=== GÜNCEL PANO VERİSİ ===\n" + contextText
-    : SYSTEM_BASE + "\n\n(Not: pano verisi şu an alınamadı; genel yardımcı ol ve veri gerektiren sorularda bunu belirt.)";
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 1024,
-      system,
-      messages: [{ role: "user", content: userText }],
-    }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error("Anthropic hata: " + JSON.stringify(data));
-  return (data.content || []).map((b) => b.text || "").join("").trim() || "(boş yanıt)";
+// ---- Konuşma hafızası (numara bazlı) ----
+const _hist = new Map(); // from -> { msgs:[{role,content}], ts }
+function getHistory(from) {
+  const h = _hist.get(from);
+  if (!h) return [];
+  if (Date.now() - h.ts > MEMORY_TTL_MS) {
+    _hist.delete(from);
+    return [];
+  }
+  return h.msgs;
+}
+function pushHistory(from, role, content) {
+  const h = _hist.get(from) || { msgs: [], ts: Date.now() };
+  h.msgs.push({ role, content });
+  const cap = MAX_HISTORY * 2;
+  if (h.msgs.length > cap) h.msgs = h.msgs.slice(h.msgs.length - cap);
+  h.ts = Date.now();
+  _hist.set(from, h);
+}
+
+// ---- Araçlar (env varsa) ----
+function buildTools() {
+  const tools = [];
+  if (SEARCH_API_KEY) {
+    tools.push({
+      name: "web_ara",
+      description:
+        "Panoda olmayan güncel/genel/şirket-dışı bilgiler için web'de arama yapar.",
+      input_schema: {
+        type: "object",
+        properties: { sorgu: { type: "string", description: "Arama sorgusu" } },
+        required: ["sorgu"],
+      },
+    });
+  }
+  if (MAIL_WEBHOOK_URL) {
+    tools.push({
+      name: "mail_gonder",
+      description:
+        "E-posta gönderir. ÇAĞIRMADAN ÖNCE kullanıcıdan açık onay al (alıcı/konu/içeriği özetle).",
+      input_schema: {
+        type: "object",
+        properties: {
+          alici: { type: "string", description: "Alıcı e-posta adresi" },
+          konu: { type: "string" },
+          govde: { type: "string" },
+        },
+        required: ["alici", "konu", "govde"],
+      },
+    });
+    tools.push({
+      name: "gundem_ekle",
+      description:
+        "int@arbor'a gündem notu maili atar (madde bir sonraki triyajda Gündem'e işlenir). ÇAĞIRMADAN ÖNCE onay al.",
+      input_schema: {
+        type: "object",
+        properties: { madde: { type: "string", description: "Gündeme eklenecek madde" } },
+        required: ["madde"],
+      },
+    });
+  }
+  return tools;
+}
+
+async function webAra(q) {
+  try {
+    const r = await fetch(
+      "https://api.search.brave.com/res/v1/web/search?count=5&q=" + encodeURIComponent(q),
+      { headers: { Accept: "application/json", "X-Subscription-Token": SEARCH_API_KEY } }
+    );
+    if (!r.ok) return "Arama hatası: HTTP " + r.status;
+    const d = await r.json();
+    const items = ((d.web && d.web.results) || [])
+      .slice(0, 5)
+      .map((x) => "- " + x.title + ": " + (x.description || "") + " (" + x.url + ")")
+      .join("\n");
+    return items || "Sonuç bulunamadı.";
+  } catch (e) {
+    return "Arama hatası: " + e.message;
+  }
+}
+
+async function sendMail(to, subject, body) {
+  try {
+    const r = await fetch(MAIL_WEBHOOK_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ to, subject, body, source: "whatsapp-bot" }),
+    });
+    return r.ok
+      ? "Mail gönderildi (alıcı: " + to + ", konu: " + subject + ")."
+      : "Mail gönderilemedi: HTTP " + r.status;
+  } catch (e) {
+    return "Mail hatası: " + e.message;
+  }
+}
+
+async function runTool(name, input) {
+  if (name === "web_ara") return await webAra(input.sorgu || "");
+  if (name === "mail_gonder")
+    return await sendMail(input.alici, input.konu, input.govde);
+  if (name === "gundem_ekle")
+    return await sendMail(INT_MAIL, "Gündem (WhatsApp bot)", input.madde || "");
+  return "Bilinmeyen araç: " + name;
+}
+
+// ---- Claude'a sor (tool-use döngüsü) ----
+async function askClaude(from, userText) {
+  let ctx = "";
+  try {
+    ctx = await getBusinessContext();
+  } catch (e) {
+    console.error("Pano verisi alınamadı:", e.message);
+  }
+  const system = ctx
+    ? SYSTEM_BASE + "\n\n=== GÜNCEL PANO VERİSİ ===\n" + ctx
+    : SYSTEM_BASE + "\n\n(Not: pano verisi şu an alınamadı; veri gerektiren sorularda bunu belirt.)";
+
+  const tools = buildTools();
+  const messages = [...getHistory(from), { role: "user", content: userText }];
+  let finalText = "";
+
+  for (let i = 0; i < 6; i++) {
+    const payload = { model: MODEL, max_tokens: 1500, system, messages };
+    if (tools.length) payload.tools = tools;
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error("Anthropic hata: " + JSON.stringify(data));
+
+    messages.push({ role: "assistant", content: data.content });
+
+    if (data.stop_reason === "tool_use") {
+      const results = [];
+      for (const block of data.content) {
+        if (block.type === "tool_use") {
+          console.log("Araç çağrısı:", block.name, JSON.stringify(block.input));
+          const out = await runTool(block.name, block.input || {});
+          results.push({ type: "tool_result", tool_use_id: block.id, content: out });
+        }
+      }
+      messages.push({ role: "user", content: results });
+      continue;
+    }
+
+    finalText = (data.content || [])
+      .filter((b) => b.type === "text")
+      .map((b) => b.text)
+      .join("")
+      .trim();
+    break;
+  }
+
+  finalText = finalText || "(boş yanıt)";
+  pushHistory(from, "user", userText);
+  pushHistory(from, "assistant", finalText);
+  return finalText;
 }
 
 // ---- WhatsApp'a yanıt gönder ----
@@ -142,7 +294,7 @@ async function sendWhatsApp(to, body) {
   );
   if (!res.ok) {
     const err = await res.text();
-    // 401 code 190 = token geçersiz/expired → kalıcı System User token'ını .env + Railway'e koy
+    // 401 code 190 = token geçersiz/expired → kalıcı System User token'ını Railway'e koy
     console.error("WhatsApp gönderim hatası:", res.status, err);
   }
 }
@@ -158,7 +310,7 @@ app.get("/webhook", (req, res) => {
 
 // ---- Mesaj alma (POST) ----
 app.post("/webhook", async (req, res) => {
-  res.sendStatus(200); // Meta'ya hemen 200 (yeniden denemeyi önle)
+  res.sendStatus(200); // Meta'ya hemen 200
   try {
     const entry = req.body?.entry?.[0]?.changes?.[0]?.value;
     const msg = entry?.messages?.[0];
@@ -169,13 +321,7 @@ app.post("/webhook", async (req, res) => {
       return;
     }
     const userText = msg.text.body;
-    let ctx = "";
-    try {
-      ctx = await getBusinessContext();
-    } catch (e) {
-      console.error("Pano verisi alınamadı:", e.message);
-    }
-    const reply = await askClaude(userText, ctx);
+    const reply = await askClaude(from, userText);
     await sendWhatsApp(from, reply);
   } catch (e) {
     console.error("İşleme hatası:", e);
