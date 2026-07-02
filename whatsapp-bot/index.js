@@ -75,7 +75,7 @@ function htmlToText(html) {
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&amp;/g, "&");
-  t = t.replace(/[ \t ]+/g, " ").replace(/\s*\n\s*/g, "\n").replace(/\n{3,}/g, "\n\n");
+  t = t.replace(/[ \t ]+/g, " ").replace(/\s*\n\s*/g, "\n").replace(/\n{3,}/g, "\n\n");
   return t.trim();
 }
 
@@ -182,4 +182,7 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-app.get("/", (_req, res) => res.send("WhatsApp–Claude Business botu çalışıy
+app.get("/", (_req, res) => res.send("WhatsApp–Claude Business botu çalışıyor."));
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log("Bot dinliyor, port " + PORT));
