@@ -245,9 +245,13 @@ async function askClaude(from, userContent, histText) {
   const messages = [...getHistory(from), { role: "user", content: userContent }];
   let finalText = "";
 
-  for (let i = 0; i < 6; i++) {
-    const payload = { model: MODEL, max_tokens: 1500, system, messages };
-    if (tools.length) payload.tools = tools;
+  const MAX_ITERS = 8;
+  for (let i = 0; i < MAX_ITERS; i++) {
+    // Son 2 turda araçları kapat: modeli MUTLAKA metin yanıt vermeye zorla
+    // (araç döngüsü tükenip boş yanıt dönmesini engeller).
+    const allowTools = tools.length && i < MAX_ITERS - 2;
+    const payload = { model: MODEL, max_tokens: 4096, system, messages };
+    if (allowTools) payload.tools = tools;
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -259,6 +263,7 @@ async function askClaude(from, userContent, histText) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error("Anthropic hata: " + JSON.stringify(data));
+    console.log("askClaude iter", i, "stop_reason:", data.stop_reason, "allowTools:", allowTools);
 
     messages.push({ role: "assistant", content: data.content });
 
@@ -280,10 +285,52 @@ async function askClaude(from, userContent, histText) {
       .map((b) => b.text)
       .join("")
       .trim();
+
+    // max_tokens ile kesildi ve hiç metin yoksa: daha yüksek limitle bir kez daha dene
+    if (!finalText && data.stop_reason === "max_tokens") {
+      console.warn("max_tokens'ta boş içerik, tekrar deneniyor");
+      continue;
+    }
     break;
   }
 
-  finalText = finalText || "(boş yanıt)";
+  // Son güvenlik ağı: hâlâ boşsa araçsız, açık bir talimatla metin yanıt zorla
+  if (!finalText) {
+    console.warn("Yanıt boş kaldı; araçsız son deneme yapılıyor");
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          max_tokens: 4096,
+          system,
+          messages: [
+            ...messages,
+            { role: "user", content: "Lütfen yukarıdaki isteğe Türkçe, net bir metin yanıtı ver (araç çağırma)." },
+          ],
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        finalText = (data.content || [])
+          .filter((b) => b.type === "text")
+          .map((b) => b.text)
+          .join("")
+          .trim();
+      }
+    } catch (e) {
+      console.error("Araçsız son deneme başarısız:", e.message);
+    }
+  }
+
+  finalText =
+    finalText ||
+    "Bu isteğe şu an yanıt üretemedim (model boş döndü). Kısa bir süre sonra tekrar dener misin?";
   pushHistory(from, "user", histText || (typeof userContent === "string" ? userContent : "[içerik]"));
   pushHistory(from, "assistant", finalText);
   return finalText;
@@ -439,6 +486,10 @@ app.post("/webhook", async (req, res) => {
     await sendWhatsApp(from, reply);
   } catch (e) {
     console.error("İşleme hatası:", e);
+    try {
+      const from = req.body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from;
+      if (from) await sendWhatsApp(from, "Bir hata oluştu, isteği işleyemedim: " + (e.message || e));
+    } catch (_) {}
   }
 });
 
