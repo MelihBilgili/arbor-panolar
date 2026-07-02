@@ -171,35 +171,80 @@ function buildTools() {
 }
 
 async function webAra(q) {
+  const strip = (x) =>
+    (x || "")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&amp;/g, "&")
+      .replace(/&#x27;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/g, '"')
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/\s+/g, " ")
+      .trim();
   try {
     if (SEARCH_API_KEY) {
       const r = await fetch(
         "https://api.search.brave.com/res/v1/web/search?count=5&q=" + encodeURIComponent(q),
         { headers: { Accept: "application/json", "X-Subscription-Token": SEARCH_API_KEY } }
       );
-      if (!r.ok) return "Arama hatası (Brave): HTTP " + r.status;
-      const d = await r.json();
-      const items = ((d.web && d.web.results) || [])
-        .slice(0, 5)
-        .map((x) => "- " + x.title + ": " + (x.description || "") + " (" + x.url + ")")
-        .join("\n");
-      return items || "Sonuç bulunamadı.";
+      if (r.ok) {
+        const d = await r.json();
+        const items = ((d.web && d.web.results) || [])
+          .slice(0, 5)
+          .map((x) => "- " + x.title + ": " + (x.description || "") + " (" + x.url + ")")
+          .join("\n");
+        if (items) return items;
+      }
     }
-    // Anahtarsız fallback: DuckDuckGo Instant Answer (sınırlı ama ücretsiz/keysiz)
+    // Anahtarsız #1: DuckDuckGo HTML (gerçek web sonuçları)
+    try {
+      const hr = await fetch("https://html.duckduckgo.com/html/?q=" + encodeURIComponent(q), {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122 Safari/537.36",
+          "Accept-Language": "tr,en;q=0.8",
+        },
+      });
+      if (hr.ok) {
+        const html = await hr.text();
+        const decode = (u) => {
+          const m = u.match(/[?&]uddg=([^&]+)/);
+          return m ? decodeURIComponent(m[1]) : u;
+        };
+        const titles = [];
+        const reA = /class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+        let m;
+        while ((m = reA.exec(html)) && titles.length < 6) {
+          titles.push({ url: decode(m[1]), title: strip(m[2]) });
+        }
+        const snips = [];
+        const reS = /class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+        let sm;
+        while ((sm = reS.exec(html)) && snips.length < 6) snips.push(strip(sm[1]));
+        const out = [];
+        for (let i = 0; i < titles.length && out.length < 5; i++) {
+          if (!titles[i].title) continue;
+          out.push("- " + titles[i].title + (snips[i] ? ": " + snips[i] : "") + " (" + titles[i].url + ")");
+        }
+        if (out.length) return out.join("\n");
+      }
+    } catch (_) {}
+    // Anahtarsız #2: DuckDuckGo Instant Answer (yedek)
     const r = await fetch(
       "https://api.duckduckgo.com/?format=json&no_html=1&t=arborbot&q=" + encodeURIComponent(q)
     );
-    if (!r.ok) return "Arama hatası (DDG): HTTP " + r.status;
-    const d = await r.json();
-    const out = [];
-    if (d.AbstractText) out.push(d.AbstractText + (d.AbstractURL ? " (" + d.AbstractURL + ")" : ""));
-    for (const rt of d.RelatedTopics || []) {
-      if (rt.Text) out.push("- " + rt.Text + (rt.FirstURL ? " (" + rt.FirstURL + ")" : ""));
-      if (out.length >= 6) break;
+    if (r.ok) {
+      const d = await r.json();
+      const out = [];
+      if (d.AbstractText) out.push(d.AbstractText + (d.AbstractURL ? " (" + d.AbstractURL + ")" : ""));
+      for (const rt of d.RelatedTopics || []) {
+        if (rt.Text) out.push("- " + rt.Text + (rt.FirstURL ? " (" + rt.FirstURL + ")" : ""));
+        if (out.length >= 6) break;
+      }
+      if (out.length) return out.join("\n");
     }
-    return out.length
-      ? out.join("\n")
-      : "Web'de net bir yanıt bulunamadı (daha zengin sonuç için Railway'e SEARCH_API_KEY/Brave ekleyebilirsin).";
+    return "Web'de sonuç bulunamadı.";
   } catch (e) {
     return "Arama hatası: " + e.message;
   }
