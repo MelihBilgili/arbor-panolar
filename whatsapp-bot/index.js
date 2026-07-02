@@ -229,7 +229,7 @@ async function runTool(name, input) {
 }
 
 // ---- Claude'a sor (tool-use döngüsü) ----
-async function askClaude(from, userText) {
+async function askClaude(from, userContent, histText) {
   let ctx = "";
   try {
     ctx = await getBusinessContext();
@@ -241,7 +241,7 @@ async function askClaude(from, userText) {
     : SYSTEM_BASE + "\n\n(Not: pano verisi şu an alınamadı; veri gerektiren sorularda bunu belirt.)";
 
   const tools = buildTools();
-  const messages = [...getHistory(from), { role: "user", content: userText }];
+  const messages = [...getHistory(from), { role: "user", content: userContent }];
   let finalText = "";
 
   for (let i = 0; i < 6; i++) {
@@ -283,9 +283,28 @@ async function askClaude(from, userText) {
   }
 
   finalText = finalText || "(boş yanıt)";
-  pushHistory(from, "user", userText);
+  pushHistory(from, "user", histText || (typeof userContent === "string" ? userContent : "[içerik]"));
   pushHistory(from, "assistant", finalText);
   return finalText;
+}
+
+// ---- WhatsApp medyası indir (görsel okuma) ----
+async function downloadWhatsAppMedia(mediaId) {
+  const metaRes = await fetch(
+    `https://graph.facebook.com/${GRAPH_VERSION}/${mediaId}`,
+    { headers: { Authorization: "Bearer " + WHATSAPP_TOKEN } }
+  );
+  if (!metaRes.ok) throw new Error("Medya meta HTTP " + metaRes.status);
+  const meta = await metaRes.json();
+  const binRes = await fetch(meta.url, {
+    headers: { Authorization: "Bearer " + WHATSAPP_TOKEN },
+  });
+  if (!binRes.ok) throw new Error("Medya indirme HTTP " + binRes.status);
+  const buf = Buffer.from(await binRes.arrayBuffer());
+  let mediaType = (meta.mime_type || "image/jpeg").split(";")[0].trim();
+  const ok = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+  if (!ok.includes(mediaType)) mediaType = "image/jpeg";
+  return { data: buf.toString("base64"), mediaType };
 }
 
 // ---- WhatsApp'a yanıt gönder ----
@@ -329,14 +348,42 @@ app.post("/webhook", async (req, res) => {
   try {
     const entry = req.body?.entry?.[0]?.changes?.[0]?.value;
     const msg = entry?.messages?.[0];
-    if (!msg || msg.type !== "text") return;
+    if (!msg) return;
     const from = msg.from;
     if (ALLOWED.length && !ALLOWED.includes(from.replace(/\D/g, ""))) {
       console.log("İzinsiz numara, atlandı:", from);
       return;
     }
-    const userText = msg.text.body;
-    const reply = await askClaude(from, userText);
+    let content, histText;
+    if (msg.type === "text") {
+      content = msg.text.body;
+      histText = msg.text.body;
+    } else if (
+      msg.type === "image" ||
+      (msg.type === "document" && (msg.document?.mime_type || "").startsWith("image/"))
+    ) {
+      const media = msg.type === "image" ? msg.image : msg.document;
+      const caption = media.caption || "";
+      try {
+        const img = await downloadWhatsAppMedia(media.id);
+        const promptText =
+          caption ||
+          "Bu görseli oku: içindeki metni/veriyi aktar; gerekiyorsa pano verisine göre yorumla.";
+        content = [
+          { type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } },
+          { type: "text", text: promptText },
+        ];
+        histText = "[görsel] " + caption;
+      } catch (e) {
+        console.error("Görsel indirilemedi:", e.message);
+        await sendWhatsApp(from, "Görseli okuyamadım (indirme hatası). Tekrar gönderir misin?");
+        return;
+      }
+    } else {
+      await sendWhatsApp(from, "Şu an yalnızca metin ve görsel mesajlarını işleyebiliyorum.");
+      return;
+    }
+    const reply = await askClaude(from, content, histText);
     await sendWhatsApp(from, reply);
   } catch (e) {
     console.error("İşleme hatası:", e);
