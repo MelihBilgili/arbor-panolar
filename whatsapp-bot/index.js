@@ -130,18 +130,16 @@ function pushHistory(from, role, content) {
 // ---- Araçlar (env varsa) ----
 function buildTools() {
   const tools = [];
-  if (SEARCH_API_KEY) {
-    tools.push({
-      name: "web_ara",
-      description:
-        "Panoda olmayan güncel/genel/şirket-dışı bilgiler için web'de arama yapar.",
-      input_schema: {
-        type: "object",
-        properties: { sorgu: { type: "string", description: "Arama sorgusu" } },
-        required: ["sorgu"],
-      },
-    });
-  }
+  tools.push({
+    name: "web_ara",
+    description:
+      "Panoda olmayan güncel/genel/şirket-dışı bilgiler için web'de arama yapar.",
+    input_schema: {
+      type: "object",
+      properties: { sorgu: { type: "string", description: "Arama sorgusu" } },
+      required: ["sorgu"],
+    },
+  });
   if (MAIL_WEBHOOK_URL) {
     tools.push({
       name: "mail_gonder",
@@ -173,17 +171,34 @@ function buildTools() {
 
 async function webAra(q) {
   try {
+    if (SEARCH_API_KEY) {
+      const r = await fetch(
+        "https://api.search.brave.com/res/v1/web/search?count=5&q=" + encodeURIComponent(q),
+        { headers: { Accept: "application/json", "X-Subscription-Token": SEARCH_API_KEY } }
+      );
+      if (!r.ok) return "Arama hatası (Brave): HTTP " + r.status;
+      const d = await r.json();
+      const items = ((d.web && d.web.results) || [])
+        .slice(0, 5)
+        .map((x) => "- " + x.title + ": " + (x.description || "") + " (" + x.url + ")")
+        .join("\n");
+      return items || "Sonuç bulunamadı.";
+    }
+    // Anahtarsız fallback: DuckDuckGo Instant Answer (sınırlı ama ücretsiz/keysiz)
     const r = await fetch(
-      "https://api.search.brave.com/res/v1/web/search?count=5&q=" + encodeURIComponent(q),
-      { headers: { Accept: "application/json", "X-Subscription-Token": SEARCH_API_KEY } }
+      "https://api.duckduckgo.com/?format=json&no_html=1&t=arborbot&q=" + encodeURIComponent(q)
     );
-    if (!r.ok) return "Arama hatası: HTTP " + r.status;
+    if (!r.ok) return "Arama hatası (DDG): HTTP " + r.status;
     const d = await r.json();
-    const items = ((d.web && d.web.results) || [])
-      .slice(0, 5)
-      .map((x) => "- " + x.title + ": " + (x.description || "") + " (" + x.url + ")")
-      .join("\n");
-    return items || "Sonuç bulunamadı.";
+    const out = [];
+    if (d.AbstractText) out.push(d.AbstractText + (d.AbstractURL ? " (" + d.AbstractURL + ")" : ""));
+    for (const rt of d.RelatedTopics || []) {
+      if (rt.Text) out.push("- " + rt.Text + (rt.FirstURL ? " (" + rt.FirstURL + ")" : ""));
+      if (out.length >= 6) break;
+    }
+    return out.length
+      ? out.join("\n")
+      : "Web'de net bir yanıt bulunamadı (daha zengin sonuç için Railway'e SEARCH_API_KEY/Brave ekleyebilirsin).";
   } catch (e) {
     return "Arama hatası: " + e.message;
   }
