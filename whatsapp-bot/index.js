@@ -39,8 +39,8 @@ const PANOLAR_URL =
 const MODEL = process.env.MODEL || "claude-sonnet-5";
 const MAX_CONTEXT_CHARS = parseInt(process.env.MAX_CONTEXT_CHARS || "70000", 10);
 const CONTEXT_TTL_MS = parseInt(process.env.CONTEXT_TTL_MS || "600000", 10); // 10 dk
-const MEMORY_TTL_MS = parseInt(process.env.MEMORY_TTL_MS || "1800000", 10); // 30 dk
-const MAX_HISTORY = parseInt(process.env.MAX_HISTORY || "8", 10); // son 8 tur
+const MEMORY_TTL_MS = parseInt(process.env.MEMORY_TTL_MS || "86400000", 10); // 24 saat (uçucu bellek penceresi genişletildi — çok-turlu görev kurgusu gün içinde korunur)
+const MAX_HISTORY = parseInt(process.env.MAX_HISTORY || "24", 10); // son 24 tur (uzun tablo/liste kurgusu geçmişten düşmesin)
 const GRAPH_VERSION = process.env.GRAPH_VERSION || "v20.0";
 const ALLOWED = (process.env.ALLOWED_NUMBERS || "905322059277")
   .split(",")
@@ -56,9 +56,14 @@ const SYSTEM_BASE =
   "Pano sorularını YALNIZCA bu veriye dayanarak yanıtla; tarih, sayı ve isimleri panodaki gibi ver. " +
   "Panoda olmayan şirket-içi bir şey sorulursa 'panoda bu bilgi yok' de — asla uydurma. " +
   "Konuşma geçmişini hatırlarsın; önceki mesajlara atıfla tutarlı ol. " +
-  "Araçların olabilir (web araması, mail gönderme, gündem notu ekleme). " +
-  "MAIL GÖNDERMEDEN veya GÜNDEM NOTU EKLEMEDEN ÖNCE ne yapacağını (alıcı, konu, içerik/madde) " +
-  "kısaca özetle ve kullanıcıdan açık ONAY iste; yalnızca kullanıcı 'evet/onayla' dedikten sonra aracı çağır. " +
+  "Araçların olabilir (web araması, mail gönderme, gündem notu ekleme, Claude görevi kaydetme). " +
+  "⚠️ HAFIZAN UÇUCUDUR: bu konuşma geçici bellekte tutulur, TTL/yeniden-başlatmada silinebilir. " +
+  "Melih sana bir GÖREV/İŞ verir ya da 'şunu yap / açılınca yap / Claude gündemine ekle / not al / kaydet' derse, " +
+  "bunu KALICI kılmak için `claude_gorev_ekle` aracını ONAY BEKLEMEDEN çağır ve `tam_icerik` alanına konuşmada " +
+  "üretilen TÜM içeriği (tablolar, listeler dâhil) BİREBİR, özetlemeden koy — kalıcı olan TEK şey bu araca yazdığındır; " +
+  "yazmazsan görev kaybolur. Görev kaydı Melih'in kendi kutusuna kalıcı nottur, onay istemezsin. " +
+  "Buna karşılık ÜÇÜNCÜ KİŞİYE MAIL GÖNDERMEDEN (`mail_gonder`) veya genel iş `gundem_ekle` yapmadan ÖNCE " +
+  "ne yapacağını (alıcı, konu, içerik/madde) kısaca özetle ve kullanıcıdan açık ONAY iste; yalnızca 'evet/onayla' sonrası çağır. " +
   "Web aramasını yalnız panoda olmayan güncel/şirket-dışı bilgiler için kullan. " +
   "Token/şifre/anahtar gibi gizli bilgileri asla paylaşma.";
 
@@ -159,11 +164,31 @@ function buildTools() {
     tools.push({
       name: "gundem_ekle",
       description:
-        "int@arbor'a gündem notu maili atar (madde bir sonraki triyajda Gündem'e işlenir). ÇAĞIRMADAN ÖNCE onay al.",
+        "GENEL İŞ gündemine (Açık İşler) madde ekler; int@arbor'a not maili atar. ÇAĞIRMADAN ÖNCE onay al. " +
+        "Claude'a verilen görev/iş için bunu DEĞİL `claude_gorev_ekle`'yi kullan.",
       input_schema: {
         type: "object",
         properties: { madde: { type: "string", description: "Gündeme eklenecek madde" } },
         required: ["madde"],
+      },
+    });
+    tools.push({
+      name: "claude_gorev_ekle",
+      description:
+        "Melih'in Claude'a bıraktığı görevi/notu KALICI kaydeder: int@arbor'a 'Claude Görev (WhatsApp bot)' konulu " +
+        "mail yazılır ve Claude bir sonraki oturum açılışında bunu Claude Gündemi panosuna alır (Kural 71/71(e)). " +
+        "Bot hafızası uçucudur; kalıcı olan TEK şey buraya yazdığındır. Görev niyeti sezilince ONAY BEKLEMEDEN çağır; " +
+        "`tam_icerik`e konuşmada üretilen TÜM içeriği (tablo/liste dâhil) BİREBİR koy, özetleme.",
+      input_schema: {
+        type: "object",
+        properties: {
+          baslik: { type: "string", description: "Görevin kısa başlığı" },
+          tam_icerik: {
+            type: "string",
+            description: "Görevin/notun tam metni — konuşmada üretilen tablo/liste dâhil BİREBİR, özetsiz",
+          },
+        },
+        required: ["baslik", "tam_icerik"],
       },
     });
   }
@@ -271,6 +296,12 @@ async function runTool(name, input) {
     return await sendMail(input.alici, input.konu, input.govde);
   if (name === "gundem_ekle")
     return await sendMail(INT_MAIL, "Gündem (WhatsApp bot)", input.madde || "");
+  if (name === "claude_gorev_ekle")
+    return await sendMail(
+      INT_MAIL,
+      "Claude Görev (WhatsApp bot): " + (input.baslik || "görev"),
+      input.tam_icerik || ""
+    );
   return "Bilinmeyen araç: " + name;
 }
 
