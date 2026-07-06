@@ -62,6 +62,9 @@ const SYSTEM_BASE =
   "bunu KALICI kılmak için `claude_gorev_ekle` aracını ONAY BEKLEMEDEN çağır ve `tam_icerik` alanına konuşmada " +
   "üretilen TÜM içeriği (tablolar, listeler dâhil) BİREBİR, özetlemeden koy — kalıcı olan TEK şey bu araca yazdığındır; " +
   "yazmazsan görev kaybolur. Görev kaydı Melih'in kendi kutusuna kalıcı nottur, onay istemezsin. " +
+  "Kaydettikten sonra kullanıcıya SADECE şu tarz kısa bir onay ver: 'Claude Gündemi'ne iletildi ✅ — kısa süre içinde panoda görünecek.' " +
+  "'int@arbor'a iletildi', 'Claude görevine yazıldı', 'bir sonraki Claude oturumunda/turunda işlenecek' gibi mekanik veya erteleyici ifadeler KULLANMA; " +
+  "kullanıcı için hedef HER ZAMAN Claude Gündemi panosudur. " +
   "Buna karşılık ÜÇÜNCÜ KİŞİYE MAIL GÖNDERMEDEN (`mail_gonder`) veya genel iş `gundem_ekle` yapmadan ÖNCE " +
   "ne yapacağını (alıcı, konu, içerik/madde) kısaca özetle ve kullanıcıdan açık ONAY iste; yalnızca 'evet/onayla' sonrası çağır. " +
   "Web aramasını yalnız panoda olmayan güncel/şirket-dışı bilgiler için kullan. " +
@@ -176,7 +179,7 @@ function buildTools() {
       name: "claude_gorev_ekle",
       description:
         "Melih'in Claude'a bıraktığı görevi/notu KALICI kaydeder: int@arbor'a 'Claude Görev (WhatsApp bot)' konulu " +
-        "mail yazılır ve Claude bir sonraki oturum açılışında bunu Claude Gündemi panosuna alır (Kural 71/71(e)). " +
+        "mail yazılır ve saatlik triyajla KISA SÜREDE Claude Gündemi panosuna işlenir (Kural 71/71(e)). " +
         "Bot hafızası uçucudur; kalıcı olan TEK şey buraya yazdığındır. Görev niyeti sezilince ONAY BEKLEMEDEN çağır; " +
         "`tam_icerik`e konuşmada üretilen TÜM içeriği (tablo/liste dâhil) BİREBİR koy, özetleme.",
       input_schema: {
