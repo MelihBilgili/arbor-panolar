@@ -116,13 +116,56 @@ async function getBusinessContext() {
   return text;
 }
 
-// ---- Konuşma hafızası (numara bazlı) ----
+// ---- Konuşma hafızası (numara bazlı, KALICI: Railway Volume /data) ----
+// RAM Map'i korunur (hız) ama her değişiklikte diske (MEM_FILE) yazılır; başlangıçta
+// diskten yüklenir → restart/redeploy'da bellek KAYBOLMAZ. Volume yoksa RAM'e düşer (çökmez).
+const fs = require("node:fs");
+const path = require("node:path");
+const MEM_DIR = process.env.MEM_DIR || "/data";
+const MEM_FILE = path.join(MEM_DIR, "wa-memory.json");
 const _hist = new Map(); // from -> { msgs:[{role,content}], ts }
+let _memPersistent = false;
+
+(function initMem() {
+  try {
+    fs.mkdirSync(MEM_DIR, { recursive: true });
+    fs.accessSync(MEM_DIR, fs.constants.W_OK);
+    _memPersistent = true;
+    if (fs.existsSync(MEM_FILE)) {
+      const obj = JSON.parse(fs.readFileSync(MEM_FILE, "utf8")) || {};
+      for (const k of Object.keys(obj)) _hist.set(k, obj[k]);
+    }
+    console.log("[bellek] KALICI bellek aktif ->", MEM_FILE, "(" + _hist.size + " kayit yuklendi)");
+  } catch (e) {
+    _memPersistent = false;
+    console.warn("[bellek] Volume yazilamiyor (" + (e.code || e.message) + "); RAM'e dusuluyor. " +
+                 "Kalicilik icin Railway'de Volume ekleyip MEM_DIR'i mount yoluna ayarla.");
+  }
+})();
+
+let _memTimer = null;
+function _saveMem() {
+  if (!_memPersistent) return;
+  clearTimeout(_memTimer);
+  _memTimer = setTimeout(() => {
+    try {
+      const obj = {};
+      for (const [k, v] of _hist.entries()) obj[k] = v;
+      const tmp = MEM_FILE + ".tmp";
+      fs.writeFileSync(tmp, JSON.stringify(obj), "utf8"); // atomik: tmp -> rename
+      fs.renameSync(tmp, MEM_FILE);
+    } catch (e) {
+      console.warn("[bellek] kayit hatasi: " + e.message);
+    }
+  }, 200); // debounce
+}
+
 function getHistory(from) {
   const h = _hist.get(from);
   if (!h) return [];
   if (Date.now() - h.ts > MEMORY_TTL_MS) {
     _hist.delete(from);
+    _saveMem();
     return [];
   }
   return h.msgs;
@@ -134,6 +177,7 @@ function pushHistory(from, role, content) {
   if (h.msgs.length > cap) h.msgs = h.msgs.slice(h.msgs.length - cap);
   h.ts = Date.now();
   _hist.set(from, h);
+  _saveMem();
 }
 
 // ---- Araçlar (env varsa) ----
