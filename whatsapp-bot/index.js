@@ -39,7 +39,7 @@ const PANOLAR_URL =
 const MODEL = process.env.MODEL || "claude-sonnet-5";
 const MAX_CONTEXT_CHARS = parseInt(process.env.MAX_CONTEXT_CHARS || "70000", 10);
 const CONTEXT_TTL_MS = parseInt(process.env.CONTEXT_TTL_MS || "600000", 10); // 10 dk
-const MEMORY_TTL_MS = parseInt(process.env.MEMORY_TTL_MS || "86400000", 10); // 24 saat (uçucu bellek penceresi genişletildi — çok-turlu görev kurgusu gün içinde korunur)
+const MEMORY_TTL_MS = parseInt(process.env.MEMORY_TTL_MS || "604800000", 10); // 7 gün (KALICI bellek: Railway Volume /data; restart/redeploy'da korunur, 7 günden eski turlar budanır)
 const MAX_HISTORY = parseInt(process.env.MAX_HISTORY || "24", 10); // son 24 tur (uzun tablo/liste kurgusu geçmişten düşmesin)
 const GRAPH_VERSION = process.env.GRAPH_VERSION || "v20.0";
 const ALLOWED = (process.env.ALLOWED_NUMBERS || "905322059277")
@@ -57,7 +57,9 @@ const SYSTEM_BASE =
   "Panoda olmayan şirket-içi bir şey sorulursa 'panoda bu bilgi yok' de — asla uydurma. " +
   "Konuşma geçmişini hatırlarsın; önceki mesajlara atıfla tutarlı ol. " +
   "Araçların olabilir (web araması, mail gönderme, gündem notu ekleme, Claude görevi kaydetme). " +
-  "⚠️ HAFIZAN UÇUCUDUR: bu konuşma geçici bellekte tutulur, TTL/yeniden-başlatmada silinebilir. " +
+  "⚠️ HAFIZAN KALICIDIR ama SINIRLIDIR: konuşma geçmişin kalıcı diskte (Railway Volume) tutulur; yeniden başlatma/redeploy'da KAYBOLMAZ, " +
+  "yaklaşık son 7 gün ve numara başına son 24 tur içinde hatırlanır (daha eskisi otomatik budanır). Uzun vadeli arşiv değildir. " +
+  "Geçmiş konuşmaları hatırlıyorsan ona göre tutarlı davran; bu pencerenin dışındaki eski sohbetleri hatırlayamazsın, o durumda uydurma. " +
   "Melih sana bir GÖREV/İŞ verir ya da 'şunu yap / açılınca yap / Claude gündemine ekle / not al / kaydet' derse, " +
   "bunu KALICI kılmak için `claude_gorev_ekle` aracını ONAY BEKLEMEDEN çağır ve `tam_icerik` alanına konuşmada " +
   "üretilen TÜM içeriği (tablolar, listeler dâhil) BİREBİR, özetlemeden koy — kalıcı olan TEK şey bu araca yazdığındır; " +
@@ -224,7 +226,7 @@ function buildTools() {
       description:
         "Melih'in Claude'a bıraktığı görevi/notu KALICI kaydeder: int@arbor'a 'Claude Görev (WhatsApp bot)' konulu " +
         "mail yazılır ve saatlik triyajla KISA SÜREDE Claude Gündemi panosuna işlenir (Kural 71/71(e)). " +
-        "Bot hafızası uçucudur; kalıcı olan TEK şey buraya yazdığındır. Görev niyeti sezilince ONAY BEKLEMEDEN çağır; " +
+        "Bot sohbet hafızası kalıcı ama SINIRLI pencereyle (son ~7 gün) tutulur; arşiv/uzun vadeli kalıcılık için TEK doğru yer buraya yazdığındır. Görev niyeti sezilince ONAY BEKLEMEDEN çağır; " +
         "`tam_icerik`e konuşmada üretilen TÜM içeriği (tablo/liste dâhil) BİREBİR koy, özetleme.",
       input_schema: {
         type: "object",
