@@ -47,6 +47,22 @@ const ALLOWED = (process.env.ALLOWED_NUMBERS || "905322059277")
   .map((s) => s.replace(/\D/g, ""))
   .filter(Boolean);
 
+// ---- Pano INBOX (doğrudan yazma) yapılandırması ----
+// Bot, görev/madde/notu GitHub reposundaki `_inbox/` klasörüne ŞİFRELİ bir JSON olarak
+// commit eder (Contents API). PC tarafındaki birleştirme turu (inbox_merge.mjs) bunları
+// çözüp doğru KAYNAK dosyaya işler (Claude_Gundemi.md / Acik_Isler_*.md ...) ve build+deploy eder.
+// Repo herkese açık olduğundan içerik PANOLAR_PW ile AES-256-GCM şifrelenir (pano ile aynı şema).
+// INBOX_GITHUB_TOKEN yoksa yazma yolu mail'e düşer (geriye dönük uyumluluk).
+const INBOX_GITHUB_TOKEN = process.env.INBOX_GITHUB_TOKEN || "";
+const INBOX_OWNER = process.env.INBOX_OWNER || "MelihBilgili";
+const INBOX_REPO = process.env.INBOX_REPO || "arbor-panolar";
+const INBOX_BRANCH = process.env.INBOX_BRANCH || "main";
+const INBOX_DIR = process.env.INBOX_DIR || "_inbox";
+// Botun doğrudan yazabileceği pano hedefleri (deterministik yazıcısı olanlar).
+// Diğer her hedef PC tarafında Claude Gündemi'ne "[Pano: X]" görevi olarak düşer (kayıp yok).
+const INBOX_TARGETS = { "claude-gundemi": 1, "acik-isler": 1 };
+const INBOX_PBKDF2_ITER = 200000;
+
 const SYSTEM_BASE =
   "Sen Arbor (Arbor Ahşap / Arbor Fenetres) için çalışan Melih Bilgili'nin iş asistanısın. " +
   "WhatsApp üzerinden gelen soruları Türkçe, kısa ve net yanıtlarsın. " +
@@ -83,6 +99,95 @@ function decryptBlob(blobB64, pw) {
   const d = crypto.createDecipheriv("aes-256-gcm", key, b(P.iv));
   d.setAuthTag(tag);
   return Buffer.concat([d.update(data), d.final()]).toString("utf8");
+}
+
+// ---- INBOX şifreleme (panolar_build_deploy.mjs encrypt ile birebir uyumlu) ----
+// AES-256-GCM / PBKDF2-SHA256 200k; tag ct sonuna eklenir; blob = base64(JSON{salt,iv,ct,iter}).
+// Çözümü decryptBlob() yapar → PC tarafı (inbox_merge.mjs) aynı PANOLAR_PW ile açar.
+function encryptBlob(plaintext, pw) {
+  const salt = crypto.randomBytes(16);
+  const iv = crypto.randomBytes(12);
+  const key = crypto.pbkdf2Sync(pw, salt, INBOX_PBKDF2_ITER, 32, "sha256");
+  const c = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const ct = Buffer.concat([c.update(Buffer.from(plaintext, "utf8")), c.final(), c.getAuthTag()]);
+  return Buffer.from(
+    JSON.stringify({
+      salt: salt.toString("base64"),
+      iv: iv.toString("base64"),
+      ct: ct.toString("base64"),
+      iter: INBOX_PBKDF2_ITER,
+    })
+  ).toString("base64");
+}
+
+// ---- Pano INBOX'a doğrudan yaz (GitHub Contents API, şifreli) ----
+// entry: {target, kind, baslik, icerik, ilgili?, bolum?, takip?, oncelik?, durum?}
+// Dönüş: kullanıcıya gösterilecek kısa Türkçe sonuç metni.
+async function inboxYaz(from, entry) {
+  if (!INBOX_GITHUB_TOKEN) throw new Error("INBOX_GITHUB_TOKEN yok");
+  if (!PANOLAR_PW) throw new Error("PANOLAR_PW yok (şifreleme için gerekli)");
+  const target = INBOX_TARGETS[entry.target] ? entry.target : entry.target || "claude-gundemi";
+  const payload = {
+    v: 1,
+    target,
+    kind: entry.kind || "task",
+    baslik: entry.baslik || "",
+    icerik: entry.icerik || "",
+    ilgili: entry.ilgili || "",
+    bolum: entry.bolum || "",
+    takip: entry.takip || "",
+    oncelik: entry.oncelik || "",
+    durum: entry.durum || "",
+    source: "whatsapp-bot",
+    from: (from || "").replace(/\d(?=\d{4})/g, "•"), // numarayı maskeleyip yaz
+    ts: new Date().toISOString(),
+  };
+  const enc = encryptBlob(JSON.stringify(payload), PANOLAR_PW);
+  const fileBody = JSON.stringify({ v: 1, enc });
+  const ts = payload.ts.replace(/[:.]/g, "-");
+  const rnd = crypto.randomBytes(3).toString("hex");
+  const pathInRepo = `${INBOX_DIR}/${target}-${ts}-${rnd}.json`;
+  const api =
+    "https://api.github.com/repos/" + INBOX_OWNER + "/" + INBOX_REPO + "/contents/" + pathInRepo;
+  const r = await fetch(api, {
+    method: "PUT",
+    headers: {
+      Authorization: "token " + INBOX_GITHUB_TOKEN,
+      Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "User-Agent": "arbor-wa-bot",
+    },
+    body: JSON.stringify({
+      message: "wa-bot inbox: " + target + " — " + (payload.baslik || payload.kind).slice(0, 60),
+      content: Buffer.from(fileBody, "utf8").toString("base64"),
+      branch: INBOX_BRANCH,
+    }),
+  });
+  if (!r.ok) throw new Error("inbox PUT HTTP " + r.status + " " + (await r.text()).slice(0, 200));
+  return pathInRepo;
+}
+
+// Pano hedefine yaz; INBOX token yoksa mail'e düş (geriye dönük uyumluluk).
+async function panoyaYaz(from, entry) {
+  const hedefAd =
+    entry.target === "acik-isler" ? "Ana Gündem" : "Claude Gündemi";
+  if (INBOX_GITHUB_TOKEN && PANOLAR_PW) {
+    try {
+      await inboxYaz(from, entry);
+      return hedefAd + "'ne iletildi ✅ — kısa süre içinde panoda görünecek.";
+    } catch (e) {
+      console.error("inbox yazma hatası, mail'e düşülüyor:", e.message);
+    }
+  }
+  // Fallback: mail (eski davranış)
+  if (!MAIL_WEBHOOK_URL) return "Yazma yolu yapılandırılmadı (INBOX_GITHUB_TOKEN/MAIL_WEBHOOK_URL yok).";
+  const konu =
+    entry.target === "acik-isler"
+      ? "Gündem (WhatsApp bot)"
+      : "Claude Görev (WhatsApp bot): " + (entry.baslik || "görev");
+  const govde = (entry.baslik ? entry.baslik + "\n\n" : "") + (entry.icerik || "");
+  await sendMail(INT_MAIL, konu, govde);
+  return hedefAd + "'ne iletildi ✅ — kısa süre içinde panoda görünecek.";
 }
 
 function htmlToText(html) {
@@ -195,6 +300,7 @@ function buildTools() {
       required: ["sorgu"],
     },
   });
+  const canWrite = MAIL_WEBHOOK_URL || INBOX_GITHUB_TOKEN;
   if (MAIL_WEBHOOK_URL) {
     tools.push({
       name: "mail_gonder",
@@ -210,22 +316,32 @@ function buildTools() {
         required: ["alici", "konu", "govde"],
       },
     });
+  }
+  if (canWrite) {
     tools.push({
       name: "gundem_ekle",
       description:
-        "GENEL İŞ gündemine (Açık İşler) madde ekler; int@arbor'a not maili atar. ÇAĞIRMADAN ÖNCE onay al. " +
-        "Claude'a verilen görev/iş için bunu DEĞİL `claude_gorev_ekle`'yi kullan.",
+        "ANA GÜNDEM panosuna (Açık İşler) iş takibi maddesi ekler — DOĞRUDAN panoya işlenir. " +
+        "ÇAĞIRMADAN ÖNCE onay al. Başkasının/Melih'in aksiyonuna bağlı takip kalemleri buraya girer. " +
+        "Claude'un YAPACAĞI bir görev/iş için bunu DEĞİL `claude_gorev_ekle`'yi kullan. " +
+        "İlgili kişi kodu (MB, EA, OE, MK…), bölüm (Şahsi/Fabrika/Yurtdışı) ve takip tarihi biliniyorsa ver; " +
+        "yoksa varsayılan İlgili=MB, Bölüm=Şahsi uygulanır (SÖ/ARGE/PEM buraya ELLE eklenmez — ERP'den gelir).",
       input_schema: {
         type: "object",
-        properties: { madde: { type: "string", description: "Gündeme eklenecek madde" } },
+        properties: {
+          madde: { type: "string", description: "Gündeme eklenecek madde (konu)" },
+          ilgili: { type: "string", description: "İlgili kişi kodu, ör. MB/EA/OE/MK (opsiyonel)" },
+          bolum: { type: "string", description: "Bölüm: Şahsi/Fabrika/Yurtdışı (opsiyonel)" },
+          takip: { type: "string", description: "Takip tarihi GG.AA.YYYY (opsiyonel)" },
+        },
         required: ["madde"],
       },
     });
     tools.push({
       name: "claude_gorev_ekle",
       description:
-        "Melih'in Claude'a bıraktığı görevi/notu KALICI kaydeder: int@arbor'a 'Claude Görev (WhatsApp bot)' konulu " +
-        "mail yazılır ve saatlik triyajla KISA SÜREDE Claude Gündemi panosuna işlenir (Kural 71/71(e)). " +
+        "Melih'in Claude'a bıraktığı görevi/notu KALICI kaydeder ve DOĞRUDAN Claude Gündemi panosuna işlenmek üzere " +
+        "repo inbox'ına yazar (kısa sürede panoda görünür). " +
         "Bot sohbet hafızası kalıcı ama SINIRLI pencereyle (son ~7 gün) tutulur; arşiv/uzun vadeli kalıcılık için TEK doğru yer buraya yazdığındır. Görev niyeti sezilince ONAY BEKLEMEDEN çağır; " +
         "`tam_icerik`e konuşmada üretilen TÜM içeriği (tablo/liste dâhil) BİREBİR koy, özetleme.",
       input_schema: {
@@ -236,8 +352,29 @@ function buildTools() {
             type: "string",
             description: "Görevin/notun tam metni — konuşmada üretilen tablo/liste dâhil BİREBİR, özetsiz",
           },
+          oncelik: { type: "string", description: "Öncelik: Yüksek/Orta/Düşük (opsiyonel)" },
         },
         required: ["baslik", "tam_icerik"],
+      },
+    });
+    tools.push({
+      name: "panoya_yaz",
+      description:
+        "Bir kaydı BELİRTİLEN panoya doğrudan yazar (genel amaçlı). `hedef` = 'claude-gundemi' (Claude'a görev) " +
+        "veya 'acik-isler' (Ana Gündem iş takibi) ya da başka bir pano kimliği. Deterministik yazıcısı olmayan " +
+        "hedefler PC tarafında Claude Gündemi'ne '[Pano: <hedef>]' göreviyle düşer (kayıp olmaz). ÇAĞIRMADAN ÖNCE onay al " +
+        "(claude_gorev_ekle görev niyetinde onay istemez; panoya_yaz genel yazımda onay ister).",
+      input_schema: {
+        type: "object",
+        properties: {
+          hedef: { type: "string", description: "Pano kimliği: claude-gundemi | acik-isler | <diğer>" },
+          baslik: { type: "string", description: "Kısa başlık" },
+          icerik: { type: "string", description: "Tam içerik (BİREBİR, özetsiz)" },
+          ilgili: { type: "string", description: "acik-isler için ilgili kişi kodu (opsiyonel)" },
+          bolum: { type: "string", description: "acik-isler için bölüm (opsiyonel)" },
+          takip: { type: "string", description: "acik-isler için takip tarihi GG.AA.YYYY (opsiyonel)" },
+        },
+        required: ["hedef", "icerik"],
       },
     });
   }
@@ -339,18 +476,38 @@ async function sendMail(to, subject, body) {
   }
 }
 
-async function runTool(name, input) {
+async function runTool(name, input, from) {
   if (name === "web_ara") return await webAra(input.sorgu || "");
   if (name === "mail_gonder")
     return await sendMail(input.alici, input.konu, input.govde);
   if (name === "gundem_ekle")
-    return await sendMail(INT_MAIL, "Gündem (WhatsApp bot)", input.madde || "");
+    return await panoyaYaz(from, {
+      target: "acik-isler",
+      kind: "gundem",
+      baslik: (input.madde || "").slice(0, 80),
+      icerik: input.madde || "",
+      ilgili: input.ilgili || "",
+      bolum: input.bolum || "",
+      takip: input.takip || "",
+    });
   if (name === "claude_gorev_ekle")
-    return await sendMail(
-      INT_MAIL,
-      "Claude Görev (WhatsApp bot): " + (input.baslik || "görev"),
-      input.tam_icerik || ""
-    );
+    return await panoyaYaz(from, {
+      target: "claude-gundemi",
+      kind: "task",
+      baslik: input.baslik || "görev",
+      icerik: input.tam_icerik || "",
+      oncelik: input.oncelik || "",
+    });
+  if (name === "panoya_yaz")
+    return await panoyaYaz(from, {
+      target: (input.hedef || "claude-gundemi").trim(),
+      kind: "note",
+      baslik: input.baslik || "",
+      icerik: input.icerik || "",
+      ilgili: input.ilgili || "",
+      bolum: input.bolum || "",
+      takip: input.takip || "",
+    });
   return "Bilinmeyen araç: " + name;
 }
 
@@ -397,7 +554,7 @@ async function askClaude(from, userContent, histText) {
       for (const block of data.content) {
         if (block.type === "tool_use") {
           console.log("Araç çağrısı:", block.name, JSON.stringify(block.input));
-          const out = await runTool(block.name, block.input || {});
+          const out = await runTool(block.name, block.input || {}, from);
           results.push({ type: "tool_result", tool_use_id: block.id, content: out });
         }
       }
