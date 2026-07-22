@@ -109,6 +109,7 @@ function renderApp(){
      <div class="topbar">
        <h1>ARBOR</h1>
        <div class="spacer"></div>
+       <span class="who" id="freshness"></span>
        <button class="btn sec" id="refresh">Yenile</button>
      </div>
      <div class="tabs">
@@ -121,8 +122,15 @@ function renderApp(){
   document.getElementById("refresh").onclick=()=>loadView();
   document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ state.tab=b.dataset.t; renderApp(); });
   loadView();
+  loadFreshness();
 }
 function loadView(){ if(state.tab==='gundem') loadGundem(); else if(state.tab==='hazir') loadHazir(); else loadAup(); }
+async function loadFreshness(){
+  const el=document.getElementById("freshness"); if(!el) return;
+  const {data}=await sb.from("erp_yukleme").select("damga,yuklenme").order("yuklenme",{ascending:false}).limit(1);
+  if(data&&data[0]){ const d=new Date(data[0].yuklenme);
+    el.textContent="Son ERP çekimi: "+data[0].damga+" · "+d.toLocaleString("tr-TR"); }
+}
 
 /* ---------- ANA GÜNDEM (düzenlenebilir) ---------- */
 async function loadGundem(){
@@ -243,6 +251,7 @@ async function loadAup(){
 
 /* ---------- BOOT ---------- */
 renderApp();
+setInterval(()=>{ if(document.querySelector('input.cell,select.cell')) return; loadFreshness(); loadView(); }, 60000);
 </script>
 </body>
 </html>
