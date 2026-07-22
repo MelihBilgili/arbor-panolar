@@ -114,6 +114,7 @@ function renderApp(){
      <div class="tabs">
        <button data-t="gundem" class="${state.tab==='gundem'?'active':''}">Ana Gündem</button>
        <button data-t="aup" class="${state.tab==='aup'?'active':''}">AÜP</button>
+       <button data-t="hazir" class="${state.tab==='hazir'?'active':''}">Hazır PEM/PRJ</button>
      </div>
    </header>
    <div class="wrap" id="view"><div class="load">Yükleniyor…</div></div>`;
@@ -121,34 +122,75 @@ function renderApp(){
   document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ state.tab=b.dataset.t; renderApp(); });
   loadView();
 }
-function loadView(){ state.tab==='gundem' ? loadGundem() : loadAup(); }
+function loadView(){ if(state.tab==='gundem') loadGundem(); else if(state.tab==='hazir') loadHazir(); else loadAup(); }
 
 /* ---------- ANA GÜNDEM (düzenlenebilir) ---------- */
 async function loadGundem(){
   const view=document.getElementById("view");
-  const {data,error}=await sb.from("ana_gundem").select("*").order("ilgili",{ascending:true}).order("sira",{ascending:true,nullsFirst:false});
-  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const [g,ar,so]=await Promise.all([
+    sb.from("ana_gundem").select("*"),
+    sb.from("gundem_arge").select("*"),
+    sb.from("gundem_so").select("*")
+  ]);
+  const err=g.error||ar.error||so.error;
+  if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
+  const man=(g.data||[]).map(r=>Object.assign({_ed:true},r));
+  const der=[...(ar.data||[]),...(so.data||[])].map(r=>Object.assign({_ed:false},r));
+  const all=man.concat(der);
   const groups={};
-  data.forEach(r=>{ const g=r.ilgili||"—"; (groups[g]=groups[g]||[]).push(r); });
+  all.forEach(r=>{ const k=r.ilgili||"—"; (groups[k]=groups[k]||[]).push(r); });
   let rows="";
-  Object.keys(groups).sort().forEach(g=>{
-    rows+=`<tr class="grp"><td colspan="6">${esc(g)} · ${groups[g].length}</td></tr>`;
-    groups[g].forEach(r=>{
-      rows+=`<tr data-id="${r.id}">
-        <td class="kod">${esc(r.kod)}</td>
-        <td><b>${esc(r.konu)}</b></td>
-        <td><div class="ed" data-f="son_durum">${esc(r.son_durum)||'<span style=color:#b7c6d6>+ durum</span>'}</div></td>
-        <td>${esc(r.bolum)}</td>
-        <td><div class="ed" data-f="takip_gunu" data-type="date">${fdate(r.takip_gunu)||'<span style=color:#b7c6d6>tarih</span>'}</div></td>
-        <td><div class="ed" data-f="statu" data-type="statu">${esc(r.statu)}</div></td>
-      </tr>`;
+  Object.keys(groups).sort().forEach(k=>{
+    rows+=`<tr class="grp"><td colspan="6">${esc(k)} · ${groups[k].length}</td></tr>`;
+    groups[k].forEach(r=>{
+      if(r._ed){
+        rows+=`<tr data-id="${r.id}">
+          <td class="kod">${esc(r.kod)}</td>
+          <td><b>${esc(r.konu)}</b></td>
+          <td><div class="ed" data-f="son_durum">${esc(r.son_durum)||'<span style=color:#b7c6d6>+ durum</span>'}</div></td>
+          <td>${esc(r.bolum)}</td>
+          <td><div class="ed" data-f="takip_gunu" data-type="date">${fdate(r.takip_gunu)||'<span style=color:#b7c6d6>tarih</span>'}</div></td>
+          <td><div class="ed" data-f="statu" data-type="statu">${esc(r.statu)}</div></td>
+        </tr>`;
+      } else {
+        rows+=`<tr style="background:#fafbfd" title="ERP-türevi · salt-okur">
+          <td class="kod" style="color:#5a6b7d">${esc(r.kod)}</td>
+          <td>${esc(r.konu)}</td>
+          <td>${esc(r.son_durum)}</td>
+          <td>${esc(r.bolum)}</td>
+          <td></td>
+          <td>${esc(r.statu)}</td>
+        </tr>`;
+      }
     });
   });
-  view.innerHTML=`<div class="hint">Ana Gündem — hücreye tıklayıp düzenleyebilirsin (doğrudan kaydedilir). ${data.length} kalem.</div>
+  view.innerHTML=`<div class="hint">Ana Gündem — manuel kalemler düzenlenebilir (tıkla-kaydet); ERP-türevi (EU/ARGE · EA/SÖ) satırlar salt-okur. Toplam ${all.length} = ${man.length} manuel + ${der.length} türev.</div>
     <div class="scroll"><table>
     <thead><tr><th>Kod</th><th>Konu</th><th>Son durum</th><th>Bölüm</th><th>Takip</th><th>Statü</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
   view.querySelectorAll(".ed").forEach(el=>el.onclick=()=>startEdit(el));
+}
+
+async function loadHazir(){
+  const view=document.getElementById("view");
+  const {data,error}=await sb.from("hazir_pem_prj").select("*");
+  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  let rows="";
+  (data||[]).forEach(r=>{
+    rows+=`<tr>
+      <td class="kod">${esc(r.tur)}</td>
+      <td class="kod">${esc(r.no)}</td>
+      <td>${esc(r.proje_adi)}</td>
+      <td>${esc(r.ek_bilgi)}</td>
+      <td class="num">${esc(r.adet)}</td>
+      <td class="num">${fdate(r.hazir_tarihi)}</td>
+      <td>${esc(r.onur_guncel)}</td>
+    </tr>`;
+  });
+  view.innerHTML=`<div class="hint">Hazır PEM/PRJ — Sevke Hazır PEM (durum 3) + PRJ (8/8.1), birleşik salt-okur. ${(data||[]).length} kalem.</div>
+    <div class="scroll"><table>
+    <thead><tr><th>Tür</th><th>No</th><th>Proje Adı</th><th>Ek Bilgi/Fiyat</th><th>Adet</th><th>Hazır Tarihi</th><th>Sevk Durumu (Onur)</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
 }
 function startEdit(el){
   if(el.querySelector("input,select")) return;
