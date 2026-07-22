@@ -127,9 +127,9 @@ function renderApp(){
 function loadView(){ if(state.tab==='gundem') loadGundem(); else if(state.tab==='hazir') loadHazir(); else loadAup(); }
 async function loadFreshness(){
   const el=document.getElementById("freshness"); if(!el) return;
-  const {data}=await sb.from("erp_yukleme").select("damga,yuklenme").order("yuklenme",{ascending:false}).limit(1);
+  const {data}=await sb.from("erp_yukleme").select("damga,yuklenme").order("damga",{ascending:false}).limit(1);
   if(data&&data[0]){ const d=new Date(data[0].yuklenme);
-    el.textContent="Son ERP çekimi: "+data[0].damga+" · "+d.toLocaleString("tr-TR"); }
+    el.textContent="Son ERP verisi: "+data[0].damga+" · yüklendi "+d.toLocaleString("tr-TR"); }
 }
 
 /* ---------- ANA GÜNDEM (düzenlenebilir) ---------- */
