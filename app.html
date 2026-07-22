@@ -109,9 +109,7 @@ function renderApp(){
      <div class="topbar">
        <h1>ARBOR</h1>
        <div class="spacer"></div>
-       <span class="who">${esc(state.session?.user?.email||"")}</span>
        <button class="btn sec" id="refresh">Yenile</button>
-       <button class="btn sec" id="logout">Çıkış</button>
      </div>
      <div class="tabs">
        <button data-t="gundem" class="${state.tab==='gundem'?'active':''}">Ana Gündem</button>
@@ -119,7 +117,6 @@ function renderApp(){
      </div>
    </header>
    <div class="wrap" id="view"><div class="load">Yükleniyor…</div></div>`;
-  document.getElementById("logout").onclick=doLogout;
   document.getElementById("refresh").onclick=()=>loadView();
   document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ state.tab=b.dataset.t; renderApp(); });
   loadView();
@@ -203,11 +200,7 @@ async function loadAup(){
 }
 
 /* ---------- BOOT ---------- */
-(async ()=>{
-  const {data}=await sb.auth.getSession();
-  if(data.session){ state.session=data.session; renderApp(); }
-  else renderLogin('email');
-})();
+renderApp();
 </script>
 </body>
 </html>
