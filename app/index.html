@@ -121,6 +121,7 @@ function renderApp(){
        <button data-t="aup" class="${state.tab==='aup'?'active':''}">AÜP</button>
        <button data-t="hazir" class="${state.tab==='hazir'?'active':''}">Hazır PEM/PRJ</button>
        <button data-t="so" class="${state.tab==='so'?'active':''}">SÖ</button>
+       <button data-t="bilanco" class="${state.tab==='bilanco'?'active':''}">Bilanço</button>
        <button data-t="ref" class="${state.tab==='ref'?'active':''}">Referans</button>
      </div>
    </header>
@@ -134,6 +135,7 @@ function loadView(){
   if(state.tab==='gundem') loadGundem();
   else if(state.tab==='hazir') loadHazir();
   else if(state.tab==='so') loadSo();
+  else if(state.tab==='bilanco') loadBilanco();
   else if(state.tab==='ref') loadRef();
   else loadAup();
 }
@@ -294,6 +296,37 @@ async function loadAup(){
     <tbody>${rows}</tbody></table></div>`;
 }
 
+
+/* ---------- BILANÇO (bilanco_ozet view + gider detay) ---------- */
+async function loadBilanco(){
+  const view=document.getElementById("view");
+  const {data,error}=await sb.from("bilanco_ozet").select("*");
+  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const rowsD=(data||[]).slice().sort((a,b)=>b.yil-a.yil);
+  const cur=rowsD[0]||{};
+  const kar=cur.kar_tl, zar=kar<0;
+  function card(t,v,s2,cls){ return `<div style="background:#fff;border:1px solid #e3e8ee;border-radius:10px;padding:10px 12px;border-left:4px solid ${cls}"><div style="font-size:11px;color:#6a7888">${t}</div><div style="font-size:18px;font-weight:700;color:#16324f">${v}</div><div style="font-size:10.5px;color:#93a1b0;margin-top:3px">${s2}</div></div>`; }
+  const cards=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:6px 0 12px">
+    ${card("Net Satış ("+cur.yil+")", money(cur.net_tl)+" TL", "≈ "+money(cur.net_eur)+" €", "#0a6b3f")}
+    ${card("Toplam Maliyet", money(cur.toplam_gider_tl)+" TL", "710 + 720 + 730", "#b8863a")}
+    ${card("Kâr/Zarar", (zar?"−":"+")+money(Math.abs(kar))+" TL", "Net − Maliyet", zar?"#b23a2e":"#0a6b3f")}
+    ${card("Kâr Marjı", (cur.marj==null?"":Number(cur.marj).toFixed(1).replace(".",","))+" %", "Kapsam: Arbor Türkiye", zar?"#b23a2e":"#0a6b3f")}
+  </div>`;
+  let rows="";
+  rowsD.forEach(r=>{
+    const k=r.kar_tl, hasK=k!=null;
+    const kc=hasK?`<td class="num" style="color:${k>=0?'#0a6b3f':'#b23a2e'};font-weight:600">${k>=0?'+':'−'}${money(Math.abs(k))}</td>`:'<td class="num" style="color:#c2ccd6">—</td>';
+    const mc=hasK?`<td class="num" style="color:${k>=0?'#0a6b3f':'#b23a2e'}">${Number(r.marj).toFixed(1).replace(".",",")}%</td>`:'<td class="num" style="color:#c2ccd6">—</td>';
+    const g=v=>v==null?'<td class="num" style="color:#c2ccd6">—</td>':`<td class="num">${money(v)}</td>`;
+    rows+=`<tr><td class="kod">${esc(r.yil)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${money(r.net_eur)}</td>${g(r.k710_tl)}${g(r.k720_tl)}${g(r.k730_tl)}${g(r.toplam_gider_tl)}${kc}${mc}</tr>`;
+  });
+  view.innerHTML=`<div class="hint">Bilanço — <b>Arbor Türkiye</b> (yalnız Türkiye kapsamı). Gelir = Yıllık İcmal, gider = SB tablosu. 2011–2024 Türkiye Satış/Gider/Kâr dosyasından; 2022–2025 tam kâr/zarar.</div>
+    ${cards}
+    <div class="scroll"><table>
+    <thead><tr><th>Yıl</th><th class="num">Net Satış (TL)</th><th class="num">Net (€)</th><th class="num">710 Malzeme</th><th class="num">720 İşçilik</th><th class="num">730 GÜG</th><th class="num">Toplam Gider</th><th class="num">Kâr/Zarar</th><th class="num">Marj</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
 /* ---------- REFERANS (kisiler / odemeler / parametreler + işleyiş) ---------- */
 async function loadRef(){
   const view=document.getElementById("view");
@@ -304,13 +337,13 @@ async function loadRef(){
   ]);
   const err=k.error||o.error||p.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
-  let kr=""; (k.data||[]).forEach(r=>{ kr+=`<tr><td class="kod">${esc(r.kod)}</td><td>${esc(r.tam_ad)}</td><td>${esc(r.email)||'<span style=color:#b7c6d6>—</span>'}</td><td>${esc(r.rol)||''}</td></tr>`; });
+  let kr=""; (k.data||[]).forEach(r=>{ kr+=`<tr><td class="kod">${esc(r.kod)}</td><td>${esc(r.tam_ad)}</td><td>${esc(r.bolum)||''}</td><td>${esc(r.email)||'<span style=color:#b7c6d6>—</span>'}</td><td>${esc(r.rol)||''}</td></tr>`; });
   let or=""; (o.data||[]).forEach(r=>{ or+=`<tr><td>${esc(r.tam_ad)}</td><td>${esc(r.tur)}</td><td class="num">${r.tutar==null?'':esc(r.tutar)} ${esc(r.para_birimi)}</td><td>${esc(r.aciklama)}</td></tr>`; });
   let pr=""; (p.data||[]).forEach(r=>{ pr+=`<tr><td class="kod">${esc(r.anahtar)}</td><td>${esc(typeof r.deger==='string'?r.deger:JSON.stringify(r.deger))}</td><td>${esc(r.aciklama)}</td></tr>`; });
   view.innerHTML=`
     <div class="flow"><b>Güncel işleyiş:</b> <span class="step">Melih ERP'yi manuel çeker</span><span class="arr">→</span><span class="step">Supabase Storage erp/&lt;YYMMDD&gt;/</span><span class="arr">→</span><span class="step">worker · upsert</span><span class="arr">→</span><span class="step">Postgres snapshot</span><span class="arr">→</span><span class="step">bu app</span></div>
     <h3 class="sec">Kişiler (${(k.data||[]).length})</h3>
-    <div class="scroll"><table><thead><tr><th>Kod</th><th>Ad Soyad</th><th>E-posta</th><th>Rol</th></tr></thead><tbody>${kr}</tbody></table></div>
+    <div class="scroll"><table><thead><tr><th>Kod</th><th>Ad Soyad</th><th>Bölüm</th><th>E-posta</th><th>Rol</th></tr></thead><tbody>${kr}</tbody></table></div>
     <h3 class="sec">Ödemeler (referans — süreç yok)</h3>
     <div class="scroll"><table><thead><tr><th>Kişi</th><th>Tür</th><th>Tutar</th><th>Açıklama</th></tr></thead><tbody>${or}</tbody></table></div>
     <h3 class="sec">Parametreler</h3>
