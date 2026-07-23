@@ -160,11 +160,13 @@ async function loadGundem(){
   const all=man.concat(der);
   const onc=r=>{ const m=String(r.son_durum||"").match(/Öncelik\s*(\d+)/i); return m?parseInt(m[1]):(r.sira!=null?r.sira:999); };
   const ac=r=>{ const m=String(r.son_durum||"").match(/(\d{2})\.(\d{2})\.(\d{4})/); return m?(m[3]+m[2]+m[1]):"99999999"; };
+  const isA=r=>/Öncelik/i.test(String(r.son_durum||""));
   const groups={};
   all.forEach(r=>{ const k=r.ilgili||"—"; (groups[k]=groups[k]||[]).push(r); });
   Object.keys(groups).forEach(k=>groups[k].sort((a,b)=>{
-    if(a._ed!==b._ed) return a._ed?-1:1;
-    if(!a._ed){ const oa=onc(a),ob=onc(b); if(oa!==ob) return oa-ob; return ac(a).localeCompare(ac(b)); }
+    const aA=isA(a),bA=isA(b);
+    if(aA!==bA) return aA?1:-1;
+    if(aA){ const oa=onc(a),ob=onc(b); if(oa!==ob) return oa-ob; const ca=ac(a),cb=ac(b); if(ca!==cb) return ca.localeCompare(cb); return String(a.kod).localeCompare(String(b.kod)); }
     return String(a.kod).localeCompare(String(b.kod));
   }));
   const keys=Object.keys(groups).sort((a,b)=> groups[b].length-groups[a].length || a.localeCompare(b));
