@@ -122,6 +122,7 @@ function renderApp(){
        <button data-t="hazir" class="${state.tab==='hazir'?'active':''}">Hazır PEM/PRJ</button>
        <button data-t="so" class="${state.tab==='so'?'active':''}">SÖ</button>
        <button data-t="bilanco" class="${state.tab==='bilanco'?'active':''}">Bilanço</button>
+       <button data-t="icmal" class="${state.tab==='icmal'?'active':''}">İcmal</button>
        <button data-t="ref" class="${state.tab==='ref'?'active':''}">Referans</button>
      </div>
    </header>
@@ -136,6 +137,7 @@ function loadView(){
   else if(state.tab==='hazir') loadHazir();
   else if(state.tab==='so') loadSo();
   else if(state.tab==='bilanco') loadBilanco();
+  else if(state.tab==='icmal') loadIcmal();
   else if(state.tab==='ref') loadRef();
   else loadAup();
 }
@@ -324,6 +326,24 @@ async function loadBilanco(){
     ${cards}
     <div class="scroll"><table>
     <thead><tr><th>Yıl</th><th class="num">Net Satış (TL)</th><th class="num">Net (€)</th><th class="num">710 Malzeme</th><th class="num">720 İşçilik</th><th class="num">730 GÜG</th><th class="num">Toplam Gider</th><th class="num">Kâr/Zarar</th><th class="num">Marj</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+
+/* ---------- YILLIK İCMAL (icmal_ozet view) ---------- */
+async function loadIcmal(){
+  const view=document.getElementById("view");
+  const {data,error}=await sb.from("icmal_ozet").select("*");
+  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const rowsD=(data||[]).slice().sort((a,b)=>b.yil-a.yil);
+  let rows="";
+  rowsD.forEach(r=>{
+    const pt=r.kismi?' <span style="font-size:9px;background:#ffe2ad;color:#7a4a00;border-radius:4px;padding:0 4px">kısmi</span>':'';
+    rows+=`<tr><td class="kod">${esc(r.yil)}${pt}</td><td class="num">${money(r.adet)}</td><td class="num">${money(r.dk1_ad)}</td><td class="num">${money(r.m2)}</td><td class="num">${money(r.net_eur)}</td><td class="num">${r.ort_kur==null?'':esc(r.ort_kur)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${r.netfi_eur_m2==null?'':money(r.netfi_eur_m2)}</td><td class="num">${r.netfi_eur_ad==null?'':money(r.netfi_eur_ad)}</td><td class="num">${r.isk==null?'':esc(r.isk)+'%'}</td></tr>`;
+  });
+  view.innerHTML=`<div class="hint">Yıllık İcmal — <b>tek gelir kaynağı</b> (bilançonun gelir tarafını besler). ${rowsD.length} yıl · 2011–2026 · 2026 kısmi.</div>
+    <div class="scroll"><table>
+    <thead><tr><th>Yıl</th><th class="num">Adet</th><th class="num">DK1 (Ad)</th><th class="num">m²</th><th class="num">Net (€)</th><th class="num">Ort. Kur</th><th class="num">Net (TL)</th><th class="num">Net Fi (€/m²)</th><th class="num">Net Fi (€/ad)</th><th class="num">İsk %</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
