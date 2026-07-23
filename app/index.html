@@ -128,6 +128,8 @@ function renderApp(){
        <button data-t="bilanco" class="${state.tab==='bilanco'?'active':''}">Bilanço</button>
        <button data-t="icmal" class="${state.tab==='icmal'?'active':''}">İcmal</button>
        <button data-t="ref" class="${state.tab==='ref'?'active':''}">Referans</button>
+       <button data-t="formlar" class="${state.tab==='formlar'?'active':''}">Formlar</button>
+       <button data-t="blueprint" class="${state.tab==='blueprint'?'active':''}">Blueprint</button>
      </div>
    </header>
    <div class="wrap" id="view"><div class="load">Yükleniyor…</div></div>`;
@@ -142,6 +144,8 @@ function loadView(){
   else if(state.tab==='bilanco') loadBilanco();
   else if(state.tab==='icmal') loadIcmal();
   else if(state.tab==='ref') loadRef();
+  else if(state.tab==='formlar') loadFormlar();
+  else if(state.tab==='blueprint') loadBlueprint();
   else loadAup();
 }
 function fmtDamga(dg){ return (dg&&dg.length>=6)? dg.slice(4,6)+"."+dg.slice(2,4)+"."+dg.slice(0,2) : "—"; }
@@ -419,6 +423,20 @@ async function loadRef(){
       <p>Raporlar → "Rapor" klasörü; ödemeler → onaya sun; aksiyon-dışı bilgi → sil. Melih'e sorulacaklar tek kaynağa yazılır, çıktıya gömülmez.</p>
     </div>
 `;
+}
+
+function loadFormlar(){
+  const view=document.getElementById("view");
+  const forms=[
+    {ad:"EA — SÖ Haftalık Gündem Formu", who:"Enes Artan · Kalite", url:"ea/", desc:"Hafta bölümünü seçer, sorun ve önerileri 'gündeme alındı'ya çevirir. Yazar: so_ea_form."},
+    {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."}
+  ];
+  const cards=forms.map(f=>{ const full=new URL(f.url, location.href).href; return `<div class="flow"><b>${esc(f.ad)}</b> <span class="tag">${esc(f.who)}</span><p>${esc(f.desc)}</p><p><a class="btn" style="text-decoration:none;display:inline-block" href="${esc(f.url)}" target="_blank">Formu aç</a> &nbsp;<span class="muted">${esc(full)}</span></p></div>`; }).join("");
+  view.innerHTML=`<div class="stamp">Çalışan Web Formları</div><div class="hint">Çalışanlar bu ayrı formlardan girer; senin panolarına doğrudan yazmaz, sonuç ilgili panoya salt-okur yansır. Linkleri ilgili kişiyle paylaş.</div>${cards}`;
+}
+function loadBlueprint(){
+  const view=document.getElementById("view");
+  view.innerHTML=`<div class="stamp">Yeni Mimari Blueprint</div><div class="hint">Supabase (veri) + GitHub (kod) + tek web app · <a href="blueprint/" target="_blank">tam sayfa aç</a></div><iframe src="blueprint/" style="width:100%;height:80vh;border:1px solid #dde3ea;border-radius:8px;background:#fff"></iframe>`;
 }
 
 /* ---------- BOOT (login kaldırıldı — Melih 23.07) ---------- */
