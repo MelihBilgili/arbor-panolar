@@ -43,6 +43,7 @@
   .hint{font-size:11px;color:#8a97a4;margin:4px 2px}
   .stamp{font-size:11.5px;color:#0a6b3f;font-weight:700;margin:2px 2px 8px}
   .num{text-align:right;white-space:nowrap}
+  .snpink{background:#ffd9ec}
   .load{padding:30px;text-align:center;color:#8a97a4}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:14px;padding:0 4px}
   .flow{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:10px 12px;margin-bottom:12px;line-height:1.8}
@@ -304,15 +305,16 @@ async function loadAup(){
       <td class="num ${ga>0?'red':''}">${ga==null?'':ga}</td>
       <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
       <td class="num">${money(r.anlasma_fiyati)}</td>
-      <td>${esc(r.satis_santiye_notlari)}</td>
+      <td${r.satis_santiye_notlari?' class="snpink"':''}>${esc(r.satis_santiye_notlari)}</td>
       <td>${esc(r.uretim_notlari)}</td>
     </tr>`;
   });
   const st=await erpStamp();
   const o0=(oz.data&&oz.data[0])||{}, o1=(oz.data&&oz.data[1])||{};
   const pct=(a,b)=>{ a=Number(a)||0; b=Number(b)||0; if(!b) return ""; const v=Math.round((a-b)/Math.abs(b)*100); return ' <span style="color:'+(v>=0?'#0a6b3f':'#b23a2e')+'">('+(v>=0?'+':'−')+Math.abs(v)+'%)</span>'; };
+  const dgun=(a,b)=>{ const v=Math.round((Number(a)||0)-(Number(b)||0)); const c=v>0?'#0a6b3f':(v<0?'#b23a2e':'#6a7888'); return ' <span style="color:'+c+'">('+(v>0?'+':(v<0?'−':''))+Math.abs(v)+' gün)</span>'; };
   const gk=Number(o0.global_kayma||0).toFixed(1).replace(".",",");
-  const stamp='<div class="stamp">Son güncelleme: '+(st||"—")+' · Adet: '+money(o0.toplam_adet)+pct(o0.toplam_adet,o1.toplam_adet)+' · Tutar: '+money(o0.toplam_tutar)+' €'+pct(o0.toplam_tutar,o1.toplam_tutar)+' · Global kayma: '+gk+' gün'+pct(o0.global_kayma,o1.global_kayma)+'</div>';
+  const stamp='<div class="stamp">Son güncelleme: '+(st||"—")+' · Adet: '+money(o0.toplam_adet)+pct(o0.toplam_adet,o1.toplam_adet)+' · Tutar: '+money(o0.toplam_tutar)+' €'+pct(o0.toplam_tutar,o1.toplam_tutar)+' · Global kayma: '+gk+' gün'+dgun(o0.global_kayma,o1.global_kayma)+'</div>';
   view.innerHTML=`${stamp}<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&gt;0 ve Kayma≥3 kırmızı.</div>
     <div class="scroll"><table>
     <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th>PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th>Satış-Şantiye Notu</th><th>Üretim Notu</th></tr></thead>
