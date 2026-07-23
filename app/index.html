@@ -43,7 +43,7 @@
   .hint{font-size:11px;color:#8a97a4;margin:4px 2px}
   .stamp{font-size:11.5px;color:#0a6b3f;font-weight:700;margin:2px 2px 8px}
   .num{text-align:right;white-space:nowrap}
-  .snpink{background:#ffd9ec}
+  .snpink{background:#ffd9ec} .itot td{background:#eef4fb;font-weight:700}
   .load{padding:30px;text-align:center;color:#8a97a4}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:14px;padding:0 4px}
   .flow{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:10px 12px;margin-bottom:12px;line-height:1.8}
@@ -357,19 +357,21 @@ async function loadBilanco(){
 /* ---------- YILLIK İCMAL (icmal_ozet view) ---------- */
 async function loadIcmal(){
   const view=document.getElementById("view");
-  const {data,error}=await sb.from("icmal_ozet").select("*");
+  const {data,error}=await sb.from("icmal_satir").select("*").order("sira",{ascending:true});
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
-  const rowsD=(data||[]).slice().sort((a,b)=>b.yil-a.yil);
+  const F=["adet","dk1_ad","m2","net_eur","ort_kur","net_tl","netfi_eur_m2","netfi_eur_ad","id_per","ur_per","top_per","ciro_per_eur","isk","kapasite_ad_ay","onaysiz_ad","onay_ter_hf","urt_ad","son_proje_cikis","so_alinan_eur","so_muht_eur","fa_alinan_eur","fa_muht_eur","top_alinan_eur","alinan_ter_hf","top_muht_eur","fr_isk_pct","dig_isk_pct"];
   let rows="";
-  const m=v=>v==null?"":money(v), n=v=>v==null?"":esc(v), pc=v=>v==null?"":esc(v)+"%";
-  rowsD.forEach(r=>{
-    const pt=r.kismi?' <span style="font-size:9px;background:#ffe2ad;color:#7a4a00;border-radius:4px;padding:0 4px">kısmi</span>':'';
-    rows+=`<tr><td class="kod">${esc(r.yil)}${pt}</td><td class="num">${m(r.adet)}</td><td class="num">${m(r.dk1_ad)}</td><td class="num">${m(r.m2)}</td><td class="num">${m(r.net_eur)}</td><td class="num">${n(r.ort_kur)}</td><td class="num">${m(r.net_tl)}</td><td class="num">${m(r.netfi_eur_m2)}</td><td class="num">${m(r.netfi_eur_ad)}</td><td class="num">${n(r.id_per)}</td><td class="num">${n(r.ur_per)}</td><td class="num">${n(r.top_per)}</td><td class="num">${m(r.ciro_per_eur)}</td><td class="num">${pc(r.isk)}</td><td class="num">${m(r.kapasite_ad_ay)}</td><td class="num">${m(r.onaysiz_ad)}</td><td class="num">${n(r.onay_ter_hf)}</td><td class="num">${m(r.urt_ad)}</td><td class="num">${fdate(r.son_proje_cikis)}</td><td class="num">${m(r.so_alinan_eur)}</td><td class="num">${m(r.so_muht_eur)}</td><td class="num">${m(r.fa_alinan_eur)}</td><td class="num">${m(r.fa_muht_eur)}</td><td class="num">${m(r.top_alinan_eur)}</td><td class="num">${n(r.alinan_ter_hf)}</td><td class="num">${m(r.top_muht_eur)}</td><td class="num">${pc(r.fr_isk_pct)}</td><td class="num">${pc(r.dig_isk_pct)}</td></tr>`;
+  (data||[]).forEach(r=>{
+    let tds='<td class="kod">'+esc(r.donem)+'</td>';
+    F.forEach(f=>{ tds+='<td class="num">'+esc(r[f])+'</td>'; });
+    rows+='<tr'+(r.is_total?' class="itot"':'')+'>'+tds+'</tr>';
   });
   const st=await tblStamp("icmal_yil");
-  view.innerHTML=`${stampHTML(st)}<div class="hint">Yıllık İcmal — <b>tek gelir kaynağı</b> (bilançonun gelir tarafını besler). ${rowsD.length} yıl · 2011–2026 · 2026 kısmi.</div>
+  const TH=["D\u00f6nem","Miktar (Ad)","DK1 (Ad)","Miktar (m\u00b2)","Net Tutar (\u20ac)","Ort. Kur","Net Tutar (TL)","Net Fi. (\u20ac/m\u00b2)","Net Fi. (\u20ac/ad)","\u0130d.Per (Ki\u015fi)","\u00dcr.Per (Ki\u015fi)","Top.Per (ki\u015fi)","Ciro/Per (\u20ac/ki\u015fi)","\u0130sk (%)","Kapasite (Ad/Ay)","0..4 Onays\u0131z (Ad)","Onay Ter (hf)","4.1\u20267 \u00dcrt (Ad)","Son Proje \u00c7\u0131k\u0131\u015f","SO al\u0131nan Prj (\u20ac)","SO muht. Prj (\u20ac)","FA al\u0131nan Prj (\u20ac)","FA muht. Prj (\u20ac)","Top.al\u0131nan Prj (\u20ac)","Al.Ter. (hf)","Top.muht. Prj (\u20ac)","FR \u0130sk. (%)","Di\u011f \u0130sk. (%)"];
+  const head=TH.map((h,i)=>i===0?('<th>'+h+'</th>'):('<th class="num">'+h+'</th>')).join("");
+  view.innerHTML=`${stampHTML(st)}<div class="hint">\u0130cmal \u2014 eski panonun i\u00e7eri\u011fi (ayl\u0131k sat\u0131rlar + <b>y\u0131l toplamlar\u0131</b> koyu). Gelir kayna\u011f\u0131 bilan\u00e7oyu besler.</div>
     <div class="scroll"><table>
-    <thead><tr><th>Yıl</th><th class="num">Miktar (Ad)</th><th class="num">DK1 (Ad)</th><th class="num">Miktar (m²)</th><th class="num">Net Tutar (€)</th><th class="num">Ort. Kur</th><th class="num">Net Tutar (TL)</th><th class="num">Net Fi. (€/m²)</th><th class="num">Net Fi. (€/ad)</th><th class="num">İd.Per (Kişi)</th><th class="num">Ür.Per (Kişi)</th><th class="num">Top.Per (kişi)</th><th class="num">Ciro/Per (€/kişi)</th><th class="num">İsk (%)</th><th class="num">Kapasite (Ad/Ay)</th><th class="num">0..4 Onaysız (Ad)</th><th class="num">Onay Ter (hf)</th><th class="num">4.1…7 Ürt (Ad)</th><th class="num">Son Proje Çıkış</th><th class="num">SO alınan Prj (€)</th><th class="num">SO muht. Prj (€)</th><th class="num">FA alınan Prj (€)</th><th class="num">FA muht. Prj (€)</th><th class="num">Top.alınan Prj (€)</th><th class="num">Al.Ter. (hf)</th><th class="num">Top.muht. Prj (€)</th><th class="num">FR İsk. (%)</th><th class="num">Diğ İsk. (%)</th></tr></thead>
+    <thead><tr>${head}</tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
