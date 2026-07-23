@@ -48,6 +48,10 @@
   .step{display:inline-block;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:3px 8px;font-weight:600;color:#16324f}
   .arr{color:#2e7d54;font-weight:700;margin:0 3px}
   h3.sec{margin:14px 2px 6px;color:#16324f;font-size:13px}
+  .flow p{margin:0 0 7px}.flow p:last-child{margin:0}
+  .tag{display:inline-block;background:#16324f;color:#fff;font-size:10px;font-weight:700;border-radius:5px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+  .tag.ok{background:#2e7d54}
+  .muted{color:#7a8794;font-size:11.5px}
 </style>
 </head>
 <body>
@@ -378,7 +382,43 @@ async function loadRef(){
     <h3 class="sec">Ödemeler (referans — süreç yok)</h3>
     <div class="scroll"><table><thead><tr><th>Kişi</th><th>Tür</th><th>Tutar</th><th>Açıklama</th></tr></thead><tbody>${or}</tbody></table></div>
     <h3 class="sec">Parametreler</h3>
-    <div class="scroll"><table><thead><tr><th>Anahtar</th><th>Değer</th><th>Açıklama</th></tr></thead><tbody>${pr}</tbody></table></div>`;
+    <div class="scroll"><table><thead><tr><th>Anahtar</th><th>Değer</th><th>Açıklama</th></tr></thead><tbody>${pr}</tbody></table></div>
+    <h3 class="sec">İşleyiş — Süreçler</h3>
+    <div class="hint">Süreçler Melih'in tarif ettiği işleyişi yansıtır; her biri tetik → sorumlu → çıktı zinciriyle yazılmıştır.</div>
+    <div class="flow"><b>1. ERP İngest Hattı</b><span class="tag">tek P süreci</span>
+      <p>Melih ERP'yi manuel çeker (Prj·Sö·Arge·Cam·Pem) → Excel'ler Supabase Storage <code>erp/&lt;YYMMDD&gt;/</code> → worker/Edge Function idempotent upsert → snapshot tabloları → app view'leri.</p>
+      <p class="muted">gyt→pst: Prj çekiminde GYT yerine PLANLANAN SEVK TARİHİ (PST) gelir; ilk PST'li çekimle snapshot kolonu + view'ler + worker + app AÜP birlikte güncellenir.</p>
+    </div>
+    <div class="flow"><b>2. SÖ Bölüm Gündem Süreci</b><span class="tag ok">SÖ sorumlusu = EA (Enes Artan)</span>
+      <p>Her ERP çekiminden sonra tüm sorun ve öneriler (SÖ'ler) Claude tarafından, EA (Enes Artan) ile paylaşılan bir panoya işlenir.</p>
+      <p>EA, o hafta gündeme alacağı bölümü panoda seçer; seçilen bölüme ait olanların yine EA tarafından <b>Pazartesi akşamına kadar</b> incelenip <b>"gündeme alındı"</b>ya çevrilmesi gerektiğini belirten bir mail Claude tarafından EA'ya gönderilir.</p>
+      <p>Claude, <b>Salı sabahı</b> paylaşılan panoda seçilen bölümle ilgili tüm SÖ'lerin işlenip işlenmediğini kontrol eder; <b>eksik varsa</b> mail ile EA'dan ister ve bu kontrolü <b>Çarşamba sabahı</b> tekrarlar.</p>
+      <p class="muted">Fabrika bölümü SÖ.xlsx KUSURLU BİRİM sütunundan gelir; boşsa "Atanmamış". Açık SÖ kümesi: DURUM ≤ 7.2 &amp; NİTELİK PEM/Şantiye.</p>
+    </div>
+    <div class="flow"><b>3. Bilanço Süreci</b><span class="tag">Türkiye · gider=SB · gelir=İcmal</span>
+      <p>SB (Muhasebe) gider tablosu → yeni dönem gideri gelince Melih iletir → Claude bilanço panosunu günceller. Kapsam yalnız Arbor Türkiye. Bilanço = Net Satış (İcmal) − Toplam Maliyet (710+720+730, SB).</p>
+    </div>
+    <div class="flow"><b>4. Yıllık İcmal Süreci</b><span class="tag">tek gelir kaynağı</span>
+      <p>Yıllık İcmal, aylık/yıllık Net Satış'ın tek kaynağıdır ve bilançonun gelir tarafını besler. PRJ/ERP çekiminden türetilir; satış raporları ay başı mapping ile iş hacmini canlı tutar.</p>
+    </div>
+    <div class="flow"><b>5. Satış Raporları Süreci</b><span class="tag">AK · FA/FY · SO</span>
+      <p>Kaynak raporu gönderir → Claude "Satış Yorum" + İcmal'e işler → mail "Rapor" klasörüne taşınır. AK (UK) ve FA/FY (Fransa/ihracat) ayın 1'i ve 15'i; SO (yurtiçi) yalnız ayın 1'i.</p>
+      <p class="muted">Eskalasyon: ayın 5. ve 20. günü gelmeyen kaynağa tek hatırlatma; önce Melih, sonra ilgili.</p>
+    </div>
+    <div class="flow"><b>6. Prim / Ödeme Süreci</b>
+      <p>Aylık prim banknot denominasyonu 100 $ → 50 € → 200 TL. Sabit: Onur 200 €/ay, Özlem Y. 7.000 TL/ay, Orhan 20.000 TL/ay. Oransal: Özgül %0,01 tahsilat. Değişken: Fatma proje primi.</p>
+      <p class="muted">Ödeme onayı: Melih "Uygundur" (52.1) onaya sunulur; Osman onaylı iç/fabrika (52.25) sorulmadan işlenir.</p>
+    </div>
+    <div class="flow"><b>7. Sevke-Hazır / PEM Takip</b><span class="tag">Onur (Sevkiyat)</span>
+      <p>Onur Ekinci sevke-hazır PEM/PRJ durumunu ve Excel'i günceller. PEM İlgili DURUM bazlı: 1.2 → Berat (dış sipariş), 1.3/2 → Semih (üretim).</p>
+    </div>
+    <div class="flow"><b>8. ARGE Süreci</b><span class="tag ok">İlgili = EU</span>
+      <p>ERP Arge.xlsx İLGİLİ sütunu (Ömer/Tarık) yok sayılır; tüm ARGE'nin İlgili'si Enes Uzun'da toplanır (K73). Ana Gündem'de ARGE ayrı blok.</p>
+    </div>
+    <div class="flow"><b>9. Mail Triyaj Süreci</b>
+      <p>Raporlar → "Rapor" klasörü; ödemeler → onaya sun; aksiyon-dışı bilgi → sil. Melih'e sorulacaklar tek kaynağa yazılır, çıktıya gömülmez.</p>
+    </div>
+`;
 }
 
 /* ---------- BOOT (login kaldırıldı — Melih 23.07) ---------- */
