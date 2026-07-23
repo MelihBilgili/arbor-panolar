@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Onur — Sevk Durumu Formu</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
+  .wrap{max-width:1120px;margin:0 auto;padding:14px 16px 48px}
+  .bar{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .bar label{font-weight:600;color:#16324f}
+  select{font:inherit;padding:8px 10px;border:1px solid #cdd6df;border-radius:8px}
+  .sum{font-size:12.5px;color:#5a6b7d;margin-left:auto}
+  .msg{font-size:12.5px;min-height:16px;font-weight:600}
+  .msg.ok{color:#2e7d54}.msg.err{color:#b40000}
+  .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;overflow:hidden}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  thead th{background:#16324f;color:#fff;font-weight:600;font-size:11.5px;padding:8px 9px;text-align:left;white-space:nowrap;position:sticky;top:0}
+  td{border-bottom:1px solid #eef1f5;padding:6px 9px;vertical-align:top}
+  tbody tr:nth-child(even){background:#fbfcfe}
+  .kod{font-weight:700;color:#16324f;white-space:nowrap}
+  .num{white-space:nowrap;color:#5a6b7d}
+  .grp td{background:#e8eef5;font-weight:700;color:#16324f}
+  .prev{color:#8a97a4;font-size:12px}
+  input.cell{font:inherit;border:1px solid #86a6c6;border-radius:6px;padding:5px 7px;width:100%;min-width:160px}
+  .ed{border:1px dashed #cdd6df;border-radius:6px;padding:5px 7px;min-height:30px;cursor:text;color:#1c2430}
+  .ed:hover{border-color:#2e7d54;background:#f6fbf7}
+  .ed.empty{color:#b7c6d6}
+  .saveflash{outline:2px solid #2e7d54}
+  .hint{font-size:12px;color:#8a97a4;margin:8px 2px}
+  .load{padding:30px;text-align:center;color:#8a97a4}
+</style>
+</head>
+<body>
+<header>
+  <h1>Onur — Sevk Durumu Formu</h1>
+  <div class="sub">Onur Ekinci · Sevke hazır PEM/PRJ kalemlerinin güncel sevk durumunu buradan gir. Hücreye tıkla, yaz, Enter'a bas.</div>
+</header>
+<div class="wrap">
+  <div class="bar">
+    <label>Filtre:</label>
+    <select id="turSel"><option value="">Tümü</option><option value="PEM">PEM</option><option value="PRJ">PRJ</option></select>
+    <span id="msg" class="msg"></span>
+    <span id="sum" class="sum"></span>
+  </div>
+  <div id="list" class="card"><div class="load">Yükleniyor…</div></div>
+  <div class="hint">"Güncel" sütununa yazdığın değer anında Supabase'e kaydedilir (sevk_durumu_onur). Bu form yalnız sevk durumunu değiştirir; Melih'in panolarına doğrudan yazmaz — sonuç Hazır PEM/PRJ panosuna salt-okur yansır.</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fd=d=>{ if(!d) return ""; const x=new Date(d); return isNaN(x)?"":String(x.getDate()).padStart(2,"0")+"."+String(x.getMonth()+1).padStart(2,"0")+"."+String(x.getFullYear()).slice(2); };
+let ROWS=[];
+async function load(){
+  const {data,error}=await sb.from("hazir_pem_prj").select("*");
+  if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
+  ROWS=data||[]; render();
+}
+function render(){
+  const f=document.getElementById("turSel").value;
+  const rows=ROWS.filter(r=>!f||r.tur===f);
+  const done=rows.filter(r=>r.onur_guncel&&String(r.onur_guncel).trim()).length;
+  document.getElementById("sum").textContent=done+" / "+rows.length+" durum girildi";
+  let html='<table><thead><tr><th>Tür</th><th>No</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Hazır Tarihi</th><th>Önceki</th><th>Güncel Sevk Durumu</th></tr></thead><tbody>';
+  let last="";
+  rows.forEach((r,i)=>{
+    if(r.tur!==last){ last=r.tur; html+='<tr class="grp"><td colspan="8">'+esc(r.tur)+'</td></tr>'; }
+    const g=r.onur_guncel||"";
+    html+='<tr data-i="'+ROWS.indexOf(r)+'">'
+      +'<td class="kod">'+esc(r.tur)+'</td>'
+      +'<td class="kod">'+esc(r.no)+'</td>'
+      +'<td>'+esc(r.proje_adi)+'</td>'
+      +'<td>'+esc(r.ek_bilgi)+'</td>'
+      +'<td class="num">'+esc(r.adet)+'</td>'
+      +'<td class="num">'+fd(r.hazir_tarihi)+'</td>'
+      +'<td class="prev">'+esc(r.onur_onceki||"")+'</td>'
+      +'<td><div class="ed '+(g?"":"empty")+'" data-i="'+ROWS.indexOf(r)+'">'+(g?esc(g):"+ durum")+'</div></td>'
+      +'</tr>';
+  });
+  html+='</tbody></table>';
+  const list=document.getElementById("list"); list.innerHTML=html;
+  list.querySelectorAll(".ed").forEach(el=>el.onclick=()=>edit(el));
+}
+function edit(el){
+  if(el.querySelector("input")) return;
+  const i=parseInt(el.dataset.i), r=ROWS[i];
+  const cur=r.onur_guncel||"";
+  const inp=document.createElement("input"); inp.className="cell"; inp.value=cur;
+  el.innerHTML=""; el.appendChild(inp); inp.focus(); inp.select();
+  const commit=async()=>{
+    const val=inp.value.trim();
+    const rec={tur:r.tur, kalem_key:String(r.no), guncel:val||null, updated_at:new Date().toISOString()};
+    const {error}=await sb.from("sevk_durumu_onur").upsert(rec,{onConflict:"tur,kalem_key"});
+    const msg=document.getElementById("msg");
+    if(error){ msg.className="msg err"; msg.textContent=error.message; el.textContent=cur||"+ durum"; return; }
+    r.onur_guncel=val; msg.className="msg ok"; msg.textContent="Kaydedildi ("+r.tur+" "+r.no+")"; setTimeout(()=>msg.textContent="",1500);
+    el.className="ed "+(val?"":"empty"); el.textContent=val||"+ durum"; el.classList.add("saveflash"); setTimeout(()=>el.classList.remove("saveflash"),400);
+    document.getElementById("sum").textContent=(function(){const f=document.getElementById("turSel").value;const rs=ROWS.filter(x=>!f||x.tur===f);return rs.filter(x=>x.onur_guncel&&String(x.onur_guncel).trim()).length+" / "+rs.length+" durum girildi";})();
+  };
+  inp.onblur=commit;
+  inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();inp.blur();} if(e.key==="Escape"){el.className="ed "+(cur?"":"empty");el.textContent=cur||"+ durum";} };
+}
+document.getElementById("turSel").onchange=render;
+load();
+</script>
+</body>
+</html>
