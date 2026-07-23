@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arbor — Panolar</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
+  header{background:#16324f;color:#fff;padding:0}
+  .topbar{display:flex;align-items:center;gap:14px;padding:8px 14px}
+  .topbar h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.5px}
+  .tabs{display:flex;gap:4px;padding:0 10px;flex-wrap:wrap}
+  .tabs button{background:transparent;color:#cfe0f0;border:0;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent}
+  .tabs button.active{color:#fff;border-bottom-color:#fff;background:rgba(255,255,255,.08)}
+  .spacer{flex:1}
+  .who{font-size:12px;color:#cfe0f0}
+  .btn{background:#2e7d54;color:#fff;border:0;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  .btn.sec{background:#e3edf7;color:#16324f}
+  .wrap{padding:12px 14px}
+  .login{max-width:360px;margin:9vh auto;background:#fff;border:1px solid #dde3ea;border-radius:12px;padding:24px}
+  .login h2{margin:0 0 4px;color:#16324f;font-size:19px}
+  .login p{margin:0 0 16px;color:#7a8794;font-size:12.5px}
+  .login input{width:100%;padding:10px;border:1px solid #cdd6df;border-radius:8px;font-size:14px;margin-bottom:10px}
+  .login .btn{width:100%}
+  .msg{font-size:12px;margin-top:10px;min-height:16px}
+  .msg.err{color:#b40000}.msg.ok{color:#2e7d54}
+  .scroll{overflow:auto;border:1px solid #dde3ea;border-radius:8px;max-height:82vh;background:#fff}
+  table{border-collapse:collapse;width:100%;font-size:12px}
+  thead th{position:sticky;top:0;background:#16324f;color:#fff;font-weight:600;font-size:11px;padding:6px 8px;text-align:left;white-space:nowrap;z-index:2}
+  td{border-bottom:1px solid #eef1f5;padding:4px 8px;vertical-align:top}
+  tbody tr:nth-child(even){background:#fbfcfe}
+  tbody tr:hover td{background:#eef6ff}
+  td.red{background:#ffe1e1;color:#b40000;font-weight:700}
+  .grp td{background:#e8eef5;font-weight:700;color:#16324f;position:sticky;left:0}
+  .kod{font-weight:700;color:#16324f;white-space:nowrap}
+  .ed{border:1px dashed transparent;border-radius:4px;padding:2px 4px;min-width:60px;cursor:text}
+  .ed:hover{border-color:#b7c6d6;background:#fffef2}
+  input.cell,select.cell{font:inherit;border:1px solid #86a6c6;border-radius:4px;padding:2px 4px;width:100%}
+  .saveflash{outline:2px solid #2e7d54;transition:outline .1s}
+  .hint{font-size:11px;color:#8a97a4;margin:4px 2px}
+  .num{text-align:right;white-space:nowrap}
+  .load{padding:30px;text-align:center;color:#8a97a4}
+  .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:14px;padding:0 4px}
+  .flow{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:10px 12px;margin-bottom:12px;line-height:1.8}
+  .step{display:inline-block;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:3px 8px;font-weight:600;color:#16324f}
+  .arr{color:#2e7d54;font-weight:700;margin:0 3px}
+  h3.sec{margin:14px 2px 6px;color:#16324f;font-size:13px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://zehysygpqxqmrzangvuc.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc";
+
+const memStore = {};
+function safeStorage(){
+  try{ const k="__arb_t"; window.localStorage.setItem(k,"1"); window.localStorage.removeItem(k); return window.localStorage; }
+  catch(e){ return { getItem:k=> (k in memStore? memStore[k]:null), setItem:(k,v)=>{memStore[k]=String(v)}, removeItem:k=>{delete memStore[k]} }; }
+}
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storage:safeStorage() }
+});
+
+const app = document.getElementById("app");
+let state = { tab:"gundem", email:"", session:null };
+const PREFIX = { F:"Fabrika", G:"Yurtdışı / Genel", P:"PEM", S:"Şahsi", ARGE:"ARGE" };
+
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function fdate(s){ if(!s) return ""; const d=new Date(s); if(isNaN(d)) return esc(s); return String(d.getDate()).padStart(2,'0')+"."+String(d.getMonth()+1).padStart(2,'0')+"."+String(d.getFullYear()).slice(2); }
+function money(n){ if(n==null||n==="") return ""; const v=Math.round(Number(n)); return isNaN(v)?"":v.toLocaleString("tr-TR"); }
+
+/* ---------- AUTH ---------- */
+function renderLogin(step){
+  app.innerHTML = `
+   <div class="login">
+     <h2>Arbor Panolar</h2>
+     <p>Giriş için e-postanı gir; sana 6 haneli bir kod göndereceğiz.</p>
+     <input id="email" type="email" placeholder="ornek@arbor.com.tr" value="${esc(state.email)}" ${step==='code'?'disabled':''}>
+     ${step==='code' ? `<input id="code" inputmode="numeric" placeholder="E-postana gelen 6 haneli kod">`:''}
+     <button class="btn" id="go">${step==='code'?'Doğrula ve gir':'Giriş kodu gönder'}</button>
+     <div class="msg" id="msg"></div>
+   </div>`;
+  document.getElementById("go").onclick = step==='code' ? doVerify : doSend;
+}
+function msg(t,ok){ const m=document.getElementById("msg"); if(m){ m.textContent=t; m.className="msg "+(ok?"ok":"err"); } }
+async function doSend(){
+  const email=document.getElementById("email").value.trim();
+  if(!email){ msg("E-posta gir."); return; }
+  state.email=email; msg("Kod gönderiliyor…",true);
+  const {error}=await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:true } });
+  if(error){ msg("Hata: "+error.message); return; }
+  renderLogin('code'); msg("Kod e-postana gönderildi.",true);
+}
+async function doVerify(){
+  const token=document.getElementById("code").value.trim();
+  if(!token){ msg("Kodu gir."); return; }
+  msg("Doğrulanıyor…",true);
+  const {data,error}=await sb.auth.verifyOtp({ email:state.email, token, type:'email' });
+  if(error){ msg("Hata: "+error.message); return; }
+  state.session=data.session; renderApp();
+}
+async function doLogout(){ await sb.auth.signOut(); state.session=null; renderLogin('email'); }
+
+/* ---------- APP SHELL ---------- */
+function renderApp(){
+  app.innerHTML = `
+   <header>
+     <div class="topbar">
+       <h1>ARBOR</h1>
+       <div class="spacer"></div>
+       <span class="who" id="freshness"></span>
+       <button class="btn sec" id="refresh">Yenile</button>
+       <button class="btn sec" id="logout">Çıkış</button>
+     </div>
+     <div class="tabs">
+       <button data-t="gundem" class="${state.tab==='gundem'?'active':''}">Ana Gündem</button>
+       <button data-t="aup" class="${state.tab==='aup'?'active':''}">AÜP</button>
+       <button data-t="hazir" class="${state.tab==='hazir'?'active':''}">Hazır PEM/PRJ</button>
+       <button data-t="so" class="${state.tab==='so'?'active':''}">SÖ</button>
+       <button data-t="ref" class="${state.tab==='ref'?'active':''}">Referans</button>
+     </div>
+   </header>
+   <div class="wrap" id="view"><div class="load">Yükleniyor…</div></div>`;
+  document.getElementById("refresh").onclick=()=>loadView();
+  document.getElementById("logout").onclick=doLogout;
+  document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ state.tab=b.dataset.t; renderApp(); });
+  loadView();
+  loadFreshness();
+}
+function loadView(){
+  if(state.tab==='gundem') loadGundem();
+  else if(state.tab==='hazir') loadHazir();
+  else if(state.tab==='so') loadSo();
+  else if(state.tab==='ref') loadRef();
+  else loadAup();
+}
+async function loadFreshness(){
+  const el=document.getElementById("freshness"); if(!el) return;
+  const {data}=await sb.from("erp_yukleme").select("damga,yuklenme").order("damga",{ascending:false}).limit(1);
+  if(data&&data[0]){ const d=new Date(data[0].yuklenme);
+    el.textContent="Son ERP verisi: "+data[0].damga+" · yüklendi "+d.toLocaleString("tr-TR"); }
+}
+
+/* ---------- ANA GÜNDEM (blok = kod_prefix; İlgili = kişi; kapat = sil) ---------- */
+async function loadGundem(){
+  const view=document.getElementById("view");
+  const [g,ar]=await Promise.all([
+    sb.from("ana_gundem").select("*"),
+    sb.from("gundem_arge").select("*")
+  ]);
+  const err=g.error||ar.error;
+  if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
+  const man=(g.data||[]).map(r=>Object.assign({_ed:true},r));
+  const der=(ar.data||[]).map(r=>Object.assign({_ed:false},r));
+  const all=man.concat(der);
+  const groups={};
+  all.forEach(r=>{ const k=r.kod_prefix||"—"; (groups[k]=groups[k]||[]).push(r); });
+  const order=["F","G","P","S","ARGE"];
+  const keys=Object.keys(groups).sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?9:ia)-(ib<0?9:ib)||a.localeCompare(b);});
+  let rows="";
+  keys.forEach(k=>{
+    rows+=`<tr class="grp"><td colspan="6">${esc(PREFIX[k]||k)} · ${groups[k].length}</td></tr>`;
+    groups[k].forEach(r=>{
+      if(r._ed){
+        rows+=`<tr data-id="${r.id}">
+          <td class="kod">${esc(r.kod)}</td>
+          <td><b>${esc(r.konu)}</b></td>
+          <td><div class="ed" data-f="son_durum">${esc(r.son_durum)||'<span style=color:#b7c6d6>+ durum</span>'}</div></td>
+          <td>${esc(r.ilgili)}</td>
+          <td><div class="ed" data-f="takip_gunu" data-type="date">${fdate(r.takip_gunu)||'<span style=color:#b7c6d6>tarih</span>'}</div></td>
+          <td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td>
+        </tr>`;
+      } else {
+        rows+=`<tr style="background:#fafbfd" title="ERP-türevi · salt-okur">
+          <td class="kod" style="color:#5a6b7d">${esc(r.kod)}</td>
+          <td>${esc(r.konu)}</td>
+          <td>${esc(r.son_durum)}</td>
+          <td>${esc(r.ilgili)}</td>
+          <td></td><td></td>
+        </tr>`;
+      }
+    });
+  });
+  view.innerHTML=`<div class="hint">Ana Gündem — bloklar kod önekine göre (ARGE ayrı blok). Manuel kalemler düzenlenebilir (tıkla-kaydet); kapatmak = ✕ (kalıcı sil, K64). ERP-türevi ARGE salt-okur, İlgili = EU. Toplam ${all.length} = ${man.length} manuel + ${der.length} ARGE.</div>
+    <div class="scroll"><table>
+    <thead><tr><th>Kod</th><th>Konu</th><th>Son durum</th><th>İlgili</th><th>Takip</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+  view.querySelectorAll(".ed").forEach(el=>el.onclick=()=>startEdit(el));
+  view.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
+}
+async function delGundem(id){
+  if(!confirm("Bu gündem maddesi kalıcı olarak silinsin mi? (kapat = sil)")) return;
+  const {error}=await sb.from("ana_gundem").delete().eq("id",id);
+  if(error){ alert(error.message); return; }
+  loadGundem();
+}
+function startEdit(el){
+  if(el.querySelector("input,select")) return;
+  const f=el.dataset.f, type=el.dataset.type, id=el.closest("tr").dataset.id;
+  const cur=el.textContent.trim().replace(/^\+.*/,"").replace(/^tarih$/,"");
+  const inp=document.createElement("input"); inp.className="cell"; inp.type = type==='date'?'date':'text';
+  inp.value = type==='date'? "": cur;
+  el.innerHTML=""; el.appendChild(inp); inp.focus();
+  const commit=async()=>{
+    let val=inp.value;
+    if(type==='date' && !val){ el.innerHTML='<span style=color:#b7c6d6>tarih</span>'; return; }
+    const {error}=await sb.from("ana_gundem").update({[f]:val||null}).eq("id",id);
+    if(error){ el.innerHTML='<span style=color:#b40000>hata</span>'; alert(error.message); return; }
+    el.textContent = type==='date'? fdate(val) : (val|| "");
+    el.classList.add("saveflash"); setTimeout(()=>el.classList.remove("saveflash"),400);
+  };
+  inp.onblur=commit;
+  inp.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault();inp.blur();} if(e.key==='Escape'){loadGundem();} };
+}
+
+/* ---------- SÖ (so_panosu, bölüm bloklu) ---------- */
+async function loadSo(){
+  const view=document.getElementById("view");
+  const {data,error}=await sb.from("so_panosu").select("*");
+  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const groups={};
+  (data||[]).forEach(r=>{ const k=r.bolum||"—"; (groups[k]=groups[k]||[]).push(r); });
+  let rows="";
+  Object.keys(groups).sort().forEach(k=>{
+    rows+=`<tr class="grp"><td colspan="6">${esc(k)} · ${groups[k].length}</td></tr>`;
+    groups[k].forEach(r=>{
+      rows+=`<tr>
+        <td class="kod">${esc(r.nr)}</td>
+        <td class="num">${fdate(r.tarih)}</td>
+        <td>${esc(r.durum)}</td>
+        <td>${esc(r.proje_adi||r.proje_numarasi)}</td>
+        <td>${esc(r.problem)}</td>
+        <td>${esc(r.bildiren)}</td>
+      </tr>`;
+    });
+  });
+  view.innerHTML=`<div class="hint">SÖ — açık Sorun ve Öneriler (Şantiye/PEM), <b>kusurlu birim = bölüme</b> göre bloklu, açılış tarihine göre. ${(data||[]).length} kayıt.</div>
+    <div class="scroll"><table>
+    <thead><tr><th>NR</th><th>Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+/* ---------- HAZIR PEM/PRJ ---------- */
+async function loadHazir(){
+  const view=document.getElementById("view");
+  const {data,error}=await sb.from("hazir_pem_prj").select("*");
+  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  let rows="";
+  (data||[]).forEach(r=>{
+    rows+=`<tr>
+      <td class="kod">${esc(r.tur)}</td>
+      <td class="kod">${esc(r.no)}</td>
+      <td>${esc(r.proje_adi)}</td>
+      <td>${esc(r.ek_bilgi)}</td>
+      <td class="num">${esc(r.adet)}</td>
+      <td class="num">${fdate(r.hazir_tarihi)}</td>
+      <td>${esc(r.onur_guncel)}</td>
+    </tr>`;
+  });
+  view.innerHTML=`<div class="hint">Hazır PEM/PRJ — Sevke Hazır PEM (durum 3) + PRJ (8/8.1), birleşik salt-okur. ${(data||[]).length} kalem.</div>
+    <div class="scroll"><table>
+    <thead><tr><th>Tür</th><th>No</th><th>Proje Adı</th><th>Ek Bilgi/Fiyat</th><th>Adet</th><th>Hazır Tarihi</th><th>Sevk Durumu (Onur)</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+/* ---------- AÜP (salt-okur) ---------- */
+async function loadAup(){
+  const view=document.getElementById("view");
+  const {data,error}=await sb.from("aup_panosu").select("*").order("aup",{ascending:true});
+  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  let rows="";
+  data.forEach(r=>{
+    const ga=r.gyt_aup, ky=r.kayma;
+    rows+=`<tr>
+      <td class="kod">${esc(r.proje_no)}</td>
+      <td>${esc(r.proje_adi)}</td>
+      <td>${esc(r.proje_durumu)}</td>
+      <td class="num">${esc(r.adet)}</td>
+      <td class="num">${fdate(r.mvt)}</td>
+      <td class="num">${fdate(r.aup)}</td>
+      <td class="num">${fdate(r.gyt)}</td>
+      <td class="num ${ga>0?'red':''}">${ga==null?'':ga}</td>
+      <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
+      <td class="num">${money(r.anlasma_fiyati)}</td>
+      <td>${esc(r.uretim_notlari)}</td>
+    </tr>`;
+  });
+  view.innerHTML=`<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · GYT-AÜP&gt;0 ve Kayma≥3 kırmızı. (GYT→PST geçişi ilk PST-formatlı çekimle yapılacak.)</div>
+    <div class="scroll"><table>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>GYT</th><th>GYT-AÜP</th><th>Kayma</th><th>TUTAR €</th><th>Üretim Notu</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+/* ---------- REFERANS (kisiler / odemeler / parametreler + işleyiş) ---------- */
+async function loadRef(){
+  const view=document.getElementById("view");
+  const [k,o,p]=await Promise.all([
+    sb.from("kisiler").select("*").order("kod"),
+    sb.from("odemeler").select("*"),
+    sb.from("parametreler").select("*").order("anahtar")
+  ]);
+  const err=k.error||o.error||p.error;
+  if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
+  let kr=""; (k.data||[]).forEach(r=>{ kr+=`<tr><td class="kod">${esc(r.kod)}</td><td>${esc(r.tam_ad)}</td><td>${esc(r.email)||'<span style=color:#b7c6d6>—</span>'}</td><td>${esc(r.rol)||''}</td></tr>`; });
+  let or=""; (o.data||[]).forEach(r=>{ or+=`<tr><td>${esc(r.tam_ad)}</td><td>${esc(r.tur)}</td><td class="num">${r.tutar==null?'':esc(r.tutar)} ${esc(r.para_birimi)}</td><td>${esc(r.aciklama)}</td></tr>`; });
+  let pr=""; (p.data||[]).forEach(r=>{ pr+=`<tr><td class="kod">${esc(r.anahtar)}</td><td>${esc(typeof r.deger==='string'?r.deger:JSON.stringify(r.deger))}</td><td>${esc(r.aciklama)}</td></tr>`; });
+  view.innerHTML=`
+    <div class="flow"><b>Güncel işleyiş:</b> <span class="step">Melih ERP'yi manuel çeker</span><span class="arr">→</span><span class="step">Supabase Storage erp/&lt;YYMMDD&gt;/</span><span class="arr">→</span><span class="step">worker · upsert</span><span class="arr">→</span><span class="step">Postgres snapshot</span><span class="arr">→</span><span class="step">bu app</span></div>
+    <h3 class="sec">Kişiler (${(k.data||[]).length})</h3>
+    <div class="scroll"><table><thead><tr><th>Kod</th><th>Ad Soyad</th><th>E-posta</th><th>Rol</th></tr></thead><tbody>${kr}</tbody></table></div>
+    <h3 class="sec">Ödemeler (referans — süreç yok)</h3>
+    <div class="scroll"><table><thead><tr><th>Kişi</th><th>Tür</th><th>Tutar</th><th>Açıklama</th></tr></thead><tbody>${or}</tbody></table></div>
+    <h3 class="sec">Parametreler</h3>
+    <div class="scroll"><table><thead><tr><th>Anahtar</th><th>Değer</th><th>Açıklama</th></tr></thead><tbody>${pr}</tbody></table></div>`;
+}
+
+/* ---------- BOOT ---------- */
+async function boot(){
+  const {data}=await sb.auth.getSession();
+  if(data && data.session){ state.session=data.session; renderApp(); }
+  else renderLogin('email');
+}
+boot();
+setInterval(()=>{ if(!state.session) return; if(document.querySelector('input.cell,select.cell')) return; loadFreshness(); loadView(); }, 60000);
+</script>
+</body>
+</html>
