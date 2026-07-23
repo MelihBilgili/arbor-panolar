@@ -158,20 +158,25 @@ async function loadGundem(){
   const man=(g.data||[]).map(r=>Object.assign({_ed:true},r));
   const der=(ar.data||[]).map(r=>Object.assign({_ed:false},r));
   const all=man.concat(der);
+  const onc=r=>{ const m=String(r.son_durum||"").match(/Öncelik\s*(\d+)/i); return m?parseInt(m[1]):(r.sira!=null?r.sira:999); };
+  const ac=r=>{ const m=String(r.son_durum||"").match(/(\d{2})\.(\d{2})\.(\d{4})/); return m?(m[3]+m[2]+m[1]):"99999999"; };
   const groups={};
-  all.forEach(r=>{ const k=r.kod_prefix||"—"; (groups[k]=groups[k]||[]).push(r); });
-  const order=["F","G","P","S","ARGE"];
-  const keys=Object.keys(groups).sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?9:ia)-(ib<0?9:ib)||a.localeCompare(b);});
+  all.forEach(r=>{ const k=r.ilgili||"—"; (groups[k]=groups[k]||[]).push(r); });
+  Object.keys(groups).forEach(k=>groups[k].sort((a,b)=>{
+    if(a._ed!==b._ed) return a._ed?-1:1;
+    if(!a._ed){ const oa=onc(a),ob=onc(b); if(oa!==ob) return oa-ob; return ac(a).localeCompare(ac(b)); }
+    return String(a.kod).localeCompare(String(b.kod));
+  }));
+  const keys=Object.keys(groups).sort((a,b)=> groups[b].length-groups[a].length || a.localeCompare(b));
   let rows="";
   keys.forEach(k=>{
-    rows+=`<tr class="grp"><td colspan="5">${esc(PREFIX[k]||k)} · ${groups[k].length}</td></tr>`;
+    rows+=`<tr class="grp"><td colspan="4">${esc(k)} · ${groups[k].length}</td></tr>`;
     groups[k].forEach(r=>{
       if(r._ed){
         rows+=`<tr data-id="${r.id}">
           <td class="kod">${esc(r.kod)}</td>
           <td><b>${esc(r.konu)}</b></td>
           <td><div class="ed" data-f="son_durum">${esc(r.son_durum)||'<span style=color:#b7c6d6>+ durum</span>'}</div></td>
-          <td>${esc(r.ilgili)}</td>
           <td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td>
         </tr>`;
       } else {
@@ -179,20 +184,20 @@ async function loadGundem(){
           <td class="kod" style="color:#5a6b7d">${esc(r.kod)}</td>
           <td>${esc(r.konu)}</td>
           <td>${esc(r.son_durum)}</td>
-          <td>${esc(r.ilgili)}</td>
           <td></td>
         </tr>`;
       }
     });
   });
   const st=await erpStamp();
-  view.innerHTML=`${stampHTML(st)}<div class="hint">Ana Gündem — bloklar kod önekine göre (ARGE ayrı blok). Manuel kalemler düzenlenebilir (tıkla-kaydet); kapatmak = ✕ (kalıcı sil, K64). ERP-türevi ARGE salt-okur, İlgili = EU. Toplam ${all.length} = ${man.length} manuel + ${der.length} ARGE.</div>
+  view.innerHTML=`${stampHTML(st)}<div class="hint">Ana Gündem — İlgili'ye göre grupludur. Manuel kalemler tıkla-kaydet; ✕ kapatır (kalıcı sil). ARGE kalemleri (salt-okur) öncelik→açılış sırasında. Toplam ${all.length}.</div>
     <div class="scroll"><table>
-    <thead><tr><th>Kod</th><th>Konu</th><th>Son durum</th><th>İlgili</th><th></th></tr></thead>
+    <thead><tr><th>Kod</th><th>Konu</th><th>Son durum</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
   view.querySelectorAll(".ed").forEach(el=>el.onclick=()=>startEdit(el));
   view.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
 }
+
 async function delGundem(id){
   if(!confirm("Bu gündem maddesi kalıcı olarak silinsin mi? (kapat = sil)")) return;
   const {error}=await sb.from("ana_gundem").delete().eq("id",id);
