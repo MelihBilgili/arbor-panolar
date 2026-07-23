@@ -308,7 +308,7 @@ async function loadAup(){
     </tr>`;
   });
   const st=await erpStamp();
-  view.innerHTML=`${stampHTML(st)}<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&gt;0 ve Kayma≥3 kırmızı. (Kolon: PLANLANAN SEVK TARİHİ.)</div>
+  view.innerHTML=`${stampHTML(st)}<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&gt;0 ve Kayma≥3 kırmızı.</div>
     <div class="scroll"><table>
     <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th>PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th>Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
@@ -391,7 +391,6 @@ async function loadRef(){
     <div class="hint">Süreçler Melih'in tarif ettiği işleyişi yansıtır; her biri tetik → sorumlu → çıktı zinciriyle yazılmıştır.</div>
     <div class="flow"><b>1. ERP İngest Hattı</b><span class="tag">tek P süreci</span>
       <p>Melih ERP'yi manuel çeker (Prj·Sö·Arge·Cam·Pem) → Excel'ler Supabase Storage <code>erp/&lt;YYMMDD&gt;/</code> → worker/Edge Function idempotent upsert → snapshot tabloları → app view'leri.</p>
-      <p class="muted">gyt→pst: Prj çekiminde GYT yerine PLANLANAN SEVK TARİHİ (PST) gelir; ilk PST'li çekimle snapshot kolonu + view'ler + worker + app AÜP birlikte güncellenir.</p>
     </div>
     <div class="flow"><b>2. SÖ Bölüm Gündem Süreci</b><span class="tag ok">SÖ sorumlusu = EA (Enes Artan)</span>
       <p>Her ERP çekiminden sonra tüm sorun ve öneriler (SÖ'ler) Claude tarafından, EA (Enes Artan) ile paylaşılan bir panoya işlenir.</p>
