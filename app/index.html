@@ -292,9 +292,9 @@ async function loadAup(){
       <td>${esc(r.uretim_notlari)}</td>
     </tr>`;
   });
-  view.innerHTML=`<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · GYT-AÜP&gt;0 ve Kayma≥3 kırmızı. (GYT→PST geçişi ilk PST-formatlı çekimle yapılacak.)</div>
+  view.innerHTML=`<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&gt;0 ve Kayma≥3 kırmızı. (Kolon: PLANLANAN SEVK TARİHİ.)</div>
     <div class="scroll"><table>
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>GYT</th><th>GYT-AÜP</th><th>Kayma</th><th>TUTAR €</th><th>Üretim Notu</th></tr></thead>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th>PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th>Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
