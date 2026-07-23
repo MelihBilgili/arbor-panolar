@@ -40,6 +40,7 @@
   input.cell,select.cell{font:inherit;border:1px solid #86a6c6;border-radius:4px;padding:2px 4px;width:100%}
   .saveflash{outline:2px solid #2e7d54;transition:outline .1s}
   .hint{font-size:11px;color:#8a97a4;margin:4px 2px}
+  .stamp{font-size:11.5px;color:#0a6b3f;font-weight:700;margin:2px 2px 8px}
   .num{text-align:right;white-space:nowrap}
   .load{padding:30px;text-align:center;color:#8a97a4}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:14px;padding:0 4px}
@@ -113,7 +114,6 @@ function renderApp(){
      <div class="topbar">
        <h1>ARBOR</h1>
        <div class="spacer"></div>
-       <span class="who" id="freshness"></span>
        <button class="btn sec" id="refresh">Yenile</button>
      </div>
      <div class="tabs">
@@ -130,7 +130,6 @@ function renderApp(){
   document.getElementById("refresh").onclick=()=>loadView();
   document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ state.tab=b.dataset.t; renderApp(); });
   loadView();
-  loadFreshness();
 }
 function loadView(){
   if(state.tab==='gundem') loadGundem();
@@ -141,12 +140,11 @@ function loadView(){
   else if(state.tab==='ref') loadRef();
   else loadAup();
 }
-async function loadFreshness(){
-  const el=document.getElementById("freshness"); if(!el) return;
-  const {data}=await sb.from("erp_yukleme").select("damga,yuklenme").order("damga",{ascending:false}).limit(1);
-  if(data&&data[0]){ const d=new Date(data[0].yuklenme);
-    el.textContent="Son ERP verisi: "+data[0].damga+" · yüklendi "+d.toLocaleString("tr-TR"); }
-}
+function fmtDamga(dg){ return (dg&&dg.length>=6)? dg.slice(4,6)+"."+dg.slice(2,4)+"."+dg.slice(0,2) : "—"; }
+function dOnly(iso){ if(!iso) return "—"; const d=new Date(iso); return isNaN(d)?"—":String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+String(d.getFullYear()).slice(2); }
+async function erpStamp(){ const {data}=await sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1); return data&&data[0]?fmtDamga(data[0].damga):"—"; }
+async function tblStamp(t){ const {data}=await sb.from(t).select("updated_at").order("updated_at",{ascending:false}).limit(1); return data&&data[0]?dOnly(data[0].updated_at):"—"; }
+function stampHTML(d){ return '<div class="stamp">Son güncelleme: '+(d||"—")+'</div>'; }
 
 /* ---------- ANA GÜNDEM (blok = kod_prefix; İlgili = kişi; kapat = sil) ---------- */
 async function loadGundem(){
@@ -166,7 +164,7 @@ async function loadGundem(){
   const keys=Object.keys(groups).sort((a,b)=>{const ia=order.indexOf(a),ib=order.indexOf(b);return (ia<0?9:ia)-(ib<0?9:ib)||a.localeCompare(b);});
   let rows="";
   keys.forEach(k=>{
-    rows+=`<tr class="grp"><td colspan="6">${esc(PREFIX[k]||k)} · ${groups[k].length}</td></tr>`;
+    rows+=`<tr class="grp"><td colspan="5">${esc(PREFIX[k]||k)} · ${groups[k].length}</td></tr>`;
     groups[k].forEach(r=>{
       if(r._ed){
         rows+=`<tr data-id="${r.id}">
@@ -174,7 +172,6 @@ async function loadGundem(){
           <td><b>${esc(r.konu)}</b></td>
           <td><div class="ed" data-f="son_durum">${esc(r.son_durum)||'<span style=color:#b7c6d6>+ durum</span>'}</div></td>
           <td>${esc(r.ilgili)}</td>
-          <td><div class="ed" data-f="takip_gunu" data-type="date">${fdate(r.takip_gunu)||'<span style=color:#b7c6d6>tarih</span>'}</div></td>
           <td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td>
         </tr>`;
       } else {
@@ -183,14 +180,15 @@ async function loadGundem(){
           <td>${esc(r.konu)}</td>
           <td>${esc(r.son_durum)}</td>
           <td>${esc(r.ilgili)}</td>
-          <td></td><td></td>
+          <td></td>
         </tr>`;
       }
     });
   });
-  view.innerHTML=`<div class="hint">Ana Gündem — bloklar kod önekine göre (ARGE ayrı blok). Manuel kalemler düzenlenebilir (tıkla-kaydet); kapatmak = ✕ (kalıcı sil, K64). ERP-türevi ARGE salt-okur, İlgili = EU. Toplam ${all.length} = ${man.length} manuel + ${der.length} ARGE.</div>
+  const st=await erpStamp();
+  view.innerHTML=`${stampHTML(st)}<div class="hint">Ana Gündem — bloklar kod önekine göre (ARGE ayrı blok). Manuel kalemler düzenlenebilir (tıkla-kaydet); kapatmak = ✕ (kalıcı sil, K64). ERP-türevi ARGE salt-okur, İlgili = EU. Toplam ${all.length} = ${man.length} manuel + ${der.length} ARGE.</div>
     <div class="scroll"><table>
-    <thead><tr><th>Kod</th><th>Konu</th><th>Son durum</th><th>İlgili</th><th>Takip</th><th></th></tr></thead>
+    <thead><tr><th>Kod</th><th>Konu</th><th>Son durum</th><th>İlgili</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
   view.querySelectorAll(".ed").forEach(el=>el.onclick=()=>startEdit(el));
   view.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
@@ -241,7 +239,8 @@ async function loadSo(){
       </tr>`;
     });
   });
-  view.innerHTML=`<div class="hint">SÖ — açık Sorun ve Öneriler (Şantiye/PEM), <b>kusurlu birim = bölüme</b> göre bloklu, açılış tarihine göre. ${(data||[]).length} kayıt.</div>
+  const st=await erpStamp();
+  view.innerHTML=`${stampHTML(st)}<div class="hint">SÖ — açık Sorun ve Öneriler (Şantiye/PEM), <b>kusurlu birim = bölüme</b> göre bloklu, açılış tarihine göre. ${(data||[]).length} kayıt.</div>
     <div class="scroll"><table>
     <thead><tr><th>NR</th><th>Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
@@ -264,7 +263,8 @@ async function loadHazir(){
       <td>${esc(r.onur_guncel)}</td>
     </tr>`;
   });
-  view.innerHTML=`<div class="hint">Hazır PEM/PRJ — Sevke Hazır PEM (durum 3) + PRJ (8/8.1), birleşik salt-okur. ${(data||[]).length} kalem.</div>
+  const st=await erpStamp();
+  view.innerHTML=`${stampHTML(st)}<div class="hint">Hazır PEM/PRJ — Sevke Hazır PEM (durum 3) + PRJ (8/8.1), birleşik salt-okur. ${(data||[]).length} kalem.</div>
     <div class="scroll"><table>
     <thead><tr><th>Tür</th><th>No</th><th>Proje Adı</th><th>Ek Bilgi/Fiyat</th><th>Adet</th><th>Hazır Tarihi</th><th>Sevk Durumu (Onur)</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
@@ -292,7 +292,8 @@ async function loadAup(){
       <td>${esc(r.uretim_notlari)}</td>
     </tr>`;
   });
-  view.innerHTML=`<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&gt;0 ve Kayma≥3 kırmızı. (Kolon: PLANLANAN SEVK TARİHİ.)</div>
+  const st=await erpStamp();
+  view.innerHTML=`${stampHTML(st)}<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&gt;0 ve Kayma≥3 kırmızı. (Kolon: PLANLANAN SEVK TARİHİ.)</div>
     <div class="scroll"><table>
     <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th>PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th>Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
@@ -322,7 +323,8 @@ async function loadBilanco(){
     const g=v=>v==null?'<td class="num" style="color:#c2ccd6">—</td>':`<td class="num">${money(v)}</td>`;
     rows+=`<tr><td class="kod">${esc(r.yil)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${money(r.net_eur)}</td>${g(r.k710_tl)}${g(r.k720_tl)}${g(r.k730_tl)}${g(r.toplam_gider_tl)}${kc}${mc}</tr>`;
   });
-  view.innerHTML=`<div class="hint">Bilanço — <b>Arbor Türkiye</b> (yalnız Türkiye kapsamı). Gelir = Yıllık İcmal, gider = SB tablosu. 2011–2024 Türkiye Satış/Gider/Kâr dosyasından; 2022–2025 tam kâr/zarar.</div>
+  const st=await tblStamp("bilanco_yil");
+  view.innerHTML=`${stampHTML(st)}<div class="hint">Bilanço — <b>Arbor Türkiye</b> (yalnız Türkiye kapsamı). Gelir = Yıllık İcmal, gider = SB tablosu. 2011–2024 Türkiye Satış/Gider/Kâr dosyasından; 2022–2025 tam kâr/zarar.</div>
     ${cards}
     <div class="scroll"><table>
     <thead><tr><th>Yıl</th><th class="num">Net Satış (TL)</th><th class="num">Net (€)</th><th class="num">710 Malzeme</th><th class="num">720 İşçilik</th><th class="num">730 GÜG</th><th class="num">Toplam Gider</th><th class="num">Kâr/Zarar</th><th class="num">Marj</th></tr></thead>
@@ -341,7 +343,8 @@ async function loadIcmal(){
     const pt=r.kismi?' <span style="font-size:9px;background:#ffe2ad;color:#7a4a00;border-radius:4px;padding:0 4px">kısmi</span>':'';
     rows+=`<tr><td class="kod">${esc(r.yil)}${pt}</td><td class="num">${money(r.adet)}</td><td class="num">${money(r.dk1_ad)}</td><td class="num">${money(r.m2)}</td><td class="num">${money(r.net_eur)}</td><td class="num">${r.ort_kur==null?'':esc(r.ort_kur)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${r.netfi_eur_m2==null?'':money(r.netfi_eur_m2)}</td><td class="num">${r.netfi_eur_ad==null?'':money(r.netfi_eur_ad)}</td><td class="num">${r.isk==null?'':esc(r.isk)+'%'}</td></tr>`;
   });
-  view.innerHTML=`<div class="hint">Yıllık İcmal — <b>tek gelir kaynağı</b> (bilançonun gelir tarafını besler). ${rowsD.length} yıl · 2011–2026 · 2026 kısmi.</div>
+  const st=await tblStamp("icmal_yil");
+  view.innerHTML=`${stampHTML(st)}<div class="hint">Yıllık İcmal — <b>tek gelir kaynağı</b> (bilançonun gelir tarafını besler). ${rowsD.length} yıl · 2011–2026 · 2026 kısmi.</div>
     <div class="scroll"><table>
     <thead><tr><th>Yıl</th><th class="num">Adet</th><th class="num">DK1 (Ad)</th><th class="num">m²</th><th class="num">Net (€)</th><th class="num">Ort. Kur</th><th class="num">Net (TL)</th><th class="num">Net Fi (€/m²)</th><th class="num">Net Fi (€/ad)</th><th class="num">İsk %</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
@@ -360,7 +363,8 @@ async function loadRef(){
   let kr=""; (k.data||[]).forEach(r=>{ kr+=`<tr><td class="kod">${esc(r.kod)}</td><td>${esc(r.tam_ad)}</td><td>${esc(r.bolum)||''}</td><td>${esc(r.email)||'<span style=color:#b7c6d6>—</span>'}</td><td>${esc(r.rol)||''}</td></tr>`; });
   let or=""; (o.data||[]).forEach(r=>{ or+=`<tr><td>${esc(r.tam_ad)}</td><td>${esc(r.tur)}</td><td class="num">${r.tutar==null?'':esc(r.tutar)} ${esc(r.para_birimi)}</td><td>${esc(r.aciklama)}</td></tr>`; });
   let pr=""; (p.data||[]).forEach(r=>{ pr+=`<tr><td class="kod">${esc(r.anahtar)}</td><td>${esc(typeof r.deger==='string'?r.deger:JSON.stringify(r.deger))}</td><td>${esc(r.aciklama)}</td></tr>`; });
-  view.innerHTML=`
+  const st=await tblStamp("kisiler");
+  view.innerHTML=`${stampHTML(st)}
     <div class="flow"><b>Güncel işleyiş:</b> <span class="step">Melih ERP'yi manuel çeker</span><span class="arr">→</span><span class="step">Supabase Storage erp/&lt;YYMMDD&gt;/</span><span class="arr">→</span><span class="step">worker · upsert</span><span class="arr">→</span><span class="step">Postgres snapshot</span><span class="arr">→</span><span class="step">bu app</span></div>
     <h3 class="sec">Kişiler (${(k.data||[]).length})</h3>
     <div class="scroll"><table><thead><tr><th>Kod</th><th>Ad Soyad</th><th>Bölüm</th><th>E-posta</th><th>Rol</th></tr></thead><tbody>${kr}</tbody></table></div>
@@ -373,7 +377,7 @@ async function loadRef(){
 /* ---------- BOOT (login kaldırıldı — Melih 23.07) ---------- */
 function boot(){ renderApp(); }
 boot();
-setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadFreshness(); loadView(); }, 60000);
+setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadView(); }, 60000);
 </script>
 </body>
 </html>
