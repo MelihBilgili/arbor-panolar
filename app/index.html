@@ -287,15 +287,16 @@ async function loadHazir(){
 /* ---------- AÜP (salt-okur) ---------- */
 async function loadAup(){
   const view=document.getElementById("view");
-  const {data,error}=await sb.from("aup_panosu").select("*").order("aup",{ascending:true});
+  const [{data,error},oz]=await Promise.all([sb.from("aup_panosu").select("*").order("aup",{ascending:true}), sb.from("aup_ozet").select("*").order("damga",{ascending:false}).limit(2)]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const dk=d=>{ d=String(d||""); const i=d.indexOf(" "); return i<0?d:(d.slice(0,i)+" "+d.slice(i+1,i+4)); };
   let rows="";
   data.forEach(r=>{
     const ga=r.gyt_aup, ky=r.kayma;
     rows+=`<tr>
-      <td class="kod">${esc(r.proje_no)}</td>
-      <td>${esc(r.proje_adi)}</td>
-      <td>${esc(r.proje_durumu)}</td>
+      <td class="kod">${esc(String(r.proje_no||"").slice(-6))}</td>
+      <td>${esc(String(r.proje_adi||"").slice(0,30))}</td>
+      <td>${esc(dk(r.proje_durumu))}</td>
       <td class="num">${esc(r.adet)}</td>
       <td class="num">${fdate(r.mvt)}</td>
       <td class="num">${fdate(r.aup)}</td>
@@ -303,13 +304,18 @@ async function loadAup(){
       <td class="num ${ga>0?'red':''}">${ga==null?'':ga}</td>
       <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
       <td class="num">${money(r.anlasma_fiyati)}</td>
+      <td>${esc(r.satis_santiye_notlari)}</td>
       <td>${esc(r.uretim_notlari)}</td>
     </tr>`;
   });
   const st=await erpStamp();
-  view.innerHTML=`${stampHTML(st)}<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&gt;0 ve Kayma≥3 kırmızı.</div>
+  const o0=(oz.data&&oz.data[0])||{}, o1=(oz.data&&oz.data[1])||{};
+  const pct=(a,b)=>{ a=Number(a)||0; b=Number(b)||0; if(!b) return ""; const v=Math.round((a-b)/Math.abs(b)*100); return ' <span style="color:'+(v>=0?'#0a6b3f':'#b23a2e')+'">('+(v>=0?'+':'−')+Math.abs(v)+'%)</span>'; };
+  const gk=Number(o0.global_kayma||0).toFixed(1).replace(".",",");
+  const stamp='<div class="stamp">Son güncelleme: '+(st||"—")+' · Adet: '+money(o0.toplam_adet)+pct(o0.toplam_adet,o1.toplam_adet)+' · Tutar: '+money(o0.toplam_tutar)+' €'+pct(o0.toplam_tutar,o1.toplam_tutar)+' · Global kayma: '+gk+' gün'+pct(o0.global_kayma,o1.global_kayma)+'</div>';
+  view.innerHTML=`${stamp}<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&gt;0 ve Kayma≥3 kırmızı.</div>
     <div class="scroll"><table>
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th>PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th>Üretim Notu</th></tr></thead>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th>PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th>Satış-Şantiye Notu</th><th>Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
