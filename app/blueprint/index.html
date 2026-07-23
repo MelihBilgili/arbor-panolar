@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arbor — Yeni Mimari Blueprint</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px;line-height:1.6}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
+  .wrap{max-width:920px;margin:0 auto;padding:16px 18px 60px}
+  #content h1{font-size:22px;color:#16324f;margin:18px 0 8px}
+  #content h2{font-size:17px;color:#16324f;border-bottom:2px solid #16324f;padding-bottom:5px;margin:26px 0 10px}
+  #content h3{font-size:14.5px;color:#16324f;margin:18px 0 6px}
+  #content code{background:#eef2f6;border-radius:4px;padding:1px 5px;font-size:12.5px}
+  #content pre{background:#0f2233;color:#e6edf3;border-radius:8px;padding:12px;overflow:auto}
+  #content pre code{background:none;color:inherit}
+  #content table{border-collapse:collapse;width:100%;font-size:13px;margin:10px 0}
+  #content th{background:#16324f;color:#fff;text-align:left;padding:7px 9px;font-size:12px}
+  #content td{border-bottom:1px solid #e6ebf1;padding:6px 9px;vertical-align:top}
+  #content blockquote{border-left:4px solid #2e7d54;background:#f2f8f4;margin:10px 0;padding:8px 12px;color:#2a4a38}
+  #content a{color:#1c6ea8}
+  .mermaid{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:14px;margin:12px 0;text-align:center}
+  .load{padding:30px;text-align:center;color:#8a97a4}
+</style>
+</head>
+<body>
+<header>
+  <h1>ARBOR — Yeni Mimari Blueprint</h1>
+  <div class="sub">Supabase (veri) + GitHub (kod) + tek web app · canlı referans</div>
+</header>
+<div class="wrap"><div id="content"><div class="load">render ediliyor…</div></div></div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script id="md" type="text/plain"># Arbor — Yeni Mimari Blueprint
+
+**Tarih:** 2026-07-23 · **Sürüm:** 260723_1141
+**Kapsam:** İş takip sisteminin yerel dosya yığınından bulut-yerlisi (Supabase + web app) mimariye göçü.
+**Depolama kararı (bu sürümde sabitlendi):** Katmanlı — veri→Supabase, kod→GitHub, **ham ERP xlsx + üretilen doküman/ek→Supabase Storage** (ERP için `erp/<YYMMDD>/` yolu; Melih manuel yükler), OneDrive→yalnız geçiş arşivi (+ upload yüzeyi hazır olana kadar geçici ERP giriş kutusu).
+
+---
+
+## 1. Vizyon — neden bu göç?
+
+Bugünkü sistem, iki bilgisayara (Ümraniye PC-A, Astoria PC-B) yayılmış onlarca Python script'i, statik HTML panosu, Excel dosyası ve 2174 satırlık bir kural dosyasından oluşuyor. Bu yapının maliyetinin büyük kısmı **işin kendisi değil, işin senkron kalması**: iki PC'yi OneDrive üzerinden tutarlı tutan push/pull döngüsü, marker dosyaları, bootstrap uygulaması, "yenisi-kazanır" bayatlık guard'ları. Genel Kurallar'daki en çok ihlal edilen ve en çok onarılan maddeler (K55/55.1 senkron, K81 makbuz, K63 cron kapıları) tam da bu dağıtık-durum probleminden doğuyor.
+
+Yeni mimarinin tek cümlelik hedefi: **iş verisini iki makinenin diskinden alıp tek bir bulut veritabanına koymak.** Böylece her iki PC ve telefon aynı doğruluk kaynağına bakar; senkron makinesi yapısal olarak ortadan kalkar; erişim herhangi bir tarayıcıdan olur.
+
+## 2. Mevcut durum (as-is)
+
+| Katman | Bugün nerede | Sorun |
+|---|---|---|
+| İş verisi (proje, PEM, ARGE, SÖ, gündem, sorular) | OneDrive'daki .md / .xlsx / .py'ye gömülü | Tek kaynak yok; her tür ayrı script'le tazeleniyor |
+| Panolar (görüntü) | Statik HTML, `build_panolar.py` → GitHub Pages | Her değişiklikte yeniden derle+deploy |
+| ERP anlık görüntüsü | `ERP\<YYMMDD>\*.xlsx` yerel dosyalar | "Önceki değer" file-diff ile; kırılgan |
+| İki-PC tutarlılığı | OneDrive + özel senkron script'leri | Mimarinin en pahalı ve en hataya açık parçası |
+| Kod | OneDrive kökünde .py/.mjs | Sürüm kontrolü yok; kod ile veri iç içe |
+
+## 3. Hedef mimari (to-be)
+
+```mermaid
+flowchart LR
+  ERP[(Arbor ERP)] -->|Melih MANUEL export + upload| XLSX[Supabase Storage<br/>erp/YYMMDD/ · o güne ait tüm xlsx]
+  XLSX -->|worker / Edge Function<br/>idempotent upsert| SUPA[(Supabase<br/>Postgres)]
+  SUPA -->|view'ler + RLS| APP[arbor_app.html<br/>web]
+  APP -->|e-posta OTP| USER((Melih / PC-A / PC-B / telefon))
+  SUPA -->|Storage| RAW[üretilen doküman + ek]
+  GH[GitHub repo<br/>şema · worker · app] -->|deploy| APP
+```
+
+Üç bulut arka ucu, üç net rol:
+
+- **Supabase (Postgres + Storage)** — iş verisinin ve ham dosyaların tek doğruluk kaynağı (ham ERP xlsx `erp/<YYMMDD>/`, üretilen ek `docs/`).
+- **GitHub (private repo)** — şema, worker ve app kodunun sürümlü evi + app'in deploy kaynağı.
+- **OneDrive** — veri hattında **kalıcı rol yok**; yalnız geçiş boyunca soğuk arşiv/yedek (+ Supabase Storage upload yüzeyi hazır olana kadar geçici ERP giriş kutusu `ERP\<YYMMDD>\`), göç tamamlanınca senkron script'leriyle emekliye ayrılır.
+
+> **Önemli netlik:** "Bulutta saklamak" = Supabase + GitHub. Claude'un çalıştığı bulut sandbox **kalıcı depo değildir** (oturum bitince silinir); depolama daima bu somut arka uçlardadır.
+
+## 4. Depolama katmanları — karar
+
+| İçerik | Ev | Gerekçe |
+|---|---|---|
+| İş verisi (proje/PEM/ARGE/SÖ/gündem/sorular/yıllık icmal) | **Supabase Postgres** | Tek kaynak; iki PC + telefon aynı yere bakar; senkron biter |
+| Kod (şema.sql, worker.py, app.html) | **GitHub private repo** | Sürüm kontrolü; OneDrive'da kod tutmak anti-kalıp; app deploy kaynağı |
+| Ham ERP xlsx (haftalık çekim) | **Supabase Storage `erp/<YYMMDD>/`** | Melih manuel export eder + uygulamadan yükler (yol adı = çekim tarihi YYMMDD, o güne ait tüm Excel'ler); worker/Edge Function en güncel yolu okur. Yerel PC/OneDrive bağımlılığı yok |
+| Üretilen doküman + ek | **Supabase Storage `docs/`** | Ingest sonrası; veriyle aynı çatı altında |
+| Geçiş arşivi + geçici ERP inbox | **OneDrive** | Geri-dönüş ağı; Storage upload yüzeyi gelene dek geçici ERP giriş kutusu; sonra emekli |
+
+**İndirgenemez insan girdisi — manuel ERP çekimi:** ERP raporlarını **Melih kendisi çeker** (dışa aktarır) ve o güne ait tüm Excel'leri **Supabase Storage'a `erp/<YYMMDD>/` yoluna yükler** (yol adı = çekim tarihi, YYMMDD). Bu tek adım bir **insan girdisidir** — ama artık yerel bir makineye veya OneDrive'a bağlı değil; herhangi bir tarayıcıdan yapılabilir. Ingest bulutta olur (worker/Edge Function Storage'dan okur). Faz 4'te ERP API'si (§7) gelirse bu manuel yükleme de otomatikleşebilir. **Geçiş:** upload yüzeyi + Storage-okuyan worker hazır olana kadar mevcut `OneDrive\ERP\<YYMMDD>\` giriş kutusu çalışmayı sürdürür. *(Not: bu, Genel Kurallar Kural 13'teki "Claude computer-use ile çeker" ifadesiyle çelişir; yeni mimaride çekim manuel → Kural 13/37/38'in güncellenmesi gerekir, bkz. §11.)*
+
+## 5. Veri modeli (kurulu)
+
+**v1 — çekirdek (`arbor_schema_v1.sql`):**
+- `erp_yukleme` — her haftalık ERP çekimi bir snapshot satırı (`damga` = YYMMDD). "Önceki değer" artık file-diff değil, snapshot geçmişinden türetilir.
+- `proje_snapshot` — Prj.xlsx birebir (proje_no, durumu, adet, MVT, AÜP, GYT, notlar, anlaşma fiyatı). **Bulgu:** AÜP ayrı varlık değil, bir tarih sütunu → pano bir view. Eski `aup_pano.py` + `pano_guard.py` + `_aup_ALERT` sentinel yapısal olarak gereksiz.
+- `ana_gundem` — konsolide takip (kod, konu, ilgili, bölüm, takip_günü, statü, kaynak_tip, türetilmiş, öncelik). Kural 39'un DB karşılığı.
+- `melih_sorular` — açık soru/karar kuyruğu.
+- `audit_log` + trigger'lar — her INSERT/UPDATE/DELETE jsonb olarak kayıt (web/etl/worker kaynağı).
+- View'ler: `v_erp_son` / `v_erp_onceki` (fs[-1]/fs[-2] yerine), `proje_guncel`, `aup_panosu`.
+
+**v2 — türev + mutabakat (`arbor_schema_v2.sql`):**
+- `pem_snapshot`, `arge_snapshot`, `so_snapshot` — ERP'nin diğer üç raporu; `durum_kod` generated column.
+- `sevk_durumu_onur` — Onur'un elle girdiği sevk durumu (snapshot değil).
+- `yillik_icmal` — aylık icmal tablosu.
+- `*_current` view'leri (en güncel çekim), `hazir_pem_prj`, `aup_panosu` (4.1≤k≤7.1 bandı), `gundem_arge`, `gundem_so`.
+- RLS + GRANT: `authenticated` okur; yazma `role='mb'` JWT talebine bağlı.
+
+## 6. Bileşenler
+
+**arbor_erp_worker.py** — Astoria'da çalışır; en güncel `ERP\<YYMMDD>\` klasöründeki Prj/Pem/Arge/SÖ.xlsx'i Supabase snapshot tablolarına idempotent upsert eder. Değişiklik algılama boyut+mtime imzasıyla (`arbor_worker_last.txt`). Servis anahtarı `%LOCALAPPDATA%\Arbor\arbor_worker.env`.
+
+**arbor_app.html** (282 satır) — Supabase JS client, canlı proje `zehysygpqxqmrzangvuc`, e-posta OTP (6 haneli kod) login. Dört sekme: **Ana Gündem** (manuel kalemler tıkla-kaydet düzenlenebilir; ERP-türevi ARGE salt-okur), **AÜP**, **Hazır PEM/PRJ**, **SÖ**. Statik panolar + `build_panolar.py` + deploy döngüsünün yerini alır.
+
+**Pilot yüklemeler** — `_pilot_load_ana_gundem.sql`, `_pilot_load_aup.sql`, `_pilot_load_derived.sql`: mevcut .md/.xlsx verisini yeni şemaya taşıyan tek seferlik ETL.
+
+## 7. ERP besleme akışı ve tam-bulut yolu
+
+Akış (hedef): **Melih ERP'yi manuel çeker** → o güne ait tüm Excel'leri uygulamadan **Supabase Storage `erp/<YYMMDD>/`** yoluna yükler → `arbor_erp_worker.py` (veya upload'ta tetiklenen Edge Function) en güncel yolu bulur, imzayla değişiklik algılar, snapshot tablolarına idempotent upsert eder → Supabase Postgres. Çekim ritmi Genel Kurallar Kural 37/38'de (haftalık, Çarşamba). Bu akış tamamen Supabase içinde kalır — yerel PC/OneDrive veri hattından çıkar. **Geçiş:** upload yüzeyi + Storage-okuyan worker devreye girene kadar worker mevcut `OneDrive\ERP\<YYMMDD>\` klasöründen okur.
+
+**Faz 4 tetikleyicisi:** Genel Kurallar F98'de geçen "EU ERP'den API verecek" gerçekleşirse, manuel export + yükleme adımı bir **zamanlanmış bulut işine** (Supabase Edge Function / cron) dönüşür; manuel adım tamamen kalkar ve sistem gerçekten tam-buluta geçer. Bu API bir sonraki büyük kilometre taşıdır; karar Melih'indir.
+
+## 8. Kimlik ve güvenlik
+
+E-posta OTP ile giriş; publishable/anon anahtar client'ta açık durabilir (tasarım gereği herkese açık, koruma RLS'te). RLS: okuma `authenticated`, yazma `role='mb'`. `audit_log` her yazımı iz olarak tutar. Not: int@arbor erişim kaybı geçmişi (delege yasak, Zapier 402) nedeniyle auth güvenilir bir e-posta hesabına bağlanmalı.
+
+## 9. Göç yol haritası
+
+- **Faz 0 — Tasarım & kurulum (TAMAM):** şema v1+v2 yazıldı, worker yazıldı, app iskeleti + canlı Supabase projesi + auth, pilot ETL üretildi.
+- **Faz 1 — Canlıya alma:** şema v1+v2'yi projeye uygula → pilot yüklemeleri koştur → app'in 4 sekmesini canlı view'lere karşı doğrula → app'i GitHub Pages/Vercel'e deploy et → worker'ı gerçek ERP klasörüyle bir kez çalıştır.
+- **Faz 2 — Paralel çalışma:** Supabase yetkili kaynak; OneDrive yedek olarak sürer; iki hafta iki sistem karşılaştırılır.
+- **Faz 3 — Emeklilik:** güven oturunca senkron script'leri ve statik pano üretimi kapatılır; Genel Kurallar'ın ilgili maddeleri sadeleştirilir.
+- **Faz 4 — Tam bulut:** ERP API'si geldiğinde besleme buluta taşınır.
+
+## 10. Yeni mimariyle emekliye ayrılacaklar
+
+- Senkron: `gunluk-senkron` / `gunluk-senkron-iceri-aktar` görevleri, `_Senkron` bootstrap, `_pull_apply.ps1`, Kural 55/55.1 — DB tek kaynak olunca gereksiz.
+- Pano üretimi: `build_panolar.py`, `panolar_build_deploy.mjs`, `panolar_deploy.py` ve statik `Panolar.html` — app doğrudan view okur.
+- AÜP guard yığını: `aup_pano.py`, `pano_guard.py`, `_aup_ALERT` sentinel — view zaten en güncele eşit.
+- File-diff mantığı: `acik_isler_sync.py erp-refresh`'in diff kısmı — snapshot geçmişi bunu üretir.
+- Onlarca tek-seferlik `_*.py` / `_*.sql` scratch dosyası — kök süpürmesiyle Arşiv'e.
+
+## 11. Riskler ve açık kararlar
+
+- **Supabase ücretsiz katman limitleri** — satır/depolama/istek sınırları göç hacmine yeter mi; gerekirse ücretli katman.
+- **Yedekleme** — Supabase otomatik yedeği + haftalık dışa aktarım (OneDrive arşivine) düşünülmeli.
+- **ERP inbox geçişi** — hedef Supabase Storage `erp/<YYMMDD>/`; uygulamaya upload zonu + worker'ın Storage'dan okuması yazılana kadar OneDrive `ERP\<YYMMDD>\` geçici kalır. Faz 4 ERP API'siyle manuel yükleme de kalkar.
+- **Genel Kurallar uyumu (açık karar):** Yeni mimaride çekim manuel olduğundan, Kural 13'teki "Claude computer-use ile çeker" ifadesi + Kural 37/38 buna göre güncellenmeli (eski "Melih elle yükler" akışına dönüş). Karar: güncellensin mi, ne zaman?
+- **Auth hesabı** — OTP'nin bağlanacağı güvenilir e-posta netleşmeli (int@arbor geçmişi).
+- **Rol modeli** — şimdilik `mb` tek yazan rol; çalışan erişimi (Onur sevk, EA/EU) ileride ek roller gerektirir.
+
+## 12. Sonraki somut adım
+
+Faz 1'in ilk işi: şema v1+v2'yi canlı Supabase projesine uygulamak ve pilot yüklemeleri koşturmak (Astoria'daki `arbor_worker.env` üzerinden). Onayınla bu adıma geçebilirim.
+</script>
+<script>
+  const md=document.getElementById("md").textContent;
+  marked.setOptions({gfm:true,breaks:false});
+  document.getElementById("content").innerHTML=marked.parse(md);
+  document.querySelectorAll("code.language-mermaid").forEach(c=>{ const d=document.createElement("div"); d.className="mermaid"; d.textContent=c.textContent; const pre=c.closest("pre"); (pre||c).replaceWith(d); });
+  try{ mermaid.initialize({startOnLoad:false,securityLevel:"loose"}); mermaid.run(); }catch(e){}
+</script>
+</body>
+</html>
