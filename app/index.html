@@ -35,6 +35,7 @@
   td.red{background:#ffe1e1;color:#b40000;font-weight:700}
   .grp td{background:#e8eef5;font-weight:700;color:#16324f;position:sticky;left:0}
   .kod{font-weight:700;color:#16324f;white-space:nowrap}
+  .gnb .kod,.gnb .grp td{font-weight:400}
   .ed{border:1px dashed transparent;border-radius:4px;padding:2px 4px;min-width:60px;cursor:text}
   .ed:hover{border-color:#b7c6d6;background:#fffef2}
   input.cell,select.cell{font:inherit;border:1px solid #86a6c6;border-radius:4px;padding:2px 4px;width:100%}
@@ -180,29 +181,27 @@ async function loadGundem(){
   const keys=Object.keys(groups).sort((a,b)=> ((a==="ARGE")-(b==="ARGE")) || groups[b].length-groups[a].length || a.localeCompare(b));
   let rows="";
   keys.forEach(k=>{
-    rows+=`<tr class="grp"><td colspan="4">${esc(k)} · ${groups[k].length}</td></tr>`;
+    rows+=`<tr class="grp"><td colspan="3">${esc(k)} · ${groups[k].length}</td></tr>`;
     groups[k].forEach(r=>{
       if(r._ed){
         rows+=`<tr data-id="${r.id}">
           <td class="kod">${esc(r.kod)}</td>
-          <td><b>${esc(r.konu)}</b></td>
-          <td><div class="ed" data-f="son_durum">${esc(r.son_durum)||'<span style=color:#b7c6d6>+ durum</span>'}</div></td>
+          <td>${esc(r.konu)}</td>
           <td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td>
         </tr>`;
       } else {
         rows+=`<tr style="background:#fafbfd" title="ERP-türevi · salt-okur">
           <td class="kod" style="color:#5a6b7d">${esc(r.kod)}</td>
           <td>${esc(r.konu)}</td>
-          <td>${esc(r.son_durum)}</td>
           <td></td>
         </tr>`;
       }
     });
   });
   const st=await erpStamp();
-  view.innerHTML=`${stampHTML(st)}<div class="hint">Ana Gündem — İlgili'ye göre gruplu; ARGE ayrı blok (öncelik→açılış). Manuel kalemler tıkla-kaydet; ✕ kapatır (kalıcı sil). Toplam ${all.length}.</div>
-    <div class="scroll"><table>
-    <thead><tr><th>Kod</th><th>Konu</th><th>Son durum</th><th></th></tr></thead>
+  view.innerHTML=`${stampHTML(st)}<div class="hint">Ana Gündem — İlgili'ye göre gruplu; ARGE ayrı blok (öncelik→açılış). ✕ kapatır (kalıcı sil). Toplam ${all.length}.</div>
+    <div class="scroll"><table class="gnb">
+    <thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
   view.querySelectorAll(".ed").forEach(el=>el.onclick=()=>startEdit(el));
   view.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
