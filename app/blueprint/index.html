@@ -95,7 +95,7 @@ flowchart LR
 
 **v1 — çekirdek (`arbor_schema_v1.sql`):**
 - `erp_yukleme` — her haftalık ERP çekimi bir snapshot satırı (`damga` = YYMMDD). "Önceki değer" artık file-diff değil, snapshot geçmişinden türetilir.
-- `proje_snapshot` — Prj.xlsx birebir (proje_no, durumu, adet, MVT, AÜP, GYT, notlar, anlaşma fiyatı). **Bulgu:** AÜP ayrı varlık değil, bir tarih sütunu → pano bir view. Eski `aup_pano.py` + `pano_guard.py` + `_aup_ALERT` sentinel yapısal olarak gereksiz.
+- `proje_snapshot` — Prj.xlsx birebir (proje_no, durumu, adet, MVT, AÜP, PST, notlar, anlaşma fiyatı). **Bulgu:** AÜP ayrı varlık değil, bir tarih sütunu → pano bir view. Eski `aup_pano.py` + `pano_guard.py` + `_aup_ALERT` sentinel yapısal olarak gereksiz.
 - `ana_gundem` — konsolide takip (kod, konu, ilgili, bölüm, takip_günü, statü, kaynak_tip, türetilmiş, öncelik). Kural 39'un DB karşılığı.
 - `melih_sorular` — açık soru/karar kuyruğu.
 - `audit_log` + trigger'lar — her INSERT/UPDATE/DELETE jsonb olarak kayıt (web/etl/worker kaynağı).
