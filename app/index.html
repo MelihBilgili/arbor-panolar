@@ -115,7 +115,6 @@ function renderApp(){
        <div class="spacer"></div>
        <span class="who" id="freshness"></span>
        <button class="btn sec" id="refresh">Yenile</button>
-       <button class="btn sec" id="logout">Çıkış</button>
      </div>
      <div class="tabs">
        <button data-t="gundem" class="${state.tab==='gundem'?'active':''}">Ana Gündem</button>
@@ -127,7 +126,6 @@ function renderApp(){
    </header>
    <div class="wrap" id="view"><div class="load">Yükleniyor…</div></div>`;
   document.getElementById("refresh").onclick=()=>loadView();
-  document.getElementById("logout").onclick=doLogout;
   document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ state.tab=b.dataset.t; renderApp(); });
   loadView();
   loadFreshness();
@@ -319,14 +317,10 @@ async function loadRef(){
     <div class="scroll"><table><thead><tr><th>Anahtar</th><th>Değer</th><th>Açıklama</th></tr></thead><tbody>${pr}</tbody></table></div>`;
 }
 
-/* ---------- BOOT ---------- */
-async function boot(){
-  const {data}=await sb.auth.getSession();
-  if(data && data.session){ state.session=data.session; renderApp(); }
-  else renderLogin('email');
-}
+/* ---------- BOOT (login kaldırıldı — Melih 23.07) ---------- */
+function boot(){ renderApp(); }
 boot();
-setInterval(()=>{ if(!state.session) return; if(document.querySelector('input.cell,select.cell')) return; loadFreshness(); loadView(); }, 60000);
+setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadFreshness(); loadView(); }, 60000);
 </script>
 </body>
 </html>
