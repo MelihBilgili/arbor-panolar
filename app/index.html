@@ -270,10 +270,10 @@ async function loadHazir(){
   (data||[]).forEach(r=>{
     rows+=`<tr>
       <td class="kod">${esc(r.tur)}</td>
-      <td class="kod">${esc(r.no)}</td>
-      <td>${esc(r.proje_adi)}</td>
+      <td class="kod">${esc(String(r.no||"").slice(-6))}</td>
+      <td>${esc(String(r.proje_adi||"").slice(0,30))}</td>
       <td>${esc(r.ek_bilgi)}</td>
-      <td class="num">${esc(r.adet)}</td>
+      <td class="num">${r.adet==null||r.adet===""?"":(isNaN(parseInt(r.adet,10))?esc(r.adet):parseInt(r.adet,10))}</td>
       <td class="num">${fdate(r.hazir_tarihi)}</td>
       <td>${esc(r.onur_guncel)}</td>
     </tr>`;
