@@ -435,10 +435,11 @@ function loadFormlar(){
   const view=document.getElementById("view");
   const forms=[
     {ad:"EA — SÖ Haftalık Gündem Formu", who:"Enes Artan · Kalite", url:"ea/", desc:"Hafta bölümünü seçer, sorun ve önerileri 'gündeme alındı'ya çevirir. Yazar: so_ea_form."},
-    {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."}
+    {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."},
+    {ad:"Cam Kombinasyonu Fiyatlandırma", who:"Fiyat aracı · paylaşılabilir", url:"cam/", desc:"Cam parametrelerini (dış/iç cam, kaplama, akustik, temper, form, ara boşluk, Fire Proof…) seç → €/m² fiyat. Geçmiş teklif eşleşmesi + çarpımsal model. Bağlantı çalışanlarla paylaşılabilir."}
   ];
   const cards=forms.map(f=>{ const full=new URL(f.url, location.href).href; return `<div class="flow"><b>${esc(f.ad)}</b> <span class="tag">${esc(f.who)}</span><p>${esc(f.desc)}</p><p><a class="btn" style="text-decoration:none;display:inline-block" href="${esc(f.url)}" target="_blank">Formu aç</a> &nbsp;<span class="muted">${esc(full)}</span></p></div>`; }).join("");
-  view.innerHTML=`<div class="stamp">Çalışan Web Formları</div><div class="hint">Çalışanlar bu ayrı formlardan girer; senin panolarına doğrudan yazmaz, sonuç ilgili panoya salt-okur yansır. Linkleri ilgili kişiyle paylaş.</div>${cards}`;
+  view.innerHTML=`<div class="stamp">Formlar & Araçlar</div><div class="hint">Çalışanlar bu ayrı formlardan girer; senin panolarına doğrudan yazmaz, sonuç ilgili panoya salt-okur yansır. Linkleri ilgili kişiyle paylaş.</div>${cards}`;
 }
 function loadBlueprint(){
   const view=document.getElementById("view");
