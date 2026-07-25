@@ -11,14 +11,14 @@
   header{background:#16324f;color:#fff;padding:0}
   .topbar{display:flex;align-items:center;gap:14px;padding:8px 14px}
   .topbar h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.5px}
-  .tabs{display:flex;gap:4px;padding:0 10px;flex-wrap:wrap}
-  .tabs button{background:transparent;color:#cfe0f0;border:0;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:3px solid transparent}
+  .tabs{display:flex;gap:2px;padding:4px 6px 0;flex-wrap:wrap}
+  .tabs button{background:transparent;color:#cfe0f0;border:0;padding:3px 9px;font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent}
   .tabs button.active{color:#fff;border-bottom-color:#fff;background:rgba(255,255,255,.08)}
   .spacer{flex:1}
   .who{font-size:12px;color:#cfe0f0}
   .btn{background:#2e7d54;color:#fff;border:0;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}
   .btn.sec{background:#e3edf7;color:#16324f}
-  .wrap{padding:12px 14px}
+  .wrap{padding:8px 10px}
   .login{max-width:360px;margin:9vh auto;background:#fff;border:1px solid #dde3ea;border-radius:12px;padding:24px}
   .login h2{margin:0 0 4px;color:#16324f;font-size:19px}
   .login p{margin:0 0 16px;color:#7a8794;font-size:12.5px}
@@ -117,11 +117,6 @@ async function doLogout(){ await sb.auth.signOut(); state.session=null; renderLo
 function renderApp(){
   app.innerHTML = `
    <header>
-     <div class="topbar">
-       <h1>ARBOR</h1>
-       <div class="spacer"></div>
-       <button class="btn sec" id="refresh">Yenile</button>
-     </div>
      <div class="tabs">
        <button data-t="gundem" class="${state.tab==='gundem'?'active':''}">Ana Gündem</button>
        <button data-t="aup" class="${state.tab==='aup'?'active':''}">AÜP</button>
@@ -136,7 +131,6 @@ function renderApp(){
      </div>
    </header>
    <div class="wrap" id="view"><div class="load">Yükleniyor…</div></div>`;
-  document.getElementById("refresh").onclick=()=>loadView();
   document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{ state.tab=b.dataset.t; renderApp(); });
   loadView();
 }
@@ -202,8 +196,7 @@ async function loadGundem(){
     });
   });
   const st=await erpStamp();
-  view.innerHTML=`${stampHTML(st)}<div class="hint">Ana Gündem — İlgili'ye göre gruplu; ARGE ayrı blok (öncelik→açılış). ✕ kapatır (kalıcı sil). Toplam ${all.length}.</div>
-    <div class="scroll"><table class="gnb">
+  view.innerHTML=`${stampHTML(st)}<div class="scroll"><table class="gnb">
     <thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
   view.querySelectorAll(".ed").forEach(el=>el.onclick=()=>startEdit(el));
