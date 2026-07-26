@@ -46,6 +46,10 @@
   .snpink{background:#ffd9ec} .itot td{background:#eef4fb;font-weight:700}
   table.aup th,table.aup td{width:1%;white-space:nowrap}
   table.aup th.note,table.aup td.note{width:auto;white-space:normal;min-width:160px}
+  .addbar{display:flex;gap:6px;margin:0 0 8px;flex-wrap:wrap;align-items:center}
+  .addbar input{border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;font:inherit}
+  .addbar input#ag-ilgili{width:110px;text-transform:uppercase}
+  .addbar input#ag-konu{flex:1;min-width:200px}
   .load{padding:30px;text-align:center;color:#8a97a4}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:14px;padding:0 4px}
   .flow{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:10px 12px;margin-bottom:12px;line-height:1.8}
@@ -198,11 +202,33 @@ async function loadGundem(){
     });
   });
   const st=await erpStamp();
-  view.innerHTML=`${stampHTML(st)}<div class="scroll"><table class="gnb">
+  const ilgOpts=keys.filter(k=>k!=='ARGE').map(k=>`<option value="${esc(k)}">`).join("");
+  view.innerHTML=`${stampHTML(st)}
+    <div class="addbar">
+      <input id="ag-ilgili" placeholder="İlgili" list="ag-ilgili-list" value="MB" autocomplete="off">
+      <datalist id="ag-ilgili-list">${ilgOpts}</datalist>
+      <input id="ag-konu" placeholder="Yeni konu — İlgili + konu yazıp Ekle'ye bas">
+      <button class="btn" id="ag-add">Ekle</button>
+    </div>
+    <div class="scroll"><table class="gnb">
     <thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
   view.querySelectorAll(".ed").forEach(el=>el.onclick=()=>startEdit(el));
   view.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
+  document.getElementById("ag-add").onclick=addGundem;
+  document.getElementById("ag-konu").onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); addGundem(); } };
+}
+async function addGundem(){
+  const ei=document.getElementById("ag-ilgili"), ek=document.getElementById("ag-konu");
+  const ilg=(ei.value||"").trim().toUpperCase(), konu=(ek.value||"").trim();
+  if(!ilg||!konu){ (ilg?ek:ei).focus(); return; }
+  const btn=document.getElementById("ag-add"); btn.disabled=true; btn.textContent="Ekleniyor…";
+  const {data}=await sb.from("ana_gundem").select("kod").like("kod","M%");
+  let mx=0; (data||[]).forEach(r=>{ const m=String(r.kod||"").match(/^M(\d+)$/); if(m) mx=Math.max(mx,+m[1]); });
+  const {error}=await sb.from("ana_gundem").insert([{kod:"M"+(mx+1),kod_prefix:"M",konu,ilgili:ilg,kaynak_tip:"manuel",turetilmis:false}]);
+  btn.disabled=false; btn.textContent="Ekle";
+  if(error){ alert(error.message); return; }
+  loadGundem();
 }
 
 async function delGundem(id){
