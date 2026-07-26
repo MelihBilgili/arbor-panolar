@@ -47,6 +47,39 @@ const ALLOWED = (process.env.ALLOWED_NUMBERS || "905322059277")
   .map((s) => s.replace(/\D/g, ""))
   .filter(Boolean);
 
+// ---- YENİ PANOLAR (Supabase) — bağlam kaynağı + doğrudan yazma ----
+// "pano/panolar" = yeni Supabase tabanlı app (.../app/). Anon publishable anahtar (public).
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://zehysygpqxqmrzangvuc.supabase.co";
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || "sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc";
+const SB = SUPABASE_URL.replace(/\/+$/, "") + "/rest/v1/";
+const SBH = { apikey: SUPABASE_KEY, Authorization: "Bearer " + SUPABASE_KEY };
+async function sbSelect(q) {
+  const r = await fetch(SB + q, { headers: SBH });
+  if (!r.ok) throw new Error("SB GET " + q + " " + r.status);
+  return r.json();
+}
+async function sbInsert(table, row) {
+  const r = await fetch(SB + table, {
+    method: "POST",
+    headers: { ...SBH, "Content-Type": "application/json", Prefer: "return=representation" },
+    body: JSON.stringify([row]),
+  });
+  if (!r.ok) throw new Error("SB insert " + r.status + " " + (await r.text()).slice(0, 200));
+  return r.json();
+}
+async function nextGundemKod() {
+  try {
+    const rows = await sbSelect("ana_gundem?select=kod&kod=like.M*");
+    let mx = 0;
+    for (const r of rows) { const m = String(r.kod || "").match(/^M(\d+)$/); if (m) mx = Math.max(mx, +m[1]); }
+    return "M" + (mx + 1);
+  } catch (e) { return "M" + String(Date.now()).slice(-4); }
+}
+function trDateToISO(s) {
+  const m = String(s || "").match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{4})$/);
+  return m ? m[3] + "-" + m[2].padStart(2, "0") + "-" + m[1].padStart(2, "0") : null;
+}
+
 // ---- Pano INBOX (doğrudan yazma) yapılandırması ----
 // Bot, görev/madde/notu GitHub reposundaki `_inbox/` klasörüne ŞİFRELİ bir JSON olarak
 // commit eder (Contents API). PC tarafındaki birleştirme turu (inbox_merge.mjs) bunları
@@ -66,25 +99,25 @@ const INBOX_PBKDF2_ITER = 200000;
 const SYSTEM_BASE =
   "Sen Arbor (Arbor Ahşap / Arbor Fenetres) için çalışan Melih Bilgili'nin iş asistanısın. " +
   "WhatsApp üzerinden gelen soruları Türkçe, kısa ve net yanıtlarsın. " +
-  "Aşağıdaki '=== GÜNCEL PANO VERİSİ ===' bloğunda şirketin canlı panoları yer alır: " +
-  "Gündem, Açık Mailler, PEM/PRJ Sevke Hazır, Yıllık İcmal, AÜP, AÜP Mail, satış yorumları " +
-  "(SO/FA/AK), Prosedür, Teklif Kuralları, Özgül Mukayese. " +
+  "ÖNEMLİ: Kullanıcı 'pano' veya 'panolar' dediğinde YENİ PANOLAR'ı (Supabase tabanlı tek web uygulaması, .../app/) kastediyordur. " +
+  "Aşağıdaki '=== GÜNCEL PANO VERİSİ ===' bloğu bu yeni panoların CANLI verisidir. Yeni panolar: " +
+  "Ana Gündem (İlgili kişiye göre bloklu, ARGE ayrı blok), AÜP, Hazır PEM/PRJ, SÖ, Bilanço, İcmal, " +
+  "Referans (Kişiler/Ödemeler/Parametreler), Formlar, Blueprint ve Özel (Kitaplar/Felsefe/PhD/Takvim). " +
   "Pano sorularını YALNIZCA bu veriye dayanarak yanıtla; tarih, sayı ve isimleri panodaki gibi ver. " +
   "Panoda olmayan şirket-içi bir şey sorulursa 'panoda bu bilgi yok' de — asla uydurma. " +
   "Konuşma geçmişini hatırlarsın; önceki mesajlara atıfla tutarlı ol. " +
-  "Araçların olabilir (web araması, mail gönderme, gündem notu ekleme, Claude görevi kaydetme). " +
-  "⚠️ HAFIZAN KALICIDIR ama SINIRLIDIR: konuşma geçmişin kalıcı diskte (Railway Volume) tutulur; yeniden başlatma/redeploy'da KAYBOLMAZ, " +
-  "yaklaşık son 7 gün ve numara başına son 24 tur içinde hatırlanır (daha eskisi otomatik budanır). Uzun vadeli arşiv değildir. " +
-  "Geçmiş konuşmaları hatırlıyorsan ona göre tutarlı davran; bu pencerenin dışındaki eski sohbetleri hatırlayamazsın, o durumda uydurma. " +
-  "Melih sana bir GÖREV/İŞ verir ya da 'şunu yap / açılınca yap / Claude gündemine ekle / not al / kaydet' derse, " +
-  "bunu KALICI kılmak için `claude_gorev_ekle` aracını ONAY BEKLEMEDEN çağır ve `tam_icerik` alanına konuşmada " +
-  "üretilen TÜM içeriği (tablolar, listeler dâhil) BİREBİR, özetlemeden koy — kalıcı olan TEK şey bu araca yazdığındır; " +
-  "yazmazsan görev kaybolur. Görev kaydı Melih'in kendi kutusuna kalıcı nottur, onay istemezsin. " +
-  "Kaydettikten sonra kullanıcıya SADECE şu tarz kısa bir onay ver: 'Claude Gündemi'ne iletildi ✅ — kısa süre içinde panoda görünecek.' " +
-  "'int@arbor'a iletildi', 'Claude görevine yazıldı', 'bir sonraki Claude oturumunda/turunda işlenecek' gibi mekanik veya erteleyici ifadeler KULLANMA; " +
-  "kullanıcı için hedef HER ZAMAN Claude Gündemi panosudur. " +
-  "Buna karşılık ÜÇÜNCÜ KİŞİYE MAIL GÖNDERMEDEN (`mail_gonder`) veya genel iş `gundem_ekle` yapmadan ÖNCE " +
-  "ne yapacağını (alıcı, konu, içerik/madde) kısaca özetle ve kullanıcıdan açık ONAY iste; yalnızca 'evet/onayla' sonrası çağır. " +
+  "⚠️ HAFIZAN KALICIDIR ama SINIRLIDIR: konuşma geçmişin kalıcı diskte tutulur; yeniden başlatma/redeploy'da KAYBOLMAZ, " +
+  "yaklaşık son 7 gün ve numara başına son 24 tur içinde hatırlanır (daha eskisi otomatik budanır). " +
+  "Bu pencerenin dışındaki eski sohbetleri hatırlayamazsın, o durumda uydurma. " +
+  "PANOLARA DEĞİŞİKLİK — YENİ PANOLAR (Supabase) ÜZERİNDE: " +
+  "Melih 'şu maddeyi ekle / gündeme ekle / MB gündemine ekle / not düş' derse `gundem_ekle` aracını çağır — " +
+  "bu DOĞRUDAN Ana Gündem panosuna (Supabase) yazar ve panoda anında görünür. İlgili kişi kodu (MB, EA, OE, CTP, EU…) " +
+  "belirtilmişse ver; yoksa varsayılan İlgili=MB. Ekleme düşük riskli olduğundan ekleme için AYRICA ONAY İSTEME; " +
+  "ekledikten sonra kısaca 'Ana Gündem'e eklendi ✅' de. " +
+  "Melih sana bir GÖREV verir ('şunu yap/araştır/hazırla, Claude gündemine ekle, kaydet') ise `claude_gorev_ekle` ile " +
+  "Ana Gündem'e İlgili=CLAUDE olarak kaydet; `tam_icerik`e konuşmada üretilen TÜM içeriği (tablo/liste dâhil) BİREBİR koy, özetleme; onay bekleme. " +
+  "Başka bir panoya/hedefe yazım için `panoya_yaz` kullan (genel yazımda önce kısa özet + onay iste). " +
+  "ÜÇÜNCÜ KİŞİYE MAIL (`mail_gonder`) göndermeden ÖNCE alıcı/konu/içeriği özetle ve açık ONAY iste; yalnız 'evet/onayla' sonrası çağır. " +
   "Web aramasını yalnız panoda olmayan güncel/şirket-dışı bilgiler için kullan. " +
   "Token/şifre/anahtar gibi gizli bilgileri asla paylaşma.";
 
@@ -167,27 +200,25 @@ async function inboxYaz(from, entry) {
   return pathInRepo;
 }
 
-// Pano hedefine yaz; INBOX token yoksa mail'e düş (geriye dönük uyumluluk).
+// Pano hedefine yaz — YENİ PANOLAR (Supabase): Ana Gündem tablosuna DOĞRUDAN insert.
+// target 'claude-gundemi' → İlgili=CLAUDE; 'acik-isler'/diğer → İlgili=verilen/MB.
 async function panoyaYaz(from, entry) {
-  const hedefAd =
-    entry.target === "acik-isler" ? "Ana Gündem" : "Claude Gündemi";
-  if (INBOX_GITHUB_TOKEN && PANOLAR_PW) {
-    try {
-      await inboxYaz(from, entry);
-      return hedefAd + "'ne iletildi ✅ — kısa süre içinde panoda görünecek.";
-    } catch (e) {
-      console.error("inbox yazma hatası, mail'e düşülüyor:", e.message);
-    }
+  const target = entry.target || "acik-isler";
+  const ilgili = (entry.ilgili || (target === "claude-gundemi" ? "CLAUDE" : "MB")).toUpperCase();
+  const konu = (entry.baslik || entry.icerik || "").slice(0, 200);
+  const acik = entry.icerik && entry.icerik !== konu ? entry.icerik : "";
+  try {
+    const kod = await nextGundemKod();
+    await sbInsert("ana_gundem", {
+      kod, kod_prefix: "M", konu, konu_aciklamasi: acik || null,
+      ilgili, bolum: entry.bolum || null, takip_gunu: trDateToISO(entry.takip),
+      kaynak_tip: "manuel", turetilmis: false,
+    });
+    return "Ana Gündem'e eklendi ✅ — panoda görünür.";
+  } catch (e) {
+    console.error("Supabase yazma hatası:", e.message);
+    return "Ana Gündem'e yazılamadı: " + e.message;
   }
-  // Fallback: mail (eski davranış)
-  if (!MAIL_WEBHOOK_URL) return "Yazma yolu yapılandırılmadı (INBOX_GITHUB_TOKEN/MAIL_WEBHOOK_URL yok).";
-  const konu =
-    entry.target === "acik-isler"
-      ? "Gündem (WhatsApp bot)"
-      : "Claude Görev (WhatsApp bot): " + (entry.baslik || "görev");
-  const govde = (entry.baslik ? entry.baslik + "\n\n" : "") + (entry.icerik || "");
-  await sendMail(INT_MAIL, konu, govde);
-  return hedefAd + "'ne iletildi ✅ — kısa süre içinde panoda görünecek.";
 }
 
 function htmlToText(html) {
@@ -209,16 +240,45 @@ let _ctxCache = { text: "", ts: 0 };
 async function getBusinessContext() {
   const now = Date.now();
   if (_ctxCache.text && now - _ctxCache.ts < CONTEXT_TTL_MS) return _ctxCache.text;
-  if (!PANOLAR_PW) throw new Error("PANOLAR_PW yok");
-  const res = await fetch(PANOLAR_URL, { headers: { "cache-control": "no-cache" } });
-  if (!res.ok) throw new Error("Pano indirilemedi: HTTP " + res.status);
-  const page = await res.text();
-  const m = page.match(/const BLOB="([^"]+)"/);
-  if (!m) throw new Error("BLOB bulunamadı (pano formatı değişmiş olabilir)");
-  let text = htmlToText(decryptBlob(m[1], PANOLAR_PW));
-  if (text.length > MAX_CONTEXT_CHARS) {
-    text = text.slice(0, MAX_CONTEXT_CHARS) + "\n…[pano kısaltıldı]";
+  const fmtRows = (rows, cols) =>
+    (rows || []).map((r) => cols.map((c) => (r[c] == null ? "" : String(r[c]))).join(" | ")).join("\n");
+  const parts = [];
+  async function sect(title, q, cols, head) {
+    try {
+      const rows = await sbSelect(q);
+      parts.push("## " + title + " (" + rows.length + ")\n" + head + "\n" + fmtRows(rows, cols));
+    } catch (e) {
+      parts.push("## " + title + "\n(alınamadı: " + e.message + ")");
+    }
   }
+  await sect(
+    "ANA GÜNDEM", "ana_gundem?select=kod,ilgili,bolum,konu,konu_aciklamasi,son_durum&order=ilgili.asc",
+    ["kod", "ilgili", "bolum", "konu", "son_durum"], "Kod | İlgili | Bölüm | Konu | Son durum");
+  try {
+    const ar = await sbSelect("gundem_arge?select=kod,konu,son_durum");
+    if (ar.length) parts.push("## ANA GÜNDEM · ARGE (" + ar.length + ")\nKod | Konu | Son durum\n" + fmtRows(ar, ["kod", "konu", "son_durum"]));
+  } catch (e) {}
+  await sect(
+    "AÜP", "aup_panosu?select=proje_no,proje_adi,proje_durumu,adet,aup,gyt,kayma,anlasma_fiyati,satis_santiye_notlari,uretim_notlari&order=aup.asc",
+    ["proje_no", "proje_adi", "proje_durumu", "adet", "aup", "gyt", "kayma", "anlasma_fiyati", "satis_santiye_notlari", "uretim_notlari"],
+    "ProjeNo | Ad | Durum | Adet | AÜP | PST | Kayma | Tutar€ | Satış-Şantiye | Üretim");
+  await sect(
+    "HAZIR PEM/PRJ", "hazir_pem_prj?select=tur,no,proje_adi,ek_bilgi,adet,hazir_tarihi,onur_guncel",
+    ["tur", "no", "proje_adi", "ek_bilgi", "adet", "hazir_tarihi", "onur_guncel"], "Tür | No | Ad | Ek | Adet | HazırT | SevkDurumu");
+  await sect(
+    "SÖ", "so_panosu?select=nr,tarih,durum,proje_adi,problem,bildiren,bolum",
+    ["nr", "tarih", "durum", "proje_adi", "problem", "bildiren", "bolum"], "NR | Tarih | Durum | Proje | Problem | Bildiren | Bölüm");
+  await sect(
+    "BİLANÇO", "bilanco_ozet?select=yil,net_tl,net_eur,toplam_gider_tl,kar_tl,marj&order=yil.desc",
+    ["yil", "net_tl", "net_eur", "toplam_gider_tl", "kar_tl", "marj"], "Yıl | NetTL | Net€ | Gider | Kâr | Marj%");
+  await sect(
+    "REFERANS · Kişiler", "kisiler?select=kod,tam_ad,bolum,email,rol&order=kod.asc",
+    ["kod", "tam_ad", "bolum", "email", "rol"], "Kod | Ad | Bölüm | E-posta | Rol");
+  await sect(
+    "REFERANS · Parametreler", "parametreler?select=anahtar,deger,aciklama",
+    ["anahtar", "deger", "aciklama"], "Anahtar | Değer | Açıklama");
+  let text = parts.join("\n\n");
+  if (text.length > MAX_CONTEXT_CHARS) text = text.slice(0, MAX_CONTEXT_CHARS) + "\n…[pano kısaltıldı]";
   _ctxCache = { text, ts: now };
   return text;
 }
