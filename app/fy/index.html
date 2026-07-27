@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FY — Yurtdışı Satış Formu</title>
+<title>Yurtdışı Satış Formu</title>
 <style>
   :root{color-scheme:light}
   *{box-sizing:border-box}
@@ -11,8 +11,9 @@
   header{background:#16324f;color:#fff;padding:12px 16px}
   header h1{font-size:17px;margin:0;font-weight:700}
   header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
-  .wrap{max-width:1180px;margin:0 auto;padding:14px 16px 60px}
-  .bar{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .wrap{max-width:1320px;margin:0 auto;padding:14px 16px 60px}
+  h2.sec{margin:22px 2px 8px;color:#16324f;font-size:15px;border-top:1px solid #dde3ea;padding-top:16px}
+  .bar{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
   .sum{font-size:12.5px;color:#5a6b7d}
   .sum b{color:#16324f}
   .msg{font-size:12.5px;min-height:16px;font-weight:600;margin-left:auto}
@@ -29,21 +30,22 @@
   input.cell,select.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:5px 7px;width:100%;background:#fff}
   input.cell:focus,select.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
   td.net input{text-align:right}
-  textarea.cell{min-height:34px;resize:vertical;min-width:220px}
+  textarea.cell{min-height:34px;resize:vertical;min-width:200px}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
   .colp{width:1%;white-space:nowrap}
   .hint{font-size:12px;color:#8a97a4;margin:10px 2px}
-  .load{padding:30px;text-align:center;color:#8a97a4}
   .addrow{margin:10px 0}
   .dirty{color:#b8863a;font-weight:600}
+  .load{padding:30px;text-align:center;color:#8a97a4}
 </style>
 </head>
 <body>
 <header>
-  <h1>FY — Yurtdışı Satış Formu</h1>
+  <h1>Yurtdışı Satış Formu</h1>
   <div class="sub">Fatma · Fransa/ihracat. Muhtemel/Alınan projelerini gir. Üretimdeki (sevke gönderilmiş) projeleri EKLEME. Bitince <b>“Kaydet ve Yayınla”</b>ya bas.</div>
 </header>
 <div class="wrap">
+  <h2 class="sec" style="border-top:0;padding-top:0;margin-top:4px">Muhtemel / Alınan Projeler</h2>
   <div class="bar">
     <button class="btn sec" id="addM">+ Muhtemel satır</button>
     <button class="btn sec" id="addA">+ Alınan satır</button>
@@ -55,21 +57,27 @@
     <button class="btn" id="publish">Kaydet ve Yayınla</button>
     <button class="btn sec" id="reload">Vazgeç / yeniden yükle</button>
   </div>
-  <div class="hint"><b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen, gerçekleşme ihtimali olan projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler. — “Kaydet ve Yayınla” tüm listeyi yeni bir çekim olarak kaydeder; Satış Yorum panosunda önceki çekime göre eklenen/çıkan ve fark otomatik gösterilir. Çalışan Melih’in panolarına doğrudan yazmaz; sonuç salt-okur yansır.</div>
+  <div class="hint"><b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler. — “Kaydet ve Yayınla” tüm listeyi yeni bir çekim olarak kaydeder; Satış panosunda önceki çekime göre eklenen/çıkan ve fark otomatik gösterilir.</div>
+
+  <h2 class="sec">Takipteki Teklifler <span class="sum">(yurtdışı — anlık kaydedilir)</span></h2>
+  <div class="bar">
+    <button class="btn sec" id="tkAdd">+ Teklif satırı</button>
+    <span class="sum" id="tkSum"></span>
+    <span class="msg" id="tkMsg"></span>
+  </div>
+  <div id="tkList" class="card"><div class="load">Yükleniyor…</div></div>
+  <div class="hint">Bu tabloda her hücre anında kaydedilir. Satış panosunun altında “Yurtdışı takipteki teklifler” olarak görünür. Telefon/e-posta gibi kişisel iletişim bilgileri gizlilik için panoda gösterilmez.</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SB_URL="https://zehysygpqxqmrzangvuc.supabase.co";
-const SB_KEY="sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc";
-const sb=supabase.createClient(SB_URL,SB_KEY);
+const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money=n=>{const v=Math.round(Number(n)||0);return v.toLocaleString("tr-TR");};
 const parseNet=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t.indexOf(",")>-1 && t.indexOf(".")>-1){ t=t.replace(/\./g,"").replace(",", "."); } else { t=t.replace(",", "."); } const v=parseFloat(t); return isNaN(v)?null:v; };
-let ROWS=[];        // {statu,proje,musteri,ulke,net_eur,durum}
-let OLD_IDS=[];     // yayınlanınca arşivlenecek aktif FY id'leri
-let dirty=false;
 
+/* ===== Muhtemel/Alınan (satis_yorum, FY) ===== */
+let ROWS=[], OLD_IDS=[], dirty=false;
 async function load(){
   const {data,error}=await sb.from("satis_yorum").select("*").eq("kaynak","FY").eq("aktif",true);
   if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
@@ -101,46 +109,92 @@ function render(){
   h+='</tbody></table>';
   const list=document.getElementById("list"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{
-    const i=+el.closest("tr").dataset.i, f=el.dataset.f;
-    const ev=el.tagName==="SELECT"?"change":"input";
-    el.addEventListener(ev,()=>{ ROWS[i][f]= f==="net_eur"? el.value : el.value; markDirty(); });
+    const i=+el.closest("tr").dataset.i, f=el.dataset.f, ev=el.tagName==="SELECT"?"change":"input";
+    el.addEventListener(ev,()=>{ ROWS[i][f]=el.value; markDirty(); });
   });
-  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>{ const i=+b.closest("tr").dataset.i; ROWS.splice(i,1); markDirty(); render(); });
+  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>{ ROWS.splice(+b.closest("tr").dataset.i,1); markDirty(); render(); });
   sums();
 }
-function addRow(statu){ ROWS.push({statu,proje:"",musteri:"",ulke:"FR",net_eur:null,durum:""}); markDirty(); render(); const inps=document.querySelectorAll('input[data-f="proje"]'); if(inps.length) inps[inps.length-1].focus(); }
-
+function addRow(statu){ ROWS.push({statu,proje:"",musteri:"",ulke:"FR",net_eur:null,durum:""}); markDirty(); render(); const inps=document.querySelectorAll('#list input[data-f="proje"]'); if(inps.length) inps[inps.length-1].focus(); }
 async function publish(){
-  // hazırla + doğrula
   const clean=[];
   for(const r of ROWS){
-    const proje=(r.proje||"").trim();
-    if(!proje) continue; // boş proje satırlarını atla
+    const proje=(r.proje||"").trim(); if(!proje) continue;
     const statu=/^al/i.test(r.statu)?"Alınan":"Muhtemel";
-    const net=parseNet(r.net_eur);
-    clean.push({grup:"Yurtdışı",kaynak:"FY",statu,proje,musteri:(r.musteri||"").trim(),net_eur:net,durum:(r.durum||"").trim(),ulke:(r.ulke||"").trim()||"FR",cekim:new Date().toISOString().slice(0,10),aktif:true});
+    clean.push({grup:"Yurtdışı",kaynak:"FY",statu,proje,musteri:(r.musteri||"").trim(),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),ulke:(r.ulke||"").trim()||"FR",cekim:new Date().toISOString().slice(0,10),aktif:true});
   }
   if(!clean.length){ setMsg("En az bir dolu (projesi olan) satır gerekli.",false); return; }
   const btn=document.getElementById("publish"); btn.disabled=true; btn.textContent="Yayınlanıyor…"; setMsg("Kaydediliyor…",true);
-  // 1) yeni çekimi ekle
   const {error:eIns}=await sb.from("satis_yorum").insert(clean);
   if(eIns){ btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Ekleme hatası: "+eIns.message,false); return; }
-  // 2) önceki aktif FY satırlarını arşivle
-  if(OLD_IDS.length){
-    const {error:eArch}=await sb.from("satis_yorum").update({aktif:false}).in("id",OLD_IDS);
-    if(eArch){ btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Yeni çekim eklendi ama önceki arşivlenemedi: "+eArch.message,false); return; }
-  }
-  btn.disabled=false; btn.textContent="Kaydet ve Yayınla";
-  setMsg("Yayınlandı ✓ ("+clean.length+" proje). Satış Yorum panosu güncel.",true);
+  if(OLD_IDS.length){ const {error:eA}=await sb.from("satis_yorum").update({aktif:false}).in("id",OLD_IDS);
+    if(eA){ btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Eklendi ama önceki arşivlenemedi: "+eA.message,false); return; } }
+  btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Yayınlandı ✓ ("+clean.length+" proje). Satış panosu güncel.",true);
   await load();
+}
+
+/* ===== Takipteki teklifler (satis_takip) — anlık kayıt ===== */
+const TCOLS=[
+ {f:'proje',h:'Proje',w:180,t:'text'},{f:'musteri',h:'Müşteri',w:150,t:'text'},{f:'yetkili',h:'Yetkili',w:140,t:'text'},
+ {f:'teklif_tarihi',h:'Teklif T.',w:130,t:'date'},{f:'hazirlayan',h:'Hazırlayan',w:100,t:'text'},{f:'agac',h:'Ağaç',w:90,t:'text'},
+ {f:'seri',h:'Seri',w:90,t:'text'},{f:'net_ht_eur',h:'Net HT €',w:100,t:'num'},{f:'adet',h:'Adet',w:70,t:'int'},
+ {f:'takip_sekli',h:'Takip Şekli',w:130,t:'text'},{f:'ihale',h:'İhale',w:90,t:'text'},{f:'durum',h:'Durum',w:100,t:'text'},
+ {f:'sorgu_tarihi',h:'Sorgu T.',w:130,t:'date'},{f:'notlar',h:'Notlar',w:200,t:'area'},{f:'yorum',h:'Yorum',w:200,t:'area'}
+];
+let TROWS=[];
+async function loadTakip(){
+  const {data,error}=await sb.from("satis_takip").select("*").eq("aktif",true).order("net_ht_eur",{ascending:false});
+  if(error){ document.getElementById("tkList").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
+  TROWS=data||[]; renderTakip();
+}
+function tkSum(){ const net=TROWS.reduce((a,r)=>a+(Number(r.net_ht_eur)||0),0); document.getElementById("tkSum").innerHTML="<b>"+TROWS.length+"</b> teklif · Net HT "+money(net)+" €"; }
+function renderTakip(){
+  let h='<table style="min-width:1650px"><thead><tr>'+TCOLS.map(c=>'<th>'+c.h+'</th>').join('')+'<th></th></tr></thead><tbody>';
+  TROWS.forEach((r,i)=>{
+    h+='<tr data-i="'+i+'">'+TCOLS.map(c=>{
+      const v=r[c.f]==null?'':r[c.f];
+      if(c.t==='area') return '<td><textarea class="cell" data-f="'+c.f+'" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
+      return '<td'+(c.t==='num'?' class="net"':'')+'><input class="cell" data-f="'+c.f+'" type="'+(c.t==='date'?'date':'text')+'" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
+    }).join('')+'<td class="colp"><button class="del" title="Sil">✕</button></td></tr>';
+  });
+  h+='</tbody></table>';
+  const list=document.getElementById("tkList"); list.innerHTML=h;
+  list.querySelectorAll("[data-f]").forEach(el=>{ const i=+el.closest("tr").dataset.i, f=el.dataset.f;
+    el.addEventListener("change",()=>saveTk(i,f,el.value)); });
+  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delTk(+b.closest("tr").dataset.i));
+  tkSum();
+}
+async function saveTk(i,f,val){
+  const r=TROWS[i]; let v=val;
+  if(f==='net_ht_eur') v=parseNet(val);
+  else if(f==='adet'){ v=parseInt(String(val).replace(/[^\d]/g,''),10); if(isNaN(v)) v=null; }
+  else if((f==='teklif_tarihi'||f==='sorgu_tarihi')){ v=val||null; }
+  else { v = (val===''?null:val); }
+  const {error}=await sb.from("satis_takip").update({[f]:v, updated_at:new Date().toISOString()}).eq("id",r.id);
+  const m=document.getElementById("tkMsg");
+  if(error){ m.className="msg err"; m.textContent=error.message; return; }
+  r[f]=v; m.className="msg ok"; m.textContent="Kaydedildi"; setTimeout(()=>{m.textContent="";},1200); if(f==='net_ht_eur') tkSum();
+}
+async function addTk(){
+  const {data,error}=await sb.from("satis_takip").insert([{proje:"Yeni teklif",aktif:true}]).select();
+  if(error){ alert(error.message); return; }
+  TROWS.unshift(data[0]); renderTakip();
+  const inp=document.querySelector('#tkList input[data-f="proje"]'); if(inp){ inp.focus(); inp.select(); }
+}
+async function delTk(i){
+  const r=TROWS[i]; if(!confirm("Bu takip teklifi silinsin mi?")) return;
+  const {error}=await sb.from("satis_takip").delete().eq("id",r.id);
+  if(error){ alert(error.message); return; }
+  TROWS.splice(i,1); renderTakip();
 }
 
 document.getElementById("addM").onclick=()=>addRow("Muhtemel");
 document.getElementById("addA").onclick=()=>addRow("Alınan");
 document.getElementById("publish").onclick=publish;
 document.getElementById("reload").onclick=()=>{ if(!dirty||confirm("Kaydedilmemiş değişiklikler silinecek. Devam?")) load(); };
+document.getElementById("tkAdd").onclick=addTk;
 window.addEventListener("beforeunload",e=>{ if(dirty){ e.preventDefault(); e.returnValue=""; } });
-load();
+load(); loadTakip();
 </script>
 </body>
 </html>
