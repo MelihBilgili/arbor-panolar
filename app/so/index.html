@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Yurtiçi Satış Formu</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
+  .wrap{max-width:1120px;margin:0 auto;padding:14px 16px 60px}
+  .bar{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .sum{font-size:12.5px;color:#5a6b7d}
+  .sum b{color:#16324f}
+  .msg{font-size:12.5px;min-height:16px;font-weight:600;margin-left:auto}
+  .msg.ok{color:#2e7d54}.msg.err{color:#b40000}
+  .btn{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer}
+  .btn.sec{background:#e3edf7;color:#16324f;font-weight:600}
+  .btn:disabled{opacity:.5;cursor:default}
+  .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;overflow:auto}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:800px}
+  thead th{background:#16324f;color:#fff;font-weight:600;font-size:11.5px;padding:8px 9px;text-align:left;white-space:nowrap;position:sticky;top:0}
+  td{border-bottom:1px solid #eef1f5;padding:5px 7px;vertical-align:top}
+  tbody tr:nth-child(even){background:#fbfcfe}
+  input.cell,select.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:5px 7px;width:100%;background:#fff}
+  input.cell:focus,select.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
+  td.net input{text-align:right}
+  textarea.cell{min-height:34px;resize:vertical;min-width:200px}
+  .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
+  .colp{width:1%;white-space:nowrap}
+  .hint{font-size:12px;color:#8a97a4;margin:10px 2px}
+  .addrow{margin:10px 0}
+  .dirty{color:#b8863a;font-weight:600}
+  .load{padding:30px;text-align:center;color:#8a97a4}
+</style>
+</head>
+<body>
+<header>
+  <h1>Yurtiçi Satış Formu</h1>
+  <div class="sub">Sinan · Yurtiçi. Muhtemel/Alınan projelerini gir. Üretimdeki (sevke gönderilmiş) projeleri EKLEME. Bitince <b>“Kaydet ve Yayınla”</b>ya bas.</div>
+</header>
+<div class="wrap">
+  <div class="bar">
+    <button class="btn sec" id="addM">+ Muhtemel satır</button>
+    <button class="btn sec" id="addA">+ Alınan satır</button>
+    <span class="sum" id="sum"></span>
+    <span class="msg" id="msg"></span>
+  </div>
+  <div id="list" class="card"><div class="load">Yükleniyor…</div></div>
+  <div class="addrow">
+    <button class="btn" id="publish">Kaydet ve Yayınla</button>
+    <button class="btn sec" id="reload">Vazgeç / yeniden yükle</button>
+  </div>
+  <div class="hint"><b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler. — “Kaydet ve Yayınla” tüm listeyi yeni bir çekim olarak kaydeder; Satış panosunda önceki çekime göre eklenen/çıkan ve fark otomatik gösterilir.</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money=n=>{const v=Math.round(Number(n)||0);return v.toLocaleString("tr-TR");};
+const parseNet=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t.indexOf(",")>-1 && t.indexOf(".")>-1){ t=t.replace(/\./g,"").replace(",", "."); } else { t=t.replace(",", "."); } const v=parseFloat(t); return isNaN(v)?null:v; };
+let ROWS=[], OLD_IDS=[], dirty=false;
+async function load(){
+  const {data,error}=await sb.from("satis_yorum").select("*").eq("kaynak","SO").eq("aktif",true);
+  if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
+  const d=(data||[]).slice().sort((a,b)=> (a.statu||"").localeCompare(b.statu||"") || (Number(b.net_eur)||0)-(Number(a.net_eur)||0));
+  OLD_IDS=d.map(r=>r.id);
+  ROWS=d.map(r=>({statu:r.statu||"Muhtemel",proje:r.proje||"",musteri:r.musteri||"",net_eur:r.net_eur,durum:r.durum||""}));
+  dirty=false; render();
+}
+function setMsg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; }
+function markDirty(){ dirty=true; sums(); }
+function sums(){
+  const m=ROWS.filter(r=>/^muht/i.test(r.statu)), a=ROWS.filter(r=>/^al/i.test(r.statu));
+  const s=arr=>arr.reduce((x,r)=>x+(Number(r.net_eur)||0),0);
+  document.getElementById("sum").innerHTML="Muhtemel <b>"+m.length+"</b> / "+money(s(m))+" € &nbsp;·&nbsp; Alınan <b>"+a.length+"</b> / "+money(s(a))+" €"+(dirty?' &nbsp;<span class="dirty">(kaydedilmedi)</span>':'');
+}
+function render(){
+  let h='<table><thead><tr><th class="colp">Statü</th><th>Proje</th><th>Müşteri</th><th class="colp">Net (€)</th><th>Durum</th><th class="colp"></th></tr></thead><tbody>';
+  ROWS.forEach((r,i)=>{
+    h+='<tr data-i="'+i+'">'
+      +'<td class="colp"><select class="cell" data-f="statu"><option'+(/^muht/i.test(r.statu)?" selected":"")+'>Muhtemel</option><option'+(/^al/i.test(r.statu)?" selected":"")+'>Alınan</option></select></td>'
+      +'<td><input class="cell" data-f="proje" value="'+esc(r.proje)+'"></td>'
+      +'<td><input class="cell" data-f="musteri" value="'+esc(r.musteri)+'"></td>'
+      +'<td class="colp net"><input class="cell" data-f="net_eur" style="width:120px" value="'+(r.net_eur==null?"":esc(r.net_eur))+'"></td>'
+      +'<td><textarea class="cell" data-f="durum">'+esc(r.durum)+'</textarea></td>'
+      +'<td class="colp"><button class="del" title="Satırı sil">✕</button></td>'
+      +'</tr>';
+  });
+  h+='</tbody></table>';
+  const list=document.getElementById("list"); list.innerHTML=h;
+  list.querySelectorAll("[data-f]").forEach(el=>{
+    const i=+el.closest("tr").dataset.i, f=el.dataset.f, ev=el.tagName==="SELECT"?"change":"input";
+    el.addEventListener(ev,()=>{ ROWS[i][f]=el.value; markDirty(); });
+  });
+  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>{ ROWS.splice(+b.closest("tr").dataset.i,1); markDirty(); render(); });
+  sums();
+}
+function addRow(statu){ ROWS.push({statu,proje:"",musteri:"",net_eur:null,durum:""}); markDirty(); render(); const inps=document.querySelectorAll('#list input[data-f="proje"]'); if(inps.length) inps[inps.length-1].focus(); }
+async function publish(){
+  const clean=[];
+  for(const r of ROWS){
+    const proje=(r.proje||"").trim(); if(!proje) continue;
+    const statu=/^al/i.test(r.statu)?"Alınan":"Muhtemel";
+    clean.push({grup:"Yurtiçi",kaynak:"SO",statu,proje,musteri:(r.musteri||"").trim(),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),ulke:"TR",cekim:new Date().toISOString().slice(0,10),aktif:true});
+  }
+  if(!clean.length){ setMsg("En az bir dolu (projesi olan) satır gerekli.",false); return; }
+  const btn=document.getElementById("publish"); btn.disabled=true; btn.textContent="Yayınlanıyor…"; setMsg("Kaydediliyor…",true);
+  const {error:eIns}=await sb.from("satis_yorum").insert(clean);
+  if(eIns){ btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Ekleme hatası: "+eIns.message,false); return; }
+  if(OLD_IDS.length){ const {error:eA}=await sb.from("satis_yorum").update({aktif:false}).in("id",OLD_IDS);
+    if(eA){ btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Eklendi ama önceki arşivlenemedi: "+eA.message,false); return; } }
+  btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Yayınlandı ✓ ("+clean.length+" proje). Satış panosu güncel.",true);
+  await load();
+}
+document.getElementById("addM").onclick=()=>addRow("Muhtemel");
+document.getElementById("addA").onclick=()=>addRow("Alınan");
+document.getElementById("publish").onclick=publish;
+document.getElementById("reload").onclick=()=>{ if(!dirty||confirm("Kaydedilmemiş değişiklikler silinecek. Devam?")) load(); };
+window.addEventListener("beforeunload",e=>{ if(dirty){ e.preventDefault(); e.returnValue=""; } });
+load();
+</script>
+</body>
+</html>
