@@ -61,6 +61,10 @@
   .tag{display:inline-block;background:#16324f;color:#fff;font-size:10px;font-weight:700;border-radius:5px;padding:1px 7px;margin-left:6px;vertical-align:middle}
   .tag.ok{background:#2e7d54}
   .muted{color:#7a8794;font-size:11.5px}
+  .sybox{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:6px 14px;margin:4px 0 10px}
+  .syrow{font-size:15px;color:#1c2430;padding:6px 0;border-bottom:1px solid #f0f3f7}
+  .syrow:last-child{border-bottom:0}
+  .dl{font-size:12px;color:#6a7888;font-weight:600}
 </style>
 </head>
 <body>
@@ -129,6 +133,7 @@ function renderApp(){
        <button data-t="aup" class="${state.tab==='aup'?'active':''}">AÜP</button>
        <button data-t="hazir" class="${state.tab==='hazir'?'active':''}">Hazır PEM/PRJ</button>
        <button data-t="so" class="${state.tab==='so'?'active':''}">SÖ</button>
+       <button data-t="satis" class="${state.tab==='satis'?'active':''}">Satış Yorum</button>
        <button data-t="bilanco" class="${state.tab==='bilanco'?'active':''}">Bilanço</button>
        <button data-t="icmal" class="${state.tab==='icmal'?'active':''}">İcmal</button>
        <button data-t="ref" class="${state.tab==='ref'?'active':''}">Referans</button>
@@ -145,6 +150,7 @@ function loadView(){
   if(state.tab==='gundem') loadGundem();
   else if(state.tab==='hazir') loadHazir();
   else if(state.tab==='so') loadSo();
+  else if(state.tab==='satis') loadSatis();
   else if(state.tab==='bilanco') loadBilanco();
   else if(state.tab==='icmal') loadIcmal();
   else if(state.tab==='ref') loadRef();
@@ -286,6 +292,53 @@ async function loadSo(){
     <div class="scroll"><table>
     <thead><tr><th>NR</th><th>Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
+}
+
+/* ---------- SATIŞ YORUM (satis_yorum: SO yurtiçi + FY yurtdışı, tek pano) ---------- */
+async function loadSatis(){
+  const view=document.getElementById("view");
+  const {data,error}=await sb.from("satis_yorum").select("*");
+  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const cur=(data||[]).filter(r=>r.aktif), prev=(data||[]).filter(r=>!r.aktif);
+  const by=(arr,s)=>arr.filter(r=>String(r.statu).toLocaleLowerCase('tr').startsWith(s));
+  const sum=arr=>arr.reduce((a,r)=>a+(Number(r.net_eur)||0),0);
+  const cM=by(cur,'muht'), cA=by(cur,'al'), pM=by(prev,'muht'), pA=by(prev,'al');
+  const dAd=(a,b)=> b.length? ` <span class="dl">(${a.length-b.length>=0?'+':'−'}${Math.abs(a.length-b.length)} ad)</span>`:'';
+  const dTut=(a,b)=>{ if(!b.length) return ''; const v=Math.round(sum(a)-sum(b)); return ` <span class="dl">(${v>=0?'+':'−'}${money(Math.abs(v))} €)</span>`; };
+  const key=r=>String(r.proje).trim().toLocaleLowerCase('tr');
+  const diff=(c,p)=>{ const ps=new Set(p.map(key)), cs=new Set(c.map(key));
+    return { ekl:c.filter(r=>!ps.has(key(r))), sil:p.filter(r=>!cs.has(key(r))) }; };
+  const chip=r=>`${esc(r.proje)} (${esc(r.grup)}, ${money(r.net_eur)} €)`;
+  const esList=(c,p)=>{ if(!p.length) return ''; const {ekl,sil}=diff(c,p); let s='';
+    if(ekl.length) s+=` &nbsp;·&nbsp; <b style="color:#0a6b3f">Eklenen (${ekl.length}):</b> ${ekl.map(chip).join(' · ')}`;
+    if(sil.length) s+=` &nbsp;·&nbsp; <b style="color:#b23a2e">Silinen (${sil.length}):</b> ${sil.map(chip).join(' · ')}`;
+    return s; };
+  const src={}; cur.forEach(r=>{ src[r.kaynak]={cekim:r.cekim,grup:r.grup}; });
+  const srcLine=Object.keys(src).sort().map(k=>`${esc(src[k].grup)} (${esc(k)}): ${dOnly(src[k].cekim)}`).join('  ·  ');
+  const stampDate=cur.reduce((m,r)=> (r.cekim>m?r.cekim:m), '0');
+  const tbl=arr=>{ const g={}; arr.forEach(r=>{ (g[r.grup]=g[r.grup]||[]).push(r); });
+    let rows=''; Object.keys(g).sort().forEach(gn=>{
+      const list=g[gn].slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0));
+      rows+=`<tr class="grp"><td colspan="4">${esc(gn)} · ${list.length} proje · Net ${money(sum(list))} €</td></tr>`;
+      list.forEach(r=>{ rows+=`<tr><td class="kod" style="white-space:normal">${esc(r.proje)}</td><td>${esc(r.musteri)}</td><td>${esc(r.durum)}</td><td class="num">${money(r.net_eur)}</td></tr>`; });
+    });
+    return `<div class="scroll"><table><thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>DURUM</th><th class="num">NET (€)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  };
+  const totAd=cM.length+cA.length, totTut=sum(cM)+sum(cA);
+  const bigrow=(lbl,ad,tut,dad,dtut)=>`<div class="syrow"><b>${lbl} Proje Sayısı:</b> ${ad} ad${dad} &nbsp;·&nbsp; <b>Tutar:</b> ${money(tut)} €${dtut}</div>`;
+  view.innerHTML=`
+    <div class="stamp">Satış Yorum — Son güncelleme: ${dOnly(stampDate)}</div>
+    <div class="hint">Yurtiçi (SO) + Yurtdışı (FY) birleşik · Kaynak — ${srcLine}</div>
+    <div class="sybox">
+      ${bigrow('Muhtemel',cM.length,sum(cM),dAd(cM,pM),dTut(cM,pM))}
+      ${bigrow('Alınan',cA.length,sum(cA),dAd(cA,pA),dTut(cA,pA))}
+      ${bigrow('Toplam',totAd,totTut, prev.length?dAd(cur,prev):'', prev.length?dTut(cur,prev):'')}
+    </div>
+    <h3 class="sec">Muhtemel <span class="muted">(${cM.length} proje · Net ${money(sum(cM))} €)</span><span class="muted">${esList(cM,pM)}</span></h3>
+    ${tbl(cM)}
+    <h3 class="sec">Alınan <span class="muted">(${cA.length} proje · Net ${money(sum(cA))} €)</span><span class="muted">${esList(cA,pA)}</span></h3>
+    ${tbl(cA)}
+  `;
 }
 
 /* ---------- HAZIR PEM/PRJ ---------- */
