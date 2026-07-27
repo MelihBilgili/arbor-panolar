@@ -48,7 +48,7 @@
   table.aup th.note,table.aup td.note{width:auto;white-space:normal;min-width:160px}
   .addbar{display:flex;gap:6px;margin:0 0 8px;flex-wrap:nowrap;align-items:center}
   .addbar input{border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;font:inherit;min-width:0}
-  .addbar input#ag-ilgili{width:58px;flex:none;text-transform:uppercase}
+  .addbar select#ag-ilgili{flex:none;border:1px solid #cdd6df;border-radius:6px;padding:6px 6px;font:inherit;background:#fff}
   .addbar input#ag-konu{flex:1;min-width:0}
   .addbar .btn{flex:none;white-space:nowrap;padding:6px 12px}
   .load{padding:30px;text-align:center;color:#8a97a4}
@@ -203,11 +203,11 @@ async function loadGundem(){
     });
   });
   const st=await erpStamp();
-  const ilgOpts=keys.filter(k=>k!=='ARGE').map(k=>`<option value="${esc(k)}">`).join("");
+  const ilgSet=[...new Set(["MB","EA","OE","CTP","EU"].concat(keys.filter(k=>k!=='ARGE')))];
+  const ilgSel=ilgSet.map(k=>`<option value="${esc(k)}"${k==='MB'?' selected':''}>${esc(k)}</option>`).join("")+`<option value="__new__">Diğer…</option>`;
   view.innerHTML=`${stampHTML(st)}
     <div class="addbar">
-      <input id="ag-ilgili" placeholder="İlgili" list="ag-ilgili-list" value="MB" autocomplete="off">
-      <datalist id="ag-ilgili-list">${ilgOpts}</datalist>
+      <select id="ag-ilgili" title="İlgili">${ilgSel}</select>
       <input id="ag-konu" placeholder="Yeni konu">
       <button class="btn" id="ag-add">Ekle</button>
     </div>
@@ -221,7 +221,10 @@ async function loadGundem(){
 }
 async function addGundem(){
   const ei=document.getElementById("ag-ilgili"), ek=document.getElementById("ag-konu");
-  const ilg=(ei.value||"").trim().toUpperCase(), konu=(ek.value||"").trim();
+  let ilg=(ei.value||"").trim();
+  if(ilg==="__new__"){ ilg=(prompt("İlgili kodu (ör. MK, FA):")||"").trim(); }
+  ilg=ilg.toUpperCase();
+  const konu=(ek.value||"").trim();
   if(!ilg||!konu){ (ilg?ek:ei).focus(); return; }
   const btn=document.getElementById("ag-add"); btn.disabled=true; btn.textContent="Ekleniyor…";
   const {data}=await sb.from("ana_gundem").select("kod").like("kod","M%");
