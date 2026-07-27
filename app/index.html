@@ -133,7 +133,7 @@ function renderApp(){
        <button data-t="aup" class="${state.tab==='aup'?'active':''}">AÜP</button>
        <button data-t="hazir" class="${state.tab==='hazir'?'active':''}">Hazır PEM/PRJ</button>
        <button data-t="so" class="${state.tab==='so'?'active':''}">SÖ</button>
-       <button data-t="satis" class="${state.tab==='satis'?'active':''}">Satış Yorum</button>
+       <button data-t="satis" class="${state.tab==='satis'?'active':''}">Satış</button>
        <button data-t="bilanco" class="${state.tab==='bilanco'?'active':''}">Bilanço</button>
        <button data-t="icmal" class="${state.tab==='icmal'?'active':''}">İcmal</button>
        <button data-t="ref" class="${state.tab==='ref'?'active':''}">Referans</button>
@@ -297,17 +297,17 @@ async function loadSo(){
 /* ---------- SATIŞ YORUM (satis_yorum: SO yurtiçi + FY yurtdışı, tek pano) ---------- */
 async function loadSatis(){
   const view=document.getElementById("view");
-  const {data,error}=await sb.from("satis_yorum").select("*");
-  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
-  const cur=(data||[]).filter(r=>r.aktif);
-  const archived=(data||[]).filter(r=>!r.aktif);
+  const [sy,tk]=await Promise.all([ sb.from("satis_yorum").select("*"), sb.from("satis_takip").select("*").eq("aktif",true) ]);
+  if(sy.error){ view.innerHTML=`<div class="load">Hata: ${esc(sy.error.message)}</div>`; return; }
+  const data=sy.data||[];
+  const cur=data.filter(r=>r.aktif), archived=data.filter(r=>!r.aktif);
   const prevCekim={}; archived.forEach(r=>{ if(!prevCekim[r.kaynak]||r.cekim>prevCekim[r.kaynak]) prevCekim[r.kaynak]=r.cekim; });
-  const curK=[...new Set(cur.map(r=>r.kaynak))];
-  const haveAllPrev=curK.length>0 && curK.every(k=>archived.some(r=>r.kaynak===k));
-  const prev=haveAllPrev ? archived.filter(r=>r.cekim===prevCekim[r.kaynak]) : [];
+  const prev=archived.filter(r=>r.cekim===prevCekim[r.kaynak]);
+  const prevSrc=new Set(prev.map(r=>r.kaynak));
+  const curCmp=cur.filter(r=>prevSrc.has(r.kaynak));
   const by=(arr,s)=>arr.filter(r=>String(r.statu).toLocaleLowerCase('tr').startsWith(s));
   const sum=arr=>arr.reduce((a,r)=>a+(Number(r.net_eur)||0),0);
-  const cM=by(cur,'muht'), cA=by(cur,'al'), pM=by(prev,'muht'), pA=by(prev,'al');
+  const cM=by(cur,'muht'), cA=by(cur,'al'), cMc=by(curCmp,'muht'), cAc=by(curCmp,'al'), pM=by(prev,'muht'), pA=by(prev,'al');
   const dAd=(a,b)=> b.length? ` <span class="dl">(${a.length-b.length>=0?'+':'−'}${Math.abs(a.length-b.length)} ad)</span>`:'';
   const dTut=(a,b)=>{ if(!b.length) return ''; const v=Math.round(sum(a)-sum(b)); return ` <span class="dl">(${v>=0?'+':'−'}${money(Math.abs(v))} €)</span>`; };
   const key=r=>String(r.proje).trim().toLocaleLowerCase('tr');
@@ -319,7 +319,7 @@ async function loadSatis(){
     if(sil.length) s+=` &nbsp;·&nbsp; <b style="color:#b23a2e">Silinen (${sil.length}):</b> ${sil.map(chip).join(' · ')}`;
     return s; };
   const src={}; cur.forEach(r=>{ src[r.kaynak]={cekim:r.cekim,grup:r.grup}; });
-  const srcLine=Object.keys(src).sort().map(k=>`${esc(src[k].grup)} (${esc(k)}): ${dOnly(src[k].cekim)}`).join('  ·  ');
+  const srcLine=Object.keys(src).sort().map(k=>`${esc(src[k].grup)} (${esc(k)}): ${dOnly(src[k].cekim)}${prevCekim[k]?` <span class="muted">(önceki ${dOnly(prevCekim[k])})</span>`:''}`).join('  ·  ');
   const stampDate=cur.reduce((m,r)=> (r.cekim>m?r.cekim:m), '0');
   const tbl=arr=>{ const g={}; arr.forEach(r=>{ (g[r.grup]=g[r.grup]||[]).push(r); });
     let rows=''; Object.keys(g).sort().forEach(gn=>{
@@ -331,18 +331,38 @@ async function loadSatis(){
   };
   const totAd=cM.length+cA.length, totTut=sum(cM)+sum(cA);
   const bigrow=(lbl,ad,tut,dad,dtut)=>`<div class="syrow"><b>${lbl} Proje Sayısı:</b> ${ad} ad${dad} &nbsp;·&nbsp; <b>Tutar:</b> ${money(tut)} €${dtut}</div>`;
+  const takip=(tk.data||[]).slice().sort((a,b)=>(Number(b.net_ht_eur)||0)-(Number(a.net_ht_eur)||0));
+  const tkNet=takip.reduce((a,r)=>a+(Number(r.net_ht_eur)||0),0);
+  const tkRows=takip.map(r=>`<tr>
+     <td class="kod" style="white-space:normal">${esc(r.proje)}</td>
+     <td>${esc(r.musteri)}</td>
+     <td>${esc(r.hazirlayan)}</td>
+     <td class="num">${fdate(r.teklif_tarihi)}</td>
+     <td>${esc(r.agac)}</td>
+     <td class="num">${money(r.net_ht_eur)}</td>
+     <td>${esc(r.takip_sekli)}</td>
+     <td>${esc(r.ihale)}</td>
+     <td>${esc(r.durum)}</td>
+     <td class="note">${esc(r.notlar)}</td>
+     <td class="note">${esc(r.yorum)}</td></tr>`).join("");
+  const takipHTML = takip.length? `
+    <h3 class="sec">Yurtdışı takipteki teklifler <span class="muted">(${takip.length} teklif · Net HT ${money(tkNet)} €)</span></h3>
+    <div class="scroll"><table class="aup">
+    <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>HAZIRLAYAN</th><th>TEKLİF</th><th>AĞAÇ</th><th class="num">NET HT (€)</th><th>TAKİP</th><th>İHALE</th><th>DURUM</th><th class="note">NOTLAR</th><th class="note">YORUM</th></tr></thead>
+    <tbody>${tkRows}</tbody></table></div>`:'';
   view.innerHTML=`
-    <div class="stamp">Satış Yorum — Son güncelleme: ${dOnly(stampDate)}</div>
+    <div class="stamp">Satış — Son güncelleme: ${dOnly(stampDate)}</div>
     <div class="hint">Yurtiçi (SO) + Yurtdışı (FY) birleşik · Kaynak — ${srcLine}</div>
     <div class="sybox">
-      ${bigrow('Muhtemel',cM.length,sum(cM),dAd(cM,pM),dTut(cM,pM))}
-      ${bigrow('Alınan',cA.length,sum(cA),dAd(cA,pA),dTut(cA,pA))}
-      ${bigrow('Toplam',totAd,totTut, prev.length?dAd(cur,prev):'', prev.length?dTut(cur,prev):'')}
+      ${bigrow('Muhtemel',cM.length,sum(cM),dAd(cMc,pM),dTut(cMc,pM))}
+      ${bigrow('Alınan',cA.length,sum(cA),dAd(cAc,pA),dTut(cAc,pA))}
+      ${bigrow('Toplam',totAd,totTut, dAd(curCmp,prev), dTut(curCmp,prev))}
     </div>
-    <h3 class="sec">Muhtemel <span class="muted">(${cM.length} proje · Net ${money(sum(cM))} €)</span><span class="muted">${esList(cM,pM)}</span></h3>
+    <h3 class="sec">Muhtemel <span class="muted">(${cM.length} proje · Net ${money(sum(cM))} €)</span><span class="muted">${esList(cMc,pM)}</span></h3>
     ${tbl(cM)}
-    <h3 class="sec">Alınan <span class="muted">(${cA.length} proje · Net ${money(sum(cA))} €)</span><span class="muted">${esList(cA,pA)}</span></h3>
+    <h3 class="sec">Alınan <span class="muted">(${cA.length} proje · Net ${money(sum(cA))} €)</span><span class="muted">${esList(cAc,pA)}</span></h3>
     ${tbl(cA)}
+    ${takipHTML}
   `;
 }
 
@@ -521,7 +541,8 @@ function loadFormlar(){
   const forms=[
     {ad:"EA — SÖ Haftalık Gündem Formu", who:"Enes Artan · Kalite", url:"ea/", desc:"Hafta bölümünü seçer, sorun ve önerileri 'gündeme alındı'ya çevirir. Yazar: so_ea_form."},
     {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."},
-    {ad:"FY — Yurtdışı Satış Formu", who:"Fatma · Satış (Fransa/ihracat)", url:"fy/", desc:"Yurtdışı muhtemel/alınan projeleri (proje, müşteri, statü, ülke, net €, durum) girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış Yorum panosuna anında yansır. Paylaşılan xlsx yerine geçer."},
+    {ad:"Yurtdışı Satış Formu", who:"Fatma · Satış (Fransa/ihracat)", url:"fy/", desc:"Yurtdışı muhtemel/alınan projeleri (proje, müşteri, statü, ülke, net €, durum) + takipteki teklifler girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır. Paylaşılan xlsx yerine geçer."},
+    {ad:"Yurtiçi Satış Formu", who:"Sinan · Satış (Yurtiçi)", url:"so/", desc:"Yurtiçi muhtemel/alınan projeleri (proje, müşteri, statü, net €) girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır."},
     {ad:"Cam Kombinasyonu Fiyatlandırma", who:"Fiyat aracı · paylaşılabilir", url:"cam/", desc:"Cam parametrelerini (dış/iç cam, kaplama, akustik, temper, form, ara boşluk, Fire Proof…) seç → €/m² fiyat. Geçmiş teklif eşleşmesi + çarpımsal model. Bağlantı çalışanlarla paylaşılabilir."}
   ];
   const cards=forms.map(f=>{ const full=new URL(f.url, location.href).href; return `<div class="flow"><b>${esc(f.ad)}</b> <span class="tag">${esc(f.who)}</span><p>${esc(f.desc)}</p><p><a class="btn" style="text-decoration:none;display:inline-block" href="${esc(f.url)}" target="_blank">Formu aç</a> &nbsp;<span class="muted">${esc(full)}</span></p></div>`; }).join("");
@@ -538,9 +559,18 @@ function loadOzel(){
   view.innerHTML=`<div class="stamp">🔒 Özel Panolar <span class="tag">parolalı</span></div><div class="hint">Kitaplar · Felsefe · PhD Notes · Takvim. Parola ile korunur; bir kez girilince cihazda hatırlanır (/ozel/ ile aynı parola).</div><iframe id="ozf" src="ozel4/" style="width:100%;height:82vh;border:1px solid #dde3ea;border-radius:8px;background:#fff"></iframe>`;
 }
 
-/* ---------- BOOT (login kaldırıldı — Melih 23.07) ---------- */
-/* rev 2026-07-25c: kompakt başlık/sekme */
-function boot(){ renderApp(); }
+/* ---------- BOOT + PAROLA KAPISI (Melih 27.07: tüm panolara parola) ---------- */
+const APP_PW="Arbor123";
+function pwOk(){ try{ return safeStorage().getItem("arbor_app_pw")===APP_PW; }catch(e){ return false; } }
+function renderPw(){
+  app.innerHTML=`<div class="login"><h2>Arbor Panolar</h2><p>Devam etmek için parolayı gir.</p>
+    <input id="pw" type="password" placeholder="Parola" autofocus>
+    <button class="btn" id="pwgo">Gir</button><div class="msg" id="pwm"></div></div>`;
+  const go=()=>{ const v=(document.getElementById("pw").value||""); if(v===APP_PW){ try{safeStorage().setItem("arbor_app_pw",v);}catch(e){} renderApp(); } else { const m=document.getElementById("pwm"); m.className="msg err"; m.textContent="Parola hatalı."; } };
+  document.getElementById("pwgo").onclick=go;
+  document.getElementById("pw").onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); go(); } };
+}
+function boot(){ if(pwOk()) renderApp(); else renderPw(); }
 boot();
 setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadView(); }, 60000);
 </script>
