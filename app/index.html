@@ -536,21 +536,8 @@ async function loadRef(){
 `;
 }
 
-/* ---------- FORMLAR AYRI PAROLA KAPISI (Melih 29.07: Formlar sekmesine ana panodan AYRI parola) ---------- */
-const FORMLAR_PW="Arbor456";
-let formlarUnlocked=false;
-function renderFormlarGate(){
-  const view=document.getElementById("view");
-  view.innerHTML=`<div class="login"><h2>Formlar</h2><p>Bu bölüm ayrı bir parola ile korunuyor.</p>
-    <input id="fpw" type="password" placeholder="Parola" autofocus>
-    <button class="btn" id="fpwgo">Gir</button><div class="msg" id="fpwm"></div></div>`;
-  const go=()=>{ const v=(document.getElementById("fpw").value||""); if(v===FORMLAR_PW){ formlarUnlocked=true; loadFormlar(); } else { const m=document.getElementById("fpwm"); m.className="msg err"; m.textContent="Parola hatalı."; } };
-  document.getElementById("fpwgo").onclick=go;
-  document.getElementById("fpw").onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); go(); } };
-}
 function loadFormlar(){
   const view=document.getElementById("view");
-  if(!formlarUnlocked){ renderFormlarGate(); return; }
   const forms=[
     {ad:"EA — SÖ Haftalık Gündem Formu", who:"Enes Artan · Kalite", url:"ea/", desc:"Hafta bölümünü seçer, sorun ve önerileri 'gündeme alındı'ya çevirir. Yazar: so_ea_form."},
     {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."},
