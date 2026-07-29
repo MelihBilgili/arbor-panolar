@@ -10,9 +10,11 @@
   body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
   header{background:#16324f;color:#fff;padding:12px 16px}
   header h1{font-size:17px;margin:0;font-weight:700}
-  header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
   .wrap{max-width:1320px;margin:0 auto;padding:14px 16px 60px}
-  h2.sec{margin:22px 2px 8px;color:#16324f;font-size:15px;border-top:1px solid #dde3ea;padding-top:16px}
+  .sechead{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin:22px 2px 8px}
+  h2.sec{color:#16324f;font-size:15px;margin:0}
+  .desc{font-size:11.5px;color:#8a97a4;max-width:660px;line-height:1.45;flex:1;min-width:260px}
+  .desc b{color:#5a6b7d}
   .bar{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 14px;margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
   .sum{font-size:12.5px;color:#5a6b7d}
   .sum b{color:#16324f}
@@ -22,17 +24,24 @@
   .btn.sec{background:#e3edf7;color:#16324f;font-weight:600}
   .btn:disabled{opacity:.5;cursor:default}
   .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;overflow:auto}
-  table{border-collapse:collapse;width:100%;font-size:13px;min-width:900px}
+  table{border-collapse:collapse;width:100%;font-size:13px}
   thead th{background:#16324f;color:#fff;font-weight:600;font-size:11.5px;padding:8px 9px;text-align:left;white-space:nowrap;position:sticky;top:0}
   td{border-bottom:1px solid #eef1f5;padding:5px 7px;vertical-align:top}
   tbody tr:nth-child(even){background:#fbfcfe}
-  .grp td{background:#e8eef5;font-weight:700;color:#16324f}
   input.cell,select.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:5px 7px;width:100%;background:#fff}
   input.cell:focus,select.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
   td.net input{text-align:right}
-  textarea.cell{min-height:34px;resize:vertical;min-width:200px}
+  textarea.cell{min-height:34px;resize:vertical}
+  .cell.bad{border-color:#d9534f;background:#fff4f4}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
   .colp{width:1%;white-space:nowrap}
+  /* iliskili sutun ciftleri (Son Takip T. + Notlari) ortak zemin + sol sinir ile gruplanir */
+  th.pairA,td.pairA{background:#eaf5ee}
+  th.pairB,td.pairB{background:#f0eefb}
+  tbody tr:nth-child(even) td.pairA{background:#e3f1e8}
+  tbody tr:nth-child(even) td.pairB{background:#eae7f7}
+  th.gs,td.gs{border-left:2px solid #9db8a6}
+  th.pairB.gs,td.pairB.gs{border-left:2px solid #b0a6d6}
   .hint{font-size:12px;color:#8a97a4;margin:10px 2px}
   .addrow{margin:10px 0}
   .dirty{color:#b8863a;font-weight:600}
@@ -42,10 +51,12 @@
 <body>
 <header>
   <h1>Yurtdışı Satış Formu</h1>
-  <div class="sub">Fatma · Fransa/ihracat. Muhtemel/Alınan projelerini gir. Üretimdeki (sevke gönderilmiş) projeleri EKLEME. Bitince <b>“Kaydet ve Yayınla”</b>ya bas.</div>
 </header>
 <div class="wrap">
-  <h2 class="sec" style="border-top:0;padding-top:0;margin-top:4px">Muhtemel / Alınan Projeler</h2>
+  <div class="sechead" style="margin-top:4px">
+    <h2 class="sec">Muhtemel / Alınan Projeler</h2>
+    <div class="desc">Her takvim ayının bitiminde, Türkiye dışındaki tüm Muhtemel/Alınan projelerini gir. Üretimdeki (sevke gönderilmiş) projeleri EKLEME. Bitince “Kaydet ve Yayınla”ya bas. <b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler. “Kaydet ve Yayınla” tüm listeyi yeni bir çekim olarak kaydeder; Satış panosunda önceki çekime göre eklenen/çıkan ve fark otomatik gösterilir.</div>
+  </div>
   <div class="bar">
     <button class="btn sec" id="addM">+ Muhtemel satır</button>
     <button class="btn sec" id="addA">+ Alınan satır</button>
@@ -57,16 +68,17 @@
     <button class="btn" id="publish">Kaydet ve Yayınla</button>
     <button class="btn sec" id="reload">Vazgeç / yeniden yükle</button>
   </div>
-  <div class="hint"><b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler. — “Kaydet ve Yayınla” tüm listeyi yeni bir çekim olarak kaydeder; Satış panosunda önceki çekime göre eklenen/çıkan ve fark otomatik gösterilir.</div>
 
-  <h2 class="sec">Takipteki Teklifler <span class="sum">(yurtdışı — anlık kaydedilir)</span></h2>
+  <div class="sechead">
+    <h2 class="sec">Takipteki Teklifler <span class="sum">(yurtdışı — anlık kaydedilir)</span></h2>
+    <div class="desc">Türkiye dışındaki müşterilere her yeni teklif iletildiğinde, teklif bilgileri aynı gün bu tabloya eklenir. Bu tabloda her hücre anında kaydedilir.</div>
+  </div>
   <div class="bar">
     <button class="btn sec" id="tkAdd">+ Teklif satırı</button>
     <span class="sum" id="tkSum"></span>
     <span class="msg" id="tkMsg"></span>
   </div>
   <div id="tkList" class="card"><div class="load">Yükleniyor…</div></div>
-  <div class="hint">Bu tabloda her hücre anında kaydedilir. Satış panosunun altında “Yurtdışı takipteki teklifler” olarak görünür. Telefon/e-posta gibi kişisel iletişim bilgileri gizlilik için panoda gösterilmez.</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -74,7 +86,14 @@
 const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money=n=>{const v=Math.round(Number(n)||0);return v.toLocaleString("tr-TR");};
-const parseNet=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t.indexOf(",")>-1 && t.indexOf(".")>-1){ t=t.replace(/\./g,"").replace(",", "."); } else { t=t.replace(",", "."); } const v=parseFloat(t); return isNaN(v)?null:v; };
+const parseNet=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null; if(t.indexOf(",")>-1 && t.indexOf(".")>-1){ t=t.replace(/\./g,"").replace(",", "."); } else { t=t.replace(",", "."); } const v=parseFloat(t); return isNaN(v)?null:v; };
+const pad=n=>String(n).padStart(2,"0");
+const fmtDate=v=>{ if(!v) return ""; const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(v)); return m? m[3]+"."+m[2]+"."+m[1] : String(v); };
+function toISO(s){ if(s==null) return null; s=String(s).trim(); if(s==="") return null;
+  let m=/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/.exec(s);
+  if(m){ let y=m[3]; if(y.length===2) y="20"+y; return y+"-"+pad(m[2])+"-"+pad(m[1]); }
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  return undefined; /* gecersiz */ }
 
 /* ===== Muhtemel/Alınan (satis_yorum, FY) ===== */
 let ROWS=[], OLD_IDS=[], dirty=false;
@@ -83,26 +102,28 @@ async function load(){
   if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
   const d=(data||[]).slice().sort((a,b)=> (a.statu||"").localeCompare(b.statu||"") || (Number(b.net_eur)||0)-(Number(a.net_eur)||0));
   OLD_IDS=d.map(r=>r.id);
-  ROWS=d.map(r=>({statu:r.statu||"Muhtemel",proje:r.proje||"",musteri:r.musteri||"",ulke:r.ulke||"FR",net_eur:r.net_eur,durum:r.durum||""}));
+  ROWS=d.map(r=>({statu:r.statu||"Muhtemel",proje:r.proje||"",musteri:r.musteri||"",ulke:r.ulke||"FR",iskonto:(r.iskonto==null?"":r.iskonto),net_eur:r.net_eur,durum:r.durum||""}));
   dirty=false; render();
 }
 function setMsg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; }
 function markDirty(){ dirty=true; sums(); }
 function sums(){
   const m=ROWS.filter(r=>/^muht/i.test(r.statu)), a=ROWS.filter(r=>/^al/i.test(r.statu));
-  const s=arr=>arr.reduce((x,r)=>x+(Number(r.net_eur)||0),0);
+  const s=arr=>arr.reduce((x,r)=>x+(parseNet(r.net_eur)||0),0);
   document.getElementById("sum").innerHTML="Muhtemel <b>"+m.length+"</b> / "+money(s(m))+" € &nbsp;·&nbsp; Alınan <b>"+a.length+"</b> / "+money(s(a))+" €"+(dirty?' &nbsp;<span class="dirty">(kaydedilmedi)</span>':'');
 }
 function render(){
-  let h='<table><thead><tr><th class="colp">Statü</th><th>Proje</th><th>Müşteri</th><th class="colp">Ülke</th><th class="colp">Net (€)</th><th>Durum</th><th class="colp"></th></tr></thead><tbody>';
+  let h='<table style="min-width:820px"><thead><tr>'
+    +'<th style="width:110px">Statü</th><th style="width:150px">Proje</th><th style="width:120px">Müşteri</th>'
+    +'<th class="colp">İskonto %</th><th class="colp">Net (€)</th><th>Durum</th><th class="colp"></th></tr></thead><tbody>';
   ROWS.forEach((r,i)=>{
     h+='<tr data-i="'+i+'">'
-      +'<td class="colp"><select class="cell" data-f="statu"><option'+(/^muht/i.test(r.statu)?" selected":"")+'>Muhtemel</option><option'+(/^al/i.test(r.statu)?" selected":"")+'>Alınan</option></select></td>'
-      +'<td><input class="cell" data-f="proje" value="'+esc(r.proje)+'"></td>'
-      +'<td><input class="cell" data-f="musteri" value="'+esc(r.musteri)+'"></td>'
-      +'<td class="colp"><input class="cell" data-f="ulke" style="width:60px" value="'+esc(r.ulke)+'"></td>'
-      +'<td class="colp net"><input class="cell" data-f="net_eur" style="width:110px" value="'+(r.net_eur==null?"":esc(r.net_eur))+'"></td>'
-      +'<td><textarea class="cell" data-f="durum">'+esc(r.durum)+'</textarea></td>'
+      +'<td><select class="cell req" data-f="statu" style="width:100px"><option'+(/^muht/i.test(r.statu)?" selected":"")+'>Muhtemel</option><option'+(/^al/i.test(r.statu)?" selected":"")+'>Alınan</option></select></td>'
+      +'<td><input class="cell req" data-f="proje" value="'+esc(r.proje)+'"></td>'
+      +'<td><input class="cell req" data-f="musteri" value="'+esc(r.musteri)+'"></td>'
+      +'<td class="colp"><input class="cell req" data-f="iskonto" style="width:70px;text-align:right" value="'+esc(r.iskonto)+'"></td>'
+      +'<td class="colp net"><input class="cell req" data-f="net_eur" style="width:100px" value="'+(r.net_eur==null||r.net_eur===""?"":esc(money(r.net_eur)))+'"></td>'
+      +'<td><textarea class="cell req" data-f="durum" style="min-width:200px">'+esc(r.durum)+'</textarea></td>'
       +'<td class="colp"><button class="del" title="Satırı sil">✕</button></td>'
       +'</tr>';
   });
@@ -110,20 +131,22 @@ function render(){
   const list=document.getElementById("list"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{
     const i=+el.closest("tr").dataset.i, f=el.dataset.f, ev=el.tagName==="SELECT"?"change":"input";
-    el.addEventListener(ev,()=>{ ROWS[i][f]=el.value; markDirty(); });
+    el.addEventListener(ev,()=>{ ROWS[i][f]=el.value; el.classList.toggle("bad", !String(el.value||"").trim()); markDirty(); });
+    if(f==="net_eur") el.addEventListener("blur",()=>{ const v=parseNet(el.value); el.value=(v==null?"":money(v)); });
   });
-  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>{ ROWS.splice(+b.closest("tr").dataset.i,1); markDirty(); render(); });
+  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>{ if(!confirm("Bu satır silinsin mi?")) return; ROWS.splice(+b.closest("tr").dataset.i,1); markDirty(); render(); });
   sums();
 }
-function addRow(statu){ ROWS.push({statu,proje:"",musteri:"",ulke:"FR",net_eur:null,durum:""}); markDirty(); render(); const inps=document.querySelectorAll('#list input[data-f="proje"]'); if(inps.length) inps[inps.length-1].focus(); }
+function addRow(statu){ ROWS.push({statu,proje:"",musteri:"",ulke:"FR",iskonto:"",net_eur:null,durum:""}); markDirty(); render(); const inps=document.querySelectorAll('#list input[data-f="proje"]'); if(inps.length) inps[inps.length-1].focus(); }
+function validateList(){
+  let bad=false;
+  document.querySelectorAll('#list .req').forEach(el=>{ const empty=!String(el.value||"").trim(); el.classList.toggle("bad",empty); if(empty) bad=true; });
+  return !bad;
+}
 async function publish(){
-  const clean=[];
-  for(const r of ROWS){
-    const proje=(r.proje||"").trim(); if(!proje) continue;
-    const statu=/^al/i.test(r.statu)?"Alınan":"Muhtemel";
-    clean.push({grup:"Yurtdışı",kaynak:"FY",statu,proje,musteri:(r.musteri||"").trim(),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),ulke:(r.ulke||"").trim()||"FR",cekim:new Date().toISOString().slice(0,10),aktif:true});
-  }
-  if(!clean.length){ setMsg("En az bir dolu (projesi olan) satır gerekli.",false); return; }
+  if(!ROWS.length){ setMsg("En az bir satır ekleyin.",false); return; }
+  if(!validateList()){ setMsg("Tüm hücreleri doldurun — hiçbir hücre boş/belirsiz bırakılamaz.",false); return; }
+  const clean=ROWS.map(r=>({grup:"Yurtdışı",kaynak:"FY",statu:(/^al/i.test(r.statu)?"Alınan":"Muhtemel"),proje:(r.proje||"").trim(),musteri:(r.musteri||"").trim(),iskonto:parseNet(r.iskonto),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),ulke:(r.ulke||"").trim()||"FR",cekim:new Date().toISOString().slice(0,10),aktif:true}));
   const btn=document.getElementById("publish"); btn.disabled=true; btn.textContent="Yayınlanıyor…"; setMsg("Kaydediliyor…",true);
   const {error:eIns}=await sb.from("satis_yorum").insert(clean);
   if(eIns){ btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Ekleme hatası: "+eIns.message,false); return; }
@@ -135,12 +158,23 @@ async function publish(){
 
 /* ===== Takipteki teklifler (satis_takip) — anlık kayıt ===== */
 const TCOLS=[
- {f:'proje',h:'Proje',w:180,t:'text'},{f:'musteri',h:'Müşteri',w:150,t:'text'},{f:'yetkili',h:'Yetkili',w:140,t:'text'},
- {f:'teklif_tarihi',h:'Teklif T.',w:130,t:'date'},{f:'hazirlayan',h:'Hazırlayan',w:100,t:'text'},{f:'agac',h:'Ağaç',w:90,t:'text'},
- {f:'seri',h:'Seri',w:90,t:'text'},{f:'net_ht_eur',h:'Net HT €',w:100,t:'num'},{f:'adet',h:'Adet',w:70,t:'int'},
- {f:'takip_sekli',h:'Takip Şekli',w:130,t:'text'},{f:'ihale',h:'İhale',w:90,t:'text'},{f:'durum',h:'Durum',w:100,t:'text'},
- {f:'sorgu_tarihi',h:'Sorgu T.',w:130,t:'date'},{f:'notlar',h:'Notlar',w:200,t:'area'},{f:'yorum',h:'Yorum',w:200,t:'area'}
+ {f:'proje',h:'Proje',w:126,t:'text',req:1},
+ {f:'musteri',h:'Müşteri',w:75,t:'text',req:1},
+ {f:'teklif_tarihi',h:'Teklif Tarihi',w:78,t:'datetext',req:1},
+ {f:'agac',h:'Ağaç',w:54,t:'text',req:1},
+ {f:'seri',h:'Seri',w:80,t:'text',req:1},
+ {f:'isk',h:'İskonto %',w:64,t:'text',req:1},
+ {f:'net_ht_eur',h:'Net HT €',w:82,t:'num',req:1},
+ {f:'adet',h:'Adet',w:48,t:'int',req:1},
+ {f:'ihale',h:'İhale',w:90,t:'text'},
+ {f:'durum',h:'Durum',w:100,t:'text'},
+ {f:'sorgu_tarihi',h:'Sorgu T.',w:90,t:'datetext'},
+ {f:'son_takip_teklif',h:'Son Takip T.',w:78,t:'datetext',grp:'pairA',gs:1},
+ {f:'takip_sekli',h:'Teklif B. Notları',w:210,t:'area',grp:'pairA'},
+ {f:'son_takip_yurtdisi',h:'Son Takip T.',w:78,t:'datetext',grp:'pairB',gs:1},
+ {f:'yurtdisi_notlari',h:'Yurtdışı B. Notları',w:210,t:'area',grp:'pairB'}
 ];
+const REQ_TK=TCOLS.filter(c=>c.req).map(c=>c.f);
 let TROWS=[];
 async function loadTakip(){
   const {data,error}=await sb.from("satis_takip").select("*").eq("aktif",true).order("net_ht_eur",{ascending:false});
@@ -148,32 +182,35 @@ async function loadTakip(){
   TROWS=data||[]; renderTakip();
 }
 function tkSum(){ const net=TROWS.reduce((a,r)=>a+(Number(r.net_ht_eur)||0),0); document.getElementById("tkSum").innerHTML="<b>"+TROWS.length+"</b> teklif · Net HT "+money(net)+" €"; }
+function cls(c){ return (c.grp?" "+c.grp:"")+(c.gs?" gs":""); }
+function dispVal(r,c){ const v=r[c.f]; if(v==null) return ""; if(c.t==='datetext') return fmtDate(v); if(c.t==='num') return money(v); return v; }
 function renderTakip(){
-  let h='<table style="min-width:1650px"><thead><tr>'+TCOLS.map(c=>'<th>'+c.h+'</th>').join('')+'<th></th></tr></thead><tbody>';
+  let h='<table style="min-width:1560px"><thead><tr>'+TCOLS.map(c=>'<th class="'+cls(c).trim()+'">'+c.h+'</th>').join('')+'<th></th></tr></thead><tbody>';
   TROWS.forEach((r,i)=>{
     h+='<tr data-i="'+i+'">'+TCOLS.map(c=>{
-      const v=r[c.f]==null?'':r[c.f];
-      if(c.t==='area') return '<td><textarea class="cell" data-f="'+c.f+'" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
-      return '<td'+(c.t==='num'?' class="net"':'')+'><input class="cell" data-f="'+c.f+'" type="'+(c.t==='date'?'date':'text')+'" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
-    }).join('')+'<td class="colp"><button class="del" title="Sil">✕</button></td></tr>';
+      const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
+      if(c.t==='area') return '<td class="'+cls(c).trim()+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
+      return '<td class="'+(cls(c)+(c.t==='num'?' net':'')).trim()+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
+    }).join('')+'<td class="colp"><button class="del" title="Satırı sil">✕</button></td></tr>';
   });
   h+='</tbody></table>';
   const list=document.getElementById("tkList"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{ const i=+el.closest("tr").dataset.i, f=el.dataset.f;
-    el.addEventListener("change",()=>saveTk(i,f,el.value)); });
+    el.addEventListener("change",()=>saveTk(i,f,el.value,el)); });
   list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delTk(+b.closest("tr").dataset.i));
   tkSum();
 }
-async function saveTk(i,f,val){
-  const r=TROWS[i]; let v=val;
+async function saveTk(i,f,val,el){
+  const r=TROWS[i]; let v=val; const m=document.getElementById("tkMsg");
   if(f==='net_ht_eur') v=parseNet(val);
   else if(f==='adet'){ v=parseInt(String(val).replace(/[^\d]/g,''),10); if(isNaN(v)) v=null; }
-  else if((f==='teklif_tarihi'||f==='sorgu_tarihi')){ v=val||null; }
-  else { v = (val===''?null:val); }
+  else if(f==='teklif_tarihi'||f==='sorgu_tarihi'){ v=toISO(val); if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YYYY biçiminde olmalı."; return; } }
+  else { v=(val===''?null:val); }
   const {error}=await sb.from("satis_takip").update({[f]:v, updated_at:new Date().toISOString()}).eq("id",r.id);
-  const m=document.getElementById("tkMsg");
   if(error){ m.className="msg err"; m.textContent=error.message; return; }
-  r[f]=v; m.className="msg ok"; m.textContent="Kaydedildi"; setTimeout(()=>{m.textContent="";},1200); if(f==='net_ht_eur') tkSum();
+  r[f]=v;
+  if(el){ const c=TCOLS.find(x=>x.f===f); if(c){ if(c.t==='num') el.value=(v==null?"":money(v)); else if(c.t==='datetext') el.value=fmtDate(v); } if(c&&c.req) el.classList.toggle("bad",!String(el.value||"").trim()); }
+  m.className="msg ok"; m.textContent="Kaydedildi"; setTimeout(()=>{m.textContent="";},1200); if(f==='net_ht_eur') tkSum();
 }
 async function addTk(){
   const {data,error}=await sb.from("satis_takip").insert([{proje:"Yeni teklif",aktif:true}]).select();
