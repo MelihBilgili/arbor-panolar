@@ -168,7 +168,6 @@ const TCOLS=[
  {f:'adet',h:'Adet',w:48,t:'int',req:1},
  {f:'ihale',h:'İhale',w:90,t:'text'},
  {f:'durum',h:'Durum',w:100,t:'text'},
- {f:'sorgu_tarihi',h:'Sorgu T.',w:90,t:'datetext'},
  {f:'son_takip_teklif',h:'Son Takip T.',w:78,t:'datetext',grp:'pairA',gs:1},
  {f:'takip_sekli',h:'Teklif B. Notları',w:210,t:'area',grp:'pairA'},
  {f:'son_takip_yurtdisi',h:'Son Takip T.',w:78,t:'datetext',grp:'pairB',gs:1},
@@ -204,7 +203,7 @@ async function saveTk(i,f,val,el){
   const r=TROWS[i]; let v=val; const m=document.getElementById("tkMsg");
   if(f==='net_ht_eur') v=parseNet(val);
   else if(f==='adet'){ v=parseInt(String(val).replace(/[^\d]/g,''),10); if(isNaN(v)) v=null; }
-  else if(f==='teklif_tarihi'||f==='sorgu_tarihi'){ v=toISO(val); if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YYYY biçiminde olmalı."; return; } }
+  else if(f==='teklif_tarihi'){ v=toISO(val); if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YYYY biçiminde olmalı."; return; } }
   else { v=(val===''?null:val); }
   const {error}=await sb.from("satis_takip").update({[f]:v, updated_at:new Date().toISOString()}).eq("id",r.id);
   if(error){ m.className="msg err"; m.textContent=error.message; return; }
