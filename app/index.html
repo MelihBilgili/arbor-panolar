@@ -42,6 +42,9 @@
   .saveflash{outline:2px solid #2e7d54;transition:outline .1s}
   .hint{font-size:11px;color:#8a97a4;margin:4px 2px}
   .stamp{font-size:11.5px;color:#0a6b3f;font-weight:700;margin:2px 2px 8px}
+  .malibar{display:flex;gap:5px;flex-wrap:wrap;margin:2px 2px 8px}
+  .malitab{background:#eef4fb;color:#16324f;border:1px solid #d3e0ee;border-radius:16px;padding:4px 12px;font-size:11.5px;font-weight:600;cursor:pointer}
+  .malitab.active{background:#16324f;color:#fff;border-color:#16324f}
   .num{text-align:right;white-space:nowrap}
   .snpink{background:#ffd9ec} .itot td{background:#eef4fb;font-weight:700}
   table.aup th,table.aup td{width:1%;white-space:nowrap}
@@ -143,9 +146,10 @@ async function loadPerms(){
 }
 
 /* ---------- APP SHELL ---------- */
-const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["bilanco","Bilanço"],["icmal","İcmal"],["ref","Referans"],["prosedur","⚖️ Prosedürler"],["formlar","Formlar"],["blueprint","Blueprint"],["ozel","🔒 Özel"]];
+const MALI_BOLUM=["depenses","ob_rapor","kredi","gmenkul","ahsap","sel_arb"];
+const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["bilanco","Bilanço"],["icmal","İcmal"],["ref","Referans"],["prosedur","⚖️ Prosedürler"],["mali","🔒 Mali"],["formlar","Formlar"],["blueprint","Blueprint"],["ozel","🔒 Özel"]];
 function renderApp(){
-  const vis = TABS.filter(t=> state.allowed===null || state.allowed.includes(t[0]));
+  const vis = TABS.filter(t=> state.allowed===null || (t[0]==='mali' ? MALI_BOLUM.some(b=>state.allowed.includes(b)) : state.allowed.includes(t[0])) );
   if(!vis.length){ app.innerHTML=`<div class="login"><h2>Arbor Panolar</h2><p>Bu hesap için tanımlı bir bölüm yok. Yöneticiyle görüşün.</p><button class="btn" id="lo">Çıkış</button></div>`; document.getElementById("lo").onclick=doLogout; return; }
   if(!vis.some(t=>t[0]===state.tab)) state.tab=vis[0][0];
   app.innerHTML = `
@@ -167,6 +171,7 @@ function loadView(){
   else if(state.tab==='icmal') loadIcmal();
   else if(state.tab==='ref') loadRef();
   else if(state.tab==='prosedur') loadProsedur();
+  else if(state.tab==='mali') loadMali();
   else if(state.tab==='formlar') loadFormlar();
   else if(state.tab==='blueprint') loadBlueprint();
   else if(state.tab==='ozel') loadOzel();
@@ -644,6 +649,37 @@ function loadBlueprint(){
   const view=document.getElementById("view");
   view.innerHTML=`<div class="stamp">Yeni Mimari Blueprint</div><div class="hint">Supabase (veri) + GitHub (kod) + tek web app · <a href="blueprint/" target="_blank">tam sayfa aç</a></div><iframe src="blueprint/" style="width:100%;height:80vh;border:1px solid #dde3ea;border-radius:8px;background:#fff"></iframe>`;
 }
+/* ---------- MALİ — 6 hassas pano (pano_ozel, bölüm-RLS). Admin hepsini görür; iç bölüm sekmeleri. ---------- */
+async function loadMali(){
+  const view=document.getElementById("view");
+  const allowed = state.allowed===null ? MALI_BOLUM.slice() : MALI_BOLUM.filter(b=>state.allowed.includes(b));
+  if(!allowed.length){ view.innerHTML=`<div class="load">Bu hesapta mali bölüm yetkisi yok.</div>`; return; }
+  if(!state.maliBolum || !allowed.includes(state.maliBolum)) state.maliBolum=allowed[0];
+  const b=state.maliBolum;
+  const [m,t,r]=await Promise.all([
+    sb.from("pano_ozel_meta").select("*").in("bolum",allowed),
+    sb.from("pano_ozel_tablo").select("*").eq("bolum",b).order("sira"),
+    sb.from("pano_ozel").select("*").eq("bolum",b).order("tablo").order("sira")
+  ]);
+  const err=m.error||t.error||r.error;
+  if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
+  const metaMap={}; (m.data||[]).forEach(x=>metaMap[x.bolum]=x);
+  const bar=allowed.map(x=>`<button class="malitab${x===b?' active':''}" data-b="${esc(x)}">${esc((metaMap[x]&&metaMap[x].etiket)||x)}</button>`).join("");
+  const meta=metaMap[b]||{};
+  const rowsByT={}; (r.data||[]).forEach(x=>{ (rowsByT[x.tablo]=rowsByT[x.tablo]||[]).push(x); });
+  let html="";
+  (t.data||[]).forEach(tb=>{
+    const hs=(tb.basliklar||[]).map(h=>`<th>${esc(h)}</th>`).join("");
+    const rs=(rowsByT[tb.tablo]||[]).map(row=>`<tr>${(row.hucreler||[]).map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("");
+    html+=`<h3 class="sec">${esc(tb.baslik||"")}</h3><div class="scroll"><table><thead><tr>${hs}</tr></thead><tbody>${rs}</tbody></table></div>`;
+  });
+  view.innerHTML=`<div class="malibar">${bar}</div>
+    <div class="stamp">${esc(meta.ad||"")}${meta.son_guncelleme?(" · "+esc(meta.son_guncelleme)):""}</div>
+    ${meta.kaynak?`<div class="hint">${esc(meta.kaynak)}</div>`:""}
+    ${html||'<div class="load">Kayıt yok.</div>'}`;
+  view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.maliBolum=btn.dataset.b; loadMali(); });
+}
+
 /* ---------- ÖZEL — tek düğme; parolalı paket (Kitaplar/Felsefe/PhD/Takvim, kendi iç sekmeleri) ---------- */
 function loadOzel(){
   const view=document.getElementById("view");
