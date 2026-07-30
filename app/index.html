@@ -64,6 +64,10 @@
   .sybox{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:6px 14px;margin:4px 0 10px}
   .syrow{font-size:15px;color:#1c2430;padding:6px 0;border-bottom:1px solid #f0f3f7}
   .syrow:last-child{border-bottom:0}
+  table.tks{border-collapse:collapse;width:100%;font-size:13px;margin:2px 0 12px}
+  table.tks th{background:#16324f;color:#fff;font-weight:600;font-size:11px;padding:5px 7px;text-align:center;white-space:nowrap}
+  table.tks td{border-bottom:1px solid #eef1f5;padding:4px 7px}
+  table.tks tr.grp td{font-weight:700;background:#eef3f8;border-top:2px solid #cdd8e4}
   .dl{font-size:12px;color:#6a7888;font-weight:600}
 </style>
 </head>
@@ -297,7 +301,7 @@ async function loadSo(){
 /* ---------- SATIŞ YORUM (satis_yorum: SO yurtiçi + FY yurtdışı, tek pano) ---------- */
 async function loadSatis(){
   const view=document.getElementById("view");
-  const [sy,tk]=await Promise.all([ sb.from("satis_yorum").select("*"), sb.from("satis_takip").select("*").eq("aktif",true) ]);
+  const [sy,tk,ss]=await Promise.all([ sb.from("satis_yorum").select("*"), sb.from("satis_takip").select("*").eq("aktif",true), sb.from("satis_takip_stats").select("*") ]);
   if(sy.error){ view.innerHTML=`<div class="load">Hata: ${esc(sy.error.message)}</div>`; return; }
   const data=sy.data||[];
   const cur=data.filter(r=>r.aktif), archived=data.filter(r=>!r.aktif);
@@ -336,20 +340,46 @@ async function loadSatis(){
   const tkRows=takip.map(r=>`<tr>
      <td class="kod" style="white-space:normal">${esc(r.proje)}</td>
      <td>${esc(r.musteri)}</td>
+     <td>${esc(r.ulke)}</td>
      <td>${esc(r.hazirlayan)}</td>
      <td class="num">${fdate(r.teklif_tarihi)}</td>
      <td>${esc(r.agac)}</td>
      <td class="num">${money(r.net_ht_eur)}</td>
      <td>${esc(r.takip_sekli)}</td>
      <td>${esc(r.ihale)}</td>
-     <td>${esc(r.durum)}</td>
-     <td class="note">${esc(r.notlar)}</td>
-     <td class="note">${esc(r.yorum)}</td></tr>`).join("");
+     <td>${esc(r.durum)}</td></tr>`).join("");
   const takipHTML = takip.length? `
     <h3 class="sec">Yurtdışı takipteki teklifler <span class="muted">(${takip.length} teklif · Net HT ${money(tkNet)} €)</span></h3>
     <div class="scroll"><table class="aup">
-    <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>HAZIRLAYAN</th><th>TEKLİF</th><th>AĞAÇ</th><th class="num">NET HT (€)</th><th>TAKİP</th><th>İHALE</th><th>DURUM</th><th class="note">NOTLAR</th><th class="note">YORUM</th></tr></thead>
+    <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>ÜLKE</th><th>HAZIRLAYAN</th><th>TEKLİF</th><th>AĞAÇ</th><th class="num">NET HT (€)</th><th>TAKİP</th><th>İHALE</th><th>DURUM</th></tr></thead>
     <tbody>${tkRows}</tbody></table></div>`:'';
+  /* ---- Takipteki teklifler: yıllık sonuç istatistiği (satis_takip_stats) ---- */
+  const stats=(ss&&!ss.error)?(ss.data||[]):[];
+  let statsHTML='';
+  if(stats.length){
+    const DD=['Kazandık','Kaybettik','Belirsiz','Müşteri işi alamadı'];
+    const S={}, years=new Set();
+    stats.forEach(r=>{ const y=r.yil, u=r.ulke||'—', d=r.durum; years.add(y);
+      (S[y]=S[y]||{}); (S[y][u]=S[y][u]||{});
+      S[y][u][d]={adet:Number(r.adet)||0,tutar:Number(r.tutar)||0,ort:r.ort_isk==null?null:Number(r.ort_isk)}; });
+    const rd=v=>v==null?'—':Math.round(v)+'%';
+    const full=o=>o?`<td class="num">${o.adet}</td><td class="num">${money(o.tutar)}</td><td class="num">${rd(o.ort)}</td>`:'<td class="num">0</td><td class="num">—</td><td class="num">—</td>';
+    const cnt=o=>`<td class="num">${o?o.adet:0}</td>`;
+    const rowFor=(lbl,g,cl)=>`<tr${cl?' class="grp"':''}><td class="kod">${esc(lbl)}</td>${full(g['Kazandık'])}${full(g['Kaybettik'])}${cnt(g['Belirsiz'])}${cnt(g['Müşteri işi alamadı'])}</tr>`;
+    const yrs=[...years].sort((a,b)=>b-a);
+    statsHTML='<h3 class="sec">Takipteki teklifler — yıllık sonuç istatistiği</h3>'
+      +'<div class="hint">Ülke bazında + Toplam. Kazandık/Kaybettik: adet · tutar · ort. iskonto. Belirsiz/Müşteri işi alamadı: adet. Yıl = kararın verildiği yıl (Belirsiz için teklif yılı).</div>';
+    yrs.forEach(y=>{
+      const uls=Object.keys(S[y]).sort();
+      const gT={}; DD.forEach(d=>{ let ad=0,tu=0,ws=0,wa=0; uls.forEach(u=>{ const o=S[y][u][d]; if(o){ ad+=o.adet; tu+=o.tutar; if(o.ort!=null){ ws+=o.ort*o.adet; wa+=o.adet; } } }); gT[d]={adet:ad,tutar:tu,ort:wa?ws/wa:null}; });
+      let body=uls.map(u=>rowFor(u,S[y][u],false)).join('');
+      body+=rowFor('Toplam',gT,true);
+      statsHTML+=`<div class="scroll"><table class="tks"><thead>
+        <tr><th rowspan="2">${y} · ÜLKE</th><th colspan="3">Kazandık</th><th colspan="3">Kaybettik</th><th rowspan="2" class="num">Belirsiz<br>(adet)</th><th rowspan="2" class="num">Müşteri işi<br>alamadı (adet)</th></tr>
+        <tr><th class="num">Adet</th><th class="num">Tutar €</th><th class="num">Ort.İsk</th><th class="num">Adet</th><th class="num">Tutar €</th><th class="num">Ort.İsk</th></tr>
+        </thead><tbody>${body}</tbody></table></div>`;
+    });
+  }
   view.innerHTML=`
     <div class="stamp">Satış — Son güncelleme: ${dOnly(stampDate)}</div>
     <div class="hint">Yurtiçi (SO) + Yurtdışı (FY) birleşik · Kaynak — ${srcLine}</div>
@@ -362,6 +392,7 @@ async function loadSatis(){
     ${tbl(cM)}
     <h3 class="sec">Alınan <span class="muted">(${cA.length} proje · Net ${money(sum(cA))} €)</span><span class="muted">${esList(cAc,pA)}</span></h3>
     ${tbl(cA)}
+    ${statsHTML}
     ${takipHTML}
   `;
 }
