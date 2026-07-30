@@ -681,8 +681,26 @@ async function loadPanoBolum(bolum, tgt){
   });
   body.innerHTML=`<div class="stamp">${esc(meta.ad||"")}${meta.son_guncelleme?(" · "+esc(meta.son_guncelleme)):""}</div>${meta.kaynak?`<div class="hint">${esc(meta.kaynak)}</div>`:""}${html||'<div class="load">Kayıt yok.</div>'}`;
 }
-/* ---------- ÖB Rapor — bağımsız üst-nav sekmesi (pano_ozel bölüm-RLS, admin-only) ---------- */
-function loadObrapor(){ loadPanoBolum("ob_rapor","view"); }
+/* ---------- ÖB Rapor — bağımsız üst-nav sekmesi (ob_rapor tablosu; ÖB formu yazar, owner salt-okur) ---------- */
+const OBR_CATS=[["t1","İlerleyen / Tamamlanan"],["t2","Dikkat / Risk"],["t3","Değişmeyen"],["t4","Yeni Eklenen / İlk Kez Görülen"]];
+function obrBadge(d){ d=(d||"").trim(); if(!d) return ""; const cls=/TAMAM|İLERLE/i.test(d)?"chg":(/DİKKAT|AÇIK/i.test(d)?"none":(/YENİ/i.test(d)?"snew":"same")); return '<span class="sbdg '+cls+'">'+esc(d)+'</span>'; }
+async function loadObrapor(){
+  const view=document.getElementById("view");
+  const {data,error}=await sb.from("ob_rapor").select("*").order("kategori").order("sira");
+  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const rows=data||[];
+  let html=`<div class="stamp">ÖB Rapor · Mukayese (Eski ◂ Yeni) · ${rows.length} satır</div>
+    <div class="hint">ÖB haftalık <a href="ob-rapor/" target="_blank">ÖB Rapor formundan</a> günceller (Yeni + Değişim); güncel/önceki mukayeseli. &nbsp; <button class="btn" id="obr-kaydir">Haftayı kaydır (Yeni→Eski)</button></div>`;
+  OBR_CATS.forEach(c=>{
+    const rs=rows.filter(r=>r.kategori===c[0]);
+    if(!rs.length) return;
+    const tr=rs.map(r=>`<tr><td class="sb">${esc(r.konu)}</td><td>${r.eski?'<div class="prev">◂ '+esc(r.eski)+'</div>':''}</td><td>${esc(r.yeni)}</td><td>${obrBadge(r.degisim)}</td></tr>`).join("");
+    html+=`<h3 class="sec">${esc(c[1])} <span class="muted">(${rs.length})</span></h3><div class="scroll"><table><thead><tr><th>Konu</th><th>Eski</th><th>Yeni</th><th>Değişim</th></tr></thead><tbody>${tr}</tbody></table></div>`;
+  });
+  view.innerHTML=html;
+  const kb=document.getElementById("obr-kaydir");
+  if(kb) kb.onclick=async()=>{ if(!confirm("Tüm satırlarda YENİ durum ESKİ'ye kaydırılıp yeni boşaltılacak (haftalık döngü). Devam?")) return; const {data,error}=await sb.rpc("ob_rapor_kaydir"); if(error){ alert("Hata: "+error.message); return; } alert(data||"Kaydırıldı"); loadObrapor(); };
+}
 
 /* ---------- MALİ — grup: Bilanço, İcmal + hassas panolar (depenses/kredi/ahsap/sel_arb). Bölüm-RLS. ---------- */
 async function loadMali(){
