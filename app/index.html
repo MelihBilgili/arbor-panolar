@@ -45,6 +45,15 @@
   .malibar{display:flex;gap:5px;flex-wrap:wrap;margin:2px 2px 8px}
   .malitab{background:#eef4fb;color:#16324f;border:1px solid #d3e0ee;border-radius:16px;padding:4px 12px;font-size:11.5px;font-weight:600;cursor:pointer}
   .malitab.active{background:#16324f;color:#fff;border-color:#16324f}
+  .skpi{display:flex;gap:8px;flex-wrap:wrap;margin:6px 2px 10px}
+  .skpi div{background:#f4f6f8;border:1px solid #e2e6ea;border-radius:8px;padding:6px 11px;font-size:12px}
+  .skpi b{display:block;font-size:15px;color:#16324f}
+  table.stbl th.obh{background:#fdf4d6;color:#8a6100}table.stbl th.mkh{background:#e2efda;color:#2e6b2e}
+  table.stbl td.sb{font-weight:700}table.stbl td.snum{white-space:nowrap;color:#9c0006;font-weight:600}
+  tr.sold td:first-child{border-left:3px solid #d93025}
+  td.scmp .cur{white-space:pre-wrap}td.scmp .prev{color:#8a8a8a;font-size:11px;font-style:italic;margin-top:2px}td.scmp.empty{color:#bbb;text-align:center}
+  .sbdg{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-bottom:2px}
+  .sbdg.snew{background:#e7f0ff;color:#0b57d0}.sbdg.chg{background:#fff0e0;color:#b25a00}.sbdg.same{background:#eef1f4;color:#667}.sbdg.none{background:#fde8e8;color:#9c0006}
   .num{text-align:right;white-space:nowrap}
   .snpink{background:#ffd9ec} .itot td{background:#eef4fb;font-weight:700}
   table.aup th,table.aup td{width:1%;white-space:nowrap}
@@ -147,7 +156,7 @@ async function loadPerms(){
 
 /* ---------- APP SHELL ---------- */
 const MALI_BOLUM=["depenses","ob_rapor","kredi","gmenkul","ahsap","sel_arb"];
-const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["bilanco","Bilanço"],["icmal","İcmal"],["ref","Referans"],["prosedur","⚖️ Prosedürler"],["mali","🔒 Mali"],["formlar","Formlar"],["blueprint","Blueprint"],["ozel","🔒 Özel"]];
+const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["bilanco","Bilanço"],["icmal","İcmal"],["ref","Referans"],["prosedur","⚖️ Prosedürler"],["mali","🔒 Mali"],["santiye","🚧 Şantiye"],["formlar","Formlar"],["blueprint","Blueprint"],["ozel","🔒 Özel"]];
 function renderApp(){
   const vis = TABS.filter(t=> state.allowed===null || (t[0]==='mali' ? MALI_BOLUM.some(b=>state.allowed.includes(b)) : state.allowed.includes(t[0])) );
   if(!vis.length){ app.innerHTML=`<div class="login"><h2>Arbor Panolar</h2><p>Bu hesap için tanımlı bir bölüm yok. Yöneticiyle görüşün.</p><button class="btn" id="lo">Çıkış</button></div>`; document.getElementById("lo").onclick=doLogout; return; }
@@ -172,6 +181,7 @@ function loadView(){
   else if(state.tab==='ref') loadRef();
   else if(state.tab==='prosedur') loadProsedur();
   else if(state.tab==='mali') loadMali();
+  else if(state.tab==='santiye') loadSantiye();
   else if(state.tab==='formlar') loadFormlar();
   else if(state.tab==='blueprint') loadBlueprint();
   else if(state.tab==='ozel') loadOzel();
@@ -640,7 +650,8 @@ function loadFormlar(){
     {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."},
     {ad:"Yurtdışı Satış Formu", who:"Fatma · Satış (Fransa/ihracat)", url:"fy/", desc:"Yurtdışı muhtemel/alınan projeleri (proje, müşteri, statü, ülke, net €, durum) + takipteki teklifler girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır. Paylaşılan xlsx yerine geçer."},
     {ad:"Yurtiçi Satış Formu", who:"Sinan · Satış (Yurtiçi)", url:"so/", desc:"Yurtiçi muhtemel/alınan projeleri (proje, müşteri, statü, net €) girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır."},
-    {ad:"Cam Kombinasyonu Fiyatlandırma", who:"Fiyat aracı · paylaşılabilir", url:"cam/", desc:"Cam parametrelerini (dış/iç cam, kaplama, akustik, temper, form, ara boşluk, Fire Proof…) seç → €/m² fiyat. Geçmiş teklif eşleşmesi + çarpımsal model. Bağlantı çalışanlarla paylaşılabilir."}
+    {ad:"Cam Kombinasyonu Fiyatlandırma", who:"Fiyat aracı · paylaşılabilir", url:"cam/", desc:"Cam parametrelerini (dış/iç cam, kaplama, akustik, temper, form, ara boşluk, Fire Proof…) seç → €/m² fiyat. Geçmiş teklif eşleşmesi + çarpımsal model. Bağlantı çalışanlarla paylaşılabilir."},
+    {ad:"Teklif & Fiyatlandırma Kuralları", who:"Teklif personeli referansı", url:"teklif/", desc:"Net/brüt teklif + montaj hesaplayıcıları, genel şartlar (ihracat oranı, min. adet), oranlar, termin, garanti, müşteri sınıf listeleri. Fiyatlandırma Kuralları 260505.xlsx'ten."}
   ];
   const cards=forms.map(f=>{ const full=new URL(f.url, location.href).href; return `<div class="flow"><b>${esc(f.ad)}</b> <span class="tag">${esc(f.who)}</span><p>${esc(f.desc)}</p><p><a class="btn" style="text-decoration:none;display:inline-block" href="${esc(f.url)}" target="_blank">Formu aç</a> &nbsp;<span class="muted">${esc(full)}</span></p></div>`; }).join("");
   view.innerHTML=`<div class="stamp">Formlar & Araçlar</div><div class="hint">Çalışanlar bu ayrı formlardan girer; senin panolarına doğrudan yazmaz, sonuç ilgili panoya salt-okur yansır. Linkleri ilgili kişiyle paylaş.</div>${cards}`;
@@ -678,6 +689,39 @@ async function loadMali(){
     ${meta.kaynak?`<div class="hint">${esc(meta.kaynak)}</div>`:""}
     ${html||'<div class="load">Kayıt yok.</div>'}`;
   view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.maliBolum=btn.dataset.b; loadMali(); });
+}
+
+/* ---------- ŞANTİYE — owner salt-okur görünüm (eski Kural 83 mukayese). ÖB/MK formları yazar. ---------- */
+function sCmp(g,o){
+  g=(g||"").trim(); o=(o||"").trim();
+  if(!g && !o) return '<td class="scmp empty">—</td>';
+  let bdg,cur;
+  if(!g){ bdg='<span class="sbdg none">GÜNCEL YOK</span>'; cur=''; }
+  else if(!o){ bdg='<span class="sbdg snew">YENİ</span>'; cur=esc(g); }
+  else if(g===o){ bdg='<span class="sbdg same">AYNI</span>'; cur=esc(g); }
+  else { bdg='<span class="sbdg chg">DEĞİŞTİ</span>'; cur=esc(g); }
+  return '<td class="scmp">'+bdg+(cur?'<div class="cur">'+cur+'</div>':'')+(o?'<div class="prev">◂ '+esc(o)+'</div>':'')+'</td>';
+}
+async function loadSantiye(){
+  const view=document.getElementById("view");
+  const [s,m]=await Promise.all([ sb.from("santiye").select("*").order("sira"), sb.from("santiye_mk").select("*") ]);
+  const err=s.error||m.error;
+  if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
+  const mk={}; (m.data||[]).forEach(x=>mk[x.santiye_id]=x);
+  const rows=(s.data||[]).filter(r=>r.durum!=="Çözüldü");
+  const ay=d=>{ if(!d) return 0; const x=new Date(d); if(isNaN(x)) return 0; const n=new Date(); return (n.getFullYear()-x.getFullYear())*12+(n.getMonth()-x.getMonth()); };
+  const toplam=rows.reduce((a,r)=>a+(Number(r.tutar)||0),0);
+  const eski=rows.filter(r=>ay(r.ilk_kayit)>=3).length;
+  const eksik=rows.filter(r=>!(r.ob_guncel||"").trim() || !(((mk[r.id]||{}).mk_guncel)||"").trim()).length;
+  let tr="";
+  rows.forEach((r,i)=>{ const a=ay(r.ilk_kayit); const mkr=mk[r.id]||{};
+    tr+=`<tr class="${a>=3?'sold':''}"><td>${i+1}</td><td class="sb">${esc(r.santiye)}</td><td>${esc(r.musteri)}</td><td class="snum">${r.tutar!=null?money(r.tutar)+' €':''}</td><td>${esc(r.neden)}</td>${sCmp(r.ob_guncel,r.ob_onceki)}${sCmp(mkr.mk_guncel,mkr.mk_onceki)}<td>${esc(r.sorumlu)}</td><td>${esc(r.hedef)}</td><td>${a?a+' ay':'yeni'}</td></tr>`; });
+  view.innerHTML=`<div class="stamp">Tıkanan Şantiyeler · ${rows.length} açık</div>
+    <div class="hint">ÖB (sarı) + MK (yeşil) formları haftalık doldurur; güncel/önceki mukayeseli — eski Kural 83. Formlar: <a href="santiye-ob/" target="_blank">ÖB formu</a> · <a href="santiye-mk/" target="_blank">MK formu</a> &nbsp; <button class="btn" id="s-kaydir">Haftayı kaydır (güncel→önceki)</button></div>
+    <div class="skpi"><div><b>${rows.length}</b> açık şantiye</div><div><b>${money(toplam)} €</b> bekleyen alacak</div><div><b>${eski}</b> 3+ aydır açık</div><div><b>${eksik}</b> eksik hücreli</div></div>
+    <div class="scroll"><table class="stbl"><thead><tr><th>#</th><th>Şantiye</th><th>Müşteri</th><th>Tutar</th><th>Tıkanma nedeni</th><th class="obh">ÖB (güncel ◂ önceki)</th><th class="mkh">MK (güncel ◂ önceki)</th><th>Sorumlu</th><th>Hedef</th><th>Yaş</th></tr></thead><tbody>${tr||'<tr><td colspan="10">Kayıt yok</td></tr>'}</tbody></table></div>`;
+  const kb=document.getElementById("s-kaydir");
+  if(kb) kb.onclick=async()=>{ if(!confirm("Tüm aktif şantiyelerde GÜNCEL durum ÖNCEKİ'ye kaydırılıp güncel boşaltılacak (haftalık döngü — eski Pazartesi mantığı). Devam?")) return; const {data,error}=await sb.rpc("santiye_kaydir"); if(error){ alert("Hata: "+error.message); return; } alert(data||"Kaydırıldı"); loadSantiye(); };
 }
 
 /* ---------- ÖZEL — tek düğme; parolalı paket (Kitaplar/Felsefe/PhD/Takvim, kendi iç sekmeleri) ---------- */
