@@ -71,7 +71,7 @@
 
   <div class="sechead">
     <h2 class="sec">Takipteki Teklifler <span class="sum">(yurtdışı — anlık kaydedilir)</span></h2>
-    <div class="desc">Türkiye dışındaki müşterilere her yeni teklif iletildiğinde, teklif bilgileri aynı gün bu tabloya eklenir. Bu tabloda her hücre anında kaydedilir.</div>
+    <div class="desc">Türkiye dışındaki müşterilere her yeni teklif iletildiğinde, teklif bilgileri aynı gün bu tabloya eklenir. Bu tabloda her hücre anında kaydedilir. <b>Durum</b> zorunludur: <b>Kazandık / Kaybettik / Müşteri işi alamadı</b> seçilirse teklif bu listeden çıkıp yıllık sonuç kayıtlarına taşınır (Satış panosundaki istatistiğe girer); <b>Belirsiz</b> takipte kalır.</div>
   </div>
   <div class="bar">
     <button class="btn sec" id="tkAdd">+ Teklif satırı</button>
@@ -160,6 +160,7 @@ async function publish(){
 const TCOLS=[
  {f:'proje',h:'Proje',w:126,t:'text',req:1},
  {f:'musteri',h:'Müşteri',w:75,t:'text',req:1},
+ {f:'ulke',h:'Ülke',w:64,t:'text',req:1},
  {f:'teklif_tarihi',h:'Teklif Tarihi',w:78,t:'datetext',req:1},
  {f:'agac',h:'Ağaç',w:54,t:'text',req:1},
  {f:'seri',h:'Seri',w:80,t:'text',req:1},
@@ -167,7 +168,7 @@ const TCOLS=[
  {f:'net_ht_eur',h:'Net HT €',w:82,t:'num',req:1},
  {f:'adet',h:'Adet',w:48,t:'int',req:1},
  {f:'ihale',h:'İhale',w:90,t:'text'},
- {f:'durum',h:'Durum',w:100,t:'text'},
+ {f:'durum',h:'Durum',w:150,t:'sel',req:1,opts:['Belirsiz','Kazandık','Kaybettik','Müşteri işi alamadı']},
  {f:'son_takip_teklif',h:'Son Takip T.',w:78,t:'datetext',grp:'pairA',gs:1},
  {f:'takip_sekli',h:'Teklif B. Notları',w:210,t:'area',grp:'pairA'},
  {f:'son_takip_yurtdisi',h:'Son Takip T.',w:78,t:'datetext',grp:'pairB',gs:1},
@@ -189,6 +190,7 @@ function renderTakip(){
     h+='<tr data-i="'+i+'">'+TCOLS.map(c=>{
       const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
       if(c.t==='area') return '<td class="'+cls(c).trim()+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
+      if(c.t==='sel'){ const opts=c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); return '<td class="'+cls(c).trim()+'"><select class="cell'+req+empty+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
       return '<td class="'+(cls(c)+(c.t==='num'?' net':'')).trim()+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')+'<td class="colp"><button class="del" title="Satırı sil">✕</button></td></tr>';
   });
@@ -199,8 +201,26 @@ function renderTakip(){
   list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delTk(+b.closest("tr").dataset.i));
   tkSum();
 }
+const parseIsk=s=>{ if(s==null) return null; const m=String(s).match(/\d+(?:[.,]\d+)?/); return m? parseFloat(m[0].replace(",",".")): null; };
+async function transferRow(i,durum){
+  const r=TROWS[i], m=document.getElementById("tkMsg");
+  if(!confirm("'"+durum+"' seçtiniz.\nBu teklif Takipteki Teklifler listesinden çıkıp yıllık sonuç kayıtlarına taşınacak (geri almak için sonuç kaydını silmeniz gerekir).\n\nOnaylıyor musunuz?")){ renderTakip(); return; }
+  const rec={ kaynak_takip_id:r.id, yil:new Date().getFullYear(), durum:durum, ulke:(r.ulke||"Fransa"),
+    proje:r.proje||null, musteri:r.musteri||null, agac:r.agac||null,
+    brut_eur:(r.brut_eur==null||r.brut_eur===""?null:Number(r.brut_eur)),
+    net_ht_eur:(r.net_ht_eur==null||r.net_ht_eur===""?null:Number(r.net_ht_eur)),
+    iskonto:parseIsk(r.isk), adet:(r.adet==null||r.adet===""?null:parseInt(r.adet,10)),
+    teklif_tarihi:r.teklif_tarihi||null, sonuc_tarihi:new Date().toISOString() };
+  const {error:e1}=await sb.from("satis_takip_sonuc").insert([rec]);
+  if(e1){ m.className="msg err"; m.textContent="Sonuç kaydı hatası: "+e1.message; renderTakip(); return; }
+  const {error:e2}=await sb.from("satis_takip").delete().eq("id",r.id);
+  if(e2){ m.className="msg err"; m.textContent="Sonuç yazıldı ama takipten silinemedi: "+e2.message; return; }
+  TROWS.splice(i,1); renderTakip();
+  m.className="msg ok"; m.textContent="'"+durum+"' → yıllık sonuç kayıtlarına taşındı ✓ ("+new Date().getFullYear()+")";
+}
 async function saveTk(i,f,val,el){
   const r=TROWS[i]; let v=val; const m=document.getElementById("tkMsg");
+  if(f==='durum' && ['Kazandık','Kaybettik','Müşteri işi alamadı'].includes(val)){ return transferRow(i,val); }
   if(f==='net_ht_eur') v=parseNet(val);
   else if(f==='adet'){ v=parseInt(String(val).replace(/[^\d]/g,''),10); if(isNaN(v)) v=null; }
   else if(f==='teklif_tarihi'){ v=toISO(val); if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YYYY biçiminde olmalı."; return; } }
@@ -212,7 +232,7 @@ async function saveTk(i,f,val,el){
   m.className="msg ok"; m.textContent="Kaydedildi"; setTimeout(()=>{m.textContent="";},1200); if(f==='net_ht_eur') tkSum();
 }
 async function addTk(){
-  const {data,error}=await sb.from("satis_takip").insert([{proje:"Yeni teklif",aktif:true}]).select();
+  const {data,error}=await sb.from("satis_takip").insert([{proje:"Yeni teklif",ulke:"Fransa",durum:"Belirsiz",aktif:true}]).select();
   if(error){ alert(error.message); return; }
   TROWS.unshift(data[0]); renderTakip();
   const inp=document.querySelector('#tkList input[data-f="proje"]'); if(inp){ inp.focus(); inp.select(); }
