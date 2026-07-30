@@ -69,6 +69,17 @@
   table.tks td{border-bottom:1px solid #eef1f5;padding:4px 7px}
   table.tks tr.grp td{font-weight:700;background:#eef3f8;border-top:2px solid #cdd8e4}
   .dl{font-size:12px;color:#6a7888;font-weight:600}
+  .pin{background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:8px 12px;font-size:11.5px;color:#16324f;margin:0 2px 12px;line-height:1.6}
+  .secH{margin:16px 2px 6px;color:#16324f;font-size:13px;font-weight:700;border-left:3px solid #16324f;padding-left:8px}
+  .law{background:#fff;border:1px solid #dde3ea;border-radius:8px;margin-bottom:7px;padding:9px 12px;display:flex;gap:11px;align-items:flex-start}
+  .law:hover{background:#fafcff}
+  .lno{font-weight:700;color:#fff;background:#16324f;border-radius:6px;min-width:34px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none;padding:0 4px}
+  .lno.ek{background:#b8863a}
+  .lbody{flex:1;min-width:0}
+  .ltitle{font-weight:700;color:#1c2430}
+  .ldate{font-size:10.5px;color:#93a1b0;font-weight:600;margin-left:6px}
+  .ltext{color:#3a4756;line-height:1.55;margin-top:3px}
+  .ltext .sub{display:block;margin-top:3px;color:#4a5867}
 </style>
 </head>
 <body>
@@ -132,7 +143,7 @@ async function loadPerms(){
 }
 
 /* ---------- APP SHELL ---------- */
-const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["bilanco","Bilanço"],["icmal","İcmal"],["ref","Referans"],["formlar","Formlar"],["blueprint","Blueprint"],["ozel","🔒 Özel"]];
+const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["bilanco","Bilanço"],["icmal","İcmal"],["ref","Referans"],["prosedur","⚖️ Prosedürler"],["formlar","Formlar"],["blueprint","Blueprint"],["ozel","🔒 Özel"]];
 function renderApp(){
   const vis = TABS.filter(t=> state.allowed===null || state.allowed.includes(t[0]));
   if(!vis.length){ app.innerHTML=`<div class="login"><h2>Arbor Panolar</h2><p>Bu hesap için tanımlı bir bölüm yok. Yöneticiyle görüşün.</p><button class="btn" id="lo">Çıkış</button></div>`; document.getElementById("lo").onclick=doLogout; return; }
@@ -155,6 +166,7 @@ function loadView(){
   else if(state.tab==='bilanco') loadBilanco();
   else if(state.tab==='icmal') loadIcmal();
   else if(state.tab==='ref') loadRef();
+  else if(state.tab==='prosedur') loadProsedur();
   else if(state.tab==='formlar') loadFormlar();
   else if(state.tab==='blueprint') loadBlueprint();
   else if(state.tab==='ozel') loadOzel();
@@ -531,7 +543,7 @@ async function loadRef(){
     <h3 class="sec">Parametreler</h3>
     <div class="scroll"><table><thead><tr><th>Anahtar</th><th>Değer</th><th>Açıklama</th></tr></thead><tbody>${pr}</tbody></table></div>
     <h3 class="sec">İşleyiş — Süreçler</h3>
-    <div class="hint">Süreçler Melih'in tarif ettiği işleyişi yansıtır; her biri tetik → sorumlu → çıktı zinciriyle yazılmıştır.</div>
+    <div class="hint">Süreçler Melih'in tarif ettiği işleyişi yansıtır; her biri <b>tetik → sorumlu → adımlar → çıktı</b> zinciriyle, sıklık etiketiyle yazılmıştır. Firma içi <b>kurallar</b> (yasalar) ayrı ⚖️ Prosedürler sekmesindedir.</div>
     <div class="flow"><b>1. ERP İngest Hattı</b><span class="tag">tek P süreci</span>
       <p>Melih ERP'yi manuel çeker → Excel'leri <code>Arbor\ERP\&lt;YYMMDD&gt;\</code> içine bırakır (geçici giriş kutusu; hedef Supabase Storage <code>erp/&lt;YYMMDD&gt;/</code>) → worker en güncel klasörü <b>başlık adına göre</b> okur, idempotent upsert eder → snapshot tabloları → app view'leri.</p>
       <p class="muted">Ingest edilen dört rapor: <b>Prj→proje_snapshot, Pem→pem_snapshot, Arge→arge_snapshot, SÖ→so_snapshot</b>. <b>Cam.xlsx ingest edilmez</b> (ayrı fiyat aracı, app/cam/). Panolar: Prj→AÜP + Hazır PRJ (durum 8/8.1); Pem→Hazır PEM (durum 3); Arge→Ana Gündem ARGE bloğu; SÖ→Ana Gündem SÖ türevi + EA formu.</p>
@@ -564,7 +576,56 @@ async function loadRef(){
       <p>ERP Arge.xlsx İLGİLİ sütunu (Ömer/Tarık) yok sayılır; tüm ARGE'nin İlgili'si Enes Uzun'da toplanır (K73). Ana Gündem'de ARGE ayrı blok (kişi gruplarından sonra), sıra öncelik→açılış.</p>
       <p class="muted"><code>gundem_arge</code> filtresi: öncelik 1–3 &amp; durum 1–4. (SÖ İlgili = EA, ARGE İlgili = EU — farklı kişiler.)</p>
     </div>
+    <div class="flow"><b>9. Cam Fiyatlandırma Aracı</b><span class="tag">talep üzerine · MB</span>
+      <p>Cam parametrelerinden (dış/iç cam, kaplama, akustik, temper, form, ara boşluk, Fire Proof…) çarpımsal model + geçmiş teklif eşleşmesiyle €/m² fiyat üretir. Bağlantı çalışanla paylaşılabilir: <a href="cam/" target="_blank">app/cam/</a>. Cam.xlsx ERP'ye ingest edilmez; bu araç ayrıdır.</p>
+    </div>
+    <div class="flow"><b>10. AÜP Kayma Takibi</b><span class="tag">her ERP çekimi</span>
+      <p>AÜP panosu ERP snapshot üstünde canlı görüntüdür. <b>PST-AÜP&gt;0</b> ve <b>Kayma≥3</b> kırmızı işaretlenir; global kayma tutar-ağırlıklı (<code>aup_ozet</code>) hesaplanır ve önceki çekimle karşılaştırılır.</p>
+    </div>
+    <div class="flow"><b>11. Sistem / Bakım Süreci</b><span class="tag ok">yapısal garanti</span>
+      <p><b>App cerrahi düzenlenir</b>, asla sıfırdan üretilmez: <code>arbor_app.html</code> düzenlenir → <code>_deploy_app.py</code> invariants kapısını çalıştırır (require eksik / forbid varsa deploy durur) → GitHub <code>app/index.html</code>. Bilerek davranış değişince önce <code>arbor_invariants.json</code> güncellenir.</p>
+      <p class="muted"><b>SQL/DDL</b> service key ile local'den çalışmaz → Supabase SQL Editor (tarayıcı) üzerinden Run; anon yazımlarda <code>audit_log</code> grant + policy unutulmaz.</p>
+    </div>
 `;
+}
+
+/* ---------- PROSEDÜRLER (firma içi kurallar — pinli statik kayıt, ERP Genel Duyurular'dan) ---------- */
+function loadProsedur(){
+  const view=document.getElementById("view");
+  const SECS={A:"A. Termin ve Tarihler",B:"B. Cam (fiyat, silikon)",C:"C. Teklif / Fiyatlandırma",D:"D. Sorun & Öneri / PEM",E:"E. Müşteri / İletişim / Personel"};
+  const PROS=[
+   {sec:"A",no:"1",ad:"Termin süresi: 11 hafta",tarih:"22.09.2023",metin:"Müşterilere bu şekilde söz verilebilir."},
+   {sec:"A",no:"2",ad:"Termin sınırlarına riayet",tarih:"07.12.2023",metin:"Tekliflerde ve onaylanan projelerde verilen termin sınırları aşılmamalı."},
+   {sec:"A",no:"3",ad:"Termin/yükleme bilgisi ERP'ye işlenir",tarih:"07.11.2023",metin:"Planlamada dikkate alınması istenen bilgi ve yükleme yorumları mail/telefon yerine ERP'deki ilgili (ek) bölüme."},
+   {sec:"A",no:"4",ad:"ERP tarih tanımları",tarih:"25.09.2024",metin:"<span class='sub'><b>MVT:</b> Müşteriye Verilen Tarih (Satış/Etüt/Şantiye'nin ilk verdiği fabrika çıkış tarihi).</span><span class='sub'><b>AÜP:</b> Ana Üretim Programı tarihi; bilgiler oluştukça değişir. Müşteriyle paylaşılmaz.</span><span class='sub'><b>Güncel Yükleme Tarihi:</b> Yönetimce müşteriye uygun bulunan, fabrikanın seferber olduğu tarih.</span>"},
+   {sec:"A",no:"4-EK",ek:true,ad:"Onaylanan işlerin MVT girişi yalnız Taha Berk Dirice",tarih:"08.07.2026 · MB talimatı",metin:"Etüt biriminde onaylanan işlerin MVT (Müşteriye Verilen Tarih) bilgisi yalnızca Taha Berk Dirice tarafından işlenir; diğer etüt personeli bu bilgiyi girmez ve daha önce işlenmiş MVT bilgilerini değiştirmez. (ERP'de etüt birimine hitaben duyuru yayınlanması için EU'a mail iletildi — 08.07.2026.)"},
+   {sec:"B",no:"5",ad:"Cam fiyatlandırma akışı (güncel)",tarih:"27.01.2026",metin:"Teklifte: ERP Cam Listesi'nden; listede yoksa yakın camdan fiyat tahmini yapılabilir. PGD'de: cam talebi doldurulur → satınalma en uygun camı bulur → proje sorumlusu tanımlayınca PGD'de seçilebilir."},
+   {sec:"B",no:"6",ad:"Cam montaj silikonu nötr (neutral cure) olmalı",tarih:"19.06.2026 · EA · K52.9",metin:"Silikon camdaki thiokol ile reaksiyona girip bozulma/yapışma problemi/akmaya yol açabilir. Şantiyede nötr kürlenme (neutral cure) silikon kullanılmalı; uygulama öncesi teknik föy kontrol edilmeli. Tereddütte Ar-Ge onayı alınır."},
+   {sec:"B",no:"7",ad:"Fransa cephe projeleri camları",tarih:"19.11.2024",metin:"Fiyat mukayesesi yapılmaksızın Fransa'dan; işlemler satınalmanın bilgisi dahilinde."},
+   {sec:"C",no:"8",ad:"58f / 68f kuralı",tarih:"18.07.2023",metin:"Tüm teklifler alüminyum kaplamalı ürün olarak 58f fiyatlandırılır (sistem 68f ile aynı). Melih onayı olmadan 68f teklif verilmez."},
+   {sec:"D",no:"9",ad:"Yurtdışı şantiye Sorun-Öneri & PEM yönlendirmesi",tarih:"07.01.2026",metin:"Talep sahipleri Muhammer Bey'e yöneltir; ERP'de yalnız Muhammer Bey bizzat ya da Onur Bey üzerinden açar."},
+   {sec:"D",no:"10",ad:"Tüm süreç olumsuzluk/iyileştirmeleri ERP'den",tarih:"17.06.2026",metin:"ERP'de Sorun ve Öneri açılarak işleme konur; mail/telefon/yüz yüze iletilmez; ERP'den takip; tıkanıklıklar Melih'e bildirilir."},
+   {sec:"D",no:"11",ad:"ERP programı hata/geliştirme önerileri &quot;ERP Geri Bildirimleri&quot; sayfasından",tarih:"22.06.2026 · EU · K52.9",metin:"ERP programıyla ilgili hata bildirimleri ve geliştirme önerileri ERP içindeki &quot;ERP Geri Bildirimleri&quot; sayfasına eklenir (mail/WhatsApp ile değil); her satıra dosya eklenebilir. Daha önce mail/WhatsApp ile iletilip listede görünmeyenler yeniden eklenir. <span class='sub'>(Madde 10'dan farkı: 10 proje/süreç sorunları; bu madde ERP yazılımının kendisine dair geri bildirim.)</span>"},
+   {sec:"E",no:"12",ad:"Fabrika ziyareti",tarih:"22.01.2026",metin:"Ziyaret eden yurt içi/dışı müşterilerle yalnız Yağız Altınbök muhatap olur."},
+   {sec:"E",no:"13",ad:"İngiltere bölge sorumlusu",tarih:"09.03.2026",metin:"Ahmet Ertürk ayrıldı; yerine Ali Karadağ (ali.karadag@arborwindows.co.uk · 0044 7391 099400)."}
+  ];
+  const SRC=[
+   "<b>Madde 4-EK kaynağı:</b> MB talimatı (08.07.2026); onaylanan işlerde MVT girişi yalnız Taha Berk Dirice, diğer etüt personeli girmez/değiştirmez. ERP duyurusu için EU'a mail iletildi.",
+   "<b>Madde 6 kaynağı:</b> Cam montaj silikonu maili int@arbor'da bulunamadı (asıl kopya selectron'da, kapsam dışı); tam metin ERP Genel Duyurular'dan (19.06.2026, EA) doğrulanarak eklendi.",
+   "<b>Madde 11 kaynağı:</b> ERP - Güncel Duyuru Bilgilendirmesi maili (22.06.2026, EU), int@arbor'a İLT: ile iletildi; Kural 52.9 ile eklendi.",
+   "<b>Oluşturma:</b> 22.06.2026 · <b>Güncelleme:</b> 08.07.2026 (Madde 4-EK MVT/Taha Berk Dirice eklendi — Kural 45 tarihli-id, 260623 → 260708) · Bağlı: ERP Computer-Use Rehberi §8, Genel Kurallar Kural 13-EK / 52.9 / 45."
+  ];
+  let sec="";
+  Object.keys(SECS).forEach(s=>{
+    const items=PROS.filter(d=>d.sec===s);
+    sec+=`<div class="secH">${esc(SECS[s])}</div>`;
+    items.forEach(d=>{ sec+=`<div class="law"><div class="lno${d.ek?' ek':''}">${esc(d.no)}</div><div class="lbody"><div><span class="ltitle">${esc(d.ad)}</span><span class="ldate">(${esc(d.tarih)})</span></div><div class="ltext">${d.metin}</div></div></div>`; });
+  });
+  view.innerHTML=`<div class="stamp">Prosedürler — Son Güncelleme: 10.07.26</div>
+    <div class="pin">📌 <b>Prosedür 260708 pinli.</b> Kaynak: ERP &gt; DUYURULAR &gt; Genel Duyurular — Ekleyen: MB (computer-use, 22.06.2026) + prosedür içerikli mailler/talimatlar (Kural 52.9). Ham metin: ERP/260622/Duyurular_Ham_MelihBilgili_260622.md · Bağlı: Kural 13-EK / 52.9 / 45.</div>
+    <div class="hint">Firma içinde uygulanması istenen kurallar. Kategoriler A–E; ERP Genel Duyurular + talimat maillerinden damıtıldı, Duyuru.xlsx ile doğrulandı.</div>
+    ${sec}
+    <div class="hint" style="margin-top:16px;border-top:1px dashed #e4e9ef;padding-top:8px">${SRC.join("<br>")}</div>`;
 }
 
 function loadFormlar(){
