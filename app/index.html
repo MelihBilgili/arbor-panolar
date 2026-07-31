@@ -725,37 +725,29 @@ async function loadMali(){
   loadPanoBolum(b, "mali-body");
 }
 
-/* ---------- ŞANTİYE — owner salt-okur görünüm (eski Kural 83 mukayese). ÖB/MK formları yazar. ---------- */
-function sCmp(g,o){
-  g=(g||"").trim(); o=(o||"").trim();
-  if(!g && !o) return '<td class="scmp empty">—</td>';
-  let bdg,cur;
-  if(!g){ bdg='<span class="sbdg none">GÜNCEL YOK</span>'; cur=''; }
-  else if(!o){ bdg='<span class="sbdg snew">YENİ</span>'; cur=esc(g); }
-  else if(g===o){ bdg='<span class="sbdg same">AYNI</span>'; cur=esc(g); }
-  else { bdg='<span class="sbdg chg">DEĞİŞTİ</span>'; cur=esc(g); }
-  return '<td class="scmp">'+bdg+(cur?'<div class="cur">'+cur+'</div>':'')+(o?'<div class="prev">◂ '+esc(o)+'</div>':'')+'</td>';
-}
+/* ---------- ŞANTİYE — owner salt-okur: tarihli DURUM LOG akışı (ÖB+MK tek form yazar). ---------- */
 async function loadSantiye(tgt){
   const view=document.getElementById(tgt||"view");
-  const [s,m]=await Promise.all([ sb.from("santiye").select("*").order("sira"), sb.from("santiye_mk").select("*") ]);
-  const err=s.error||m.error;
+  const [s,l]=await Promise.all([
+    sb.from("santiye").select("*").order("sira"),
+    sb.from("santiye_durum_log").select("*").order("tarih",{ascending:false}).order("id",{ascending:false})
+  ]);
+  const err=s.error||l.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
-  const mk={}; (m.data||[]).forEach(x=>mk[x.santiye_id]=x);
+  const logByS={}; (l.data||[]).forEach(x=>{ (logByS[x.santiye_id]=logByS[x.santiye_id]||[]).push(x); });
   const rows=(s.data||[]).filter(r=>r.durum!=="Çözüldü");
   const ay=d=>{ if(!d) return 0; const x=new Date(d); if(isNaN(x)) return 0; const n=new Date(); return (n.getFullYear()-x.getFullYear())*12+(n.getMonth()-x.getMonth()); };
   const toplam=rows.reduce((a,r)=>a+(Number(r.tutar)||0),0);
   const eski=rows.filter(r=>ay(r.ilk_kayit)>=3).length;
-  const eksik=rows.filter(r=>!(r.ob_guncel||"").trim() || !(((mk[r.id]||{}).mk_guncel)||"").trim()).length;
-  let tr="";
-  rows.forEach((r,i)=>{ const a=ay(r.ilk_kayit); const mkr=mk[r.id]||{};
-    tr+=`<tr class="${a>=3?'sold':''}"><td>${i+1}</td><td class="sb">${esc(r.santiye)}</td><td>${esc(r.musteri)}</td><td class="snum">${r.tutar!=null?money(r.tutar)+' €':''}</td><td>${esc(r.neden)}</td>${sCmp(r.ob_guncel,r.ob_onceki)}${sCmp(mkr.mk_guncel,mkr.mk_onceki)}<td>${esc(r.sorumlu)}</td><td>${esc(r.hedef)}</td><td>${a?a+' ay':'yeni'}</td></tr>`; });
-  view.innerHTML=`<div class="stamp">Tıkanan Şantiyeler · ${rows.length} açık</div>
-    <div class="hint">ÖB (sarı) + MK (yeşil) formları haftalık doldurur; güncel/önceki mukayeseli — eski Kural 83. Formlar: <a href="santiye-ob/" target="_blank">ÖB formu</a> · <a href="santiye-mk/" target="_blank">MK formu</a> &nbsp; <button class="btn" id="s-kaydir">Haftayı kaydır (güncel→önceki)</button></div>
-    <div class="skpi"><div><b>${rows.length}</b> açık şantiye</div><div><b>${money(toplam)} €</b> bekleyen alacak</div><div><b>${eski}</b> 3+ aydır açık</div><div><b>${eksik}</b> eksik hücreli</div></div>
-    <div class="scroll"><table class="stbl"><thead><tr><th>#</th><th>Şantiye</th><th>Müşteri</th><th>Tutar</th><th>Tıkanma nedeni</th><th class="obh">ÖB (güncel ◂ önceki)</th><th class="mkh">MK (güncel ◂ önceki)</th><th>Sorumlu</th><th>Hedef</th><th>Yaş</th></tr></thead><tbody>${tr||'<tr><td colspan="10">Kayıt yok</td></tr>'}</tbody></table></div>`;
-  const kb=document.getElementById("s-kaydir");
-  if(kb) kb.onclick=async()=>{ if(!confirm("Tüm aktif şantiyelerde GÜNCEL durum ÖNCEKİ'ye kaydırılıp güncel boşaltılacak (haftalık döngü — eski Pazartesi mantığı). Devam?")) return; const {data,error}=await sb.rpc("santiye_kaydir"); if(error){ alert("Hata: "+error.message); return; } alert(data||"Kaydırıldı"); loadSantiye(); };
+  let html=`<div class="stamp">Tıkanan Şantiyeler · ${rows.length} açık</div>
+    <div class="hint">ÖB + MK tek <a href="santiye-log/" target="_blank">Şantiye Durum formundan</a> tarihli durum girer; owner tarihli akışı görür. Yeni tıkanmış şantiye owner tarafından eklenir.</div>
+    <div class="skpi"><div><b>${rows.length}</b> açık şantiye</div><div><b>${money(toplam)} €</b> bekleyen alacak</div><div><b>${eski}</b> 3+ aydır açık</div><div><b>${(l.data||[]).length}</b> durum kaydı</div></div>`;
+  rows.forEach((r)=>{ const a=ay(r.ilk_kayit); const logs=logByS[r.id]||[];
+    const tl=logs.length?logs.map(x=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid #f0f3f7"><span class="sbdg ${x.kim==='OB'?'snew':'chg'}">${x.kim==='OB'?'ÖB':'MK'}</span><span style="color:#8a97a4;font-size:11px;white-space:nowrap;min-width:66px">${fdate(x.tarih)}</span><span style="flex:1;white-space:pre-wrap">${esc(x.durum)}</span></div>`).join(""):'<div class="muted" style="padding:4px 2px">Henüz durum girişi yok.</div>';
+    html+=`<div class="flow"><b class="sb">${esc(r.santiye)}</b>${r.musteri?' <span class="tag">'+esc(r.musteri)+'</span>':''}${r.tutar!=null?' <span class="snum">'+money(r.tutar)+' €</span>':''}${a>=3?' <span class="sbdg none">'+a+' ay</span>':''}
+      <p class="muted" style="margin:4px 0 8px">${esc(r.neden||'')}${r.sorumlu?' · Sorumlu: '+esc(r.sorumlu):''}${r.hedef?' · Hedef: '+esc(r.hedef):''}</p>
+      <div>${tl}</div></div>`; });
+  view.innerHTML=html;
 }
 
 /* ---------- ÖZEL — grup: 5 hassas pano (pano_ozel_html, iframe srcdoc) + G.menkul (pano_ozel). Bölüm-RLS; anon 401. Parola/ozel4 YOK. ---------- */
