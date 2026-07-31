@@ -321,12 +321,20 @@ async function loadSo(){
     <tbody>${rows}</tbody></table></div>`;
 }
 
-/* ---------- SATIŞ YORUM (satis_yorum: SO yurtiçi + FY yurtdışı, tek pano) ---------- */
+/* ---------- SATIŞ YORUM (satis_yorum: SO yurtiçi + FY=Yurt Dışı 1; + ayrı Yurt Dışı 2 = satis_*_2) ---------- */
 async function loadSatis(){
   const view=document.getElementById("view");
-  const [sy,tk,ss]=await Promise.all([ sb.from("satis_yorum").select("*"), sb.from("satis_takip").select("*").eq("aktif",true), sb.from("satis_takip_stats").select("*") ]);
+  const [sy,tk,ss,sy2,tk2,ss2]=await Promise.all([
+    sb.from("satis_yorum").select("*"), sb.from("satis_takip").select("*").eq("aktif",true), sb.from("satis_takip_stats").select("*"),
+    sb.from("satis_yorum_2").select("*"), sb.from("satis_takip_2").select("*").eq("aktif",true), sb.from("satis_takip_stats_2").select("*")
+  ]);
   if(sy.error){ view.innerHTML=`<div class="load">Hata: ${esc(sy.error.message)}</div>`; return; }
-  const data=sy.data||[];
+  const b1=satisBlock(sy.data||[], tk.data||[], (ss&&!ss.error)?(ss.data||[]):[]);
+  const b2=satisBlock(sy2.data||[], (tk2&&tk2.data)||[], (ss2&&!ss2.error)?(ss2.data||[]):[]);
+  view.innerHTML=`<div class="stamp">Satış — Yurtiçi (SO) + Yurt Dışı 1 (FY)</div>${b1}
+    <h2 class="secH" style="margin-top:28px">🌍 Yurt Dışı 2 — ayrı form (kendi satis_*_2 tabloları)</h2>${b2}`;
+}
+function satisBlock(data, tkData, ssData){
   const cur=data.filter(r=>r.aktif), archived=data.filter(r=>!r.aktif);
   const prevCekim={}; archived.forEach(r=>{ if(!prevCekim[r.kaynak]||r.cekim>prevCekim[r.kaynak]) prevCekim[r.kaynak]=r.cekim; });
   const prev=archived.filter(r=>r.cekim===prevCekim[r.kaynak]);
@@ -358,7 +366,7 @@ async function loadSatis(){
   };
   const totAd=cM.length+cA.length, totTut=sum(cM)+sum(cA);
   const bigrow=(lbl,ad,tut,dad,dtut)=>`<div class="syrow"><b>${lbl} Proje Sayısı:</b> ${ad} ad${dad} &nbsp;·&nbsp; <b>Tutar:</b> ${money(tut)} €${dtut}</div>`;
-  const takip=(tk.data||[]).slice().sort((a,b)=>(Number(b.net_ht_eur)||0)-(Number(a.net_ht_eur)||0));
+  const takip=(tkData||[]).slice().sort((a,b)=>(Number(b.net_ht_eur)||0)-(Number(a.net_ht_eur)||0));
   const tkNet=takip.reduce((a,r)=>a+(Number(r.net_ht_eur)||0),0);
   const tkRows=takip.map(r=>`<tr>
      <td class="kod" style="white-space:normal">${esc(r.proje)}</td>
@@ -377,7 +385,7 @@ async function loadSatis(){
     <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>ÜLKE</th><th>HAZIRLAYAN</th><th>TEKLİF</th><th>AĞAÇ</th><th class="num">NET HT (€)</th><th>TAKİP</th><th>İHALE</th><th>DURUM</th></tr></thead>
     <tbody>${tkRows}</tbody></table></div>`:'';
   /* ---- Takipteki teklifler: yıllık sonuç istatistiği (satis_takip_stats) ---- */
-  const stats=(ss&&!ss.error)?(ss.data||[]):[];
+  const stats=ssData||[];
   let statsHTML='';
   if(stats.length){
     const DD=['Kazandık','Kaybettik','Belirsiz','Müşteri işi alamadı'];
@@ -403,9 +411,8 @@ async function loadSatis(){
         </thead><tbody>${body}</tbody></table></div>`;
     });
   }
-  view.innerHTML=`
-    <div class="stamp">Satış — Son güncelleme: ${dOnly(stampDate)}</div>
-    <div class="hint">Yurtiçi (SO) + Yurtdışı (FY) birleşik · Kaynak — ${srcLine}</div>
+  return `
+    <div class="hint">${srcLine?('Kaynak — '+srcLine+' · '):''}Son güncelleme: ${data.length?dOnly(stampDate):'—'}${data.length?'':' · <i>(henüz kayıt yok)</i>'}</div>
     <div class="sybox">
       ${bigrow('Muhtemel',cM.length,sum(cM),dAd(cMc,pM),dTut(cMc,pM))}
       ${bigrow('Alınan',cA.length,sum(cA),dAd(cAc,pA),dTut(cAc,pA))}
@@ -654,7 +661,8 @@ function loadFormlar(){
     {ad:"EA — SÖ Haftalık Gündem Formu", who:"Enes Artan · Kalite", url:"ea/", desc:"Hafta bölümünü seçer, sorun ve önerileri 'gündeme alındı'ya çevirir. Yazar: so_ea_form."},
     {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."},
     {ad:"ÖB Rapor Formu", who:"Özgül Bedestenci · Yurtdışı Finans", url:"ob-rapor/", desc:"Haftalık ÖB rapor kalemlerini (konu, eski/yeni durum, kategori) günceller. Yazar: ob_rapor; ÖB Rapor panosuna salt-okur yansır."},
-    {ad:"Yurtdışı Satış Formu", who:"Fatma · Satış (Fransa/ihracat)", url:"fy/", desc:"Yurtdışı muhtemel/alınan projeleri (proje, müşteri, statü, ülke, net €, durum) + takipteki teklifler girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır. Paylaşılan xlsx yerine geçer."},
+    {ad:"Yurt Dışı 1 Satış Formu", who:"Fatma · Satış (Fransa/ihracat)", url:"fy/", desc:"Yurtdışı muhtemel/alınan projeleri (proje, müşteri, statü, ülke, net €, durum) + takipteki teklifler girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır. Paylaşılan xlsx yerine geçer."},
+    {ad:"Yurt Dışı 2 Satış Formu", who:"Yurt Dışı 2 ekibi · ayrı form", url:"fy2/", desc:"Yurt Dışı 1 ile birebir aynı format, TAMAMEN AYRI veri (satis_yorum_2 / satis_takip_2 / satis_takip_sonuc_2). Ayrı kişilerce doldurulur; form 1 verisiyle karışmaz. Satış panosundaki 'Yurt Dışı 2' bloğuna yansır."},
     {ad:"Yurtiçi Satış Formu", who:"Sinan · Satış (Yurtiçi)", url:"so/", desc:"Yurtiçi muhtemel/alınan projeleri (proje, müşteri, statü, net €) girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır."},
     {ad:"Cam Kombinasyonu Fiyatlandırma", who:"Fiyat aracı · paylaşılabilir", url:"cam/", desc:"Cam parametrelerini (dış/iç cam, kaplama, akustik, temper, form, ara boşluk, Fire Proof…) seç → €/m² fiyat. Geçmiş teklif eşleşmesi + çarpımsal model. Bağlantı çalışanlarla paylaşılabilir."},
     {ad:"Teklif & Fiyatlandırma Kuralları", who:"Teklif personeli referansı", url:"teklif/", desc:"Net/brüt teklif + montaj hesaplayıcıları, genel şartlar (ihracat oranı, min. adet), oranlar, termin, garanti, müşteri sınıf listeleri. Fiyatlandırma Kuralları 260505.xlsx'ten."}
