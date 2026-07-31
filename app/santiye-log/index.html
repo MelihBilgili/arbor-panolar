@@ -25,12 +25,14 @@
   .kimwrap{display:flex;gap:8px}
   .kimbtn{flex:1;text-align:center;border:1px solid #cdd6df;border-radius:8px;padding:9px;cursor:pointer;font-weight:600;background:#fff;color:#555}
   .kimbtn.on{background:#8a6100;color:#fff;border-color:#8a6100}
+  #yeniwrap{display:none;border:1px dashed #cdb27a;border-radius:8px;padding:10px 12px;margin-bottom:10px;background:#fffdf3}
+  #yeniwrap.on{display:block}
 </style>
 </head>
 <body>
 <header>
   <h1>Tıkanan Şantiyeler — Durum Formu</h1>
-  <div class="sub">Özgül Bedestenci (ÖB) ve Mehmet Bey (MK) buradan durum ekler. Her giriş: şantiye + kim + durum + <b>tarih</b>. Melih'in panosuna tarihli akış olarak yansır.</div>
+  <div class="sub">Özgül Bedestenci (ÖB) ve Mehmet Bey (MK) buradan durum ekler. Mevcut şantiye seç <b>veya yeni şantiye</b> ekle; kim + durum + <b>tarih</b>. Melih'in panosuna tarihli akış olarak yansır.</div>
 </header>
 <div class="wrap">
   <div class="card">
@@ -47,6 +49,15 @@
         </div>
       </div>
     </div>
+    <div id="yeniwrap">
+      <div class="row" style="margin-bottom:6px">
+        <div class="f grow"><label>YENİ ŞANTİYE ADI</label><input id="yeniAd" placeholder="Şantiye adı"></div>
+        <div class="f grow"><label>MÜŞTERİ / FİRMA (opsiyonel)</label><input id="yeniMusteri" placeholder=""></div>
+      </div>
+      <div class="row" style="margin-bottom:0">
+        <div class="f grow"><label>TIKANMA NEDENİ (opsiyonel)</label><input id="yeniNeden" placeholder=""></div>
+      </div>
+    </div>
     <div class="row">
       <div class="f grow"><label>DURUM / GELİŞME</label><textarea id="durum" placeholder="Bu tarihteki durum / gelişme..."></textarea></div>
     </div>
@@ -56,34 +67,54 @@
     </div>
     <div class="msg" id="msg"></div>
   </div>
-  <div class="hint">Kayıtlar Supabase'e (santiye_durum_log) yazılır. Yeni bir tıkanmış şantiye eklenmesi gerekiyorsa Melih'e iletin.</div>
+  <div class="hint">Kayıtlar Supabase'e yazılır. Yeni şantiyede yalnız ad/müşteri/neden girilir; tutar ve diğer finans bilgileri Melih tarafından doldurulur.</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $=id=>document.getElementById(id);
 let KIM="OB";
-function msg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},2500); }
+function msg(t,ok){ const m=$("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3000); }
 document.querySelectorAll(".kimbtn").forEach(b=>b.onclick=()=>{ document.querySelectorAll(".kimbtn").forEach(x=>x.classList.remove("on")); b.classList.add("on"); KIM=b.getAttribute("data-k"); });
-document.getElementById("tarih").value = new Date().toISOString().slice(0,10);
-async function loadListe(){
+$("tarih").value = new Date().toISOString().slice(0,10);
+$("santiye").onchange=()=>{ $("yeniwrap").classList.toggle("on", $("santiye").value==="__new__"); };
+async function loadListe(sel){
   const {data,error}=await sb.from("santiye_liste").select("*").order("santiye");
-  const sel=document.getElementById("santiye");
-  if(error){ sel.innerHTML='<option value="">Hata: '+esc(error.message)+'</option>'; return; }
+  const s=$("santiye");
+  if(error){ s.innerHTML='<option value="">Hata: '+esc(error.message)+'</option>'; return; }
   const rows=data||[];
-  sel.innerHTML='<option value="">— şantiye seç —</option>'+rows.map(r=>'<option value="'+r.id+'">'+esc(r.santiye)+'</option>').join("");
+  s.innerHTML='<option value="">— şantiye seç —</option>'
+    +'<option value="__new__">➕ Yeni şantiye ekle…</option>'
+    +rows.map(r=>'<option value="'+r.id+'"'+(sel&&sel===r.id?' selected':'')+'>'+esc(r.santiye)+'</option>').join("");
+  if(sel){ s.value=String(sel); $("yeniwrap").classList.remove("on"); }
 }
-document.getElementById("save").onclick=async()=>{
-  const sid=document.getElementById("santiye").value;
-  const durum=document.getElementById("durum").value.trim();
-  const tarih=document.getElementById("tarih").value;
-  if(!sid){ msg("Şantiye seç.",false); return; }
+async function createSantiye(){
+  const ad=$("yeniAd").value.trim();
+  if(!ad){ msg("Yeni şantiye adı gir.",false); return null; }
+  const rec={ santiye:ad };
+  const mus=$("yeniMusteri").value.trim(); if(mus) rec.musteri=mus;
+  const ned=$("yeniNeden").value.trim(); if(ned) rec.neden=ned;
+  const ins=await sb.from("santiye").insert(rec);
+  if(ins.error){ msg("Şantiye oluşturma hatası: "+ins.error.message,false); return null; }
+  // Yeni id'yi santiye_liste'den ada göre bul (en yüksek id)
+  const {data}=await sb.from("santiye_liste").select("id,santiye").eq("santiye",ad).order("id",{ascending:false}).limit(1);
+  return (data&&data[0])?data[0].id:null;
+}
+$("save").onclick=async()=>{
+  const durum=$("durum").value.trim();
+  const tarih=$("tarih").value;
   if(!durum){ msg("Durum metni gir.",false); return; }
   if(!tarih){ msg("Tarih gir.",false); return; }
+  let sid=$("santiye").value;
+  if(sid===""){ msg("Şantiye seç veya yeni ekle.",false); return; }
+  let isNew=false;
+  if(sid==="__new__"){ sid=await createSantiye(); if(!sid) return; isNew=true; }
   const {error}=await sb.from("santiye_durum_log").insert({ santiye_id:parseInt(sid), kim:KIM, durum, tarih });
-  if(error){ msg("Hata: "+error.message,false); return; }
-  msg("Eklendi ("+(KIM==="OB"?"ÖB":"MK")+" · "+tarih+"). Yeni durum ekleyebilirsiniz.",true);
-  document.getElementById("durum").value="";
+  if(error){ msg("Durum kaydı hatası: "+error.message,false); return; }
+  msg((isNew?"Yeni şantiye + durum eklendi":"Durum eklendi")+" ("+(KIM==="OB"?"ÖB":"MK")+" · "+tarih+").",true);
+  $("durum").value=""; $("yeniAd").value=""; $("yeniMusteri").value=""; $("yeniNeden").value="";
+  await loadListe(isNew?parseInt(sid):null);
 };
 loadListe();
 </script>
