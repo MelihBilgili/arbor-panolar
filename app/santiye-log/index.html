@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tıkanan Şantiyeler — Durum Formu (ÖB + MK)</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  header{background:#8a6100;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#ffe9b8;margin-top:3px}
+  .wrap{max-width:720px;margin:0 auto;padding:16px 16px 60px}
+  .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .f{display:flex;flex-direction:column;gap:4px}
+  .f.grow{flex:1;min-width:220px}
+  .f label{font-size:11px;color:#8a6100;font-weight:700}
+  input,textarea,select{font:inherit;padding:8px 10px;border:1px solid #cdd6df;border-radius:7px;background:#fffdf5}
+  textarea{min-height:80px;resize:vertical}
+  .save{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px 18px;font-weight:600;cursor:pointer;font-size:14px}
+  .msg{font-size:13px;min-height:18px;margin-top:8px}.msg.ok{color:#2e7d54;font-weight:600}.msg.err{color:#b40000;font-weight:600}
+  .hint{font-size:12px;color:#8a97a4;margin:10px 2px}
+  .kimwrap{display:flex;gap:8px}
+  .kimbtn{flex:1;text-align:center;border:1px solid #cdd6df;border-radius:8px;padding:9px;cursor:pointer;font-weight:600;background:#fff;color:#555}
+  .kimbtn.on{background:#8a6100;color:#fff;border-color:#8a6100}
+</style>
+</head>
+<body>
+<header>
+  <h1>Tıkanan Şantiyeler — Durum Formu</h1>
+  <div class="sub">Özgül Bedestenci (ÖB) ve Mehmet Bey (MK) buradan durum ekler. Her giriş: şantiye + kim + durum + <b>tarih</b>. Melih'in panosuna tarihli akış olarak yansır.</div>
+</header>
+<div class="wrap">
+  <div class="card">
+    <div class="row">
+      <div class="f grow">
+        <label>ŞANTİYE</label>
+        <select id="santiye"><option value="">Yükleniyor…</option></select>
+      </div>
+      <div class="f grow">
+        <label>KİM</label>
+        <div class="kimwrap">
+          <div class="kimbtn on" data-k="OB">ÖB (Özgül)</div>
+          <div class="kimbtn" data-k="MK">MK (Mehmet)</div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="f grow"><label>DURUM / GELİŞME</label><textarea id="durum" placeholder="Bu tarihteki durum / gelişme..."></textarea></div>
+    </div>
+    <div class="row">
+      <div class="f"><label>TARİH</label><input id="tarih" type="date"></div>
+      <div class="f" style="justify-content:flex-end"><button class="save" id="save">Durumu ekle</button></div>
+    </div>
+    <div class="msg" id="msg"></div>
+  </div>
+  <div class="hint">Kayıtlar Supabase'e (santiye_durum_log) yazılır. Yeni bir tıkanmış şantiye eklenmesi gerekiyorsa Melih'e iletin.</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let KIM="OB";
+function msg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},2500); }
+document.querySelectorAll(".kimbtn").forEach(b=>b.onclick=()=>{ document.querySelectorAll(".kimbtn").forEach(x=>x.classList.remove("on")); b.classList.add("on"); KIM=b.getAttribute("data-k"); });
+document.getElementById("tarih").value = new Date().toISOString().slice(0,10);
+async function loadListe(){
+  const {data,error}=await sb.from("santiye_liste").select("*").order("santiye");
+  const sel=document.getElementById("santiye");
+  if(error){ sel.innerHTML='<option value="">Hata: '+esc(error.message)+'</option>'; return; }
+  const rows=data||[];
+  sel.innerHTML='<option value="">— şantiye seç —</option>'+rows.map(r=>'<option value="'+r.id+'">'+esc(r.santiye)+'</option>').join("");
+}
+document.getElementById("save").onclick=async()=>{
+  const sid=document.getElementById("santiye").value;
+  const durum=document.getElementById("durum").value.trim();
+  const tarih=document.getElementById("tarih").value;
+  if(!sid){ msg("Şantiye seç.",false); return; }
+  if(!durum){ msg("Durum metni gir.",false); return; }
+  if(!tarih){ msg("Tarih gir.",false); return; }
+  const {error}=await sb.from("santiye_durum_log").insert({ santiye_id:parseInt(sid), kim:KIM, durum, tarih });
+  if(error){ msg("Hata: "+error.message,false); return; }
+  msg("Eklendi ("+(KIM==="OB"?"ÖB":"MK")+" · "+tarih+"). Yeni durum ekleyebilirsiniz.",true);
+  document.getElementById("durum").value="";
+};
+loadListe();
+</script>
+</body>
+</html>
