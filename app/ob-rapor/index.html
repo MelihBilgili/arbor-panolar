@@ -42,7 +42,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
-const CATS = [["t1","İlerleyen / Tamamlanan"],["t2","Dikkat / Risk"],["t3","Değişmeyen"],["t4","Yeni Eklenen / İlk Kez Görülen"]];
+const CATS = [["t1","İlerleyen / Tamamlanan"],["t3","Değişmeyen"],["t4","Yeni Eklenen / İlk Kez Görülen"]];
 const CATLBL = Object.fromEntries(CATS);
 const DEGS = ["İLERLEME","TAMAMLANDI","DİKKAT","AÇIK SORUN","AYNI","YENİ"];
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
