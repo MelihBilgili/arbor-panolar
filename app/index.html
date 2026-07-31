@@ -653,6 +653,7 @@ function loadFormlar(){
   const forms=[
     {ad:"EA — SÖ Haftalık Gündem Formu", who:"Enes Artan · Kalite", url:"ea/", desc:"Hafta bölümünü seçer, sorun ve önerileri 'gündeme alındı'ya çevirir. Yazar: so_ea_form."},
     {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."},
+    {ad:"ÖB Rapor Formu", who:"Özgül Bedestenci · Yurtdışı Finans", url:"ob-rapor/", desc:"Haftalık ÖB rapor kalemlerini (konu, eski/yeni durum, kategori) günceller. Yazar: ob_rapor; ÖB Rapor panosuna salt-okur yansır."},
     {ad:"Yurtdışı Satış Formu", who:"Fatma · Satış (Fransa/ihracat)", url:"fy/", desc:"Yurtdışı muhtemel/alınan projeleri (proje, müşteri, statü, ülke, net €, durum) + takipteki teklifler girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır. Paylaşılan xlsx yerine geçer."},
     {ad:"Yurtiçi Satış Formu", who:"Sinan · Satış (Yurtiçi)", url:"so/", desc:"Yurtiçi muhtemel/alınan projeleri (proje, müşteri, statü, net €) girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır."},
     {ad:"Cam Kombinasyonu Fiyatlandırma", who:"Fiyat aracı · paylaşılabilir", url:"cam/", desc:"Cam parametrelerini (dış/iç cam, kaplama, akustik, temper, form, ara boşluk, Fire Proof…) seç → €/m² fiyat. Geçmiş teklif eşleşmesi + çarpımsal model. Bağlantı çalışanlarla paylaşılabilir."},
@@ -682,7 +683,7 @@ async function loadPanoBolum(bolum, tgt){
   body.innerHTML=`<div class="stamp">${esc(meta.ad||"")}${meta.son_guncelleme?(" · "+esc(meta.son_guncelleme)):""}</div>${meta.kaynak?`<div class="hint">${esc(meta.kaynak)}</div>`:""}${html||'<div class="load">Kayıt yok.</div>'}`;
 }
 /* ---------- ÖB Rapor — bağımsız üst-nav sekmesi (ob_rapor tablosu; ÖB formu yazar, owner salt-okur) ---------- */
-const OBR_CATS=[["t1","İlerleyen / Tamamlanan"],["t2","Dikkat / Risk"],["t3","Değişmeyen"],["t4","Yeni Eklenen / İlk Kez Görülen"]];
+const OBR_CATS=[["t1","İlerleyen / Tamamlanan"],["t3","Değişmeyen"],["t4","Yeni Eklenen / İlk Kez Görülen"]];
 function obrBadge(d){ d=(d||"").trim(); if(!d) return ""; const cls=/TAMAM|İLERLE/i.test(d)?"chg":(/DİKKAT|AÇIK/i.test(d)?"none":(/YENİ/i.test(d)?"snew":"same")); return '<span class="sbdg '+cls+'">'+esc(d)+'</span>'; }
 async function loadObrapor(){
   const view=document.getElementById("view");
