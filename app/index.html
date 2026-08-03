@@ -384,18 +384,20 @@ function eurDelta(v){ const r=Math.round(v); const c=r>0?'#0a6b3f':(r<0?'#b23a2e
 /* Üst özet blok: hizalı Muhtemel | Alınan; Toplam + bölge satırları + eklenen(yeşil)/silinen(kırmızı) */
 function satisSummary(regions){
   const cell=(cur,cmp,prev,hasPrev)=>`${money(sSum(cur))} €${hasPrev?eurDelta(sSum(cmp)-sSum(prev)):''}`;
-  const det=(cmp,prev,hasPrev)=>{ if(!hasPrev) return '';
+  /* eklenen → YEŞİL; silinen → muhtemel→alınan (M sütunu) veya alınan→üretim (A sütunu) geçişi ise SİYAH, diğer silinenler KIRMIZI */
+  const det=(cmp,prev,hasPrev,kind,curM,curA)=>{ if(!hasPrev) return '';
     const {ekl,sil}=sDiff(cmp,prev); let s='';
-    /* Silinen = muhtemel→alınan / alınan→üretim geçişi (olumlu) → SİYAH; diğerleri (eklenen) → KIRMIZI */
-    ekl.forEach(r=> s+=`<div style="color:#b23a2e;white-space:nowrap">${esc(r.proje)} +${money(r.net_eur)} €</div>`);
-    sil.forEach(r=> s+=`<div style="color:#1c2430;white-space:nowrap">${esc(r.proje)} −${money(r.net_eur)} €</div>`);
+    ekl.forEach(r=> s+=`<div style="color:#0a6b3f;white-space:nowrap">${esc(r.proje)} +${money(r.net_eur)} €</div>`);
+    sil.forEach(r=>{ const k=sKey(r); const iyi = kind==='M' ? curA.has(k) : (!curM.has(k) && !curA.has(k));
+      s+=`<div style="color:${iyi?'#1c2430':'#b23a2e'};white-space:nowrap">${esc(r.proje)} −${money(r.net_eur)} €</div>`; });
     return s; };
   const tM=[],tA=[],tMc=[],tAc=[],tpM=[],tpA=[]; let anyPrev=false;
   regions.forEach(rg=>{ tM.push(...rg.cM); tA.push(...rg.cA); tMc.push(...rg.cMc); tAc.push(...rg.cAc); tpM.push(...rg.pM); tpA.push(...rg.pA); anyPrev=anyPrev||rg.hasPrev; });
   let body=`<tr class="stot"><td>Toplam</td><td class="num">${cell(tM,tMc,tpM,anyPrev)}</td><td class="num">${cell(tA,tAc,tpA,anyPrev)}</td></tr>`;
   regions.forEach(rg=>{
+    const curM=new Set(rg.cM.map(sKey)), curA=new Set(rg.cA.map(sKey));
     body+=`<tr class="sreg"><td>${esc(rg.ad)}</td><td class="num">${cell(rg.cM,rg.cMc,rg.pM,rg.hasPrev)}</td><td class="num">${cell(rg.cA,rg.cAc,rg.pA,rg.hasPrev)}</td></tr>`;
-    const dm=det(rg.cMc,rg.pM,rg.hasPrev), da=det(rg.cAc,rg.pA,rg.hasPrev);
+    const dm=det(rg.cMc,rg.pM,rg.hasPrev,'M',curM,curA), da=det(rg.cAc,rg.pA,rg.hasPrev,'A',curM,curA);
     if(dm||da) body+=`<tr class="sdet"><td></td><td>${dm}</td><td>${da}</td></tr>`;
   });
   return `<div class="scroll" style="max-height:none;overflow:visible;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num">Alınan</th></tr></thead><tbody>${body}</tbody></table></div>`;
@@ -462,11 +464,11 @@ function takipDiff(snapRows){
   const last=cekimler[cekimler.length-1], prev=cekimler[cekimler.length-2];
   const cur=rows.filter(r=>String(r.cekim)===last), pr=rows.filter(r=>String(r.cekim)===prev);
   const {ekl,sil}=sDiff(cur,pr);
-  /* Silinen = alınana/üretime geçtiği için SİYAH; eklenen (diğerleri) → KIRMIZI */
-  const chip=(r,pos)=>`<span style="color:${pos?'#b23a2e':'#1c2430'};white-space:nowrap">${esc(r.proje)}${r.net_ht_eur!=null?` ${pos?'+':'−'}${money(r.net_ht_eur)} €`:''}</span>`;
+  /* eklenen → YEŞİL; silinen (takipten çıktı = karara bağlandı/ilerledi) → SİYAH */
+  const chip=(r,pos)=>`<span style="color:${pos?'#0a6b3f':'#1c2430'};white-space:nowrap">${esc(r.proje)}${r.net_ht_eur!=null?` ${pos?'+':'−'}${money(r.net_ht_eur)} €`:''}</span>`;
   let s=`<div class="sybox" style="line-height:1.9"><div class="muted">Önceki çekim ${dOnly(prev)} → ${dOnly(last)}</div>`;
   if(!ekl.length&&!sil.length) s+='<div class="muted">Değişiklik yok.</div>';
-  if(ekl.length) s+=`<div><b style="color:#b23a2e">Eklenen (${ekl.length}):</b> ${ekl.map(r=>chip(r,1)).join(' · ')}</div>`;
+  if(ekl.length) s+=`<div><b style="color:#0a6b3f">Eklenen (${ekl.length}):</b> ${ekl.map(r=>chip(r,1)).join(' · ')}</div>`;
   if(sil.length) s+=`<div><b style="color:#1c2430">Silinen (${sil.length}):</b> ${sil.map(r=>chip(r,0)).join(' · ')}</div>`;
   return s+'</div>';
 }
