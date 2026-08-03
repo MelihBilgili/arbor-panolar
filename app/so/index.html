@@ -43,6 +43,13 @@
   <div class="sub">Sinan · Yurtiçi. Muhtemel/Alınan projelerini gir. Üretimdeki (sevke gönderilmiş) projeleri EKLEME. Bitince <b>“Kaydet ve Yayınla”</b>ya bas.</div>
 </header>
 <div class="wrap">
+  <div class="aybar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:6px 0 2px">
+    <span>Bilgiler</span>
+    <select id="ayMonth" style="padding:6px 8px;border:1px solid #cdd6df;border-radius:6px;font:inherit;background:#fff"></select>
+    <button class="btn" id="ayBtn">ayına ilişkin gelişmeleri yansıtacak şekilde güncellendi</button>
+    <span class="msg" id="ayMsg"></span>
+  </div>
+  <div style="margin:0 2px 12px;color:#b25a00;font-size:12px">Bu düğmeye yalnız aylık güncelleme için basınız, düzeltme ve revizyon durumunda lütfen basmayınız.</div>
   <div class="bar">
     <button class="btn sec" id="addM">+ Muhtemel satır</button>
     <button class="btn sec" id="addA">+ Alınan satır</button>
@@ -122,6 +129,29 @@ document.getElementById("addA").onclick=()=>addRow("Alınan");
 document.getElementById("publish").onclick=publish;
 document.getElementById("reload").onclick=()=>{ if(!dirty||confirm("Kaydedilmemiş değişiklikler silinecek. Devam?")) load(); };
 window.addEventListener("beforeunload",e=>{ if(dirty){ e.preventDefault(); e.returnValue=""; } });
+/* ===== Aylık güncelleme işareti (satis_ay_islendi + mail; yurtiçi takip yok) ===== */
+setupAyIsaret("SO",null);
+function setupAyIsaret(KAYNAK,SNAP){
+  const AYLAR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+  const sel=document.getElementById("ayMonth"); if(!sel) return;
+  const now=new Date();
+  for(let i=0;i<12;i++){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); const lbl=AYLAR[d.getMonth()]+" "+d.getFullYear(); const o=document.createElement("option"); o.value=lbl; o.textContent=lbl; sel.appendChild(o); }
+  sel.value=AYLAR[now.getMonth()]+" "+now.getFullYear();
+  document.getElementById("ayBtn").onclick=async()=>{
+    const ay=sel.value, m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
+    if(!confirm('"'+ay+'" ayı için aylık güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN.\n\nOnaylıyor musunuz?')) return;
+    btn.disabled=true; m.className="msg"; m.textContent="İşaretleniyor…";
+    const {error}=await sb.from("satis_ay_islendi").upsert({kaynak:KAYNAK,ay,mail_gonderildi:false,updated_at:new Date().toISOString()},{onConflict:"kaynak"});
+    if(error){ btn.disabled=false; m.className="msg err"; m.textContent="Hata: "+error.message; return; }
+    if(SNAP){ try{ await sb.rpc(SNAP); }catch(e){} }
+    let note="";
+    try{ const r=await sb.functions.invoke("satis-ay-mail",{body:{kaynak:KAYNAK,ay}});
+      if(r.error){ note=" (mail gönderilemedi: "+(r.error.message||r.error)+")"; }
+      else { await sb.from("satis_ay_islendi").update({mail_gonderildi:true}).eq("kaynak",KAYNAK); }
+    }catch(e){ note=" (mail gönderilemedi)"; }
+    btn.disabled=false; m.className="msg ok"; m.textContent="✓ "+ay+" ayı işaretlendi — panoda görünecek."+note;
+  };
+}
 load();
 </script>
 </body>
