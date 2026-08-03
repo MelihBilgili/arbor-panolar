@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MK — Faaliyet & Prim Formu</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
+  .wrap{max-width:1120px;margin:0 auto;padding:14px 16px 70px}
+  .blk{background:#fff;border:1px solid #dde3ea;border-radius:10px;margin-bottom:16px;overflow:hidden}
+  .blk>h2{font-size:14px;margin:0;padding:10px 14px;color:#fff}
+  .blk .formula{font-size:11.5px;color:#eaf1f8;font-weight:400}
+  .b1>h2{background:#16324f}.b2>h2{background:#0a6b57}.b3>h2{background:#7a3d8f}.b4>h2{background:#b5651d}
+  .tblwrap{overflow:auto}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+  thead th{background:#eef4fb;color:#16324f;font-weight:600;font-size:11.5px;padding:7px 9px;text-align:left;white-space:nowrap;border-bottom:2px solid #d3e0ee}
+  td{border-bottom:1px solid #eef1f5;padding:5px 7px;vertical-align:top}
+  input.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:5px 7px;width:100%;background:#fff}
+  input.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
+  td.num input{text-align:right}
+  textarea.cell{min-height:32px;resize:vertical;min-width:160px}
+  .prim{text-align:right;white-space:nowrap;font-weight:700;color:#0a5745}
+  .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
+  .colp{width:1%;white-space:nowrap}
+  .blkfoot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:9px 14px;background:#fbfcfe;border-top:1px solid #eef1f5}
+  .btn{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer}
+  .btn.sec{background:#e3edf7;color:#16324f;font-weight:600;padding:7px 12px;font-size:13px}
+  .btn:disabled{opacity:.5;cursor:default}
+  .subt{font-size:12.5px;color:#5a6b7d;margin-left:auto}
+  .subt b{color:#0a5745}
+  .totbar{position:sticky;bottom:0;background:#16324f;color:#fff;border-radius:10px;padding:12px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:6px;box-shadow:0 -2px 10px rgba(0,0,0,.12)}
+  .totbar .big{font-size:18px;font-weight:800}
+  .totbar .msg{font-size:12.5px;font-weight:600;min-height:16px}
+  .totbar .msg.ok{color:#8ff0c2}.totbar .msg.err{color:#ffb4b4}
+  .hint{font-size:12px;color:#8a97a4;margin:2px 2px 14px}
+</style>
+</head>
+<body>
+<header>
+  <h1>MK — Faaliyet &amp; Prim Formu</h1>
+  <div class="sub">Mehmet Konak. Dört blokta faaliyetlerini gir; prim <b>kontrat/tutar</b> alanlarından otomatik hesaplanır. Bitince <b>“Kaydet”</b>e bas.</div>
+</header>
+<div class="wrap">
+  <div class="hint">Her blok kendi kuralıyla prim üretir. Girdiğin satırlar “Kaydet” ile kaydedilir; toplam prim dört kriterin (Memnuniyet · TS · FR Satış · Diğer Satış) tümünü kapsar.</div>
+  <div id="blocks"></div>
+  <div class="totbar">
+    <div>Toplam Prim: <span class="big" id="grand">0 €</span></div>
+    <button class="btn" id="save">Kaydet</button>
+    <button class="btn sec" id="clear">Temizle</button>
+    <span class="msg" id="msg"></span>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const parseNum=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t.indexOf(",")>-1&&t.indexOf(".")>-1){ t=t.replace(/\./g,"").replace(",","."); } else { t=t.replace(",","."); } const v=parseFloat(t); return isNaN(v)?null:v; };
+const eur=n=>{ const v=Number(n)||0; return v.toLocaleString("tr-TR",{maximumFractionDigits:2})+" €"; };
+
+/* ===== PRİM KURALLARI (tek kaynak) — Mali→MK Prim panosuyla birebir aynı =====
+   Memnuniyet : Oran% × %0,75 × (Kontrat HT ÷ 12)   → 800.000 @%100 = 500
+   TS Ekstra  : %0,2 × TS tutarı                     → 150.000 = 300
+   FR Satış   : %0,05 × Kontrat HT                   → 600.000 = 300
+   Diğer Satış: %0,10 × Kontrat HT                   → 200.000 = 200
+   Toplam = dört kriterin tümü (FR dahil).                                    */
+const PRIM={
+  memnuniyet:r=> (Number(parseNum(r.memnuniyet_orani))||0)/100 * 0.0075 * ((Number(parseNum(r.kontrat_tutari))||0)/12),
+  ts:r=> 0.002  * (Number(parseNum(r.ts_tutari))||0),
+  fr:r=> 0.0005 * (Number(parseNum(r.kontrat_tutari))||0),
+  diger:r=> 0.001 * (Number(parseNum(r.kontrat_tutari))||0)
+};
+const BLOCKS=[
+ {tur:"memnuniyet",cls:"b1",ad:"1 · Müşteri Memnuniyeti",formula:"Prim = Memnuniyet Oranı % × %0,75 × (Kontrat HT ÷ 12)",
+  cols:[["firma","Firma","text"],["proje","Proje","text"],["memnuniyet_kriterleri","Memnuniyet Kriterleri","ta"],["memnuniyet_orani","Memnuniyet Oranı %","num"],["kontrat_tutari","Kontrat Tutarı HT (€)","num"]]},
+ {tur:"ts",cls:"b2",ad:"2 · TS Ekstra İşlerin Kabul Ettirilmesi",formula:"Prim = %0,2 × TS Tutarı",
+  cols:[["firma","Firma","text"],["proje","Proje","text"],["ts_notlari","TS Notları","ta"],["ts_tutari","TS Tutarı (€)","num"]]},
+ {tur:"fr",cls:"b3",ad:"3 · FR (Fransa) Satış",formula:"Prim = %0,05 × Kontrat HT",
+  cols:[["firma","Firma","text"],["proje","Proje","text"],["kontrat_tarihi","Kontrat Tarihi","date"],["kontrat_tutari","Kontrat Tutarı HT (€)","num"]]},
+ {tur:"diger",cls:"b4",ad:"4 · Diğer Satış",formula:"Prim = %0,10 × Kontrat HT",
+  cols:[["firma","Firma","text"],["proje","Proje","text"],["kontrat_tarihi","Kontrat Tarihi","date"],["kontrat_tutari","Kontrat Tutarı HT (€)","num"]]}
+];
+const DATA={memnuniyet:[],ts:[],fr:[],diger:[]};
+function blankRow(b){ const o={}; b.cols.forEach(c=>o[c[0]]=""); return o; }
+
+function rowPrim(tur,r){ return PRIM[tur](r); }
+function blockTotal(tur){ return DATA[tur].reduce((a,r)=>a+rowPrim(tur,r),0); }
+function grandTotal(){ return BLOCKS.reduce((a,b)=>a+blockTotal(b.tur),0); }
+function renderCell(b,i,c){
+  const [f,lbl,ty]=c, r=DATA[b.tur][i], v=r[f];
+  if(ty==="ta") return '<td><textarea class="cell" data-f="'+f+'">'+esc(v)+'</textarea></td>';
+  if(ty==="num") return '<td class="colp num"><input class="cell" data-f="'+f+'" style="width:120px" value="'+esc(v)+'"></td>';
+  if(ty==="date") return '<td class="colp"><input class="cell" type="date" data-f="'+f+'" style="width:150px" value="'+esc(v)+'"></td>';
+  return '<td><input class="cell" data-f="'+f+'" value="'+esc(v)+'"></td>';
+}
+function renderBlock(b){
+  const head=b.cols.map(c=>'<th>'+esc(c[1])+'</th>').join("")+'<th class="num">Prim (€)</th><th class="colp"></th>';
+  let body="";
+  DATA[b.tur].forEach((r,i)=>{
+    body+='<tr data-i="'+i+'">'+b.cols.map(c=>renderCell(b,i,c)).join("")
+      +'<td class="prim" data-prim>'+eur(rowPrim(b.tur,r))+'</td>'
+      +'<td class="colp"><button class="del" title="Satırı sil">✕</button></td></tr>';
+  });
+  if(!DATA[b.tur].length) body='<tr><td colspan="'+(b.cols.length+2)+'" style="color:#8a97a4;padding:12px 10px">Henüz satır yok — “+ satır” ile ekle.</td></tr>';
+  return '<div class="blk '+b.cls+'" data-tur="'+b.tur+'">'
+    +'<h2>'+esc(b.ad)+' <span class="formula">— '+esc(b.formula)+'</span></h2>'
+    +'<div class="tblwrap"><table><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>'
+    +'<div class="blkfoot"><button class="btn sec addr">+ satır</button>'
+    +'<span class="subt">Blok primi: <b data-bt>'+eur(blockTotal(b.tur))+'</b> · <span data-bc>'+DATA[b.tur].length+'</span> satır</span></div></div>';
+}
+function render(){
+  document.getElementById("blocks").innerHTML=BLOCKS.map(renderBlock).join("");
+  document.querySelectorAll(".blk").forEach(blk=>{
+    const tur=blk.dataset.tur, b=BLOCKS.find(x=>x.tur===tur);
+    blk.querySelectorAll("[data-f]").forEach(el=>{
+      const i=+el.closest("tr").dataset.i, f=el.dataset.f, ev=el.tagName==="TEXTAREA"?"input":(el.type==="date"?"change":"input");
+      el.addEventListener(ev,()=>{ DATA[tur][i][f]=el.value; recalcRow(blk,i); });
+    });
+    blk.querySelectorAll(".del").forEach(btn=>btn.onclick=()=>{ DATA[tur].splice(+btn.closest("tr").dataset.i,1); render(); });
+    blk.querySelector(".addr").onclick=()=>{ DATA[tur].push(blankRow(b)); render(); const rows=blk.querySelectorAll("tbody input.cell"); };
+  });
+  refreshTotals();
+}
+function recalcRow(blk,i){
+  const tur=blk.dataset.tur;
+  const cell=blk.querySelector('tr[data-i="'+i+'"] [data-prim]');
+  if(cell) cell.textContent=eur(rowPrim(tur,DATA[tur][i]));
+  refreshTotals(blk);
+}
+function refreshTotals(blk){
+  if(blk){ const tur=blk.dataset.tur; const bt=blk.querySelector("[data-bt]"); if(bt) bt.textContent=eur(blockTotal(tur)); }
+  else document.querySelectorAll(".blk").forEach(b=>{ const t=b.querySelector("[data-bt]"); if(t) t.textContent=eur(blockTotal(b.dataset.tur)); });
+  document.getElementById("grand").textContent=eur(grandTotal());
+}
+function setMsg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; }
+function isFilled(tur,r){
+  if(tur==="memnuniyet"||tur==="ts") return (r.firma||r.proje||"").trim()!=="" || parseNum(r.kontrat_tutari)!=null || parseNum(r.ts_tutari)!=null;
+  return (r.firma||r.proje||"").trim()!=="" || parseNum(r.kontrat_tutari)!=null;
+}
+async function save(){
+  const rows=[];
+  BLOCKS.forEach(b=>{ DATA[b.tur].forEach(r=>{ if(!isFilled(b.tur,r)) return;
+    rows.push({tur:b.tur,
+      firma:(r.firma||"").trim()||null, proje:(r.proje||"").trim()||null,
+      memnuniyet_kriterleri:(r.memnuniyet_kriterleri||"").trim()||null,
+      memnuniyet_orani:parseNum(r.memnuniyet_orani),
+      ts_notlari:(r.ts_notlari||"").trim()||null, ts_tutari:parseNum(r.ts_tutari),
+      kontrat_tarihi:(r.kontrat_tarihi||"")||null, kontrat_tutari:parseNum(r.kontrat_tutari)}); }); });
+  if(!rows.length){ setMsg("En az bir dolu satır gerekli.",false); return; }
+  const btn=document.getElementById("save"); btn.disabled=true; btn.textContent="Kaydediliyor…"; setMsg("Kaydediliyor…",true);
+  const {error}=await sb.from("mk_faaliyet").insert(rows);
+  btn.disabled=false; btn.textContent="Kaydet";
+  if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
+  setMsg("Kaydedildi ✓ ("+rows.length+" faaliyet · "+eur(grandTotal())+"). Mali → MK Prim panosuna yansıdı.",true);
+  BLOCKS.forEach(b=>DATA[b.tur]=[]); render();
+}
+document.getElementById("save").onclick=save;
+document.getElementById("clear").onclick=()=>{ if(confirm("Tüm girilen satırlar temizlensin mi?")){ BLOCKS.forEach(b=>DATA[b.tur]=[]); render(); setMsg("",true); } };
+BLOCKS.forEach(b=>DATA[b.tur].push(blankRow(b)));
+render();
+</script>
+</body>
+</html>
