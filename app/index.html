@@ -80,6 +80,14 @@
   table.tks th{background:#16324f;color:#fff;font-weight:600;font-size:11px;padding:5px 7px;text-align:center;white-space:nowrap}
   table.tks td{border-bottom:1px solid #eef1f5;padding:4px 7px}
   table.tks tr.grp td{font-weight:700;background:#eef3f8;border-top:2px solid #cdd8e4}
+  table.ssum{border-collapse:collapse;width:auto;min-width:520px;font-size:13px;margin:2px 0 16px;background:#fff}
+  table.ssum th{background:#16324f;color:#fff;font-weight:600;font-size:11px;padding:6px 16px;text-align:right;white-space:nowrap}
+  table.ssum th:first-child{text-align:left}
+  table.ssum td{padding:5px 16px;border-bottom:1px solid #eef1f5;color:#1c2430}
+  table.ssum td.num{text-align:right;white-space:nowrap}
+  table.ssum tr.stot td{font-weight:700;background:#eef4fb;border-bottom:2px solid #cdd8e4}
+  table.ssum tr.sreg td{font-weight:600}
+  table.ssum tr.sdet td{padding-top:1px;padding-bottom:7px;font-size:11.5px;line-height:1.6}
   .dl{font-size:12px;color:#6a7888;font-weight:600}
   .pin{background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:8px 12px;font-size:11.5px;color:#16324f;margin:0 2px 12px;line-height:1.6}
   .secH{margin:16px 2px 6px;color:#16324f;font-size:13px;font-weight:700;border-left:3px solid #16324f;padding-left:8px}
@@ -215,7 +223,7 @@ async function loadGundem(){
     if(aA){ const oa=onc(a),ob=onc(b); if(oa!==ob) return oa-ob; const ca=ac(a),cb=ac(b); if(ca!==cb) return ca.localeCompare(cb); return String(a.kod).localeCompare(String(b.kod)); }
     return String(a.kod).localeCompare(String(b.kod));
   }));
-  const keys=Object.keys(groups).sort((a,b)=> ((a==="ARGE")-(b==="ARGE")) || groups[b].length-groups[a].length || a.localeCompare(b));
+  const keys=Object.keys(groups).sort((a,b)=> ((b==="MB")-(a==="MB")) || ((a==="ARGE")-(b==="ARGE")) || groups[b].length-groups[a].length || a.localeCompare(b));
   let rows="";
   keys.forEach(k=>{
     rows+=`<tr class="grp"><td colspan="3">${esc(k)} · ${groups[k].length}</td></tr>`;
@@ -309,122 +317,180 @@ async function loadSo(){
         <td class="num">${fdate(r.tarih)}</td>
         <td>${esc(r.durum)}</td>
         <td>${esc(r.proje_adi||r.proje_numarasi)}</td>
-        <td>${esc(r.problem)}</td>
+        <td>${esc(String(r.problem||"").slice(0,96))}${String(r.problem||"").length>96?"…":""}</td>
         <td>${esc(r.bildiren)}</td>
       </tr>`;
     });
   });
   const st=await erpStamp();
-  view.innerHTML=`${stampHTML(st)}<div class="hint">SÖ — açık Sorun ve Öneriler (Şantiye/PEM), <b>kusurlu birim = bölüme</b> göre bloklu, açılış tarihine göre. ${(data||[]).length} kayıt.</div>
+  view.innerHTML=`<div class="stamp">Son güncelleme: ${st||"—"} · ${(data||[]).length} kayıt</div><div class="hint">SÖ — açık Sorun ve Öneriler (Şantiye/PEM), <b>kusurlu birim = bölüme</b> göre bloklu, açılış tarihine göre.</div>
     <div class="scroll"><table>
     <thead><tr><th>NR</th><th>Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
-/* ---------- SATIŞ YORUM (satis_yorum: SO yurtiçi + FY=Yurt Dışı 1; + ayrı Yurt Dışı 2 = satis_*_2) ---------- */
+/* ---------- SATIŞ (Yurt İçi=SO · Yurt Dışı 1=FY · Yurt Dışı 2=satis_*_2) — birleşik ---------- */
 async function loadSatis(){
   const view=document.getElementById("view");
-  const [sy,tk,ss,sy2,tk2,ss2]=await Promise.all([
-    sb.from("satis_yorum").select("*"), sb.from("satis_takip").select("*").eq("aktif",true), sb.from("satis_takip_stats").select("*"),
-    sb.from("satis_yorum_2").select("*"), sb.from("satis_takip_2").select("*").eq("aktif",true), sb.from("satis_takip_stats_2").select("*")
+  const [sy,tk,ss,sy2,tk2,ss2,sn,sn2,ai]=await Promise.all([
+    sb.from("satis_yorum").select("*"),
+    sb.from("satis_takip").select("*").eq("aktif",true),
+    sb.from("satis_takip_stats").select("*"),
+    sb.from("satis_yorum_2").select("*"),
+    sb.from("satis_takip_2").select("*").eq("aktif",true),
+    sb.from("satis_takip_stats_2").select("*"),
+    sb.from("satis_takip_snapshot").select("*"),
+    sb.from("satis_takip_snapshot_2").select("*"),
+    sb.from("satis_ay_islendi").select("*")
   ]);
   if(sy.error){ view.innerHTML=`<div class="load">Hata: ${esc(sy.error.message)}</div>`; return; }
-  const b1=satisBlock(sy.data||[], tk.data||[], (ss&&!ss.error)?(ss.data||[]):[]);
-  const b2=satisBlock(sy2.data||[], (tk2&&tk2.data)||[], (ss2&&!ss2.error)?(ss2.data||[]):[]);
-  view.innerHTML=`<div class="stamp">Satış — Yurtiçi (SO) + Yurt Dışı 1 (FY)</div>${b1}
-    <h2 class="secH" style="margin-top:28px">🌍 Yurt Dışı 2 — ayrı form (kendi satis_*_2 tabloları)</h2>${b2}`;
+  const syRows=sy.data||[], sy2Rows=(sy2&&!sy2.error)?(sy2.data||[]):[];
+  const islendi={}; ((ai&&!ai.error)?(ai.data||[]):[]).forEach(r=>{ islendi[r.kaynak]=r; });
+  const regions=[
+    {ad:"Yurt İçi", kaynak:"SO", data:syRows.filter(r=>r.kaynak==='SO')},
+    {ad:"Yurt Dışı 1", kaynak:"FY", data:syRows.filter(r=>r.kaynak==='FY')},
+    {ad:"Yurt Dışı 2", kaynak:"FY2", data:sy2Rows}
+  ].map(rg=>Object.assign(rg, regCalc(rg.data)));
+  const stampDate=regions.reduce((m,rg)=> (rg.cekim>m?rg.cekim:m), '0');
+  const anyData=regions.some(rg=>rg.data.length);
+  view.innerHTML=`
+    <div class="stamp">Satış — Yurt İçi + Yurt Dışı 1 + Yurt Dışı 2 · Son güncelleme: ${anyData?dOnly(stampDate):'—'}</div>
+    ${satisSummary(regions)}
+    ${regions.map(rg=>regionDetail(rg,islendi[rg.kaynak])).join("")}
+    ${takipSection("Yurtdışı 1 Takipteki Teklifler", tk.data||[], (ss&&!ss.error)?(ss.data||[]):[], (sn&&!sn.error)?(sn.data||[]):[])}
+    ${takipSection("Yurtdışı 2 Takipteki Teklifler", (tk2&&tk2.data)||[], (ss2&&!ss2.error)?(ss2.data||[]):[], (sn2&&!sn2.error)?(sn2.data||[]):[])}
+  `;
 }
-function satisBlock(data, tkData, ssData){
-  const cur=data.filter(r=>r.aktif), archived=data.filter(r=>!r.aktif);
-  const prevCekim={}; archived.forEach(r=>{ if(!prevCekim[r.kaynak]||r.cekim>prevCekim[r.kaynak]) prevCekim[r.kaynak]=r.cekim; });
-  const prev=archived.filter(r=>r.cekim===prevCekim[r.kaynak]);
-  const prevSrc=new Set(prev.map(r=>r.kaynak));
-  const curCmp=cur.filter(r=>prevSrc.has(r.kaynak));
-  const by=(arr,s)=>arr.filter(r=>String(r.statu).toLocaleLowerCase('tr').startsWith(s));
-  const sum=arr=>arr.reduce((a,r)=>a+(Number(r.net_eur)||0),0);
-  const cM=by(cur,'muht'), cA=by(cur,'al'), cMc=by(curCmp,'muht'), cAc=by(curCmp,'al'), pM=by(prev,'muht'), pA=by(prev,'al');
-  const dAd=(a,b)=> b.length? ` <span class="dl">(${a.length-b.length>=0?'+':'−'}${Math.abs(a.length-b.length)} ad)</span>`:'';
-  const dTut=(a,b)=>{ if(!b.length) return ''; const v=Math.round(sum(a)-sum(b)); return ` <span class="dl">(${v>=0?'+':'−'}${money(Math.abs(v))} €)</span>`; };
-  const key=r=>String(r.proje).trim().toLocaleLowerCase('tr');
-  const diff=(c,p)=>{ const ps=new Set(p.map(key)), cs=new Set(c.map(key));
-    return { ekl:c.filter(r=>!ps.has(key(r))), sil:p.filter(r=>!cs.has(key(r))) }; };
-  const chip=r=>`${esc(r.proje)} (${esc(r.grup)}, ${money(r.net_eur)} €)`;
-  const esList=(c,p)=>{ if(!p.length) return ''; const {ekl,sil}=diff(c,p); let s='';
-    if(ekl.length) s+=` &nbsp;·&nbsp; <b style="color:#0a6b3f">Eklenen (${ekl.length}):</b> ${ekl.map(chip).join(' · ')}`;
-    if(sil.length) s+=` &nbsp;·&nbsp; <b style="color:#b23a2e">Silinen (${sil.length}):</b> ${sil.map(chip).join(' · ')}`;
-    return s; };
-  const src={}; cur.forEach(r=>{ src[r.kaynak]={cekim:r.cekim,grup:r.grup}; });
-  const srcLine=Object.keys(src).sort().map(k=>`${esc(src[k].grup)} (${esc(k)}): ${dOnly(src[k].cekim)}${prevCekim[k]?` <span class="muted">(önceki ${dOnly(prevCekim[k])})</span>`:''}`).join('  ·  ');
-  const stampDate=cur.reduce((m,r)=> (r.cekim>m?r.cekim:m), '0');
-  const tbl=arr=>{ const g={}; arr.forEach(r=>{ (g[r.grup]=g[r.grup]||[]).push(r); });
-    let rows=''; Object.keys(g).sort().forEach(gn=>{
-      const list=g[gn].slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0));
-      rows+=`<tr class="grp"><td colspan="4">${esc(gn)} · ${list.length} proje · Net ${money(sum(list))} €</td></tr>`;
-      list.forEach(r=>{ rows+=`<tr><td class="kod" style="white-space:normal">${esc(r.proje)}</td><td>${esc(r.musteri)}</td><td>${esc(r.durum)}</td><td class="num">${money(r.net_eur)}</td></tr>`; });
-    });
-    return `<div class="scroll"><table><thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>DURUM</th><th class="num">NET (€)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+/* Bölge çekim hesabı: aktif=güncel, arşivden en yeni çekim=önceki */
+function regCalc(rows){
+  const cur=rows.filter(r=>r.aktif), arch=rows.filter(r=>!r.aktif);
+  let pc=null; arch.forEach(r=>{ if(pc==null||r.cekim>pc) pc=r.cekim; });
+  const prev=arch.filter(r=>r.cekim===pc);
+  const cmp = prev.length? cur : [];
+  const by=(arr,s)=>arr.filter(r=>String(r.statu||"").toLocaleLowerCase('tr').startsWith(s));
+  return {
+    cM:by(cur,'muht'), cA:by(cur,'al'),
+    cMc:by(cmp,'muht'), cAc:by(cmp,'al'),
+    pM:by(prev,'muht'), pA:by(prev,'al'),
+    cekim: cur.reduce((m,r)=> (r.cekim>m?r.cekim:m), '0'),
+    hasPrev: prev.length>0
   };
-  const totAd=cM.length+cA.length, totTut=sum(cM)+sum(cA);
-  const bigrow=(lbl,ad,tut,dad,dtut)=>`<div class="syrow"><b>${lbl} Proje Sayısı:</b> ${ad} ad${dad} &nbsp;·&nbsp; <b>Tutar:</b> ${money(tut)} €${dtut}</div>`;
+}
+const sSum=arr=>arr.reduce((a,r)=>a+(Number(r.net_eur)||0),0);
+const sKey=r=>String(r.proje||"").trim().toLocaleLowerCase('tr');
+function sDiff(c,p){ const ps=new Set(p.map(sKey)), cs=new Set(c.map(sKey));
+  return { ekl:c.filter(r=>!ps.has(sKey(r))), sil:p.filter(r=>!cs.has(sKey(r))) }; }
+function eurDelta(v){ const r=Math.round(v); const c=r>0?'#0a6b3f':(r<0?'#b23a2e':'#6a7888'); return ` <span style="color:${c}">(${r>0?'+':(r<0?'−':'')}${money(Math.abs(r))} €)</span>`; }
+/* Üst özet blok: hizalı Muhtemel | Alınan; Toplam + bölge satırları + eklenen(yeşil)/silinen(kırmızı) */
+function satisSummary(regions){
+  const cell=(cur,cmp,prev,hasPrev)=>`${money(sSum(cur))} €${hasPrev?eurDelta(sSum(cmp)-sSum(prev)):''}`;
+  const det=(cmp,prev,hasPrev)=>{ if(!hasPrev) return '';
+    const {ekl,sil}=sDiff(cmp,prev); let s='';
+    ekl.forEach(r=> s+=`<div style="color:#0a6b3f;white-space:nowrap">${esc(r.proje)} +${money(r.net_eur)} €</div>`);
+    sil.forEach(r=> s+=`<div style="color:#b23a2e;white-space:nowrap">${esc(r.proje)} −${money(r.net_eur)} €</div>`);
+    return s; };
+  const tM=[],tA=[],tMc=[],tAc=[],tpM=[],tpA=[]; let anyPrev=false;
+  regions.forEach(rg=>{ tM.push(...rg.cM); tA.push(...rg.cA); tMc.push(...rg.cMc); tAc.push(...rg.cAc); tpM.push(...rg.pM); tpA.push(...rg.pA); anyPrev=anyPrev||rg.hasPrev; });
+  let body=`<tr class="stot"><td>Toplam</td><td class="num">${cell(tM,tMc,tpM,anyPrev)}</td><td class="num">${cell(tA,tAc,tpA,anyPrev)}</td></tr>`;
+  regions.forEach(rg=>{
+    body+=`<tr class="sreg"><td>${esc(rg.ad)}</td><td class="num">${cell(rg.cM,rg.cMc,rg.pM,rg.hasPrev)}</td><td class="num">${cell(rg.cA,rg.cAc,rg.pA,rg.hasPrev)}</td></tr>`;
+    const dm=det(rg.cMc,rg.pM,rg.hasPrev), da=det(rg.cAc,rg.pA,rg.hasPrev);
+    if(dm||da) body+=`<tr class="sdet"><td></td><td>${dm}</td><td>${da}</td></tr>`;
+  });
+  return `<div class="scroll" style="max-height:none;overflow:visible;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num">Alınan</th></tr></thead><tbody>${body}</tbody></table></div>`;
+}
+function satisTbl(arr){
+  const list=arr.slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0));
+  const rows=list.map(r=>`<tr><td class="kod" style="white-space:normal">${esc(r.proje)}</td><td>${esc(r.musteri)}</td><td>${esc(r.durum)}</td><td class="num">${money(r.net_eur)}</td></tr>`).join("");
+  return `<div class="scroll"><table><thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>DURUM</th><th class="num">NET (€)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+/* Aylık güncelleme banner: form düğmesi satis_ay_islendi'ye yazar → burada '… ayı işlendi' */
+function ayBanner(ai){ if(!ai||!ai.ay) return ''; return `<div class="stamp" style="color:#0b57d0">📅 ${esc(ai.ay)} ayı işlendi${ai.updated_at?` · ${dOnly(ai.updated_at)}`:''}</div>`; }
+function regionDetail(rg, ai){
+  return `<h2 class="secH" style="margin-top:22px">${esc(rg.ad)}</h2>
+    ${ayBanner(ai)}
+    <h3 class="sec">Muhtemel <span class="muted">(${rg.cM.length} proje · Net ${money(sSum(rg.cM))} €)</span></h3>
+    ${satisTbl(rg.cM)}
+    <h3 class="sec">Alınan <span class="muted">(${rg.cA.length} proje · Net ${money(sSum(rg.cA))} €)</span></h3>
+    ${satisTbl(rg.cA)}`;
+}
+/* Ülke normalizasyonu: Almanya · İngiltere · Diğer Ülkeler */
+function ulkeNorm(u){ u=String(u||"").toLocaleLowerCase('tr');
+  if(/alman|german/.test(u)) return 'Almanya';
+  if(/ingil|i̇ngil|united kingdom|\buk\b|england|britan/.test(u)) return 'İngiltere';
+  return 'Diğer Ülkeler'; }
+/* Takipteki teklifler istatistiği — Almanya/İngiltere/Diğer + yıllar tek blokta */
+function statsBlock(ssData){
+  const stats=ssData||[];
+  const DD=['Kazandık','Kaybettik','Belirsiz','Müşteri işi alamadı'];
+  const ULKE=['Almanya','İngiltere','Diğer Ülkeler'];
+  const S={}, years=new Set();
+  stats.forEach(r=>{ const y=r.yil, u=ulkeNorm(r.ulke), d=r.durum; years.add(y);
+    (S[y]=S[y]||{}); (S[y][u]=S[y][u]||{});
+    const o=S[y][u][d]=S[y][u][d]||{adet:0,tutar:0,ws:0,wa:0};
+    o.adet+=Number(r.adet)||0; o.tutar+=Number(r.tutar)||0;
+    if(r.ort_isk!=null){ o.ws+=Number(r.ort_isk)*(Number(r.adet)||0); o.wa+=(Number(r.adet)||0); } });
+  const ort=o=>(o&&o.wa)?o.ws/o.wa:null;
+  const rd=v=>v==null?'—':Math.round(v)+'%';
+  const full=o=>o?`<td class="num">${o.adet}</td><td class="num">${money(o.tutar)}</td><td class="num">${rd(ort(o))}</td>`:'<td class="num">0</td><td class="num">—</td><td class="num">—</td>';
+  const cnt=o=>`<td class="num">${o?o.adet:0}</td>`;
+  const rowFor=(lbl,g,cl)=>`<tr${cl?' class="grp"':''}><td class="kod">${esc(lbl)}</td>${full(g['Kazandık'])}${full(g['Kaybettik'])}${cnt(g['Belirsiz'])}${cnt(g['Müşteri işi alamadı'])}</tr>`;
+  const yrs=[...years].sort((a,b)=>b-a);
+  let body='';
+  const yearBlock=y=>{
+    body+=`<tr class="grp"><td colspan="9">${esc(String(y))}</td></tr>`;
+    const gT={}; DD.forEach(d=>{ let ad=0,tu=0,ws=0,wa=0; ULKE.forEach(u=>{ const o=(S[y]&&S[y][u])?S[y][u][d]:null; if(o){ ad+=o.adet; tu+=o.tutar; ws+=o.ws; wa+=o.wa; } }); gT[d]={adet:ad,tutar:tu,ws:ws,wa:wa}; });
+    ULKE.forEach(u=> body+=rowFor(u, (S[y]&&S[y][u])||{}, false));
+    body+=rowFor('Toplam',gT,true);
+  };
+  if(yrs.length) yrs.forEach(yearBlock);
+  else { body+=`<tr class="grp"><td colspan="9">— (veri bekleniyor)</td></tr>`; ULKE.forEach(u=> body+=rowFor(u,{},false)); body+=rowFor('Toplam',{},true); }
+  return '<h3 class="sec">Takipteki teklifler — yıllık sonuç istatistiği</h3>'
+    +'<div class="hint">Ülke: Almanya · İngiltere · Diğer Ülkeler + Toplam. Kazandık/Kaybettik: adet · tutar · ort. iskonto. Belirsiz/Müşteri işi alamadı: adet. Yıllar tek blokta (2025 · 2026 …).</div>'
+    +`<div class="scroll"><table class="tks"><thead>
+      <tr><th rowspan="2">Yıl / Ülke</th><th colspan="3">Kazandık</th><th colspan="3">Kaybettik</th><th rowspan="2" class="num">Belirsiz<br>(adet)</th><th rowspan="2" class="num">Müşteri işi<br>alamadı (adet)</th></tr>
+      <tr><th class="num">Adet</th><th class="num">Tutar €</th><th class="num">Ort.İsk</th><th class="num">Adet</th><th class="num">Tutar €</th><th class="num">Ort.İsk</th></tr>
+      </thead><tbody>${body}</tbody></table></div>`;
+}
+/* Snapshot'tan eklenen/silinen — en yeni iki çekim farkı */
+function takipDiff(snapRows){
+  const rows=snapRows||[];
+  const cekimler=[...new Set(rows.map(r=>String(r.cekim)))].sort();
+  if(cekimler.length<2) return '<div class="hint">Eklenen/silinen için en az iki snapshot gerekir (form her yayınlandığında bir snapshot alınır).</div>';
+  const last=cekimler[cekimler.length-1], prev=cekimler[cekimler.length-2];
+  const cur=rows.filter(r=>String(r.cekim)===last), pr=rows.filter(r=>String(r.cekim)===prev);
+  const {ekl,sil}=sDiff(cur,pr);
+  const chip=(r,pos)=>`<span style="color:${pos?'#0a6b3f':'#b23a2e'};white-space:nowrap">${esc(r.proje)}${r.net_ht_eur!=null?` ${pos?'+':'−'}${money(r.net_ht_eur)} €`:''}</span>`;
+  let s=`<div class="sybox" style="line-height:1.9"><div class="muted">Önceki çekim ${dOnly(prev)} → ${dOnly(last)}</div>`;
+  if(!ekl.length&&!sil.length) s+='<div class="muted">Değişiklik yok.</div>';
+  if(ekl.length) s+=`<div><b style="color:#0a6b3f">Eklenen (${ekl.length}):</b> ${ekl.map(r=>chip(r,1)).join(' · ')}</div>`;
+  if(sil.length) s+=`<div><b style="color:#b23a2e">Silinen (${sil.length}):</b> ${sil.map(r=>chip(r,0)).join(' · ')}</div>`;
+  return s+'</div>';
+}
+/* Yurtdışı takip tablosu: Ülke/Hazırlayan yok; 4 not kolonu (Formlardan) */
+function takipSection(title, tkData, ssData, snapRows){
   const takip=(tkData||[]).slice().sort((a,b)=>(Number(b.net_ht_eur)||0)-(Number(a.net_ht_eur)||0));
   const tkNet=takip.reduce((a,r)=>a+(Number(r.net_ht_eur)||0),0);
   const tkRows=takip.map(r=>`<tr>
      <td class="kod" style="white-space:normal">${esc(r.proje)}</td>
      <td>${esc(r.musteri)}</td>
-     <td>${esc(r.ulke)}</td>
-     <td>${esc(r.hazirlayan)}</td>
      <td class="num">${fdate(r.teklif_tarihi)}</td>
      <td>${esc(r.agac)}</td>
      <td class="num">${money(r.net_ht_eur)}</td>
-     <td>${esc(r.takip_sekli)}</td>
      <td>${esc(r.ihale)}</td>
-     <td>${esc(r.durum)}</td></tr>`).join("");
+     <td>${esc(r.durum)}</td>
+     <td class="num">${esc(r.son_takip_teklif)}</td>
+     <td class="note">${esc(r.takip_sekli)}</td>
+     <td class="num">${esc(r.son_takip_yurtdisi)}</td>
+     <td class="note">${esc(r.yurtdisi_notlari)}</td></tr>`).join("");
   const takipHTML = takip.length? `
-    <h3 class="sec">Yurtdışı takipteki teklifler <span class="muted">(${takip.length} teklif · Net HT ${money(tkNet)} €)</span></h3>
     <div class="scroll"><table class="aup">
-    <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>ÜLKE</th><th>HAZIRLAYAN</th><th>TEKLİF</th><th>AĞAÇ</th><th class="num">NET HT (€)</th><th>TAKİP</th><th>İHALE</th><th>DURUM</th></tr></thead>
-    <tbody>${tkRows}</tbody></table></div>`:'';
-  /* ---- Takipteki teklifler: yıllık sonuç istatistiği (satis_takip_stats) ---- */
-  const stats=ssData||[];
-  let statsHTML='';
-  if(stats.length){
-    const DD=['Kazandık','Kaybettik','Belirsiz','Müşteri işi alamadı'];
-    const S={}, years=new Set();
-    stats.forEach(r=>{ const y=r.yil, u=r.ulke||'—', d=r.durum; years.add(y);
-      (S[y]=S[y]||{}); (S[y][u]=S[y][u]||{});
-      S[y][u][d]={adet:Number(r.adet)||0,tutar:Number(r.tutar)||0,ort:r.ort_isk==null?null:Number(r.ort_isk)}; });
-    const rd=v=>v==null?'—':Math.round(v)+'%';
-    const full=o=>o?`<td class="num">${o.adet}</td><td class="num">${money(o.tutar)}</td><td class="num">${rd(o.ort)}</td>`:'<td class="num">0</td><td class="num">—</td><td class="num">—</td>';
-    const cnt=o=>`<td class="num">${o?o.adet:0}</td>`;
-    const rowFor=(lbl,g,cl)=>`<tr${cl?' class="grp"':''}><td class="kod">${esc(lbl)}</td>${full(g['Kazandık'])}${full(g['Kaybettik'])}${cnt(g['Belirsiz'])}${cnt(g['Müşteri işi alamadı'])}</tr>`;
-    const yrs=[...years].sort((a,b)=>b-a);
-    statsHTML='<h3 class="sec">Takipteki teklifler — yıllık sonuç istatistiği</h3>'
-      +'<div class="hint">Ülke bazında + Toplam. Kazandık/Kaybettik: adet · tutar · ort. iskonto. Belirsiz/Müşteri işi alamadı: adet. Yıl = kararın verildiği yıl (Belirsiz için teklif yılı).</div>';
-    yrs.forEach(y=>{
-      const uls=Object.keys(S[y]).sort();
-      const gT={}; DD.forEach(d=>{ let ad=0,tu=0,ws=0,wa=0; uls.forEach(u=>{ const o=S[y][u][d]; if(o){ ad+=o.adet; tu+=o.tutar; if(o.ort!=null){ ws+=o.ort*o.adet; wa+=o.adet; } } }); gT[d]={adet:ad,tutar:tu,ort:wa?ws/wa:null}; });
-      let body=uls.map(u=>rowFor(u,S[y][u],false)).join('');
-      body+=rowFor('Toplam',gT,true);
-      statsHTML+=`<div class="scroll"><table class="tks"><thead>
-        <tr><th rowspan="2">${y} · ÜLKE</th><th colspan="3">Kazandık</th><th colspan="3">Kaybettik</th><th rowspan="2" class="num">Belirsiz<br>(adet)</th><th rowspan="2" class="num">Müşteri işi<br>alamadı (adet)</th></tr>
-        <tr><th class="num">Adet</th><th class="num">Tutar €</th><th class="num">Ort.İsk</th><th class="num">Adet</th><th class="num">Tutar €</th><th class="num">Ort.İsk</th></tr>
-        </thead><tbody>${body}</tbody></table></div>`;
-    });
-  }
-  return `
-    <div class="hint">${srcLine?('Kaynak — '+srcLine+' · '):''}Son güncelleme: ${data.length?dOnly(stampDate):'—'}${data.length?'':' · <i>(henüz kayıt yok)</i>'}</div>
-    <div class="sybox">
-      ${bigrow('Muhtemel',cM.length,sum(cM),dAd(cMc,pM),dTut(cMc,pM))}
-      ${bigrow('Alınan',cA.length,sum(cA),dAd(cAc,pA),dTut(cAc,pA))}
-      ${bigrow('Toplam',totAd,totTut, dAd(curCmp,prev), dTut(curCmp,prev))}
-    </div>
-    <h3 class="sec">Muhtemel <span class="muted">(${cM.length} proje · Net ${money(sum(cM))} €)</span><span class="muted">${esList(cMc,pM)}</span></h3>
-    ${tbl(cM)}
-    <h3 class="sec">Alınan <span class="muted">(${cA.length} proje · Net ${money(sum(cA))} €)</span><span class="muted">${esList(cAc,pA)}</span></h3>
-    ${tbl(cA)}
-    ${statsHTML}
+    <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>TEKLİF</th><th>AĞAÇ</th><th class="num">NET HT (€)</th><th>İHALE</th><th>DURUM</th><th>Son Takip T.</th><th class="note">Teklif B. Notları</th><th>Son Takip T.</th><th class="note">Yurtdışı B. Notları</th></tr></thead>
+    <tbody>${tkRows}</tbody></table></div>`:'<div class="hint">Takipte teklif yok.</div>';
+  return `<h3 class="sec" style="margin-top:26px">${esc(title)} <span class="muted">(${takip.length} teklif · Net HT ${money(tkNet)} €)</span></h3>
+    ${takipDiff(snapRows)}
     ${takipHTML}
-  `;
+    ${statsBlock(ssData)}`;
 }
 
 /* ---------- HAZIR PEM/PRJ ---------- */
@@ -432,8 +498,14 @@ async function loadHazir(){
   const view=document.getElementById("view");
   const {data,error}=await sb.from("hazir_pem_prj").select("*");
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  /* Filtre: taze kalemleri gizle — PEM hazır tarihi son 15 gün, PRJ AÜP (hazir_tarihi) son 10 gün içindeyse çıkar. Eski/takılı kalanlar görünür. */
+  const _now=new Date(); _now.setHours(23,59,59,999);
+  const _cut=n=>{ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-n); return d; };
+  const _c15=_cut(15), _c10=_cut(10);
+  const _son=(dt,c)=>{ if(!dt) return false; const d=new Date(dt); return !isNaN(d) && d>=c && d<=_now; };
+  const filt=(data||[]).filter(r=>{ const isPem=/PEM/i.test(String(r.tur||"")); return isPem? !_son(r.hazir_tarihi,_c15) : !_son(r.hazir_tarihi,_c10); });
   let rows="";
-  (data||[]).forEach(r=>{
+  filt.forEach(r=>{
     rows+=`<tr>
       <td class="kod">${esc(r.tur)}</td>
       <td class="kod">${esc(String(r.no||"").slice(-6))}</td>
@@ -445,7 +517,7 @@ async function loadHazir(){
     </tr>`;
   });
   const st=await erpStamp();
-  view.innerHTML=`${stampHTML(st)}<div class="hint">Hazır PEM/PRJ — Sevke Hazır PEM (durum 3) + PRJ (8/8.1), birleşik salt-okur. ${(data||[]).length} kalem.</div>
+  view.innerHTML=`${stampHTML(st)}<div class="hint">Hazır PEM/PRJ — Sevke Hazır PEM (durum 3) + PRJ (8/8.1), birleşik salt-okur. Taze kalemler gizli (PEM son 15 gün · PRJ AÜP son 10 gün). ${filt.length} / ${(data||[]).length} kalem.</div>
     <div class="scroll"><table>
     <thead><tr><th>Tür</th><th>No</th><th>Proje Adı</th><th>Ek Bilgi/Fiyat</th><th>Adet</th><th>Hazır Tarihi</th><th>Sevk Durumu (Onur)</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
