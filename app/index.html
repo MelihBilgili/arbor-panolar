@@ -618,26 +618,23 @@ async function loadIcmal(tgt){
     <tbody>${rows}</tbody></table></div>`;
 }
 
-/* ---------- REFERANS (kisiler / odemeler / parametreler + işleyiş) ---------- */
+/* ---------- REFERANS (kisiler / parametreler + işleyiş; ödemeler Maaş-Prim'e taşındı) ---------- */
 async function loadRef(){
   const view=document.getElementById("view");
-  const [k,o,p]=await Promise.all([
+  const [k,p]=await Promise.all([
     sb.from("kisiler").select("*").order("kod"),
-    sb.from("odemeler").select("*"),
     sb.from("parametreler").select("*").order("anahtar")
   ]);
-  const err=k.error||o.error||p.error;
+  const err=k.error||p.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
   let kr=""; (k.data||[]).forEach(r=>{ kr+=`<tr><td class="kod">${esc(r.kod)}</td><td>${esc(r.tam_ad)}</td><td>${esc(r.bolum)||''}</td><td>${esc(r.email)||'<span style=color:#b7c6d6>—</span>'}</td><td>${esc(r.rol)||''}</td></tr>`; });
-  let or=""; (o.data||[]).forEach(r=>{ or+=`<tr><td>${esc(r.tam_ad)}</td><td>${esc(r.tur)}</td><td class="num">${r.tutar==null?'':esc(r.tutar)} ${esc(r.para_birimi)}</td><td>${esc(r.aciklama)}</td></tr>`; });
   let pr=""; (p.data||[]).forEach(r=>{ pr+=`<tr><td class="kod">${esc(r.anahtar)}</td><td>${esc(typeof r.deger==='string'?r.deger:JSON.stringify(r.deger))}</td><td>${esc(r.aciklama)}</td></tr>`; });
   const st=await tblStamp("kisiler");
   view.innerHTML=`${stampHTML(st)}
     <div class="flow"><b>Güncel işleyiş:</b> <span class="step">Melih ERP'yi manuel çeker</span><span class="arr">→</span><span class="step">Arbor\ERP\&lt;YYMMDD&gt;\ (geçici giriş kutusu)</span><span class="arr">→</span><span class="step">worker · upsert</span><span class="arr">→</span><span class="step">Postgres snapshot</span><span class="arr">→</span><span class="step">bu app</span></div>
     <h3 class="sec">Kişiler (${(k.data||[]).length})</h3>
     <div class="scroll"><table><thead><tr><th>Kod</th><th>Ad Soyad</th><th>Bölüm</th><th>E-posta</th><th>Rol</th></tr></thead><tbody>${kr}</tbody></table></div>
-    <h3 class="sec">Ödemeler (referans — süreç yok)</h3>
-    <div class="scroll"><table><thead><tr><th>Kişi</th><th>Tür</th><th>Tutar</th><th>Açıklama</th></tr></thead><tbody>${or}</tbody></table></div>
+    <div class="hint">Ödemeler (referans — süreç yok) bloğu <b>Mali → Maaş-Prim</b> panosuna taşındı.</div>
     <h3 class="sec">Parametreler</h3>
     <div class="scroll"><table><thead><tr><th>Anahtar</th><th>Değer</th><th>Açıklama</th></tr></thead><tbody>${pr}</tbody></table></div>
     <h3 class="sec">İşleyiş — Süreçler</h3>
@@ -683,6 +680,9 @@ async function loadRef(){
     <div class="flow"><b>11. Sistem / Bakım Süreci</b><span class="tag ok">yapısal garanti</span>
       <p><b>App cerrahi düzenlenir</b>, asla sıfırdan üretilmez: <code>arbor_app.html</code> düzenlenir → <code>_deploy_app.py</code> invariants kapısını çalıştırır (require eksik / forbid varsa deploy durur) → GitHub <code>app/index.html</code>. Bilerek davranış değişince önce <code>arbor_invariants.json</code> güncellenir.</p>
       <p class="muted"><b>SQL/DDL</b> service key ile local'den çalışmaz → Supabase SQL Editor (tarayıcı) üzerinden Run; anon yazımlarda <code>audit_log</code> grant + policy unutulmaz.</p>
+    </div>
+    <div class="flow"><b>12. Prosedür Güncelleme</b><span class="tag">ERP son kayıt</span>
+      <p>Prosedürler, <code>C:\\Users\\USER\\OneDrive\\Arbor\\ERP\\</code> son kayıt dikkate alınarak güncellenir.</p>
     </div>
 `;
 }
