@@ -163,8 +163,8 @@ async function loadPerms(){
 }
 
 /* ---------- APP SHELL ---------- */
-const MALI_BOLUM=["depenses","kredi","ahsap","sel_arb","mali_maasprim"];
-const MALI_ALL=["depenses","kredi","ahsap","sel_arb","bilanco","icmal","mali_maasprim"];
+const MALI_BOLUM=["depenses","kredi","ahsap","sel_arb","mali_maasprim","mali_mkprim"];
+const MALI_ALL=["depenses","kredi","ahsap","sel_arb","bilanco","icmal","mali_maasprim","mali_mkprim"];
 const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["mali","Mali"],["obrapor","ÖB Rapor"],["formlar","Formlar"],["ozel","Özel"]];
 function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b)); if(k==='obrapor') return a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar')||a.includes('santiye'); return a.includes(k); }
 function renderApp(){
@@ -736,6 +736,7 @@ function loadFormlar(){
     {ad:"EA — SÖ Haftalık Gündem Formu", who:"Enes Artan · Kalite", url:"ea/", desc:"Hafta bölümünü seçer, sorun ve önerileri 'gündeme alındı'ya çevirir. Yazar: so_ea_form."},
     {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."},
     {ad:"ÖB Rapor Formu", who:"Özgül Bedestenci · Yurtdışı Finans", url:"ob-rapor/", desc:"Haftalık ÖB rapor kalemlerini (konu, eski/yeni durum, kategori) günceller. Yazar: ob_rapor; ÖB Rapor panosuna salt-okur yansır."},
+    {ad:"MK — Faaliyet & Prim Formu", who:"Mehmet Konak", url:"mk-prim/", desc:"Dört blok (Memnuniyet · TS Ekstra · FR Satış · Diğer Satış) faaliyet girişi; prim kontrat/tutar alanlarından otomatik hesaplanır. Yazar: mk_faaliyet; Mali → MK Prim panosuna salt-okur yansır (toplam FR dahil 4 kriter)."},
     {ad:"Yurt Dışı 1 Satış Formu", who:"Fatma · Satış (Fransa/ihracat)", url:"fy/", desc:"Yurtdışı muhtemel/alınan projeleri (proje, müşteri, statü, ülke, net €, durum) + takipteki teklifler girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır. Paylaşılan xlsx yerine geçer."},
     {ad:"Yurt Dışı 2 Satış Formu", who:"Yurt Dışı 2 ekibi · ayrı form", url:"fy2/", desc:"Yurt Dışı 1 ile birebir aynı format, TAMAMEN AYRI veri (satis_yorum_2 / satis_takip_2 / satis_takip_sonuc_2). Ayrı kişilerce doldurulur; form 1 verisiyle karışmaz. Satış panosundaki 'Yurt Dışı 2' bloğuna yansır."},
     {ad:"Yurtiçi Satış Formu", who:"Sinan · Satış (Yurtiçi)", url:"so/", desc:"Yurtiçi muhtemel/alınan projeleri (proje, müşteri, statü, net €) girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır."},
@@ -798,14 +799,38 @@ async function loadMali(){
   const b=state.maliBolum;
   let metaMap={};
   if(panoAllowed.length){ const m=await sb.from("pano_ozel_meta").select("*").in("bolum",panoAllowed); (m.data||[]).forEach(x=>metaMap[x.bolum]=x); }
-  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="mali_maasprim"?"Maaş-Prim" : ((metaMap[x]&&metaMap[x].etiket)||x);
+  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="mali_maasprim"?"Maaş-Prim" : x==="mali_mkprim"?"MK Prim" : ((metaMap[x]&&metaMap[x].etiket)||x);
   const bar=all.map(x=>`<button class="malitab${x===b?' active':''}" data-b="${esc(x)}">${esc(label(x))}</button>`).join("");
   view.innerHTML=`<div class="malibar">${bar}</div><div id="mali-body"><div class="load">Yükleniyor…</div></div>`;
   view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.maliBolum=btn.dataset.b; loadMali(); });
   if(b==="bilanco"){ loadBilanco("mali-body"); return; }
   if(b==="icmal"){ loadIcmal("mali-body"); return; }
+  if(b==="mali_mkprim"){ loadMkPrim("mali-body"); return; } /* MK Prim: canlı faaliyet + otomatik prim (mk_faaliyet, bölüm-RLS) */
   if(b==="mali_maasprim"){ loadOzelHtml("mali_maasprim","mali-body"); return; } /* Maaş-Prim: tam sadakat ham-HTML (pano_ozel_html, bölüm-RLS) */
   loadPanoBolum(b, "mali-body");
+}
+
+/* ---------- MK PRİM — owner salt-okur: MK faaliyet formundan 4 blok + otomatik prim (mk_faaliyet). Tek kaynak: oranlar burada + formda birebir. ---------- */
+const MKP_BLOCKS=[["memnuniyet","Müşteri Memnuniyeti","Oran% × %0,75 × (Kontrat HT ÷ 12)"],["ts","TS Ekstra İşler","%0,2 × TS Tutarı"],["fr","FR (Fransa) Satış","%0,05 × Kontrat HT"],["diger","Diğer Satış","%0,10 × Kontrat HT"]];
+function mkPrim(tur,r){ const K=Number(r.kontrat_tutari)||0; if(tur==="memnuniyet") return (Number(r.memnuniyet_orani)||0)/100*0.0075*(K/12); if(tur==="ts") return 0.002*(Number(r.ts_tutari)||0); if(tur==="fr") return 0.0005*K; return 0.001*K; }
+const mkEur=n=>(Number(n)||0).toLocaleString("tr-TR",{maximumFractionDigits:2})+" €";
+async function loadMkPrim(tgt){
+  const body=document.getElementById(tgt||"view");
+  const {data,error}=await sb.from("mk_faaliyet").select("*").eq("aktif",true).order("id",{ascending:false});
+  if(error){ body.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const rows=data||[]; const byT={memnuniyet:[],ts:[],fr:[],diger:[]}; rows.forEach(r=>{ (byT[r.tur]=byT[r.tur]||[]).push(r); });
+  let grand=0;
+  let html=`<div class="stamp">MK Prim · ${rows.length} faaliyet</div><div class="hint">Mehmet Konak <a href="mk-prim/" target="_blank">Faaliyet formundan</a> girer; prim kontrat/tutar alanlarından otomatik hesaplanır (tek kaynak). Toplam dört kriteri (FR dahil) kapsar.</div>`;
+  MKP_BLOCKS.forEach(bl=>{
+    const tur=bl[0], rs=byT[tur]||[], bt=rs.reduce((a,r)=>a+mkPrim(tur,r),0); grand+=bt;
+    const isMem=tur==="memnuniyet", isTs=tur==="ts";
+    const extraH= isMem?"<th>Kriter</th><th class='num'>Oran %</th>":(isTs?"<th>TS Notları</th>":"<th class='num'>Kontrat Tarihi</th>");
+    const amtH= isTs?"TS Tutarı (€)":"Kontrat HT (€)";
+    const tr=rs.map(r=>{ const extra= isMem?`<td>${esc(r.memnuniyet_kriterleri||"")}</td><td class='num'>${r.memnuniyet_orani==null?"":esc(r.memnuniyet_orani)}</td>`:(isTs?`<td>${esc(r.ts_notlari||"")}</td>`:`<td class='num'>${fdate(r.kontrat_tarihi)}</td>`); const amt=isTs?r.ts_tutari:r.kontrat_tutari; return `<tr><td>${esc(r.firma||"")}</td><td>${esc(r.proje||"")}</td>${extra}<td class='num'>${money(amt)}</td><td class='num' style='font-weight:700;color:#0a5745'>${mkEur(mkPrim(tur,r))}</td></tr>`; }).join("");
+    html+=`<h3 class="sec">${esc(bl[1])} <span class="muted">— ${esc(bl[2])} · ${rs.length} satır · ${mkEur(bt)}</span></h3><div class="scroll"><table><thead><tr><th>Firma</th><th>Proje</th>${extraH}<th class='num'>${amtH}</th><th class='num'>Prim (€)</th></tr></thead><tbody>${tr||`<tr><td colspan='6' style='color:#8a97a4;padding:10px'>Kayıt yok.</td></tr>`}</tbody></table></div>`;
+  });
+  html+=`<div class="skpi" style="margin-top:12px"><div><b>${mkEur(grand)}</b> toplam prim (4 kriter)</div><div><b>${rows.length}</b> faaliyet</div></div>`;
+  body.innerHTML=html;
 }
 
 /* ---------- ŞANTİYE — owner salt-okur: tarihli DURUM LOG akışı (ÖB+MK tek form yazar). ---------- */
