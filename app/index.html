@@ -586,13 +586,15 @@ async function loadBilanco(tgt){
     const kc=hasK?`<td class="num" style="color:${k>=0?'#0a6b3f':'#b23a2e'};font-weight:600">${k>=0?'+':'−'}${money(Math.abs(k))}</td>`:'<td class="num" style="color:#c2ccd6">—</td>';
     const mc=hasK?`<td class="num" style="color:${k>=0?'#0a6b3f':'#b23a2e'}">${Number(r.marj).toFixed(1).replace(".",",")}%</td>`:'<td class="num" style="color:#c2ccd6">—</td>';
     const g=v=>v==null?'<td class="num" style="color:#c2ccd6">—</td>':`<td class="num">${money(v)}</td>`;
-    rows+=`<tr><td class="kod">${esc(r.yil)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${money(r.net_eur)}</td>${g(r.k710_tl)}${g(r.k720_tl)}${g(r.k730_tl)}${g(r.toplam_gider_tl)}${kc}${mc}</tr>`;
+    const tg=r.toplam_gider_tl;
+    const p=v=>(v==null||tg==null||Number(tg)===0)?'<td class="num" style="color:#c2ccd6">—</td>':`<td class="num" style="color:#6a7888">%${(v/tg*100).toFixed(1).replace(".",",")}</td>`;
+    rows+=`<tr><td class="kod">${esc(r.yil)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${money(r.net_eur)}</td>${g(r.k710_tl)}${p(r.k710_tl)}${g(r.k720_tl)}${p(r.k720_tl)}${g(r.k730_tl)}${p(r.k730_tl)}${g(r.toplam_gider_tl)}${kc}${mc}</tr>`;
   });
   const st=await tblStamp("bilanco_yil");
   view.innerHTML=`${stampHTML(st)}<div class="hint">Bilanço — <b>Arbor Türkiye</b> (yalnız Türkiye kapsamı). Gelir = Yıllık İcmal, gider = SB tablosu. 2011–2024 Türkiye Satış/Gider/Kâr dosyasından; 2022–2025 tam kâr/zarar.</div>
     ${cards}
     <div class="scroll"><table>
-    <thead><tr><th>Yıl</th><th class="num">Net Satış (TL)</th><th class="num">Net (€)</th><th class="num">710 Malzeme</th><th class="num">720 İşçilik</th><th class="num">730 GÜG</th><th class="num">Toplam Gider</th><th class="num">Kâr/Zarar</th><th class="num">Marj</th></tr></thead>
+    <thead><tr><th>Yıl</th><th class="num">Net Satış (TL)</th><th class="num">Net (€)</th><th class="num">710 Malzeme</th><th class="num">710 %</th><th class="num">720 İşçilik</th><th class="num">720 %</th><th class="num">730 GÜG</th><th class="num">730 %</th><th class="num">Toplam Gider</th><th class="num">Kâr/Zarar</th><th class="num">Marj</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
