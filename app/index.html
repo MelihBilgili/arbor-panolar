@@ -587,7 +587,7 @@ async function loadBilanco(tgt){
     const mc=hasK?`<td class="num" style="color:${k>=0?'#0a6b3f':'#b23a2e'}">${Number(r.marj).toFixed(1).replace(".",",")}%</td>`:'<td class="num" style="color:#c2ccd6">—</td>';
     const g=v=>v==null?'<td class="num" style="color:#c2ccd6">—</td>':`<td class="num">${money(v)}</td>`;
     const tg=r.toplam_gider_tl;
-    const p=v=>(v==null||tg==null||Number(tg)===0)?'<td class="num" style="color:#c2ccd6">—</td>':`<td class="num" style="color:#6a7888">%${(v/tg*100).toFixed(1).replace(".",",")}</td>`;
+    const p=v=>(v==null||tg==null||Number(tg)===0)?'<td class="num" style="color:#c2ccd6">—</td>':`<td class="num" style="color:#6a7888">%${Math.round(v/tg*100)}</td>`;
     rows+=`<tr><td class="kod">${esc(r.yil)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${money(r.net_eur)}</td>${g(r.k710_tl)}${p(r.k710_tl)}${g(r.k720_tl)}${p(r.k720_tl)}${g(r.k730_tl)}${p(r.k730_tl)}${g(r.toplam_gider_tl)}${kc}${mc}</tr>`;
   });
   const st=await tblStamp("bilanco_yil");
