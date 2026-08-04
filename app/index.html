@@ -764,10 +764,11 @@ async function loadAhsap(tgt){
   const scbm=arr=>arr.reduce((a,r)=>a+(Number(r.toplam_cbm)||0),0);
   const int=v=>v==null?"—":Math.round(v).toLocaleString("tr-TR");
   const chg=(cu,pr)=>{ if(cu==null||pr==null||pr===0) return '<td class="num" style="color:#c2ccd6">—</td>'; const p=Math.round((cu-pr)/pr*100); const col=p>0?'#b23a2e':(p<0?'#0a6b3f':'#6a7888'); return `<td class="num" style="color:${col}">${p>0?'+':''}${p}%</td>`; };
-  const agaclar=[...new Set(cur.map(r=>r.agac).concat(prev.map(r=>r.agac)))].sort((a,b)=>String(a).localeCompare(String(b),'tr'));
+  const agaclar=["Çam DKD","Çam KKK-20cm","Çam KKK-70cm","İroko DKD","Lareks DKD","Meranti DKD","Meşe DKD","Accoya DKD","Okaliptus DKD","Okaliptus KKK","Sapelli DKD"];
   let rh="";
   agaclar.forEach(ag=>{
     const cc=cur.filter(r=>r.agac===ag), pp=prev.filter(r=>r.agac===ag);
+    if(!cc.length&&!pp.length){ rh+=`<tr style="font-weight:700;background:#f4efe6"><td>${esc(ag)}</td><td class="num" style="color:#c2ccd6">—</td><td class="num" style="color:#c2ccd6">—</td><td class="num" style="color:#c2ccd6">—</td><td class="num" style="color:#c2ccd6">—</td></tr>`; return; }
     const ca=wavg(cc), pa=wavg(pp);
     rh+=`<tr style="font-weight:700;background:#f4efe6"><td>${esc(ag)}</td><td class="num">${int(scbm(cc))}</td><td class="num">${ca==null?"—":int(ca)+" €"}</td><td class="num">${pa==null?"—":int(pa)+" €"}</td>${chg(ca,pa)}</tr>`;
     const teds=[...new Set(cc.map(r=>r.tedarikci).concat(pp.map(r=>r.tedarikci)))].sort((a,b)=>String(a).localeCompare(String(b),'tr'));
