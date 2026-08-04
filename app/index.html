@@ -779,7 +779,7 @@ async function loadAhsap(tgt){
   });
   let stamp="—";
   if(cur.length){ const md=cur.reduce((m,r)=> (r.created_at>m?r.created_at:m), '0'); const d=new Date(md); stamp=`${AY_TR[d.getMonth()]} ${d.getFullYear()} ayı işlendi · ${dOnly(md)}`; }
-  body.innerHTML=`<div class="stamp">Timber 72x86${cur.length?" · "+stamp:""}</div>
+  body.innerHTML=`<div class="stamp">${cur.length?stamp:"—"}</div>
     <div class="hint">Ahşap alımları — ağaç çeşidi başına <b>CBM ağırlıklı € ortalama</b> (giriş kuruyla €'ya çevrilmiş); altında tedarikçi kırılımı. Önceki = son kapanan dönem. <a href="ahsap/" target="_blank">Ahşap formundan</a> işlenir, aylık güncellemede güncel→önceki kayar.</div>
     <div class="scroll"><table><thead><tr><th>Ağaç Çeşidi / Tedarikçi</th><th class="num">Top. CBM</th><th class="num">Ağ. Ort. €</th><th class="num">Önceki Ort. €</th><th class="num">Değişim %</th></tr></thead><tbody>${rh||'<tr><td colspan="5" class="load">Kayıt yok.</td></tr>'}</tbody></table></div>`;
 }
