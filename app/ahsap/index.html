@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ahşap Maliyet Formu — Timber 72x86</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  header{background:#6b4a12;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#f0dbb0;margin-top:3px}
+  .wrap{max-width:760px;margin:0 auto;padding:16px 16px 60px}
+  .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .warn{background:#fff8ea;border:1px solid #e8cf95;border-radius:9px;padding:11px 13px;font-size:12.5px;line-height:1.5;color:#6b4a12;margin-bottom:14px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .f{display:flex;flex-direction:column;gap:4px}
+  .f.grow{flex:1;min-width:200px}
+  .f label{font-size:11px;color:#6b4a12;font-weight:700}
+  input,select{font:inherit;padding:8px 10px;border:1px solid #cdd6df;border-radius:7px;background:#fffdf5;width:100%}
+  input:disabled{background:#eee;color:#888}
+  .save{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px 18px;font-weight:600;cursor:pointer;font-size:14px}
+  .upd{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:13px}
+  .msg{font-size:13px;min-height:18px;margin-top:8px}.msg.ok{color:#2e7d54;font-weight:600}.msg.err{color:#b40000;font-weight:600}
+  .hint{font-size:12px;color:#8a97a4;margin:10px 2px}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:6px}
+  th{background:#6b4a12;color:#fff;font-weight:600;padding:6px 8px;text-align:left;font-size:11px}
+  td{border-bottom:1px solid #eef1f5;padding:5px 8px}
+  .updbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .updnote{font-size:11.5px;color:#8a6100;flex:1;min-width:220px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ahşap Maliyet Formu · Timber 72x86</h1>
+  <div class="sub">Sipariş verilmiş ahşap alımlarını buradan işleyin. Melih'in Ahşap panosuna ağaç çeşidi + tedarikçi kırılımıyla € ağırlıklı ortalama olarak yansır.</div>
+</header>
+<div class="wrap">
+  <div class="warn">Buraya sadece gerçekten siparişi verilmiş alımlar işlenir. Satınalmaya dönüşmeyen fiyatlar işlenmez. Tüm fiyatların Türkiye teslimi olması gerekir. Yurt dışında teslim alınan ürünlere navlun maliyeti yansıtılarak Türkiye teslimi birim fiyatları bulunup işlenir.</div>
+
+  <div class="card">
+    <div class="row">
+      <div class="f grow">
+        <label>ÜRÜN ÇEŞİDİ (kesit 72 x 86)</label>
+        <select id="agac"></select>
+      </div>
+      <div class="f grow">
+        <label>TEDARİKÇİ</label>
+        <input id="tedarikci" placeholder="Tedarikçi adı">
+      </div>
+    </div>
+    <div class="row">
+      <div class="f grow"><label>UZUNLUK</label><input id="uzunluk" placeholder="ör. 3 m / 3000 mm"></div>
+      <div class="f grow"><label>TOPLAM CBM</label><input id="cbm" inputmode="decimal" placeholder="ör. 12,5"></div>
+    </div>
+    <div class="row">
+      <div class="f grow"><label>FİYAT (birim)</label><input id="fiyat" inputmode="decimal" placeholder="ör. 1000"></div>
+      <div class="f"><label>PARA BİRİMİ</label>
+        <select id="pb"><option value="EUR">EUR (€)</option><option value="TL">TL</option><option value="USD">USD ($)</option></select>
+      </div>
+      <div class="f grow"><label id="kurlbl">KUR (1 € = ? EUR)</label><input id="kur" inputmode="decimal" placeholder="1"></div>
+    </div>
+    <div class="row" style="margin-bottom:0">
+      <div class="f" style="justify-content:flex-end"><button class="save" id="save">Alımı ekle</button></div>
+      <div class="f grow" style="justify-content:center"><div class="msg" id="msg"></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="updbar">
+      <button class="upd" id="update">Aylık güncelleme (ayı kapat)</button>
+      <div class="updnote">Ay kapanınca çalıştır: mevcut alımların ağırlıklı ortalaması <b>"önceki"ye</b> kayar, yeni alımlar yeni dönemi oluşturur. Ayda bir kullanılır — gün içinde tek tek alım eklemek için bu düğmeye gerek yok.</div>
+    </div>
+    <div class="msg" id="umsg"></div>
+  </div>
+
+  <div class="card" id="seswrap" style="display:none">
+    <div style="font-size:12px;color:#6b4a12;font-weight:700;margin-bottom:2px">Bu oturumda eklenenler</div>
+    <table><thead><tr><th>Ürün</th><th>Tedarikçi</th><th>CBM</th><th>Fiyat</th><th>€ birim</th></tr></thead><tbody id="sesbody"></tbody></table>
+  </div>
+  <div class="hint">Kayıtlar Supabase'e yazılır (yalnızca ekleme). Fiyat hangi para biriminde girilirse girilsin, girilen kurla €'ya çevrilip kaydedilir (tarihsel doğruluk).</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const AGAC=["Çam DKD","Çam KKK-20cm","Çam KKK-70cm","İroko DKD","Lareks DKD","Meranti DKD","Meşe DKD","Accoya DKD","Okaliptus DKD","Okaliptus KKK","Sapelli DKD"];
+$("agac").innerHTML='<option value="">— ürün seç —</option>'+AGAC.map(a=>'<option value="'+esc(a)+'">'+esc(a)+' 72 x 86</option>').join("");
+const num=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null; if(t.indexOf(",")>-1 && t.indexOf(".")>-1){ t=t.replace(/\./g,"").replace(",","."); } else { t=t.replace(",","."); } const v=parseFloat(t); return isNaN(v)?null:v; };
+function msg(el,t,ok){ const m=$(el); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
+function syncKur(){ const pb=$("pb").value; $("kurlbl").textContent="KUR (1 € = ? "+pb+")"; if(pb==="EUR"){ $("kur").value="1"; $("kur").disabled=true; } else { $("kur").disabled=false; if($("kur").value==="1") $("kur").value=""; } }
+$("pb").onchange=syncKur; syncKur();
+const SES=[];
+function renderSes(){ if(!SES.length) return; $("seswrap").style.display="block"; $("sesbody").innerHTML=SES.map(r=>'<tr><td>'+esc(r.agac)+'</td><td>'+esc(r.tedarikci)+'</td><td>'+esc(r.cbm)+'</td><td>'+esc(r.fiyat)+' '+esc(r.pb)+'</td><td>'+Math.round(r.eur)+' €</td></tr>').join(""); }
+$("save").onclick=async()=>{
+  const agac=$("agac").value, tedarikci=$("tedarikci").value.trim(), uzunluk=$("uzunluk").value.trim();
+  const cbm=num($("cbm").value), fiyat=num($("fiyat").value), pb=$("pb").value, kur=num($("kur").value);
+  if(!agac){ msg("msg","Ürün çeşidi seç.",false); return; }
+  if(!tedarikci){ msg("msg","Tedarikçi gir.",false); return; }
+  if(cbm==null||cbm<=0){ msg("msg","Toplam CBM gir.",false); return; }
+  if(fiyat==null||fiyat<=0){ msg("msg","Fiyat gir.",false); return; }
+  if(kur==null||kur<=0){ msg("msg","Kur gir (1 € = ? "+pb+").",false); return; }
+  const fiyat_eur = fiyat/kur;
+  const rec={ agac, kesit:"72 x 86", uzunluk:uzunluk||null, tedarikci, toplam_cbm:cbm, fiyat, para_birimi:pb, eur_kur:kur, fiyat_eur };
+  $("save").disabled=true;
+  const {error}=await sb.from("ahsap_alim").insert(rec);
+  $("save").disabled=false;
+  if(error){ msg("msg","Kayıt hatası: "+error.message,false); return; }
+  SES.unshift({agac,tedarikci,cbm,fiyat,pb,eur:fiyat_eur}); renderSes();
+  msg("msg","Alım eklendi ("+agac+" · "+tedarikci+").",true);
+  $("tedarikci").value=""; $("uzunluk").value=""; $("cbm").value=""; $("fiyat").value=""; $("agac").value="";
+};
+$("update").onclick=async()=>{
+  if(!confirm("AYLIK GÜNCELLEME\n\nMevcut (açık) alımlar kapatılacak: bu dönemin ağırlıklı ortalaması 'önceki' olacak, bundan sonraki alımlar yeni dönemi oluşturacak.\n\nBu işlem ayda bir, ay kapanınca yapılır. Devam edilsin mi?")) return;
+  $("update").disabled=true;
+  const {data,error}=await sb.rpc("ahsap_ay_kapat");
+  $("update").disabled=false;
+  if(error){ msg("umsg","Güncelleme hatası: "+error.message,false); return; }
+  msg("umsg","Aylık güncelleme yapıldı. "+(data||""),true);
+};
+</script>
+</body>
+</html>
