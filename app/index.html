@@ -354,7 +354,7 @@ async function loadSatis(){
   const stampDate=regions.reduce((m,rg)=> (rg.cekim>m?rg.cekim:m), '0');
   const anyData=regions.some(rg=>rg.data.length);
   view.innerHTML=`
-    <div class="stamp">Satış — Yurt İçi + Yurt Dışı 1 + Yurt Dışı 2 · Son güncelleme: ${anyData?dOnly(stampDate):'—'}</div>
+    <div class="stamp">Son güncelleme: ${anyData?dOnly(stampDate):'—'}</div>
     ${satisSummary(regions)}
     ${regions.map(rg=>regionDetail(rg,islendi[rg.kaynak])).join("")}
     ${takipSection("Yurtdışı 1 Takipteki Teklifler", tk.data||[], (ss&&!ss.error)?(ss.data||[]):[], (sn&&!sn.error)?(sn.data||[]):[], true)}
@@ -719,7 +719,7 @@ function loadProsedur(){
     sec+=`<div class="secH">${esc(SECS[s])}</div>`;
     items.forEach(d=>{ sec+=`<div class="law"><div class="lno${d.ek?' ek':''}">${esc(d.no)}</div><div class="lbody"><div><span class="ltitle">${esc(d.ad)}</span><span class="ldate">(${esc(d.tarih)})</span></div><div class="ltext">${d.metin}</div></div></div>`; });
   });
-  view.innerHTML=`<div class="stamp">Prosedürler — Son Güncelleme: 03.08.26</div>
+  view.innerHTML=`<div class="stamp">Son Güncelleme: 03.08.26</div>
     <div class="pin">📌 <b>Prosedür 260708 pinli.</b> Kaynak: Ham metin: C:\\Users\\USER\\OneDrive\\Arbor\\ERP\\Duyurular_Ham_MelihBilgili_260622.md. Her ERP çekiminde, C:\\Users\\USER\\OneDrive\\Arbor\\ERP\\son kayıt dikkate alınarak güncellenir.</div>
     <div class="hint">Firma içinde uygulanması istenen kurallar. Kategoriler: Termin/Tarih · Teklif · SÖ/PEM · Müşteri/Personel · Teknik; ERP Genel Duyurular + talimat maillerinden damıtıldı, Duyuru.xlsx ile doğrulandı.</div>
     ${sec}
@@ -799,9 +799,9 @@ async function loadPanoBolum(bolum, tgt){
   (t.data||[]).forEach(tb=>{
     const hs=(tb.basliklar||[]).map(h=>`<th>${esc(h)}</th>`).join("");
     const rs=(rowsByT[tb.tablo]||[]).map(row=>`<tr>${(row.hucreler||[]).map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("");
-    html+=`<h3 class="sec">${esc(tb.baslik||"")}</h3><div class="scroll"><table><thead><tr>${hs}</tr></thead><tbody>${rs}</tbody></table></div>`;
+    html+=`${tb.baslik?`<h3 class="sec">${esc(tb.baslik)}</h3>`:""}<div class="scroll"><table><thead><tr>${hs}</tr></thead><tbody>${rs}</tbody></table></div>`;
   });
-  body.innerHTML=`<div class="stamp">${esc(meta.ad||"")}${meta.son_guncelleme?(" · "+esc(meta.son_guncelleme)):""}</div>${meta.kaynak?`<div class="hint">${esc(meta.kaynak)}</div>`:""}${html||'<div class="load">Kayıt yok.</div>'}`;
+  body.innerHTML=`<div class="stamp">${esc(meta.son_guncelleme||"")}</div>${meta.kaynak?`<div class="hint">${esc(meta.kaynak)}</div>`:""}${html||'<div class="load">Kayıt yok.</div>'}`;
 }
 /* ---------- ÖB Rapor — bağımsız üst-nav sekmesi (ob_rapor tablosu; ÖB formu yazar, owner salt-okur) ---------- */
 const OBR_CATS=[["t1","İlerleyen / Tamamlanan"],["t3","Değişmeyen"],["t4","Yeni Eklenen / İlk Kez Görülen"]];
@@ -811,7 +811,7 @@ async function loadObrapor(){
   const {data,error}=await sb.from("ob_rapor").select("*").order("kategori").order("sira");
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const rows=data||[];
-  let html=`<div class="stamp">ÖB Rapor · Mukayese (Eski ◂ Yeni) · ${rows.length} satır</div>
+  let html=`<div class="stamp">Mukayese (Eski ◂ Yeni) · ${rows.length} satır</div>
     <div class="hint">ÖB haftalık <a href="ob-rapor/" target="_blank">ÖB Rapor formundan</a> günceller (Yeni + Değişim); güncel/önceki mukayeseli. &nbsp; <button class="btn" id="obr-kaydir">Haftayı kaydır (Yeni→Eski)</button></div>`;
   OBR_CATS.forEach(c=>{
     const rs=rows.filter(r=>r.kategori===c[0]);
@@ -858,7 +858,7 @@ async function loadMkPrim(tgt){
   if(error){ body.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const rows=data||[]; const byT={memnuniyet:[],ts:[],fr:[],diger:[]}; rows.forEach(r=>{ (byT[r.tur]=byT[r.tur]||[]).push(r); });
   let grand=0;
-  let html=`<div class="stamp">MK Prim · ${rows.length} faaliyet</div><div class="hint">Mehmet Konak <a href="mk-prim/" target="_blank">Faaliyet formundan</a> girer; prim kontrat/tutar alanlarından otomatik hesaplanır (tek kaynak). Toplam dört kriteri (FR dahil) kapsar.</div>`;
+  let html=`<div class="stamp">${rows.length} faaliyet</div><div class="hint">Mehmet Konak <a href="mk-prim/" target="_blank">Faaliyet formundan</a> girer; prim kontrat/tutar alanlarından otomatik hesaplanır (tek kaynak). Toplam dört kriteri (FR dahil) kapsar.</div>`;
   MKP_BLOCKS.forEach(bl=>{
     const tur=bl[0], rs=byT[tur]||[], bt=rs.reduce((a,r)=>a+mkPrim(tur,r),0); grand+=bt;
     const isMem=tur==="memnuniyet", isTs=tur==="ts";
@@ -885,7 +885,7 @@ async function loadSantiye(tgt){
   const ay=d=>{ if(!d) return 0; const x=new Date(d); if(isNaN(x)) return 0; const n=new Date(); return (n.getFullYear()-x.getFullYear())*12+(n.getMonth()-x.getMonth()); };
   const toplam=rows.reduce((a,r)=>a+(Number(r.tutar)||0),0);
   const eski=rows.filter(r=>ay(r.ilk_kayit)>=3).length;
-  let html=`<div class="stamp">Tıkanan Şantiyeler · ${rows.length} açık</div>
+  let html=`<div class="stamp">${rows.length} açık</div>
     <div class="hint">ÖB + MK tek <a href="santiye-log/" target="_blank">Şantiye Durum formundan</a> tarihli durum girer; owner tarihli akışı görür. Yeni tıkanmış şantiye owner tarafından eklenir.</div>
     <div class="skpi"><div><b>${rows.length}</b> açık şantiye</div><div><b>${money(toplam)} €</b> bekleyen alacak</div><div><b>${eski}</b> 3+ aydır açık</div><div><b>${(l.data||[]).length}</b> durum kaydı</div></div>`;
   rows.forEach((r)=>{ const a=ay(r.ilk_kayit); const logs=logByS[r.id]||[];
