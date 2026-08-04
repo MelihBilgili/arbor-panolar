@@ -59,7 +59,6 @@
       <div class="f"><label>PARA BİRİMİ</label>
         <select id="pb"><option value="EUR">EUR (€)</option><option value="TL">TL</option><option value="USD">USD ($)</option></select>
       </div>
-      <div class="f grow"><label id="kurlbl">KUR (1 € = ? EUR)</label><input id="kur" inputmode="decimal" placeholder="1"></div>
     </div>
     <div class="row" style="margin-bottom:0">
       <div class="f" style="justify-content:flex-end"><button class="save" id="save">Alımı ekle</button></div>
@@ -79,7 +78,7 @@
     <div style="font-size:12px;color:#6b4a12;font-weight:700;margin-bottom:2px">Bu oturumda eklenenler</div>
     <table><thead><tr><th>Ürün</th><th>Tedarikçi</th><th>CBM</th><th>Fiyat</th><th>€ birim</th></tr></thead><tbody id="sesbody"></tbody></table>
   </div>
-  <div class="hint">Kayıtlar Supabase'e yazılır (yalnızca ekleme). Fiyat hangi para biriminde girilirse girilsin, girilen kurla €'ya çevrilip kaydedilir (tarihsel doğruluk).</div>
+  <div class="hint">Kayıtlar Supabase'e yazılır (yalnızca ekleme). Fiyat hangi para biriminde girilirse girilsin, kayıt anında otomatik alınan güncel kurla €'ya çevrilip kaydedilir; kullanılan kur ve kur tarihi satıra yazılır (tarihsel doğruluk).</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -90,26 +89,32 @@ const AGAC=["Çam DKD","Çam KKK-20cm","Çam KKK-70cm","İroko DKD","Lareks DKD"
 $("agac").innerHTML='<option value="">— ürün seç —</option>'+AGAC.map(a=>'<option value="'+esc(a)+'">'+esc(a)+' 72 x 86</option>').join("");
 const num=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null; if(t.indexOf(",")>-1 && t.indexOf(".")>-1){ t=t.replace(/\./g,"").replace(",","."); } else { t=t.replace(",","."); } const v=parseFloat(t); return isNaN(v)?null:v; };
 function msg(el,t,ok){ const m=$(el); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
-function syncKur(){ const pb=$("pb").value; $("kurlbl").textContent="KUR (1 € = ? "+pb+")"; if(pb==="EUR"){ $("kur").value="1"; $("kur").disabled=true; } else { $("kur").disabled=false; if($("kur").value==="1") $("kur").value=""; } }
-$("pb").onchange=syncKur; syncKur();
 const SES=[];
 function renderSes(){ if(!SES.length) return; $("seswrap").style.display="block"; $("sesbody").innerHTML=SES.map(r=>'<tr><td>'+esc(r.agac)+'</td><td>'+esc(r.tedarikci)+'</td><td>'+esc(r.cbm)+'</td><td>'+esc(r.fiyat)+' '+esc(r.pb)+'</td><td>'+Math.round(r.eur)+' €</td></tr>').join(""); }
 $("save").onclick=async()=>{
   const agac=$("agac").value, tedarikci=$("tedarikci").value.trim(), uzunluk=$("uzunluk").value.trim();
-  const cbm=num($("cbm").value), fiyat=num($("fiyat").value), pb=$("pb").value, kur=num($("kur").value);
+  const cbm=num($("cbm").value), fiyat=num($("fiyat").value), pb=$("pb").value;
   if(!agac){ msg("msg","Ürün çeşidi seç.",false); return; }
   if(!tedarikci){ msg("msg","Tedarikçi gir.",false); return; }
   if(cbm==null||cbm<=0){ msg("msg","Toplam CBM gir.",false); return; }
   if(fiyat==null||fiyat<=0){ msg("msg","Fiyat gir.",false); return; }
-  if(kur==null||kur<=0){ msg("msg","Kur gir (1 € = ? "+pb+").",false); return; }
-  const fiyat_eur = fiyat/kur;
-  const rec={ agac, kesit:"72 x 86", uzunluk:uzunluk||null, tedarikci, toplam_cbm:cbm, fiyat, para_birimi:pb, eur_kur:kur, fiyat_eur };
   $("save").disabled=true;
+  let kur=1, kur_tarihi=null;
+  if(pb!=="EUR"){
+    msg("msg","Güncel kur alınıyor…",true);
+    try{
+      const {data:kd,error:ke}=await sb.functions.invoke("ahsap-kur",{body:{}});
+      if(ke||!kd||!kd.ok||!(kd.rates&&kd.rates[pb]>0)) throw new Error("kur");
+      kur=kd.rates[pb]; kur_tarihi=kd.tarih||null;
+    }catch(e){ $("save").disabled=false; msg("msg","Kur alınamadı (internet/kaynak). Kayıt yapılmadı — lütfen tekrar deneyin.",false); return; }
+  }
+  const fiyat_eur = fiyat/kur;
+  const rec={ agac, kesit:"72 x 86", uzunluk:uzunluk||null, tedarikci, toplam_cbm:cbm, fiyat, para_birimi:pb, eur_kur:kur, fiyat_eur, kur_tarihi };
   const {error}=await sb.from("ahsap_alim").insert(rec);
   $("save").disabled=false;
   if(error){ msg("msg","Kayıt hatası: "+error.message,false); return; }
   SES.unshift({agac,tedarikci,cbm,fiyat,pb,eur:fiyat_eur}); renderSes();
-  msg("msg","Alım eklendi ("+agac+" · "+tedarikci+").",true);
+  msg("msg","Alım eklendi ("+agac+" · "+tedarikci+")"+(pb!=="EUR"?" · kur otomatik":"")+".",true);
   $("tedarikci").value=""; $("uzunluk").value=""; $("cbm").value=""; $("fiyat").value=""; $("agac").value="";
 };
 $("update").onclick=async()=>{
