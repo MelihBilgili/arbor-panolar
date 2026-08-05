@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sel Ft - Ödeme · Selectron–Arbor SAS</title>
+<style>
+  :root{color-scheme:light}*{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#bcd3ea;margin-top:3px}
+  .wrap{max-width:780px;margin:0 auto;padding:16px 16px 60px}
+  .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .card h2{font-size:14px;margin:0 0 10px;color:#16324f;border-bottom:2px solid #eef3f8;padding-bottom:6px}
+  .card h2 small{font-weight:400;color:#7a8896;font-size:11.5px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .f{display:flex;flex-direction:column;gap:4px}
+  .f.grow{flex:1;min-width:170px}
+  .f label{font-size:11px;color:#456;font-weight:700}
+  input,select{font:inherit;padding:8px 10px;border:1px solid #cdd6df;border-radius:7px;background:#fffdf8;width:100%}
+  .save{background:#16324f;color:#fff;border:0;border-radius:8px;padding:9px 18px;font-weight:600;cursor:pointer;font-size:14px}
+  .msg{font-size:13px;min-height:18px;margin-top:8px}.msg.ok{color:#0a6b3f;font-weight:600}.msg.err{color:#b40000;font-weight:600}
+  .hint{font-size:12px;color:#8a97a4;margin:8px 2px}
+  .monthly{background:#fff8ea;border:1px solid #e8cf95}
+  .upd{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Sel Ft - Ödeme</h1>
+  <div class="sub">Selectron (TR üretici) ile Arbor SAS (FR) arasındaki fatura ve ödeme akışı. Girilen kalemler SEL-ARB panosunun özet satırlarını besler.</div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h2>1 · Sel Ft <small>— Selectron'un Arbor SAS'a kestiği ihracat faturaları → "Selectron'a Borç"</small></h2>
+    <div class="row">
+      <div class="f grow"><label>FT NO</label><input id="s1_ft" placeholder="Fatura no"></div>
+      <div class="f"><label>TARİH</label><input id="s1_tarih" type="date"></div>
+    </div>
+    <div class="row"><div class="f grow"><label>PROJE(LER)</label><input id="s1_proje" placeholder="Proje adı — çoksa virgülle ayır"></div></div>
+    <div class="row" style="margin-bottom:0">
+      <div class="f grow"><label>TUTAR</label><input id="s1_tutar" inputmode="decimal" placeholder="ör. 120000"></div>
+      <div class="f"><label>PARA BİRİMİ</label><select id="s1_pb"><option>EUR</option><option>TL</option><option>USD</option></select></div>
+      <div class="f" style="justify-content:flex-end"><button class="save" id="s1_btn">Sel Ft ekle</button></div>
+    </div>
+    <div class="msg" id="s1_msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>2 · Ödeme <small>— Arbor SAS'ın Selectron'a aktardığı ödemeler → "Selectron'a gönderilen"</small></h2>
+    <div class="row">
+      <div class="f"><label>ÖDEME TARİHİ</label><input id="s2_tarih" type="date"></div>
+      <div class="f grow"><label>GÖNDEREN BANKA</label><select id="s2_gonderen"><option>BNP</option><option>CA</option></select></div>
+      <div class="f grow"><label>ALICI BANKA</label><input id="s2_alici" placeholder="(serbest)"></div>
+    </div>
+    <div class="row" style="margin-bottom:0">
+      <div class="f grow"><label>TUTAR</label><input id="s2_tutar" inputmode="decimal" placeholder="ör. 50000"></div>
+      <div class="f"><label>PARA BİRİMİ</label><select id="s2_pb"><option>EUR</option><option>TL</option><option>USD</option></select></div>
+      <div class="f" style="justify-content:flex-end"><button class="save" id="s2_btn">Ödeme ekle</button></div>
+    </div>
+    <div class="msg" id="s2_msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>3 · Arbor SAS → Selectron Kesilen Fatura <small>— Arbor SAS'ın Selectron'a kestiği faturalar → "Selectron'a Fatura Edilen Tutar"</small></h2>
+    <div class="row">
+      <div class="f grow"><label>FT NO</label><input id="s3_ft" placeholder="Fatura no"></div>
+      <div class="f"><label>TARİH</label><input id="s3_tarih" type="date"></div>
+    </div>
+    <div class="row"><div class="f grow"><label>PROJE(LER)</label><input id="s3_proje" placeholder="Proje adı — çoksa virgülle ayır"></div></div>
+    <div class="row" style="margin-bottom:0">
+      <div class="f grow"><label>TUTAR</label><input id="s3_tutar" inputmode="decimal" placeholder="ör. 30000"></div>
+      <div class="f"><label>PARA BİRİMİ</label><select id="s3_pb"><option>EUR</option><option>TL</option><option>USD</option></select></div>
+      <div class="f" style="justify-content:flex-end"><button class="save" id="s3_btn">Fatura ekle</button></div>
+    </div>
+    <div class="msg" id="s3_msg"></div>
+  </div>
+
+  <div class="card monthly">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="upd" id="ay_btn">AYLIK GÜNCELLEME (SEL-ARB'a snapshot al)</button>
+      <div style="font-size:11.5px;color:#8a6100;flex:1;min-width:220px">Ay kapanınca çalıştır: güncel Sel Ft (borç), Ödeme (gönderilen), Arbor→Selectron fatura (fatura edilen) ve Arbor SAS Alacak toplamları <b>yeni tarih sütunu</b> olarak SEL-ARB panosuna yazılır; int@arbor'a bilgi maili gider. Ayda bir kullanılır.</div>
+    </div>
+    <div class="msg" id="ay_msg"></div>
+  </div>
+
+  <div class="hint">Kayıtlar Supabase'e yazılır (yalnız ekleme). EUR dışı tutarlar kayıt anında güncel kurla €'ya çevrilir; kur ve tarih satıra yazılır. Fatura tek tutar + çoklu proje etiketiyle girilir (tutar projelere bölünmez).</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const $=id=>document.getElementById(id);
+const num=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null; if(t.indexOf(",")>-1&&t.indexOf(".")>-1){t=t.replace(/\./g,"").replace(",",".");}else{t=t.replace(",",".");} const v=parseFloat(t); return isNaN(v)?null:v; };
+function msg(el,t,ok){ const m=$(el); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
+const today=new Date().toISOString().slice(0,10);
+["s1_tarih","s2_tarih","s3_tarih"].forEach(id=>$(id).value=today);
+async function toEur(tutar,pb){
+  if(pb==="EUR") return {tutar_eur:tutar,eur_kur:1,kur_tarihi:null};
+  const {data:kd,error}=await sb.functions.invoke("ahsap-kur",{body:{}});
+  if(error||!kd||!kd.ok||!(kd.rates&&kd.rates[pb]>0)) throw new Error("kur");
+  return {tutar_eur:tutar/kd.rates[pb],eur_kur:kd.rates[pb],kur_tarihi:kd.tarih||null};
+}
+async function addRow(btn,tbl,rec,pb,tutar,msgel,clearIds){
+  if(tutar==null||tutar<=0){ msg(msgel,"Tutar gir.",false); return; }
+  $(btn).disabled=true;
+  try{
+    const k=await toEur(tutar,pb);
+    const {error}=await sb.from(tbl).insert(Object.assign(rec,{tutar,para_birimi:pb},k));
+    if(error){ msg(msgel,"Hata: "+error.message,false); }
+    else{ msg(msgel,"Eklendi"+(pb!=="EUR"?" (kur otomatik)":"")+".",true); clearIds.forEach(i=>{if($(i).type!=="date"&&$(i).tagName!=="SELECT")$(i).value="";}); }
+  }catch(e){ msg(msgel,"Kur alınamadı — kayıt yapılmadı.",false); }
+  $(btn).disabled=false;
+}
+$("s1_btn").onclick=()=>addRow("s1_btn","ihracat_fatura",{ft_no:$("s1_ft").value.trim(),tarih:$("s1_tarih").value||null,projeler:$("s1_proje").value.trim()},$("s1_pb").value,num($("s1_tutar").value),"s1_msg",["s1_ft","s1_proje","s1_tutar"]);
+$("s2_btn").onclick=()=>addRow("s2_btn","sel_odeme",{odeme_tarihi:$("s2_tarih").value||null,gonderen_banka:$("s2_gonderen").value,alici_banka:$("s2_alici").value.trim()},$("s2_pb").value,num($("s2_tutar").value),"s2_msg",["s2_alici","s2_tutar"]);
+$("s3_btn").onclick=()=>addRow("s3_btn","arbor_kesilen_fatura",{ft_no:$("s3_ft").value.trim(),tarih:$("s3_tarih").value||null,projeler:$("s3_proje").value.trim()},$("s3_pb").value,num($("s3_tutar").value),"s3_msg",["s3_ft","s3_proje","s3_tutar"]);
+$("ay_btn").onclick=async()=>{
+  if(!confirm("AYLIK GÜNCELLEME\n\nGüncel toplamlar SEL-ARB panosuna YENİ TARİH SÜTUNU olarak yazılacak ve int@arbor'a mail gidecek. Ayda bir yapılır. Devam?")) return;
+  $("ay_btn").disabled=true; msg("ay_msg","Snapshot alınıyor…",true);
+  try{
+    const {data,error}=await sb.functions.invoke("sel-arb-ay-kapat",{body:{}});
+    if(error||!(data&&data.ok)){ msg("ay_msg","Hata: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"),false); }
+    else{ msg("ay_msg",data.note||("Snapshot alındı: "+data.tarih),true); }
+  }catch(e){ msg("ay_msg","Hata: "+e,false); }
+  $("ay_btn").disabled=false;
+};
+</script>
+</body>
+</html>
