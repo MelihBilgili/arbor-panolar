@@ -803,6 +803,50 @@ async function loadPanoBolum(bolum, tgt){
   });
   body.innerHTML=`<div class="stamp">${esc(meta.son_guncelleme||"")}</div>${meta.kaynak?`<div class="hint">${esc(meta.kaynak)}</div>`:""}${html||'<div class="load">Kayıt yok.</div>'}`;
 }
+/* ---------- SEL-ARB — özel render: Firma 15ch / Proje 20ch (nowrap+ellipsis, tam metin title/scroll), tarih sütunları üstünde "Arbor SAS Alacak €" spanning başlık, "Δ ilk→son €", son tarih dolu-alacak satırları görünür + boşlar gizli/toggle, footer daima görünür. Bölüm-RLS aynı (pano_ozel_*). ---------- */
+const SA_FOOT=new Set(["Selectron'a gönderilen","Selectron'a Borç (Σ E)","Toplam güncel alacak","Selectron'a Fatura Edilen Tutar","Arbor SAS faaliyet kaybı","TOPLAM GÜNCEL ALACAK"]);
+async function loadSelArb(tgt){
+  const body=document.getElementById(tgt);
+  const [m,t,r]=await Promise.all([
+    sb.from("pano_ozel_meta").select("*").eq("bolum","sel_arb"),
+    sb.from("pano_ozel_tablo").select("*").eq("bolum","sel_arb").order("sira"),
+    sb.from("pano_ozel").select("*").eq("bolum","sel_arb").order("tablo").order("sira")
+  ]);
+  const err=m.error||t.error||r.error;
+  if(err){ body.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
+  const meta=(m.data||[])[0]||{}, tb=(t.data||[])[0]||{}, basliklar=tb.basliklar||[];
+  const nd=Math.max(0,basliklar.length-3), rows=(r.data||[]);
+  const lastIdx=2+nd-1;
+  const filled=c=>{ const raw=String(c==null?"":c).replace(/[^\d-]/g,""); return raw!==""&&Number(raw)!==0; };
+  const dateHdrs=basliklar.slice(2,2+nd).map(h=>`<th class="sa-num">${esc(h)}</th>`).join("");
+  let dlt=basliklar[basliklar.length-1]||"Δ ilk→son"; if(dlt.indexOf("€")<0) dlt=dlt+" €";
+  let hiddenCount=0;
+  const trs=rows.map(row=>{
+    const h=row.hucreler||[], isFoot=SA_FOOT.has(h[0]), show=isFoot||filled(h[lastIdx]);
+    if(!show) hiddenCount++;
+    const mid=[]; for(let i=0;i<nd;i++) mid.push(`<td class="sa-num">${esc(h[2+i]||"")}</td>`);
+    return `<tr class="${isFoot?'sa-foot':''}${show?'':' sa-hide'}"${show?'':' style="display:none"'}>`
+      +`<td class="sa-firma"><span class="c" title="${esc(h[0]||"")}">${esc(h[0]||"")}</span></td>`
+      +`<td class="sa-proje"><span class="c" title="${esc(h[1]||"")}">${esc(h[1]||"")}</span></td>`
+      +mid.join("")+`<td class="sa-num sa-delta">${esc(h[2+nd]||"")}</td></tr>`;
+  }).join("");
+  const style=`<style>
+  .sa-wrap table{border-collapse:collapse;width:100%;font-size:12px}
+  .sa-wrap th,.sa-wrap td{border-bottom:1px solid #eef1f5;padding:4px 8px;white-space:nowrap}
+  .sa-wrap thead th{background:#16324f;color:#fff;font-weight:600}
+  .sa-firma>.c{max-width:15ch}.sa-proje>.c{max-width:20ch}
+  .sa-firma>.c,.sa-proje>.c{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sa-proje>.c{font-weight:600;color:#16324f}
+  .sa-num{text-align:right}
+  tr.sa-foot td{font-weight:700;background:#eef3f8}
+  </style>`;
+  const btn=hiddenCount?`<button class="btn" id="sa-toggle" data-on="0">Boş-alacak satırları göster (${hiddenCount})</button>`:"";
+  body.innerHTML=`${style}<div class="stamp">${esc(meta.son_guncelleme||"")}</div>${meta.kaynak?`<div class="hint">${esc(meta.kaynak)}</div>`:""}${btn?`<div class="hint">${btn}</div>`:""}<div class="sa-wrap scroll"><table><thead>`
+    +`<tr><th rowspan="2">${esc(basliklar[0]||"Firma")}</th><th rowspan="2">${esc(basliklar[1]||"Proje")}</th><th colspan="${nd}" class="sa-num" style="text-align:center">Arbor SAS Alacak €</th><th rowspan="2" class="sa-num">${esc(dlt)}</th></tr>`
+    +`<tr>${dateHdrs}</tr></thead><tbody>${trs}</tbody></table></div>`;
+  const tg=document.getElementById("sa-toggle");
+  if(tg) tg.onclick=()=>{ const on=tg.dataset.on==="1"; document.querySelectorAll("#"+tgt+" tr.sa-hide").forEach(x=>x.style.display=on?"none":""); tg.dataset.on=on?"0":"1"; tg.textContent=on?`Boş-alacak satırları göster (${hiddenCount})`:`Boş-alacak satırları gizle (${hiddenCount})`; };
+}
 /* ---------- ÖB Rapor — bağımsız üst-nav sekmesi (ob_rapor tablosu; ÖB formu yazar, owner salt-okur) ---------- */
 const OBR_CATS=[["t1","İlerleyen / Tamamlanan"],["t3","Değişmeyen"],["t4","Yeni Eklenen / İlk Kez Görülen"]];
 function obrBadge(d){ d=(d||"").trim(); if(!d) return ""; const cls=/TAMAM|İLERLE/i.test(d)?"chg":(/DİKKAT|AÇIK/i.test(d)?"none":(/YENİ/i.test(d)?"snew":"same")); return '<span class="sbdg '+cls+'">'+esc(d)+'</span>'; }
@@ -845,6 +889,7 @@ async function loadMali(){
   if(b==="mali_mkprim"){ loadMkPrim("mali-body"); return; } /* MK Prim: canlı faaliyet + otomatik prim (mk_faaliyet, bölüm-RLS) */
   if(b==="mali_maasprim"){ loadOzelHtml("mali_maasprim","mali-body"); return; } /* Maaş-Prim: tam sadakat ham-HTML (pano_ozel_html, bölüm-RLS) */
   if(b==="ahsap"){ loadAhsap("mali-body"); return; }
+  if(b==="sel_arb"){ loadSelArb("mali-body"); return; } /* SEL-ARB: özel render (spanning başlık + kolon genişlik/scroll + son-tarih dolu-alacak görünür/toggle) */
   loadPanoBolum(b, "mali-body");
 }
 
