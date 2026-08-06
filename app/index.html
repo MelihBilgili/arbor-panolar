@@ -7,6 +7,7 @@
 <style>
   :root{color-scheme:light}
   *{box-sizing:border-box}
+  html,body{max-width:100vw;overflow-x:hidden}
   body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
   header{background:#16324f;color:#fff;padding:0}
   .topbar{display:flex;align-items:center;gap:14px;padding:8px 14px}
@@ -26,7 +27,7 @@
   .login .btn{width:100%}
   .msg{font-size:12px;margin-top:10px;min-height:16px}
   .msg.err{color:#b40000}.msg.ok{color:#2e7d54}
-  .scroll{overflow:auto;border:1px solid #dde3ea;border-radius:8px;max-height:82vh;background:#fff}
+  .scroll{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #dde3ea;border-radius:8px;max-height:82vh;background:#fff}
   table{border-collapse:collapse;width:100%;font-size:12px}
   thead th{position:sticky;top:0;background:#16324f;color:#fff;font-weight:600;font-size:11px;padding:6px 8px;text-align:left;white-space:nowrap;z-index:2}
   td{border-bottom:1px solid #eef1f5;padding:4px 8px;vertical-align:top}
