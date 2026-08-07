@@ -971,20 +971,21 @@ async function loadObrapor(){
   const _gunc=_mx?(_mx.slice(8,10)+"."+_mx.slice(5,7)+"."+_mx.slice(0,4)):"";
   let html=`<div class="stamp">Mukayese (Eski ◂ Yeni) · ${rows.length} satır${_gunc?` · Güncelleme: ${_gunc}`:""}</div>
     <div class="hint">ÖB haftalık <a href="ob-rapor/" target="_blank">ÖB Rapor formundan</a> günceller (Yeni + Değişim); güncel/önceki mukayeseli. &nbsp; <button class="btn" id="obr-kaydir">Haftayı kaydır (Yeni→Eski)</button></div>`;
+  {
+    const iAkt=iRows.filter(r=>!r.arsiv), iArs=iRows.filter(r=>r.arsiv);
+    let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iAkt.length} aktif${iArs.length?` · ${iArs.length} iz`:""})</span></h3><div class="scroll"><table><thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th></tr></thead><tbody>`;
+    iAkt.forEach(r=>{ ib+=`<tr><td class="sb">${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari)}</td></tr>`; });
+    iArs.forEach(r=>{ ib+=`<tr style="opacity:.42;font-style:italic"><td>${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari||"")}</td></tr>`; });
+    if(!iRows.length) ib+=`<tr><td colspan="3" class="muted">Henüz iş yok — ÖB formundaki "Takipteki İşler / Yeni İş Ekle" ile eklenir.</td></tr>`;
+    ib+=`</tbody></table></div>`;
+    html+=ib;
+  }
   OBR_CATS.forEach(c=>{
     const rs=rows.filter(r=>r.kategori===c[0]);
     if(!rs.length) return;
     const tr=rs.map(r=>`<tr><td class="sb">${esc(r.konu)}</td><td>${r.eski?'<div class="prev">◂ '+esc(r.eski)+'</div>':''}</td><td>${esc(r.yeni)}</td><td>${obrBadge(r.degisim)}</td></tr>`).join("");
     html+=`<h3 class="sec">${esc(c[1])} <span class="muted">(${rs.length})</span></h3><div class="scroll"><table><thead><tr><th>Konu</th><th>Eski</th><th>Yeni</th><th>Değişim</th></tr></thead><tbody>${tr}</tbody></table></div>`;
   });
-  const iAkt=iRows.filter(r=>!r.arsiv), iArs=iRows.filter(r=>r.arsiv);
-  if(iRows.length){
-    let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iAkt.length} aktif${iArs.length?` · ${iArs.length} iz`:""})</span></h3><div class="scroll"><table><thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th></tr></thead><tbody>`;
-    iAkt.forEach(r=>{ ib+=`<tr><td class="sb">${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari)}</td></tr>`; });
-    iArs.forEach(r=>{ ib+=`<tr style="opacity:.42;font-style:italic"><td>${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari||"")}</td></tr>`; });
-    ib+=`</tbody></table></div>`;
-    html+=ib;
-  }
   view.innerHTML=html;
   const kb=document.getElementById("obr-kaydir");
   if(kb) kb.onclick=async()=>{ if(!confirm("Tüm satırlarda YENİ durum ESKİ'ye kaydırılıp yeni boşaltılacak (haftalık döngü). Devam?")) return; const {data,error}=await sb.rpc("ob_rapor_kaydir"); if(error){ alert("Hata: "+error.message); return; } alert(data||"Kaydırıldı"); loadObrapor(); };
