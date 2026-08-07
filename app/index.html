@@ -554,31 +554,59 @@ function takipSection(title, tkData, ssData, snapRows, showStats){
 /* ---------- HAZIR PEM/PRJ ---------- */
 async function loadHazir(){
   const view=document.getElementById("view");
-  const {data,error}=await sb.from("hazir_pem_prj").select("*");
+  const [{data,error},erpRes,ozRes]=await Promise.all([
+    sb.from("hazir_pem_prj").select("*"),
+    sb.from("hazir_erp").select("tur,kalem_key,erp"),
+    sb.from("sevk_durumu_onur").select("tur,kalem_key,degisim_ozet")
+  ]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
-  /* Filtre: taze kalemleri gizle — PEM hazır tarihi son 15 gün, PRJ AÜP (hazir_tarihi) son 10 gün içindeyse çıkar. Eski/takılı kalanlar görünür. */
+  const erpMap={}; (erpRes.data||[]).forEach(r=>{ erpMap[String(r.tur).toUpperCase()+"|"+r.kalem_key]=r.erp||{}; });
+  const ozMap={}; (ozRes.data||[]).forEach(r=>{ ozMap[String(r.tur).toUpperCase()+"|"+r.kalem_key]=r.degisim_ozet||""; });
+  /* Filtre: taze kalemleri gizle — PEM hazır tarihi son 15 gün, PRJ AÜP (hazir_tarihi) son 10 gün içindeyse çıkar. */
   const _now=new Date(); _now.setHours(23,59,59,999);
   const _cut=n=>{ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-n); return d; };
   const _c15=_cut(15), _c10=_cut(10);
   const _son=(dt,c)=>{ if(!dt) return false; const d=new Date(dt); return !isNaN(d) && d>=c && d<=_now; };
   const filt=(data||[]).filter(r=>{ const isPem=/PEM/i.test(String(r.tur||"")); return isPem? !_son(r.hazir_tarihi,_c15) : !_son(r.hazir_tarihi,_c10); });
-  let rows="";
-  filt.forEach(r=>{
-    rows+=`<tr>
-      <td class="kod">${esc(r.tur)}</td>
-      <td class="kod">${esc(String(r.no||"").slice(-6))}</td>
-      <td>${esc(String(r.proje_adi||"").slice(0,30))}</td>
-      <td>${esc(r.ek_bilgi)}</td>
-      <td class="num">${r.adet==null||r.adet===""?"":(isNaN(parseInt(r.adet,10))?esc(r.adet):parseInt(r.adet,10))}</td>
-      <td class="num">${fdate(r.hazir_tarihi)}</td>
-      <td>${esc(r.onur_guncel)}</td>
-    </tr>`;
-  });
+  const digits=s=>String(s==null?"":s).replace(/\D/g,"");
+  const lastN=(s,n)=>{ const d=digits(s); return d.slice(-n); };
+  const ev=(tur,no,k)=>{ const e=erpMap[tur+"|"+no]||{}; return e[k]!=null?String(e[k]):""; };
+  const block=tip=>{
+    const T=tip==="pem"?"PEM":"PRJ";
+    const rowsX=filt.filter(r=>String(r.tur||"").toUpperCase()===T);
+    if(!rowsX.length) return "";
+    const noteCol=tip==="pem"?"ekbilgi":"notlar", dcol=tip==="pem"?"termin":"aup";
+    const noteHd=tip==="pem"?"Ek Bilgi":"Satış/Şantiye Notları", dateHd=tip==="pem"?"Termin Tarihi":"AÜP Tarihi";
+    const kodW=tip==="pem"?"h5":"h8";
+    const sorted=[...rowsX].sort((a,b)=>(ev(T,a.no,dcol)||"99999999").localeCompare(ev(T,b.no,dcol)||"99999999"));
+    const body=sorted.map(r=>{
+      const kod=lastN(r.no,tip==="pem"?5:8);
+      const proje=ev(T,r.no,"proje")||String(r.proje_adi||"");
+      const note=ev(T,r.no,noteCol)||(tip==="pem"?String(r.ek_bilgi||""):"");
+      const adet=ev(T,r.no,"adet")||(r.adet==null?"":String(r.adet));
+      const dt=ev(T,r.no,dcol)||r.hazir_tarihi||"";
+      const onur=r.onur_guncel||"", oz=ozMap[T+"|"+r.no]||"";
+      return `<tr>`
+        +`<td class="c ${kodW}"><span title="${esc(kod)}">${esc(kod)}</span></td>`
+        +`<td class="c h15"><span title="${esc(proje)}">${esc(proje)}</span></td>`
+        +`<td class="c h25"><span title="${esc(note)}">${esc(note)}</span></td>`
+        +(tip==="pem"?`<td class="c h3"><span>${esc(adet)}</span></td>`:``)
+        +`<td class="c h8"><span title="${esc(dt)}">${esc(fdate(dt)||dt)}</span></td>`
+        +`<td class="c h20"><span title="${esc(onur)}">${esc(onur)}</span></td>`
+        +`<td class="c h20"><span title="${esc(oz)}">${esc(oz)}</span></td>`
+        +`</tr>`;
+    }).join("");
+    const heads=tip==="pem"
+      ? `<th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>${dateHd}</th><th>Sevk Durumu (Onur)</th><th>Sevk Durum Değişimi</th>`
+      : `<th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>${dateHd}</th><th>Sevk Durumu (Onur)</th><th>Sevk Durum Değişimi</th>`;
+    return `<h3 class="sec">${T}</h3><div class="scroll hblk"><table><thead><tr>${heads}</tr></thead><tbody>${body}</tbody></table></div>`;
+  };
   const st=await erpStamp();
-  view.innerHTML=`${stampHTML(st)}<div class="hint">Hazır PEM/PRJ — Sevke Hazır PEM (durum 3) + PRJ (8/8.1), birleşik salt-okur. Taze kalemler gizli (PEM son 15 gün · PRJ AÜP son 10 gün). ${filt.length} / ${(data||[]).length} kalem.</div>
-    <div class="scroll"><table>
-    <thead><tr><th>Tür</th><th>No</th><th>Proje Adı</th><th>Ek Bilgi/Fiyat</th><th>Adet</th><th>Hazır Tarihi</th><th>Sevk Durumu (Onur)</th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
+  view.innerHTML=`${stampHTML(st)}
+    <style>.hblk table{font-size:12px}.hblk th,.hblk td{white-space:nowrap;padding:4px 8px;border-bottom:1px solid #eef1f5}.hblk .c>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.h3>span{max-width:3ch}.h5>span{max-width:5ch}.h8>span{max-width:8ch}.h15>span{max-width:15ch}.h20>span{max-width:20ch}.h25>span{max-width:25ch}</style>
+    <div class="hint">Hazır PEM/PRJ — PEM (durum 3) + PRJ (8/8.1). Sevk durumu Onur formundan; orta sütunlar en yeni ERP'den; son sütun aylık değişim özeti. Taze kalemler gizli. ${filt.length} / ${(data||[]).length} kalem.</div>
+    ${block("pem")}
+    ${block("prj")}`;
 }
 
 /* ---------- AÜP (salt-okur) ---------- */
