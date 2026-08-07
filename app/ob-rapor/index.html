@@ -103,13 +103,16 @@ async function delIsler(id){
 }
 async function haftalikGuncelle(){
   const kapat=IROWS.filter(r=>!r.arsiv && (r.durum==="Tamamlandı"||r.durum==="İptal oldu"));
-  if(!kapat.length){ msg("Kapatılacak (Tamamlandı/İptal oldu) iş yok.",true); return; }
-  if(!confirm("Haftalık Güncelleme:\n\n"+kapat.length+" iş (Tamamlandı/İptal oldu) aktif listeden kalkacak; son ÖB Notları soluk iz olarak kalacak. Devam?")) return;
+  if(!confirm("Haftalık Güncelleme:\n\n• Her aktif işin önceki→son değişiminin özeti üretilip panoya yazılacak, sonra son değer 'önceki'ye kaydırılacak (ilk basışta baseline; özet boş).\n• Durumu Tamamlandı/İptal oldu olan "+kapat.length+" iş aktif listeden kalkacak (son ÖB Notları soluk iz).\n\nDevam?")) return;
+  const btn=document.getElementById("iWeek"); btn.disabled=true; msg("Değişim özetleri üretiliyor…",true);
+  const {data,error}=await sb.functions.invoke("ob-degisim-ozet",{body:{}});
+  if(error||!(data&&data.ok)){ btn.disabled=false; msg("Özet üretilemedi: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"),false); return; }
   for(const r of kapat){
-    const {error}=await sb.from("ob_isler").update({arsiv:true,updated_at:new Date().toISOString()}).eq("id",r.id);
-    if(error){ msg("Hata: "+error.message,false); return; }
+    const {error:e2}=await sb.from("ob_isler").update({arsiv:true,updated_at:new Date().toISOString()}).eq("id",r.id);
+    if(e2){ btn.disabled=false; msg("Hata: "+e2.message,false); return; }
   }
-  msg(kapat.length+" iş arşive alındı (soluk iz).",true); loadIsler();
+  btn.disabled=false;
+  msg((data.note||"Özet güncellendi")+(kapat.length?` · ${kapat.length} iş arşive alındı`:""),true); loadIsler();
 }
 document.getElementById("iAdd").onclick=addIsler;
 document.getElementById("iWeek").onclick=haftalikGuncelle;
