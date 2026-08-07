@@ -821,7 +821,7 @@ function loadFormlar(){
   const forms=[
     {ad:"EA — SÖ Haftalık Gündem Formu", who:"Enes Artan · Kalite", url:"ea/", desc:"Hafta bölümünü seçer, sorun ve önerileri 'gündeme alındı'ya çevirir. Yazar: so_ea_form."},
     {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."},
-    {ad:"ÖB Rapor Formu", who:"Özgül Bedestenci · Yurtdışı Finans", url:"ob-rapor/", desc:"Haftalık ÖB rapor kalemlerini (konu, eski/yeni durum, kategori) günceller. Yazar: ob_rapor; ÖB Rapor panosuna salt-okur yansır."},
+    {ad:"ÖB Rapor Formu", who:"Özgül Bedestenci · Yurtdışı Finans", url:"ob-rapor/", desc:"Takipteki işleri (Konu · Durum · ÖB Notları) günceller; Haftalık Güncelleme'de Tamamlandı/İptal işler soluk ize döner. Yazar: ob_isler; ÖB Rapor panosuna salt-okur yansır."},
     {ad:"MK — Faaliyet & Prim Formu", who:"Mehmet Konak", url:"mk-prim/", desc:"Dört blok (Memnuniyet · TS Ekstra · FR Satış · Diğer Satış) faaliyet girişi; prim kontrat/tutar alanlarından otomatik hesaplanır. Yazar: mk_faaliyet; Mali → MK Prim panosuna salt-okur yansır (toplam FR dahil 4 kriter)."},
     {ad:"Yurt Dışı 1 Satış Formu", who:"Fatma · Satış (Fransa/ihracat)", url:"fy/", desc:"Yurtdışı muhtemel/alınan projeleri (proje, müşteri, statü, ülke, net €, durum) + takipteki teklifler girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır. Paylaşılan xlsx yerine geçer."},
     {ad:"Yurt Dışı 2 Satış Formu", who:"Yurt Dışı 2 ekibi · ayrı form", url:"fy2/", desc:"Yurt Dışı 1 ile birebir aynı format, TAMAMEN AYRI veri (satis_yorum_2 / satis_takip_2 / satis_takip_sonuc_2). Ayrı kişilerce doldurulur; form 1 verisiyle karışmaz. Satış panosundaki 'Yurt Dışı 2' bloğuna yansır."},
@@ -957,38 +957,24 @@ async function loadSelArb(tgt){
   const tg=document.getElementById("sa-toggle");
   if(tg) tg.onclick=()=>{ const on=tg.dataset.on==="1"; document.querySelectorAll("#"+tgt+" tr.sa-hide").forEach(x=>x.style.display=on?"none":""); tg.dataset.on=on?"0":"1"; tg.textContent=on?`Boş-alacak satırları göster (${hiddenCount})`:`Boş-alacak satırları gizle (${hiddenCount})`; };
 }
-/* ---------- ÖB Rapor — bağımsız üst-nav sekmesi (ob_rapor tablosu; ÖB formu yazar, owner salt-okur) ---------- */
-const OBR_CATS=[["t1","İlerleyen / Tamamlanan"],["t3","Değişmeyen"],["t4","Yeni Eklenen / İlk Kez Görülen"]];
-function obrBadge(d){ d=(d||"").trim(); if(!d) return ""; const cls=/TAMAM|İLERLE/i.test(d)?"chg":(/DİKKAT|AÇIK/i.test(d)?"none":(/YENİ/i.test(d)?"snew":"same")); return '<span class="sbdg '+cls+'">'+esc(d)+'</span>'; }
+/* ---------- ÖB Rapor — bağımsız üst-nav sekmesi (Takipteki İşler / ob_isler; ÖB formu yazar, owner salt-okur) ---------- */
 async function loadObrapor(){
   const view=document.getElementById("view");
-  const {data,error}=await sb.from("ob_rapor").select("*").order("kategori").order("sira");
-  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
-  const rows=data||[];
   const isl=await sb.from("ob_isler").select("*").order("arsiv").order("id");
-  const iRows=(isl&&!isl.error)?(isl.data||[]):[];
-  const _mx=rows.reduce((m,r)=>(r.updated_at&&r.updated_at>m)?r.updated_at:m,"");
+  if(isl.error){ view.innerHTML=`<div class="load">Hata: ${esc(isl.error.message)}</div>`; return; }
+  const iRows=isl.data||[];
+  const _mx=iRows.reduce((m,r)=>(r.updated_at&&r.updated_at>m)?r.updated_at:m,"");
   const _gunc=_mx?(_mx.slice(8,10)+"."+_mx.slice(5,7)+"."+_mx.slice(0,4)):"";
-  let html=`<div class="stamp">Mukayese (Eski ◂ Yeni) · ${rows.length} satır${_gunc?` · Güncelleme: ${_gunc}`:""}</div>
-    <div class="hint">ÖB haftalık <a href="ob-rapor/" target="_blank">ÖB Rapor formundan</a> günceller (Yeni + Değişim); güncel/önceki mukayeseli. &nbsp; <button class="btn" id="obr-kaydir">Haftayı kaydır (Yeni→Eski)</button></div>`;
-  {
-    const iAkt=iRows.filter(r=>!r.arsiv), iArs=iRows.filter(r=>r.arsiv);
-    let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iAkt.length} aktif${iArs.length?` · ${iArs.length} iz`:""})</span></h3><div class="scroll"><table><thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th></tr></thead><tbody>`;
-    iAkt.forEach(r=>{ ib+=`<tr><td class="sb">${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari)}</td></tr>`; });
-    iArs.forEach(r=>{ ib+=`<tr style="opacity:.42;font-style:italic"><td>${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari||"")}</td></tr>`; });
-    if(!iRows.length) ib+=`<tr><td colspan="3" class="muted">Henüz iş yok — ÖB formundaki "Takipteki İşler / Yeni İş Ekle" ile eklenir.</td></tr>`;
-    ib+=`</tbody></table></div>`;
-    html+=ib;
-  }
-  OBR_CATS.forEach(c=>{
-    const rs=rows.filter(r=>r.kategori===c[0]);
-    if(!rs.length) return;
-    const tr=rs.map(r=>`<tr><td class="sb">${esc(r.konu)}</td><td>${r.eski?'<div class="prev">◂ '+esc(r.eski)+'</div>':''}</td><td>${esc(r.yeni)}</td><td>${obrBadge(r.degisim)}</td></tr>`).join("");
-    html+=`<h3 class="sec">${esc(c[1])} <span class="muted">(${rs.length})</span></h3><div class="scroll"><table><thead><tr><th>Konu</th><th>Eski</th><th>Yeni</th><th>Değişim</th></tr></thead><tbody>${tr}</tbody></table></div>`;
-  });
+  const iAkt=iRows.filter(r=>!r.arsiv), iArs=iRows.filter(r=>r.arsiv);
+  let html=`<div class="stamp">Son güncelleme: ${_gunc||"—"}</div>
+    <div class="hint">ÖB <a href="ob-rapor/" target="_blank">Takipteki İşler formundan</a> günceller. Aktif işler normal; durumu Tamamlandı/İptal olanların son notu soluk iz olarak kalır.</div>`;
+  let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iAkt.length} aktif${iArs.length?` · ${iArs.length} iz`:""})</span></h3><div class="scroll"><table><thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th></tr></thead><tbody>`;
+  iAkt.forEach(r=>{ ib+=`<tr><td class="sb">${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari)}</td></tr>`; });
+  iArs.forEach(r=>{ ib+=`<tr style="opacity:.42;font-style:italic"><td>${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari||"")}</td></tr>`; });
+  if(!iRows.length) ib+=`<tr><td colspan="3" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
+  ib+=`</tbody></table></div>`;
+  html+=ib;
   view.innerHTML=html;
-  const kb=document.getElementById("obr-kaydir");
-  if(kb) kb.onclick=async()=>{ if(!confirm("Tüm satırlarda YENİ durum ESKİ'ye kaydırılıp yeni boşaltılacak (haftalık döngü). Devam?")) return; const {data,error}=await sb.rpc("ob_rapor_kaydir"); if(error){ alert("Hata: "+error.message); return; } alert(data||"Kaydırıldı"); loadObrapor(); };
 }
 
 /* ---------- MALİ — grup: Bilanço, İcmal + hassas panolar (depenses/kredi/ahsap/sel_arb). Bölüm-RLS. ---------- */
