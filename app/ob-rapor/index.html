@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ÖB — Rapor Mukayese Formu</title>
+<title>ÖB — Takipteki İşler Formu</title>
 <style>
   :root{color-scheme:light}
   *{box-sizing:border-box}
@@ -13,18 +13,8 @@
   header .sub{font-size:12px;color:#ffe9b8;margin-top:3px}
   .wrap{max-width:980px;margin:0 auto;padding:14px 16px 60px}
   .msg{font-size:12.5px;min-height:16px}.msg.ok{color:#2e7d54;font-weight:600}.msg.err{color:#b40000;font-weight:600}
-  .grp{margin:18px 0 6px}
+  .grp{margin:14px 0 6px}
   .grp h2{font-size:14px;margin:0 0 8px;color:#5c4300;border-bottom:2px solid #e6d3a3;padding-bottom:4px}
-  .grp .addbtn{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:600;cursor:pointer;font-size:12.5px;margin-bottom:8px}
-  .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:12px 14px;margin-bottom:12px}
-  .row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
-  .f{display:flex;flex-direction:column;gap:3px}
-  .f label{font-size:11px;color:#8a6100;font-weight:700}
-  .f.grow{flex:1;min-width:240px}
-  input,textarea,select{font:inherit;padding:7px 9px;border:1px solid #cdd6df;border-radius:7px;background:#fffdf5}
-  textarea{min-height:58px;resize:vertical}
-  .prev{font-size:11.5px;color:#8a8a8a;font-style:italic;margin:2px 0 6px}
-  .save{background:#2e7d54;color:#fff;border:0;border-radius:7px;padding:7px 14px;font-weight:600;cursor:pointer}
   .load{padding:30px;text-align:center;color:#8a97a4}
   .hint{font-size:12px;color:#8a97a4;margin:10px 2px}
   .ibtns{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
@@ -34,7 +24,7 @@
   .itbl th,.itbl td{border-bottom:1px solid #eef1f5;padding:5px 7px;text-align:left;vertical-align:top}
   .itbl thead th{background:#8a6100;color:#fff;font-weight:600}
   .itbl .ic{font:inherit;padding:5px 7px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf5;width:150px}
-  .itbl textarea.ic{min-width:240px;min-height:40px;resize:vertical}
+  .itbl textarea.ic{min-width:280px;min-height:40px;resize:vertical}
   .itbl tr.ifade{opacity:.42}
   .itbl tr.ifade td{font-style:italic;color:#7a6a3a}
   .idel{background:#fff;border:1px solid #e0b4b4;color:#b40000;border-radius:6px;cursor:pointer;padding:3px 8px;font-weight:700}
@@ -45,8 +35,8 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </head>
 <body>
 <header>
-  <h1>ÖB Rapor — Mukayese Formu</h1>
-  <div class="sub">Özgül Bedestenci · Her hafta her konunun <b>bu haftaki durumunu (Yeni)</b> ve <b>Değişim</b> etiketini gir; yeni konu ekle. Önceki hafta (Eski) gri gösterilir ve otomatik tutulur. Melih'in "ÖB Rapor" panosuna salt-okur yansır.</div>
+  <h1>ÖB — Takipteki İşler</h1>
+  <div class="sub">Özgül Bedestenci · Her işin Konu, Durum ve ÖB Notları'nı gir. "Haftalık Güncelleme"de durumu Tamamlandı/İptal olan işler aktif listeden kalkar, son ÖB Notları soluk iz olarak kalır. Melih'in "ÖB Rapor" panosuna salt-okur yansır.</div>
 </header>
 <div class="wrap">
   <div id="msg" class="msg"></div>
@@ -57,77 +47,14 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <button class="wkbtn" id="iWeek">Haftalık Güncelleme</button>
     </div>
     <div id="iList"><div class="load">Yükleniyor…</div></div>
-    <div class="hint">Konu (en çok 20 karakter) · Durum · ÖB Notları anında kaydedilir. "Haftalık Güncelleme": durumu <b>Tamamlandı</b> veya <b>İptal</b> olan işler aktif listeden kalkar; son ÖB Notları soluk iz olarak kalır. Aktif işler (Henüz çalışılmadı / İlerliyor) normal kalır.</div>
+    <div class="hint">Konu · Durum · ÖB Notları anında kaydedilir. "Haftalık Güncelleme": durumu <b>Tamamlandı</b> veya <b>İptal</b> olan işler aktif listeden kalkar; son ÖB Notları soluk iz olarak kalır. Aktif işler (Henüz çalışılmadı / İlerliyor) normal kalır.</div>
   </div>
-
-  <div class="grp"><h2>Rapor Mukayese</h2></div>
-  <div id="list"><div class="load">Yükleniyor…</div></div>
-  <div class="hint">Kayıtlar Supabase'e yazılır (ob_rapor). Yalnız Konu / Yeni / Değişim / Kategori düzenlenir; Eski durum ve sıra sistem tarafından tutulur (haftalık kaydırmada Yeni → Eski olur).</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
-const CATS = [["t1","İlerleyen / Tamamlanan"],["t3","Değişmeyen"],["t4","Yeni Eklenen / İlk Kez Görülen"]];
-const CATLBL = Object.fromEntries(CATS);
-const DEGS = ["İLERLEME","TAMAMLANDI","DİKKAT","AÇIK SORUN","AYNI","YENİ"];
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function msg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},1900); }
-let ROWS=[];
-async function load(){
-  const {data,error}=await sb.from("ob_rapor").select("*").order("kategori").order("sira");
-  if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
-  ROWS=data||[]; render();
-}
-function catOpts(v){ return CATS.map(c=>'<option value="'+c[0]+'"'+(c[0]===v?' selected':'')+'>'+esc(c[1])+'</option>').join(""); }
-function degOpts(v){ return '<option value="">—</option>'+DEGS.map(d=>'<option'+(d===v?' selected':'')+'>'+d+'</option>').join(""); }
-function card(r){
-  const isNew=!r.id;
-  return '<div class="card" data-id="'+(r.id||'')+'" data-kat="'+esc(r.kategori||'t1')+'">'
-    +'<div class="row">'
-      +'<div class="f grow"><label>KONU</label><input class="i-konu" value="'+esc(r.konu)+'" placeholder="Rapor konusu / başlık"></div>'
-      +'<div class="f"><label>KATEGORİ</label><select class="i-kat">'+catOpts(r.kategori||'t1')+'</select></div>'
-      +'<div class="f"><label>DEĞİŞİM</label><select class="i-deg">'+degOpts(r.degisim)+'</select></div>'
-    +'</div>'
-    +'<div class="row"><div class="f grow"><label>YENİ — bu haftaki durum</label>'
-      +'<textarea class="i-yeni" placeholder="Bu haftaki güncel durum / aksiyon...">'+esc(r.yeni)+'</textarea>'
-      +(r.eski?'<div class="prev">◂ önceki (Eski): '+esc(r.eski)+'</div>':'')+'</div></div>'
-    +'<div class="row" style="align-items:center"><button class="save">'+(isNew?"Ekle":"Kaydet")+'</button></div>'
-    +'</div>';
-}
-function render(){
-  const list=document.getElementById("list");
-  let html="";
-  CATS.forEach(c=>{
-    const rows=ROWS.filter(r=>r.kategori===c[0]);
-    html+='<div class="grp" data-kat="'+c[0]+'"><h2>'+esc(c[1])+' <span style="font-weight:400;color:#8a97a4">('+rows.length+')</span></h2>'
-      +'<button class="addbtn" data-add="'+c[0]+'">+ '+esc(c[1])+' satırı ekle</button>'
-      +rows.map(card).join("")+'</div>';
-  });
-  list.innerHTML=html; bind();
-}
-function bind(){
-  document.querySelectorAll(".card").forEach(c=>{ c.querySelector(".save").onclick=()=>save(c); });
-  document.querySelectorAll(".addbtn").forEach(b=>b.onclick=()=>{
-    const kat=b.dataset.add;
-    if(document.querySelector('.card[data-id=""][data-kat="'+kat+'"]')){ msg("Önce açık yeni kartı kaydet.",false); return; }
-    b.insertAdjacentHTML("afterend", card({kategori:kat,konu:"",yeni:"",eski:"",degisim:""}));
-    bind();
-  });
-}
-function collect(c){
-  const g=s=>c.querySelector(s);
-  return { kategori:g(".i-kat").value, konu:g(".i-konu").value.trim(),
-    yeni:g(".i-yeni").value.trim(), degisim:g(".i-deg").value };
-}
-async function save(c){
-  const id=c.dataset.id; const rec=collect(c);
-  if(!rec.konu){ msg("Konu gerekli.",false); return; }
-  let error;
-  if(id){ ({error}=await sb.from("ob_rapor").update(rec).eq("id",parseInt(id))); }
-  else  { ({error}=await sb.from("ob_rapor").insert(rec)); }
-  if(error){ msg(error.message,false); return; }
-  msg("Kaydedildi: "+rec.konu,true); load();
-}
 
 /* ===== Takipteki İşler (ob_isler) — anlık kayıt + haftalık arşiv ===== */
 const OBI_DURUM=["Henüz çalışılmadı","İlerliyor","Tamamlandı","İptal"];
@@ -143,7 +70,7 @@ function renderIsler(){
   let h='<table class="itbl"><thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th><th></th></tr></thead><tbody>';
   akt.forEach(r=>{
     h+='<tr data-id="'+r.id+'">'
-      +'<td><input class="ic" data-f="konu" maxlength="20" value="'+esc(r.konu)+'" placeholder="Konu (≤20)"></td>'
+      +'<td><input class="ic" data-f="konu" value="'+esc(r.konu)+'" placeholder="Konu"></td>'
       +'<td><select class="ic" data-f="durum">'+durumOpts(r.durum)+'</select></td>'
       +'<td><textarea class="ic" data-f="ob_notlari" placeholder="ÖB notları...">'+esc(r.ob_notlari)+'</textarea></td>'
       +'<td><button class="idel" title="Sil">✕</button></td></tr>';
@@ -187,7 +114,7 @@ async function haftalikGuncelle(){
 document.getElementById("iAdd").onclick=addIsler;
 document.getElementById("iWeek").onclick=haftalikGuncelle;
 
-load(); loadIsler();
+loadIsler();
 </script>
 </body>
 </html>
