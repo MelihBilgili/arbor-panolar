@@ -36,7 +36,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <body>
 <header>
   <h1>ÖB — Takipteki İşler</h1>
-  <div class="sub">Özgül Bedestenci · Her işin Konu, Durum ve ÖB Notları'nı gir. "Haftalık Güncelleme"de durumu Tamamlandı/İptal olan işler aktif listeden kalkar, son ÖB Notları soluk iz olarak kalır. Melih'in "ÖB Rapor" panosuna salt-okur yansır.</div>
+  <div class="sub">Özgül Bedestenci · Her işin Konu, Durum ve ÖB Notları'nı gir. "Haftalık Güncelleme"de durumu Tamamlandı/İptal oldu olan işler aktif listeden kalkar, son ÖB Notları soluk iz olarak kalır. Melih'in "ÖB Rapor" panosuna salt-okur yansır.</div>
 </header>
 <div class="wrap">
   <div id="msg" class="msg"></div>
@@ -47,7 +47,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <button class="wkbtn" id="iWeek">Haftalık Güncelleme</button>
     </div>
     <div id="iList"><div class="load">Yükleniyor…</div></div>
-    <div class="hint">Konu · Durum · ÖB Notları anında kaydedilir. "Haftalık Güncelleme": durumu <b>Tamamlandı</b> veya <b>İptal</b> olan işler aktif listeden kalkar; son ÖB Notları soluk iz olarak kalır. Aktif işler (Henüz çalışılmadı / İlerliyor) normal kalır.</div>
+    <div class="hint">Konu · Durum · ÖB Notları anında kaydedilir. "Haftalık Güncelleme": durumu <b>Tamamlandı</b> veya <b>İptal oldu</b> olan işler aktif listeden kalkar; son ÖB Notları soluk iz olarak kalır. Aktif işler (Henüz çalışılmadı / İlerliyor) normal kalır.</div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -57,7 +57,7 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",
 function msg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},1900); }
 
 /* ===== Takipteki İşler (ob_isler) — anlık kayıt + haftalık arşiv ===== */
-const OBI_DURUM=["Henüz çalışılmadı","İlerliyor","Tamamlandı","İptal"];
+const OBI_DURUM=["Henüz çalışılmadı","İlerliyor","Tamamlandı","İptal oldu"];
 let IROWS=[];
 async function loadIsler(){
   const {data,error}=await sb.from("ob_isler").select("*").order("arsiv").order("id");
@@ -102,9 +102,9 @@ async function delIsler(id){
   IROWS=IROWS.filter(x=>x.id!==id); renderIsler();
 }
 async function haftalikGuncelle(){
-  const kapat=IROWS.filter(r=>!r.arsiv && (r.durum==="Tamamlandı"||r.durum==="İptal"));
-  if(!kapat.length){ msg("Kapatılacak (Tamamlandı/İptal) iş yok.",true); return; }
-  if(!confirm("Haftalık Güncelleme:\n\n"+kapat.length+" iş (Tamamlandı/İptal) aktif listeden kalkacak; son ÖB Notları soluk iz olarak kalacak. Devam?")) return;
+  const kapat=IROWS.filter(r=>!r.arsiv && (r.durum==="Tamamlandı"||r.durum==="İptal oldu"));
+  if(!kapat.length){ msg("Kapatılacak (Tamamlandı/İptal oldu) iş yok.",true); return; }
+  if(!confirm("Haftalık Güncelleme:\n\n"+kapat.length+" iş (Tamamlandı/İptal oldu) aktif listeden kalkacak; son ÖB Notları soluk iz olarak kalacak. Devam?")) return;
   for(const r of kapat){
     const {error}=await sb.from("ob_isler").update({arsiv:true,updated_at:new Date().toISOString()}).eq("id",r.id);
     if(error){ msg("Hata: "+error.message,false); return; }
