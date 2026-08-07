@@ -821,7 +821,7 @@ function loadFormlar(){
   const forms=[
     {ad:"EA — SÖ Haftalık Gündem Formu", who:"Enes Artan · Kalite", url:"ea/", desc:"Hafta bölümünü seçer, sorun ve önerileri 'gündeme alındı'ya çevirir. Yazar: so_ea_form."},
     {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."},
-    {ad:"ÖB Rapor Formu", who:"Özgül Bedestenci · Yurtdışı Finans", url:"ob-rapor/", desc:"Takipteki işleri (Konu · Durum · ÖB Notları) günceller; Haftalık Güncelleme'de Tamamlandı/İptal işler soluk ize döner. Yazar: ob_isler; ÖB Rapor panosuna salt-okur yansır."},
+    {ad:"ÖB Rapor Formu", who:"Özgül Bedestenci · Yurtdışı Finans", url:"ob-rapor/", desc:"Takipteki işleri (Konu · Durum · ÖB Notları) günceller; Haftalık Güncelleme'de Tamamlandı/İptal oldu işler soluk ize döner. Yazar: ob_isler; ÖB Rapor panosuna salt-okur yansır."},
     {ad:"MK — Faaliyet & Prim Formu", who:"Mehmet Konak", url:"mk-prim/", desc:"Dört blok (Memnuniyet · TS Ekstra · FR Satış · Diğer Satış) faaliyet girişi; prim kontrat/tutar alanlarından otomatik hesaplanır. Yazar: mk_faaliyet; Mali → MK Prim panosuna salt-okur yansır (toplam FR dahil 4 kriter)."},
     {ad:"Yurt Dışı 1 Satış Formu", who:"Fatma · Satış (Fransa/ihracat)", url:"fy/", desc:"Yurtdışı muhtemel/alınan projeleri (proje, müşteri, statü, ülke, net €, durum) + takipteki teklifler girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır. Paylaşılan xlsx yerine geçer."},
     {ad:"Yurt Dışı 2 Satış Formu", who:"Yurt Dışı 2 ekibi · ayrı form", url:"fy2/", desc:"Yurt Dışı 1 ile birebir aynı format, TAMAMEN AYRI veri (satis_yorum_2 / satis_takip_2 / satis_takip_sonuc_2). Ayrı kişilerce doldurulur; form 1 verisiyle karışmaz. Satış panosundaki 'Yurt Dışı 2' bloğuna yansır."},
@@ -967,7 +967,7 @@ async function loadObrapor(){
   const _gunc=_mx?(_mx.slice(8,10)+"."+_mx.slice(5,7)+"."+_mx.slice(0,4)):"";
   const iAkt=iRows.filter(r=>!r.arsiv), iArs=iRows.filter(r=>r.arsiv);
   let html=`<div class="stamp">Son güncelleme: ${_gunc||"—"}</div>
-    <div class="hint">ÖB <a href="ob-rapor/" target="_blank">Takipteki İşler formundan</a> günceller. Aktif işler normal; durumu Tamamlandı/İptal olanların son notu soluk iz olarak kalır.</div>`;
+    <div class="hint">ÖB <a href="ob-rapor/" target="_blank">Takipteki İşler formundan</a> günceller. Aktif işler normal; durumu Tamamlandı/İptal oldu olanların son notu soluk iz olarak kalır.</div>`;
   let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iAkt.length} aktif${iArs.length?` · ${iArs.length} iz`:""})</span></h3><div class="scroll"><table><thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th></tr></thead><tbody>`;
   iAkt.forEach(r=>{ ib+=`<tr><td class="sb">${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari)}</td></tr>`; });
   iArs.forEach(r=>{ ib+=`<tr style="opacity:.42;font-style:italic"><td>${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari||"")}</td></tr>`; });
