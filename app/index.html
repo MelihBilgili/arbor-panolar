@@ -455,7 +455,7 @@ function satisSummary(regions){
     const dm=det(rg.cMc,rg.pM,rg.hasPrev,'M',curM,curA), da=det(rg.cAc,rg.pA,rg.hasPrev,'A',curM,curA);
     if(dm||da) body+=`<tr class="sdet"><td></td><td>${dm}</td><td>${da}</td></tr>`;
   });
-  return `<div class="scroll" style="max-height:none;overflow:visible;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num">Alınan</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  return `<div class="scroll" style="max-height:none;overflow-y:visible;overflow-x:auto;-webkit-overflow-scrolling:touch;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num">Alınan</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 function satisTbl(arr){
   const list=arr.slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0));
