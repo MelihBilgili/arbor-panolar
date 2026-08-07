@@ -27,6 +27,16 @@
   .save{background:#2e7d54;color:#fff;border:0;border-radius:7px;padding:7px 14px;font-weight:600;cursor:pointer}
   .load{padding:30px;text-align:center;color:#8a97a4}
   .hint{font-size:12px;color:#8a97a4;margin:10px 2px}
+  .ibtns{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+  .ibtns .wkbtn{background:#0b57d0;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:600;cursor:pointer;font-size:12.5px}
+  .itbl{border-collapse:collapse;width:100%;font-size:13px}
+  .itbl th,.itbl td{border-bottom:1px solid #eef1f5;padding:5px 7px;text-align:left;vertical-align:top}
+  .itbl thead th{background:#8a6100;color:#fff;font-weight:600}
+  .itbl .ic{font:inherit;padding:5px 7px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf5;width:150px}
+  .itbl textarea.ic{min-width:240px;min-height:40px;resize:vertical}
+  .itbl tr.ifade{opacity:.42}
+  .itbl tr.ifade td{font-style:italic;color:#7a6a3a}
+  .idel{background:#fff;border:1px solid #e0b4b4;color:#b40000;border-radius:6px;cursor:pointer;padding:3px 8px;font-weight:700}
 
 html,body{max-width:100vw;overflow-x:hidden}
 table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
@@ -41,6 +51,15 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div id="msg" class="msg"></div>
   <div id="list"><div class="load">Yükleniyor…</div></div>
   <div class="hint">Kayıtlar Supabase'e yazılır (ob_rapor). Yalnız Konu / Yeni / Değişim / Kategori düzenlenir; Eski durum ve sıra sistem tarafından tutulur (haftalık kaydırmada Yeni → Eski olur).</div>
+
+  <div class="grp"><h2>Takipteki İşler</h2>
+    <div class="ibtns">
+      <button class="addbtn" id="iAdd">+ Yeni İş Ekle</button>
+      <button class="wkbtn" id="iWeek">Haftalık Güncelleme</button>
+    </div>
+    <div id="iList"><div class="load">Yükleniyor…</div></div>
+    <div class="hint">Konu (en çok 20 karakter) · Durum · ÖB Notları anında kaydedilir. "Haftalık Güncelleme": durumu <b>Tamamlandı</b> veya <b>İptal</b> olan işler aktif listeden kalkar; son ÖB Notları soluk iz olarak kalır. Aktif işler (Henüz çalışılmadı / İlerliyor) normal kalır.</div>
+  </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -106,7 +125,66 @@ async function save(c){
   if(error){ msg(error.message,false); return; }
   msg("Kaydedildi: "+rec.konu,true); load();
 }
-load();
+
+/* ===== Takipteki İşler (ob_isler) — anlık kayıt + haftalık arşiv ===== */
+const OBI_DURUM=["Henüz çalışılmadı","İlerliyor","Tamamlandı","İptal"];
+let IROWS=[];
+async function loadIsler(){
+  const {data,error}=await sb.from("ob_isler").select("*").order("arsiv").order("id");
+  if(error){ document.getElementById("iList").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
+  IROWS=data||[]; renderIsler();
+}
+function durumOpts(v){ return OBI_DURUM.map(d=>'<option'+(d===v?' selected':'')+'>'+esc(d)+'</option>').join(""); }
+function renderIsler(){
+  const akt=IROWS.filter(r=>!r.arsiv), ars=IROWS.filter(r=>r.arsiv);
+  let h='<table class="itbl"><thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th><th></th></tr></thead><tbody>';
+  akt.forEach(r=>{
+    h+='<tr data-id="'+r.id+'">'
+      +'<td><input class="ic" data-f="konu" maxlength="20" value="'+esc(r.konu)+'" placeholder="Konu (≤20)"></td>'
+      +'<td><select class="ic" data-f="durum">'+durumOpts(r.durum)+'</select></td>'
+      +'<td><textarea class="ic" data-f="ob_notlari" placeholder="ÖB notları...">'+esc(r.ob_notlari)+'</textarea></td>'
+      +'<td><button class="idel" title="Sil">✕</button></td></tr>';
+  });
+  ars.forEach(r=>{
+    h+='<tr class="ifade" title="Arşiv (soluk iz) — durum: '+esc(r.durum)+'"><td>'+esc(r.konu)+'</td><td>'+esc(r.durum)+'</td><td colspan="2">'+esc(r.ob_notlari||"")+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  const list=document.getElementById("iList"); list.innerHTML=h;
+  list.querySelectorAll("[data-f]").forEach(el=>{ el.addEventListener("change",()=>saveIsler(+el.closest("tr").dataset.id,el.dataset.f,el.value)); });
+  list.querySelectorAll(".idel").forEach(b=>b.onclick=()=>delIsler(+b.closest("tr").dataset.id));
+}
+async function saveIsler(id,f,v){
+  const rec={}; rec[f]=(v===""?null:v); rec.updated_at=new Date().toISOString();
+  const {error}=await sb.from("ob_isler").update(rec).eq("id",id);
+  if(error){ msg("Hata: "+error.message,false); return; }
+  const r=IROWS.find(x=>x.id===id); if(r) r[f]=v; msg("Kaydedildi",true);
+}
+async function addIsler(){
+  const {data,error}=await sb.from("ob_isler").insert({konu:"",durum:"Henüz çalışılmadı",ob_notlari:"",arsiv:false}).select();
+  if(error){ msg(error.message,false); return; }
+  IROWS.push(data[0]); renderIsler();
+  const inps=document.querySelectorAll('#iList input[data-f="konu"]'); if(inps.length) inps[inps.length-1].focus();
+}
+async function delIsler(id){
+  if(!confirm("Bu iş silinsin mi?")) return;
+  const {error}=await sb.from("ob_isler").delete().eq("id",id);
+  if(error){ msg(error.message,false); return; }
+  IROWS=IROWS.filter(x=>x.id!==id); renderIsler();
+}
+async function haftalikGuncelle(){
+  const kapat=IROWS.filter(r=>!r.arsiv && (r.durum==="Tamamlandı"||r.durum==="İptal"));
+  if(!kapat.length){ msg("Kapatılacak (Tamamlandı/İptal) iş yok.",true); return; }
+  if(!confirm("Haftalık Güncelleme:\n\n"+kapat.length+" iş (Tamamlandı/İptal) aktif listeden kalkacak; son ÖB Notları soluk iz olarak kalacak. Devam?")) return;
+  for(const r of kapat){
+    const {error}=await sb.from("ob_isler").update({arsiv:true,updated_at:new Date().toISOString()}).eq("id",r.id);
+    if(error){ msg("Hata: "+error.message,false); return; }
+  }
+  msg(kapat.length+" iş arşive alındı (soluk iz).",true); loadIsler();
+}
+document.getElementById("iAdd").onclick=addIsler;
+document.getElementById("iWeek").onclick=haftalikGuncelle;
+
+load(); loadIsler();
 </script>
 </body>
 </html>
