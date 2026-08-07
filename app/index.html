@@ -583,7 +583,8 @@ async function loadHazir(){
       const kod=lastN(r.no,tip==="pem"?5:8);
       const proje=ev(T,r.no,"proje")||String(r.proje_adi||"");
       const note=ev(T,r.no,noteCol)||(tip==="pem"?String(r.ek_bilgi||""):"");
-      const adet=ev(T,r.no,"adet")||(r.adet==null?"":String(r.adet));
+      let adet=ev(T,r.no,"adet")||(r.adet==null?"":String(r.adet));
+      if(adet!==""&&isFinite(parseFloat(adet))) adet=String(Math.round(parseFloat(adet)));
       const dt=ev(T,r.no,dcol)||r.hazir_tarihi||"";
       const onur=r.onur_guncel||"", oz=ozMap[T+"|"+r.no]||"";
       return `<tr>`
