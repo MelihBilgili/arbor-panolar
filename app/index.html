@@ -407,12 +407,14 @@ async function loadSatis(){
   const stampDate=regions.reduce((m,rg)=> (rg.cekim>m?rg.cekim:m), '0');
   const anyData=regions.some(rg=>rg.data.length);
   view.innerHTML=`
+    <style>.satis-wrap .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.satis-wrap .scroll>table:not(.ssum){min-width:max-content}.satis-wrap .scroll th{white-space:nowrap}</style>
+    <div class="satis-wrap">
     <div class="stamp">Son güncelleme: ${anyData?dOnly(stampDate):'—'}</div>
     ${satisSummary(regions)}
     ${regions.map(rg=>regionDetail(rg,islendi[rg.kaynak])).join("")}
     ${takipSection("Yurtdışı 1 Takipteki Teklifler", tk.data||[], (ss&&!ss.error)?(ss.data||[]):[], (sn&&!sn.error)?(sn.data||[]):[], true)}
     ${takipSection("Yurtdışı 2 Takipteki Teklifler", (tk2&&tk2.data)||[], (ss2&&!ss2.error)?(ss2.data||[]):[], (sn2&&!sn2.error)?(sn2.data||[]):[], false)}
-  `;
+    </div>`;
 }
 /* Bölge çekim hesabı: aktif=güncel, arşivden en yeni çekim=önceki */
 function regCalc(rows){
