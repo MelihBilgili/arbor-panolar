@@ -50,8 +50,6 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </header>
 <div class="wrap">
   <div id="msg" class="msg"></div>
-  <div id="list"><div class="load">Yükleniyor…</div></div>
-  <div class="hint">Kayıtlar Supabase'e yazılır (ob_rapor). Yalnız Konu / Yeni / Değişim / Kategori düzenlenir; Eski durum ve sıra sistem tarafından tutulur (haftalık kaydırmada Yeni → Eski olur).</div>
 
   <div class="grp"><h2>Takipteki İşler</h2>
     <div class="ibtns">
@@ -61,6 +59,10 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <div id="iList"><div class="load">Yükleniyor…</div></div>
     <div class="hint">Konu (en çok 20 karakter) · Durum · ÖB Notları anında kaydedilir. "Haftalık Güncelleme": durumu <b>Tamamlandı</b> veya <b>İptal</b> olan işler aktif listeden kalkar; son ÖB Notları soluk iz olarak kalır. Aktif işler (Henüz çalışılmadı / İlerliyor) normal kalır.</div>
   </div>
+
+  <div class="grp"><h2>Rapor Mukayese</h2></div>
+  <div id="list"><div class="load">Yükleniyor…</div></div>
+  <div class="hint">Kayıtlar Supabase'e yazılır (ob_rapor). Yalnız Konu / Yeni / Değişim / Kategori düzenlenir; Eski durum ve sıra sistem tarafından tutulur (haftalık kaydırmada Yeni → Eski olur).</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
