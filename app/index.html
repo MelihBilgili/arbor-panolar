@@ -965,7 +965,9 @@ async function loadObrapor(){
   const {data,error}=await sb.from("ob_rapor").select("*").order("kategori").order("sira");
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const rows=data||[];
-  let html=`<div class="stamp">Mukayese (Eski ◂ Yeni) · ${rows.length} satır</div>
+  const _mx=rows.reduce((m,r)=>(r.updated_at&&r.updated_at>m)?r.updated_at:m,"");
+  const _gunc=_mx?(_mx.slice(8,10)+"."+_mx.slice(5,7)+"."+_mx.slice(0,4)):"";
+  let html=`<div class="stamp">Mukayese (Eski ◂ Yeni) · ${rows.length} satır${_gunc?` · Güncelleme: ${_gunc}`:""}</div>
     <div class="hint">ÖB haftalık <a href="ob-rapor/" target="_blank">ÖB Rapor formundan</a> günceller (Yeni + Değişim); güncel/önceki mukayeseli. &nbsp; <button class="btn" id="obr-kaydir">Haftayı kaydır (Yeni→Eski)</button></div>`;
   OBR_CATS.forEach(c=>{
     const rs=rows.filter(r=>r.kategori===c[0]);
