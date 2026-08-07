@@ -57,9 +57,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </header>
 <div class="wrap">
   <div class="aybar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:6px 0 2px">
-    <span>Bilgiler</span>
-    <select id="ayMonth" style="padding:6px 8px;border:1px solid #cdd6df;border-radius:6px;font:inherit;background:#fff"></select>
-    <button class="btn" id="ayBtn">ayına ilişkin gelişmeleri yansıtacak şekilde güncellendi</button>
+    <button class="btn" id="ayBtn">Aylık güncelleme (ayı kapat)</button>
     <span class="msg" id="ayMsg"></span>
   </div>
   <div class="hint" style="margin:0 2px 12px;color:#b25a00">Bu düğmeye yalnız aylık güncelleme için basınız, düzeltme ve revizyon durumunda lütfen basmayınız.</div>
@@ -264,12 +262,11 @@ document.getElementById("tkAdd").onclick=addTk;
 setupAyIsaret("FY","satis_takip_snapshot_al");
 function setupAyIsaret(KAYNAK,SNAP){
   const AYLAR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
-  const sel=document.getElementById("ayMonth"); if(!sel) return;
+  const btn0=document.getElementById("ayBtn"); if(!btn0) return;
   const now=new Date();
-  for(let i=0;i<12;i++){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); const lbl=AYLAR[d.getMonth()]+" "+d.getFullYear(); const o=document.createElement("option"); o.value=lbl; o.textContent=lbl; sel.appendChild(o); }
-  sel.value=AYLAR[now.getMonth()]+" "+now.getFullYear();
-  document.getElementById("ayBtn").onclick=async()=>{
-    const ay=sel.value, m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
+  const ay=AYLAR[now.getMonth()]+" "+now.getFullYear();
+  btn0.onclick=async()=>{
+    const m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
     if(!confirm('"'+ay+'" ayı için aylık güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN.\n\nOnaylıyor musunuz?')) return;
     btn.disabled=true; m.className="msg"; m.textContent="İşaretleniyor…";
     const {error}=await sb.from("satis_ay_islendi").upsert({kaynak:KAYNAK,ay,mail_gonderildi:false,updated_at:new Date().toISOString()},{onConflict:"kaynak"});
