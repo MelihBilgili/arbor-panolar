@@ -38,6 +38,10 @@
   .totbar .msg{font-size:12.5px;font-weight:600;min-height:16px}
   .totbar .msg.ok{color:#8ff0c2}.totbar .msg.err{color:#ffb4b4}
   .hint{font-size:12px;color:#8a97a4;margin:2px 2px 14px}
+  .aybar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:0 0 14px}
+  .aybar .msg{font-size:12.5px;font-weight:600}
+  .aybar .msg.ok{color:#2e7d54}.aybar .msg.err{color:#b40000}
+  .aywarn{font-size:12px;color:#b25a00;margin-left:auto}
 
 html,body{max-width:100vw;overflow-x:hidden}
 table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
@@ -50,6 +54,11 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </header>
 <div class="wrap">
   <div class="hint">Her blok kendi kuralıyla prim üretir. Girdiğin satırlar “Kaydet” ile kaydedilir; toplam prim dört kriterin (Memnuniyet · TS · FR Satış · Diğer Satış) tümünü kapsar.</div>
+  <div class="aybar">
+    <button class="btn" id="ayBtn">Aylık güncelleme (ayı kapat)</button>
+    <span class="msg" id="ayMsg"></span>
+    <span class="aywarn">Yalnız aylık güncelleme için basınız; düzeltme/revizyon için basmayınız.</span>
+  </div>
   <div id="blocks"></div>
   <div class="totbar">
     <div>Toplam Prim: <span class="big" id="grand">0 €</span></div>
@@ -164,6 +173,22 @@ async function save(){
 }
 document.getElementById("save").onclick=save;
 document.getElementById("clear").onclick=()=>{ if(confirm("Tüm girilen satırlar temizlensin mi?")){ BLOCKS.forEach(b=>DATA[b.tur]=[]); render(); setMsg("",true); } };
+
+/* ===== Aylık güncelleme: mk_ay_islendi (append) + mk-faaliyet-mail ===== */
+const AYLAR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const DONEM=AYLAR[new Date().getMonth()]+" "+new Date().getFullYear();
+document.getElementById("ayBtn").onclick=async()=>{
+  const m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
+  if(!confirm('"'+DONEM+'" ayı için aylık güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN.\n\nOnaylıyor musunuz?')) return;
+  btn.disabled=true; m.className="msg"; m.textContent="İşaretleniyor…";
+  const {error}=await sb.from("mk_ay_islendi").insert({ay:DONEM});
+  if(error){ btn.disabled=false; m.className="msg err"; m.textContent="Hata: "+error.message; return; }
+  let note="";
+  try{ const r=await sb.functions.invoke("mk-faaliyet-mail",{body:{ay:DONEM}});
+    if(r.error){ note=" (mail gönderilemedi: "+(r.error.message||r.error)+")"; }
+  }catch(e){ note=" (mail gönderilemedi)"; }
+  btn.disabled=false; m.className="msg ok"; m.textContent="✓ "+DONEM+" ayı işaretlendi."+note;
+};
 BLOCKS.forEach(b=>DATA[b.tur].push(blankRow(b)));
 render();
 </script>
