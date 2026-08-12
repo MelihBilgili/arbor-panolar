@@ -965,12 +965,10 @@ async function loadObrapor(){
   const iRows=isl.data||[];
   const _mx=iRows.reduce((m,r)=>(r.updated_at&&r.updated_at>m)?r.updated_at:m,"");
   const _gunc=_mx?(_mx.slice(8,10)+"."+_mx.slice(5,7)+"."+_mx.slice(0,4)):"";
-  const iAkt=iRows.filter(r=>!r.arsiv), iArs=iRows.filter(r=>r.arsiv);
   let html=`<div class="stamp">Son güncelleme: ${_gunc||"—"}</div>
-    <div class="hint">ÖB <a href="ob-rapor/" target="_blank">Takipteki İşler formundan</a> günceller. Aktif işler normal; durumu Tamamlandı/İptal oldu olanların son notu soluk iz olarak kalır.</div>`;
-  let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iAkt.length} aktif${iArs.length?` · ${iArs.length} iz`:""})</span></h3><div class="scroll"><table><thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th><th>Değişim Özeti</th></tr></thead><tbody>`;
-  iAkt.forEach(r=>{ ib+=`<tr><td class="sb">${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari)}</td><td>${esc(r.degisim_ozet)}</td></tr>`; });
-  iArs.forEach(r=>{ ib+=`<tr style="opacity:.42;font-style:italic"><td>${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari||"")}</td><td>${esc(r.degisim_ozet||"")}</td></tr>`; });
+    <div class="hint">ÖB <a href="ob-rapor/" target="_blank">Takipteki İşler formundan</a> günceller. Haftalık Güncelleme'de durumu Tamamlandı/İptal oldu olan işler tamamen silinir.</div>`;
+  let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3><div class="scroll"><table><thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th><th>Değişim Özeti</th></tr></thead><tbody>`;
+  iRows.forEach(r=>{ ib+=`<tr><td class="sb">${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari)}</td><td>${esc(r.degisim_ozet)}</td></tr>`; });
   if(!iRows.length) ib+=`<tr><td colspan="4" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
   ib+=`</tbody></table></div>`;
   html+=ib;
