@@ -59,6 +59,9 @@
   .snpink{background:#ffd9ec} .itot td{background:#eef4fb;font-weight:700}
   table.aup th,table.aup td{width:1%;white-space:nowrap}
   table.aup th.note,table.aup td.note{width:auto;white-space:normal;min-width:160px}
+  table.aup th.ss,table.aup th.ur{white-space:nowrap}
+  table.aup td.ss>.cx{display:block;width:20ch;white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.aup td.ur>.cx{display:block;width:15ch;white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .addbar{display:flex;gap:6px;margin:0 0 8px;flex-wrap:nowrap;align-items:center}
   .addbar input{border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;font:inherit;min-width:0}
   .addbar select#ag-ilgili{flex:none;border:1px solid #cdd6df;border-radius:6px;padding:6px 6px;font:inherit;background:#fff}
@@ -604,8 +607,8 @@ async function loadAup(){
       <td class="num ${ga>0?'red':''}">${ga==null?'':ga}</td>
       <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
       <td class="num">${money(r.anlasma_fiyati)}</td>
-      <td class="note${r.satis_santiye_notlari?' snpink':''}">${esc(r.satis_santiye_notlari)}</td>
-      <td class="note">${esc(r.uretim_notlari)}</td>
+      <td class="ss${r.satis_santiye_notlari?' snpink':''}"><div class="cx">${esc(r.satis_santiye_notlari)}</div></td>
+      <td class="ur"><div class="cx">${esc(r.uretim_notlari)}</div></td>
     </tr>`;
   });
   const st=await erpStamp();
@@ -616,7 +619,7 @@ async function loadAup(){
   const stamp='<div class="stamp">Son güncelleme: '+(st||"—")+' · Adet: '+money(o0.toplam_adet)+pct(o0.toplam_adet,o1.toplam_adet)+' · Tutar: '+money(o0.toplam_tutar)+' €'+pct(o0.toplam_tutar,o1.toplam_tutar)+' · Global kayma: '+gk+' gün'+dgun(o0.global_kayma,o1.global_kayma)+'</div>';
   view.innerHTML=`${stamp}<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&gt;0 ve Kayma≥3 kırmızı.</div>
     <div class="scroll"><table class="aup">
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th>PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="note">Satış-Şantiye Notu</th><th class="note">Üretim Notu</th></tr></thead>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th>PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
