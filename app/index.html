@@ -727,7 +727,7 @@ async function loadRef(){
     <div class="hint">Süreçler Melih'in tarif ettiği işleyişi yansıtır; her biri <b>tetik → sorumlu → adımlar → çıktı</b> zinciriyle, sıklık etiketiyle yazılmıştır. Firma içi <b>kurallar</b> (yasalar) ayrı Prosedürler sekmesindedir.</div>
     <div class="flow"><b>1. ERP İngest Hattı</b><span class="tag">tek P süreci</span>
       <p>Melih ERP'yi manuel çeker → Excel'leri <code>Arbor\ERP\&lt;YYMMDD&gt;\</code> içine bırakır (geçici giriş kutusu; hedef Supabase Storage <code>erp/&lt;YYMMDD&gt;/</code>) → worker en güncel klasörü <b>başlık adına göre</b> okur, idempotent upsert eder → snapshot tabloları → app view'leri.</p>
-      <p class="muted">Ingest edilen dört rapor: <b>Prj→proje_snapshot, Pem→pem_snapshot, Arge→arge_snapshot, SÖ→so_snapshot</b>. <b>Cam.xlsx ingest edilmez</b> (ayrı fiyat aracı, app/cam/). Panolar: Prj→AÜP + Hazır PRJ (durum 8/8.1); Pem→Hazır PEM (durum 3); Arge→Ana Gündem ARGE bloğu; SÖ→Ana Gündem SÖ türevi + EA formu.</p>
+      <p class="muted">Ingest edilen beş rapor: <b>Prj→proje_snapshot, Pem→pem_snapshot, Arge→arge_snapshot, SÖ→so_snapshot, Üs→icmal_satir</b> (Aylık Üretim-Satış → İcmal aylık kolonları, aya göre PATCH). <b>Cam.xlsx ve Duyuru.xlsx ingest edilmez</b> (Cam ayrı fiyat aracı app/cam/). Panolar: Prj→AÜP + Hazır PRJ (durum 8/8.1); Pem→Hazır PEM (durum 3); Arge→Ana Gündem ARGE bloğu; SÖ→Ana Gündem SÖ türevi + EA formu; Üs→İcmal.</p>
     </div>
     <div class="flow"><b>2. SÖ Bölüm Gündem Süreci</b><span class="tag ok">SÖ sorumlusu = EA (Enes Artan)</span>
       <p>Her ERP çekiminden sonra tüm sorun ve öneriler (SÖ'ler) Claude tarafından, EA (Enes Artan) ile paylaşılan bir panoya işlenir.</p>
@@ -739,7 +739,7 @@ async function loadRef(){
       <p>SB (Muhasebe) gider tablosu → yeni dönem gideri gelince Melih iletir → Claude bilanço panosunu günceller. Kapsam yalnız Arbor Türkiye. Bilanço = Net Satış (İcmal) − Toplam Maliyet (710+720+730, SB).</p>
     </div>
     <div class="flow"><b>4. Yıllık İcmal Süreci</b><span class="tag">tek gelir kaynağı</span>
-      <p>Yıllık İcmal, aylık/yıllık Net Satış'ın tek kaynağıdır ve bilançonun gelir tarafını besler. PRJ/ERP çekiminden türetilir; satış raporları ay başı mapping ile iş hacmini canlı tutar.</p>
+      <p>Yıllık İcmal, aylık/yıllık Net Satış'ın tek kaynağıdır ve bilançonun gelir tarafını besler. Aylık üretim-satış kolonları (adet, m², net €/TL, kur, net fiyat, personel, ciro/personel) ERP <b>Üs.xlsx</b>'ten gelir (worker aya göre icmal_satir'a yazar); SO/FA alınan-muhtemel satış formlarından; onaysız/üretim adedi Prj rollup'ından.</p>
     </div>
     <div class="flow"><b>5. Satış Raporları Süreci</b><span class="tag">AK · FA/FY · SO</span>
       <p>Kaynak raporu gönderir → Claude "Satış Yorum" + İcmal'e işler → mail "Rapor" klasörüne taşınır. AK (UK) ve FA/FY (Fransa/ihracat) ayın 1'i ve 15'i; SO (yurtiçi) yalnız ayın 1'i.</p>
