@@ -107,7 +107,6 @@
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const SUPABASE_URL = "https://zehysygpqxqmrzangvuc.supabase.co";
 const SUPABASE_KEY = "sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc";
@@ -262,7 +261,6 @@ async function loadGundem(){
       <input id="ag-kod" placeholder="Kod" style="display:none;max-width:120px">
       <input id="ag-konu" placeholder="Yeni konu">
       <button class="btn" id="ag-add">Ekle</button>
-      <button class="btn sec" id="ag-erp" title="En yeni Arbor\\ERP klasöründen PEM/PRJ orta sütunlarını doldur (owner)">ERP'den eşle</button>
     </div>
     ${grpTable(['MB'])}
     ${pemPrjBlock(pemRows,'pem')}
@@ -274,7 +272,6 @@ async function loadGundem(){
   selEl.onchange=syncKod; syncKod();
   document.getElementById("ag-add").onclick=addGundem;
   document.getElementById("ag-konu").onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); addGundem(); } };
-  document.getElementById("ag-erp").onclick=erpEsle;
 }
 async function addGundem(){
   const ei=document.getElementById("ag-ilgili"), ek=document.getElementById("ag-konu"), ekod=document.getElementById("ag-kod");
@@ -301,34 +298,6 @@ async function addGundem(){
   if(error){ alert(error.message); return; }
   loadGundem();
 }
-async function erpEsle(){
-  const btn=document.getElementById("ag-erp");
-  if(!window.showDirectoryPicker){ alert("Tarayıcı klasör erişimini desteklemiyor (Chrome masaüstü gerekir)."); return; }
-  let dir; try{ dir=await window.showDirectoryPicker(); }catch(e){ return; }
-  btn.disabled=true; btn.textContent="Okunuyor…";
-  try{
-    let target=dir, best="";
-    for await (const [name,handle] of dir.entries()){ if(handle.kind==='directory' && /^\d{6}$/.test(name) && name>best){ best=name; target=handle; } }
-    const getFile=async(h,names)=>{ for(const n of names){ try{ const fh=await h.getFileHandle(n); return await fh.getFile(); }catch(e){} } return null; };
-    let pemF=await getFile(target,["Pem.xlsx","PEM.xlsx","pem.xlsx"]);
-    let prjF=await getFile(target,["Prj.xlsx","PRJ.xlsx","prj.xlsx","Proje.xlsx"]);
-    if(!pemF&&!prjF){ pemF=await getFile(dir,["Pem.xlsx","PEM.xlsx"]); prjF=await getFile(dir,["Prj.xlsx","PRJ.xlsx","Proje.xlsx"]); best=""; }
-    const digits=s=>String(s==null?"":s).replace(/\D/g,""), lastN=(s,n)=>digits(s).slice(-n);
-    const isoD=v=>{ if(v==null||v==="")return ""; const s=String(v); const m=s.match(/(\d{4})-(\d{2})-(\d{2})/); if(m) return m[1]+"-"+m[2]+"-"+m[3]; const d=new Date(s); return isNaN(d)?s:d.toISOString().slice(0,10); };
-    const parse=f=>f.arrayBuffer().then(ab=>{ const wb=XLSX.read(ab,{type:'array'}); return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:""}); });
-    const pemMap={}, prjMap={};
-    if(pemF){ (await parse(pemF)).forEach(r=>{ const k=lastN(r["SATIR NR."],5); if(k) pemMap[k]={proje:r["PROJE ADI"]||"",ekbilgi:r["TALEP"]||"",adet:String(r["MİKTAR"]!=null?r["MİKTAR"]:(r["MIKTAR"]||"")),durum:r["DURUM"]||"",termin:isoD(r["TERMİN TARİHİ"]||r["TERMIN TARIHI"])}; }); }
-    if(prjF){ (await parse(prjF)).forEach(r=>{ const k=lastN(r["PROJE NUMARASI"],8); if(k) prjMap[k]={proje:r["PROJE ADI"]||"",notlar:r["SATIŞ/ŞANTİYE NOTLARI"]||r["SATIS/SANTIYE NOTLARI"]||"",adet:String(r["ADET"]!=null?r["ADET"]:""),durum:r["PROJE DURUMU"]||"",aup:isoD(r["AÜP"]||r["AUP"])}; }); }
-    const {data:rows,error}=await sb.from("ana_gundem").select("id,kod,kaynak_tip").in("kaynak_tip",["pem","prj"]);
-    if(error){ alert(error.message); btn.disabled=false; btn.textContent="ERP'den eşle"; return; }
-    let matched=0,miss=0;
-    for(const r of (rows||[])){ const map=r.kaynak_tip==='pem'?pemMap:prjMap; const k=lastN(r.kod,r.kaynak_tip==='pem'?5:8); const erp=map[k]; if(erp){ await sb.from("ana_gundem").update({erp}).eq("id",r.id); matched++; } else miss++; }
-    btn.disabled=false; btn.textContent="ERP'den eşle";
-    alert("ERP eşleme bitti"+(best?(" ("+best+")"):"")+". Eşleşen: "+matched+" · eşleşmeyen: "+miss);
-    loadGundem();
-  }catch(e){ btn.disabled=false; btn.textContent="ERP'den eşle"; alert("ERP eşleme hatası: "+e); }
-}
-
 async function delGundem(id){
   if(!confirm("Bu gündem maddesi kalıcı olarak silinsin mi? (kapat = sil)")) return;
   const {error}=await sb.from("ana_gundem").delete().eq("id",id);
