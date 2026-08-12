@@ -1075,7 +1075,7 @@ async function boot(){
 }
 sb.auth.onAuthStateChange((_ev,s)=>{ if(!s){ state.session=null; renderLogin(); } });
 boot();
-setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadView(); }, 60000);
+setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadView(); }, 300000);
 </script>
 </body>
 </html>
