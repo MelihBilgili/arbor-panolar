@@ -71,6 +71,11 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <div class="msg" id="msg"></div>
   </div>
   <div class="hint">Kayıtlar Supabase'e yazılır. Yeni şantiyede yalnız ad/müşteri/neden girilir; tutar ve diğer finans bilgileri Melih tarafından doldurulur.</div>
+
+  <div class="card">
+    <h2 style="font-size:14px;margin:0 0 8px;color:#5c4300;border-bottom:2px solid #e6d3a3;padding-bottom:4px">Mevcut Durum Akışı <span id="akisCnt" style="font-weight:400;color:#8a97a4;font-size:12px"></span></h2>
+    <div id="akis" style="max-height:360px;overflow:auto"><div class="hint">Yükleniyor…</div></div>
+  </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -118,8 +123,29 @@ $("save").onclick=async()=>{
   msg((isNew?"Yeni şantiye + durum eklendi":"Durum eklendi")+" ("+(KIM==="OB"?"ÖB":"MK")+" · "+tarih+").",true);
   $("durum").value=""; $("yeniAd").value=""; $("yeniMusteri").value=""; $("yeniNeden").value="";
   await loadListe(isNew?parseInt(sid):null);
+  loadAkis();
 };
+async function loadAkis(){
+  const {data,error}=await sb.from("santiye_durum_akis").select("*").order("tarih",{ascending:false}).order("id",{ascending:false});
+  const el=$("akis");
+  if(error){ el.innerHTML='<div class="hint">Akış okunamadı: '+esc(error.message)+'</div>'; return; }
+  const rows=data||[]; $("akisCnt").textContent="("+rows.length+" kayıt)";
+  if(!rows.length){ el.innerHTML='<div class="hint">Henüz durum kaydı yok.</div>'; return; }
+  const dk=t=>t?String(t).slice(8,10)+"."+String(t).slice(5,7)+"."+String(t).slice(2,4):"";
+  el.innerHTML='<table style="border-collapse:collapse;width:100%;font-size:12.5px"><thead><tr>'
+    +'<th style="text-align:left;padding:5px 7px;border-bottom:2px solid #e6d3a3;white-space:nowrap">Şantiye</th>'
+    +'<th style="text-align:left;padding:5px 7px;border-bottom:2px solid #e6d3a3">Kim</th>'
+    +'<th style="text-align:left;padding:5px 7px;border-bottom:2px solid #e6d3a3;white-space:nowrap">Tarih</th>'
+    +'<th style="text-align:left;padding:5px 7px;border-bottom:2px solid #e6d3a3">Durum / Gelişme</th></tr></thead><tbody>'
+    +rows.map(r=>'<tr>'
+      +'<td style="padding:4px 7px;border-bottom:1px solid #eef1f5;white-space:nowrap">'+esc(r.santiye)+'</td>'
+      +'<td style="padding:4px 7px;border-bottom:1px solid #eef1f5">'+(r.kim==="OB"?"ÖB":"MK")+'</td>'
+      +'<td style="padding:4px 7px;border-bottom:1px solid #eef1f5;white-space:nowrap">'+dk(r.tarih)+'</td>'
+      +'<td style="padding:4px 7px;border-bottom:1px solid #eef1f5">'+esc(r.durum)+'</td></tr>').join("")
+    +'</tbody></table>';
+}
 loadListe();
+loadAkis();
 </script>
 </body>
 </html>
