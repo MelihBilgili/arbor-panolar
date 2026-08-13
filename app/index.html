@@ -177,9 +177,9 @@ async function loadPerms(){
 
 /* ---------- APP SHELL ---------- */
 const MALI_BOLUM=["depenses","kredi","ahsap","sel_arb","mali_maasprim","mali_mkprim"];
-const MALI_ALL=["depenses","kredi","ahsap","sel_arb","bilanco","icmal","mali_maasprim","mali_mkprim"];
+const MALI_ALL=["depenses","kredi","ahsap","sel_arb","bilanco","icmal","mali_maasprim","mali_mkprim","santiye"];
 const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["mali","Mali"],["obrapor","ÖB Rapor"],["formlar","Formlar"],["ozel","Özel"]];
-function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b)); if(k==='obrapor') return a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar')||a.includes('santiye'); return a.includes(k); }
+function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b)); if(k==='obrapor') return a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
 function renderApp(){
   const vis = TABS.filter(t=> tabVisible(t[0]) );
   if(!vis.length){ app.innerHTML=`<div class="login"><h2>Arbor Panolar</h2><p>Bu hesap için tanımlı bir bölüm yok. Yöneticiyle görüşün.</p><button class="btn" id="lo">Çıkış</button></div>`; document.getElementById("lo").onclick=doLogout; return; }
@@ -341,13 +341,16 @@ function startEdit(el){
 /* ---------- SÖ (so_panosu, bölüm bloklu) ---------- */
 async function loadSo(){
   const view=document.getElementById("view");
-  const {data,error}=await sb.from("so_panosu").select("*");
+  const [so,ea]=await Promise.all([ sb.from("so_panosu").select("*"), sb.from("so_ea_form").select("nr,statu,gundem_tarihi") ]);
+  const data=so.data, error=so.error;
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const eaMap={}; (ea&&!ea.error?(ea.data||[]):[]).forEach(x=>eaMap[x.nr]=x);
+  const gundemHuc=nr=>{ const g=eaMap[nr]; return (g&&g.statu==="gundeme_alindi"&&g.gundem_tarihi)?fdate(g.gundem_tarihi):"—"; };
   const groups={};
   (data||[]).forEach(r=>{ const k=r.bolum||"—"; (groups[k]=groups[k]||[]).push(r); });
   let rows="";
   Object.keys(groups).sort().forEach(k=>{
-    rows+=`<tr class="grp"><td colspan="6">${esc(k)} · ${groups[k].length}</td></tr>`;
+    rows+=`<tr class="grp"><td colspan="7">${esc(k)} · ${groups[k].length}</td></tr>`;
     groups[k].forEach(r=>{
       rows+=`<tr>
         <td class="kod">${esc(r.nr)}</td>
@@ -356,13 +359,14 @@ async function loadSo(){
         <td class="c15"><div class="cx">${esc(r.proje_adi||r.proje_numarasi)}</div></td>
         <td class="c20"><div class="cx">${esc(r.problem)}</div></td>
         <td class="c7"><div class="cx">${esc(r.bildiren)}</div></td>
+        <td class="num">${gundemHuc(r.nr)}</td>
       </tr>`;
     });
   });
   const st=await erpStamp();
   view.innerHTML=`<div class="stamp">Son güncelleme: ${st||"—"} · ${(data||[]).length} kayıt</div><div class="hint">SÖ — açık Sorun ve Öneriler (Şantiye/PEM), <b>kusurlu birim = bölüme</b> göre bloklu, açılış tarihine göre.</div>
     <div class="scroll"><table class="so">
-    <thead><tr><th>NR</th><th>Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th></tr></thead>
+    <thead><tr><th>NR</th><th>Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th><th>Gündem</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
@@ -798,12 +802,6 @@ function loadProsedur(){
 
 function loadFormlar(){
   const view=document.getElementById("view");
-  const tabs=[["araclar","Formlar & Araçlar"],["santiye","Şantiye"]];
-  if(!state.formSub || !tabs.some(t=>t[0]===state.formSub)) state.formSub=tabs[0][0];
-  const gbar=tabs.map(t=>`<button class="malitab${t[0]===state.formSub?' active':''}" data-f="${t[0]}">${esc(t[1])}</button>`).join("");
-  view.innerHTML=`<div class="malibar">${gbar}</div><div id="form-body"><div class="load">Yükleniyor…</div></div>`;
-  view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.formSub=btn.dataset.f; loadFormlar(); });
-  if(state.formSub==="santiye"){ loadSantiye("form-body"); return; }
   const forms=[
     {ad:"EA — SÖ Haftalık Gündem Formu", who:"Enes Artan · Kalite", url:"ea/", desc:"Hafta bölümünü seçer, sorun ve önerileri 'gündeme alındı'ya çevirir. Yazar: so_ea_form."},
     {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."},
@@ -816,10 +814,12 @@ function loadFormlar(){
     {ad:"Arbor SAS Alacak € Formu", who:"Selectron mutabakat · alacak", url:"arbolacak/", desc:"Firma/proje bazlı güncel alacak kalemleri: yeni ekle veya mevcut güncelle (tutar, para birimi; EUR dışı otomatik kur). SEL-ARB panosunun 'Toplam güncel alacak' ve firma×tarih matrisini besler. AYLIK GÜNCELLEME → yeni tarih sütunu snapshot + mail."},
     {ad:"Yurtiçi Satış Formu", who:"Sinan · Satış (Yurtiçi)", url:"so/", desc:"Yurtiçi muhtemel/alınan projeleri (proje, müşteri, statü, net €) girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır."},
     {ad:"Cam Kombinasyonu Fiyatlandırma", who:"Fiyat aracı · paylaşılabilir", url:"cam/", desc:"Cam parametrelerini (dış/iç cam, kaplama, akustik, temper, form, ara boşluk, Fire Proof…) seç → €/m² fiyat. Geçmiş teklif eşleşmesi + çarpımsal model. Bağlantı çalışanlarla paylaşılabilir."},
-    {ad:"Teklif & Fiyatlandırma Kuralları", who:"Teklif personeli referansı", url:"teklif/", desc:"Net/brüt teklif + montaj hesaplayıcıları, genel şartlar (ihracat oranı, min. adet), oranlar, termin, garanti, müşteri sınıf listeleri. Fiyatlandırma Kuralları 260505.xlsx'ten."}
+    {ad:"Teklif & Fiyatlandırma Kuralları", who:"Teklif personeli referansı", url:"teklif/", desc:"Net/brüt teklif + montaj hesaplayıcıları, genel şartlar (ihracat oranı, min. adet), oranlar, termin, garanti, müşteri sınıf listeleri. Fiyatlandırma Kuralları 260505.xlsx'ten."},
+    {ad:"Tıkanan Şantiyeler — Durum Formu", who:"ÖB + MK · Şantiye durum", url:"santiye-log/", desc:"Tıkanan şantiyelere tarihli durum girişi (ÖB ve MK tek formdan). Yazar: santiye_durum_log; Mali → Şantiye panosuna tarihli akış olarak salt-okur yansır. Yeni tıkanmış şantiye owner tarafından eklenir."}
   ];
-  const cards=forms.map(f=>{ const full=new URL(f.url, location.href).href; return `<div class="flow"><b>${esc(f.ad)}</b> <span class="tag">${esc(f.who)}</span><p>${esc(f.desc)}</p><p><a class="btn" style="text-decoration:none;display:inline-block" href="${esc(f.url)}" target="_blank">Formu aç</a> &nbsp;<span class="muted">${esc(full)}</span></p></div>`; }).join("");
-  document.getElementById("form-body").innerHTML=`<div class="hint">Çalışanlar bu ayrı formlardan girer; senin panolarına doğrudan yazmaz, sonuç ilgili panoya salt-okur yansır. Linkleri ilgili kişiyle paylaş.</div>${cards}`;
+  const SIK={"ea/":"Her Salı","onur/":"Her ayın ilk iş günü","ob-rapor/":"Her ayın ilk iş günü","mk-prim/":"Her ayın ilk iş günü","fy/":"Her ayın ilk iş günü","fy2/":"Her ayın ilk iş günü","ahsap/":"Her ayın ilk iş günü","selft/":"Her ayın ilk iş günü","arbolacak/":"Her ayın ilk iş günü","so/":"Her ayın ilk iş günü","cam/":"Süresiz","teklif/":"Süresiz","santiye-log/":"Gerektikçe"};
+  const cards=forms.map(f=>{ const full=new URL(f.url, location.href).href; const sik=SIK[f.url]||"—"; return `<div class="flow"><b>${esc(f.ad)}</b> <span class="tag">${esc(f.who)}</span> <span class="tag" style="background:#eef3ee;color:#2e7d54">Güncelleme: ${esc(sik)}</span><p>${esc(f.desc)}</p><p><a class="btn" style="text-decoration:none;display:inline-block" href="${esc(f.url)}" target="_blank">Formu aç</a> &nbsp;<span class="muted">${esc(full)}</span></p></div>`; }).join("");
+  view.innerHTML=`<div class="hint">Çalışanlar bu ayrı formlardan girer; senin panolarına doğrudan yazmaz, sonuç ilgili panoya salt-okur yansır. Linkleri ilgili kişiyle paylaş. Her formun <b>güncelleme sıklığı</b> etiketle gösterilir.</div>${cards}`;
 }
 /* ---------- Ortak: tek pano_ozel bölümünü hedef elemana render et (bölüm-RLS; anon 401) ---------- */
 /* ---------- AHŞAP — Timber 72x86: ahsap_alim'den derlenir (ağaç+tedarikçi, CBM ağırlıklı € ort). Bölüm-RLS; anon 401. ---------- */
@@ -966,7 +966,7 @@ async function loadObrapor(){
 async function loadMali(){
   const view=document.getElementById("view");
   const isAdmin = state.allowed===null;
-  const ek = [["bilanco","Bilanço"],["icmal","İcmal"]].filter(x=> isAdmin || state.allowed.includes(x[0]));
+  const ek = [["bilanco","Bilanço"],["icmal","İcmal"],["santiye","Şantiye"]].filter(x=> isAdmin || state.allowed.includes(x[0]));
   const panoAllowed = isAdmin ? MALI_BOLUM.slice() : MALI_BOLUM.filter(b=>state.allowed.includes(b));
   const all = ek.map(x=>x[0]).concat(panoAllowed);
   if(!all.length){ view.innerHTML=`<div class="load">Bu hesapta mali bölüm yetkisi yok.</div>`; return; }
@@ -974,12 +974,13 @@ async function loadMali(){
   const b=state.maliBolum;
   let metaMap={};
   if(panoAllowed.length){ const m=await sb.from("pano_ozel_meta").select("*").in("bolum",panoAllowed); (m.data||[]).forEach(x=>metaMap[x.bolum]=x); }
-  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="ahsap"?"Ahşap" : x==="mali_maasprim"?"Maaş-Prim" : x==="mali_mkprim"?"MK Prim" : ((metaMap[x]&&metaMap[x].etiket)||x);
+  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="santiye"?"Şantiye" : x==="ahsap"?"Ahşap" : x==="mali_maasprim"?"Maaş-Prim" : x==="mali_mkprim"?"MK Prim" : ((metaMap[x]&&metaMap[x].etiket)||x);
   const bar=all.map(x=>`<button class="malitab${x===b?' active':''}" data-b="${esc(x)}">${esc(label(x))}</button>`).join("");
   view.innerHTML=`<div class="malibar">${bar}</div><div id="mali-body"><div class="load">Yükleniyor…</div></div>`;
   view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.maliBolum=btn.dataset.b; loadMali(); });
   if(b==="bilanco"){ loadBilanco("mali-body"); return; }
   if(b==="icmal"){ loadIcmal("mali-body"); return; }
+  if(b==="santiye"){ loadSantiye("mali-body"); return; } /* Şantiye: tıkanan şantiye durum log akışı (santiye/santiye_durum_log) */
   if(b==="mali_mkprim"){ loadMkPrim("mali-body"); return; } /* MK Prim: canlı faaliyet + otomatik prim (mk_faaliyet, bölüm-RLS) */
   if(b==="mali_maasprim"){ loadOzelHtml("mali_maasprim","mali-body"); return; } /* Maaş-Prim: tam sadakat ham-HTML (pano_ozel_html, bölüm-RLS) */
   if(b==="ahsap"){ loadAhsap("mali-body"); return; }
