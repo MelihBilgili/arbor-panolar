@@ -107,6 +107,12 @@
   .ldate{font-size:10.5px;color:#93a1b0;font-weight:600;margin-left:6px}
   .ltext{color:#3a4756;line-height:1.55;margin-top:3px}
   .ltext .sub{display:block;margin-top:3px;color:#4a5867}
+  .lhead{cursor:pointer;display:flex;align-items:center;gap:6px}
+  .lcaret{color:#93a1b0;font-size:9px;flex:none;transition:transform .15s}
+  .law.open .lcaret{transform:rotate(90deg)}
+  .law:not(.open) .ltext{display:none}
+  .lx{color:#c0392b;cursor:pointer;font-weight:700;font-size:14px;line-height:1;flex:none;margin-left:8px;padding:2px 5px;border-radius:5px}
+  .lx:hover{color:#fff;background:#c0392b}
 </style>
 </head>
 <body>
@@ -771,26 +777,23 @@ function loadProsedur(){
    {sec:"E",no:"12",ad:"Fabrika ziyareti",tarih:"22.01.2026",metin:"Ziyaret eden yurt içi/dışı müşterilerle yalnız Yağız Altınbök muhatap olur."},
    {sec:"T",no:"6",ad:"Cam montaj silikonu nötr (neutral cure) olmalı",tarih:"19.06.2026 · EA · K52.9",metin:"Silikon camdaki thiokol ile reaksiyona girip bozulma/yapışma problemi/akmaya yol açabilir. Şantiyede nötr kürlenme (neutral cure) silikon kullanılmalı; uygulama öncesi teknik föy kontrol edilmeli. Tereddütte Ar-Ge onayı alınır."}
   ];
-  const SRC=[
-   "<b>Madde 4-EK kaynağı:</b> MB talimatı (08.07.2026); onaylanan işlerde MVT girişi yalnız Taha Berk Dirice, diğer etüt personeli girmez/değiştirmez. ERP duyurusu için EU'a mail iletildi.",
-   "<b>Madde 6 kaynağı:</b> Cam montaj silikonu maili int@arbor'da bulunamadı (asıl kopya selectron'da, kapsam dışı); tam metin ERP Genel Duyurular'dan (19.06.2026, EA) doğrulanarak eklendi.",
-   "<b>Madde 11 kaynağı:</b> ERP - Güncel Duyuru Bilgilendirmesi maili (22.06.2026, EU), int@arbor'a İLT: ile iletildi; Kural 52.9 ile eklendi.",
-   "<b>Madde 4 revizyonu:</b> &quot;Güncel Yükleme Tarihi&quot; kaldırıldı, yerine Planlanan Sevk Tarihi (PST) — ERP Genel Duyurular (04.08.2026, EU); pazartesi 12:00 güncelleme + MVT termin tablosu eklendi (Duyuru.xlsx 260812).",
-   "<b>Madde 13 kaynağı:</b> İK süreçleri Mahmut EDE sorumluluğunda — MB talimatı (03.08.2026, Ümraniye ofisi); işe giriş/çıkış tam akışı talimatta (Duyuru.xlsx 260812).",
-   "<b>Madde 14 kaynağı:</b> PEM giriş talimatı dokümanı — EA (10.08.2026, ERP Genel Duyurular, Duyuru.xlsx 260812).",
-   "<b>Oluşturma:</b> 22.06.2026 · <b>Güncelleme:</b> 13.08.2026 (Madde 4 PST revizyonu + Madde 13 İK/Mahmut EDE + Madde 14 PEM giriş talimatı; Duyuru.xlsx 260812'den) · önceki 08.07.2026 (Madde 4-EK) · Bağlı: ERP Computer-Use Rehberi §8, Genel Kurallar Kural 13-EK / 52.9 / 45."
-  ];
+  const HIDE_KEY="arbor_pros_iptal";
+  const getHidden=()=>{ try{ return JSON.parse(localStorage.getItem(HIDE_KEY)||"[]"); }catch(e){ return []; } };
+  const hidden=getHidden();
   let sec="";
   Object.keys(SECS).forEach(s=>{
-    const items=PROS.filter(d=>d.sec===s);
+    const items=PROS.filter(d=>d.sec===s && !hidden.includes(d.no));
+    if(!items.length) return;
     sec+=`<div class="secH">${esc(SECS[s])}</div>`;
-    items.forEach(d=>{ sec+=`<div class="law"><div class="lno${d.ek?' ek':''}">${esc(d.no)}</div><div class="lbody"><div><span class="ltitle">${esc(d.ad)}</span><span class="ldate">(${esc(d.tarih)})</span></div><div class="ltext">${d.metin}</div></div></div>`; });
+    items.forEach(d=>{ sec+=`<div class="law" data-no="${esc(d.no)}"><div class="lno${d.ek?' ek':''}">${esc(d.no)}</div><div class="lbody"><div class="lhead"><span class="lcaret">▶</span><span class="ltitle">${esc(d.ad)}</span><span class="ldate">(${esc(d.tarih)})</span></div><div class="ltext">${d.metin}</div></div><div class="lx" title="İptal (gizle)">✕</div></div>`; });
   });
-  view.innerHTML=`<div class="stamp">Son Güncelleme: 13.08.26</div>
-    <div class="pin">📌 <b>Prosedür 260708 pinli.</b> Kaynak: Ham metin: C:\\Users\\USER\\OneDrive\\Arbor\\ERP\\Duyurular_Ham_MelihBilgili_260622.md. Her ERP çekiminde, C:\\Users\\USER\\OneDrive\\Arbor\\ERP\\son kayıt dikkate alınarak güncellenir.</div>
-    <div class="hint">Firma içinde uygulanması istenen kurallar. Kategoriler: Termin/Tarih · Teklif · SÖ/PEM · Müşteri/Personel · Teknik; ERP Genel Duyurular + talimat maillerinden damıtıldı, Duyuru.xlsx ile doğrulandı.</div>
-    ${sec}
-    <div class="hint" style="margin-top:16px;border-top:1px dashed #e4e9ef;padding-top:8px">${SRC.join("<br>")}</div>`;
+  view.innerHTML=`<div class="stamp">Son Güncelleme: 13.08.26</div>${sec}`;
+  view.querySelectorAll(".law").forEach(law=>{
+    const tog=()=>law.classList.toggle("open");
+    const head=law.querySelector(".lhead"), no=law.querySelector(".lno");
+    head.onclick=tog; no.onclick=tog; no.style.cursor="pointer";
+    law.querySelector(".lx").onclick=e=>{ e.stopPropagation(); const h=getHidden(); if(!h.includes(law.dataset.no)) h.push(law.dataset.no); localStorage.setItem(HIDE_KEY,JSON.stringify(h)); law.remove(); };
+  });
 }
 
 function loadFormlar(){
