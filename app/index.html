@@ -62,9 +62,9 @@
   table.aup th.ss,table.aup th.ur{white-space:nowrap}
   table.aup td.ss>.cx{display:block;width:20ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   table.aup td.ur>.cx{display:block;width:15ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
-  table.so td.c7>.cx,table.so td.c15>.cx,table.so td.c20>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
-  table.aup td.ss>.cx::-webkit-scrollbar,table.aup td.ur>.cx::-webkit-scrollbar,table.so td.c7>.cx::-webkit-scrollbar,table.so td.c15>.cx::-webkit-scrollbar,table.so td.c20>.cx::-webkit-scrollbar{display:none}
-  table.so td.c7>.cx{width:7ch}table.so td.c15>.cx{width:15ch}table.so td.c20>.cx{width:20ch}
+  table.so td.c7>.cx,table.so td.c10>.cx,table.so td.c15>.cx,table.so td.c20>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.aup td.ss>.cx::-webkit-scrollbar,table.aup td.ur>.cx::-webkit-scrollbar,table.so td.c7>.cx::-webkit-scrollbar,table.so td.c10>.cx::-webkit-scrollbar,table.so td.c15>.cx::-webkit-scrollbar,table.so td.c20>.cx::-webkit-scrollbar{display:none}
+  table.so td.c7>.cx{width:7ch}table.so td.c10>.cx{width:10ch}table.so td.c15>.cx{width:15ch}table.so td.c20>.cx{width:20ch}
   .addbar{display:flex;gap:6px;margin:0 0 8px;flex-wrap:nowrap;align-items:center}
   .addbar input{border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;font:inherit;min-width:0}
   .addbar select#ag-ilgili{flex:none;border:1px solid #cdd6df;border-radius:6px;padding:6px 6px;font:inherit;background:#fff}
@@ -341,14 +341,15 @@ async function loadSo(){
   (data||[]).forEach(r=>{ const k=r.bolum||"—"; (groups[k]=groups[k]||[]).push(r); });
   let rows="";
   Object.keys(groups).sort().forEach(k=>{
-    rows+=`<tr class="grp"><td colspan="6">${esc(k)} · ${groups[k].length}</td></tr>`;
+    rows+=`<tr class="grp"><td colspan="7">${esc(k)} · ${groups[k].length}</td></tr>`;
     groups[k].forEach(r=>{
       rows+=`<tr>
         <td class="kod">${esc(r.nr)}</td>
-        <td class="num">${fdate(r.tarih)}</td>
+        <td style="white-space:nowrap">${fdate(r.tarih)}</td>
         <td class="c7"><div class="cx">${esc(r.durum)}</div></td>
         <td class="c15"><div class="cx">${esc(r.proje_adi||r.proje_numarasi)}</div></td>
         <td class="c20"><div class="cx">${esc(r.problem)}</div></td>
+        <td class="c10"><div class="cx">${esc(r.bolum)}</div></td>
         <td class="c7"><div class="cx">${esc(r.bildiren)}</div></td>
       </tr>`;
     });
@@ -356,7 +357,7 @@ async function loadSo(){
   const st=await erpStamp();
   view.innerHTML=`<div class="stamp">Son güncelleme: ${st||"—"} · ${(data||[]).length} kayıt</div><div class="hint">SÖ — açık Sorun ve Öneriler (Şantiye/PEM), <b>kusurlu birim = bölüme</b> göre bloklu, açılış tarihine göre.</div>
     <div class="scroll"><table class="so">
-    <thead><tr><th>NR</th><th>Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th></tr></thead>
+    <thead><tr><th>NR</th><th>Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Kusurlu Birim</th><th>Bildiren</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
