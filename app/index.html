@@ -261,7 +261,7 @@ async function loadGundem(){
   const ilgSel=persons.map(k=>`<option value="${esc(k)}"${k==='MB'?' selected':''}>${esc(k)}</option>`).join("")+`<option value="PEM">PEM (takip)</option><option value="PRJ">PRJ (takip)</option><option value="__new__">Diğer…</option>`;
   const restKeys=keys.filter(k=>k!=='MB');
   view.innerHTML=`${stampHTML(st)}
-    <style>.gblk table{font-size:12px}.gblk th,.gblk td{white-space:nowrap;padding:4px 8px;border-bottom:1px solid #eef1f5}.gblk .c>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.c3>span{max-width:3ch}.c5>span{max-width:5ch}.c8>span{max-width:8ch}.c10>span{max-width:10ch}.c15>span{max-width:15ch}.c25>span{max-width:25ch}
+    <style>.gblk table{font-size:12px}.gblk th,.gblk td{white-space:nowrap;padding:4px 8px;border-bottom:1px solid #eef1f5}.gblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.gblk .c>span::-webkit-scrollbar{display:none}.c3>span{max-width:3ch}.c5>span{max-width:5ch}.c8>span{max-width:8ch}.c10>span{max-width:10ch}.c15>span{max-width:15ch}.c25>span{max-width:25ch}
     .ag-wrap .scroll{max-height:none;overflow-y:visible;overflow-x:auto;border:0;background:transparent;border-radius:0;margin:0 0 12px}</style>
     <div class="addbar">
       <select id="ag-ilgili" title="İlgili">${ilgSel}</select>
@@ -584,7 +584,7 @@ async function loadHazir(){
   };
   const st=await erpStamp();
   view.innerHTML=`${stampHTML(st)}
-    <style>.hblk table{font-size:12px}.hblk th,.hblk td{white-space:nowrap;padding:4px 8px;border-bottom:1px solid #eef1f5}.hblk .c>span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.h3>span{max-width:3ch}.h5>span{max-width:5ch}.h8>span{max-width:8ch}.h15>span{max-width:15ch}.h20>span{max-width:20ch}.h25>span{max-width:25ch}</style>
+    <style>.hblk table{font-size:12px}.hblk th,.hblk td{white-space:nowrap;padding:4px 8px;border-bottom:1px solid #eef1f5}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{max-width:3ch}.h5>span{max-width:5ch}.h8>span{max-width:8ch}.h15>span{max-width:15ch}.h20>span{max-width:20ch}.h25>span{max-width:25ch}</style>
     <div class="hint">Hazır PEM/PRJ — PEM (durum 3) + PRJ (8/8.1). Sevk durumu Onur formundan; orta sütunlar en yeni ERP'den; son sütun aylık değişim özeti. Taze kalemler gizli. ${filt.length} / ${(data||[]).length} kalem.</div>
     ${block("pem")}
     ${block("prj")}`;
@@ -923,7 +923,8 @@ async function loadSelArb(tgt){
   .sa-wrap th,.sa-wrap td{border-bottom:1px solid #eef1f5;padding:4px 8px;white-space:nowrap}
   .sa-wrap thead th{background:#16324f;color:#fff;font-weight:600}
   .sa-firma>.c{max-width:15ch}.sa-proje>.c{max-width:20ch}
-  .sa-firma>.c,.sa-proje>.c{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sa-firma>.c,.sa-proje>.c{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}
+  .sa-firma>.c::-webkit-scrollbar,.sa-proje>.c::-webkit-scrollbar{display:none}
   .sa-proje>.c{font-weight:600;color:#16324f}
   .sa-num{text-align:right}
   tr.sa-foot td{font-weight:700;background:#eef3f8}
