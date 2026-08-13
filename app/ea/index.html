@@ -48,11 +48,13 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div class="bar">
     <label for="bolumSel">Hafta bölümü:</label>
     <select id="bolumSel"><option value="">— yükleniyor —</option></select>
+    <button class="allbtn" id="guncelleBtn" style="background:#16324f">Haftalık Güncelleme</button>
+    <span id="gunc" class="msg"></span>
     <span id="msg" class="msg"></span>
     <span id="sum" class="sum"></span>
   </div>
   <div id="list" class="card"><div class="load">Bölüm seçin…</div></div>
-  <div class="hint">Kayıtlar anında Supabase'e yazılır (so_ea_form). Bu form yalnız SÖ gündem statüsünü değiştirir; Melih'in panolarına doğrudan yazmaz — sonuçlar oraya salt-okur yansır.</div>
+  <div class="hint">Kayıtlar anında Supabase'e yazılır (so_ea_form). <b>Haftalık Güncelleme</b> düğmesi, o an gündemde olan tüm Sorun-Öneri kayıtlarını bugünün tarihiyle damgalar; bu tarih SÖ panosundaki <b>Gündem</b> sütununa yansır. Bu form yalnız SÖ gündem statüsünü değiştirir; Melih'in panolarına doğrudan yazmaz — sonuçlar oraya salt-okur yansır.</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -73,6 +75,23 @@ async function loadAll(){
     return '<option value="'+esc(k)+'">'+esc(k)+' ('+done+'/'+bol[k]+')</option>';
   }).join("");
   sel.onchange=()=>render(sel.value);
+  document.getElementById("guncelleBtn").onclick=haftalikGuncelle;
+  const dts=Object.values(FORM).filter(x=>x.statu==="gundeme_alindi"&&x.gundem_tarihi).map(x=>x.gundem_tarihi).sort();
+  if(dts.length){ document.getElementById("gunc").className="msg"; document.getElementById("gunc").textContent="Son güncelleme: "+fd(dts[dts.length-1]); }
+}
+async function haftalikGuncelle(){
+  const msg=document.getElementById("msg");
+  const today=new Date().toISOString().slice(0,10);
+  const {data,error}=await sb.from("so_ea_form").select("nr").eq("statu","gundeme_alindi");
+  if(error){ msg.className="msg err"; msg.textContent=error.message; return; }
+  const recs=(data||[]).map(r=>({nr:r.nr, statu:"gundeme_alindi", gundem_tarihi:today}));
+  if(!recs.length){ msg.className="msg err"; msg.textContent="Gündemde kayıt yok — önce sorun/önerileri gündeme alın."; setTimeout(()=>msg.textContent="",2500); return; }
+  const up=await sb.from("so_ea_form").upsert(recs,{onConflict:"nr"});
+  if(up.error){ msg.className="msg err"; msg.textContent=up.error.message; return; }
+  recs.forEach(r=>{ if(FORM[r.nr]) FORM[r.nr].gundem_tarihi=today; });
+  msg.className="msg ok"; msg.textContent=recs.length+" gündem kaydı "+fd(today)+" ile güncellendi";
+  document.getElementById("gunc").className="msg ok"; document.getElementById("gunc").textContent="Son güncelleme: "+fd(today);
+  setTimeout(()=>{ msg.textContent=""; msg.className="msg"; document.getElementById("gunc").className="msg"; },2500);
 }
 function render(bolum){
   const list=document.getElementById("list"), sum=document.getElementById("sum");
