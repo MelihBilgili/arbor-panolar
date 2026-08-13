@@ -757,15 +757,17 @@ function loadProsedur(){
   const SECS={A:"Termin ve Tarihler",C:"Teklif / Fiyatlandırma",D:"Sorun & Öneri / PEM",E:"Müşteri / İletişim / Personel",T:"Teknik"};
   const PROS=[
    {sec:"A",no:"4-EK",ek:true,ad:"Onaylanan işlerin MVT girişi yalnız Taha Berk Dirice",tarih:"08.07.2026 · MB talimatı",metin:"Etüt biriminde onaylanan işlerin MVT (Müşteriye Verilen Tarih) bilgisi yalnızca Taha Berk Dirice tarafından işlenir; diğer etüt personeli bu bilgiyi girmez ve daha önce işlenmiş MVT bilgilerini değiştirmez. (ERP'de etüt birimine hitaben duyuru yayınlanması için EU'a mail iletildi — 08.07.2026.)"},
-   {sec:"A",no:"4",ad:"ERP tarih tanımları",tarih:"25.09.2024",metin:"<span class='sub'><b>MVT:</b> Müşteriye Verilen Tarih (Satış/Etüt/Şantiye'nin ilk verdiği fabrika çıkış tarihi).</span><span class='sub'><b>AÜP:</b> Ana Üretim Programı tarihi; bilgiler oluştukça değişir. Müşteriyle paylaşılmaz.</span><span class='sub'><b>Güncel Yükleme Tarihi:</b> Yönetimce müşteriye uygun bulunan, fabrikanın seferber olduğu tarih.</span>"},
+   {sec:"A",no:"4",ad:"ERP tarih tanımları",tarih:"25.09.2024 · rev. 04.08.2026 · EU",metin:"<span class='sub'><b>MVT:</b> Müşteriye Verilen Tarih (Satış/Etüt/Şantiye'nin ilk verdiği fabrika çıkış tarihi).</span><span class='sub'><b>AÜP:</b> Ana Üretim Programı tarihi; bilgiler oluştukça değişir. Müşteriyle paylaşılmaz.</span><span class='sub'><b>Planlanan Sevk Tarihi (PST):</b> &quot;Güncel Yükleme Tarihi&quot;nin yerine geldi (04.08.2026). Projelerde güncel tutulmalı; <b>her pazartesi 12:00'dan önce</b> güncellenir. AÜP her pazartesi yapılır; ürünler bu tarihe göre sandıklanıp sevkiyat alanına alınır.</span><span class='sub'><b>MVT termin tablosu:</b> numune 3 ad/3 hf · temoin daire 10/4 hf · ilave 5/4 hf · ≤10 parti 10/6 hf · 10–80 parti 80/10 hf; 68p/78t/78a içerenlerde min. 6 hf; aynı PGD'den türeyen 2 parti termini arası min. 7 gün.</span>"},
    {sec:"A",no:"3",ad:"Termin/yükleme bilgisi ERP'ye işlenir",tarih:"07.11.2023",metin:"Planlamada dikkate alınması istenen bilgi ve yükleme yorumları mail/telefon yerine ERP'deki ilgili (ek) bölüme."},
    {sec:"A",no:"1",ad:"Termin süresi: 11 hafta",tarih:"22.09.2023",metin:"Müşterilere bu şekilde söz verilebilir."},
    {sec:"C",no:"5",ad:"Cam fiyatlandırma akışı (güncel)",tarih:"27.01.2026",metin:"Teklifte: ERP Cam Listesi'nden; listede yoksa yakın camdan fiyat tahmini yapılabilir. PGD'de: cam talebi doldurulur → satınalma en uygun camı bulur → proje sorumlusu tanımlayınca PGD'de seçilebilir."},
    {sec:"C",no:"7",ad:"Fransa cephe projeleri camları",tarih:"19.11.2024",metin:"Fiyat mukayesesi yapılmaksızın Fransa'dan; işlemler satınalmanın bilgisi dahilinde."},
    {sec:"C",no:"8",ad:"58f / 68f kuralı",tarih:"18.07.2023",metin:"Tüm teklifler alüminyum kaplamalı ürün olarak 58f fiyatlandırılır (sistem 68f ile aynı). Melih onayı olmadan 68f teklif verilmez."},
+   {sec:"D",no:"14",ad:"PEM giriş talimatı",tarih:"10.08.2026 · EA",metin:"PEM girişlerinin nasıl yapılacağına ilişkin talimat dokümanı yayımlandı. <b>ERP kullanıcısı tüm personel</b>, bu dokümandaki talimat ve yönlendirmeler doğrultusunda PEM talebi açar."},
    {sec:"D",no:"11",ad:"ERP programı hata/geliştirme önerileri ERP Geri Bildirimleri sayfasından",tarih:"22.06.2026 · EU · K52.9",metin:"ERP programıyla ilgili hata bildirimleri ve geliştirme önerileri ERP içindeki &quot;ERP Geri Bildirimleri&quot; sayfasına eklenir (mail/WhatsApp ile değil); her satıra dosya eklenebilir. Daha önce mail/WhatsApp ile iletilip listede görünmeyenler yeniden eklenir. <span class='sub'>(Madde 10'dan farkı: 10 proje/süreç sorunları; bu madde ERP yazılımının kendisine dair geri bildirim.)</span>"},
    {sec:"D",no:"10",ad:"Tüm süreç olumsuzluk/iyileştirmeleri ERP'den",tarih:"17.06.2026",metin:"ERP'de Sorun ve Öneri açılarak işleme konur; mail/telefon/yüz yüze iletilmez; ERP'den takip; tıkanıklıklar Melih'e bildirilir."},
    {sec:"D",no:"9",ad:"Yurtdışı şantiye Sorun-Öneri & PEM yönlendirmesi",tarih:"07.01.2026",metin:"Talep sahipleri Muhammer Bey'e yöneltir; ERP'de yalnız Muhammer Bey bizzat ya da Onur Bey üzerinden açar."},
+   {sec:"E",no:"13",ad:"İK süreçleri → Mahmut EDE (Ümraniye)",tarih:"03.08.2026 · MB talimatı",metin:"İnsan Kaynakları süreçleri <b>Mahmut EDE</b> sorumluluğundadır. Personelin özlük/şahsi talep ve soruları doğrudan Mahmut EDE'ye; şahsi kart/sistem tanımı, izin/geç kalma bildirimi ve aksaklıklar <b>Orhan BULUT</b>'a iletilir. Amirler, bağlı personelin işe giriş/çıkış süreçlerini (Mahmut Bey ile birlikte yürütmek üzere) Orhan Bulut'a yönlendirir. <span class='sub'>İşe alım, istifa ve şirketçe çıkarma adımlarının tam akışı (tutanak/savunma, ibraname, ihtarname, arabuluculuk, SGK çıkışı) MB'nin 03.08.2026 talimatında tanımlıdır.</span>"},
    {sec:"E",no:"12",ad:"Fabrika ziyareti",tarih:"22.01.2026",metin:"Ziyaret eden yurt içi/dışı müşterilerle yalnız Yağız Altınbök muhatap olur."},
    {sec:"T",no:"6",ad:"Cam montaj silikonu nötr (neutral cure) olmalı",tarih:"19.06.2026 · EA · K52.9",metin:"Silikon camdaki thiokol ile reaksiyona girip bozulma/yapışma problemi/akmaya yol açabilir. Şantiyede nötr kürlenme (neutral cure) silikon kullanılmalı; uygulama öncesi teknik föy kontrol edilmeli. Tereddütte Ar-Ge onayı alınır."}
   ];
@@ -773,7 +775,10 @@ function loadProsedur(){
    "<b>Madde 4-EK kaynağı:</b> MB talimatı (08.07.2026); onaylanan işlerde MVT girişi yalnız Taha Berk Dirice, diğer etüt personeli girmez/değiştirmez. ERP duyurusu için EU'a mail iletildi.",
    "<b>Madde 6 kaynağı:</b> Cam montaj silikonu maili int@arbor'da bulunamadı (asıl kopya selectron'da, kapsam dışı); tam metin ERP Genel Duyurular'dan (19.06.2026, EA) doğrulanarak eklendi.",
    "<b>Madde 11 kaynağı:</b> ERP - Güncel Duyuru Bilgilendirmesi maili (22.06.2026, EU), int@arbor'a İLT: ile iletildi; Kural 52.9 ile eklendi.",
-   "<b>Oluşturma:</b> 22.06.2026 · <b>Güncelleme:</b> 08.07.2026 (Madde 4-EK MVT/Taha Berk Dirice eklendi — Kural 45 tarihli-id, 260623 → 260708) · Bağlı: ERP Computer-Use Rehberi §8, Genel Kurallar Kural 13-EK / 52.9 / 45."
+   "<b>Madde 4 revizyonu:</b> &quot;Güncel Yükleme Tarihi&quot; kaldırıldı, yerine Planlanan Sevk Tarihi (PST) — ERP Genel Duyurular (04.08.2026, EU); pazartesi 12:00 güncelleme + MVT termin tablosu eklendi (Duyuru.xlsx 260812).",
+   "<b>Madde 13 kaynağı:</b> İK süreçleri Mahmut EDE sorumluluğunda — MB talimatı (03.08.2026, Ümraniye ofisi); işe giriş/çıkış tam akışı talimatta (Duyuru.xlsx 260812).",
+   "<b>Madde 14 kaynağı:</b> PEM giriş talimatı dokümanı — EA (10.08.2026, ERP Genel Duyurular, Duyuru.xlsx 260812).",
+   "<b>Oluşturma:</b> 22.06.2026 · <b>Güncelleme:</b> 13.08.2026 (Madde 4 PST revizyonu + Madde 13 İK/Mahmut EDE + Madde 14 PEM giriş talimatı; Duyuru.xlsx 260812'den) · önceki 08.07.2026 (Madde 4-EK) · Bağlı: ERP Computer-Use Rehberi §8, Genel Kurallar Kural 13-EK / 52.9 / 45."
   ];
   let sec="";
   Object.keys(SECS).forEach(s=>{
@@ -781,7 +786,7 @@ function loadProsedur(){
     sec+=`<div class="secH">${esc(SECS[s])}</div>`;
     items.forEach(d=>{ sec+=`<div class="law"><div class="lno${d.ek?' ek':''}">${esc(d.no)}</div><div class="lbody"><div><span class="ltitle">${esc(d.ad)}</span><span class="ldate">(${esc(d.tarih)})</span></div><div class="ltext">${d.metin}</div></div></div>`; });
   });
-  view.innerHTML=`<div class="stamp">Son Güncelleme: 03.08.26</div>
+  view.innerHTML=`<div class="stamp">Son Güncelleme: 13.08.26</div>
     <div class="pin">📌 <b>Prosedür 260708 pinli.</b> Kaynak: Ham metin: C:\\Users\\USER\\OneDrive\\Arbor\\ERP\\Duyurular_Ham_MelihBilgili_260622.md. Her ERP çekiminde, C:\\Users\\USER\\OneDrive\\Arbor\\ERP\\son kayıt dikkate alınarak güncellenir.</div>
     <div class="hint">Firma içinde uygulanması istenen kurallar. Kategoriler: Termin/Tarih · Teklif · SÖ/PEM · Müşteri/Personel · Teknik; ERP Genel Duyurular + talimat maillerinden damıtıldı, Duyuru.xlsx ile doğrulandı.</div>
     ${sec}
