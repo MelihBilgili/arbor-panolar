@@ -178,7 +178,7 @@ async function loadPerms(){
 /* ---------- APP SHELL ---------- */
 const MALI_BOLUM=["depenses","kredi","ahsap","sel_arb","mali_maasprim","mali_mkprim"];
 const MALI_ALL=["depenses","kredi","ahsap","sel_arb","bilanco","icmal","mali_maasprim","mali_mkprim","santiye"];
-const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["mali","Mali"],["obrapor","ÖB Rapor"],["formlar","Formlar"],["ozel","Özel"]];
+const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["mali","Mali"],["obrapor","ÖB Rapor"],["formlar","Formlar"],["fiyat","Fiyatlandırma"],["ozel","Özel"]];
 function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b)); if(k==='obrapor') return a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
 function renderApp(){
   const vis = TABS.filter(t=> tabVisible(t[0]) );
@@ -204,6 +204,7 @@ function loadView(){
   else if(state.tab==='mali') loadMali();
   else if(state.tab==='obrapor') loadObrapor();
   else if(state.tab==='formlar') loadFormlar();
+  else if(state.tab==='fiyat') loadFiyat();
   else if(state.tab==='ozel') loadOzel();
   else loadAup();
 }
@@ -1014,6 +1015,124 @@ async function loadObrapor(){
   view.innerHTML=html;
 }
 
+/* ---------- FİYATLANDIRMA — kaynak veri + editör (fiyat_* tabloları, anon dar). GÜNCELLE = yayınla + bildir. ---------- */
+async function loadFiyat(){
+  const view=document.getElementById("view");
+  const [pp,ah,ga,ms,ya]=await Promise.all([
+    sb.from("fiyat_parametre").select("*").order("sira"),
+    sb.from("fiyat_ahsap").select("*").order("sira").order("id"),
+    sb.from("fiyat_garanti").select("*").order("sira").order("id"),
+    sb.from("fiyat_musteri_sinif").select("*").order("sira").order("id"),
+    sb.from("fiyat_yayin").select("*").limit(1)
+  ]);
+  const err=pp.error||ah.error||ga.error||ms.error;
+  if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
+  const P=pp.data||[], A=ah.data||[], G=ga.data||[], M=ms.data||[];
+  const allUp=[].concat(P,A,G,M).map(r=>r.updated_at).filter(Boolean).sort();
+  const gunc=allUp.length?dOnly(allUp[allUp.length-1]):"—";
+  const yr=(ya.data&&ya.data[0])||{};
+  const ec=(t,id,f,v,type)=>`<span class="fedit" data-t="${t}" data-id="${id}" data-f="${f}"${type?` data-type="${type}"`:""} title="Düzenlemek için tıkla">${esc(v==null||v===""?"—":v)}</span>`;
+  // Skalar parametreler
+  let pRows=P.map(r=>`<tr>`
+    +`<td>${esc(r.baslik)}</td>`
+    +`<td class="fc">${ec("fiyat_parametre",r.id,"fransa_deger",r.fransa_deger)}</td>`
+    +`<td class="fc">${ec("fiyat_parametre",r.id,"diger_deger",r.diger_deger)}</td></tr>`).join("");
+  const pTbl=`<h3 class="sec">Parametreler</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Parametre</th><th>Fransa</th><th>Diğer</th></tr></thead><tbody>${pRows}</tbody></table></div>`;
+  // A) Ahşap
+  let aRows=A.map(r=>`<tr data-id="${r.id}">`
+    +`<td class="fc">${ec("fiyat_ahsap",r.id,"ad",r.ad)}</td>`
+    +`<td class="fc">${ec("fiyat_ahsap",r.id,"fr_kaynak",r.fr_kaynak)}</td>`
+    +`<td class="fc">${ec("fiyat_ahsap",r.id,"du_kaynak",r.du_kaynak)}</td>`
+    +`<td class="fc">${ec("fiyat_ahsap",r.id,"durum",r.durum)}</td>`
+    +`<td class="fc">${ec("fiyat_ahsap",r.id,"aciklama",r.aciklama)}</td>`
+    +`<td><button class="fdel" data-t="fiyat_ahsap" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
+  const aTbl=`<h3 class="sec">Ahşap Türü ve Durumu</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Tür</th><th>FR Kaynak</th><th>DÜ Kaynak</th><th>Durum</th><th>Açıklama</th><th></th></tr></thead><tbody>${aRows}`
+    +`<tr class="faddrow"><td><input id="fa-ad" placeholder="Tür"></td><td><input id="fa-fr" placeholder="FR kaynak"></td><td><input id="fa-du" placeholder="DÜ kaynak"></td><td><input id="fa-durum" placeholder="Mevcut/Sıkıntılı"></td><td><input id="fa-ac" placeholder="Açıklama"></td><td><button class="btn" id="fa-add">Ekle</button></td></tr>`
+    +`</tbody></table></div>`;
+  // B) Garanti
+  let gRows=G.map(r=>`<tr data-id="${r.id}">`
+    +`<td class="fc">${ec("fiyat_garanti",r.id,"ulke",r.ulke)}</td>`
+    +`<td class="fc">${ec("fiyat_garanti",r.id,"sure",r.sure)}</td>`
+    +`<td><button class="fdel" data-t="fiyat_garanti" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
+  const gTbl=`<h3 class="sec">Garanti Ülkesi ve Süresi</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Ülke</th><th>Süre</th><th></th></tr></thead><tbody>${gRows}`
+    +`<tr class="faddrow"><td><input id="fg-ulke" placeholder="Ülke"></td><td><input id="fg-sure" placeholder="Süre"></td><td><button class="btn" id="fg-add">Ekle</button></td></tr>`
+    +`</tbody></table></div>`;
+  // C/D) Müşteri sınıfları
+  const msBlock=(sinif,title)=>{
+    const rows=M.filter(r=>r.sinif===sinif);
+    let body=rows.map(r=>`<tr data-id="${r.id}"><td class="fc">${ec("fiyat_musteri_sinif",r.id,"ad",r.ad)}</td><td><button class="fdel" data-t="fiyat_musteri_sinif" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
+    return `<h3 class="sec">${esc(title)}</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Şirket</th><th></th></tr></thead><tbody>${body}`
+      +`<tr class="faddrow"><td><input id="fm${sinif}-ad" placeholder="Şirket adı"></td><td><button class="btn" id="fm${sinif}-add" data-sinif="${sinif}">Ekle</button></td></tr>`
+      +`</tbody></table></div>`;
+  };
+  const style=`<style>
+   .ftbl{border-collapse:collapse;width:100%;font-size:12.5px}
+   .ftbl th,.ftbl td{border-bottom:1px solid #eef1f5;padding:5px 9px;text-align:left;vertical-align:top}
+   .ftbl thead th{background:#16324f;color:#fff;font-weight:600;white-space:nowrap}
+   .ftbl .fedit{cursor:pointer;display:inline-block;min-width:24px;border-bottom:1px dashed #cdd6df}
+   .ftbl .fedit:hover{background:#fff3d6}
+   .ftbl input{font:inherit;padding:3px 6px;border:1px solid #cdd6df;border-radius:5px;width:100%;min-width:70px}
+   .ftbl .faddrow td{background:#f6f9fc}
+   .ftbl .fdel{border:1px solid #e3b3b3;background:#fff;color:#b40000;border-radius:5px;cursor:pointer;padding:1px 7px}
+   .ftbl .fdel:hover{background:#b40000;color:#fff}
+   .fbar{display:flex;align-items:center;gap:12px;margin:2px 0 12px}
+   #fiyat-guncelle{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:8px 18px;font-weight:700;cursor:pointer;font-size:13px}
+   #fiyat-guncelle:hover{background:#24623f}
+   .fpub{font-size:11px;color:#7a8896}
+  </style>`;
+  view.innerHTML=`${style}<div class="stamp">Fiyatlandırma · Son güncelleme: ${gunc}</div>
+    <div class="fbar"><button id="fiyat-guncelle">GÜNCELLE</button><span class="fpub">${yr.yayin_at?("Son yayın: "+dOnly(yr.yayin_at)):"Henüz yayınlanmadı"}</span></div>
+    ${pTbl}${aTbl}${gTbl}${msBlock(1,"1. Sınıf Fransa Şirketleri")}${msBlock(2,"2. Sınıf Fransa Şirketleri")}`;
+  // olaylar
+  view.querySelectorAll(".fedit").forEach(el=>el.onclick=()=>startFiyEdit(el));
+  view.querySelectorAll(".fdel").forEach(b=>b.onclick=()=>fiyDel(b.dataset.t,b.dataset.id));
+  document.getElementById("fa-add").onclick=async()=>{
+    const ad=document.getElementById("fa-ad").value.trim(); if(!ad){alert("Tür gir.");return;}
+    const rec={ad,fr_kaynak:document.getElementById("fa-fr").value.trim()||null,du_kaynak:document.getElementById("fa-du").value.trim()||null,durum:document.getElementById("fa-durum").value.trim()||null,aciklama:document.getElementById("fa-ac").value.trim()||null,sira:(A.length?Math.max(...A.map(x=>x.sira||0))+1:1)};
+    const {error}=await sb.from("fiyat_ahsap").insert(rec); if(error){alert(error.message);return;} loadFiyat();
+  };
+  document.getElementById("fg-add").onclick=async()=>{
+    const ulke=document.getElementById("fg-ulke").value.trim(); if(!ulke){alert("Ülke gir.");return;}
+    const rec={ulke,sure:document.getElementById("fg-sure").value.trim()||null,sira:(G.length?Math.max(...G.map(x=>x.sira||0))+1:1)};
+    const {error}=await sb.from("fiyat_garanti").insert(rec); if(error){alert(error.message);return;} loadFiyat();
+  };
+  [1,2].forEach(sn=>{ document.getElementById("fm"+sn+"-add").onclick=async()=>{
+    const ad=document.getElementById("fm"+sn+"-ad").value.trim(); if(!ad){alert("Şirket adı gir.");return;}
+    const rec={ad,sinif:sn,sira:(M.length?Math.max(...M.map(x=>x.sira||0))+1:1)};
+    const {error}=await sb.from("fiyat_musteri_sinif").insert(rec); if(error){alert(error.message);return;} loadFiyat();
+  }; });
+  document.getElementById("fiyat-guncelle").onclick=fiyGuncelle;
+}
+function startFiyEdit(el){
+  if(el.querySelector("input")) return;
+  const t=el.dataset.t, id=el.dataset.id, f=el.dataset.f;
+  const cur=el.textContent==="—"?"":el.textContent;
+  const inp=document.createElement("input"); inp.value=cur; el.textContent=""; el.appendChild(inp); inp.focus(); inp.select();
+  const commit=async()=>{
+    const val=inp.value.trim();
+    const {error}=await sb.from(t).update({[f]:val||null}).eq("id",id);
+    if(error){ el.textContent="hata"; alert(error.message); return; }
+    el.textContent=val||"—"; el.classList.add("saveflash"); setTimeout(()=>el.classList.remove("saveflash"),400);
+  };
+  inp.onblur=commit;
+  inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();inp.blur();} if(e.key==="Escape"){el.textContent=cur||"—";} };
+}
+async function fiyDel(t,id){
+  if(!confirm("Bu satır silinsin mi?")) return;
+  const {error}=await sb.from(t).delete().eq("id",id);
+  if(error){ alert(error.message); return; } loadFiyat();
+}
+async function fiyGuncelle(){
+  if(!confirm("Fiyatlandırma değerleri yayınlanacak ve ilgili kişilere bilgi maili gönderilecek. Onaylıyor musunuz?")) return;
+  const btn=document.getElementById("fiyat-guncelle"); btn.disabled=true; btn.textContent="Gönderiliyor…";
+  const {data:params}=await sb.from("fiyat_parametre").select("*").order("sira");
+  await sb.from("fiyat_yayin").update({ yayin_at:new Date().toISOString(), snapshot:params||[] }).eq("id",1);
+  const {data,error}=await sb.functions.invoke("fiyat-degisiklik-mail",{ body:{} });
+  btn.disabled=false; btn.textContent="GÜNCELLE";
+  if(error||(data&&data.error)){ alert("Yayınlandı ama mail hatası: "+(error?error.message:data.error)); loadFiyat(); return; }
+  alert("Yayınlandı. Bilgi maili gönderildi"+(data&&data.gonderilen?(" ("+data.gonderilen+" alıcı)."):"."));
+  loadFiyat();
+}
 /* ---------- MALİ — grup: Bilanço, İcmal + hassas panolar (depenses/kredi/ahsap/sel_arb). Bölüm-RLS. ---------- */
 async function loadMali(){
   const view=document.getElementById("view");
