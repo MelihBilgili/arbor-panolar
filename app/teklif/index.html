@@ -17,9 +17,12 @@ body{ margin:0; background:#f4f6f8; color:#1d2733;
   font-size:14px; line-height:1.4; }
 .wrap{max-width:1000px;margin:0 auto;padding:14px 14px 40px;}
 header{ background:linear-gradient(135deg,#1c3d5a,#2e6da4); color:#fff;
-  border-radius:12px; padding:12px 18px; margin-bottom:12px; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
+  border-radius:12px; padding:12px 18px; margin-bottom:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
 header h1{margin:0;font-size:18px;color:#fff;}
 header .upd{color:#dbe7f3;font-size:12px;}
+.region{display:inline-flex;background:#26527a;border-radius:9px;padding:3px;margin-left:auto;}
+.region button{border:0;background:transparent;color:#cfe0f1;padding:5px 14px;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;}
+.region button.active{background:#fff;color:#1c3d5a;box-shadow:0 1px 3px rgba(0,0,0,.2);}
 .card{ background:#fff;border:1px solid #e4e9ef;border-radius:12px; margin-bottom:10px;overflow:hidden;}
 .card h2{ margin:0;padding:9px 14px;font-size:14px; background:#fbfcfd;border-bottom:1px solid #eef2f6;}
 .body{padding:8px 14px 12px;}
@@ -44,10 +47,11 @@ td.note{color:#52617a;font-size:13px;}
 .res3 .box.tot .lbl{color:#c7d6e6;}
 .res3 .amt{font-size:20px;font-weight:800;color:#1c3d5a;}
 .res3 .box.tot .amt{color:#fff;}
-.gs{font-size:13px;color:#33465c;margin:7px 0;}
+/* Genel Şartlar: her paragrafta madde imi, sola hizalı */
+.gs{font-size:13px;color:#33465c;margin:6px 0;text-align:left;padding-left:14px;position:relative;}
+.gs::before{content:"•";color:#2e6da4;font-weight:700;position:absolute;left:0;}
 .gs b{color:#1c3d5a;}
 .gs .co{color:#33465c;}
-.subh{margin:12px 0 3px;font-size:12px;font-weight:700;color:#7587a0;text-transform:uppercase;letter-spacing:.03em;}
 .ahsap-wrap{max-width:360px;margin-top:6px;}
 </style>
 </head>
@@ -56,6 +60,10 @@ td.note{color:#52617a;font-size:13px;}
 <header>
   <h1>Fiyatlandırma Kuralları</h1>
   <span class="upd" id="stamp">Son Güncelleme: —</span>
+  <div class="region">
+    <button data-r="fr" class="active">Fransa</button>
+    <button data-r="du">Diğer</button>
+  </div>
 </header>
 
 <!-- ===== TEKLİF HESAPLAYICI ===== -->
@@ -106,7 +114,7 @@ td.note{color:#52617a;font-size:13px;}
 <section class="card">
   <h2>Genel Şartlar</h2>
   <div class="body">
-    <table><tbody id="genelTop"></tbody></table>
+    <div class="gs" id="genelTop">—</div>
 
     <div class="gs">Pencad'den alınamayan tüm fiyatlar için Enes Uzun'a müracaat edilir.</div>
     <div class="gs">Fransa, İngiltere ve Almanya dışındaki ülkeler için ürün garantisi ve montaj teklifi verilmemeli, teklife şu not eklenmelidir: <i>"Ürünlerimizi yüklemek için sizden fabrika sahasında muayene ederek yükleme onayı vermenizi rica edeceğiz. Yükleme gerçekleştikten sonra ürünlerimizle ilgili herhangi bir garantimiz bulunmamaktadır."</i></div>
@@ -138,10 +146,31 @@ const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const $=id=>document.getElementById(id);
 
-// ---- hesaplama oranları (Fransa) ----
+let REGION='fr';           // varsayılan açılış = Fransa
+let P={};                  // fiyat_parametre (anahtar -> satır)
+let MS=[];                 // müşteri sınıf listesi
+
+// seçili bölgeye göre parametre metin değeri
+const val=k=> P[k] ? (REGION==='fr'?P[k].fransa_deger:P[k].diger_deger) : "";
+const vale=k=> esc(val(k));
+const bl=k=> P[k]?esc(P[k].baslik):k;
+// "%51" / "%75" -> 0.51 / 0.75
+const ppct=s=>{ const m=String(s||"").replace(',','.').match(/-?\d+(\.\d+)?/); return m?parseFloat(m[0])/100:0; };
+
+// ---- hesaplama oranları (seçili bölgeye göre; iskonto/sürşarj panodan, montaj €/m² sabit) ----
 const R={ baz:0.51, s1:0.14, s2:0.05, reno:0.10,
   brk:[[50000,0.45],[250000,0.15],[500000,0.10],[Infinity,0.05]],
   mont:[[50,160],[150,125],[300,105],[500,95],[Infinity,90]], cephe:190 };
+function buildRates(){
+  if(P.baz_iskonto){
+    R.baz=ppct(val('baz_iskonto')); R.s1=ppct(val('s1_iskonto')); R.s2=ppct(val('s2_iskonto')); R.reno=ppct(val('renovasyon'));
+    R.brk=[[50000,ppct(val('buyukluk_50k'))],[250000,ppct(val('buyukluk_50_250k'))],[500000,ppct(val('buyukluk_250_500k'))],[Infinity,ppct(val('buyukluk_500k'))]];
+  }
+  // Montaj €/m² panoda yok → bölgeye göre sabit
+  R.mont = REGION==='fr'?[[50,160],[150,125],[300,105],[500,95],[Infinity,90]]:[[50,190],[150,180],[300,170],[500,160],[Infinity,150]];
+  R.cephe = REGION==='fr'?190:210;
+}
+
 const fmt0=n=>isFinite(n)?n.toLocaleString('tr-TR',{maximumFractionDigits:0}):'—';
 const eur=n=>isFinite(n)?fmt0(n)+' €':'—';
 const pct=n=>'%'+(n*100).toLocaleString('tr-TR',{maximumFractionDigits:2});
@@ -187,6 +216,28 @@ function recalc(){ const net=calcNet(), mont=calcMont(); $('grandOut').textConte
   $(id).addEventListener('input',recalc); $(id).addEventListener('change',recalc);
 });
 
+// ---- bölgeye bağlı içeriği çiz (canlı değerler) ----
+function renderGenel(){
+  // Genel Şartlar ilk satır: İhracat + Min adet (tek satır)
+  $('genelTop').innerHTML=`<b>İhracat fatura oranı:</b> ${vale('ihracat_fatura')} &nbsp;·&nbsp; <b>Minimum ürün adedi:</b> ${vale('min_adet')}`;
+  $('lineIsk').innerHTML=`<b>${bl('baz_iskonto')}:</b> ${vale('baz_iskonto')} &nbsp;·&nbsp; <b>${bl('s1_iskonto')}:</b> ${vale('s1_iskonto')} &nbsp;·&nbsp; <b>${bl('s2_iskonto')}:</b> ${vale('s2_iskonto')}`;
+  $('lineBuyukluk').innerHTML=`<b>Proje büyüklüğü sürşarjları:</b> ${bl('buyukluk_50k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_50k')} &nbsp;·&nbsp; ${bl('buyukluk_50_250k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_50_250k')} &nbsp;·&nbsp; ${bl('buyukluk_250_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_250_500k')} &nbsp;·&nbsp; ${bl('buyukluk_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_500k')}`;
+  $('lineDiger').innerHTML=`<b>Diğer sürşarjlar:</b> ${bl('renovasyon')}: ${vale('renovasyon')} &nbsp;·&nbsp; ${bl('cephe_montaj')}: ${vale('cephe_montaj')} &nbsp;·&nbsp; ${bl('uzak_montaj')}: ${vale('uzak_montaj')}`;
+  $('terminBody').innerHTML=
+    `<tr><td>${bl('genel_termin')}</td><td class="val">${vale('genel_termin')}</td></tr>`+
+    `<tr><td>${bl('yukleme_araligi')}</td><td class="val">${vale('yukleme_araligi')}</td></tr>`+
+    `<tr><td>${bl('std_termin')}</td><td class="val">${vale('std_termin')}</td></tr>`+
+    `<tr><td>${bl('stddisi_termin')}</td><td class="val">${vale('stddisi_termin')}</td></tr>`;
+}
+function applyRegion(){ buildRates(); recalc(); renderGenel(); }
+
+// bölge düğmeleri
+document.querySelectorAll('.region button').forEach(b=>b.onclick=()=>{
+  REGION=b.dataset.r;
+  document.querySelectorAll('.region button').forEach(x=>x.classList.toggle('active',x===b));
+  applyRegion();
+});
+
 // ---- CANLI: Fiyatlandırma panosu tablolarından oku ----
 const dk=iso=>{ if(!iso) return "—"; const s=String(iso); return s.slice(8,10)+"."+s.slice(5,7)+"."+s.slice(2,4); };
 async function loadCanli(){
@@ -195,33 +246,16 @@ async function loadCanli(){
     sb.from("fiyat_musteri_sinif").select("*"),
     sb.from("fiyat_ahsap").select("ad,sira").order("sira").order("id")
   ]);
-  const P={}; (pp.data||[]).forEach(r=>P[r.anahtar]=r);
-  const fr=k=>P[k]?esc(P[k].fransa_deger):"—";
-  const bl=k=>P[k]?esc(P[k].baslik):k;
-  // son güncelleme (başlık yanı)
+  P={}; (pp.data||[]).forEach(r=>P[r.anahtar]=r); MS=ms.data||[];
   const ups=(pp.data||[]).map(r=>r.updated_at).filter(Boolean).sort();
   $('stamp').textContent="Son Güncelleme: "+(ups.length?dk(ups[ups.length-1]):"—");
-  // Ahşap dropdown (canlı)
   $('ahsap').innerHTML=(ah.data||[]).map(r=>`<option>${esc(r.ad)}</option>`).join("");
-  // Genel Şartlar üst (ihracat, min adet)
-  $('genelTop').innerHTML=
-    `<tr><td>İhracat fatura oranı</td><td class="val">${fr('ihracat_fatura')}</td></tr>`+
-    `<tr><td>Minimum ürün adedi</td><td class="val">${fr('min_adet')}</td></tr>`;
-  // Şirket listeleri (alfabetik, canlı)
-  const s1=(ms.data||[]).filter(r=>r.sinif===1).map(r=>r.ad).sort((a,b)=>a.localeCompare(b,'tr'));
-  const s2=(ms.data||[]).filter(r=>r.sinif===2).map(r=>r.ad).sort((a,b)=>a.localeCompare(b,'tr'));
+  // Şirket listeleri (Fransa bağlamlı sabit — bölgeyle değişmez, alfabetik)
+  const s1=MS.filter(r=>r.sinif===1).map(r=>r.ad).sort((a,b)=>a.localeCompare(b,'tr'));
+  const s2=MS.filter(r=>r.sinif===2).map(r=>r.ad).sort((a,b)=>a.localeCompare(b,'tr'));
   $('listS1').textContent=s1.length?s1.join(" · "):"—";
   $('listS2').textContent=s2.length?s2.join(" · "):"—";
-  // Parametre satırları (canlı değerler)
-  $('lineIsk').innerHTML=`<b>${bl('baz_iskonto')}:</b> ${fr('baz_iskonto')} &nbsp;·&nbsp; <b>${bl('s1_iskonto')}:</b> ${fr('s1_iskonto')} &nbsp;·&nbsp; <b>${bl('s2_iskonto')}:</b> ${fr('s2_iskonto')}`;
-  $('lineBuyukluk').innerHTML=`<b>Proje büyüklüğü sürşarjları:</b> ${bl('buyukluk_50k').replace(' için Proje büyüklüğü sürşarjı','')} → ${fr('buyukluk_50k')} &nbsp;·&nbsp; ${bl('buyukluk_50_250k').replace(' için Proje büyüklüğü sürşarjı','')} → ${fr('buyukluk_50_250k')} &nbsp;·&nbsp; ${bl('buyukluk_250_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${fr('buyukluk_250_500k')} &nbsp;·&nbsp; ${bl('buyukluk_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${fr('buyukluk_500k')}`;
-  $('lineDiger').innerHTML=`<b>Diğer sürşarjlar:</b> ${bl('renovasyon')}: ${fr('renovasyon')} &nbsp;·&nbsp; ${bl('cephe_montaj')}: ${fr('cephe_montaj')} &nbsp;·&nbsp; ${bl('uzak_montaj')}: ${fr('uzak_montaj')}`;
-  // Termin (canlı)
-  $('terminBody').innerHTML=
-    `<tr><td>${bl('genel_termin')}</td><td class="val">${fr('genel_termin')}</td></tr>`+
-    `<tr><td>${bl('yukleme_araligi')}</td><td class="val">${fr('yukleme_araligi')}</td></tr>`+
-    `<tr><td>${bl('std_termin')}</td><td class="val">${fr('std_termin')}</td></tr>`+
-    `<tr><td>${bl('stddisi_termin')}</td><td class="val">${fr('stddisi_termin')}</td></tr>`;
+  applyRegion();
 }
 recalc();
 loadCanli();
