@@ -12,111 +12,58 @@
 <style>
 :root{ color-scheme: light; }
 *{box-sizing:border-box;}
-body{
-  margin:0; background:#f4f6f8; color:#1d2733;
+body{ margin:0; background:#f4f6f8; color:#1d2733;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  font-size:14px; line-height:1.4;
-}
+  font-size:14px; line-height:1.4; }
 .wrap{max-width:1000px;margin:0 auto;padding:14px 14px 40px;}
-header{
-  background:linear-gradient(135deg,#1c3d5a,#2e6da4); color:#fff;
-  border-radius:12px; padding:14px 18px; margin-bottom:12px;
-  box-shadow:0 4px 14px rgba(28,61,90,.18);
-}
-header h1{margin:0 0 3px;font-size:18px;color:#fff;}
-header p{margin:0;color:#fff;font-size:13px;}
-.toolbar{
-  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
-  margin:0 0 12px; position:sticky; top:0; z-index:20;
-  background:#f4f6f8; padding:8px 0;
-}
-.search{flex:1;min-width:200px;}
-.search input{
-  width:100%;padding:8px 12px;border:1px solid #cdd6e0;border-radius:10px;
-  font-size:14px;background:#fff;
-}
-.region{display:flex;background:#e3e9f0;border-radius:10px;padding:3px;}
-.region button{
-  border:0;background:transparent;padding:7px 14px;border-radius:8px;
-  font-size:13px;font-weight:600;cursor:pointer;color:#46586b;
-}
-.region button.active{background:#2e6da4;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15);}
-.card{
-  background:#fff;border:1px solid #e4e9ef;border-radius:12px;
-  margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04);
-}
-.card h2{
-  margin:0;padding:10px 14px;font-size:14px;cursor:pointer;
-  display:flex;align-items:center;gap:10px;background:#fbfcfd;
-  border-bottom:1px solid #eef2f6;
-}
-.card.calc{border:1px solid #cfe0f1;}
-.card.calc h2{background:#eef4fb;}
-.card h2 .ico{font-size:17px;}
-.card h2 .chev{margin-left:auto;transition:transform .2s;color:#90a0b0;}
-.card.collapsed h2 .chev{transform:rotate(-90deg);}
-.card.collapsed .body{display:none;}
-.body{padding:4px 14px 12px;}
+header{ background:linear-gradient(135deg,#1c3d5a,#2e6da4); color:#fff;
+  border-radius:12px; padding:12px 18px; margin-bottom:12px; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
+header h1{margin:0;font-size:18px;color:#fff;}
+header .upd{color:#dbe7f3;font-size:12px;}
+.card{ background:#fff;border:1px solid #e4e9ef;border-radius:12px; margin-bottom:10px;overflow:hidden;}
+.card h2{ margin:0;padding:9px 14px;font-size:14px; background:#fbfcfd;border-bottom:1px solid #eef2f6;}
+.body{padding:8px 14px 12px;}
 table{width:100%;border-collapse:collapse;font-size:13.5px;}
-th,td{padding:6px 8px;text-align:left;border-bottom:1px solid #eef2f6;vertical-align:top;}
+th,td{padding:5px 8px;text-align:left;border-bottom:1px solid #eef2f6;vertical-align:top;}
 th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:#7587a0;font-weight:600;}
 tr:last-child td{border-bottom:0;}
 td.val{font-weight:700;color:#1c3d5a;white-space:nowrap;}
-td.unit{color:#8294a8;font-size:13px;white-space:nowrap;}
 td.note{color:#52617a;font-size:13px;}
-.diff{background:#fff7e6;}
-.subhead{margin:10px 0 3px;font-size:12px;font-weight:700;color:#7587a0;text-transform:uppercase;letter-spacing:.04em;}
-.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 4px;}
-.flow .step{background:#eef4fb;border:1px solid #d3e3f4;border-radius:8px;padding:6px 10px;font-size:13px;}
-.flow .arr{color:#9bb0c6;font-weight:700;}
-.legend{font-size:12px;color:#7587a0;margin:2px 0 0;}
-.legend b{color:#caa23a;}
-footer{text-align:center;color:#90a0b0;font-size:12px;margin-top:12px;}
-.hidden{display:none !important;}
-/* calculator */
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin:4px 0;}
-@media(max-width:620px){.grid{grid-template-columns:1fr;}}
-.fld label{display:block;font-size:12px;font-weight:600;color:#5a6b80;margin-bottom:4px;}
-.fld input,.fld select{
-  width:100%;padding:8px 10px;border:1px solid #cdd6e0;border-radius:9px;
-  font-size:14px;background:#fff;color:#1d2733;
-}
-.result{
-  margin-top:10px;background:#f4f8fc;border:1px solid #d6e4f2;border-radius:11px;padding:10px 12px;
-}
-.result .big{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;}
-.result .big .lbl{font-size:13px;font-weight:600;color:#5a6b80;}
-.result .big .amt{font-size:22px;font-weight:800;color:#1c3d5a;}
-.bd{margin-top:8px;border-top:1px dashed #cdd9e6;padding-top:7px;}
-.bd .row{display:flex;justify-content:space-between;font-size:13px;color:#52617a;padding:2px 0;}
-.bd .row b{color:#1c3d5a;font-variant-numeric:tabular-nums;}
-.total{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;
-  background:#1c3d5a;color:#fff;border-radius:11px;padding:10px 12px;}
-.total .lbl{font-size:13px;font-weight:600;opacity:.85;}
-.total .amt{font-size:20px;font-weight:800;}
+.row1{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 12px;margin:2px 0;}
+.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 12px;margin:8px 0 2px;}
+@media(max-width:640px){.row1,.row4{grid-template-columns:1fr 1fr;}}
+.fld label{display:block;font-size:12px;font-weight:600;color:#5a6b80;margin-bottom:3px;}
+.fld input,.fld select{ width:100%;padding:7px 10px;border:1px solid #cdd6e0;border-radius:9px;
+  font-size:14px;background:#fff;color:#1d2733; }
+.line{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 2px;font-size:12.5px;color:#52617a;}
+.line b{color:#1c3d5a;font-variant-numeric:tabular-nums;}
+.res3{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
+.res3 .box{flex:1;min-width:180px;background:#f4f8fc;border:1px solid #d6e4f2;border-radius:11px;padding:9px 12px;}
+.res3 .box.tot{background:#1c3d5a;border-color:#1c3d5a;}
+.res3 .lbl{font-size:12px;font-weight:600;color:#5a6b80;display:block;}
+.res3 .box.tot .lbl{color:#c7d6e6;}
+.res3 .amt{font-size:20px;font-weight:800;color:#1c3d5a;}
+.res3 .box.tot .amt{color:#fff;}
+.gs{font-size:13px;color:#33465c;margin:7px 0;}
+.gs b{color:#1c3d5a;}
+.gs .co{color:#33465c;}
+.subh{margin:12px 0 3px;font-size:12px;font-weight:700;color:#7587a0;text-transform:uppercase;letter-spacing:.03em;}
+.ahsap-wrap{max-width:360px;margin-top:6px;}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
   <h1>Fiyatlandırma Kuralları</h1>
-  <p>Son Güncelleme: 09.07.26</p>
+  <span class="upd" id="stamp">Son Güncelleme: —</span>
 </header>
 
-<div class="toolbar">
-  <div class="search"><input id="q" type="search" placeholder="Ara: iskonto, montaj, cam, 58f, garanti…"></div>
-  <div class="region">
-    <button data-r="fr" class="active">🇫🇷 Fransa</button>
-    <button data-r="du">🌍 Diğer Ülkeler</button>
-  </div>
-</div>
-
 <!-- ===== TEKLİF HESAPLAYICI ===== -->
-<section class="card calc" data-sec data-nofilter>
-  <h2><span class="ico">🧮</span> Teklif Hesaplayıcı (net tutar) <span class="chev">▾</span></h2>
+<section class="card">
+  <h2>Teklif Hesaplayıcı</h2>
   <div class="body">
-    <div class="grid">
-      <div class="fld"><label>Brüt tutar (€) — cam ve girdiler dahil ürün fiyatı</label>
+    <div class="row1">
+      <div class="fld"><label>Brüt tutar (€)</label>
         <input id="brut" type="number" min="0" step="1000" value="700000"></div>
       <div class="fld"><label>Müşteri sınıfı</label>
         <select id="sinif">
@@ -129,490 +76,155 @@ footer{text-align:center;color:#90a0b0;font-size:12px;margin-top:12px;}
           <option value="diger">Diğer</option>
           <option value="reno">Renovasyon (mevcut doğrama değişimi)</option>
         </select></div>
-      <div class="fld"><label>Bölge</label>
-        <input id="bolgeShow" type="text" value="Fransa" readonly></div>
     </div>
-    <div class="result">
-      <div class="big"><span class="lbl">Net teklif tutarı (montaj hariç)</span><span class="amt" id="netOut">—</span></div>
-      <div class="bd" id="netBd"></div>
-    </div>
-    <p class="legend">Cephe projeleri ve giyotin için özel çalışma/özel kural geçerlidir; bu hesaplayıcı standart ürün akışını (Excel "Katsayı" mantığı) uygular.</p>
-  </div>
-</section>
+    <div class="line" id="netBd"></div>
 
-<!-- ===== MONTAJ HESAPLAYICI (yalnız Fransa) ===== -->
-<section class="card calc" data-sec data-nofilter data-fr>
-  <h2><span class="ico">🔧</span> Montaj Hesaplayıcı <span class="chev">▾</span></h2>
-  <div class="body">
-    <div class="grid">
-      <div class="fld"><label>Ürün m²</label>
-        <input id="m2" type="number" min="0" step="1" value="277"></div>
-      <div class="fld"><label>Ürün adedi</label>
-        <input id="adet" type="number" min="0" step="1" value="300"></div>
+    <div class="row4">
+      <div class="fld"><label>Ürün m²</label><input id="m2" type="number" min="0" step="1" value="277"></div>
+      <div class="fld"><label>Ürün adedi</label><input id="adet" type="number" min="0" step="1" value="300"></div>
       <div class="fld"><label>Proje tipi</label>
-        <select id="mtip">
-          <option value="std">Standart (pencere/kapı)</option>
-          <option value="cephe">Cephe projesi</option>
-        </select></div>
+        <select id="mtip"><option value="std">Standart (pencere/kapı)</option><option value="cephe">Cephe projesi</option></select></div>
       <div class="fld"><label>Zorluk sürşarjları</label>
-        <select id="msur">
-          <option value="0">Yok</option>
-          <option value="ap">Applique extérieure (+%40)</option>
-          <option value="uzak">Uzak bölge (+%65)</option>
-          <option value="apuzak">Applique + Uzak bölge</option>
-        </select></div>
+        <select id="msur"><option value="0">Yok</option><option value="ap">Applique extérieure (+%40)</option><option value="uzak">Uzak bölge (+%65)</option><option value="apuzak">Applique + Uzak bölge</option></select></div>
     </div>
-    <div class="result">
-      <div class="big"><span class="lbl">Montaj teklif tutarı</span><span class="amt" id="montOut">—</span></div>
-      <div class="bd" id="montBd"></div>
+    <div class="line" id="montBd"></div>
+
+    <div class="res3">
+      <div class="box"><span class="lbl">Ürün Satış Net Tutarı</span><span class="amt" id="netOut">—</span></div>
+      <div class="box"><span class="lbl">Montaj Teklif Tutarı</span><span class="amt" id="montOut">—</span></div>
+      <div class="box tot"><span class="lbl">Toplam Teklif Tutarı</span><span class="amt" id="grandOut">—</span></div>
+    </div>
+
+    <div class="ahsap-wrap fld">
+      <label>Ahşap türü seçin</label>
+      <select id="ahsap"></select>
     </div>
   </div>
 </section>
 
-<!-- TOPLAM (yalnız Fransa — montaj hesaplayıcıya bağlı) -->
-<div class="total" data-fr><span class="lbl">TOPLAM TEKLİF (net + montaj)</span><span class="amt" id="grandOut">—</span></div>
-
-<!-- GENEL -->
-<section class="card" data-sec>
-  <h2><span class="ico">📋</span> Genel Şartlar <span class="chev">▾</span></h2>
+<!-- ===== GENEL ŞARTLAR ===== -->
+<section class="card">
+  <h2>Genel Şartlar</h2>
   <div class="body">
-  <table>
-    <tr><th>Konu</th><th>Değer</th><th></th><th>Açıklama</th></tr>
-    <tr><td>İhracat fatura oranı</td><td class="val">%12</td><td class="unit"></td>
-      <td class="note">Ürün satış bedeli (montaj hariç) üzerinden bu oranda düşüm yapılarak ihracat faturası hazırlanır.</td></tr>
-    <tr><td>Minimum ürün adedi</td>
-      <td class="val"><span data-fr>200</span><span data-du class="hidden">50</span> adet</td><td class="unit"></td>
-      <td class="note">Aynı şantiyede geçmiş fazlar ve gelecekte hedeflenen işler dahil edilerek bulunur. Bu adetten az ürünlü projelere teklif verilmez; satış teklif isterse <b>yönetim onayı</b> gerekir.</td></tr>
-  </table>
+    <table><tbody id="genelTop"></tbody></table>
+
+    <div class="gs">Pencad'den alınamayan tüm fiyatlar için Enes Uzun'a müracaat edilir.</div>
+    <div class="gs">Fransa, İngiltere ve Almanya dışındaki ülkeler için ürün garantisi ve montaj teklifi verilmemeli, teklife şu not eklenmelidir: <i>"Ürünlerimizi yüklemek için sizden fabrika sahasında muayene ederek yükleme onayı vermenizi rica edeceğiz. Yükleme gerçekleştikten sonra ürünlerimizle ilgili herhangi bir garantimiz bulunmamaktadır."</i></div>
+
+    <div class="gs">Tüm İngiltere müşterilerine ek olarak aşağıdaki şirketler 1. Sınıf Müşteri sayılır:<br><span class="co" id="listS1">—</span></div>
+    <div class="gs">Tüm Almanya müşterilerine ek olarak aşağıdaki şirketler 2. Sınıf Müşteri sayılır:<br><span class="co" id="listS2">—</span></div>
+
+    <div class="gs">Fransa'da olup 1 ve 2. sınıfların dışındaki şirketler ve Fransa, İngiltere ve Almanya dışındaki ülkelerdeki tüm müşteriler "Liste dışı" sayılır.</div>
+    <div class="gs">Köln ve Londra'daki ofislerimizden otomobille 3 saat ve daha uzun sürede ulaşılan Almanya ve İngiltere şantiyelerine ek olarak 75, 77, 78, 91, 92, 93, 94 ve 95 dışındaki tüm Fransa departmanlarına Uzak Bölge sürşarjı uygulanır.</div>
+
+    <div class="gs" id="lineIsk">—</div>
+    <div class="gs" id="lineBuyukluk">—</div>
+    <div class="gs" id="lineDiger">—</div>
   </div>
 </section>
 
-<!-- BRÜT -->
-<section class="card" data-sec>
-  <h2><span class="ico">🧱</span> Brüt Satış Fiyatı Hesaplama <span class="chev">▾</span></h2>
+<!-- ===== TERMİN ===== -->
+<section class="card">
+  <h2>Termin</h2>
   <div class="body">
-    <div class="flow">
-      <span class="step">Çıplak ürün fiyatı</span><span class="arr">+</span>
-      <span class="step">Cam (ERP)</span><span class="arr">+</span>
-      <span class="step">Diğer girdiler</span><span class="arr">+</span>
-      <span class="step">Alu/özel girdiler</span><span class="arr">=</span>
-      <span class="step"><b>Brüt fiyat</b></span>
-    </div>
-
-    <div class="subhead">Girdi fiyatı / oranı sorgula</div>
-    <div class="fld" style="max-width:420px">
-      <label>Girdi seçin</label>
-      <select id="girdi">
-        <optgroup label="Oranlar">
-          <option value="cam">Cam</option>
-          <option value="diger">Diğer girdi fiyat oranı</option>
-          <option value="cepheahsap">Cephe ahşap girdi fiyat oranı</option>
-          <option value="cephediger">Cephe diğer fiyat oranı</option>
-        </optgroup>
-        <optgroup label="Alu kaplama / özel girdi (€/mtul · FR = D.Ü.)">
-          <option value="aludenizlik">Alu denizlik</option>
-          <option value="eker">Eker</option>
-          <option value="kasaalu">Kasa Alu Kaplama</option>
-          <option value="kanatalu">Kanat Alu Kaplama</option>
-          <option value="kanatgenis">Kanat Geniş Alu Kaplama</option>
-          <option value="hbsbkasa">HBSB Kasa</option>
-          <option value="hbsbkanat">HBSB Kanat</option>
-          <option value="egriselkanat">Eğrisel Kanat</option>
-          <option value="egriselkasa">Eğrisel Kasa</option>
-          <option value="frbini">Alu Kanat FR Bini</option>
-        </optgroup>
-      </select>
-    </div>
-    <div class="result" style="margin-top:10px">
-      <div class="big"><span class="lbl" id="girdiName">—</span><span class="amt" id="girdiVal">—</span></div>
-      <div class="bd"><div class="row"><span id="girdiNote"></span></div></div>
-    </div>
-
-    <div class="subhead">Profil serileri — fiyat kaynağı</div>
-    <p class="note" style="margin:4px 0 8px"><b>Aşağıdakiler hariç tüm fiyatlar Pencad'den alınır:</b></p>
-    <table>
-      <tr><th>Seri</th><th>Yöntem</th></tr>
-      <tr><td>56p</td><td class="note">68p − %10</td></tr>
-      <tr><td>68m · 68k</td><td class="note">58f + %10</td></tr>
-      <tr><td>68f HBSB · 78s HBSB · Epoch · 68c · Cephe</td><td class="note">Özel çalışma</td></tr>
-    </table>
-    <p class="legend">Not: 78t ve 78a artık Pencad'den alınabiliyor (istisna değil). · ⚠️ <b>58f / 68f kuralı:</b> Tüm teklifler 58f olarak fiyatlanır (68f ile aynı sistem). Melih onayı olmadan 68f teklif verilmez.</p>
-
-    <div class="subhead">Ahşap türü — fiyat kaynağı &amp; temin durumu</div>
-    <div class="fld" style="max-width:420px">
-      <label>Ahşap türü seçin <span id="ahsapBolge" style="font-weight:400;color:#90a0b0"></span></label>
-      <select id="ahsap">
-        <option value="camdkd">ÇAM DKD</option>
-        <option value="camkkk20">ÇAM KKK-20cm</option>
-        <option value="camkkk70">ÇAM KKK-70cm</option>
-        <option value="iroko">İROKO DKD</option>
-        <option value="lareks">LAREKS DKD</option>
-        <option value="meranti">MERANTİ DKD</option>
-        <option value="mese">MEŞE DKD</option>
-        <option value="accoya">ACCOYA</option>
-        <option value="okaliptusdkd">OKALİPTUS DKD</option>
-        <option value="okaliptuskkk">OKALİPTUS KKK</option>
-        <option value="sapelli">SAPELLI DKD</option>
-      </select>
-    </div>
-    <div class="result" style="margin-top:10px">
-      <div class="big"><span class="lbl" id="ahsapName">—</span><span class="amt" id="ahsapTemin" style="font-size:15px"></span></div>
-      <div class="bd"><div class="row"><span id="ahsapKaynakLbl">Fiyat kaynağı</span><b id="ahsapKaynak"></b></div>
-        <div class="row" id="ahsapTeminRow"><span>Temin durumu</span><b id="ahsapTeminNote"></b></div></div>
-    </div>
+    <table><tbody id="terminBody"></tbody></table>
   </div>
 </section>
 
-<!-- NET -->
-<section class="card" data-sec>
-  <h2><span class="ico">💶</span> Net Satış Fiyatı — Oranlar <span class="chev">▾</span></h2>
-  <div class="body">
-    <div class="flow">
-      <span class="step">Brüt tutar</span><span class="arr">− baz iskonto</span>
-      <span class="step">Net</span><span class="arr">− müşteri iskontosu</span>
-      <span class="step">± sürşarj</span><span class="arr">=</span>
-      <span class="step"><b>Teklif tutarı</b></span>
-    </div>
-
-    <div class="subhead">İskonto / sürşarj sorgula</div>
-    <div class="fld" style="max-width:460px">
-      <label>Kalem seçin <span id="netSelBolge" style="font-weight:400;color:#90a0b0"></span></label>
-      <select id="netsel">
-        <optgroup label="İskontolar">
-          <option value="baz">Baz iskonto</option>
-          <option value="s1">1. Sınıf müşteri iskontosu</option>
-          <option value="s2">2. Sınıf müşteri iskontosu</option>
-          <option value="cepheisk">Cephe iskontosu</option>
-        </optgroup>
-        <optgroup label="Proje büyüklüğü sürşarjı (net tutara ilave)">
-          <option value="b1">&lt; 50.000 €</option>
-          <option value="b2">50.000 – 250.000 €</option>
-          <option value="b3">250.000 – 500.000 €</option>
-          <option value="b4">500.000 € ve üzeri</option>
-        </optgroup>
-        <optgroup label="Özel sürşarjlar">
-          <option value="reno">Renovasyon teklif sürşarjı</option>
-          <option value="s78">78t ve 78a fiyat sürşarjı</option>
-          <option value="epoch">Epoch ürün fiyat sürşarjı</option>
-          <option value="buton">Butonlu panjur fiyat sürşarjı</option>
-          <option value="giyotin">Giyotin teklif sürşarjı</option>
-        </optgroup>
-      </select>
-    </div>
-    <div class="result" style="margin-top:10px">
-      <div class="big"><span class="lbl" id="netSelName">—</span><span class="amt" id="netSelVal">—</span></div>
-      <div class="bd"><div class="row"><span id="netSelNote"></span></div></div>
-    </div>
-    <p class="legend">Müşteri sınıfı ekteki şirket/departman listelerine göre girilir; listede yoksa boş bırakılır.</p>
-  </div>
-</section>
-
-<!-- MONTAJ ORANLAR (yalnız Diğer Ülkeler) -->
-<section class="card" data-sec data-du>
-  <h2><span class="ico">📐</span> Montaj Fiyatı — Oranlar <span class="chev">▾</span></h2>
-  <div class="body">
-    <div class="subhead">Montaj kalemi sorgula</div>
-    <div class="fld" style="max-width:460px">
-      <label>Kalem seçin <span id="montSelBolge" style="font-weight:400;color:#90a0b0"></span></label>
-      <select id="montsel">
-        <optgroup label="Adede göre (€/m² · yakın bölge)">
-          <option value="m1">0 – 50 adet</option>
-          <option value="m2">50 – 150 adet</option>
-          <option value="m3">150 – 300 adet</option>
-          <option value="m4">300 – 500 adet</option>
-          <option value="m5">500 adet üstü</option>
-          <option value="cephe">Cephe projeleri</option>
-        </optgroup>
-        <optgroup label="Sürşarjlar">
-          <option value="ap">Applique extérieure sürşarjı</option>
-          <option value="uzak">Uzak bölge sürşarjı</option>
-        </optgroup>
-      </select>
-    </div>
-    <div class="result" style="margin-top:10px">
-      <div class="big"><span class="lbl" id="montSelName">—</span><span class="amt" id="montSelVal">—</span></div>
-      <div class="bd"><div class="row"><span id="montSelNote"></span></div></div>
-    </div>
-  </div>
-</section>
-
-<!-- TERMİN -->
-<section class="card" data-sec>
-  <h2><span class="ico">⏱️</span> Termin <span class="chev">▾</span></h2>
-  <div class="body">
-  <table>
-    <tr><th>Konu</th><th>Süre</th><th>Açıklama</th></tr>
-    <tr><td>Genel proje termini</td><td class="val"><span data-fr>min. 10 hafta</span><span data-du class="hidden">min. 10 hafta</span></td><td class="note">İlk yükleme içindir. Teklifte yalnız bu bilgi yer alır; kat'i terminin müşteri talebine ve fabrika yoğunluğuna göre sonra belirleneceği belirtilir. Dini bayram ve özel girdilerin etkisi ayrıca eklenir.</td></tr>
-    <tr><td>Yükleme aralığı</td><td class="val">7 gün</td><td class="note">Birden çok kamyona sığan projelerin yüklemeleri arasındaki süre.</td></tr>
-    <tr><td>Standart ürün termini</td><td class="val">4 hafta</td><td class="note">En çok 4 adet 56s/58f/68s/68f/78s/90s pencere tipolojisi.</td></tr>
-    <tr><td>Standart dışı ürün termini</td><td class="val">6 hafta</td><td class="note">En çok 4 adet; diğer seriler/pencere dışı tipolojiler veya manyetik kontak, özel kol, kartela dışı renk gibi alışılmadık özellikler.</td></tr>
-  </table>
-  </div>
-</section>
-
-<!-- GARANTİ -->
-<section class="card" data-sec>
-  <h2><span class="ico">🛡️</span> Garanti <span class="chev">▾</span></h2>
-  <div class="body">
-    <div class="fld" style="max-width:320px">
-      <label>Ülke</label>
-      <select id="garulke">
-        <option value="fr">Fransa</option>
-        <option value="ing">İngiltere</option>
-        <option value="alm">Almanya</option>
-        <option value="diger">Diğer</option>
-      </select>
-    </div>
-    <div class="result" style="margin-top:10px">
-      <div class="big"><span class="lbl">Garanti Süresi</span><span class="amt" id="garout">10 yıl</span></div>
-    </div>
-    <p class="legend" id="garnote" style="margin-top:8px">Diğer ülkeler (İngiltere/Almanya hariç) için teklife eklenecek not: <i>"Ürünlerimizi yüklemek için sizden fabrika sahasında muayene ederek yükleme onayı vermenizi rica edeceğiz. Yükleme gerçekleştikten sonra ürünlerimizle ilgili herhangi bir garantimiz bulunmamaktadır."</i></p>
-  </div>
-</section>
-
-<!-- MÜŞTERİ LİSTELERİ -->
-<section class="card collapsed" data-sec>
-  <h2><span class="ico">🏢</span> Müşteri Sınıf Listeleri <span class="chev">▾</span></h2>
-  <div class="body">
-    <div class="subhead" data-fr>Fransa şirketleri — Önem 1</div>
-    <p class="note" data-fr>LEON GROSSE · DUMEZ IDF · URBAN DUMEZ · CBC · COREDIF-DG · SICRA · VERDOIA · GTM Bâtiment (Vinci) · EIFFAGE Construction Habitat · BESNARD &amp; CHAUVIN (Léon Grosse) · BECIA · DEMATHIEU BARD · ROSA BATIMENTS · SPIE BATIGNOLLES · FCAI (Fayat) · LEGENDRE · LES MAÇONS PARISIENS · Paris Ouest Construction · BOUYGUES CONSTRUCTION · RABOT DUTILLEUL · GROUPE GOYER (Façade) · E2MK (Menuiserie)</p>
-    <div class="subhead" data-fr>Fransa şirketleri — Önem 2</div>
-    <p class="note" data-fr>DEMATHIEU et BARD IMMO · SVM PROMOTION · BOUYGUES IMMOBILIER · PICHET-ECO TECH · QUADRAL Immobilier · NEXITY · GROUPE OGIC · MARIGNAN · WOODEUM RESIDENTIEL · ANGEVIN CONSTRUCTION</p>
-    <div class="subhead" data-du>Diğer ülke projeleri</div>
-    <p class="note" data-du>Tüm İngiltere projeleri → Önem <b>1</b> &nbsp;·&nbsp; Tüm Almanya projeleri → Önem <b>2</b></p>
-    <div class="subhead" data-fr>Fransa — uzak bölge sürşarjı uygulanan departmanlar</div>
-    <p class="note" data-fr><b>Sürşarj YOK (Paris bölgesi):</b> 75, 77, 78, 91, 92, 93, 94, 95</p>
-    <p class="note" data-fr><b>Uzak bölge (%65 sürşarj):</b> 80 Amiens · 60 Compiègne · 62 Arras · 02 Laon · 59 Lille · 51 Reims · 10 Troyes · 89 Auxerre · 58 Nevers · 21 Dijon · 45 Orléans · 18 Bourges · 36 Châteauroux · 37 Tours · 41 Blois · 76 Rouen · 27 Evreux · 14 Caen · 72 Le Mans · 61 Alençon · 28 Chartres</p>
-  </div>
-</section>
-
-<footer>
-  Bu sayfa <b>Fiyatlandırma Kuralları 260505.xlsx</b> içeriğinden hazırlanmıştır · Genel proje termini Melih talimatıyla min. 10 haftaya güncellendi (2026-08-14) ·Değerler bölgeye göre değişir, sağ üstten <b>Fransa / Diğer Ülkeler</b> seçin.<br>
-  <span style="color:#caa23a">●</span> Sarı satırlar bölgeye göre farklı değer taşır.
-</footer>
 </div>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ---- rate tables ----
-const RATES={
-  fr:{ baz:0.51, s1:0.14, s2:0.05, reno:0.10,
-    brk:[[50000,0.45],[250000,0.15],[500000,0.10],[Infinity,0.05]],
-    mont:[[50,160],[150,125],[300,105],[500,95],[Infinity,90]], cephe:190 },
-  du:{ baz:0.60, s1:0.15, s2:0.08, reno:0.10,
-    brk:[[50000,0.30],[250000,0.10],[500000,0.05],[Infinity,0.00]],
-    mont:[[50,190],[150,180],[300,170],[500,160],[Infinity,150]], cephe:210 }
-};
-// ---- girdi (input prices/rates) ----
-const GIRDI={
-  cam:{n:'Cam',v:'ERP',note:'Çıplak ürün fiyatına ERP yazılımından elde edilen cam satış fiyatı eklenir.'},
-  diger:{n:'Diğer girdi fiyat oranı',v:'×3',note:'Çarpan × alış fiyatı = girdi satış fiyatı; çıplak ürün fiyatına eklenir.'},
-  cepheahsap:{n:'Cephe ahşap girdi fiyat oranı',v:'×7',note:'Çarpan × alış fiyatı = girdi satış fiyatı.'},
-  cephediger:{n:'Cephe diğer fiyat oranı',v:'×3',note:'Çarpan × alış fiyatı = girdi satış fiyatı.'},
-  aludenizlik:{n:'Alu denizlik',v:'85 €/mtul',note:'Çıplak ürün fiyatına bu fiyat eklenerek nihai ürün fiyatı hesaplanır.'},
-  eker:{n:'Eker',v:'75 €/mtul',note:'Çıplak ürün fiyatına bu fiyat eklenir.'},
-  kasaalu:{n:'Kasa Alu Kaplama',v:'40 €/mtul',note:'Çıplak ürün fiyatına bu fiyat eklenir.'},
-  kanatalu:{n:'Kanat Alu Kaplama',v:'28 €/mtul',note:'Çıplak ürün fiyatına bu fiyat eklenir.'},
-  kanatgenis:{n:'Kanat Geniş Alu Kaplama',v:'37 €/mtul',note:'Çıplak ürün fiyatına bu fiyat eklenir.'},
-  hbsbkasa:{n:'HBSB Kasa',v:'235 €/mtul',note:'Çıplak ürün fiyatına bu fiyat eklenir.'},
-  hbsbkanat:{n:'HBSB Kanat',v:'45 €/mtul',note:'Çıplak ürün fiyatına bu fiyat eklenir.'},
-  egriselkanat:{n:'Eğrisel Kanat',v:'190 €/mtul',note:'Çıplak ürün fiyatına bu fiyat eklenir.'},
-  egriselkasa:{n:'Eğrisel Kasa',v:'270 €/mtul',note:'Çıplak ürün fiyatına bu fiyat eklenir.'},
-  frbini:{n:'Alu Kanat FR Bini',v:'70 €/mtul',note:'Çıplak ürün fiyatına bu fiyat eklenir.'}
-};
-function showGirdi(){
-  const g=GIRDI[document.getElementById('girdi').value];
-  document.getElementById('girdiName').textContent=g.n;
-  document.getElementById('girdiVal').textContent=g.v;
-  document.getElementById('girdiNote').textContent=g.note;
-}
+const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $=id=>document.getElementById(id);
 
-// ---- ahşap (region-aware: FR=Pencad, D.Ü.=Makropen) ----
-const AHSAP={
-  camdkd:{n:'ÇAM DKD', fr:'Pencad ÇAM DKD', du:'Makropen Çam f/j +%20', ok:false, tn:'Temini sıkıntılı olabilir — muhtemel projeler çizimlerden önce fabrika müdürüne bildirilmeli.'},
-  camkkk20:{n:'ÇAM KKK-20cm', fr:'Pencad ÇAM KKK-20cm', du:'Makropen Çam f/j', ok:true, tn:'Her zaman elimizde mevcut.'},
-  camkkk70:{n:'ÇAM KKK-70cm', fr:'Pencad ÇAM KKK-70cm', du:'Makropen Çam f/j +%10', ok:true, tn:'Her zaman elimizde mevcut.'},
-  iroko:{n:'İROKO DKD', fr:'Pencad İROKO DKD', du:'Makropen Meşe +%15', ok:false, tn:'Temini sıkıntılı olabilir — muhtemel projeler çizimlerden önce fabrika müdürüne bildirilmeli.'},
-  lareks:{n:'LAREKS DKD', fr:'Pencad LAREKS DKD', du:'Makropen Meranti', ok:false, tn:'Temini sıkıntılı olabilir — muhtemel projeler çizimlerden önce fabrika müdürüne bildirilmeli.'},
-  meranti:{n:'MERANTİ DKD', fr:'Pencad MERANTİ DKD', du:'Makropen Meranti', ok:false, tn:'Temini sıkıntılı olabilir — muhtemel projeler çizimlerden önce fabrika müdürüne bildirilmeli.'},
-  mese:{n:'MEŞE DKD', fr:'Pencad MEŞE DKD', du:'Makropen Meşe', ok:true, tn:'Her zaman elimizde mevcut.'},
-  accoya:{n:'ACCOYA', fr:'Pencad MEŞE KKK', du:'Makropen Meşe +%40', ok:true, tn:'Her zaman elimizde mevcut.'},
-  okaliptusdkd:{n:'OKALİPTUS DKD', fr:'Pencad OKALİPTUS DKD', du:'Makropen Meranti +%15', ok:true, tn:'Her zaman elimizde mevcut.'},
-  okaliptuskkk:{n:'OKALİPTUS KKK', fr:'Pencad OKALİPTUS KKK', du:'Makropen Meranti', ok:true, tn:'Her zaman elimizde mevcut.'},
-  sapelli:{n:'SAPELLI DKD', fr:'Pencad SAPELLI DKD', du:'Makropen Meşe', ok:false, tn:'Temini sıkıntılı olabilir — muhtemel projeler çizimlerden önce fabrika müdürüne bildirilmeli.'}
-};
-function showAhsap(){
-  const a=AHSAP[document.getElementById('ahsap').value];
-  const src = REGION==='fr'?a.fr:a.du;
-  const bolge = REGION==='fr'?'Fransa · Pencad':'Diğer Ülkeler · Makropen';
-  document.getElementById('ahsapBolge').textContent='('+bolge+')';
-  document.getElementById('ahsapName').textContent=a.n;
-  document.getElementById('ahsapTemin').textContent=a.ok?'✅ Mevcut':'⚠️ Sıkıntılı';
-  document.getElementById('ahsapTemin').style.color=a.ok?'#2e8b57':'#c0791f';
-  document.getElementById('ahsapKaynakLbl').textContent='Fiyat kaynağı';
-  document.getElementById('ahsapKaynak').textContent=src;
-  document.getElementById('ahsapTeminNote').textContent=a.tn;
-}
-
-// ---- net iskonto/sürşarj seçici (region-aware) ----
-const NETSEL={
-  baz:{n:'Baz iskonto', fr:'%51', du:'%60', note:'Brüt tutara uygulanır → net teklif tutarı.'},
-  s1:{n:'1. Sınıf müşteri iskontosu', fr:'%14', du:'%15', note:'Net tutara, müşterinin şirket listesindeki önemine göre uygulanır.'},
-  s2:{n:'2. Sınıf müşteri iskontosu', fr:'%5', du:'%8', note:'Net tutara, müşteri önemine göre uygulanır.'},
-  cepheisk:{n:'Cephe iskontosu', fr:'%24', du:'%24', note:'Cephe özel çalışmayla hesaplandıktan sonra ilave iskonto.'},
-  b1:{n:'Teklif sürşarjı · < 50.000 €', fr:'%45', du:'%30', note:'Net tutara ilave edilerek teklif tutarı bulunur.'},
-  b2:{n:'Teklif sürşarjı · 50.000 – 250.000 €', fr:'%15', du:'%10', note:'Net tutara ilave edilerek teklif tutarı bulunur.'},
-  b3:{n:'Teklif sürşarjı · 250.000 – 500.000 €', fr:'%10', du:'%5', note:'Net tutara ilave edilerek teklif tutarı bulunur.'},
-  b4:{n:'Teklif sürşarjı · 500.000 € ve üzeri', fr:'%5', du:'%0', note:'Net tutara ilave edilerek teklif tutarı bulunur.'},
-  reno:{n:'Renovasyon teklif sürşarjı', fr:'%10', du:'%10', note:'Mevcut doğramaların değişimini içeren projelerde uygulanır.'},
-  s78:{n:'78t ve 78a fiyat sürşarjı', fr:'%40', du:'%40', note:'78t/78a, 68s ve 58f olarak cam hariç maliyete bu oran ilave edilerek hesaplanır.'},
-  epoch:{n:'Epoch ürün fiyat sürşarjı', fr:'%24', du:'%24', note:'Epoch 68s olarak hesaplanır, cam hariç maliyete bu oran ilave edilir.'},
-  buton:{n:'Butonlu panjur fiyat sürşarjı', fr:'%20', du:'%20', note:'Manuel panjur fiyatına bu oran ilave edilir.'},
-  giyotin:{n:'Giyotin teklif sürşarjı', fr:'%0', du:'%0', note:'Giyotin ürünlerde ek sürşarj uygulanmaz.'}
-};
-// ---- montaj seçici (region-aware) ----
-const MONTSEL={
-  m1:{n:'Montaj · 0 – 50 adet', fr:'160 €/m²', du:'190 €/m²', note:'Yakın bölgelerde adede bağlı m² montaj fiyatı.'},
-  m2:{n:'Montaj · 50 – 150 adet', fr:'125 €/m²', du:'180 €/m²', note:'Yakın bölgelerde adede bağlı m² montaj fiyatı.'},
-  m3:{n:'Montaj · 150 – 300 adet', fr:'105 €/m²', du:'170 €/m²', note:'Yakın bölgelerde adede bağlı m² montaj fiyatı.'},
-  m4:{n:'Montaj · 300 – 500 adet', fr:'95 €/m²', du:'160 €/m²', note:'Yakın bölgelerde adede bağlı m² montaj fiyatı.'},
-  m5:{n:'Montaj · 500 adet üstü', fr:'90 €/m²', du:'150 €/m²', note:'Yakın bölgelerde adede bağlı m² montaj fiyatı.'},
-  cephe:{n:'Montaj · Cephe projeleri', fr:'190 €/m²', du:'210 €/m²', note:'Cephe projeleri için m² montaj fiyatı.'},
-  ap:{n:'Applique extérieure sürşarjı', fr:'%40', du:'%40', note:'Montaj türü/yerinin zorluğu nedeniyle montaj fiyatına ilave.'},
-  uzak:{n:'Uzak bölge sürşarjı', fr:'%65', du:'%65', note:'Uzak bölge şantiyelerinde montaj fiyatına ilave (FR departman listesine göre).'}
-};
-function tagBolge(o){ return o.fr===o.du ? '(FR = D.Ü.)' : (REGION==='fr'?'(Fransa)':'(Diğer Ülkeler)'); }
-function showNetSel(){
-  const o=NETSEL[document.getElementById('netsel').value];
-  document.getElementById('netSelBolge').textContent=tagBolge(o);
-  document.getElementById('netSelName').textContent=o.n;
-  document.getElementById('netSelVal').textContent=REGION==='fr'?o.fr:o.du;
-  document.getElementById('netSelNote').textContent=o.note;
-}
-function showMontSel(){
-  const o=MONTSEL[document.getElementById('montsel').value];
-  document.getElementById('montSelBolge').textContent=tagBolge(o);
-  document.getElementById('montSelName').textContent=o.n;
-  document.getElementById('montSelVal').textContent=REGION==='fr'?o.fr:o.du;
-  document.getElementById('montSelNote').textContent=o.note;
-}
-
-// ---- garanti ----
-function showGar(){
-  const u=document.getElementById('garulke').value;
-  const yil = (u==='fr'||u==='ing'||u==='alm') ? '10 yıl' : '0 yıl';
-  document.getElementById('garout').textContent=yil;
-  document.getElementById('garnote').style.display = (u==='diger') ? '' : 'none';
-}
-
-let REGION='fr';
+// ---- hesaplama oranları (Fransa) ----
+const R={ baz:0.51, s1:0.14, s2:0.05, reno:0.10,
+  brk:[[50000,0.45],[250000,0.15],[500000,0.10],[Infinity,0.05]],
+  mont:[[50,160],[150,125],[300,105],[500,95],[Infinity,90]], cephe:190 };
 const fmt0=n=>isFinite(n)?n.toLocaleString('tr-TR',{maximumFractionDigits:0}):'—';
 const eur=n=>isFinite(n)?fmt0(n)+' €':'—';
 const pct=n=>'%'+(n*100).toLocaleString('tr-TR',{maximumFractionDigits:2});
 function pick(arr,x){ for(const [lim,v] of arr){ if(x<=lim) return v; } return arr[arr.length-1][1]; }
 
-// ---- net (teklif) calc ----
 function calcNet(){
-  const R=RATES[REGION];
-  const brut=parseFloat(document.getElementById('brut').value)||0;
-  const sinif=document.getElementById('sinif').value;
-  const reno=document.getElementById('proje').value==='reno';
+  const brut=parseFloat($('brut').value)||0;
+  const sinif=$('sinif').value;
+  const reno=$('proje').value==='reno';
   const musk = sinif==='1'?R.s1 : sinif==='2'?R.s2 : 0;
   const sur = pick(R.brk, brut);
   let kat=(1-R.baz)*(1-musk)*(1+sur);
   if(reno) kat*=(1+R.reno);
   const net=brut*kat;
-  document.getElementById('netOut').textContent=eur(net);
-  document.getElementById('netBd').innerHTML=
-    `<div class="row"><span>Baz iskonto</span><b>−${pct(R.baz)}</b></div>`+
-    `<div class="row"><span>Müşteri iskontosu (${sinif==='0'?'yok':sinif+'. sınıf'})</span><b>−${pct(musk)}</b></div>`+
-    `<div class="row"><span>Büyüklük sürşarjı</span><b>+${pct(sur)}</b></div>`+
-    (reno?`<div class="row"><span>Renovasyon sürşarjı</span><b>+${pct(R.reno)}</b></div>`:'')+
-    `<div class="row"><span><b>Katsayı</b></span><b>${kat.toLocaleString('tr-TR',{maximumFractionDigits:5})}</b></div>`;
+  $('netOut').textContent=eur(net);
+  $('netBd').innerHTML=
+    `<span>Baz iskonto <b>−${pct(R.baz)}</b></span>`+
+    `<span>Müşteri iskontosu (${sinif==='0'?'yok':sinif+'. sınıf'}) <b>−${pct(musk)}</b></span>`+
+    `<span>Büyüklük sürşarjı <b>+${pct(sur)}</b></span>`+
+    (reno?`<span>Renovasyon <b>+${pct(R.reno)}</b></span>`:'')+
+    `<span>Katsayı <b>${kat.toLocaleString('tr-TR',{maximumFractionDigits:5})}</b></span>`;
   return net;
 }
-// ---- montaj calc ----
 function calcMont(){
-  const R=RATES[REGION];
-  const m2=parseFloat(document.getElementById('m2').value)||0;
-  const adet=parseFloat(document.getElementById('adet').value)||0;
-  const cephe=document.getElementById('mtip').value==='cephe';
-  const sur=document.getElementById('msur').value;
+  const m2=parseFloat($('m2').value)||0;
+  const adet=parseFloat($('adet').value)||0;
+  const cephe=$('mtip').value==='cephe';
+  const sur=$('msur').value;
   const birim = cephe ? R.cephe : pick(R.mont, adet);
   let f=1; const parts=[];
   if(sur==='ap'||sur==='apuzak'){ f*=1.40; parts.push('Applique +%40'); }
   if(sur==='uzak'||sur==='apuzak'){ f*=1.65; parts.push('Uzak bölge +%65'); }
   const tut=m2*birim*f;
-  document.getElementById('montOut').textContent=eur(tut);
-  document.getElementById('montBd').innerHTML=
-    `<div class="row"><span>Birim fiyat (${cephe?'cephe':adet+' adet dilimi'})</span><b>${birim} €/m²</b></div>`+
-    `<div class="row"><span>Taban (${fmt0(m2)} m² × ${birim})</span><b>${eur(m2*birim)}</b></div>`+
-    (parts.length?`<div class="row"><span>Sürşarj</span><b>${parts.join(' · ')}</b></div>`:'');
+  $('montOut').textContent=eur(tut);
+  $('montBd').innerHTML=
+    `<span>Birim fiyat (${cephe?'cephe':adet+' adet dilimi'}) <b>${birim} €/m²</b></span>`+
+    `<span>Taban (${fmt0(m2)} m² × ${birim}) <b>${eur(m2*birim)}</b></span>`+
+    (parts.length?`<span>Sürşarj <b>${parts.join(' · ')}</b></span>`:'');
   return tut;
 }
-function recalc(){
-  const net=calcNet(), mont=calcMont();
-  document.getElementById('grandOut').textContent=eur(net+mont);
-}
-
-// ---- region toggle ----
-const btns=document.querySelectorAll('.region button');
-function applyRegion(){
-  const r=REGION;
-  document.querySelectorAll('[data-fr]').forEach(e=>e.classList.toggle('hidden', r!=='fr'));
-  document.querySelectorAll('[data-du]').forEach(e=>e.classList.toggle('hidden', r!=='du'));
-}
-function setRegion(r){
-  REGION=r;
-  btns.forEach(b=>b.classList.toggle('active', b.dataset.r===r));
-  applyRegion();
-  document.getElementById('bolgeShow').value = r==='fr'?'Fransa':'Diğer Ülkeler';
-  recalc();
-  showAhsap();
-  showNetSel();
-  showMontSel();
-}
-btns.forEach(b=>b.addEventListener('click',()=>setRegion(b.dataset.r)));
-
-// inputs
+function recalc(){ const net=calcNet(), mont=calcMont(); $('grandOut').textContent=eur(net+mont); }
 ['brut','sinif','proje','m2','adet','mtip','msur'].forEach(id=>{
-  document.getElementById(id).addEventListener('input',recalc);
-  document.getElementById(id).addEventListener('change',recalc);
-});
-document.getElementById('girdi').addEventListener('change',showGirdi);
-document.getElementById('ahsap').addEventListener('change',showAhsap);
-document.getElementById('netsel').addEventListener('change',showNetSel);
-document.getElementById('montsel').addEventListener('change',showMontSel);
-document.getElementById('garulke').addEventListener('change',showGar);
-showGirdi(); showGar();
-
-// collapse
-document.querySelectorAll('.card h2').forEach(h=>{
-  h.addEventListener('click',()=>h.parentElement.classList.toggle('collapsed'));
+  $(id).addEventListener('input',recalc); $(id).addEventListener('change',recalc);
 });
 
-// search
-const q=document.getElementById('q');
-q.addEventListener('input',()=>{
-  const t=q.value.trim().toLowerCase();
-  document.querySelectorAll('section[data-sec]').forEach(sec=>{
-    if(sec.hasAttribute('data-nofilter')){ sec.classList.toggle('hidden', !!t); return; }
-    if(!t){ sec.classList.remove('hidden'); sec.classList.remove('collapsed');
-      sec.querySelectorAll('tr').forEach(r=>r.classList.remove('hidden')); applyRegion(); return; }
-    let any=false;
-    sec.querySelectorAll('table tr').forEach(r=>{
-      if(r.querySelector('th')){return;}
-      const hit=r.textContent.toLowerCase().includes(t);
-      r.classList.toggle('hidden',!hit); if(hit)any=true;
-    });
-    const headHit=sec.querySelector('h2').textContent.toLowerCase().includes(t);
-    const proseHit=[...sec.querySelectorAll('.note,.subhead')].some(p=>p.textContent.toLowerCase().includes(t));
-    if(headHit||proseHit)any=true;
-    sec.classList.toggle('hidden',!any);
-    sec.classList.remove('collapsed');
-  });
-});
-
-setRegion('fr');
+// ---- CANLI: Fiyatlandırma panosu tablolarından oku ----
+const dk=iso=>{ if(!iso) return "—"; const s=String(iso); return s.slice(8,10)+"."+s.slice(5,7)+"."+s.slice(2,4); };
+async function loadCanli(){
+  const [pp,ms,ah]=await Promise.all([
+    sb.from("fiyat_parametre").select("*").order("sira"),
+    sb.from("fiyat_musteri_sinif").select("*"),
+    sb.from("fiyat_ahsap").select("ad,sira").order("sira").order("id")
+  ]);
+  const P={}; (pp.data||[]).forEach(r=>P[r.anahtar]=r);
+  const fr=k=>P[k]?esc(P[k].fransa_deger):"—";
+  const bl=k=>P[k]?esc(P[k].baslik):k;
+  // son güncelleme (başlık yanı)
+  const ups=(pp.data||[]).map(r=>r.updated_at).filter(Boolean).sort();
+  $('stamp').textContent="Son Güncelleme: "+(ups.length?dk(ups[ups.length-1]):"—");
+  // Ahşap dropdown (canlı)
+  $('ahsap').innerHTML=(ah.data||[]).map(r=>`<option>${esc(r.ad)}</option>`).join("");
+  // Genel Şartlar üst (ihracat, min adet)
+  $('genelTop').innerHTML=
+    `<tr><td>İhracat fatura oranı</td><td class="val">${fr('ihracat_fatura')}</td></tr>`+
+    `<tr><td>Minimum ürün adedi</td><td class="val">${fr('min_adet')}</td></tr>`;
+  // Şirket listeleri (alfabetik, canlı)
+  const s1=(ms.data||[]).filter(r=>r.sinif===1).map(r=>r.ad).sort((a,b)=>a.localeCompare(b,'tr'));
+  const s2=(ms.data||[]).filter(r=>r.sinif===2).map(r=>r.ad).sort((a,b)=>a.localeCompare(b,'tr'));
+  $('listS1').textContent=s1.length?s1.join(" · "):"—";
+  $('listS2').textContent=s2.length?s2.join(" · "):"—";
+  // Parametre satırları (canlı değerler)
+  $('lineIsk').innerHTML=`<b>${bl('baz_iskonto')}:</b> ${fr('baz_iskonto')} &nbsp;·&nbsp; <b>${bl('s1_iskonto')}:</b> ${fr('s1_iskonto')} &nbsp;·&nbsp; <b>${bl('s2_iskonto')}:</b> ${fr('s2_iskonto')}`;
+  $('lineBuyukluk').innerHTML=`<b>Proje büyüklüğü sürşarjları:</b> ${bl('buyukluk_50k').replace(' için Proje büyüklüğü sürşarjı','')} → ${fr('buyukluk_50k')} &nbsp;·&nbsp; ${bl('buyukluk_50_250k').replace(' için Proje büyüklüğü sürşarjı','')} → ${fr('buyukluk_50_250k')} &nbsp;·&nbsp; ${bl('buyukluk_250_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${fr('buyukluk_250_500k')} &nbsp;·&nbsp; ${bl('buyukluk_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${fr('buyukluk_500k')}`;
+  $('lineDiger').innerHTML=`<b>Diğer sürşarjlar:</b> ${bl('renovasyon')}: ${fr('renovasyon')} &nbsp;·&nbsp; ${bl('cephe_montaj')}: ${fr('cephe_montaj')} &nbsp;·&nbsp; ${bl('uzak_montaj')}: ${fr('uzak_montaj')}`;
+  // Termin (canlı)
+  $('terminBody').innerHTML=
+    `<tr><td>${bl('genel_termin')}</td><td class="val">${fr('genel_termin')}</td></tr>`+
+    `<tr><td>${bl('yukleme_araligi')}</td><td class="val">${fr('yukleme_araligi')}</td></tr>`+
+    `<tr><td>${bl('std_termin')}</td><td class="val">${fr('std_termin')}</td></tr>`+
+    `<tr><td>${bl('stddisi_termin')}</td><td class="val">${fr('stddisi_termin')}</td></tr>`;
+}
+recalc();
+loadCanli();
 </script>
 </body>
 </html>
