@@ -1072,7 +1072,7 @@ async function loadFiyat(){
    .fpub{font-size:11px;color:#7a8896}
   </style>`;
   view.innerHTML=`${style}<div class="stamp">Fiyatlandırma · Son güncelleme: ${gunc}</div>
-    <div class="fbar"><button id="fiyat-guncelle">GÜNCELLE</button><span class="fpub">${yr.yayin_at?("Son yayın: "+dOnly(yr.yayin_at)):"Henüz yayınlanmadı"}</span></div>
+    <div class="fbar"><button id="fiyat-guncelle">GÜNCELLE</button><span class="fpub">${yr.yayin_at?("Son yayın: "+dOnly(yr.yayin_at)):"Henüz yayınlanmadı"}${yr.bildirim_beklemede?" · <b style=color:#b47800>bildirim beklemede</b>":""}</span></div>
     ${pTbl}${aTbl}${msBlock(1,"1. Sınıf Fransa Şirketleri")}${msBlock(2,"2. Sınıf Fransa Şirketleri")}`;
   // olaylar
   view.querySelectorAll(".fedit").forEach(el=>el.onclick=()=>startFiyEdit(el));
@@ -1109,14 +1109,15 @@ async function fiyDel(t,id){
   if(error){ alert(error.message); return; } loadFiyat();
 }
 async function fiyGuncelle(){
-  if(!confirm("Fiyatlandırma değerleri yayınlanacak ve ilgili kişilere bilgi maili gönderilecek. Onaylıyor musunuz?")) return;
-  const btn=document.getElementById("fiyat-guncelle"); btn.disabled=true; btn.textContent="Gönderiliyor…";
+  if(!confirm("Fiyatlandırma değerleri yayınlanacak ve ilgili kişilere bilgi maili beklemeye alınacak (int@arbor.com.tr Outlook üzerinden gönderilir). Onaylıyor musunuz?")) return;
+  const btn=document.getElementById("fiyat-guncelle"); btn.disabled=true; btn.textContent="Yayınlanıyor…";
   const {data:params}=await sb.from("fiyat_parametre").select("*").order("sira");
-  await sb.from("fiyat_yayin").update({ yayin_at:new Date().toISOString(), snapshot:params||[] }).eq("id",1);
-  const {data,error}=await sb.functions.invoke("fiyat-degisiklik-mail",{ body:{} });
+  const metin="fiyatlandırma kurallarında değişiklik yapılmıştır, lütfen tarama verilerini silerek formu yenileyiniz.";
+  // Yayınla + bildirim beklemeye al (asıl gönderim Outlook üzerinden yapılır — Resend dış gönderim yapmıyor)
+  const {error}=await sb.from("fiyat_yayin").update({ yayin_at:new Date().toISOString(), snapshot:params||[], bildirim_beklemede:true, bildirim_metni:metin }).eq("id",1);
   btn.disabled=false; btn.textContent="GÜNCELLE";
-  if(error||(data&&data.error)){ alert("Yayınlandı ama mail hatası: "+(error?error.message:data.error)); loadFiyat(); return; }
-  alert("Yayınlandı. Bilgi maili gönderildi"+(data&&data.gonderilen?(" ("+data.gonderilen+" alıcı)."):"."));
+  if(error){ alert("Hata: "+error.message); return; }
+  alert("Yayınlandı. Değişiklik bildirimi BEKLEMEYE ALINDI — int@arbor.com.tr Outlook hesabından ilgili kişilere gönderilecek.");
   loadFiyat();
 }
 /* ---------- MALİ — grup: Bilanço, İcmal + hassas panolar (depenses/kredi/ahsap/sel_arb). Bölüm-RLS. ---------- */
