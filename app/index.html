@@ -1018,17 +1018,16 @@ async function loadObrapor(){
 /* ---------- FİYATLANDIRMA — kaynak veri + editör (fiyat_* tabloları, anon dar). GÜNCELLE = yayınla + bildir. ---------- */
 async function loadFiyat(){
   const view=document.getElementById("view");
-  const [pp,ah,ga,ms,ya]=await Promise.all([
+  const [pp,ah,ms,ya]=await Promise.all([
     sb.from("fiyat_parametre").select("*").order("sira"),
     sb.from("fiyat_ahsap").select("*").order("sira").order("id"),
-    sb.from("fiyat_garanti").select("*").order("sira").order("id"),
     sb.from("fiyat_musteri_sinif").select("*").order("sira").order("id"),
     sb.from("fiyat_yayin").select("*").limit(1)
   ]);
-  const err=pp.error||ah.error||ga.error||ms.error;
+  const err=pp.error||ah.error||ms.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
-  const P=pp.data||[], A=ah.data||[], G=ga.data||[], M=ms.data||[];
-  const allUp=[].concat(P,A,G,M).map(r=>r.updated_at).filter(Boolean).sort();
+  const P=pp.data||[], A=ah.data||[], M=ms.data||[];
+  const allUp=[].concat(P,A,M).map(r=>r.updated_at).filter(Boolean).sort();
   const gunc=allUp.length?dOnly(allUp[allUp.length-1]):"—";
   const yr=(ya.data&&ya.data[0])||{};
   const ec=(t,id,f,v,type)=>`<span class="fedit" data-t="${t}" data-id="${id}" data-f="${f}"${type?` data-type="${type}"`:""} title="Düzenlemek için tıkla">${esc(v==null||v===""?"—":v)}</span>`;
@@ -1048,14 +1047,6 @@ async function loadFiyat(){
     +`<td><button class="fdel" data-t="fiyat_ahsap" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
   const aTbl=`<h3 class="sec">Ahşap Türü ve Durumu</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Tür</th><th>FR Kaynak</th><th>DÜ Kaynak</th><th>Durum</th><th>Açıklama</th><th></th></tr></thead><tbody>${aRows}`
     +`<tr class="faddrow"><td><input id="fa-ad" placeholder="Tür"></td><td><input id="fa-fr" placeholder="FR kaynak"></td><td><input id="fa-du" placeholder="DÜ kaynak"></td><td><input id="fa-durum" placeholder="Mevcut/Sıkıntılı"></td><td><input id="fa-ac" placeholder="Açıklama"></td><td><button class="btn" id="fa-add">Ekle</button></td></tr>`
-    +`</tbody></table></div>`;
-  // B) Garanti
-  let gRows=G.map(r=>`<tr data-id="${r.id}">`
-    +`<td class="fc">${ec("fiyat_garanti",r.id,"ulke",r.ulke)}</td>`
-    +`<td class="fc">${ec("fiyat_garanti",r.id,"sure",r.sure)}</td>`
-    +`<td><button class="fdel" data-t="fiyat_garanti" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
-  const gTbl=`<h3 class="sec">Garanti Ülkesi ve Süresi</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Ülke</th><th>Süre</th><th></th></tr></thead><tbody>${gRows}`
-    +`<tr class="faddrow"><td><input id="fg-ulke" placeholder="Ülke"></td><td><input id="fg-sure" placeholder="Süre"></td><td><button class="btn" id="fg-add">Ekle</button></td></tr>`
     +`</tbody></table></div>`;
   // C/D) Müşteri sınıfları
   const msBlock=(sinif,title)=>{
@@ -1082,7 +1073,7 @@ async function loadFiyat(){
   </style>`;
   view.innerHTML=`${style}<div class="stamp">Fiyatlandırma · Son güncelleme: ${gunc}</div>
     <div class="fbar"><button id="fiyat-guncelle">GÜNCELLE</button><span class="fpub">${yr.yayin_at?("Son yayın: "+dOnly(yr.yayin_at)):"Henüz yayınlanmadı"}</span></div>
-    ${pTbl}${aTbl}${gTbl}${msBlock(1,"1. Sınıf Fransa Şirketleri")}${msBlock(2,"2. Sınıf Fransa Şirketleri")}`;
+    ${pTbl}${aTbl}${msBlock(1,"1. Sınıf Fransa Şirketleri")}${msBlock(2,"2. Sınıf Fransa Şirketleri")}`;
   // olaylar
   view.querySelectorAll(".fedit").forEach(el=>el.onclick=()=>startFiyEdit(el));
   view.querySelectorAll(".fdel").forEach(b=>b.onclick=()=>fiyDel(b.dataset.t,b.dataset.id));
@@ -1090,11 +1081,6 @@ async function loadFiyat(){
     const ad=document.getElementById("fa-ad").value.trim(); if(!ad){alert("Tür gir.");return;}
     const rec={ad,fr_kaynak:document.getElementById("fa-fr").value.trim()||null,du_kaynak:document.getElementById("fa-du").value.trim()||null,durum:document.getElementById("fa-durum").value.trim()||null,aciklama:document.getElementById("fa-ac").value.trim()||null,sira:(A.length?Math.max(...A.map(x=>x.sira||0))+1:1)};
     const {error}=await sb.from("fiyat_ahsap").insert(rec); if(error){alert(error.message);return;} loadFiyat();
-  };
-  document.getElementById("fg-add").onclick=async()=>{
-    const ulke=document.getElementById("fg-ulke").value.trim(); if(!ulke){alert("Ülke gir.");return;}
-    const rec={ulke,sure:document.getElementById("fg-sure").value.trim()||null,sira:(G.length?Math.max(...G.map(x=>x.sira||0))+1:1)};
-    const {error}=await sb.from("fiyat_garanti").insert(rec); if(error){alert(error.message);return;} loadFiyat();
   };
   [1,2].forEach(sn=>{ document.getElementById("fm"+sn+"-add").onclick=async()=>{
     const ad=document.getElementById("fm"+sn+"-ad").value.trim(); if(!ad){alert("Şirket adı gir.");return;}
