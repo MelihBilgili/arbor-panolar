@@ -59,19 +59,19 @@
   .snpink{background:#ffd9ec} .itot td{background:#eef4fb;font-weight:700}
   thead th.num{text-align:right}
   table.aup{width:auto}
-  table.aup th,table.aup td{width:1%;white-space:nowrap}
-  table.aup th.note,table.aup td.note{width:auto;white-space:normal;min-width:160px;max-width:34ch}
+  table.aup th,table.aup td{white-space:nowrap}
+  table.aup th.note,table.aup td.note{white-space:normal;min-width:160px;max-width:34ch}
   table.aup th.ss,table.aup th.ur{white-space:nowrap}
   table.aupmain thead th:nth-child(n+4):nth-child(-n+10){text-align:right}
   table.aup td.ss>.cx{display:block;width:20ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   table.aup td.ur>.cx{display:block;width:45ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   table.so{width:auto}
-  table.so th,table.so td{width:1%}
+  table.so th,table.so td{white-space:nowrap}
   table.so td.c7>.cx,table.so td.c15>.cx,table.so td.c20>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   table.aup td.ss>.cx::-webkit-scrollbar,table.aup td.ur>.cx::-webkit-scrollbar,table.so td.c7>.cx::-webkit-scrollbar,table.so td.c15>.cx::-webkit-scrollbar,table.so td.c20>.cx::-webkit-scrollbar{display:none}
   table.so td.c7>.cx{width:7ch}table.so td.c15>.cx{width:15ch}table.so td.c20>.cx{width:60ch}
   table.sat{width:auto}
-  table.sat th,table.sat td{width:1%;white-space:nowrap}
+  table.sat th,table.sat td{white-space:nowrap}
   table.sat td>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   table.sat td>.cx::-webkit-scrollbar{display:none}
   table.sat td.s25>.cx{width:25ch}table.sat td.s20>.cx{width:20ch}table.sat td.s60>.cx{width:60ch}
@@ -459,7 +459,7 @@ async function loadSatis(){
   const stampDate=regions.reduce((m,rg)=> (rg.cekim>m?rg.cekim:m), '0');
   const anyData=regions.some(rg=>rg.data.length);
   view.innerHTML=`
-    <style>.satis-wrap .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.satis-wrap .scroll>table:not(.ssum){min-width:max-content}.satis-wrap .scroll th{white-space:nowrap}</style>
+    <style>.satis-wrap .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.satis-wrap .scroll th{white-space:nowrap}</style>
     <div class="satis-wrap">
     <div class="stamp">Son güncelleme: ${anyData?dOnly(stampDate):'—'}</div>
     ${satisSummary(regions)}
@@ -905,7 +905,7 @@ function loadFormlar(){
     table.frm .cx{overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
     table.frm .cx::-webkit-scrollbar{display:none}
     table.frm td.sb .cx{font-weight:700;color:#16324f}
-    table.frm td.fopen{white-space:nowrap;width:1%;padding:2px 8px}
+    table.frm td.fopen{white-space:nowrap;padding:2px 8px}
     table.frm td.fopen .btn{display:inline-block;text-decoration:none;padding:3px 10px;font-size:11.5px;border-radius:6px}
   </style>
   <div class="scroll"><table class="frm">
@@ -945,7 +945,7 @@ async function loadAhsap(tgt){
   /* Son güncelleme = Ahşap formundaki AYLIK GÜNCELLEME düğmesine son basılma (pano_yayin) */
   const py=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","ahsap").limit(1);
   const pyAt=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
-  body.innerHTML=`<style>table.ahs{width:auto}table.ahs th,table.ahs td{width:1%;white-space:nowrap}</style>
+  body.innerHTML=`<style>table.ahs{width:auto}table.ahs th,table.ahs td{white-space:nowrap}</style>
     <div class="stamp">Son güncelleme: ${pyAt?dOnly(pyAt):"—"}</div>
     <div class="scroll"><table class="ahs"><thead><tr><th>Ağaç Çeşidi / Tedarikçi</th><th class="num">Top. CBM</th><th class="num">Ağ. Ort. €</th><th class="num">Önceki Ort. €</th><th class="num">Değişim %</th></tr></thead><tbody>${rh||'<tr><td colspan="5" class="load">Kayıt yok.</td></tr>'}</tbody></table></div>`;
 }
@@ -966,7 +966,7 @@ async function loadPanoBolum(bolum, tgt){
     const rs=(rowsByT[tb.tablo]||[]).map(row=>`<tr>${(row.hucreler||[]).map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("");
     html+=`${tb.baslik?`<h3 class="sec">${esc(tb.baslik)}</h3>`:""}<div class="scroll"><table class="pob"><thead><tr>${hs}</tr></thead><tbody>${rs}</tbody></table></div>`;
   });
-  body.innerHTML=`<style>table.pob{width:auto}table.pob th,table.pob td{width:1%;white-space:nowrap}</style>`
+  body.innerHTML=`<style>table.pob{width:auto}table.pob th,table.pob td{white-space:nowrap}</style>`
     +`<div class="stamp">${esc(meta.son_guncelleme||"")}${meta.kaynak?` · <span style="font-weight:400;color:#7a8896">${esc(meta.kaynak)}</span>`:""}</div>`
     +`${html||'<div class="load">Kayıt yok.</div>'}`;
 }
@@ -1023,7 +1023,7 @@ async function loadSelArb(tgt){
   }).join("");
   const style=`<style>
   .sa-wrap table{border-collapse:collapse;width:auto;font-size:11.5px}
-  .sa-wrap th,.sa-wrap td{border-bottom:1px solid #eef1f5;padding:2px 6px;white-space:nowrap;width:1%;line-height:16px}
+  .sa-wrap th,.sa-wrap td{border-bottom:1px solid #eef1f5;padding:2px 6px;white-space:nowrap;line-height:16px}
   .sa-wrap thead th{background:#16324f;color:#fff;font-weight:600}
   .sa-proje>.c{width:35ch}.sa-firma>.c{max-width:20ch}
   .sa-firma>.c,.sa-proje>.c{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}
@@ -1111,7 +1111,7 @@ async function loadFiyat(target){
   };
   const style=`<style>
    .ftbl{border-collapse:collapse;width:auto;font-size:11.5px}
-   .ftbl th,.ftbl td{border-bottom:1px solid #eef1f5;padding:2px 7px;text-align:left;vertical-align:middle;width:1%;white-space:nowrap;line-height:16px}
+   .ftbl th,.ftbl td{border-bottom:1px solid #eef1f5;padding:2px 7px;text-align:left;vertical-align:middle;white-space:nowrap;line-height:16px}
    .ftbl td.fac{white-space:normal;max-width:60ch}
    .fpubx{color:#a3aeba}
    .ftbl thead th{background:#16324f;color:#fff;font-weight:600;white-space:nowrap}
@@ -1242,7 +1242,7 @@ async function loadDepenses(tgt){
   const t2=ayList.map(x=>`<tr><td>${esc(DEP_AY[x.ay-1]||"")} ${x.yil}</td><td class="num">${money(x.v)}</td></tr>`).join("")
     +`<tr class="itot"><td>TOPLAM</td><td class="num">${money(aTop)}</td></tr>`;
   const ya=(y&&!y.error&&y.data&&y.data[0])?y.data[0].yayin_at:null;
-  body.innerHTML=`<style>table.dep{width:auto}table.dep th,table.dep td{width:1%;white-space:nowrap}
+  body.innerHTML=`<style>table.dep{width:auto}table.dep th,table.dep td{white-space:nowrap}
       .depd{margin:0 0 14px}.depd>summary{cursor:pointer;color:#16324f;font-size:13px;font-weight:700;margin:14px 2px 6px;list-style:revert}
       .depd .scroll{margin-top:6px}</style>
     <div class="stamp">Son güncelleme: ${ya?dOnly(ya):"—"}</div>
@@ -1359,12 +1359,12 @@ async function loadSantiye(tgt){
   }).join("");
   view.innerHTML=`<div class="stamp">${rows.length} açık · ÖB ${sonBasim("OB")} · MK ${sonBasim("MK")}</div>
     <div class="hint">Durum girişleri <b>ÖB Faaliyet</b> ve <b>MK Faaliyet</b> formlarından gelir; yeni tıkanmış şantiyeyi ÖB ekler. Alacak = SEL-ARB'da o şantiyeye bağlanan kayıtların ${saMax?dOnly(saMax):'—'} tarihli toplamı.</div>
-    <style>table.stik{width:auto}table.stik th,table.stik td{width:1%}
+    <style>table.stik{width:auto}
       table.stik td.sb{white-space:nowrap;font-weight:700}
       table.stik .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}
       table.stik .c>span::-webkit-scrollbar{display:none}
       table.stik td.t20>span{width:20ch}
-      table.stik th.tdur,table.stik td.tdur{width:auto;white-space:normal;min-width:38ch}</style>
+      table.stik th.tdur,table.stik td.tdur{white-space:normal;min-width:38ch;max-width:70ch}</style>
     <div class="scroll"><table class="stbl stik">
     <thead><tr><th>ŞANTİYE</th><th>MÜŞTERİ</th><th class="num">ARBOR SAS ALACAK €</th><th class="tdur">DURUM</th></tr></thead>
     <tbody>${body}<tr class="itot"><td>Toplam · ${rows.length} açık</td><td></td><td class="num">${money(toplam)}</td><td></td></tr></tbody>
