@@ -1029,16 +1029,27 @@ async function loadObrapor(){
   const isl=await sb.from("ob_isler").select("*").order("arsiv").order("id");
   if(isl.error){ view.innerHTML=`<div class="load">Hata: ${esc(isl.error.message)}</div>`; return; }
   const iRows=isl.data||[];
-  const _mx=iRows.reduce((m,r)=>(r.updated_at&&r.updated_at>m)?r.updated_at:m,"");
-  const _gunc=_mx?(_mx.slice(8,10)+"."+_mx.slice(5,7)+"."+_mx.slice(0,4)):"";
-  let html=`<div class="stamp">Son güncelleme: ${_gunc||"—"}</div>
-    <div class="hint">ÖB <a href="ob-rapor/" target="_blank">Takipteki İşler formundan</a> günceller. Haftalık Güncelleme'de durumu Tamamlandı/İptal oldu olan işler tamamen silinir.</div>`;
-  let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3><div class="scroll"><table><thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th><th>Değişim Özeti</th></tr></thead><tbody>`;
-  iRows.forEach(r=>{ ib+=`<tr><td class="sb">${esc(r.konu)}</td><td>${esc(r.durum)}</td><td>${esc(r.ob_notlari)}</td><td>${esc(r.degisim_ozet)}</td></tr>`; });
+  /* Son güncelleme = ÖB formundaki HAFTALIK GÜNCELLEME düğmesine son basılma (pano_yayin) */
+  const py=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","ob_rapor").limit(1);
+  const pyAt=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
+  const cx=(v,cls)=>`<td class="${cls||""}"><div class="cx">${esc(v==null?"":v)}</div></td>`;
+  let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3>`
+    +`<div class="scroll"><table class="obt">`
+    +`<colgroup><col class="k35"><col class="k20"><col class="k100"><col class="k60"></colgroup>`
+    +`<thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th><th>Değişim Özeti</th></tr></thead><tbody>`;
+  iRows.forEach(r=>{ ib+=`<tr>${cx(r.konu,"sb")}${cx(r.durum)}${cx(r.ob_notlari)}${cx(r.degisim_ozet)}</tr>`; });
   if(!iRows.length) ib+=`<tr><td colspan="4" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
   ib+=`</tbody></table></div>`;
-  html+=ib;
-  view.innerHTML=html;
+  view.innerHTML=`<style>
+    table.obt{width:auto;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
+    table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k60{width:60ch}table.obt col.k100{width:100ch}
+    table.obt th,table.obt td{border-bottom:1px solid #eef1f5;padding:2px 8px;text-align:left;vertical-align:middle;height:20px;line-height:16px}
+    table.obt thead th{background:#16324f;color:#fff;font-weight:600;font-size:11px;white-space:nowrap;padding:4px 8px}
+    table.obt .cx{overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
+    table.obt .cx::-webkit-scrollbar{display:none}
+    table.obt td.sb .cx{font-weight:700;color:#16324f}
+  </style>
+  <div class="stamp">Son güncelleme: ${pyAt?dOnly(pyAt):"—"}</div>${ib}`;
 }
 
 /* ---------- FİYATLANDIRMA — kaynak veri + editör (fiyat_* tabloları, anon dar). GÜNCELLE = yayınla + bildir. ---------- */
