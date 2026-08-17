@@ -1050,38 +1050,36 @@ async function loadFiyat(target){
   const err=pp.error||ah.error||ms.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
   const P=pp.data||[], A=ah.data||[], M=ms.data||[];
-  const allUp=[].concat(P,A,M).map(r=>r.updated_at).filter(Boolean).sort();
-  const gunc=allUp.length?dOnly(allUp[allUp.length-1]):"—";
   const yr=(ya.data&&ya.data[0])||{};
   const ec=(t,id,f,v,type)=>`<span class="fedit" data-t="${t}" data-id="${id}" data-f="${f}"${type?` data-type="${type}"`:""} title="Düzenlemek için tıkla">${esc(v==null||v===""?"—":v)}</span>`;
   // Skalar parametreler
   let pRows=P.map(r=>`<tr>`
-    +`<td>${esc(r.baslik)}</td>`
+    +`<td class="fc">${ec("fiyat_parametre",r.id,"baslik",r.baslik)}</td>`
     +`<td class="fc">${ec("fiyat_parametre",r.id,"fransa_deger",r.fransa_deger)}</td>`
     +`<td class="fc">${ec("fiyat_parametre",r.id,"diger_deger",r.diger_deger)}</td></tr>`).join("");
   const pTbl=`<h3 class="sec">Parametreler</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Parametre</th><th>Fransa</th><th>Diğer</th></tr></thead><tbody>${pRows}</tbody></table></div>`;
   // A) Ahşap
   let aRows=A.map(r=>`<tr data-id="${r.id}">`
     +`<td class="fc">${ec("fiyat_ahsap",r.id,"ad",r.ad)}</td>`
-    +`<td class="fc">${ec("fiyat_ahsap",r.id,"fr_kaynak",r.fr_kaynak)}</td>`
-    +`<td class="fc">${ec("fiyat_ahsap",r.id,"du_kaynak",r.du_kaynak)}</td>`
     +`<td class="fc">${ec("fiyat_ahsap",r.id,"durum",r.durum)}</td>`
-    +`<td class="fc">${ec("fiyat_ahsap",r.id,"aciklama",r.aciklama)}</td>`
+    +`<td class="fc fac">${ec("fiyat_ahsap",r.id,"aciklama",r.aciklama)}</td>`
     +`<td><button class="fdel" data-t="fiyat_ahsap" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
-  const aTbl=`<h3 class="sec">Ahşap Türü ve Durumu</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Tür</th><th>FR Kaynak</th><th>DÜ Kaynak</th><th>Durum</th><th>Açıklama</th><th></th></tr></thead><tbody>${aRows}`
-    +`<tr class="faddrow"><td><input id="fa-ad" placeholder="Tür"></td><td><input id="fa-fr" placeholder="FR kaynak"></td><td><input id="fa-du" placeholder="DÜ kaynak"></td><td><input id="fa-durum" placeholder="Mevcut/Sıkıntılı"></td><td><input id="fa-ac" placeholder="Açıklama"></td><td><button class="btn" id="fa-add">Ekle</button></td></tr>`
+  const aTbl=`<h3 class="sec">Ahşap Türü ve Durumu</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Tür</th><th>Durum</th><th>Açıklama</th><th></th></tr></thead><tbody>${aRows}`
+    +`<tr class="faddrow"><td><input id="fa-ad" placeholder="Tür"></td><td><input id="fa-durum" placeholder="Mevcut/Sıkıntılı"></td><td><input id="fa-ac" placeholder="Açıklama"></td><td><button class="btn" id="fa-add">Ekle</button></td></tr>`
     +`</tbody></table></div>`;
-  // C/D) Müşteri sınıfları
+  // C/D) Müşteri sınıfları — iki tablo birebir aynı format, şirketler alfabetik
   const msBlock=(sinif,title)=>{
-    const rows=M.filter(r=>r.sinif===sinif);
+    const rows=M.filter(r=>r.sinif===sinif).slice().sort((a,b)=>String(a.ad||"").localeCompare(String(b.ad||""),"tr"));
     let body=rows.map(r=>`<tr data-id="${r.id}"><td class="fc">${ec("fiyat_musteri_sinif",r.id,"ad",r.ad)}</td><td><button class="fdel" data-t="fiyat_musteri_sinif" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
     return `<h3 class="sec">${esc(title)}</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Şirket</th><th></th></tr></thead><tbody>${body}`
       +`<tr class="faddrow"><td><input id="fm${sinif}-ad" placeholder="Şirket adı"></td><td><button class="btn" id="fm${sinif}-add" data-sinif="${sinif}">Ekle</button></td></tr>`
       +`</tbody></table></div>`;
   };
   const style=`<style>
-   .ftbl{border-collapse:collapse;width:100%;font-size:12.5px}
-   .ftbl th,.ftbl td{border-bottom:1px solid #eef1f5;padding:5px 9px;text-align:left;vertical-align:top}
+   .ftbl{border-collapse:collapse;width:auto;font-size:12.5px}
+   .ftbl th,.ftbl td{border-bottom:1px solid #eef1f5;padding:5px 9px;text-align:left;vertical-align:top;width:1%;white-space:nowrap}
+   .ftbl td.fac{white-space:normal;max-width:60ch}
+   .fpubx{color:#a3aeba}
    .ftbl thead th{background:#16324f;color:#fff;font-weight:600;white-space:nowrap}
    .ftbl .fedit{cursor:pointer;display:inline-block;min-width:24px;border-bottom:1px dashed #cdd6df}
    .ftbl .fedit:hover{background:#fff3d6}
@@ -1094,15 +1092,15 @@ async function loadFiyat(target){
    #fiyat-guncelle:hover{background:#24623f}
    .fpub{font-size:11px;color:#7a8896}
   </style>`;
-  view.innerHTML=`${style}<div class="stamp">Fiyatlandırma · Son güncelleme: ${gunc}</div>
-    <div class="fbar"><button id="fiyat-guncelle">GÜNCELLE</button><span class="fpub">${yr.yayin_at?("Son yayın: "+dOnly(yr.yayin_at)):"Henüz yayınlanmadı"}${yr.bildirim_beklemede?" · <b style=color:#b47800>bildirim beklemede</b>":""}</span></div>
+  view.innerHTML=`${style}
+    <div class="fbar"><button id="fiyat-guncelle">GÜNCELLE</button><span class="fpub">${yr.yayin_at?("Son yayın: "+dOnly(yr.yayin_at)+" <span class=\"fpubx\">(bu düğmeye son basılıp fiyatlandırma formuna aktarıldığı tarih)</span>"):"Henüz yayınlanmadı"}${yr.bildirim_beklemede?" · <b style=color:#b47800>bildirim beklemede</b>":""}</span></div>
     ${pTbl}${aTbl}${msBlock(1,"1. Sınıf Fransa Şirketleri")}${msBlock(2,"2. Sınıf Fransa Şirketleri")}`;
   // olaylar
   view.querySelectorAll(".fedit").forEach(el=>el.onclick=()=>startFiyEdit(el));
   view.querySelectorAll(".fdel").forEach(b=>b.onclick=()=>fiyDel(b.dataset.t,b.dataset.id));
   document.getElementById("fa-add").onclick=async()=>{
     const ad=document.getElementById("fa-ad").value.trim(); if(!ad){alert("Tür gir.");return;}
-    const rec={ad,fr_kaynak:document.getElementById("fa-fr").value.trim()||null,du_kaynak:document.getElementById("fa-du").value.trim()||null,durum:document.getElementById("fa-durum").value.trim()||null,aciklama:document.getElementById("fa-ac").value.trim()||null,sira:(A.length?Math.max(...A.map(x=>x.sira||0))+1:1)};
+    const rec={ad,durum:document.getElementById("fa-durum").value.trim()||null,aciklama:document.getElementById("fa-ac").value.trim()||null,sira:(A.length?Math.max(...A.map(x=>x.sira||0))+1:1)};
     const {error}=await sb.from("fiyat_ahsap").insert(rec); if(error){alert(error.message);return;} loadFiyat();
   };
   [1,2].forEach(sn=>{ document.getElementById("fm"+sn+"-add").onclick=async()=>{
