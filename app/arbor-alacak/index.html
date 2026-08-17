@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arbor SAS Alacak € · Selectron mutabakat</title>
+<style>
+  :root{color-scheme:light}*{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#bcd3ea;margin-top:3px}
+  .wrap{max-width:820px;margin:0 auto;padding:16px 16px 60px}
+  .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:14px 16px;margin-bottom:14px}
+  .card h2{font-size:14px;margin:0 0 10px;color:#16324f}
+  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .f{display:flex;flex-direction:column;gap:4px}
+  .f.grow{flex:1;min-width:160px}
+  .f label{font-size:11px;color:#456;font-weight:700}
+  input,select{font:inherit;padding:8px 10px;border:1px solid #cdd6df;border-radius:7px;background:#fffdf8;width:100%}
+  .save{background:#16324f;color:#fff;border:0;border-radius:8px;padding:9px 18px;font-weight:600;cursor:pointer;font-size:14px}
+  .msg{font-size:13px;min-height:18px;margin-top:8px}.msg.ok{color:#0a6b3f;font-weight:600}.msg.err{color:#b40000;font-weight:600}
+  .hint{font-size:12px;color:#8a97a4;margin:8px 2px}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:6px}
+  th{background:#16324f;color:#fff;font-weight:600;padding:6px 8px;text-align:left;font-size:11px}
+  td{border-bottom:1px solid #eef1f5;padding:4px 6px}
+  td input,td select{padding:5px 7px;font-size:12.5px}
+  .num{text-align:right}
+  .rowsave{background:#0a6b3f;color:#fff;border:0;border-radius:6px;padding:5px 10px;font-weight:600;cursor:pointer;font-size:12px}
+  .monthly{background:#fff8ea;border:1px solid #e8cf95}
+  .upd{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:13px}
+
+html,body{max-width:100vw;overflow-x:hidden}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+</style>
+</head>
+<body>
+<header>
+  <h1>Arbor SAS Alacak €</h1>
+  <div class="sub">Arbor SAS'ın firma/proje bazlı güncel alacakları. Mevcut kalemleri güncelle veya yeni satır ekle; SEL-ARB panosunun "Toplam güncel alacak" ve firma×tarih matrisini besler.</div>
+</header>
+<div class="wrap">
+
+  <div class="card">
+    <h2>Yeni kalem ekle</h2>
+    <div class="row">
+      <div class="f grow"><label>FİRMA</label><input id="n_firma" placeholder="Firma"></div>
+      <div class="f grow"><label>PROJE</label><input id="n_proje" placeholder="Proje"></div>
+    </div>
+    <div class="row" style="margin-bottom:0">
+      <div class="f grow"><label>ALACAK TUTARI</label><input id="n_tutar" inputmode="decimal" placeholder="ör. 10000"></div>
+      <div class="f"><label>PARA BİRİMİ</label><select id="n_pb"><option>EUR</option><option>TL</option><option>USD</option></select></div>
+      <div class="f" style="justify-content:flex-end"><button class="save" id="n_btn">Kalem ekle</button></div>
+    </div>
+    <div class="msg" id="n_msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Mevcut kalemler <span id="cnt" style="font-weight:400;color:#7a8896;font-size:12px"></span></h2>
+    <div style="overflow:auto"><table><thead><tr><th>Firma</th><th>Proje</th><th class="num">Alacak</th><th>PB</th><th></th></tr></thead>
+    <tbody id="tb"><tr><td colspan="5">Yükleniyor…</td></tr></tbody></table></div>
+    <div class="msg" id="u_msg"></div>
+  </div>
+
+  <div class="card monthly">
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="upd" id="ay_btn">AYLIK GÜNCELLEME (SEL-ARB'a snapshot al)</button>
+      <div style="font-size:11.5px;color:#8a6100;flex:1;min-width:220px">Ay kapanınca çalıştır: bu alacak kalemleri + Sel Ft (borç) + Ödeme (gönderilen) + kesilen fatura (fatura edilen) toplamları <b>yeni tarih sütunu</b> olarak SEL-ARB panosuna yazılır; int@arbor'a mail gider.</div>
+    </div>
+    <div class="msg" id="ay_msg"></div>
+  </div>
+
+  <div class="hint">EUR dışı tutar girilirse kayıt/güncelleme anında güncel kurla €'ya çevrilir. Pano yalnız aylık snapshot anında güncellenir (güncel→önceki kayma).</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null; if(t.indexOf(",")>-1&&t.indexOf(".")>-1){t=t.replace(/\./g,"").replace(",",".");}else{t=t.replace(",",".");} const v=parseFloat(t); return isNaN(v)?null:v; };
+const fmt=v=>v==null?"":Math.round(v).toLocaleString("tr-TR");
+function msg(el,t,ok){ const m=$(el); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
+async function toEur(tutar,pb){
+  if(pb==="EUR") return {tutar_eur:tutar,eur_kur:1,kur_tarihi:null};
+  const {data:kd,error}=await sb.functions.invoke("ahsap-kur",{body:{}});
+  if(error||!kd||!kd.ok||!(kd.rates&&kd.rates[pb]>0)) throw new Error("kur");
+  return {tutar_eur:tutar/kd.rates[pb],eur_kur:kd.rates[pb],kur_tarihi:kd.tarih||null};
+}
+async function load(){
+  const {data,error}=await sb.from("arbor_alacak_kalem").select("*").order("sira",{nullsFirst:false}).order("id");
+  const tb=$("tb");
+  if(error){ tb.innerHTML='<tr><td colspan="5">Hata: '+esc(error.message)+'</td></tr>'; return; }
+  const rows=data||[]; $("cnt").textContent="("+rows.length+")";
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="5">Kalem yok.</td></tr>'; return; }
+  tb.innerHTML=rows.map(r=>`<tr data-id="${r.id}">
+    <td><input class="e_firma" value="${esc(r.firma||"")}"></td>
+    <td><input class="e_proje" value="${esc(r.proje||"")}"></td>
+    <td class="num"><input class="e_tutar num" style="text-align:right" value="${esc(r.tutar==null?"":r.tutar)}"></td>
+    <td><select class="e_pb"><option${(r.para_birimi||"EUR")==="EUR"?" selected":""}>EUR</option><option${r.para_birimi==="TL"?" selected":""}>TL</option><option${r.para_birimi==="USD"?" selected":""}>USD</option></select></td>
+    <td><button class="rowsave">Kaydet</button></td></tr>`).join("");
+  tb.querySelectorAll("tr").forEach(tr=>{
+    const b=tr.querySelector(".rowsave"); if(!b) return;
+    b.onclick=async()=>{
+      const id=tr.getAttribute("data-id");
+      const firma=tr.querySelector(".e_firma").value.trim(), proje=tr.querySelector(".e_proje").value.trim();
+      const tutar=num(tr.querySelector(".e_tutar").value), pb=tr.querySelector(".e_pb").value;
+      if(tutar==null){ msg("u_msg","Tutar gir.",false); return; }
+      b.disabled=true;
+      try{ const k=await toEur(tutar,pb);
+        const {error}=await sb.from("arbor_alacak_kalem").update(Object.assign({firma,proje,tutar,para_birimi:pb,updated_at:new Date().toISOString()},k)).eq("id",id);
+        if(error) msg("u_msg","Hata: "+error.message,false); else msg("u_msg","Güncellendi ("+firma+").",true);
+      }catch(e){ msg("u_msg","Kur alınamadı.",false); }
+      b.disabled=false;
+    };
+  });
+}
+$("n_btn").onclick=async()=>{
+  const firma=$("n_firma").value.trim(), proje=$("n_proje").value.trim(), tutar=num($("n_tutar").value), pb=$("n_pb").value;
+  if(!firma){ msg("n_msg","Firma gir.",false); return; }
+  if(tutar==null||tutar<=0){ msg("n_msg","Tutar gir.",false); return; }
+  $("n_btn").disabled=true;
+  try{ const k=await toEur(tutar,pb);
+    const {error}=await sb.from("arbor_alacak_kalem").insert(Object.assign({firma,proje:proje||"—",tutar,para_birimi:pb},k));
+    if(error) msg("n_msg","Hata: "+error.message,false);
+    else{ msg("n_msg","Kalem eklendi.",true); $("n_firma").value="";$("n_proje").value="";$("n_tutar").value=""; load(); }
+  }catch(e){ msg("n_msg","Kur alınamadı.",false); }
+  $("n_btn").disabled=false;
+};
+$("ay_btn").onclick=async()=>{
+  if(!confirm("AYLIK GÜNCELLEME\n\nGüncel toplamlar SEL-ARB panosuna YENİ TARİH SÜTUNU olarak yazılacak ve int@arbor'a mail gidecek. Ayda bir yapılır. Devam?")) return;
+  $("ay_btn").disabled=true; msg("ay_msg","Snapshot alınıyor…",true);
+  try{ const {data,error}=await sb.functions.invoke("sel-arb-ay-kapat",{body:{}});
+    if(!error&&data&&data.ok){ try{ await sb.from("pano_yayin").upsert({anahtar:"sel_arb",yayin_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"anahtar"}); }catch(e2){} }
+    if(error||!(data&&data.ok)) msg("ay_msg","Hata: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"),false);
+    else msg("ay_msg",data.note||("Snapshot alındı: "+data.tarih),true);
+  }catch(e){ msg("ay_msg","Hata: "+e,false); }
+  $("ay_btn").disabled=false;
+};
+load();
+</script>
+</body>
+</html>
