@@ -898,8 +898,9 @@ function loadFormlar(){
     +`<td><div class="cx">${esc(f.sik)}</div></td>`
     +`<td class="fopen"><a class="btn" href="${esc(f.url)}" target="_blank">Formu aç</a></td></tr>`).join("");
   view.innerHTML=`<style>
-    table.frm{width:auto;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
-    table.frm col.f30{width:30ch}table.frm col.f10{width:10ch}table.frm col.f20{width:20ch}table.frm col.fb{width:1px}
+    /* table-layout:fixed + width:1px → tablo genişliği = colgroup toplamı (width:auto olursa tarayıcı yayar) */
+    table.frm{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
+    table.frm col.f30{width:30ch}table.frm col.f10{width:10ch}table.frm col.f20{width:20ch}table.frm col.fb{width:12ch}
     table.frm th,table.frm td{border-bottom:1px solid #eef1f5;padding:2px 8px;text-align:left;vertical-align:middle;height:22px;line-height:18px}
     table.frm thead th{background:#16324f;color:#fff;font-weight:600;font-size:11px;white-space:nowrap;padding:4px 8px}
     table.frm .cx{overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
@@ -1059,7 +1060,7 @@ async function loadObrapor(){
   if(!iRows.length) ib+=`<tr><td colspan="4" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
   ib+=`</tbody></table></div>`;
   view.innerHTML=`<style>
-    table.obt{width:auto;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
+    table.obt{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
     table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k60{width:60ch}table.obt col.k100{width:100ch}
     table.obt th,table.obt td{border-bottom:1px solid #eef1f5;padding:2px 8px;text-align:left;vertical-align:middle;height:20px;line-height:16px}
     table.obt thead th{background:#16324f;color:#fff;font-weight:600;font-size:11px;white-space:nowrap;padding:4px 8px}
@@ -1293,7 +1294,7 @@ async function loadMkPrim(tgt){
       +`</tr></thead><tbody>${tr||`<tr><td colspan="6" style="color:#8a97a4;padding:10px">Kayıt yok.</td></tr>`}</tbody></table></div>`;
   });
   body.innerHTML=`<style>
-    table.mkp{width:auto;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
+    table.mkp{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
     table.mkp col.w35{width:35ch}table.mkp col.w12{width:12ch}
     table.mkp th,table.mkp td{border-bottom:1px solid #eef1f5;padding:4px 8px;text-align:left;vertical-align:top}
     table.mkp thead th{background:#16324f;color:#fff;font-weight:600;font-size:11px;white-space:nowrap}
