@@ -27,6 +27,11 @@
   .kimbtn.on{background:#8a6100;color:#fff;border-color:#8a6100}
   #yeniwrap{display:none;border:1px dashed #cdb27a;border-radius:8px;padding:10px 12px;margin-bottom:10px;background:#fffdf3}
   #yeniwrap.on{display:block}
+  .salist{max-height:190px;overflow:auto;border:1px solid #cdd6df;border-radius:7px;background:#fff;margin-top:4px}
+  .salist label{display:flex;gap:8px;align-items:flex-start;padding:5px 9px;font-size:12.5px;color:#1c2430;border-bottom:1px solid #f0f3f7;cursor:pointer;font-weight:400}
+  .salist label:hover{background:#fffdf3}
+  .salist input{margin-top:2px;flex:none}
+  .salist .fr{color:#8a97a4;font-size:11px}
 
 html,body{max-width:100vw;overflow-x:hidden}
 table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
@@ -54,8 +59,16 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     </div>
     <div id="yeniwrap">
       <div class="row" style="margin-bottom:6px">
-        <div class="f grow"><label>YENİ ŞANTİYE ADI</label><input id="yeniAd" placeholder="Şantiye adı"></div>
-        <div class="f grow"><label>MÜŞTERİ / FİRMA (opsiyonel)</label><input id="yeniMusteri" placeholder=""></div>
+        <div class="f grow">
+          <label>SEL-ARB KAYDI SEÇ (şantiyeye ait bir veya birkaç proje)</label>
+          <input id="saAra" placeholder="Ara: proje veya firma adı…">
+          <div id="saList" class="salist"><div class="hint" style="margin:4px">Yükleniyor…</div></div>
+          <div id="saSec" class="hint" style="margin:4px 2px 0">Henüz seçim yok.</div>
+        </div>
+      </div>
+      <div class="row" style="margin-bottom:6px">
+        <div class="f grow"><label>ŞANTİYE ADI (seçimden gelir, düzeltilebilir)</label><input id="yeniAd" placeholder="Şantiye adı"></div>
+        <div class="f grow"><label>MÜŞTERİ / FİRMA (seçimden gelir)</label><input id="yeniMusteri" placeholder=""></div>
       </div>
       <div class="row" style="margin-bottom:0">
         <div class="f grow"><label>TIKANMA NEDENİ (opsiyonel)</label><input id="yeniNeden" placeholder=""></div>
@@ -97,10 +110,44 @@ async function loadListe(sel){
     +rows.map(r=>'<option value="'+r.id+'"'+(sel&&sel===r.id?' selected':'')+'>'+esc(r.santiye)+'</option>').join("");
   if(sel){ s.value=String(sel); $("yeniwrap").classList.remove("on"); }
 }
+/* ---- SEL-ARB kayıt listesi: yeni şantiye serbest metinle değil, buradan seçilir ---- */
+let SA=[], SASEL=new Set();
+async function loadSelArbListe(){
+  const {data,error}=await sb.from("sel_arb_liste").select("sira,firma,proje").order("proje");
+  const el=$("saList");
+  if(error){ el.innerHTML='<div class="hint" style="margin:4px">Liste okunamadı: '+esc(error.message)+'</div>'; return; }
+  SA=data||[];
+  renderSaList();
+}
+function renderSaList(){
+  const q=($("saAra").value||"").toLocaleLowerCase("tr").trim();
+  const list=SA.filter(r=>!q||((r.proje||"")+" "+(r.firma||"")).toLocaleLowerCase("tr").includes(q));
+  $("saList").innerHTML = list.length
+    ? list.map(r=>'<label><input type="checkbox" value="'+r.sira+'"'+(SASEL.has(r.sira)?' checked':'')+'><span>'+esc(r.proje)+'<span class="fr"> · '+esc(r.firma)+'</span></span></label>').join("")
+    : '<div class="hint" style="margin:4px">Eşleşen kayıt yok.</div>';
+  $("saList").querySelectorAll("input").forEach(c=>c.onchange=()=>{
+    const s=Number(c.value);
+    if(c.checked) SASEL.add(s); else SASEL.delete(s);
+    syncSaSec();
+  });
+}
+function syncSaSec(){
+  const sel=SA.filter(r=>SASEL.has(r.sira));
+  $("saSec").innerHTML = sel.length
+    ? "Seçilen: "+sel.map(r=>esc(r.proje)).join(" + ")
+    : "Henüz seçim yok.";
+  if(sel.length){
+    if(!$("yeniAd").dataset.touched) $("yeniAd").value=sel[0].proje;
+    $("yeniMusteri").value=sel[0].firma||"";
+  }
+}
+$("saAra").oninput=renderSaList;
+$("yeniAd").oninput=()=>{ $("yeniAd").dataset.touched="1"; };
 async function createSantiye(){
+  if(!SASEL.size){ msg("Şantiyenin SEL-ARB kaydını seç (en az bir proje).",false); return null; }
   const ad=$("yeniAd").value.trim();
-  if(!ad){ msg("Yeni şantiye adı gir.",false); return null; }
-  const rec={ santiye:ad };
+  if(!ad){ msg("Şantiye adı boş olamaz.",false); return null; }
+  const rec={ santiye:ad, sel_arb_sira:[...SASEL] };
   const mus=$("yeniMusteri").value.trim(); if(mus) rec.musteri=mus;
   const ned=$("yeniNeden").value.trim(); if(ned) rec.neden=ned;
   const ins=await sb.from("santiye").insert(rec);
@@ -122,6 +169,9 @@ $("save").onclick=async()=>{
   if(error){ msg("Durum kaydı hatası: "+error.message,false); return; }
   msg((isNew?"Yeni şantiye + durum eklendi":"Durum eklendi")+" ("+(KIM==="OB"?"ÖB":"MK")+" · "+tarih+").",true);
   $("durum").value=""; $("yeniAd").value=""; $("yeniMusteri").value=""; $("yeniNeden").value="";
+  $("yeniAd").dataset.touched=""; SASEL.clear(); renderSaList(); syncSaSec();
+  /* Panodaki "Durum" sütunu için önceki→son değişim özetini üret (sessiz; hata kullanıcıyı engellemez) */
+  try{ await sb.functions.invoke("santiye-degisim-ozet",{ body:{ santiye_id:parseInt(sid) } }); }catch(e){}
   await loadListe(isNew?parseInt(sid):null);
   loadAkis();
 };
@@ -145,6 +195,7 @@ async function loadAkis(){
     +'</tbody></table>';
 }
 loadListe();
+loadSelArbListe();
 loadAkis();
 </script>
 </body>
