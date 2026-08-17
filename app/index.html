@@ -266,10 +266,9 @@ function fitHeads(){
 /* ---------- ANA GÜNDEM (blok = kod_prefix; İlgili = kişi; kapat = sil) ---------- */
 async function loadGundem(){
   const view=document.getElementById("view");
-  const [g,ar,ft]=await Promise.all([
+  const [g,ar]=await Promise.all([
     sb.from("ana_gundem").select("*"),
-    sb.from("gundem_arge").select("*"),
-    sb.from("form_takip").select("*").order("sira")
+    sb.from("gundem_arge").select("*")
   ]);
   const err=g.error||ar.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
@@ -313,44 +312,13 @@ async function loadGundem(){
     const title=(tip==='pem'?'PEM-':'PRJ-')+rowsX.length;
     return `<h3 class="sec">${title}</h3><div class="scroll gblk"><table><thead><tr><th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>Durum</th><th>${dateHd}</th><th>Konu</th><th></th></tr></thead><tbody>${body}</tbody></table></div>`;
   };
-  // ---- Formlar takip bloğu (form_takip) ----
-  const ftRows=(ft&&ft.data)||[];
-  const ftBy={}; ftRows.forEach(r=>ftBy[r.form_key]=r);
-  const today=new Date(); today.setHours(0,0,0,0);
-  const dParse=s=>{ if(!s) return null; const p=String(s).slice(0,10).split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
-  const addPeriod=(d,sik)=>{ const x=new Date(d); if(/ay/i.test(sik)){ x.setMonth(x.getMonth()+1); } else { x.setDate(x.getDate()+7); } return x; };
-  const gecikenGun=r=>{
-    let ref=dParse(r.son_guncelleme);
-    if(!ref && r.form_key==="santiye_mk"){ const ob=ftBy["santiye_ob"]; ref=ob?dParse(ob.son_guncelleme):null; } // MK saati ÖB bastıktan sonra başlar
-    if(!ref) ref=new Date(today);                                    // hiç basılmadıysa referans = bugün
-    const bit=addPeriod(ref,r.gunc_sikligi||"");
-    const gun=Math.floor((today-bit)/86400000);
-    return gun>0?gun:0;
-  };
-  const formlarBlock=(()=>{
-    if(!ftRows.length) return "";
-    const body=ftRows.map(r=>{
-      const g=gecikenGun(r);
-      const sayac=(r.mail_sayac||0)+1;
-      const gc=g>0?`<b style="color:#b40000">${g}</b>`:`<span style="color:#7a8896">0</span>`;
-      return `<tr data-fk="${esc(r.form_key)}">`
-        +`<td class="c c20"><span title="${esc(r.form_adi)}">${esc(r.form_adi)}</span></td>`
-        +`<td class="c c25"><span title="${esc(r.gunc_sikligi)}">${esc(r.gunc_sikligi)}</span></td>`
-        +`<td class="c c12" style="text-align:right"><span>${gc}</span></td>`
-        +`<td style="white-space:nowrap"><button class="fmail" data-fk="${esc(r.form_key)}" title="${esc(r.ilgili_ad)} · ${esc(r.ilgili_email)} (cc: int@arbor.com.tr)">${sayac}. mail gönder</button>`
-        +` <button class="freset" data-fk="${esc(r.form_key)}" title="Güncellendi olarak işaretle (geciken sıfırlanır, mail sayacı sıfırlanır)">✓</button></td></tr>`;
-    }).join("");
-    return `<h3 class="sec">Formlar · ${ftRows.length}</h3>`
-      +`<div class="scroll gblk"><table><thead><tr><th>Form</th><th>Güncelleme Sıklığı</th><th>Geciken (Gün)</th><th>Mail</th></tr></thead><tbody>${body}</tbody></table></div>`;
-  })();
   const persons=[...new Set(["MB","EA","OE","CTP","EU"].concat(keys.filter(k=>k!=='ARGE')))];
   const ilgSel=persons.map(k=>`<option value="${esc(k)}"${k==='MB'?' selected':''}>${esc(k)}</option>`).join("")+`<option value="PEM">PEM (takip)</option><option value="PRJ">PRJ (takip)</option><option value="__new__">Diğer…</option>`;
   const restKeys=keys.filter(k=>k!=='MB');
   view.innerHTML=`
     <style>.gblk table{font-size:11.5px}.gblk th,.gblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.gblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.gblk .c>span::-webkit-scrollbar{display:none}.c3>span{max-width:3ch}.c5>span{max-width:5ch}.c8>span{max-width:8ch}.c10>span{max-width:10ch}.c12>span{max-width:12ch}.c15>span{max-width:15ch}.c20>span{max-width:20ch}.c25>span{max-width:25ch}
     .ag-wrap .scroll{max-height:none;overflow-y:visible;overflow-x:auto;border:0;background:transparent;border-radius:0;margin:0 0 12px}
-    .gblk button.fmail{font-size:11px;padding:3px 9px;border:1px solid #8a6100;background:#fff7e6;color:#7a5400;border-radius:6px;cursor:pointer}.gblk button.fmail:hover{background:#8a6100;color:#fff}
-    .gblk button.freset{font-size:11px;padding:3px 7px;border:1px solid #cdd6df;background:#fff;color:#2e7d54;border-radius:6px;cursor:pointer}.gblk button.freset:hover{background:#2e7d54;color:#fff;border-color:#2e7d54}</style>
+    .gblk button.fmail{display:none}</style>
     <div class="addbar">
       <select id="ag-ilgili" title="İlgili">${ilgSel}</select>
       <input id="ag-kod" placeholder="Kod" style="display:none;max-width:120px">
@@ -362,11 +330,8 @@ async function loadGundem(){
     ${pemPrjBlock(pemRows,'pem')}
     ${pemPrjBlock(prjRows,'prj')}
     ${grpTable(restKeys)}
-    ${formlarBlock}
     </div>`;
   view.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
-  view.querySelectorAll(".fmail").forEach(b=>b.onclick=()=>formMail(b.dataset.fk,b));
-  view.querySelectorAll(".freset").forEach(b=>b.onclick=()=>formReset(b.dataset.fk));
   const selEl=document.getElementById("ag-ilgili"), kodInp=document.getElementById("ag-kod");
   const syncKod=()=>{ const v=selEl.value, on=(v==='PEM'||v==='PRJ'); kodInp.style.display=on?'':'none'; kodInp.placeholder=v==='PEM'?'Kod (son 5)':(v==='PRJ'?'Kod (son 8)':'Kod'); };
   selEl.onchange=syncKod; syncKod();
@@ -405,14 +370,14 @@ async function formMail(fk,btn){
   const {data,error}=await sb.functions.invoke("form-hatirlat-mail",{ body:{ form_key:fk } });
   if(btn){ btn.disabled=false; btn.textContent=t; }
   if(error||(data&&data.error)){ alert("Mail gönderilemedi: "+(error?error.message:data.error)); return; }
-  loadGundem();
+  loadFormlar();
 }
 async function formReset(fk){
   if(!confirm("Bu form güncellendi olarak işaretlensin mi? (geciken + mail sayacı sıfırlanır)")) return;
   const bugun=new Date().toISOString().slice(0,10);
   const {error}=await sb.from("form_takip").update({ son_guncelleme:bugun, mail_sayac:0 }).eq("form_key",fk);
   if(error){ alert(error.message); return; }
-  loadGundem();
+  loadFormlar();
 }
 async function delGundem(id){
   if(!confirm("Bu gündem maddesi kalıcı olarak silinsin mi? (kapat = sil)")) return;
@@ -911,9 +876,10 @@ function loadProsedur(){
   });
 }
 
-function loadFormlar(){
+async function loadFormlar(){
   const view=document.getElementById("view");
-  /* Her form = bir satır. Sütunlar: Form(30) · Kullanıcı(10) · Güncelleme(20) · Formu Aç */
+  /* Her form = bir satır. Sütunlar: Form(30) · Kullanıcı(10) · Güncelleme(20) · Geciken(8) · Mail · Formu Aç
+     Geciken/Mail sütunları eski Ana Gündem "Formlar" bloğundan buraya taşındı (form_takip). */
   const forms=[
     {ad:"SÖ Gündem",           who:"Enes Artan",        url:"ea/",          sik:"Her Salı"},
     {ad:"Hazır PEM-PRJ Sevk",  who:"Onur Ekinci",       url:"onur/",        sik:"Her ayın ilk iş günü"},
@@ -928,15 +894,43 @@ function loadFormlar(){
     {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
-  const body=forms.map(f=>`<tr>`
-    +`<td class="sb"><div class="cx">${esc(f.ad)}</div></td>`
-    +`<td><div class="cx">${esc(f.who)}</div></td>`
-    +`<td><div class="cx">${esc(f.sik)}</div></td>`
-    +`<td class="fopen"><a class="btn" href="${esc(f.url)}" target="_blank">Formu aç</a></td></tr>`).join("");
+  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap","selft/":"sel_ft"};
+  const ft=await sb.from("form_takip").select("*");
+  const ftBy={}; ((ft&&!ft.error)?(ft.data||[]):[]).forEach(r=>ftBy[r.form_key]=r);
+  const today=new Date(); today.setHours(0,0,0,0);
+  const dParse=s=>{ if(!s) return null; const p=String(s).slice(0,10).split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
+  const addPeriod=(d,sik)=>{ const x=new Date(d); if(/ay/i.test(sik)){ x.setMonth(x.getMonth()+1); } else { x.setDate(x.getDate()+7); } return x; };
+  const gecikenGun=r=>{
+    let ref=dParse(r.son_guncelleme); if(!ref) ref=new Date(today);
+    const gun=Math.floor((today-addPeriod(ref,r.gunc_sikligi||""))/86400000);
+    return gun>0?gun:0;
+  };
+  const body=forms.map(f=>{
+    const r=ftBy[FK[f.url]];
+    const sik=r?(r.gunc_sikligi||f.sik):f.sik;
+    const g=r?gecikenGun(r):null;
+    const gc=g==null?'<span class="muted">—</span>':(g>0?`<b style="color:#b40000">${g}</b>`:`<span style="color:#7a8896">0</span>`);
+    const mail=r?`<button class="fmail" data-fk="${esc(r.form_key)}" title="${esc(r.ilgili_ad)} · ${esc(r.ilgili_email)} (cc: int@arbor.com.tr)">${(r.mail_sayac||0)+1}. mail</button>`
+                 +` <button class="freset" data-fk="${esc(r.form_key)}" title="Güncellendi olarak işaretle (geciken + mail sayacı sıfırlanır)">✓</button>`
+               :'<span class="muted">—</span>';
+    return `<tr>`
+      +`<td class="sb"><div class="cx">${esc(f.ad)}</div></td>`
+      +`<td><div class="cx">${esc(f.who)}</div></td>`
+      +`<td><div class="cx">${esc(sik)}</div></td>`
+      +`<td class="num"><div class="cx">${gc}</div></td>`
+      +`<td class="fmailc">${mail}</td>`
+      +`<td class="fopen"><a class="btn" href="${esc(f.url)}" target="_blank">Formu aç</a></td></tr>`;
+  }).join("");
   view.innerHTML=`<style>
     /* table-layout:fixed + width:1px → tablo genişliği = colgroup toplamı (width:auto olursa tarayıcı yayar) */
     table.frm{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
-    table.frm col.f30{width:30ch}table.frm col.f10{width:10ch}table.frm col.f20{width:20ch}table.frm col.fb{width:12ch}
+    table.frm col.f30{width:30ch}table.frm col.f10{width:10ch}table.frm col.f20{width:20ch}table.frm col.f8{width:8ch}table.frm col.fm{width:19ch}table.frm col.fb{width:12ch}
+    table.frm td.num,table.frm th.num{text-align:right}
+    table.frm td.fmailc{white-space:nowrap;padding:2px 8px}
+    table.frm button.fmail{font-size:11px;padding:1px 7px;border:1px solid #8a6100;background:#fff7e6;color:#7a5400;border-radius:5px;cursor:pointer}
+    table.frm button.fmail:hover{background:#8a6100;color:#fff}
+    table.frm button.freset{font-size:11px;padding:1px 6px;border:1px solid #cdd6df;background:#fff;color:#2e7d54;border-radius:5px;cursor:pointer}
+    table.frm button.freset:hover{background:#2e7d54;color:#fff;border-color:#2e7d54}
     table.frm th,table.frm td{border-bottom:1px solid #eef1f5;padding:2px 8px;text-align:left;vertical-align:middle;height:22px;line-height:18px}
     table.frm thead th{background:#16324f;color:#fff;font-weight:600;font-size:11px;white-space:nowrap;padding:4px 8px}
     table.frm .cx{overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
@@ -946,9 +940,11 @@ function loadFormlar(){
     table.frm td.fopen .btn{display:inline-block;text-decoration:none;padding:3px 10px;font-size:11.5px;border-radius:6px}
   </style>
   <div class="scroll"><table class="frm">
-  <colgroup><col class="f30"><col class="f10"><col class="f20"><col class="fb"></colgroup>
-  <thead><tr><th>Form</th><th>Kullanıcı</th><th>Güncelleme</th><th></th></tr></thead>
+  <colgroup><col class="f30"><col class="f10"><col class="f20"><col class="f8"><col class="fm"><col class="fb"></colgroup>
+  <thead><tr><th>Form</th><th>Kullanıcı</th><th>Güncelleme</th><th class="num">Geciken (Gün)</th><th>Mail</th><th></th></tr></thead>
   <tbody>${body}</tbody></table></div>`;
+  view.querySelectorAll(".fmail").forEach(b=>b.onclick=()=>formMail(b.dataset.fk,b));
+  view.querySelectorAll(".freset").forEach(b=>b.onclick=()=>formReset(b.dataset.fk));
 }
 /* ---------- Ortak: tek pano_ozel bölümünü hedef elemana render et (bölüm-RLS; anon 401) ---------- */
 /* ---------- AHŞAP — Timber 72x86: ahsap_alim'den derlenir (ağaç+tedarikçi, CBM ağırlıklı € ort). Bölüm-RLS; anon 401. ---------- */
