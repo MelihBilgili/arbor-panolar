@@ -66,6 +66,32 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <button class="btn sec" id="clear">Temizle</button>
     <span class="msg" id="msg"></span>
   </div>
+
+  <div class="blk b2" style="margin-top:18px">
+    <h2>Tıkanmış Şantiyeler — Durum Girişi (MK)</h2>
+    <div style="padding:12px 14px">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div style="flex:1;min-width:220px">
+          <div style="font-size:11px;color:#0a6b57;font-weight:700;margin-bottom:3px">ŞANTİYE</div>
+          <select id="s_sec" class="cell"><option value="">Yükleniyor…</option></select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#0a6b57;font-weight:700;margin-bottom:3px">TARİH</div>
+          <input id="s_tarih" type="date" class="cell" style="width:160px">
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <div style="font-size:11px;color:#0a6b57;font-weight:700;margin-bottom:3px">DURUM / GELİŞME</div>
+        <textarea id="s_durum" class="cell" style="min-height:60px" placeholder="Bu tarihteki durum / gelişme…"></textarea>
+      </div>
+      <div style="margin-top:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button class="btn" id="s_btn">Durumu ekle</button>
+        <span class="msg" id="s_msg" style="font-size:12.5px;font-weight:600"></span>
+      </div>
+      <div class="hint" style="margin:10px 2px 0">Yeni tıkanmış şantiyeyi <b>ÖB</b> ekler (ÖB Faaliyet formu); buradan mevcut şantiyelere MK durumu girilir. Melih'in <b>Mali → MK Faaliyet</b> panosuna yansır.</div>
+      <div id="s_akis" style="margin-top:10px"></div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -189,6 +215,44 @@ document.getElementById("ayBtn").onclick=async()=>{
   }catch(e){ note=" (mail gönderilemedi)"; }
   btn.disabled=false; m.className="msg ok"; m.textContent="✓ "+DONEM+" ayı işaretlendi."+note;
 };
+/* ===== Tıkanmış Şantiyeler — MK durum girişi (santiye_durum_log, kim='MK') ===== */
+function sMsg(t,ok){ const m=document.getElementById("s_msg"); m.className="msg "+(ok?"ok":"err"); m.style.color=ok?"#2e7d54":"#b40000"; m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3000); }
+const sDk=t=>t?String(t).slice(8,10)+"."+String(t).slice(5,7)+"."+String(t).slice(2,4):"";
+async function sLoadListe(sel){
+  const {data,error}=await sb.from("santiye_liste").select("*").order("santiye");
+  const s=document.getElementById("s_sec");
+  if(error){ s.innerHTML='<option value="">Hata: '+esc(error.message)+'</option>'; return; }
+  s.innerHTML='<option value="">— şantiye seç —</option>'+(data||[]).map(r=>'<option value="'+r.id+'"'+(sel===r.id?' selected':'')+'>'+esc(r.santiye)+'</option>').join("");
+}
+async function sLoadAkis(){
+  const {data,error}=await sb.from("santiye_durum_akis").select("*").order("tarih",{ascending:false}).order("id",{ascending:false});
+  const el=document.getElementById("s_akis");
+  if(error){ el.innerHTML='<div class="hint">Akış okunamadı.</div>'; return; }
+  const rows=(data||[]).slice(0,20);
+  if(!rows.length){ el.innerHTML='<div class="hint">Henüz durum kaydı yok.</div>'; return; }
+  el.innerHTML='<div class="tblwrap"><table style="min-width:0"><thead><tr><th>Şantiye</th><th>Kim</th><th>Tarih</th><th>Durum / Gelişme</th></tr></thead><tbody>'
+    +rows.map(r=>'<tr><td style="white-space:nowrap">'+esc(r.santiye)+'</td><td>'+(r.kim==="OB"?"ÖB":"MK")+'</td><td style="white-space:nowrap">'+sDk(r.tarih)+'</td><td>'+esc(r.durum)+'</td></tr>').join("")
+    +'</tbody></table></div>';
+}
+document.getElementById("s_tarih").value=new Date().toISOString().slice(0,10);
+document.getElementById("s_btn").onclick=async()=>{
+  const sid=document.getElementById("s_sec").value;
+  const durum=document.getElementById("s_durum").value.trim();
+  const tarih=document.getElementById("s_tarih").value;
+  if(!sid){ sMsg("Şantiye seç.",false); return; }
+  if(!durum){ sMsg("Durum metni gir.",false); return; }
+  if(!tarih){ sMsg("Tarih gir.",false); return; }
+  const btn=document.getElementById("s_btn"); btn.disabled=true;
+  const {error}=await sb.from("santiye_durum_log").insert({santiye_id:parseInt(sid),kim:"MK",durum,tarih});
+  btn.disabled=false;
+  if(error){ sMsg("Hata: "+error.message,false); return; }
+  sMsg("Durum eklendi (MK · "+tarih+").",true);
+  document.getElementById("s_durum").value="";
+  try{ await sb.functions.invoke("santiye-degisim-ozet",{body:{santiye_id:parseInt(sid)}}); }catch(e){}
+  sLoadAkis();
+};
+sLoadListe(); sLoadAkis();
+
 BLOCKS.forEach(b=>DATA[b.tur].push(blankRow(b)));
 render();
 </script>
