@@ -876,24 +876,42 @@ function loadProsedur(){
 
 function loadFormlar(){
   const view=document.getElementById("view");
+  /* Her form = bir satır. Sütunlar: Form(30) · Kullanıcı(10) · Güncelleme(20) · Formu Aç */
   const forms=[
-    {ad:"EA — SÖ Haftalık Gündem Formu", who:"Enes Artan · Kalite", url:"ea/", desc:"Hafta bölümünü seçer, sorun ve önerileri 'gündeme alındı'ya çevirir. Yazar: so_ea_form."},
-    {ad:"Onur — Sevk Durumu Formu", who:"Onur Ekinci · Sevkiyat", url:"onur/", desc:"Hazır PEM/PRJ kalemlerinin güncel sevk durumunu girer. Yazar: sevk_durumu_onur."},
-    {ad:"ÖB Rapor Formu", who:"Özgül Bedestenci · Yurtdışı Finans", url:"ob-rapor/", desc:"Takipteki işleri (Konu · Durum · ÖB Notları) günceller; Haftalık Güncelleme'de Tamamlandı/İptal oldu işler soluk ize döner. Yazar: ob_isler; ÖB Rapor panosuna salt-okur yansır."},
-    {ad:"MK — Faaliyet & Prim Formu", who:"Mehmet Konak", url:"mk-prim/", desc:"Dört blok (Memnuniyet · TS Ekstra · FR Satış · Diğer Satış) faaliyet girişi; prim kontrat/tutar alanlarından otomatik hesaplanır. Yazar: mk_faaliyet; Mali → MK Prim panosuna salt-okur yansır (toplam FR dahil 4 kriter)."},
-    {ad:"Yurt Dışı 1 Satış Formu", who:"Fatma · Satış (Fransa/ihracat)", url:"fy/", desc:"Yurtdışı muhtemel/alınan projeleri (proje, müşteri, statü, ülke, net €, durum) + takipteki teklifler girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır. Paylaşılan xlsx yerine geçer."},
-    {ad:"Yurt Dışı 2 Satış Formu", who:"Yurt Dışı 2 ekibi · ayrı form", url:"fy2/", desc:"Yurt Dışı 1 ile birebir aynı format, TAMAMEN AYRI veri (satis_yorum_2 / satis_takip_2 / satis_takip_sonuc_2). Ayrı kişilerce doldurulur; form 1 verisiyle karışmaz. Satış panosundaki 'Yurt Dışı 2' bloğuna yansır."},
-    {ad:"Ahşap Maliyet Formu", who:"Satınalma · ahşap alımları", url:"ahsap/", desc:"Siparişi verilmiş ahşap alımları (ürün 72x86, tedarikçi, CBM, fiyat, para birimi, giriş kuru) işlenir; giriş kuruyla €'ya çevrilir. Ahşap (Timber 72x86) panosuna ağaç+tedarikçi kırılımı ağırlıklı € ortalama olarak yansır. Aylık güncelleme ile güncel→önceki kayar."},
-    {ad:"Sel Ft - Ödeme Formu", who:"Selectron–Arbor SAS mutabakat", url:"selft/", desc:"Üç bölüm: (1) Sel Ft = Selectron'un Arbor SAS'a kestiği ihracat faturaları → 'Selectron'a Borç'; (2) Ödeme = Arbor SAS→Selectron ödemeleri (BNP/CA) → 'Selectron'a gönderilen'; (3) Arbor SAS→Selectron kesilen fatura → 'Selectron'a Fatura Edilen'. EUR dışı otomatik kur. AYLIK GÜNCELLEME → SEL-ARB'a yeni tarih sütunu + mail."},
-    {ad:"Arbor SAS Alacak € Formu", who:"Selectron mutabakat · alacak", url:"arbolacak/", desc:"Firma/proje bazlı güncel alacak kalemleri: yeni ekle veya mevcut güncelle (tutar, para birimi; EUR dışı otomatik kur). SEL-ARB panosunun 'Toplam güncel alacak' ve firma×tarih matrisini besler. AYLIK GÜNCELLEME → yeni tarih sütunu snapshot + mail."},
-    {ad:"Yurtiçi Satış Formu", who:"Sinan · Satış (Yurtiçi)", url:"so/", desc:"Yurtiçi muhtemel/alınan projeleri (proje, müşteri, statü, net €) girer. 'Kaydet ve Yayınla' → satis_yorum'a yeni çekim; Satış panosuna anında yansır."},
-    {ad:"Cam Kombinasyonu Fiyatlandırma", who:"Fiyat aracı · paylaşılabilir", url:"cam/", desc:"Cam parametrelerini (dış/iç cam, kaplama, akustik, temper, form, ara boşluk, Fire Proof…) seç → €/m² fiyat. Geçmiş teklif eşleşmesi + çarpımsal model. Bağlantı çalışanlarla paylaşılabilir."},
-    {ad:"Teklif & Fiyatlandırma Kuralları", who:"Teklif personeli referansı", url:"teklif/", desc:"Net/brüt teklif + montaj hesaplayıcıları, genel şartlar (ihracat oranı, min. adet), oranlar, termin, garanti, müşteri sınıf listeleri. Fiyatlandırma Kuralları 260505.xlsx'ten."},
-    {ad:"Tıkanan Şantiyeler — Durum Formu", who:"ÖB + MK · Şantiye durum", url:"santiye-log/", desc:"Tıkanan şantiyelere tarihli durum girişi (ÖB ve MK tek formdan). Yazar: santiye_durum_log; Mali → Şantiye panosuna tarihli akış olarak salt-okur yansır. Yeni tıkanmış şantiye owner tarafından eklenir."}
+    {ad:"SÖ Gündem",           who:"Enes Artan",        url:"ea/",          sik:"Her Salı"},
+    {ad:"Hazır PEM-PRJ Sevk",  who:"Onur Ekinci",       url:"onur/",        sik:"Her ayın ilk iş günü"},
+    {ad:"ÖB Rapor",            who:"Özgül Bedestenci",  url:"ob-rapor/",    sik:"Her ayın ilk iş günü"},
+    {ad:"MK Faaliyet",         who:"Mehmet Konak",      url:"mk-prim/",     sik:"Her ayın ilk iş günü"},
+    {ad:"Tıkanmış Şantiyeler", who:"ÖB + MK",           url:"santiye-log/", sik:"Her ayın ilk iş günü"},
+    {ad:"Yurtiçi Satış",       who:"Sinan Oran",        url:"so/",          sik:"Her ayın ilk iş günü"},
+    {ad:"Yurt Dışı 1 Satış",   who:"Mustafa Nas",       url:"fy/",          sik:"Her ayın ilk iş günü"},
+    {ad:"Yurt Dışı 2 Satış",   who:"Melike Başaran",    url:"fy2/",         sik:"Her ayın ilk iş günü"},
+    {ad:"Ahşap Maliyet",       who:"Umut Aktaş",        url:"ahsap/",       sik:"Her ayın ilk iş günü"},
+    {ad:"Sel Ft - Ödeme",      who:"Onur Ekinci",       url:"selft/",       sik:"Her ayın ilk iş günü"},
+    {ad:"Yurt Dışı Alacak",    who:"Onur Ekinci",       url:"arbolacak/",   sik:"Her ayın ilk iş günü"},
+    {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
+    {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
-  const SIK={"ea/":"Her Salı","onur/":"Her ayın ilk iş günü","ob-rapor/":"Her ayın ilk iş günü","mk-prim/":"Her ayın ilk iş günü","fy/":"Her ayın ilk iş günü","fy2/":"Her ayın ilk iş günü","ahsap/":"Her ayın ilk iş günü","selft/":"Her ayın ilk iş günü","arbolacak/":"Her ayın ilk iş günü","so/":"Her ayın ilk iş günü","cam/":"Süresiz","teklif/":"Süresiz","santiye-log/":"Her ayın ilk iş günü"};
-  const cards=forms.map(f=>{ const full=new URL(f.url, location.href).href; const sik=SIK[f.url]||"—"; return `<div class="flow"><b>${esc(f.ad)}</b> <span class="tag">${esc(f.who)}</span> <span class="tag" style="background:#eef3ee;color:#2e7d54">Güncelleme: ${esc(sik)}</span><p>${esc(f.desc)}</p><p><a class="btn" style="text-decoration:none;display:inline-block" href="${esc(f.url)}" target="_blank">Formu aç</a> &nbsp;<span class="muted">${esc(full)}</span></p></div>`; }).join("");
-  view.innerHTML=cards;
+  const body=forms.map(f=>`<tr>`
+    +`<td class="sb"><div class="cx">${esc(f.ad)}</div></td>`
+    +`<td><div class="cx">${esc(f.who)}</div></td>`
+    +`<td><div class="cx">${esc(f.sik)}</div></td>`
+    +`<td class="fopen"><a class="btn" href="${esc(f.url)}" target="_blank">Formu aç</a></td></tr>`).join("");
+  view.innerHTML=`<style>
+    table.frm{width:auto;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
+    table.frm col.f30{width:30ch}table.frm col.f10{width:10ch}table.frm col.f20{width:20ch}table.frm col.fb{width:1px}
+    table.frm th,table.frm td{border-bottom:1px solid #eef1f5;padding:2px 8px;text-align:left;vertical-align:middle;height:22px;line-height:18px}
+    table.frm thead th{background:#16324f;color:#fff;font-weight:600;font-size:11px;white-space:nowrap;padding:4px 8px}
+    table.frm .cx{overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
+    table.frm .cx::-webkit-scrollbar{display:none}
+    table.frm td.sb .cx{font-weight:700;color:#16324f}
+    table.frm td.fopen{white-space:nowrap;width:1%;padding:2px 8px}
+    table.frm td.fopen .btn{display:inline-block;text-decoration:none;padding:3px 10px;font-size:11.5px;border-radius:6px}
+  </style>
+  <div class="scroll"><table class="frm">
+  <colgroup><col class="f30"><col class="f10"><col class="f20"><col class="fb"></colgroup>
+  <thead><tr><th>Form</th><th>Kullanıcı</th><th>Güncelleme</th><th></th></tr></thead>
+  <tbody>${body}</tbody></table></div>`;
 }
 /* ---------- Ortak: tek pano_ozel bölümünü hedef elemana render et (bölüm-RLS; anon 401) ---------- */
 /* ---------- AHŞAP — Timber 72x86: ahsap_alim'den derlenir (ağaç+tedarikçi, CBM ağırlıklı € ort). Bölüm-RLS; anon 401. ---------- */
