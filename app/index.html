@@ -238,19 +238,21 @@ function fitHeads(){
     const th0=tbl.tHead, body=tbl.tBodies[0];
     if(!th0||!th0.rows.length||!body||!body.rows.length) return;
     const hr=th0.rows[th0.rows.length-1], n=hr.cells.length;
-    const inner=el=>{ const c=el.firstElementChild; return c?c.scrollWidth:0; };
-    const pad=el=>{ const cs=getComputedStyle(el); return parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight); };
+    /* Range ile GERÇEK metin genişliği — scrollWidth yerleşmiş sütun genişliğini verdiği için dairesel olur */
+    const rw=el=>{ const r=document.createRange(); r.selectNodeContents(el); return r.getBoundingClientRect().width; };
     const colMax=new Array(n).fill(0);
     for(const row of body.rows){
       if(row.cells.length!==n) continue;              /* grup / colspan satırları hariç */
-      for(let i=0;i<n;i++){ const c=row.cells[i]; const w=Math.max(inner(c), c.scrollWidth-pad(c)); if(w>colMax[i]) colMax[i]=w; }
+      for(let i=0;i<n;i++){ const c=row.cells[i], ch=c.firstElementChild;
+        const w=ch?ch.getBoundingClientRect().width:rw(c);
+        if(w>colMax[i]) colMax[i]=w; }
     }
     for(let i=0;i<n;i++){
       const th=hr.cells[i];
       if(!th||th.colSpan>1||th.rowSpan>1||!th.textContent.trim()||!colMax[i]) continue;
-      if(th.scrollWidth-pad(th) <= colMax[i]+2) continue;      /* başlık zaten dar */
+      if(rw(th)<=colMax[i]+2) continue;                        /* başlık zaten dar */
       th.classList.add("thsm");
-      if(th.scrollWidth-pad(th) > colMax[i]+2) th.innerHTML='<span class="thw">'+th.innerHTML+'</span>';
+      if(rw(th)>colMax[i]+2) th.innerHTML='<span class="thw">'+th.innerHTML+'</span>';
     }
   });
 }
@@ -1228,7 +1230,7 @@ async function loadMali(){
   if(b==="bilanco"){ loadBilanco("mali-body"); return; }
   if(b==="icmal"){ loadIcmal("mali-body"); return; }
   /* MK Faaliyet = MK prim blokları + Tıkanmış Şantiyeler (eski ayrı Şantiye sekmesi buraya taşındı) */
-  if(b==="mali_mkprim"){ document.getElementById("mali-body").innerHTML=`<div id="mkp-a"></div><h2 class="secH">Tıkanmış Şantiyeler</h2><div id="mkp-b"></div>`; loadMkPrim("mkp-a"); loadSantiye("mkp-b"); return; }
+  if(b==="mali_mkprim"){ document.getElementById("mali-body").innerHTML=`<div id="mkp-a"></div><div id="mkp-b"></div>`; loadMkPrim("mkp-a"); loadSantiye("mkp-b"); return; }
   if(b==="mali_maasprim"){ loadOzelHtml("mali_maasprim","mali-body"); return; } /* Maaş-Prim: tam sadakat ham-HTML (pano_ozel_html, bölüm-RLS) */
   if(b==="ahsap"){ loadAhsap("mali-body"); return; }
   if(b==="fiyat"){ loadFiyat("mali-body"); return; } /* Fiyatlandırma: kaynak veri + editör (fiyat_* tablolar, anon) */
@@ -1381,24 +1383,22 @@ async function loadSantiye(tgt){
   const toplam=rows.reduce((a,r)=>a+(alacakOf(r).tutar||0),0);
   const body=rows.map(r=>{
     const a=ay(r.ilk_kayit), logs=logByS[r.id]||[], last=logs[0], al=alacakOf(r);
-    const dur=last
-      ? `<div><span class="sbdg ${last.kim==='OB'?'snew':'chg'}">${last.kim==='OB'?'ÖB':'MK'}</span> <span style="color:#8a97a4;font-size:11px">${fdate(last.tarih)}</span> ${esc(last.durum)}</div>`
-        +(r.degisim_ozet?`<div style="color:#8a6100;font-size:11px;font-style:italic;margin-top:2px">Δ ${esc(r.degisim_ozet)}</div>`:"")
-      : `<span class="muted">Henüz durum girişi yok.</span>`;
+    const durTxt=last?(esc(last.durum)+(r.degisim_ozet?` <span style="color:#8a6100;font-style:italic">· Δ ${esc(r.degisim_ozet)}</span>`:"")):`<span class="muted">Henüz durum girişi yok.</span>`;
+    const dur=`<div class="cx">${durTxt}</div>`;
     return `<tr>`
       +`<td class="sb"><span title="${esc(r.neden||'')}">${esc(r.santiye)}</span>${a>=3?' <span class="sbdg none">'+a+' ay</span>':''}</td>`
       +`<td class="c t20"><span title="${esc(r.musteri||'')}">${esc(r.musteri||'')}</span></td>`
       +`<td class="num"${al.det?` title="${esc(al.det)}"`:''}>${al.tutar==null?'':money(al.tutar)}</td>`
       +`<td class="tdur">${dur}</td></tr>`;
   }).join("");
-  view.innerHTML=`<div class="stamp">${rows.length} açık · ÖB ${sonBasim("OB")} · MK ${sonBasim("MK")}</div>
-    <div class="hint">Durum girişleri <b>ÖB Faaliyet</b> ve <b>MK Faaliyet</b> formlarından gelir; yeni tıkanmış şantiyeyi ÖB ekler. Alacak = SEL-ARB'da o şantiyeye bağlanan kayıtların ${saMax?dOnly(saMax):'—'} tarihli toplamı.</div>
+  view.innerHTML=`<h2 class="secH">Tıkanmış Şantiyeler <span class="muted" style="font-weight:400">· ${rows.length} açık · ÖB ${sonBasim("OB")} · MK ${sonBasim("MK")}</span></h2>
     <style>table.stik{width:auto}
       table.stik td.sb{white-space:nowrap;font-weight:700}
       table.stik .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}
       table.stik .c>span::-webkit-scrollbar{display:none}
       table.stik td.t20>span{width:20ch}
-      table.stik th.tdur,table.stik td.tdur{white-space:normal;min-width:38ch;max-width:70ch}</style>
+      table.stik td.tdur>.cx{display:block;width:70ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+      table.stik td.tdur>.cx::-webkit-scrollbar{display:none}</style>
     <div class="scroll"><table class="stbl stik">
     <thead><tr><th>ŞANTİYE</th><th>MÜŞTERİ</th><th class="num">ARBOR SAS ALACAK €</th><th class="tdur">DURUM</th></tr></thead>
     <tbody>${body}<tr class="itot"><td>Toplam · ${rows.length} açık</td><td></td><td class="num">${money(toplam)}</td><td></td></tr></tbody>
