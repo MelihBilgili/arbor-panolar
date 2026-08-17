@@ -7,25 +7,25 @@
 <style>
   :root{color-scheme:light}
   *{box-sizing:border-box}
-  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
   header{background:#8a6100;color:#fff;padding:12px 16px}
   header h1{font-size:17px;margin:0;font-weight:700}
   header .sub{font-size:12px;color:#ffe9b8;margin-top:3px}
-  .wrap{max-width:980px;margin:0 auto;padding:14px 16px 60px}
+  .wrap{max-width:1100px;margin:0 auto;padding:10px 14px 40px}
   .msg{font-size:12.5px;min-height:16px}.msg.ok{color:#2e7d54;font-weight:600}.msg.err{color:#b40000;font-weight:600}
-  .grp{margin:14px 0 6px}
-  .grp h2{font-size:14px;margin:0 0 8px;color:#5c4300;border-bottom:2px solid #e6d3a3;padding-bottom:4px}
+  .grp{margin:10px 0 4px}
+  .grp h2{font-size:13px;margin:0 0 5px;color:#5c4300;border-bottom:2px solid #e6d3a3;padding-bottom:3px}
   .load{padding:30px;text-align:center;color:#8a97a4}
-  .hint{font-size:12px;color:#8a97a4;margin:10px 2px}
-  .ibtns{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+  .hint{font-size:11px;color:#8a97a4;margin:4px 2px}
+  .ibtns{display:flex;gap:8px;flex-wrap:wrap;margin:5px 0}
   .ibtns .iadd{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:600;cursor:pointer;font-size:12.5px}
   .ibtns .wkbtn{background:#0b57d0;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:600;cursor:pointer;font-size:12.5px}
-  .itbl{border-collapse:collapse;width:100%;font-size:13px}
-  .itbl th,.itbl td{border-bottom:1px solid #eef1f5;padding:5px 7px;text-align:left;vertical-align:top}
+  .itbl{border-collapse:collapse;width:auto;font-size:12px}
+  .itbl th,.itbl td{border-bottom:1px solid #eef1f5;padding:2px 6px;text-align:left;vertical-align:middle;line-height:16px;white-space:nowrap}
   .itbl thead th{background:#8a6100;color:#fff;font-weight:600}
-  .itbl .ic{font:inherit;padding:5px 7px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf5;width:150px}
+  .itbl .ic{font:inherit;padding:2px 5px;border:1px solid #cdd6df;border-radius:5px;background:#fffdf5;width:150px}
   .itbl .ic[data-f="ob_notlari"]{width:40ch}
-  .idel{background:#fff;border:1px solid #e0b4b4;color:#b40000;border-radius:6px;cursor:pointer;padding:3px 8px;font-weight:700}
+  .idel{background:#fff;border:1px solid #e0b4b4;color:#b40000;border-radius:5px;cursor:pointer;padding:0 7px;font-weight:700;line-height:18px}
   .dsel{font:inherit;padding:6px 9px;border:1px solid #cdd6df;border-radius:8px;background:#fffdf5;font-size:12.5px}
   .itbl .ic[data-f="tutar"]{width:130px;text-align:right}
   .itbl .ic[data-f="tedarikci"]{width:28ch}
@@ -41,10 +41,6 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </style>
 </head>
 <body>
-<header>
-  <h1>ÖB — Faaliyet</h1>
-  <div class="sub">Özgül Bedestenci · Takipteki işler, Dépenses tedarikçi giderleri ve tıkanmış şantiye durumları. Melih'in panolarına salt-okur yansır.</div>
-</header>
 <div class="wrap">
   <div id="msg" class="msg"></div>
 
@@ -54,7 +50,6 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <button class="wkbtn" id="iWeek">Haftalık Güncelleme</button>
     </div>
     <div id="iList"><div class="load">Yükleniyor…</div></div>
-    <div class="hint">Konu · Durum · ÖB Notları anında kaydedilir. "Haftalık Güncelleme": durumu <b>Tamamlandı</b> veya <b>İptal oldu</b> olan işler aktif listeden kalkar; son ÖB Notları soluk iz olarak kalır. Aktif işler (Henüz çalışılmadı / İlerliyor) normal kalır.</div>
   </div>
 
   <div class="grp"><h2>Dépenses — Tedarikçi Giderleri</h2>
@@ -66,7 +61,6 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <span id="dPubInfo" class="hint" style="margin:0;align-self:center"></span>
     </div>
     <div id="dList"><div class="load">Yükleniyor…</div></div>
-    <div class="hint">Seçili <b>ay</b> için tedarikçi adı ve tutarı (€) gir — anında kaydedilir. Melih'in <b>Dépenses</b> panosundaki iki tablo (tedarikçi bazında + aylık toplam) doğrudan bu kayıtlardan hesaplanır. <b>Panoya Aktar</b>: panodaki "Son güncelleme" tarihini bugüne çeker.</div>
   </div>
 
   <div class="grp"><h2>Tıkanmış Şantiyeler — Durum Girişi (ÖB)</h2>
@@ -88,7 +82,6 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       </div>
     </div>
     <textarea id="s_durum" class="dsel" style="width:100%;min-height:60px" placeholder="Bu tarihteki durum / gelişme…"></textarea>
-    <div class="hint">Yeni tıkanmış şantiyeyi <b>yalnız ÖB</b> ekler; şantiye adı ve müşteri SEL-ARB kaydından gelir. MK kendi durumunu MK Faaliyet formundan girer. Melih'in <b>Mali → MK Faaliyet</b> panosuna yansır.</div>
     <div id="s_akis"></div>
   </div>
 </div>
@@ -267,9 +260,26 @@ async function sLoadAkis(){
   if(error){ el.innerHTML='<div class="hint">Akış okunamadı.</div>'; return; }
   const rows=(data||[]).slice(0,20);
   if(!rows.length){ el.innerHTML='<div class="hint">Henüz durum kaydı yok.</div>'; return; }
-  el.innerHTML='<table class="itbl"><thead><tr><th>Şantiye</th><th>Kim</th><th>Tarih</th><th>Durum / Gelişme</th></tr></thead><tbody>'
-    +rows.map(r=>'<tr><td style="white-space:nowrap">'+esc(r.santiye)+'</td><td>'+(r.kim==="OB"?"ÖB":"MK")+'</td><td style="white-space:nowrap">'+sDk(r.tarih)+'</td><td>'+esc(r.durum)+'</td></tr>').join("")
+  el.innerHTML='<table class="itbl"><thead><tr><th>Şantiye</th><th>Durum / Gelişme</th><th></th></tr></thead><tbody>'
+    +rows.map(r=>'<tr data-lid="'+r.id+'"><td>'+esc(r.santiye)+'</td>'
+      +'<td><input type="text" class="ic" data-lf="durum" style="width:70ch" value="'+esc(r.durum)+'"></td>'
+      +'<td><button class="idel" title="Sil">✕</button></td></tr>').join("")
     +'</tbody></table>';
+  el.querySelectorAll("[data-lf]").forEach(i=>i.addEventListener("change",()=>sSaveLog(+i.closest("tr").dataset.lid,i.value)));
+  el.querySelectorAll(".idel").forEach(b=>b.onclick=()=>sDelLog(+b.closest("tr").dataset.lid));
+}
+async function sSaveLog(id,v){
+  const t=String(v||"").trim();
+  if(!t){ sMsg("Durum boş olamaz.",false); sLoadAkis(); return; }
+  const {error}=await sb.from("santiye_durum_log").update({durum:t}).eq("id",id);
+  if(error){ sMsg("Kaydedilemedi: "+error.message,false); return; }
+  sMsg("Kaydedildi",true);
+}
+async function sDelLog(id){
+  if(!confirm("Bu durum kaydı silinsin mi?")) return;
+  const {error}=await sb.from("santiye_durum_log").delete().eq("id",id);
+  if(error){ sMsg("Silinemedi: "+error.message,false); return; }
+  sMsg("Silindi",true); sLoadAkis();
 }
 async function createSantiye(){
   if(!SASEL.size){ sMsg("Şantiyenin SEL-ARB kaydını seç (en az bir proje).",false); return null; }
