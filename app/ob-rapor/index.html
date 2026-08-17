@@ -26,6 +26,10 @@
   .itbl .ic{font:inherit;padding:5px 7px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf5;width:150px}
   .itbl .ic[data-f="ob_notlari"]{width:40ch}
   .idel{background:#fff;border:1px solid #e0b4b4;color:#b40000;border-radius:6px;cursor:pointer;padding:3px 8px;font-weight:700}
+  .dsel{font:inherit;padding:6px 9px;border:1px solid #cdd6df;border-radius:8px;background:#fffdf5;font-size:12.5px}
+  .itbl .ic[data-f="tutar"]{width:130px;text-align:right}
+  .itbl .ic[data-f="tedarikci"]{width:28ch}
+  .dtot td{background:#fff7e6;font-weight:700}
 
 html,body{max-width:100vw;overflow-x:hidden}
 table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
@@ -46,6 +50,18 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     </div>
     <div id="iList"><div class="load">Yükleniyor…</div></div>
     <div class="hint">Konu · Durum · ÖB Notları anında kaydedilir. "Haftalık Güncelleme": durumu <b>Tamamlandı</b> veya <b>İptal oldu</b> olan işler aktif listeden kalkar; son ÖB Notları soluk iz olarak kalır. Aktif işler (Henüz çalışılmadı / İlerliyor) normal kalır.</div>
+  </div>
+
+  <div class="grp"><h2>Dépenses — Tedarikçi Giderleri</h2>
+    <div class="ibtns">
+      <select id="dYil" class="dsel" title="Yıl"></select>
+      <select id="dAy" class="dsel" title="Ay"></select>
+      <button class="iadd" id="dAdd">+ Tedarikçi Ekle</button>
+      <button class="wkbtn" id="dPub">Panoya Aktar</button>
+      <span id="dPubInfo" class="hint" style="margin:0;align-self:center"></span>
+    </div>
+    <div id="dList"><div class="load">Yükleniyor…</div></div>
+    <div class="hint">Seçili <b>ay</b> için tedarikçi adı ve tutarı (€) gir — anında kaydedilir. Melih'in <b>Dépenses</b> panosundaki iki tablo (tedarikçi bazında + aylık toplam) doğrudan bu kayıtlardan hesaplanır. <b>Panoya Aktar</b>: panodaki "Son güncelleme" tarihini bugüne çeker.</div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -111,7 +127,80 @@ async function haftalikGuncelle(){
 document.getElementById("iAdd").onclick=addIsler;
 document.getElementById("iWeek").onclick=haftalikGuncelle;
 
+/* ===== Dépenses (depenses_kalem) — Melih'in Dépenses panosunun tek kaynağı ===== */
+const DAY=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const dEur=n=>(Math.round(Number(n)||0)).toLocaleString("tr-TR");
+const dDate=s=>{ if(!s) return ""; const d=new Date(s); return isNaN(d)?"":String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+String(d.getFullYear()).slice(2); };
+let DROWS=[];
+(function initDSel(){
+  const now=new Date(), yEl=document.getElementById("dYil"), aEl=document.getElementById("dAy");
+  let ys=""; for(let y=now.getFullYear()+1;y>=now.getFullYear()-3;y--) ys+='<option'+(y===now.getFullYear()?' selected':'')+'>'+y+'</option>';
+  yEl.innerHTML=ys;
+  aEl.innerHTML=DAY.map((a,i)=>'<option value="'+(i+1)+'"'+((i+1)===now.getMonth()+1?' selected':'')+'>'+a+'</option>').join("");
+  yEl.onchange=loadDep; aEl.onchange=loadDep;
+})();
+const dYil=()=>parseInt(document.getElementById("dYil").value,10);
+const dAy=()=>parseInt(document.getElementById("dAy").value,10);
+async function loadDep(){
+  const [k,y]=await Promise.all([
+    sb.from("depenses_kalem").select("*").eq("yil",dYil()).eq("ay",dAy()).order("tutar",{ascending:false}),
+    sb.from("depenses_yayin").select("yayin_at").limit(1)
+  ]);
+  if(k.error){ document.getElementById("dList").innerHTML='<div class="load">Hata: '+esc(k.error.message)+'</div>'; return; }
+  DROWS=k.data||[];
+  const ya=(y&&!y.error&&y.data&&y.data[0])?y.data[0].yayin_at:null;
+  document.getElementById("dPubInfo").textContent = ya?("Son aktarım: "+dDate(ya)):"Henüz aktarılmadı";
+  renderDep();
+}
+function renderDep(){
+  const top=DROWS.reduce((a,r)=>a+(Number(r.tutar)||0),0);
+  let h='<table class="itbl"><thead><tr><th>Tedarikçi</th><th style="text-align:right">Tutar (€)</th><th></th></tr></thead><tbody>';
+  DROWS.forEach(r=>{
+    h+='<tr data-id="'+r.id+'">'
+      +'<td><input class="ic" data-f="tedarikci" value="'+esc(r.tedarikci)+'" placeholder="Tedarikçi adı"></td>'
+      +'<td style="text-align:right"><input class="ic" data-f="tutar" type="number" step="0.01" value="'+esc(r.tutar)+'" placeholder="0"></td>'
+      +'<td><button class="ddel" title="Sil">✕</button></td></tr>';
+  });
+  if(!DROWS.length) h+='<tr><td colspan="3" style="color:#8a97a4;padding:10px">Bu ay için kayıt yok — "+ Tedarikçi Ekle" ile başla.</td></tr>';
+  h+='<tr class="dtot"><td>TOPLAM</td><td style="text-align:right">'+dEur(top)+'</td><td></td></tr>';
+  h+='</tbody></table>';
+  const list=document.getElementById("dList"); list.innerHTML=h;
+  list.querySelectorAll("[data-f]").forEach(el=>{ el.addEventListener("change",()=>saveDep(+el.closest("tr").dataset.id,el.dataset.f,el.value)); });
+  list.querySelectorAll(".ddel").forEach(b=>b.onclick=()=>delDep(+b.closest("tr").dataset.id));
+}
+async function saveDep(id,f,v){
+  const rec={}; rec[f]= f==="tutar" ? (v===""?0:Number(v)) : v;
+  rec.updated_at=new Date().toISOString();
+  const {error}=await sb.from("depenses_kalem").update(rec).eq("id",id);
+  if(error){ msg("Hata: "+error.message,false); return; }
+  const r=DROWS.find(x=>x.id===id); if(r) r[f]=rec[f];
+  msg("Kaydedildi",true); renderDep();
+}
+async function addDep(){
+  const {data,error}=await sb.from("depenses_kalem").insert({yil:dYil(),ay:dAy(),tedarikci:"",tutar:0}).select();
+  if(error){ msg(error.message,false); return; }
+  DROWS.push(data[0]); renderDep();
+  const inps=document.querySelectorAll('#dList input[data-f="tedarikci"]'); if(inps.length) inps[inps.length-1].focus();
+}
+async function delDep(id){
+  if(!confirm("Bu tedarikçi satırı silinsin mi?")) return;
+  const {error}=await sb.from("depenses_kalem").delete().eq("id",id);
+  if(error){ msg(error.message,false); return; }
+  DROWS=DROWS.filter(x=>x.id!==id); renderDep();
+}
+async function pubDep(){
+  if(!confirm("Girilen gider kayıtları Melih'in Dépenses panosuna aktarılmış sayılacak ve panodaki 'Son güncelleme' tarihi bugüne çekilecek. Devam?")) return;
+  const btn=document.getElementById("dPub"); btn.disabled=true;
+  const {error}=await sb.from("depenses_yayin").update({yayin_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",1);
+  btn.disabled=false;
+  if(error){ msg("Hata: "+error.message,false); return; }
+  msg("Panoya aktarıldı.",true); loadDep();
+}
+document.getElementById("dAdd").onclick=addDep;
+document.getElementById("dPub").onclick=pubDep;
+
 loadIsler();
+loadDep();
 </script>
 </body>
 </html>
