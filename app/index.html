@@ -924,11 +924,12 @@ async function loadAhsap(tgt){
       rh+=`<tr><td style="padding-left:22px;color:#5a6b7d">${esc(td==null||td===""?"—":td)}</td><td class="num">${int(scbm(tc))}</td><td class="num">${tca==null?"—":int(tca)+" €"}</td><td class="num">${tpa==null?"—":int(tpa)+" €"}</td>${chg(tca,tpa)}</tr>`;
     });
   });
-  let stamp="—";
-  if(cur.length){ const md=cur.reduce((m,r)=> (r.created_at>m?r.created_at:m), '0'); const d=new Date(md); stamp=`${AY_TR[d.getMonth()]} ${d.getFullYear()} ayı işlendi · ${dOnly(md)}`; }
-  body.innerHTML=`<div class="stamp">${cur.length?stamp:"—"}</div>
-    <div class="hint">Ahşap alımları — ağaç çeşidi başına <b>CBM ağırlıklı € ortalama</b> (giriş kuruyla €'ya çevrilmiş); altında tedarikçi kırılımı. Önceki = son kapanan dönem. <a href="ahsap/" target="_blank">Ahşap formundan</a> işlenir, aylık güncellemede güncel→önceki kayar.</div>
-    <div class="scroll"><table><thead><tr><th>Ağaç Çeşidi / Tedarikçi</th><th class="num">Top. CBM</th><th class="num">Ağ. Ort. €</th><th class="num">Önceki Ort. €</th><th class="num">Değişim %</th></tr></thead><tbody>${rh||'<tr><td colspan="5" class="load">Kayıt yok.</td></tr>'}</tbody></table></div>`;
+  /* Son güncelleme = Ahşap formundaki AYLIK GÜNCELLEME düğmesine son basılma (pano_yayin) */
+  const py=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","ahsap").limit(1);
+  const pyAt=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
+  body.innerHTML=`<style>table.ahs{width:auto}table.ahs th,table.ahs td{width:1%;white-space:nowrap}</style>
+    <div class="stamp">Son güncelleme: ${pyAt?dOnly(pyAt):"—"}</div>
+    <div class="scroll"><table class="ahs"><thead><tr><th>Ağaç Çeşidi / Tedarikçi</th><th class="num">Top. CBM</th><th class="num">Ağ. Ort. €</th><th class="num">Önceki Ort. €</th><th class="num">Değişim %</th></tr></thead><tbody>${rh||'<tr><td colspan="5" class="load">Kayıt yok.</td></tr>'}</tbody></table></div>`;
 }
 async function loadPanoBolum(bolum, tgt){
   const body=document.getElementById(tgt);
@@ -945,9 +946,11 @@ async function loadPanoBolum(bolum, tgt){
   (t.data||[]).forEach(tb=>{
     const hs=(tb.basliklar||[]).map(h=>`<th>${esc(h)}</th>`).join("");
     const rs=(rowsByT[tb.tablo]||[]).map(row=>`<tr>${(row.hucreler||[]).map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("");
-    html+=`${tb.baslik?`<h3 class="sec">${esc(tb.baslik)}</h3>`:""}<div class="scroll"><table><thead><tr>${hs}</tr></thead><tbody>${rs}</tbody></table></div>`;
+    html+=`${tb.baslik?`<h3 class="sec">${esc(tb.baslik)}</h3>`:""}<div class="scroll"><table class="pob"><thead><tr>${hs}</tr></thead><tbody>${rs}</tbody></table></div>`;
   });
-  body.innerHTML=`<div class="stamp">${esc(meta.son_guncelleme||"")}</div>${meta.kaynak?`<div class="hint">${esc(meta.kaynak)}</div>`:""}${html||'<div class="load">Kayıt yok.</div>'}`;
+  body.innerHTML=`<style>table.pob{width:auto}table.pob th,table.pob td{width:1%;white-space:nowrap}</style>`
+    +`<div class="stamp">${esc(meta.son_guncelleme||"")}${meta.kaynak?` · <span style="font-weight:400;color:#7a8896">${esc(meta.kaynak)}</span>`:""}</div>`
+    +`${html||'<div class="load">Kayıt yok.</div>'}`;
 }
 /* ---------- SEL-ARB — özel render: Firma 15ch / Proje 20ch (nowrap+ellipsis, tam metin title/scroll), tarih sütunları üstünde "Arbor SAS Alacak €" spanning başlık, "Δ ilk→son €", son tarih dolu-alacak satırları görünür + boşlar gizli/toggle, footer daima görünür. Bölüm-RLS aynı (pano_ozel_*). ---------- */
 const SA_FOOT=new Set(["Selectron'a gönderilen","Selectron'a Borç (Σ E)","Toplam güncel alacak","Selectron'a Fatura Edilen Tutar","Arbor SAS faaliyet kaybı","TOPLAM GÜNCEL ALACAK"]);
@@ -970,9 +973,9 @@ async function loadSelArb(tgt){
   const dLbl=t=>t.slice(8,10)+"."+t.slice(5,7)+"."+t.slice(2,4);
   const fmt=v=>(v==null||v==="")?"":Math.round(v).toLocaleString("tr-TR");
   const delta=arr=>{ const p=arr.filter(v=>v!=null); if(p.length<2) return ""; const dl=Math.round(p[p.length-1]-p[0]); if(dl===0) return ""; return (dl>0?"+":"−")+Math.abs(dl).toLocaleString("tr-TR"); };
-  const basliklar=["Firma","Proje",...dates.map(dLbl),"Δ eski→yeni"];
+  const basliklar=["Proje","Firma",...dates.map(dLbl),"Δ eski→yeni"];
   const rows=[];
-  firmalar.forEach(f=>{ const series=dates.map(d=>f.vals[d]==null?null:f.vals[d]); rows.push([f.firma,f.proje,...series.map(fmt),delta([...series].reverse())]); });
+  firmalar.forEach(f=>{ const series=dates.map(d=>f.vals[d]==null?null:f.vals[d]); rows.push([f.proje,f.firma,...series.map(fmt),delta([...series].reverse())]); });
   const gon=dates.map(d=>ozBy[d]?ozBy[d].gonderilen:null);
   const borc=dates.map(d=>ozBy[d]?ozBy[d].borc:null);
   const topAlac=dates.map(d=>{ let sm=0,any=false; firmalar.forEach(f=>{ if(f.vals[d]!=null){sm+=f.vals[d];any=true;} }); return any?sm:null; });
@@ -996,15 +999,15 @@ async function loadSelArb(tgt){
     if(!show) hiddenCount++;
     const mid=[]; for(let i=0;i<nd;i++) mid.push(`<td class="sa-num">${esc(h[2+i]||"")}</td>`);
     return `<tr class="${isFoot?'sa-foot':''}${show?'':' sa-hide'}"${show?'':' style="display:none"'}>`
-      +`<td class="sa-firma"><span class="c" title="${esc(h[0]||"")}">${esc(h[0]||"")}</span></td>`
-      +`<td class="sa-proje"><span class="c" title="${esc(h[1]||"")}">${esc(h[1]||"")}</span></td>`
+      +`<td class="sa-proje"><span class="c" title="${esc(h[0]||"")}">${esc(h[0]||"")}</span></td>`
+      +`<td class="sa-firma"><span class="c" title="${esc(h[1]||"")}">${esc(h[1]||"")}</span></td>`
       +mid.join("")+`<td class="sa-num sa-delta">${esc(h[2+nd]||"")}</td></tr>`;
   }).join("");
   const style=`<style>
-  .sa-wrap table{border-collapse:collapse;width:100%;font-size:12px}
-  .sa-wrap th,.sa-wrap td{border-bottom:1px solid #eef1f5;padding:4px 8px;white-space:nowrap}
+  .sa-wrap table{border-collapse:collapse;width:auto;font-size:12px}
+  .sa-wrap th,.sa-wrap td{border-bottom:1px solid #eef1f5;padding:4px 8px;white-space:nowrap;width:1%}
   .sa-wrap thead th{background:#16324f;color:#fff;font-weight:600}
-  .sa-firma>.c{max-width:15ch}.sa-proje>.c{max-width:20ch}
+  .sa-proje>.c{width:35ch}.sa-firma>.c{max-width:20ch}
   .sa-firma>.c,.sa-proje>.c{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}
   .sa-firma>.c::-webkit-scrollbar,.sa-proje>.c::-webkit-scrollbar{display:none}
   .sa-proje>.c{font-weight:600;color:#16324f}
@@ -1012,8 +1015,10 @@ async function loadSelArb(tgt){
   tr.sa-foot td{font-weight:700;background:#eef3f8}
   </style>`;
   const btn=hiddenCount?`<button class="btn" id="sa-toggle" data-on="0">Boş-alacak satırları göster (${hiddenCount})</button>`:"";
-  body.innerHTML=`${style}<div class="stamp">Son güncelleme: ${esc(stamp)}</div><div class="hint">${esc(SA_NOTE)}</div>${btn?`<div class="hint">${btn}</div>`:""}<div class="sa-wrap scroll"><table><thead>`
-    +`<tr><th rowspan="2">${esc(basliklar[0]||"Firma")}</th><th rowspan="2">${esc(basliklar[1]||"Proje")}</th><th colspan="${nd}" class="sa-num" style="text-align:center">Arbor SAS Alacak €</th><th rowspan="2" class="sa-num">${esc(dlt)}</th></tr>`
+  const pyS=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","sel_arb").limit(1);
+  const pyAtS=(pyS&&!pyS.error&&pyS.data&&pyS.data[0])?pyS.data[0].yayin_at:null;
+  body.innerHTML=`${style}<div class="stamp">Son güncelleme: ${pyAtS?dOnly(pyAtS):esc(stamp)}</div>${btn?`<div class="hint">${btn}</div>`:""}<div class="sa-wrap scroll"><table><thead>`
+    +`<tr><th rowspan="2">${esc(basliklar[0]||"Proje")}</th><th rowspan="2">${esc(basliklar[1]||"Firma")}</th><th colspan="${nd}" class="sa-num" style="text-align:center">Arbor SAS Alacak €</th><th rowspan="2" class="sa-num">${esc(dlt)}</th></tr>`
     +`<tr>${dateHdrs}</tr></thead><tbody>${trs}</tbody></table></div>`;
   const tg=document.getElementById("sa-toggle");
   if(tg) tg.onclick=()=>{ const on=tg.dataset.on==="1"; document.querySelectorAll("#"+tgt+" tr.sa-hide").forEach(x=>x.style.display=on?"none":""); tg.dataset.on=on?"0":"1"; tg.textContent=on?`Boş-alacak satırları göster (${hiddenCount})`:`Boş-alacak satırları gizle (${hiddenCount})`; };
