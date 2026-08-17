@@ -29,8 +29,10 @@
   .msg.err{color:#b40000}.msg.ok{color:#2e7d54}
   .scroll{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #dde3ea;border-radius:8px;max-height:82vh;background:#fff;width:max-content;max-width:100%}
   table{border-collapse:collapse;width:auto;font-size:12px}
-  thead th{position:sticky;top:0;background:#16324f;color:#fff;font-weight:600;font-size:10.5px;padding:3px 6px;text-align:left;white-space:nowrap;z-index:2}
-  td{border-bottom:1px solid #eef1f5;padding:2px 6px;vertical-align:middle;line-height:16px}
+  thead th{position:sticky;top:0;background:#16324f;color:#fff;font-weight:600;font-size:10.5px;padding:3px 6px;text-align:left;white-space:nowrap;z-index:2;vertical-align:bottom}
+  thead th.thsm{font-size:9.5px;letter-spacing:-.1px}
+  thead th .thw{display:inline-block;max-width:14ch;white-space:normal;line-height:11px;vertical-align:bottom}
+  td{border-bottom:1px solid #eef1f5;padding:2px 6px;vertical-align:middle;line-height:16px;white-space:nowrap}
   tbody tr:nth-child(even){background:#fbfcfe}
   tbody tr:hover td{background:#eef6ff}
   td.red{background:#ffe1e1;color:#b40000;font-weight:700}
@@ -41,7 +43,7 @@
   .ed:hover{border-color:#b7c6d6;background:#fffef2}
   input.cell,select.cell{font:inherit;border:1px solid #86a6c6;border-radius:4px;padding:2px 4px;width:100%}
   .saveflash{outline:2px solid #2e7d54;transition:outline .1s}
-  .hint{font-size:10.5px;color:#8a97a4;margin:2px 2px}
+  .hint{font-size:10.5px;color:#8a97a4;margin:2px 2px;max-width:min(100%,120ch)}
   .stamp{font-size:11px;color:#0a6b3f;font-weight:700;margin:1px 2px 4px}
   .malibar{display:flex;gap:4px;flex-wrap:wrap;margin:1px 2px 6px}
   .malitab{background:#eef4fb;color:#16324f;border:1px solid #d3e0ee;border-radius:14px;padding:2px 10px;font-size:11px;font-weight:600;cursor:pointer}
@@ -82,7 +84,7 @@
   .addbar .btn{flex:none;white-space:nowrap;padding:6px 12px}
   .load{padding:30px;text-align:center;color:#8a97a4}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:14px;padding:0 4px}
-  .flow{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:6px 9px;margin-bottom:6px;line-height:1.5}
+  .flow{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:6px 9px;margin-bottom:6px;line-height:1.5;width:max-content;max-width:min(100%,110ch)}
   .step{display:inline-block;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:3px 8px;font-weight:600;color:#16324f}
   .arr{color:#2e7d54;font-weight:700;margin:0 3px}
   h3.sec{margin:8px 2px 3px;color:#16324f;font-size:12px}
@@ -90,7 +92,7 @@
   .tag{display:inline-block;background:#16324f;color:#fff;font-size:10px;font-weight:700;border-radius:5px;padding:1px 7px;margin-left:6px;vertical-align:middle}
   .tag.ok{background:#2e7d54}
   .muted{color:#7a8794;font-size:11.5px}
-  .sybox{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:4px 10px;margin:3px 0 6px}
+  .sybox{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:4px 10px;margin:3px 0 6px;width:max-content;max-width:min(100%,110ch)}
   .syrow{font-size:13px;color:#1c2430;padding:3px 0;border-bottom:1px solid #f0f3f7}
   .syrow:last-child{border-bottom:0}
   table.tks{border-collapse:collapse;width:auto;font-size:11.5px;margin:2px 0 8px}
@@ -109,9 +111,9 @@
   table.ssum tr.sdet .sdp{text-align:left}
   table.ssum tr.sdet .sdv{text-align:right;flex:none}
   .dl{font-size:12px;color:#6a7888;font-weight:600}
-  .pin{background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:5px 10px;font-size:11px;color:#16324f;margin:0 2px 6px;line-height:1.45}
-  .secH{margin:10px 2px 4px;color:#16324f;font-size:12.5px;font-weight:700;border-left:3px solid #16324f;padding-left:8px}
-  .law{background:#fff;border:1px solid #dde3ea;border-radius:8px;margin-bottom:4px;padding:5px 9px;display:flex;gap:9px;align-items:flex-start}
+  .pin{background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:5px 10px;font-size:11px;color:#16324f;margin:0 2px 6px;line-height:1.45;width:max-content;max-width:min(100%,110ch)}
+  .secH{margin:10px 2px 4px;color:#16324f;font-size:12.5px;font-weight:700;border-left:3px solid #16324f;padding-left:8px;width:max-content;max-width:100%}
+  .law{background:#fff;border:1px solid #dde3ea;border-radius:8px;margin-bottom:4px;padding:5px 9px;display:flex;gap:9px;align-items:flex-start;width:max-content;max-width:min(100%,110ch)}
   .law:hover{background:#fafcff}
   .lno{font-weight:700;color:#fff;background:#16324f;border-radius:6px;min-width:34px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none;padding:0 4px}
   .lno.ek{background:#b8863a}
@@ -225,6 +227,38 @@ function dOnly(iso){ if(!iso) return "—"; const d=new Date(iso); return isNaN(
 async function erpStamp(){ const {data}=await sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1); return data&&data[0]?fmtDamga(data[0].damga):"—"; }
 async function tblStamp(t){ const {data}=await sb.from(t).select("updated_at").order("updated_at",{ascending:false}).limit(1); return data&&data[0]?dOnly(data[0].updated_at):"—"; }
 function stampHTML(d){ return '<div class="stamp">Son güncelleme: '+(d||"—")+'</div>'; }
+
+/* ---------- Başlık uydurma: sütun başlığı içerikten genişse bir tık küçült; hâlâ genişse
+   iki satıra sar (başlıklar alttan hizalı). Yalnız auto-layout tablolarda çalışır;
+   colgroup'lu sabit tablolarda gerek yok. Her tabloya bir kez uygulanır (data-fh). ---------- */
+function fitHeads(){
+  document.querySelectorAll("#app table").forEach(tbl=>{
+    if(tbl.dataset.fh) return; tbl.dataset.fh="1";
+    if(getComputedStyle(tbl).tableLayout==="fixed") return;
+    const th0=tbl.tHead, body=tbl.tBodies[0];
+    if(!th0||!th0.rows.length||!body||!body.rows.length) return;
+    const hr=th0.rows[th0.rows.length-1], n=hr.cells.length;
+    const inner=el=>{ const c=el.firstElementChild; return c?c.scrollWidth:0; };
+    const pad=el=>{ const cs=getComputedStyle(el); return parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight); };
+    const colMax=new Array(n).fill(0);
+    for(const row of body.rows){
+      if(row.cells.length!==n) continue;              /* grup / colspan satırları hariç */
+      for(let i=0;i<n;i++){ const c=row.cells[i]; const w=Math.max(inner(c), c.scrollWidth-pad(c)); if(w>colMax[i]) colMax[i]=w; }
+    }
+    for(let i=0;i<n;i++){
+      const th=hr.cells[i];
+      if(!th||th.colSpan>1||th.rowSpan>1||!th.textContent.trim()||!colMax[i]) continue;
+      if(th.scrollWidth-pad(th) <= colMax[i]+2) continue;      /* başlık zaten dar */
+      th.classList.add("thsm");
+      if(th.scrollWidth-pad(th) > colMax[i]+2) th.innerHTML='<span class="thw">'+th.innerHTML+'</span>';
+    }
+  });
+}
+(function(){
+  const run=()=>{ clearTimeout(window._fhT); window._fhT=setTimeout(fitHeads,60); };
+  const app=document.getElementById("app");
+  if(app) new MutationObserver(run).observe(app,{childList:true,subtree:true});
+})();
 
 /* ---------- ANA GÜNDEM (blok = kod_prefix; İlgili = kişi; kapat = sil) ---------- */
 async function loadGundem(){
