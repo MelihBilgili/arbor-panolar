@@ -193,8 +193,10 @@ async function loadPerms(){
 /* ---------- APP SHELL ---------- */
 const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_maasprim","mali_mkprim"];
 const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_maasprim","mali_mkprim"];
-const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["mali","Mali"],["obrapor","ÖB Faaliyet"],["formlar","Formlar"],["ozel","Özel"]];
-function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b)); if(k==='obrapor') return a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
+/* ÖB Faaliyet artık Mali grubunun içinde (MK Faaliyet'in yanında) */
+const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
+const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
+function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b))||a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
 function renderApp(){
   const vis = TABS.filter(t=> tabVisible(t[0]) );
   if(!vis.length){ app.innerHTML=`<div class="login"><h2>Arbor Panolar</h2><p>Bu hesap için tanımlı bir bölüm yok. Yöneticiyle görüşün.</p><button class="btn" id="lo">Çıkış</button></div>`; document.getElementById("lo").onclick=doLogout; return; }
@@ -217,7 +219,6 @@ function loadView(){
   else if(state.tab==='ref') loadRef();
   else if(state.tab==='prosedur') loadProsedur();
   else if(state.tab==='mali') loadMali();
-  else if(state.tab==='obrapor') loadObrapor();
   else if(state.tab==='formlar') loadFormlar();
   else if(state.tab==='ozel') loadOzel();
   else loadAup();
@@ -1078,8 +1079,8 @@ async function loadSelArb(tgt){
   if(tg) tg.onclick=()=>{ const on=tg.dataset.on==="1"; document.querySelectorAll("#"+tgt+" tr.sa-hide").forEach(x=>x.style.display=on?"none":""); tg.dataset.on=on?"0":"1"; tg.textContent=on?`Boş-alacak satırları göster (${hiddenCount})`:`Boş-alacak satırları gizle (${hiddenCount})`; };
 }
 /* ---------- ÖB Rapor — bağımsız üst-nav sekmesi (Takipteki İşler / ob_isler; ÖB formu yazar, owner salt-okur) ---------- */
-async function loadObrapor(){
-  const view=document.getElementById("view");
+async function loadObrapor(tgt){
+  const view=document.getElementById(tgt||"view");
   const isl=await sb.from("ob_isler").select("*").order("arsiv").order("id");
   if(isl.error){ view.innerHTML=`<div class="load">Hata: ${esc(isl.error.message)}</div>`; return; }
   const iRows=isl.data||[];
@@ -1216,17 +1217,19 @@ async function loadMali(){
   const view=document.getElementById("view");
   const isAdmin = state.allowed===null;
   const ek = [["bilanco","Bilanço"],["icmal","İcmal"],["fiyat","Fiyatlandırma"]].filter(x=> isAdmin || state.allowed.includes(x[0]));
+  const obOk = isAdmin || state.allowed.includes("ob_rapor");
   const panoAllowed = isAdmin ? MALI_BOLUM.slice() : MALI_BOLUM.filter(b=>state.allowed.includes(b));
-  const all = ek.map(x=>x[0]).concat(panoAllowed);
+  const all = ek.map(x=>x[0]).concat(panoAllowed).concat(obOk?["ob_rapor"]:[]);
   if(!all.length){ view.innerHTML=`<div class="load">Bu hesapta mali bölüm yetkisi yok.</div>`; return; }
   if(!state.maliBolum || !all.includes(state.maliBolum)) state.maliBolum=all[0];
   const b=state.maliBolum;
   let metaMap={};
   if(panoAllowed.length){ const m=await sb.from("pano_ozel_meta").select("*").in("bolum",panoAllowed); (m.data||[]).forEach(x=>metaMap[x.bolum]=x); }
-  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="fiyat"?"Fiyatlandırma" : x==="ahsap"?"Ahşap" : x==="mali_maasprim"?"Maaş-Prim" : x==="mali_mkprim"?"MK Faaliyet" : ((metaMap[x]&&metaMap[x].etiket)||x);
+  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="fiyat"?"Fiyatlandırma" : x==="ahsap"?"Ahşap" : x==="mali_maasprim"?"Maaş-Prim" : x==="mali_mkprim"?"MK Faaliyet" : x==="ob_rapor"?"ÖB Faaliyet" : ((metaMap[x]&&metaMap[x].etiket)||x);
   const bar=all.map(x=>`<button class="malitab${x===b?' active':''}" data-b="${esc(x)}">${esc(label(x))}</button>`).join("");
   view.innerHTML=`<div class="malibar">${bar}</div><div id="mali-body"><div class="load">Yükleniyor…</div></div>`;
   view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.maliBolum=btn.dataset.b; loadMali(); });
+  if(b==="ob_rapor"){ loadObrapor("mali-body"); return; }
   if(b==="bilanco"){ loadBilanco("mali-body"); return; }
   if(b==="icmal"){ loadIcmal("mali-body"); return; }
   /* MK Faaliyet = MK prim blokları + Tıkanmış Şantiyeler (eski ayrı Şantiye sekmesi buraya taşındı) */
