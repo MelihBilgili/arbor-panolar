@@ -121,6 +121,8 @@ async function haftalikGuncelle(){
     const {error:e2}=await sb.from("ob_isler").delete().eq("id",r.id);
     if(e2){ btn.disabled=false; msg("Hata: "+e2.message,false); return; }
   }
+  /* Panodaki "Son güncelleme" damgası = bu düğmeye basılma anı */
+  try{ await sb.from("pano_yayin").upsert({anahtar:"ob_rapor",yayin_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"anahtar"}); }catch(e){}
   btn.disabled=false;
   msg((data.note||"Özet güncellendi")+(sil.length?` · ${sil.length} iş silindi`:""),true); loadIsler();
 }
