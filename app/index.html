@@ -1196,26 +1196,61 @@ async function loadMkPrim(tgt){
 /* ---------- ŞANTİYE — owner salt-okur: tarihli DURUM LOG akışı (ÖB+MK tek form yazar). ---------- */
 async function loadSantiye(tgt){
   const view=document.getElementById(tgt||"view");
-  const [s,l]=await Promise.all([
+  const [s,l,sa]=await Promise.all([
     sb.from("santiye").select("*").order("sira"),
-    sb.from("santiye_durum_log").select("*").order("tarih",{ascending:false}).order("id",{ascending:false})
+    sb.from("santiye_durum_log").select("*").order("tarih",{ascending:false}).order("id",{ascending:false}),
+    sb.from("sel_arb_snapshot").select("tarih,sira,firma,proje,alacak")
   ]);
   const err=s.error||l.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
   const logByS={}; (l.data||[]).forEach(x=>{ (logByS[x.santiye_id]=logByS[x.santiye_id]||[]).push(x); });
   const rows=(s.data||[]).filter(r=>r.durum!=="Çözüldü");
   const ay=d=>{ if(!d) return 0; const x=new Date(d); if(isNaN(x)) return 0; const n=new Date(); return (n.getFullYear()-x.getFullYear())*12+(n.getMonth()-x.getMonth()); };
-  const toplam=rows.reduce((a,r)=>a+(Number(r.tutar)||0),0);
-  const eski=rows.filter(r=>ay(r.ilk_kayit)>=3).length;
-  let html=`<div class="stamp">${rows.length} açık</div>
-    <div class="hint">ÖB + MK tek <a href="santiye-log/" target="_blank">Şantiye Durum formundan</a> tarihli durum girer; owner tarihli akışı görür. Yeni tıkanmış şantiye owner tarafından eklenir.</div>
-    <div class="skpi"><div><b>${rows.length}</b> açık şantiye</div><div><b>${money(toplam)} €</b> bekleyen alacak</div><div><b>${eski}</b> 3+ aydır açık</div><div><b>${(l.data||[]).length}</b> durum kaydı</div></div>`;
-  rows.forEach((r)=>{ const a=ay(r.ilk_kayit); const logs=logByS[r.id]||[];
-    const tl=logs.length?logs.map(x=>`<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid #f0f3f7"><span class="sbdg ${x.kim==='OB'?'snew':'chg'}">${x.kim==='OB'?'ÖB':'MK'}</span><span style="color:#8a97a4;font-size:11px;white-space:nowrap;min-width:66px">${fdate(x.tarih)}</span><span style="flex:1;white-space:pre-wrap">${esc(x.durum)}</span></div>`).join(""):'<div class="muted" style="padding:4px 2px">Henüz durum girişi yok.</div>';
-    html+=`<div class="flow"><b class="sb">${esc(r.santiye)}</b>${r.musteri?' <span class="tag">'+esc(r.musteri)+'</span>':''}${r.tutar!=null?' <span class="snum">'+money(r.tutar)+' €</span>':''}${a>=3?' <span class="sbdg none">'+a+' ay</span>':''}
-      <p class="muted" style="margin:4px 0 8px">${esc(r.neden||'')}${r.sorumlu?' · Sorumlu: '+esc(r.sorumlu):''}${r.hedef?' · Hedef: '+esc(r.hedef):''}</p>
-      <div>${tl}</div></div>`; });
-  view.innerHTML=html;
+  /* Formun güncelleme düğmesine son basılma tarihi — ÖB ve MK için ayrı (santiye_durum_log) */
+  const sonBasim=k=>{ let m=null; (l.data||[]).forEach(x=>{ if(x.kim!==k) return; const d=x.created_at||x.tarih; if(d&&(m==null||String(d)>String(m))) m=d; }); return m?dOnly(m):"—"; };
+  /* Arbor SAS Alacak — SEL-ARB en yeni çekim; bağ = santiye.sel_arb_sira (ÖB formundaki seçim) */
+  const saRows=(sa&&!sa.error)?(sa.data||[]):[];
+  let saMax=""; saRows.forEach(x=>{ if(String(x.tarih)>saMax) saMax=String(x.tarih); });
+  const saBy={}; saRows.filter(x=>String(x.tarih)===saMax).forEach(x=>{ saBy[x.sira]=x; });
+  const norm=t=>String(t==null?"":t).toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
+  const alacakOf=r=>{
+    let keys=Array.isArray(r.sel_arb_sira)?r.sel_arb_sira.map(Number):[];
+    if(!keys.length){ /* bağ girilmemişse geçici ad benzerliği (ÖB seçim yaptıkça devre dışı kalır) */
+      const kel=norm(r.santiye).split(" ").filter(w=>w.length>=5);
+      if(kel.length) keys=Object.keys(saBy).filter(k=>{
+        const pw=norm(saBy[k].proje).split(" ");
+        return kel.some(w=>pw.some(p=>p.startsWith(w)||w.startsWith(p)));
+      }).map(Number);
+    }
+    const hit=keys.map(k=>saBy[k]).filter(Boolean);
+    return { tutar:hit.length?hit.reduce((a,x)=>a+(Number(x.alacak)||0),0):null,
+             det:hit.map(x=>x.proje+" · "+money(x.alacak)+" €").join("\n") };
+  };
+  const toplam=rows.reduce((a,r)=>a+(alacakOf(r).tutar||0),0);
+  const body=rows.map(r=>{
+    const a=ay(r.ilk_kayit), logs=logByS[r.id]||[], last=logs[0], al=alacakOf(r);
+    const dur=last
+      ? `<div><span class="sbdg ${last.kim==='OB'?'snew':'chg'}">${last.kim==='OB'?'ÖB':'MK'}</span> <span style="color:#8a97a4;font-size:11px">${fdate(last.tarih)}</span> ${esc(last.durum)}</div>`
+        +(r.degisim_ozet?`<div style="color:#8a6100;font-size:11px;font-style:italic;margin-top:2px">Δ ${esc(r.degisim_ozet)}</div>`:"")
+      : `<span class="muted">Henüz durum girişi yok.</span>`;
+    return `<tr>`
+      +`<td class="sb"><span title="${esc(r.neden||'')}">${esc(r.santiye)}</span>${a>=3?' <span class="sbdg none">'+a+' ay</span>':''}</td>`
+      +`<td class="c t20"><span title="${esc(r.musteri||'')}">${esc(r.musteri||'')}</span></td>`
+      +`<td class="num"${al.det?` title="${esc(al.det)}"`:''}>${al.tutar==null?'':money(al.tutar)}</td>`
+      +`<td class="tdur">${dur}</td></tr>`;
+  }).join("");
+  view.innerHTML=`<div class="stamp">${rows.length} açık · ÖB ${sonBasim("OB")} · MK ${sonBasim("MK")}</div>
+    <div class="hint">ÖB + MK tek <a href="santiye-log/" target="_blank">Şantiye Durum formundan</a> tarihli durum girer; owner tarihli akışı görür. Yeni tıkanmış şantiye <b>ÖB</b> tarafından eklenir. Alacak = SEL-ARB'da o şantiyeye bağlanan kayıtların ${saMax?dOnly(saMax):'—'} tarihli toplamı.</div>
+    <style>table.stik{width:auto}table.stik th,table.stik td{width:1%}
+      table.stik td.sb{white-space:nowrap;font-weight:700}
+      table.stik .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}
+      table.stik .c>span::-webkit-scrollbar{display:none}
+      table.stik td.t20>span{width:20ch}
+      table.stik th.tdur,table.stik td.tdur{width:auto;white-space:normal;min-width:38ch}</style>
+    <div class="scroll"><table class="stbl stik">
+    <thead><tr><th>ŞANTİYE</th><th>MÜŞTERİ</th><th class="num">ARBOR SAS ALACAK €</th><th class="tdur">DURUM</th></tr></thead>
+    <tbody>${body}<tr class="itot"><td>Toplam · ${rows.length} açık</td><td></td><td class="num">${money(toplam)}</td><td></td></tr></tbody>
+    </table></div>`;
 }
 
 /* ---------- ÖZEL — grup: 5 hassas pano (pano_ozel_html, iframe srcdoc) + G.menkul (pano_ozel). Bölüm-RLS; anon 401. Parola/ozel4 YOK. ---------- */
