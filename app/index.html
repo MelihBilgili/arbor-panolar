@@ -632,7 +632,7 @@ async function loadHazir(){
   const filt=(data||[]).filter(r=>{
     const dt=r.hazir_tarihi; if(!dt) return false;
     const d=new Date(dt); if(isNaN(d)) return false;
-    return !(d>=_cut && d<=_ref);
+    return !(d>=_cut);
   });
   const digits=s=>String(s==null?"":s).replace(/\D/g,"");
   const lastN=(s,n)=>{ const d=digits(s); return d.slice(-n); };
