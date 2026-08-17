@@ -1164,8 +1164,59 @@ async function loadMali(){
   if(b==="mali_maasprim"){ loadOzelHtml("mali_maasprim","mali-body"); return; } /* Maaş-Prim: tam sadakat ham-HTML (pano_ozel_html, bölüm-RLS) */
   if(b==="ahsap"){ loadAhsap("mali-body"); return; }
   if(b==="fiyat"){ loadFiyat("mali-body"); return; } /* Fiyatlandırma: kaynak veri + editör (fiyat_* tablolar, anon) */
+  if(b==="depenses"){ loadDepenses("mali-body"); return; } /* Dépenses: ÖB Rapor formundaki depenses_kalem'den hesaplanır */
   if(b==="sel_arb"){ loadSelArb("mali-body"); return; } /* SEL-ARB: özel render (spanning başlık + kolon genişlik/scroll + son-tarih dolu-alacak görünür/toggle) */
   loadPanoBolum(b, "mali-body");
+}
+
+/* ---------- DÉPENSES — kaynak: ÖB Rapor formu (depenses_kalem: yıl×ay×tedarikçi×tutar).
+   İki tablo da buradan HESAPLANIR. Tablo boşsa eski pano_ozel baseline'ı okunur. ---------- */
+const DEP_AY=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+async function loadDepenses(tgt){
+  const body=document.getElementById(tgt||"view");
+  const [k,y]=await Promise.all([
+    sb.from("depenses_kalem").select("yil,ay,tedarikci,tutar"),
+    sb.from("depenses_yayin").select("yayin_at").limit(1)
+  ]);
+  const ted={}, aylar={};
+  const kr=(k&&!k.error)?(k.data||[]):[];
+  if(kr.length){
+    kr.forEach(r=>{ const t=String(r.tedarikci||"").trim()||"—", v=Number(r.tutar)||0;
+      ted[t]=(ted[t]||0)+v; const kk=r.yil+"|"+r.ay; aylar[kk]=(aylar[kk]||0)+v; });
+  }else{
+    /* ÖB formu doldurulana kadar eski baseline */
+    const [tb,pr]=await Promise.all([
+      sb.from("pano_ozel_tablo").select("tablo,baslik").eq("bolum","depenses"),
+      sb.from("pano_ozel").select("tablo,sira,hucreler").eq("bolum","depenses").order("tablo").order("sira")
+    ]);
+    const num=s=>{ const x=String(s==null?"":s).replace(/[^\d.,-]/g,"").replace(/\./g,"").replace(",","."); const v=parseFloat(x); return isNaN(v)?0:v; };
+    const bl=((tb.data||[]).find(x=>x.tablo==="t2")||{}).baslik||"";
+    const ym=String(bl).match(/(20\d{2})/); const yil=ym?Number(ym[1]):new Date().getFullYear();
+    (pr.data||[]).forEach(x=>{ const c=x.hucreler||[]; const ad=String(c[0]||"").trim();
+      if(!ad||/^toplam$/i.test(ad)) return;
+      if(x.tablo==="t1"){ ted[ad]=(ted[ad]||0)+num(c[1]); return; }
+      if(x.tablo==="t2"){ const i=DEP_AY.indexOf(ad); const v=num(c[1]); if(i<0||!v) return; aylar[yil+"|"+(i+1)]=v; }
+    });
+  }
+  const tedList=Object.keys(ted).map(t=>({t,v:ted[t]})).sort((a,b)=>b.v-a.v);
+  const tTop=tedList.reduce((a,x)=>a+x.v,0);
+  const t1=tedList.map(x=>`<tr><td>${esc(x.t)}</td><td class="num">${money(x.v)}</td><td class="num">${tTop?Math.round(x.v/tTop*100):0}%</td></tr>`).join("")
+    +`<tr class="itot"><td>TOPLAM</td><td class="num">${money(tTop)}</td><td class="num">100%</td></tr>`;
+  const ayList=Object.keys(aylar).map(kk=>{ const p=kk.split("|"); return {yil:Number(p[0]),ay:Number(p[1]),v:aylar[kk]}; })
+    .sort((a,b)=> (b.yil-a.yil) || (b.ay-a.ay));
+  const aTop=ayList.reduce((a,x)=>a+x.v,0);
+  const t2=ayList.map(x=>`<tr><td>${esc(DEP_AY[x.ay-1]||"")} ${x.yil}</td><td class="num">${money(x.v)}</td></tr>`).join("")
+    +`<tr class="itot"><td>TOPLAM</td><td class="num">${money(aTop)}</td></tr>`;
+  const ya=(y&&!y.error&&y.data&&y.data[0])?y.data[0].yayin_at:null;
+  body.innerHTML=`<style>table.dep{width:auto}table.dep th,table.dep td{width:1%;white-space:nowrap}
+      .depd{margin:0 0 14px}.depd>summary{cursor:pointer;color:#16324f;font-size:13px;font-weight:700;margin:14px 2px 6px;list-style:revert}
+      .depd .scroll{margin-top:6px}</style>
+    <div class="stamp">Son güncelleme: ${ya?dOnly(ya):"—"}</div>
+    <details class="depd"><summary>Tedarikçi Bazında Gider (yüksekten düşüğe) · ${tedList.length}</summary>
+      <div class="scroll"><table class="dep"><thead><tr><th>Tedarikçi</th><th class="num">Toplam (€)</th><th class="num">Pay</th></tr></thead><tbody>${t1}</tbody></table></div>
+    </details>
+    <h3 class="sec">Aylık Toplam Gider</h3>
+    <div class="scroll"><table class="dep"><thead><tr><th>Ay</th><th class="num">Tutar (€)</th></tr></thead><tbody>${t2}</tbody></table></div>`;
 }
 
 /* ---------- MK PRİM — owner salt-okur: MK faaliyet formundan 4 blok + otomatik prim (mk_faaliyet). Tek kaynak: oranlar burada + formda birebir. ---------- */
