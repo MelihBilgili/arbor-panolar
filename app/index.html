@@ -1228,23 +1228,58 @@ async function loadDepenses(tgt){
 const MKP_BLOCKS=[["memnuniyet","Müşteri Memnuniyeti","Oran% × %0,75 × (Kontrat HT ÷ 12)"],["ts","TS Ekstra İşler","%0,2 × TS Tutarı"],["fr","FR (Fransa) Satış","%0,05 × Kontrat HT"],["diger","Diğer Satış","%0,10 × Kontrat HT"]];
 function mkPrim(tur,r){ const K=Number(r.kontrat_tutari)||0; if(tur==="memnuniyet") return (Number(r.memnuniyet_orani)||0)/100*0.0075*(K/12); if(tur==="ts") return 0.002*(Number(r.ts_tutari)||0); if(tur==="fr") return 0.0005*K; return 0.001*K; }
 const mkEur=n=>(Number(n)||0).toLocaleString("tr-TR",{maximumFractionDigits:2})+" €";
+/* Dört blok da AYNI 6 sütunlu iskelete oturur (colgroup + table-layout:fixed) →
+   Proje, Kontrat HT/TS Tutarı ve Prim sütunları tablolar arasında yatayda tam hizalı.
+   1 Firma(35) 2 Proje(35) 3 Kriter/TS Notları(35) 4 Oran%/Kontrat Tarihi(12) 5 Kontrat HT/TS Tutarı(12) 6 Prim(12) */
+const MKP_COLS=`<colgroup><col class="w35"><col class="w35"><col class="w35"><col class="w12"><col class="w12"><col class="w12"></colgroup>`;
 async function loadMkPrim(tgt){
   const body=document.getElementById(tgt||"view");
-  const {data,error}=await sb.from("mk_faaliyet").select("*").eq("aktif",true).order("id",{ascending:false});
-  if(error){ body.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
-  const rows=data||[]; const byT={memnuniyet:[],ts:[],fr:[],diger:[]}; rows.forEach(r=>{ (byT[r.tur]=byT[r.tur]||[]).push(r); });
-  let grand=0;
-  let html=`<div class="stamp">${rows.length} faaliyet</div><div class="hint">Mehmet Konak <a href="mk-prim/" target="_blank">Faaliyet formundan</a> girer; prim kontrat/tutar alanlarından otomatik hesaplanır (tek kaynak). Toplam dört kriteri (FR dahil) kapsar.</div>`;
+  const [f,ai]=await Promise.all([
+    sb.from("mk_faaliyet").select("*").eq("aktif",true).order("id",{ascending:false}),
+    sb.from("mk_ay_islendi").select("created_at").order("created_at",{ascending:false}).limit(1)
+  ]);
+  if(f.error){ body.innerHTML=`<div class="load">Hata: ${esc(f.error.message)}</div>`; return; }
+  const rows=f.data||[]; const byT={memnuniyet:[],ts:[],fr:[],diger:[]}; rows.forEach(r=>{ (byT[r.tur]=byT[r.tur]||[]).push(r); });
+  const gunc=(ai&&!ai.error&&ai.data&&ai.data[0])?dOnly(ai.data[0].created_at):"—";
+  const cT=(v,cls)=>`<td class="${cls||""}"><div class="cx">${esc(v==null?"":v)}</div></td>`;
+  const cN=(v,cls)=>`<td class="num ${cls||""}"><div class="cx num">${v==null?"":v}</div></td>`;
+  let grand=0, html="";
   MKP_BLOCKS.forEach(bl=>{
     const tur=bl[0], rs=byT[tur]||[], bt=rs.reduce((a,r)=>a+mkPrim(tur,r),0); grand+=bt;
     const isMem=tur==="memnuniyet", isTs=tur==="ts";
-    const extraH= isMem?"<th>Kriter</th><th class='num'>Oran %</th>":(isTs?"<th>TS Notları</th>":"<th class='num'>Kontrat Tarihi</th>");
-    const amtH= isTs?"TS Tutarı (€)":"Kontrat HT (€)";
-    const tr=rs.map(r=>{ const extra= isMem?`<td>${esc(r.memnuniyet_kriterleri||"")}</td><td class='num'>${r.memnuniyet_orani==null?"":esc(r.memnuniyet_orani)}</td>`:(isTs?`<td>${esc(r.ts_notlari||"")}</td>`:`<td class='num'>${fdate(r.kontrat_tarihi)}</td>`); const amt=isTs?r.ts_tutari:r.kontrat_tutari; return `<tr><td>${esc(r.firma||"")}</td><td>${esc(r.proje||"")}</td>${extra}<td class='num'>${money(amt)}</td><td class='num' style='font-weight:700;color:#0a5745'>${mkEur(mkPrim(tur,r))}</td></tr>`; }).join("");
-    html+=`<h3 class="sec">${esc(bl[1])} <span class="muted">— ${esc(bl[2])} · ${rs.length} satır · ${mkEur(bt)}</span></h3><div class="scroll"><table><thead><tr><th>Firma</th><th>Proje</th>${extraH}<th class='num'>${amtH}</th><th class='num'>Prim (€)</th></tr></thead><tbody>${tr||`<tr><td colspan='6' style='color:#8a97a4;padding:10px'>Kayıt yok.</td></tr>`}</tbody></table></div>`;
+    const h3= isMem?"Kriter":(isTs?"TS Notları":"");
+    const h4= isMem?"Oran %":(isTs?"":"Kontrat Tarihi");
+    const h5= isTs?"TS Tutarı (€)":"Kontrat HT (€)";
+    const tr=rs.map(r=>`<tr>`
+      +cT(r.firma||"")
+      +cT(r.proje||"")
+      +cT(isMem?(r.memnuniyet_kriterleri||""):(isTs?(r.ts_notlari||""):""))
+      +cN(isMem?(r.memnuniyet_orani==null?"":esc(r.memnuniyet_orani)):(isTs?"":fdate(r.kontrat_tarihi)))
+      +cN(money(isTs?r.ts_tutari:r.kontrat_tutari))
+      +cN(mkEur(mkPrim(tur,r)),"prim")
+      +`</tr>`).join("");
+    html+=`<h3 class="sec">${esc(bl[1])} <span class="muted">— ${esc(bl[2])} · ${rs.length} satır · ${mkEur(bt)}</span></h3>`
+      +`<div class="scroll"><table class="mkp">${MKP_COLS}<thead><tr>`
+      +`<th>Firma</th><th>Proje</th><th>${esc(h3)}</th><th class="num">${esc(h4)}</th><th class="num">${esc(h5)}</th><th class="num">Prim (€)</th>`
+      +`</tr></thead><tbody>${tr||`<tr><td colspan="6" style="color:#8a97a4;padding:10px">Kayıt yok.</td></tr>`}</tbody></table></div>`;
   });
-  html+=`<div class="skpi" style="margin-top:12px"><div><b>${mkEur(grand)}</b> toplam prim (4 kriter)</div><div><b>${rows.length}</b> faaliyet</div></div>`;
-  body.innerHTML=html;
+  body.innerHTML=`<style>
+    table.mkp{width:auto;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
+    table.mkp col.w35{width:35ch}table.mkp col.w12{width:12ch}
+    table.mkp th,table.mkp td{border-bottom:1px solid #eef1f5;padding:4px 8px;text-align:left;vertical-align:top}
+    table.mkp thead th{background:#16324f;color:#fff;font-weight:600;font-size:11px;white-space:nowrap}
+    table.mkp th.num{text-align:right}
+    table.mkp .cx{overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
+    table.mkp .cx::-webkit-scrollbar{display:none}
+    table.mkp .cx.num{text-align:right}
+    table.mkp td.prim .cx{font-weight:700;color:#0a5745}
+    table.mkptop{margin:2px 0 8px}
+    table.mkptop td{border:0;background:transparent;padding:2px 8px;font-size:11.5px;color:#0a6b3f;font-weight:700}
+  </style>
+  <table class="mkp mkptop">${MKP_COLS}<tbody><tr>
+    <td colspan="5">Son güncelleme: ${gunc} · Toplam prim (4 kriter)</td>
+    <td class="num"><div class="cx num">${mkEur(grand)}</div></td>
+  </tr></tbody></table>${html}`;
 }
 
 /* ---------- ŞANTİYE — owner salt-okur: tarihli DURUM LOG akışı (ÖB+MK tek form yazar). ---------- */
