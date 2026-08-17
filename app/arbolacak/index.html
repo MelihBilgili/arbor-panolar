@@ -130,6 +130,7 @@ $("ay_btn").onclick=async()=>{
   if(!confirm("AYLIK GÜNCELLEME\n\nGüncel toplamlar SEL-ARB panosuna YENİ TARİH SÜTUNU olarak yazılacak ve int@arbor'a mail gidecek. Ayda bir yapılır. Devam?")) return;
   $("ay_btn").disabled=true; msg("ay_msg","Snapshot alınıyor…",true);
   try{ const {data,error}=await sb.functions.invoke("sel-arb-ay-kapat",{body:{}});
+    if(!error&&data&&data.ok){ try{ await sb.from("pano_yayin").upsert({anahtar:"sel_arb",yayin_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"anahtar"}); }catch(e2){} }
     if(error||!(data&&data.ok)) msg("ay_msg","Hata: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"),false);
     else msg("ay_msg",data.note||("Snapshot alındı: "+data.tarih),true);
   }catch(e){ msg("ay_msg","Hata: "+e,false); }
