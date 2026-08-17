@@ -76,7 +76,10 @@
   table.sat th,table.sat td{white-space:nowrap}
   table.sat td>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   table.sat td>.cx::-webkit-scrollbar{display:none}
-  table.sat td.s25>.cx{width:25ch}table.sat td.s20>.cx{width:20ch}table.sat td.s60>.cx{width:60ch}
+  table.sat td.s25>.cx{width:12.5ch}table.sat td.s20>.cx{width:13.33ch}table.sat td.s60>.cx{width:60ch}
+  table.aup td.t-proje>.cx,table.aup td.t-mus>.cx,table.aup td.t-agac>.cx,table.aup td.t-ihale>.cx,table.aup td.t-durum>.cx,table.aup td.t-not>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.aup td.t-proje>.cx::-webkit-scrollbar,table.aup td.t-mus>.cx::-webkit-scrollbar,table.aup td.t-agac>.cx::-webkit-scrollbar,table.aup td.t-ihale>.cx::-webkit-scrollbar,table.aup td.t-durum>.cx::-webkit-scrollbar,table.aup td.t-not>.cx::-webkit-scrollbar{display:none}
+  table.aup td.t-proje>.cx{width:12.5ch}table.aup td.t-mus>.cx{width:13.33ch}table.aup td.t-agac>.cx{width:10ch}table.aup td.t-ihale>.cx{width:10ch}table.aup td.t-durum>.cx{width:14ch}table.aup td.t-not>.cx{width:25ch}
   .addbar{display:flex;gap:6px;margin:0 0 8px;flex-wrap:nowrap;align-items:center}
   .addbar input{border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;font:inherit;min-width:0}
   .addbar select#ag-ilgili{flex:none;border:1px solid #cdd6df;border-radius:6px;padding:6px 6px;font:inherit;background:#fff}
@@ -517,9 +520,9 @@ function satisTbl(arr){
   const rows=list.map(r=>`<tr>`
     +`<td class="kod s25"><div class="cx" title="${esc(r.proje)}">${esc(r.proje)}</div></td>`
     +`<td class="s20"><div class="cx" title="${esc(r.musteri)}">${esc(r.musteri)}</div></td>`
-    +`<td class="s60"><div class="cx" title="${esc(r.durum)}">${esc(r.durum)}</div></td>`
-    +`<td class="num">${money(r.net_eur)}</td></tr>`).join("");
-  return `<div class="scroll"><table class="sat"><thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>DURUM</th><th class="num">NET (€)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    +`<td class="num">${money(r.net_eur)}</td>`
+    +`<td class="s60"><div class="cx" title="${esc(r.durum)}">${esc(r.durum)}</div></td></tr>`).join("");
+  return `<div class="scroll"><table class="sat"><thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th class="num">NET (€)</th><th>DURUM</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 /* Bölge başlığı yanı: ilgili formun güncelleme düğmesine son basılma tarihi (satis_ay_islendi.updated_at) */
 function ayBanner(ai){ if(!ai||!ai.updated_at) return ''; return ` <span class="muted" style="font-weight:400">· ${dOnly(ai.updated_at)}</span>`; }
@@ -589,20 +592,20 @@ function takipSection(title, tkData, ssData, snapRows, showStats){
   const takip=(tkData||[]).slice().sort((a,b)=>(Number(b.net_ht_eur)||0)-(Number(a.net_ht_eur)||0));
   const tkNet=takip.reduce((a,r)=>a+(Number(r.net_ht_eur)||0),0);
   const tkRows=takip.map(r=>`<tr>
-     <td class="kod" style="white-space:normal">${esc(r.proje)}</td>
-     <td>${esc(r.musteri)}</td>
-     <td class="num">${fdate(r.teklif_tarihi)}</td>
-     <td>${esc(r.agac)}</td>
+     <td class="t-proje"><div class="cx" title="${esc(r.proje)}">${esc(r.proje)}</div></td>
+     <td class="t-mus"><div class="cx" title="${esc(r.musteri)}">${esc(r.musteri)}</div></td>
      <td class="num">${money(r.net_ht_eur)}</td>
-     <td>${esc(r.ihale)}</td>
-     <td>${esc(r.durum)}</td>
+     <td class="num">${fdate(r.teklif_tarihi)}</td>
+     <td class="t-agac"><div class="cx" title="${esc(r.agac)}">${esc(r.agac)}</div></td>
+     <td class="t-ihale"><div class="cx" title="${esc(r.ihale)}">${esc(r.ihale)}</div></td>
+     <td class="t-durum"><div class="cx" title="${esc(r.durum)}">${esc(r.durum)}</div></td>
      <td class="num">${esc(r.son_takip_teklif)}</td>
-     <td class="note">${esc(r.takip_sekli)}</td>
+     <td class="t-not"><div class="cx" title="${esc(r.takip_sekli)}">${esc(r.takip_sekli)}</div></td>
      <td class="num">${esc(r.son_takip_yurtdisi)}</td>
-     <td class="note">${esc(r.yurtdisi_notlari)}</td></tr>`).join("");
+     <td class="t-not"><div class="cx" title="${esc(r.yurtdisi_notlari)}">${esc(r.yurtdisi_notlari)}</div></td></tr>`).join("");
   const takipHTML = takip.length? `
     <div class="scroll"><table class="aup">
-    <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th class="num">TEKLİF</th><th>AĞAÇ</th><th class="num">NET HT (€)</th><th>İHALE</th><th>DURUM</th><th class="num">Son Takip T.</th><th class="note">Teklif B. Notları</th><th class="num">Son Takip T.</th><th class="note">Yurtdışı B. Notları</th></tr></thead>
+    <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th class="num">NET HT (€)</th><th class="num">TEKLİF</th><th>AĞAÇ</th><th>İHALE</th><th>DURUM</th><th class="num">Son Takip T.</th><th>Teklif B. Notları</th><th class="num">Son Takip T.</th><th>Yurtdışı B. Notları</th></tr></thead>
     <tbody>${tkRows}</tbody></table></div>`:'<div class="hint">Takipte teklif yok.</div>';
   return `<h3 class="sec" style="margin-top:26px">${esc(title)} <span class="muted">(${takip.length} teklif · Net HT ${money(tkNet)} €)</span></h3>
     ${takipDiff(snapRows)}
