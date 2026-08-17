@@ -57,14 +57,24 @@
   .sbdg.snew{background:#e7f0ff;color:#0b57d0}.sbdg.chg{background:#fff0e0;color:#b25a00}.sbdg.same{background:#eef1f4;color:#667}.sbdg.none{background:#fde8e8;color:#9c0006}
   .num{text-align:right;white-space:nowrap}
   .snpink{background:#ffd9ec} .itot td{background:#eef4fb;font-weight:700}
+  thead th.num{text-align:right}
+  table.aup{width:auto}
   table.aup th,table.aup td{width:1%;white-space:nowrap}
-  table.aup th.note,table.aup td.note{width:auto;white-space:normal;min-width:160px}
+  table.aup th.note,table.aup td.note{width:auto;white-space:normal;min-width:160px;max-width:34ch}
   table.aup th.ss,table.aup th.ur{white-space:nowrap}
+  table.aupmain thead th:nth-child(n+4):nth-child(-n+10){text-align:right}
   table.aup td.ss>.cx{display:block;width:20ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
-  table.aup td.ur>.cx{display:block;width:15ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.aup td.ur>.cx{display:block;width:45ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.so{width:auto}
+  table.so th,table.so td{width:1%}
   table.so td.c7>.cx,table.so td.c15>.cx,table.so td.c20>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   table.aup td.ss>.cx::-webkit-scrollbar,table.aup td.ur>.cx::-webkit-scrollbar,table.so td.c7>.cx::-webkit-scrollbar,table.so td.c15>.cx::-webkit-scrollbar,table.so td.c20>.cx::-webkit-scrollbar{display:none}
-  table.so td.c7>.cx{width:7ch}table.so td.c15>.cx{width:15ch}table.so td.c20>.cx{width:20ch}
+  table.so td.c7>.cx{width:7ch}table.so td.c15>.cx{width:15ch}table.so td.c20>.cx{width:60ch}
+  table.sat{width:auto}
+  table.sat th,table.sat td{width:1%;white-space:nowrap}
+  table.sat td>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.sat td>.cx::-webkit-scrollbar{display:none}
+  table.sat td.s25>.cx{width:25ch}table.sat td.s20>.cx{width:20ch}table.sat td.s60>.cx{width:60ch}
   .addbar{display:flex;gap:6px;margin:0 0 8px;flex-wrap:nowrap;align-items:center}
   .addbar input{border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;font:inherit;min-width:0}
   .addbar select#ag-ilgili{flex:none;border:1px solid #cdd6df;border-radius:6px;padding:6px 6px;font:inherit;background:#fff}
@@ -95,6 +105,9 @@
   table.ssum tr.stot td{font-weight:700;background:#eef4fb;border-bottom:2px solid #cdd8e4}
   table.ssum tr.sreg td{font-weight:600}
   table.ssum tr.sdet td{padding-top:1px;padding-bottom:7px;font-size:11.5px;line-height:1.6}
+  table.ssum tr.sdet .sdrow{display:flex;justify-content:space-between;align-items:baseline;gap:14px;white-space:nowrap}
+  table.ssum tr.sdet .sdp{text-align:left}
+  table.ssum tr.sdet .sdv{text-align:right;flex:none}
   .dl{font-size:12px;color:#6a7888;font-weight:600}
   .pin{background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:8px 12px;font-size:11.5px;color:#16324f;margin:0 2px 12px;line-height:1.6}
   .secH{margin:16px 2px 6px;color:#16324f;font-size:13px;font-weight:700;border-left:3px solid #16324f;padding-left:8px}
@@ -293,11 +306,10 @@ async function loadGundem(){
     return `<h3 class="sec">Formlar · ${ftRows.length}</h3>`
       +`<div class="scroll gblk"><table><thead><tr><th>Form</th><th>Güncelleme Sıklığı</th><th>Geciken (Gün)</th><th>Mail</th></tr></thead><tbody>${body}</tbody></table></div>`;
   })();
-  const st=await erpStamp();
   const persons=[...new Set(["MB","EA","OE","CTP","EU"].concat(keys.filter(k=>k!=='ARGE')))];
   const ilgSel=persons.map(k=>`<option value="${esc(k)}"${k==='MB'?' selected':''}>${esc(k)}</option>`).join("")+`<option value="PEM">PEM (takip)</option><option value="PRJ">PRJ (takip)</option><option value="__new__">Diğer…</option>`;
   const restKeys=keys.filter(k=>k!=='MB');
-  view.innerHTML=`${stampHTML(st)}
+  view.innerHTML=`
     <style>.gblk table{font-size:12px}.gblk th,.gblk td{white-space:nowrap;padding:4px 8px;border-bottom:1px solid #eef1f5}.gblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.gblk .c>span::-webkit-scrollbar{display:none}.c3>span{max-width:3ch}.c5>span{max-width:5ch}.c8>span{max-width:8ch}.c10>span{max-width:10ch}.c12>span{max-width:12ch}.c15>span{max-width:15ch}.c20>span{max-width:20ch}.c25>span{max-width:25ch}
     .ag-wrap .scroll{max-height:none;overflow-y:visible;overflow-x:auto;border:0;background:transparent;border-radius:0;margin:0 0 12px}
     .gblk button.fmail{font-size:11px;padding:3px 9px;border:1px solid #8a6100;background:#fff7e6;color:#7a5400;border-radius:6px;cursor:pointer}.gblk button.fmail:hover{background:#8a6100;color:#fff}
@@ -418,7 +430,7 @@ async function loadSo(){
   const st=await erpStamp();
   view.innerHTML=`<div class="stamp">Son güncelleme: ${st||"—"} · ${(data||[]).length} kayıt</div><div class="hint">SÖ — açık Sorun ve Öneriler (Şantiye/PEM), <b>kusurlu birim = bölüme</b> göre bloklu, açılış tarihine göre.</div>
     <div class="scroll"><table class="so">
-    <thead><tr><th>NR</th><th>Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th><th>Gündem</th></tr></thead>
+    <thead><tr><th>NR</th><th class="num">Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th><th class="num">Gündem</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
@@ -482,9 +494,10 @@ function satisSummary(regions){
   /* eklenen → YEŞİL; silinen → muhtemel→alınan (M sütunu) veya alınan→üretim (A sütunu) geçişi ise SİYAH, diğer silinenler KIRMIZI */
   const det=(cmp,prev,hasPrev,kind,curM,curA)=>{ if(!hasPrev) return '';
     const {ekl,sil}=sDiff(cmp,prev); let s='';
-    ekl.forEach(r=> s+=`<div style="color:#0a6b3f;white-space:nowrap">${esc(r.proje)} +${money(r.net_eur)} €</div>`);
+    const line=(col,proje,sgn,val)=>`<div class="sdrow" style="color:${col}"><span class="sdp">${esc(proje)}</span><span class="sdv">${sgn}${money(val)} €</span></div>`;
+    ekl.forEach(r=> s+=line('#0a6b3f',r.proje,'+',r.net_eur));
     sil.forEach(r=>{ const k=sKey(r); const iyi = kind==='M' ? curA.has(k) : (!curM.has(k) && !curA.has(k));
-      s+=`<div style="color:${iyi?'#1c2430':'#b23a2e'};white-space:nowrap">${esc(r.proje)} −${money(r.net_eur)} €</div>`; });
+      s+=line(iyi?'#1c2430':'#b23a2e',r.proje,'−',r.net_eur); });
     return s; };
   const tM=[],tA=[],tMc=[],tAc=[],tpM=[],tpA=[]; let anyPrev=false;
   regions.forEach(rg=>{ tM.push(...rg.cM); tA.push(...rg.cA); tMc.push(...rg.cMc); tAc.push(...rg.cAc); tpM.push(...rg.pM); tpA.push(...rg.pA); anyPrev=anyPrev||rg.hasPrev; });
@@ -499,14 +512,17 @@ function satisSummary(regions){
 }
 function satisTbl(arr){
   const list=arr.slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0));
-  const rows=list.map(r=>`<tr><td class="kod" style="white-space:normal">${esc(r.proje)}</td><td>${esc(r.musteri)}</td><td>${esc(r.durum)}</td><td class="num">${money(r.net_eur)}</td></tr>`).join("");
-  return `<div class="scroll"><table><thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>DURUM</th><th class="num">NET (€)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const rows=list.map(r=>`<tr>`
+    +`<td class="kod s25"><div class="cx" title="${esc(r.proje)}">${esc(r.proje)}</div></td>`
+    +`<td class="s20"><div class="cx" title="${esc(r.musteri)}">${esc(r.musteri)}</div></td>`
+    +`<td class="s60"><div class="cx" title="${esc(r.durum)}">${esc(r.durum)}</div></td>`
+    +`<td class="num">${money(r.net_eur)}</td></tr>`).join("");
+  return `<div class="scroll"><table class="sat"><thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>DURUM</th><th class="num">NET (€)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
-/* Aylık güncelleme banner: form düğmesi satis_ay_islendi'ye yazar → burada '… ayı işlendi' */
-function ayBanner(ai){ if(!ai||!ai.ay) return ''; return `<div class="stamp" style="color:#0b57d0">📅 ${esc(ai.ay)} ayı işlendi${ai.updated_at?` · ${dOnly(ai.updated_at)}`:''}</div>`; }
+/* Bölge başlığı yanı: ilgili formun güncelleme düğmesine son basılma tarihi (satis_ay_islendi.updated_at) */
+function ayBanner(ai){ if(!ai||!ai.updated_at) return ''; return ` <span class="muted" style="font-weight:400">· ${dOnly(ai.updated_at)}</span>`; }
 function regionDetail(rg, ai){
-  return `<h2 class="secH" style="margin-top:22px">${esc(rg.ad)}</h2>
-    ${ayBanner(ai)}
+  return `<h2 class="secH" style="margin-top:22px">${esc(rg.ad)}${ayBanner(ai)}</h2>
     <h3 class="sec">Muhtemel <span class="muted">(${rg.cM.length} proje · Net ${money(sSum(rg.cM))} €)</span></h3>
     ${satisTbl(rg.cM)}
     <h3 class="sec">Alınan <span class="muted">(${rg.cA.length} proje · Net ${money(sSum(rg.cA))} €)</span></h3>
@@ -545,7 +561,6 @@ function statsBlock(ssData){
   if(yrs.length) yrs.forEach(yearBlock);
   else { body+=`<tr class="grp"><td colspan="9">— (veri bekleniyor)</td></tr>`; ULKE.forEach(u=> body+=rowFor(u,{},false)); body+=rowFor('Toplam',{},true); }
   return '<h3 class="sec">Takipteki teklifler — yıllık sonuç istatistiği</h3>'
-    +'<div class="hint">Ülke: Almanya · İngiltere · Fransa · Diğer Ülkeler + Toplam. Kazandık/Kaybettik: adet · tutar · ort. iskonto. Belirsiz/Müşteri işi alamadı: adet. Yıllar tek blokta (2025 · 2026 …).</div>'
     +`<div class="scroll"><table class="tks"><thead>
       <tr><th rowspan="2">Yıl / Ülke</th><th colspan="3">Kazandık</th><th colspan="3">Kaybettik</th><th rowspan="2" class="num">Belirsiz<br>(adet)</th><th rowspan="2" class="num">Müşteri işi<br>alamadı (adet)</th></tr>
       <tr><th class="num">Adet</th><th class="num">Tutar €</th><th class="num">Ort.İsk</th><th class="num">Adet</th><th class="num">Tutar €</th><th class="num">Ort.İsk</th></tr>
@@ -561,7 +576,7 @@ function takipDiff(snapRows){
   const {ekl,sil}=sDiff(cur,pr);
   /* eklenen → YEŞİL; silinen (takipten çıktı = karara bağlandı/ilerledi) → SİYAH */
   const chip=(r,pos)=>`<span style="color:${pos?'#0a6b3f':'#1c2430'};white-space:nowrap">${esc(r.proje)}${r.net_ht_eur!=null?` ${pos?'+':'−'}${money(r.net_ht_eur)} €`:''}</span>`;
-  let s=`<div class="sybox" style="line-height:1.9"><div class="muted">Önceki çekim ${dOnly(prev)} → ${dOnly(last)}</div>`;
+  let s=`<div class="sybox" style="line-height:1.9">`;
   if(!ekl.length&&!sil.length) s+='<div class="muted">Değişiklik yok.</div>';
   if(ekl.length) s+=`<div><b style="color:#0a6b3f">Eklenen (${ekl.length}):</b> ${ekl.map(r=>chip(r,1)).join(' · ')}</div>`;
   if(sil.length) s+=`<div><b style="color:#1c2430">Silinen (${sil.length}):</b> ${sil.map(r=>chip(r,0)).join(' · ')}</div>`;
@@ -585,7 +600,7 @@ function takipSection(title, tkData, ssData, snapRows, showStats){
      <td class="note">${esc(r.yurtdisi_notlari)}</td></tr>`).join("");
   const takipHTML = takip.length? `
     <div class="scroll"><table class="aup">
-    <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th>TEKLİF</th><th>AĞAÇ</th><th class="num">NET HT (€)</th><th>İHALE</th><th>DURUM</th><th>Son Takip T.</th><th class="note">Teklif B. Notları</th><th>Son Takip T.</th><th class="note">Yurtdışı B. Notları</th></tr></thead>
+    <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th class="num">TEKLİF</th><th>AĞAÇ</th><th class="num">NET HT (€)</th><th>İHALE</th><th>DURUM</th><th class="num">Son Takip T.</th><th class="note">Teklif B. Notları</th><th class="num">Son Takip T.</th><th class="note">Yurtdışı B. Notları</th></tr></thead>
     <tbody>${tkRows}</tbody></table></div>`:'<div class="hint">Takipte teklif yok.</div>';
   return `<h3 class="sec" style="margin-top:26px">${esc(title)} <span class="muted">(${takip.length} teklif · Net HT ${money(tkNet)} €)</span></h3>
     ${takipDiff(snapRows)}
@@ -596,20 +611,27 @@ function takipSection(title, tkData, ssData, snapRows, showStats){
 /* ---------- HAZIR PEM/PRJ ---------- */
 async function loadHazir(){
   const view=document.getElementById("view");
-  const [{data,error},erpRes,ozRes]=await Promise.all([
+  const [{data,error},erpRes,ozRes,dgRes]=await Promise.all([
     sb.from("hazir_pem_prj").select("*"),
     sb.from("hazir_erp").select("tur,kalem_key,erp"),
-    sb.from("sevk_durumu_onur").select("tur,kalem_key,degisim_ozet")
+    sb.from("sevk_durumu_onur").select("tur,kalem_key,degisim_ozet"),
+    sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1)
   ]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const erpMap={}; (erpRes.data||[]).forEach(r=>{ erpMap[String(r.tur).toUpperCase()+"|"+r.kalem_key]=r.erp||{}; });
   const ozMap={}; (ozRes.data||[]).forEach(r=>{ ozMap[String(r.tur).toUpperCase()+"|"+r.kalem_key]=r.degisim_ozet||""; });
-  /* Filtre: taze kalemleri gizle — PEM hazır tarihi son 15 gün, PRJ AÜP (hazir_tarihi) son 10 gün içindeyse çıkar. */
-  const _now=new Date(); _now.setHours(23,59,59,999);
-  const _cut=n=>{ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-n); return d; };
-  const _c15=_cut(15), _c10=_cut(10);
-  const _son=(dt,c)=>{ if(!dt) return false; const d=new Date(dt); return !isNaN(d) && d>=c && d<=_now; };
-  const filt=(data||[]).filter(r=>{ const isPem=/PEM/i.test(String(r.tur||"")); return isPem? !_son(r.hazir_tarihi,_c15) : !_son(r.hazir_tarihi,_c10); });
+  /* Filtre (her ingest sonrası otomatik geçerli):
+     1) Termin tarihi (PEM) / AÜP tarihi (PRJ) BOŞ olan kalemler gösterilmez.
+     2) Bu tarih, panonun güncelleme tarihinden (son ERP damgası) geriye doğru 10 gün içindeyse gösterilmez. */
+  const _dmg=String((dgRes&&dgRes.data&&dgRes.data[0]&&dgRes.data[0].damga)||"");
+  const _ref=/^\d{6}$/.test(_dmg)? new Date(2000+Number(_dmg.slice(0,2)),Number(_dmg.slice(2,4))-1,Number(_dmg.slice(4,6))) : new Date();
+  _ref.setHours(23,59,59,999);
+  const _cut=new Date(_ref); _cut.setHours(0,0,0,0); _cut.setDate(_cut.getDate()-10);
+  const filt=(data||[]).filter(r=>{
+    const dt=r.hazir_tarihi; if(!dt) return false;
+    const d=new Date(dt); if(isNaN(d)) return false;
+    return !(d>=_cut && d<=_ref);
+  });
   const digits=s=>String(s==null?"":s).replace(/\D/g,"");
   const lastN=(s,n)=>{ const d=digits(s); return d.slice(-n); };
   const ev=(tur,no,k)=>{ const e=erpMap[tur+"|"+no]||{}; return e[k]!=null?String(e[k]):""; };
@@ -647,7 +669,7 @@ async function loadHazir(){
   const st=await erpStamp();
   view.innerHTML=`${stampHTML(st)}
     <style>.hblk table{font-size:12px}.hblk th,.hblk td{white-space:nowrap;padding:4px 8px;border-bottom:1px solid #eef1f5}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{max-width:3ch}.h5>span{max-width:5ch}.h8>span{max-width:8ch}.h15>span{max-width:15ch}.h20>span{max-width:20ch}.h25>span{max-width:25ch}</style>
-    <div class="hint">Hazır PEM/PRJ — PEM (durum 3) + PRJ (8/8.1). Sevk durumu Onur formundan; orta sütunlar en yeni ERP'den; son sütun aylık değişim özeti. Taze kalemler gizli. ${filt.length} / ${(data||[]).length} kalem.</div>
+    <div class="hint">Hazır PEM/PRJ — PEM (durum 3) + PRJ (8/8.1). Sevk durumu Onur formundan; orta sütunlar en yeni ERP'den; son sütun aylık değişim özeti. Termin/AÜP tarihi boş olanlar ve pano tarihinden geriye 10 gün içindekiler gizli. ${filt.length} / ${(data||[]).length} kalem.</div>
     ${block("pem")}
     ${block("prj")}`;
 }
@@ -669,7 +691,7 @@ async function loadAup(){
       <td class="num">${fdate(r.mvt)}</td>
       <td class="num">${fdate(r.aup)}</td>
       <td class="num">${fdate(r.gyt)}</td>
-      <td class="num ${ga>0?'red':''}">${ga==null?'':ga}</td>
+      <td class="num ${ga<0?'red':''}">${ga==null?'':ga}</td>
       <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
       <td class="num">${money(r.anlasma_fiyati)}</td>
       <td class="ss${r.satis_santiye_notlari?' snpink':''}"><div class="cx">${esc(r.satis_santiye_notlari)}</div></td>
@@ -682,8 +704,8 @@ async function loadAup(){
   const dgun=(a,b)=>{ const v=Math.round((Number(a)||0)-(Number(b)||0)); const c=v>0?'#0a6b3f':(v<0?'#b23a2e':'#6a7888'); return ' <span style="color:'+c+'">('+(v>0?'+':(v<0?'−':''))+Math.abs(v)+' gün)</span>'; };
   const gk=Number(o0.global_kayma||0).toFixed(1).replace(".",",");
   const stamp='<div class="stamp">Son güncelleme: '+(st||"—")+' · Adet: '+money(o0.toplam_adet)+pct(o0.toplam_adet,o1.toplam_adet)+' · Tutar: '+money(o0.toplam_tutar)+' €'+pct(o0.toplam_tutar,o1.toplam_tutar)+' · Global kayma: '+gk+' gün'+dgun(o0.global_kayma,o1.global_kayma)+'</div>';
-  view.innerHTML=`${stamp}<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&gt;0 ve Kayma≥3 kırmızı.</div>
-    <div class="scroll"><table class="aup">
+  view.innerHTML=`${stamp}<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&lt;0 ve Kayma≥3 kırmızı.</div>
+    <div class="scroll"><table class="aup aupmain">
     <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th>PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
