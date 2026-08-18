@@ -312,9 +312,9 @@ async function loadGundem(){
       +`<td class="c c15"><span title="${esc(ev(r,'proje'))}">${esc(ev(r,'proje'))}</span></td>`
       +`<td class="c c25"><span title="${esc(ev(r,noteCol))}">${esc(ev(r,noteCol))}</span></td>`
       +`<td class="c c3"><span>${esc(ev(r,'adet'))}</span></td>`
-      +`<td class="c c10"><span title="${esc(ev(r,'durum'))}">${esc(ev(r,'durum'))}</span></td>`
-      +`<td class="c c8"><span>${esc(ev(r,dcol))}</span></td>`
-      +`<td class="c c25"><span title="${esc(r.konu)}">${esc(r.konu)}</span></td>`
+      +`<td class="c cdur"><span title="${esc(ev(r,'durum'))}">${esc(ev(r,'durum'))}</span></td>`
+      +`<td class="c c8"><span>${fdate(ev(r,dcol))}</span></td>`
+      +`<td class="c ckon"><span title="${esc(r.konu)}">${esc(r.konu)}</span></td>`
       +`<td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
     const title=(tip==='pem'?'PEM-':'PRJ-')+rowsX.length;
     return `<h3 class="sec">${title}</h3><div class="scroll gblk"><table><thead><tr><th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>Durum</th><th>${dateHd}</th><th>Konu</th><th></th></tr></thead><tbody>${body}</tbody></table></div>`;
@@ -323,7 +323,7 @@ async function loadGundem(){
   const ilgSel=persons.map(k=>`<option value="${esc(k)}"${k==='MB'?' selected':''}>${esc(k)}</option>`).join("")+`<option value="PEM">PEM (takip)</option><option value="PRJ">PRJ (takip)</option><option value="__new__">Diğer…</option>`;
   const restKeys=keys.filter(k=>k!=='MB');
   view.innerHTML=`
-    <style>.gblk table{font-size:11.5px}.gblk th,.gblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.gblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.gblk .c>span::-webkit-scrollbar{display:none}.c3>span{max-width:3ch}.c5>span{max-width:5ch}.c8>span{max-width:8ch}.c10>span{max-width:10ch}.c12>span{max-width:12ch}.c15>span{max-width:15ch}.c20>span{max-width:20ch}.c25>span{max-width:25ch}
+    <style>.gblk table{font-size:11.5px}.gblk th,.gblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.gblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.gblk .c>span::-webkit-scrollbar{display:none}.c3>span{max-width:3ch}.c5>span{max-width:5ch}.c8>span{max-width:8ch}.c10>span{max-width:10ch}.c12>span{max-width:12ch}.c15>span{max-width:15ch}.c20>span{max-width:20ch}.c25>span{max-width:25ch}.cdur>span{max-width:13ch}.ckon>span{max-width:32.5ch}
     .ag-wrap .scroll{max-height:none;overflow-y:visible;overflow-x:auto;border:0;background:transparent;border-radius:0;margin:0 0 12px}
     .gblk button.fmail{display:none}</style>
     <div class="addbar">
@@ -437,7 +437,7 @@ async function loadSo(){
     });
   });
   const st=await erpStamp();
-  view.innerHTML=`<div class="stamp">Son güncelleme: ${st||"—"} · ${(data||[]).length} kayıt</div><div class="hint">SÖ — açık Sorun ve Öneriler (Şantiye/PEM), <b>kusurlu birim = bölüme</b> göre bloklu, açılış tarihine göre.</div>
+  view.innerHTML=`<div class="stamp">Son güncelleme: ${st||"—"}</div>
     <div class="scroll"><table class="so">
     <thead><tr><th>NR</th><th class="num">Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th><th class="num">Gündem</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
@@ -468,7 +468,10 @@ async function loadSatis(){
   const stampDate=regions.reduce((m,rg)=> (rg.cekim>m?rg.cekim:m), '0');
   const anyData=regions.some(rg=>rg.data.length);
   view.innerHTML=`
-    <style>.satis-wrap .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.satis-wrap .scroll th{white-space:nowrap}</style>
+    <style>.satis-wrap .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.satis-wrap .scroll th{white-space:nowrap}
+    /* 2-satırlı gruplu başlık sticky hizası: 1. satır top:0, 2. satır 1. satır yüksekliği kadar aşağı */
+    .satis-wrap table.aup thead tr:first-child th{top:0;z-index:3}
+    .satis-wrap table.aup thead tr:nth-child(2) th{top:22px;z-index:2}</style>
     <div class="satis-wrap">
     <div class="stamp">Son güncelleme: ${anyData?dOnly(stampDate):'—'}</div>
     ${satisSummary(regions)}
@@ -652,7 +655,7 @@ async function loadHazir(){
     if(!rowsX.length) return "";
     const noteCol=tip==="pem"?"ekbilgi":"notlar", dcol=tip==="pem"?"termin":"aup";
     const noteHd=tip==="pem"?"Ek Bilgi":"Satış/Şantiye Notları", dateHd=tip==="pem"?"Termin Tarihi":"AÜP Tarihi";
-    const kodW=tip==="pem"?"h5":"h8";
+    const kodW="h8";  /* PEM+PRJ kod aynı genişlik → son 4 sütun hizalı (6d) */
     const sorted=[...rowsX].sort((a,b)=>(ev(T,a.no,dcol)||"99999999").localeCompare(ev(T,b.no,dcol)||"99999999"));
     const body=sorted.map(r=>{
       const kod=lastN(r.no,tip==="pem"?5:8);
@@ -666,7 +669,7 @@ async function loadHazir(){
         +`<td class="c ${kodW}"><span title="${esc(kod)}">${esc(kod)}</span></td>`
         +`<td class="c h15"><span title="${esc(proje)}">${esc(proje)}</span></td>`
         +`<td class="c h25"><span title="${esc(note)}">${esc(note)}</span></td>`
-        +(tip==="pem"?`<td class="c h3"><span>${esc(adet)}</span></td>`:``)
+        +`<td class="c h3"><span>${esc(adet)}</span></td>`
         +`<td class="c h8"><span title="${esc(dt)}">${esc(fdate(dt)||dt)}</span></td>`
         +`<td class="c h20"><span title="${esc(onur)}">${esc(onur)}</span></td>`
         +`<td class="c h20"><span title="${esc(oz)}">${esc(oz)}</span></td>`
@@ -674,12 +677,12 @@ async function loadHazir(){
     }).join("");
     const heads=tip==="pem"
       ? `<th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>${dateHd}</th><th>Sevk Durumu (Onur)</th><th>Sevk Durum Değişimi</th>`
-      : `<th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>${dateHd}</th><th>Sevk Durumu (Onur)</th><th>Sevk Durum Değişimi</th>`;
+      : `<th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>${dateHd}</th><th>Sevk Durumu (Onur)</th><th>Sevk Durum Değişimi</th>`;
     return `<h3 class="sec">${T}</h3><div class="scroll hblk"><table><thead><tr>${heads}</tr></thead><tbody>${body}</tbody></table></div>`;
   };
   const st=await erpStamp();
   view.innerHTML=`${stampHTML(st)}
-    <style>.hblk table{font-size:11.5px}.hblk th,.hblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{max-width:3ch}.h5>span{max-width:5ch}.h8>span{max-width:8ch}.h15>span{max-width:15ch}.h20>span{max-width:20ch}.h25>span{max-width:25ch}</style>
+    <style>.hblk table{font-size:11.5px}.hblk th,.hblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.hblk thead th{vertical-align:bottom}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{max-width:3ch}.h5>span{max-width:5ch}.h8>span{max-width:8ch}.h15>span{max-width:15ch}.h20>span{max-width:34ch}.h25>span{max-width:25ch}</style>
     ${block("pem")}
     ${block("prj")}`;
 }
@@ -1110,7 +1113,7 @@ async function loadObrapor(tgt){
   ib+=`</tbody></table></div>`;
   view.innerHTML=`<style>
     table.obt{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
-    table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k60{width:60ch}table.obt col.k100{width:100ch}
+    table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k60{width:60ch}table.obt col.k100{width:85ch}
     table.obt th,table.obt td{border-bottom:1px solid #eef1f5;padding:2px 8px;text-align:left;vertical-align:middle;height:20px;line-height:16px}
     table.obt thead th{background:#16324f;color:#fff;font-weight:600;font-size:11px;white-space:nowrap;padding:4px 8px}
     table.obt .cx{overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
