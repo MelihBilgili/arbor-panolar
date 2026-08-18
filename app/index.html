@@ -156,7 +156,10 @@ let state = { tab:"gundem", email:"", session:null, allowed:null };
 const PREFIX = { F:"Fabrika", G:"Yurtdışı / Genel", P:"PEM", S:"Şahsi", ARGE:"ARGE" };
 
 function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function fdate(s){ if(!s) return ""; const d=new Date(s); if(isNaN(d)) return esc(s); return String(d.getDate()).padStart(2,'0')+"."+String(d.getMonth()+1).padStart(2,'0')+"."+String(d.getFullYear()).slice(2); }
+function fdate(s){ if(!s) return ""; s=String(s).trim();
+  const m=s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);  /* DD.MM.YYYY / DD.MM.YY — new Date() bunu ABD MM/DD sanıp kaydırıyor, elle parse et */
+  if(m){ const g=+m[1],ay=+m[2]; if(g>=1&&g<=31&&ay>=1&&ay<=12){ const y=m[3].length<=2?m[3]:m[3].slice(-2); return String(g).padStart(2,'0')+"."+String(ay).padStart(2,'0')+"."+String(y).padStart(2,'0'); } }
+  const d=new Date(s); if(isNaN(d)) return esc(s); return String(d.getDate()).padStart(2,'0')+"."+String(d.getMonth()+1).padStart(2,'0')+"."+String(d.getFullYear()).slice(2); }
 function money(n){ if(n==null||n==="") return ""; const v=Math.round(Number(n)); return isNaN(v)?"":v.toLocaleString("tr-TR"); }
 
 /* ---------- AUTH ---------- */
