@@ -76,10 +76,11 @@
   table.sat th,table.sat td{white-space:nowrap}
   table.sat td>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   table.sat td>.cx::-webkit-scrollbar{display:none}
-  table.sat td.s25>.cx{width:12.5ch}table.sat td.s20>.cx{width:13.33ch}table.sat td.s60>.cx{width:60ch}
+  table.sat td.s25>.cx{width:12.5ch}table.sat td.s20>.cx{width:13.33ch}table.sat td.s60>.cx{width:78ch}
+  table.aup thead th{vertical-align:bottom}
   table.aup td.t-proje>.cx,table.aup td.t-mus>.cx,table.aup td.t-agac>.cx,table.aup td.t-ihale>.cx,table.aup td.t-durum>.cx,table.aup td.t-not>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   table.aup td.t-proje>.cx::-webkit-scrollbar,table.aup td.t-mus>.cx::-webkit-scrollbar,table.aup td.t-agac>.cx::-webkit-scrollbar,table.aup td.t-ihale>.cx::-webkit-scrollbar,table.aup td.t-durum>.cx::-webkit-scrollbar,table.aup td.t-not>.cx::-webkit-scrollbar{display:none}
-  table.aup td.t-proje>.cx{width:12.5ch}table.aup td.t-mus>.cx{width:13.33ch}table.aup td.t-agac>.cx{width:10ch}table.aup td.t-ihale>.cx{width:10ch}table.aup td.t-durum>.cx{width:14ch}table.aup td.t-not>.cx{width:25ch}
+  table.aup td.t-proje>.cx{width:12.5ch}table.aup td.t-mus>.cx{width:13.33ch}table.aup td.t-agac>.cx{width:10ch}table.aup td.t-ihale>.cx{width:10ch}table.aup td.t-durum>.cx{width:14ch}table.aup td.t-not>.cx{width:42.5ch}
   .addbar{display:flex;gap:6px;margin:0 0 8px;flex-wrap:nowrap;align-items:center}
   .addbar input{border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;font:inherit;min-width:0}
   .addbar select#ag-ilgili{flex:none;border:1px solid #cdd6df;border-radius:6px;padding:6px 6px;font:inherit;background:#fff}
@@ -469,8 +470,9 @@ async function loadSatis(){
     <div class="stamp">Son güncelleme: ${anyData?dOnly(stampDate):'—'}</div>
     ${satisSummary(regions)}
     ${regions.map(rg=>regionDetail(rg,islendi[rg.kaynak])).join("")}
-    ${takipSection("Yurtdışı 1 Takipteki Teklifler", tk.data||[], (ss&&!ss.error)?(ss.data||[]):[], (sn&&!sn.error)?(sn.data||[]):[], true)}
+    ${takipSection("Yurtdışı 1 Takipteki Teklifler", tk.data||[], (ss&&!ss.error)?(ss.data||[]):[], (sn&&!sn.error)?(sn.data||[]):[], false)}
     ${takipSection("Yurtdışı 2 Takipteki Teklifler", (tk2&&tk2.data)||[], (ss2&&!ss2.error)?(ss2.data||[]):[], (sn2&&!sn2.error)?(sn2.data||[]):[], false)}
+    ${statsBlock((ss&&!ss.error)?(ss.data||[]):[])}
     </div>`;
 }
 /* Bölge çekim hesabı: aktif=güncel, arşivden en yeni çekim=önceki */
@@ -589,7 +591,7 @@ function takipDiff(snapRows){
 }
 /* Yurtdışı takip tablosu: Ülke/Hazırlayan yok; 4 not kolonu (Formlardan) */
 function takipSection(title, tkData, ssData, snapRows, showStats){
-  const takip=(tkData||[]).slice().sort((a,b)=>(Number(b.net_ht_eur)||0)-(Number(a.net_ht_eur)||0));
+  const takip=(tkData||[]).slice().sort((a,b)=>String(b.teklif_tarihi||"").localeCompare(String(a.teklif_tarihi||"")));
   const tkNet=takip.reduce((a,r)=>a+(Number(r.net_ht_eur)||0),0);
   const tkRows=takip.map(r=>`<tr>
      <td class="t-proje"><div class="cx" title="${esc(r.proje)}">${esc(r.proje)}</div></td>
@@ -599,9 +601,9 @@ function takipSection(title, tkData, ssData, snapRows, showStats){
      <td class="t-agac"><div class="cx" title="${esc(r.agac)}">${esc(r.agac)}</div></td>
      <td class="t-ihale"><div class="cx" title="${esc(r.ihale)}">${esc(r.ihale)}</div></td>
      <td class="t-durum"><div class="cx" title="${esc(r.durum)}">${esc(r.durum)}</div></td>
-     <td class="num">${esc(r.son_takip_teklif)}</td>
+     <td class="num">${fdate(r.son_takip_teklif)}</td>
      <td class="t-not"><div class="cx" title="${esc(r.takip_sekli)}">${esc(r.takip_sekli)}</div></td>
-     <td class="num">${esc(r.son_takip_yurtdisi)}</td>
+     <td class="num">${fdate(r.son_takip_yurtdisi)}</td>
      <td class="t-not"><div class="cx" title="${esc(r.yurtdisi_notlari)}">${esc(r.yurtdisi_notlari)}</div></td></tr>`).join("");
   const takipHTML = takip.length? `
     <div class="scroll"><table class="aup">
@@ -869,7 +871,16 @@ function loadProsedur(){
     sec+=`<div class="secH">${esc(SECS[s])}</div>`;
     items.forEach(d=>{ sec+=`<div class="law" data-no="${esc(d.no)}"><div class="lno${d.ek?' ek':''}">${esc(d.no)}</div><div class="lbody"><div class="lhead"><span class="lcaret">▶</span><span class="ltitle">${esc(d.ad)}</span><span class="ldate">(${esc(d.tarih)})</span></div><div class="ltext">${d.metin}</div></div><div class="lx" title="İptal (gizle)">✕</div></div>`; });
   });
-  view.innerHTML=`<div class="stamp">Son Güncelleme: 13.08.26</div>${sec}`;
+  view.innerHTML=`<style>
+    #view .secH{margin:9px 0 3px;font-size:12px}
+    #view .law{padding:1px 0;margin:0;border-bottom:1px solid #eef1f5}
+    #view .law .lhead{padding:1px 0;gap:6px;line-height:16px}
+    #view .law .ltitle{font-size:12px}
+    #view .law .ldate{font-size:11px}
+    #view .law .lno{font-size:11px;padding:0 5px;line-height:16px}
+    #view .law .lcaret{font-size:9px}
+    #view .law .ltext{font-size:12px;line-height:1.35;padding:2px 0 4px}
+  </style><div class="stamp">Son Güncelleme: 13.08.26</div>${sec}`;
   view.querySelectorAll(".law").forEach(law=>{
     const tog=()=>law.classList.toggle("open");
     const head=law.querySelector(".lhead"), no=law.querySelector(".lno");
@@ -1131,7 +1142,7 @@ async function loadFiyat(target){
   let aRows=A.map(r=>`<tr data-id="${r.id}">`
     +`<td class="fc">${ec("fiyat_ahsap",r.id,"ad",r.ad)}</td>`
     +`<td class="fc">${ec("fiyat_ahsap",r.id,"durum",r.durum)}</td>`
-    +`<td class="fc fac">${ec("fiyat_ahsap",r.id,"aciklama",r.aciklama)}</td>`
+    +`<td class="fc"><div class="acx">${ec("fiyat_ahsap",r.id,"aciklama",r.aciklama)}</div></td>`
     +`<td><button class="fdel" data-t="fiyat_ahsap" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
   const aTbl=`<h3 class="sec">Ahşap Türü ve Durumu</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Tür</th><th>Durum</th><th>Açıklama</th><th></th></tr></thead><tbody>${aRows}`
     +`<tr class="faddrow"><td><input id="fa-ad" placeholder="Tür"></td><td><input id="fa-durum" placeholder="Mevcut/Sıkıntılı"></td><td><input id="fa-ac" placeholder="Açıklama"></td><td><button class="btn" id="fa-add">Ekle</button></td></tr>`
@@ -1139,7 +1150,7 @@ async function loadFiyat(target){
   // C/D) Müşteri sınıfları — iki tablo birebir aynı format, şirketler alfabetik
   const msBlock=(sinif,title)=>{
     const rows=M.filter(r=>r.sinif===sinif).slice().sort((a,b)=>String(a.ad||"").localeCompare(String(b.ad||""),"tr"));
-    let body=rows.map(r=>`<tr data-id="${r.id}"><td class="fc">${ec("fiyat_musteri_sinif",r.id,"ad",r.ad)}</td><td><button class="fdel" data-t="fiyat_musteri_sinif" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
+    let body=rows.map(r=>`<tr data-id="${r.id}"><td class="fc"><div class="mcx">${ec("fiyat_musteri_sinif",r.id,"ad",r.ad)}</div></td><td><button class="fdel" data-t="fiyat_musteri_sinif" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
     return `<h3 class="sec">${esc(title)}</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Şirket</th><th></th></tr></thead><tbody>${body}`
       +`<tr class="faddrow"><td><input id="fm${sinif}-ad" placeholder="Şirket adı"></td><td><button class="btn" id="fm${sinif}-add" data-sinif="${sinif}">Ekle</button></td></tr>`
       +`</tbody></table></div>`;
@@ -1147,7 +1158,9 @@ async function loadFiyat(target){
   const style=`<style>
    .ftbl{border-collapse:collapse;width:auto;font-size:11.5px}
    .ftbl th,.ftbl td{border-bottom:1px solid #eef1f5;padding:2px 7px;text-align:left;vertical-align:middle;white-space:nowrap;line-height:16px}
-   .ftbl td.fac{white-space:normal;max-width:60ch}
+   .ftbl .acx{display:block;width:87ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+   .ftbl .mcx{display:block;width:26ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+   .ftbl .acx::-webkit-scrollbar,.ftbl .mcx::-webkit-scrollbar{display:none}
    .fpubx{color:#a3aeba}
    .ftbl thead th{background:#16324f;color:#fff;font-weight:600;white-space:nowrap}
    .ftbl .fedit{cursor:pointer;display:inline-block;min-width:24px;border-bottom:1px dashed #cdd6df}
@@ -1236,7 +1249,7 @@ async function loadMali(){
   if(b==="ahsap"){ loadAhsap("mali-body"); return; }
   if(b==="fiyat"){ loadFiyat("mali-body"); return; } /* Fiyatlandırma: kaynak veri + editör (fiyat_* tablolar, anon) */
   /* SEL-ARB = mutabakat matrisi + Dépenses (eski ayrı Dépenses sekmesi buraya taşındı) */
-  if(b==="sel_arb"){ document.getElementById("mali-body").innerHTML=`<div id="sa-a"></div><h2 class="secH">Dépenses</h2><div id="sa-b"></div>`; loadSelArb("sa-a"); loadDepenses("sa-b"); return; }
+  if(b==="sel_arb"){ document.getElementById("mali-body").innerHTML=`<div id="sa-a"></div><h2 class="secH">Dépenses <span class="muted" id="dep-stamp" style="font-weight:400"></span></h2><div id="sa-b"></div>`; loadSelArb("sa-a"); loadDepenses("sa-b"); return; }
   loadPanoBolum(b, "mali-body");
 }
 
@@ -1282,12 +1295,12 @@ async function loadDepenses(tgt){
   body.innerHTML=`<style>table.dep{width:auto}table.dep th,table.dep td{white-space:nowrap}
       .depd{margin:0 0 14px}.depd>summary{cursor:pointer;color:#16324f;font-size:13px;font-weight:700;margin:14px 2px 6px;list-style:revert}
       .depd .scroll{margin-top:6px}</style>
-    <div class="stamp">Son güncelleme: ${ya?dOnly(ya):"—"}</div>
     <details class="depd"><summary>Tedarikçi Bazında Gider (yüksekten düşüğe) · ${tedList.length}</summary>
       <div class="scroll"><table class="dep"><thead><tr><th>Tedarikçi</th><th class="num">Toplam (€)</th><th class="num">Pay</th></tr></thead><tbody>${t1}</tbody></table></div>
     </details>
     <h3 class="sec">Aylık Toplam Gider</h3>
     <div class="scroll"><table class="dep"><thead><tr><th>Ay</th><th class="num">Tutar (€)</th></tr></thead><tbody>${t2}</tbody></table></div>`;
+  const ds=document.getElementById("dep-stamp"); if(ds) ds.textContent="· Son güncelleme: "+(ya?dOnly(ya):"—");
 }
 
 /* ---------- MK PRİM — owner salt-okur: MK faaliyet formundan 4 blok + otomatik prim (mk_faaliyet). Tek kaynak: oranlar burada + formda birebir. ---------- */
@@ -1398,7 +1411,7 @@ async function loadSantiye(tgt){
       table.stik .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}
       table.stik .c>span::-webkit-scrollbar{display:none}
       table.stik td.t20>span{width:20ch}
-      table.stik td.tdur>.cx{display:block;width:70ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+      table.stik td.tdur>.cx{display:block;width:119ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
       table.stik td.tdur>.cx::-webkit-scrollbar{display:none}</style>
     <div class="scroll"><table class="stbl stik">
     <thead><tr><th>ŞANTİYE</th><th>MÜŞTERİ</th><th class="num">ARBOR SAS ALACAK €</th><th class="tdur">DURUM</th></tr></thead>
