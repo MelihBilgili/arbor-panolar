@@ -1371,18 +1371,20 @@ async function loadMkPrim(tgt){
 /* ---------- ŞANTİYE — owner salt-okur: tarihli DURUM LOG akışı (ÖB+MK tek form yazar). ---------- */
 async function loadSantiye(tgt){
   const view=document.getElementById(tgt||"view");
-  const [s,l,sa]=await Promise.all([
+  const [s,mk,sa]=await Promise.all([
     sb.from("santiye").select("*").order("sira"),
-    sb.from("santiye_durum_log").select("*").order("tarih",{ascending:false}).order("id",{ascending:false}),
+    sb.from("mk_santiye_snapshot").select("*"),
     sb.from("sel_arb_snapshot").select("tarih,sira,firma,proje,alacak")
   ]);
-  const err=s.error||l.error;
+  const err=s.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
-  const logByS={}; (l.data||[]).forEach(x=>{ (logByS[x.santiye_id]=logByS[x.santiye_id]||[]).push(x); });
+  /* Pano DURUM'u YALNIZ MK snapshot'ından okur (önceki+güncel); ÖB verisi panoya girmez */
+  const mkBy={}; (mk.data||[]).forEach(x=>{ mkBy[x.santiye_id]=x; });
   const rows=(s.data||[]).filter(r=>r.durum!=="Çözüldü");
   const ay=d=>{ if(!d) return 0; const x=new Date(d); if(isNaN(x)) return 0; const n=new Date(); return (n.getFullYear()-x.getFullYear())*12+(n.getMonth()-x.getMonth()); };
-  /* Formun güncelleme düğmesine son basılma tarihi — ÖB ve MK için ayrı (santiye_durum_log) */
-  const sonBasim=k=>{ let m=null; (l.data||[]).forEach(x=>{ if(x.kim!==k) return; const d=x.created_at||x.tarih; if(d&&(m==null||String(d)>String(m))) m=d; }); return m?dOnly(m):"—"; };
+  const sdk=d=>d?String(d).slice(8,10)+"."+String(d).slice(5,7)+"."+String(d).slice(2,4):"";
+  /* MK son güncelleme = en yeni snapshot.updated_at (aylık güncelleme düğmesine son basılma; yalnız MK) */
+  let mkStamp=null; (mk.data||[]).forEach(x=>{ if(x.updated_at&&(mkStamp==null||String(x.updated_at)>String(mkStamp))) mkStamp=x.updated_at; }); mkStamp=mkStamp?dOnly(mkStamp):"—";
   /* Arbor SAS Alacak — SEL-ARB en yeni çekim; bağ = santiye.sel_arb_sira (ÖB formundaki seçim) */
   const saRows=(sa&&!sa.error)?(sa.data||[]):[];
   let saMax=""; saRows.forEach(x=>{ if(String(x.tarih)>saMax) saMax=String(x.tarih); });
@@ -1403,8 +1405,13 @@ async function loadSantiye(tgt){
   };
   const toplam=rows.reduce((a,r)=>a+(alacakOf(r).tutar||0),0);
   const body=rows.map(r=>{
-    const a=ay(r.ilk_kayit), logs=logByS[r.id]||[], last=logs[0], al=alacakOf(r);
-    const durTxt=last?(esc(last.durum)+(r.degisim_ozet?` <span style="color:#8a6100;font-style:italic">· Δ ${esc(r.degisim_ozet)}</span>`:"")):`<span class="muted">Henüz durum girişi yok.</span>`;
+    const a=ay(r.ilk_kayit), al=alacakOf(r), m=mkBy[r.id];
+    let durTxt;
+    if(m&&(m.mk_guncel_durum||m.mk_guncel_tarih)){
+      const g=`${m.mk_guncel_tarih?'<b>'+sdk(m.mk_guncel_tarih)+'</b> · ':''}${esc(m.mk_guncel_durum||"")}`;
+      const o=(m.mk_onceki_durum||m.mk_onceki_tarih)?` <span class="muted">· Önceki${m.mk_onceki_tarih?' ('+sdk(m.mk_onceki_tarih)+')':''}: ${esc(m.mk_onceki_durum||"")}</span>`:"";
+      durTxt=g+o;
+    } else durTxt=`<span class="muted">Henüz MK güncellemesi yok.</span>`;
     const dur=`<div class="cx">${durTxt}</div>`;
     return `<tr>`
       +`<td class="sb"><span title="${esc(r.neden||'')}">${esc(r.santiye)}</span>${a>=3?' <span class="sbdg none">'+a+' ay</span>':''}</td>`
@@ -1412,7 +1419,7 @@ async function loadSantiye(tgt){
       +`<td class="num"${al.det?` title="${esc(al.det)}"`:''}>${al.tutar==null?'':money(al.tutar)}</td>`
       +`<td class="tdur">${dur}</td></tr>`;
   }).join("");
-  view.innerHTML=`<h2 class="secH">Tıkanmış Şantiyeler <span class="muted" style="font-weight:400">· ${rows.length} açık · ÖB ${sonBasim("OB")} · MK ${sonBasim("MK")}</span></h2>
+  view.innerHTML=`<h2 class="secH">Tıkanmış Şantiyeler <span class="muted" style="font-weight:400">· ${rows.length} açık · MK ${mkStamp}</span></h2>
     <style>table.stik{width:auto}
       table.stik td.sb{white-space:nowrap;font-weight:700}
       table.stik .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}
