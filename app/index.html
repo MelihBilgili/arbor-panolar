@@ -907,7 +907,7 @@ async function loadFormlar(){
     {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
-  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap","selft/":"sel_ft"};
+  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap","selft/":"sel_ft","arbolacak/":"yd_alacak"};
   const ft=await sb.from("form_takip").select("*");
   const ftBy={}; ((ft&&!ft.error)?(ft.data||[]):[]).forEach(r=>ftBy[r.form_key]=r);
   const today=new Date(); today.setHours(0,0,0,0);
