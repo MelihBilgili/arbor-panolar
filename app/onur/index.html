@@ -71,9 +71,18 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",
 const fd=d=>{ if(!d) return ""; const x=new Date(d); return isNaN(x)?"":String(x.getDate()).padStart(2,"0")+"."+String(x.getMonth()+1).padStart(2,"0")+"."+String(x.getFullYear()).slice(2); };
 let ROWS=[];
 async function load(){
-  const {data,error}=await sb.from("hazir_pem_prj").select("*");
+  const [{data,error},dg]=await Promise.all([
+    sb.from("hazir_pem_prj").select("*"),
+    sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1)
+  ]);
   if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
-  ROWS=data||[]; render();
+  /* Hazır PEM/PRJ panosuyla AYNI kural: yalnız hazir_tarihi < (en yeni ERP damgası − 10 gün) görünür; band-içi + gelecek + boş gizli */
+  const _dmg=String((dg&&dg.data&&dg.data[0]&&dg.data[0].damga)||"");
+  const _ref=/^\d{6}$/.test(_dmg)? new Date(2000+Number(_dmg.slice(0,2)),Number(_dmg.slice(2,4))-1,Number(_dmg.slice(4,6))) : new Date();
+  _ref.setHours(23,59,59,999);
+  const _cut=new Date(_ref); _cut.setHours(0,0,0,0); _cut.setDate(_cut.getDate()-10);
+  ROWS=(data||[]).filter(r=>{ const dt=r.hazir_tarihi; if(!dt) return false; const d=new Date(dt); if(isNaN(d)) return false; return !(d>=_cut); });
+  render();
 }
 function render(){
   const f=document.getElementById("turSel").value;
