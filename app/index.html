@@ -607,7 +607,8 @@ function takipSection(title, tkData, ssData, snapRows, showStats){
      <td class="t-not"><div class="cx" title="${esc(r.yurtdisi_notlari)}">${esc(r.yurtdisi_notlari)}</div></td></tr>`).join("");
   const takipHTML = takip.length? `
     <div class="scroll"><table class="aup">
-    <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th class="num">NET HT (€)</th><th class="num">TEKLİF</th><th>AĞAÇ</th><th>İHALE</th><th>DURUM</th><th class="num">Son Takip T.</th><th>Teklif B. Notları</th><th class="num">Son Takip T.</th><th>Yurtdışı B. Notları</th></tr></thead>
+    <thead><tr><th rowspan="2">PROJE</th><th rowspan="2">MÜŞTERİ</th><th rowspan="2" class="num">NET HT (€)</th><th rowspan="2" class="num">TEKLİF</th><th rowspan="2">AĞAÇ</th><th rowspan="2">İHALE</th><th rowspan="2">DURUM</th><th colspan="2" style="text-align:center">Teklif Birimi</th><th colspan="2" style="text-align:center">Yurtdışı Birimi</th></tr>
+    <tr><th class="num">Son Takip T.</th><th>Notları</th><th class="num">Son Takip T.</th><th>Notları</th></tr></thead>
     <tbody>${tkRows}</tbody></table></div>`:'<div class="hint">Takipte teklif yok.</div>';
   return `<h3 class="sec" style="margin-top:26px">${esc(title)} <span class="muted">(${takip.length} teklif · Net HT ${money(tkNet)} €)</span></h3>
     ${takipDiff(snapRows)}
