@@ -1245,15 +1245,16 @@ let fiyatTarget="view";
 async function loadFiyat(target){
   if(target) fiyatTarget=target;
   const view=document.getElementById(fiyatTarget)||document.getElementById("view");
-  const [pp,ah,ms,ya]=await Promise.all([
+  const [pp,ah,ms,ya,tt]=await Promise.all([
     sb.from("fiyat_parametre").select("*").order("sira"),
     sb.from("fiyat_ahsap").select("*").order("sira").order("id"),
     sb.from("fiyat_musteri_sinif").select("*").order("sira").order("id"),
-    sb.from("fiyat_yayin").select("*").limit(1)
+    sb.from("fiyat_yayin").select("*").limit(1),
+    sb.from("fiyat_termin").select("*").order("sira").order("id")
   ]);
   const err=pp.error||ah.error||ms.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
-  const P=pp.data||[], A=ah.data||[], M=ms.data||[];
+  const P=pp.data||[], A=ah.data||[], M=ms.data||[], T=(tt&&!tt.error)?(tt.data||[]):[];
   const yr=(ya.data&&ya.data[0])||{};
   const ec=(t,id,f,v,type)=>`<span class="fedit" data-t="${t}" data-id="${id}" data-f="${f}"${type?` data-type="${type}"`:""} title="Düzenlemek için tıkla">${esc(v==null||v===""?"—":v)}</span>`;
   // Skalar parametreler
@@ -1262,6 +1263,19 @@ async function loadFiyat(target){
     +`<td class="fc">${ec("fiyat_parametre",r.id,"fransa_deger",r.fransa_deger)}</td>`
     +`<td class="fc">${ec("fiyat_parametre",r.id,"diger_deger",r.diger_deger)}</td></tr>`).join("");
   const pTbl=`<h3 class="sec">Parametreler</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Parametre</th><th>Fransa</th><th>Diğer</th></tr></thead><tbody>${pRows}</tbody></table></div>`;
+  /* B) Termin — MVT hafta tablosu (form bunu birebir okur; boş numune hücresi = gri/uygulanmaz) */
+  let tRows=T.map(r=>`<tr data-id="${r.id}">`
+    +`<td class="fc">${ec("fiyat_termin",r.id,"aralik",r.aralik)}</td>`
+    +`<td class="fc">${ec("fiyat_termin",r.id,"ic_68",r.ic_68)}</td>`
+    +`<td class="fc">${ec("fiyat_termin",r.id,"numune",r.numune)}</td>`
+    +`<td class="fc">${ec("fiyat_termin",r.id,"std_disi",r.std_disi)}</td>`
+    +`<td><button class="fdel" data-t="fiyat_termin" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
+  const tTbl=`<h3 class="sec">Termin — MVT (hafta)</h3><div class="scroll"><table class="ftbl"><thead><tr>`
+    +`<th>Projedeki Ürün ya da Cephedeki Cam</th><th>68p, 78t veya 78a İçeren Projeler</th>`
+    +`<th>İçermeyen · Hızlandırmak için Standart (4/16/4) Cam Kullanılabilen Numuneler</th>`
+    +`<th>İçermeyen · Standart (4/16/4) Dışı Cam Kullanılan Projeler</th><th></th></tr></thead><tbody>${tRows}`
+    +`<tr class="faddrow"><td><input id="ft-aralik" placeholder="1–4 adet"></td><td><input id="ft-ic" placeholder="6"></td><td><input id="ft-nu" placeholder="(boş)"></td><td><input id="ft-sd" placeholder="4"></td><td><button class="btn" id="ft-add">Ekle</button></td></tr>`
+    +`</tbody></table></div>`;
   // A) Ahşap
   let aRows=A.map(r=>`<tr data-id="${r.id}">`
     +`<td class="fc">${ec("fiyat_ahsap",r.id,"ad",r.ad)}</td>`
@@ -1304,7 +1318,7 @@ async function loadFiyat(target){
   </style>`;
   view.innerHTML=`${style}
     <div class="fbar"><button id="fiyat-guncelle">GÜNCELLE</button><span class="fpub">${yr.yayin_at?("Son yayın: "+dOnly(yr.yayin_at)+" <span class=\"fpubx\">(bu düğmeye son basılıp fiyatlandırma formuna aktarıldığı tarih)</span>"):"Henüz yayınlanmadı"}${yr.bildirim_beklemede?" · <b style=color:#b47800>bildirim beklemede</b>":""}</span></div>
-    ${pTbl}${aTbl}${SINIFLAR.map(s=>msBlock(s[0],s[1])).join("")}`;
+    ${pTbl}${tTbl}${aTbl}${SINIFLAR.map(s=>msBlock(s[0],s[1])).join("")}`;
   // olaylar
   view.querySelectorAll(".fedit").forEach(el=>el.onclick=()=>startFiyEdit(el));
   view.querySelectorAll(".fdel").forEach(b=>b.onclick=()=>fiyDel(b.dataset.t,b.dataset.id));
@@ -1312,6 +1326,12 @@ async function loadFiyat(target){
     const ad=document.getElementById("fa-ad").value.trim(); if(!ad){alert("Tür gir.");return;}
     const rec={ad,durum:document.getElementById("fa-durum").value.trim()||null,aciklama:document.getElementById("fa-ac").value.trim()||null,sira:(A.length?Math.max(...A.map(x=>x.sira||0))+1:1)};
     const {error}=await sb.from("fiyat_ahsap").insert(rec); if(error){alert(error.message);return;} loadFiyat();
+  };
+  document.getElementById("ft-add").onclick=async()=>{
+    const ar=document.getElementById("ft-aralik").value.trim(); if(!ar){alert("Aralık gir (ör. 1–4 adet).");return;}
+    const g=id=>{ const v=document.getElementById(id).value.trim(); return v||null; };
+    const rec={aralik:ar,ic_68:g("ft-ic"),numune:g("ft-nu"),std_disi:g("ft-sd"),sira:(T.length?Math.max(...T.map(x=>x.sira||0))+1:1)};
+    const {error}=await sb.from("fiyat_termin").insert(rec); if(error){alert(error.message);return;} loadFiyat();
   };
   SINIFLAR.map(s=>s[0]).forEach(sn=>{ document.getElementById("fm"+sn+"-add").onclick=async()=>{
     const ad=document.getElementById("fm"+sn+"-ad").value.trim(); if(!ad){alert("Şirket adı gir.");return;}
