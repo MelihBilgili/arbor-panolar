@@ -77,9 +77,11 @@
   table.so td.c7>.cx{width:7ch}table.so td.c15>.cx{width:15ch}table.so td.c20>.cx{width:60ch}
   table.sat{width:auto}
   table.sat th,table.sat td{white-space:nowrap}
-  table.sat td>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
-  table.sat td>.cx::-webkit-scrollbar{display:none}
-  table.sat td.s25>.cx{width:12.5ch}table.sat td.s20>.cx{width:13.33ch}table.sat td.s60>.cx{width:78ch}
+  table.sat td>.cx,table.sat th>.cw{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.sat td>.cx::-webkit-scrollbar,table.sat th>.cw::-webkit-scrollbar{display:none}
+  /* Muhtemel/Alınan blokları: dört sütun da sabit genişlik → bütün bloklar (boş olanlar dahil)
+     yatayda birebir hizalı, sağ dikey sınırlar da aynı hizada. Başlıkta da aynı genişlik (span.cw). */
+  table.sat .sc1{width:21.25ch}table.sat .sc2{width:20ch}table.sat .sc3{width:10ch;text-align:right}table.sat .sc4{width:50.7ch}
   table.aup thead th{vertical-align:bottom}
   table.aup td.t-proje>.cx,table.aup td.t-mus>.cx,table.aup td.t-agac>.cx,table.aup td.t-ihale>.cx,table.aup td.t-durum>.cx,table.aup td.t-not>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   table.aup td.t-proje>.cx::-webkit-scrollbar,table.aup td.t-mus>.cx::-webkit-scrollbar,table.aup td.t-agac>.cx::-webkit-scrollbar,table.aup td.t-ihale>.cx::-webkit-scrollbar,table.aup td.t-durum>.cx::-webkit-scrollbar,table.aup td.t-not>.cx::-webkit-scrollbar{display:none}
@@ -238,6 +240,8 @@ function dOnly(iso){ if(!iso) return "—"; const d=new Date(iso); return isNaN(
 async function erpStamp(){ const {data}=await sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1); return data&&data[0]?fmtDamga(data[0].damga):"—"; }
 async function tblStamp(t){ const {data}=await sb.from(t).select("updated_at").order("updated_at",{ascending:false}).limit(1); return data&&data[0]?dOnly(data[0].updated_at):"—"; }
 function stampHTML(d){ return '<div class="stamp">Son güncelleme: '+(d||"—")+'</div>'; }
+/* Damga satırlarındaki "(+%N)" rozeti — bir önceki ERP çekimine göre değişim, tamsayı. */
+function pctSpan(a,b){ a=Number(a)||0; b=Number(b)||0; if(!b) return ""; const v=Math.round((a-b)/Math.abs(b)*100); return ' <span style="color:'+(v>=0?'#0a6b3f':'#b23a2e')+'">('+(v>=0?'+':'−')+Math.abs(v)+'%)</span>'; }
 
 /* ---------- Başlık uydurma: sütun başlığı içerikten genişse bir tık küçült; hâlâ genişse
    iki satıra sar (başlıklar alttan hizalı). Yalnız auto-layout tablolarda çalışır;
@@ -458,7 +462,7 @@ function startEdit(el){
 /* ---------- SÖ (so_panosu, bölüm bloklu) ---------- */
 async function loadSo(){
   const view=document.getElementById("view");
-  const [so,ea]=await Promise.all([ sb.from("so_panosu").select("*"), sb.from("so_ea_form").select("nr,statu,gundem_tarihi") ]);
+  const [so,ea,adRes]=await Promise.all([ sb.from("so_panosu").select("*"), sb.from("so_ea_form").select("nr,statu,gundem_tarihi"), sb.from("pano_adet_ozet").select("damga,so_adet").limit(2) ]);
   const data=so.data, error=so.error;
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const eaMap={}; (ea&&!ea.error?(ea.data||[]):[]).forEach(x=>eaMap[x.nr]=x);
@@ -481,7 +485,9 @@ async function loadSo(){
     });
   });
   const st=await erpStamp();
-  view.innerHTML=`<div class="stamp">Son güncelleme: ${st||"—"}</div>
+  const s0=(adRes&&adRes.data&&adRes.data[0])||{}, s1=(adRes&&adRes.data&&adRes.data[1])||{};
+  const soAdet=' · SÖ Adet: '+Math.round(Number(s0.so_adet)||0)+pctSpan(s0.so_adet,s1.so_adet);
+  view.innerHTML=`<div class="stamp">Son güncelleme: ${st||"—"}${soAdet}</div>
     <div class="scroll"><table class="so">
     <thead><tr><th>NR</th><th class="num">Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th><th class="num">Gündem</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
@@ -515,7 +521,13 @@ async function loadSatis(){
     <style>.satis-wrap .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.satis-wrap .scroll th{white-space:nowrap}
     /* 2-satırlı gruplu başlık sticky hizası: 1. satır top:0, 2. satır 1. satır yüksekliği kadar aşağı */
     .satis-wrap table.aup thead tr:first-child th{top:0;z-index:3}
-    .satis-wrap table.aup thead tr:nth-child(2) th{top:22px;z-index:2}</style>
+    .satis-wrap table.aup thead tr:nth-child(2) th{top:22px;z-index:2}
+    /* Grup başlığı (Teklif/Yurtdışı Birimi) ortalanınca alt başlıklardan kaymış görünüyordu:
+       sola hizalanır (ilk alt sütunun tam üstünde başlar) + grup sınırına dikey ayraç. */
+    .satis-wrap table.aup thead th.grph{text-align:left}
+    .satis-wrap table.aup thead th.grph,.satis-wrap table.aup thead th.grpc{border-left:2px solid #6f8cab}
+    .satis-wrap table.aup tbody td:nth-child(8),.satis-wrap table.aup tbody td:nth-child(10){border-left:2px solid #dbe5ef}
+    .satis-wrap table.aup td.t-durum>.cx{width:9.1ch}</style>
     <div class="satis-wrap">
     <div class="stamp">Son güncelleme: ${anyData?dOnly(stampDate):'—'}</div>
     ${satisSummary(regions)}
@@ -570,11 +582,11 @@ function satisSummary(regions){
 function satisTbl(arr){
   const list=arr.slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0));
   const rows=list.map(r=>`<tr>`
-    +`<td class="kod s25"><div class="cx" title="${esc(r.proje)}">${esc(r.proje)}</div></td>`
-    +`<td class="s20"><div class="cx" title="${esc(r.musteri)}">${esc(r.musteri)}</div></td>`
-    +`<td class="num">${money(r.net_eur)}</td>`
-    +`<td class="s60"><div class="cx" title="${esc(r.durum)}">${esc(r.durum)}</div></td></tr>`).join("");
-  return `<div class="scroll"><table class="sat"><thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th class="num">NET (€)</th><th>DURUM</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    +`<td class="kod"><div class="cx sc1" title="${esc(r.proje)}">${esc(r.proje)}</div></td>`
+    +`<td><div class="cx sc2" title="${esc(r.musteri)}">${esc(r.musteri)}</div></td>`
+    +`<td class="num"><div class="cx sc3">${money(r.net_eur)}</div></td>`
+    +`<td><div class="cx sc4" title="${esc(r.durum)}">${esc(r.durum)}</div></td></tr>`).join("");
+  return `<div class="scroll"><table class="sat"><thead><tr><th><span class="cw sc1">PROJE</span></th><th><span class="cw sc2">MÜŞTERİ</span></th><th class="num"><span class="cw sc3">NET (€)</span></th><th><span class="cw sc4">DURUM</span></th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 /* Bölge başlığı yanı: ilgili formun güncelleme düğmesine son basılma tarihi (satis_ay_islendi.updated_at) */
 function ayBanner(ai){ if(!ai||!ai.updated_at) return ''; return ` <span class="muted" style="font-weight:400">· ${dOnly(ai.updated_at)}</span>`; }
@@ -657,8 +669,8 @@ function takipSection(title, tkData, ssData, snapRows, showStats){
      <td class="t-not"><div class="cx" title="${esc(r.yurtdisi_notlari)}">${esc(r.yurtdisi_notlari)}</div></td></tr>`).join("");
   const takipHTML = takip.length? `
     <div class="scroll"><table class="aup">
-    <thead><tr><th rowspan="2">PROJE</th><th rowspan="2">MÜŞTERİ</th><th rowspan="2" class="num">NET HT (€)</th><th rowspan="2" class="num">TEKLİF</th><th rowspan="2">AĞAÇ</th><th rowspan="2">İHALE</th><th rowspan="2">DURUM</th><th colspan="2" style="text-align:center">Teklif Birimi</th><th colspan="2" style="text-align:center">Yurtdışı Birimi</th></tr>
-    <tr><th class="num">Son Takip T.</th><th>Notları</th><th class="num">Son Takip T.</th><th>Notları</th></tr></thead>
+    <thead><tr><th rowspan="2">PROJE</th><th rowspan="2">MÜŞTERİ</th><th rowspan="2" class="num">NET HT (€)</th><th rowspan="2" class="num">TEKLİF</th><th rowspan="2">AĞAÇ</th><th rowspan="2">İHALE</th><th rowspan="2">DURUM</th><th colspan="2" class="grph">Teklif Birimi</th><th colspan="2" class="grph">Yurtdışı Birimi</th></tr>
+    <tr><th class="num grpc">Son Takip T.</th><th>Notları</th><th class="num grpc">Son Takip T.</th><th>Notları</th></tr></thead>
     <tbody>${tkRows}</tbody></table></div>`:'<div class="hint">Takipte teklif yok.</div>';
   return `<h3 class="sec" style="margin-top:26px">${esc(title)} <span class="muted">(${takip.length} teklif · Net HT ${money(tkNet)} €)</span></h3>
     ${takipDiff(snapRows)}
@@ -669,11 +681,12 @@ function takipSection(title, tkData, ssData, snapRows, showStats){
 /* ---------- HAZIR PEM/PRJ ---------- */
 async function loadHazir(){
   const view=document.getElementById("view");
-  const [{data,error},erpRes,ozRes,dgRes]=await Promise.all([
+  const [{data,error},erpRes,ozRes,dgRes,adRes]=await Promise.all([
     sb.from("hazir_pem_prj").select("*"),
     sb.from("hazir_erp").select("tur,kalem_key,erp"),
     sb.from("sevk_durumu_onur").select("tur,kalem_key,degisim_ozet"),
-    sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1)
+    sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1),
+    sb.from("pano_adet_ozet").select("damga,pem_adet,prj_adet").limit(2)
   ]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const erpMap={}; (erpRes.data||[]).forEach(r=>{ erpMap[String(r.tur).toUpperCase()+"|"+r.kalem_key]=r.erp||{}; });
@@ -704,7 +717,8 @@ async function loadHazir(){
     const body=sorted.map(r=>{
       const kod=lastN(r.no,tip==="pem"?5:8);
       const proje=ev(T,r.no,"proje")||String(r.proje_adi||"");
-      const note=ev(T,r.no,noteCol)||(tip==="pem"?String(r.ek_bilgi||""):"");
+      /* PRJ notu ERP Prj.xlsx "SATIŞ/ŞANTİYE NOTLARI" alanından (hazir_pem_prj.satis_notu) gelir. */
+      const note=ev(T,r.no,noteCol)||(tip==="pem"?String(r.ek_bilgi||""):String(r.satis_notu||""));
       let adet=ev(T,r.no,"adet")||(r.adet==null?"":String(r.adet));
       if(adet!==""&&isFinite(parseFloat(adet))) adet=String(Math.round(parseFloat(adet)));
       const dt=ev(T,r.no,dcol)||r.hazir_tarihi||"";
@@ -719,14 +733,19 @@ async function loadHazir(){
         +`<td class="c h20"><span title="${esc(oz)}">${esc(oz)}</span></td>`
         +`</tr>`;
     }).join("");
-    const heads=tip==="pem"
-      ? `<th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>${dateHd}</th><th>Sevk Durumu (Onur)</th><th>Sevk Durum Değişimi</th>`
-      : `<th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>${dateHd}</th><th>Sevk Durumu (Onur)</th><th>Sevk Durum Değişimi</th>`;
-    return `<h3 class="sec">${T}</h3><div class="scroll hblk"><table><thead><tr>${heads}</tr></thead><tbody>${body}</tbody></table></div>`;
+    /* Blok başlığı (h3 "PEM"/"PRJ") YOK — blok kimliği ilk sütun başlığında: PEM / Proje.
+       Adetler damga satırında (PEM Adet / PRJ Adet). */
+    const kodHd=tip==="pem"?"PEM":"Proje";
+    const heads=`<th>${kodHd}</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>${dateHd}</th><th>Sevk Durumu (Onur)</th><th>Sevk Durum Değişimi</th>`;
+    return `<div class="scroll hblk"><table><thead><tr>${heads}</tr></thead><tbody>${body}</tbody></table></div>`;
   };
   const st=await erpStamp();
-  view.innerHTML=`${stampHTML(st)}
-    <style>.hblk table{font-size:11.5px}.hblk th,.hblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.hblk thead th{vertical-align:bottom}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{width:3ch}.h5>span{width:5ch}.h8>span{width:8ch}.h15>span{width:15ch}.h20>span{width:34ch}.h25>span{width:25ch}.hdt>span{width:15ch}</style>
+  const a0=(adRes&&adRes.data&&adRes.data[0])||{}, a1=(adRes&&adRes.data&&adRes.data[1])||{};
+  const hStamp='<div class="stamp">Son güncelleme: '+(st||"—")
+    +' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)
+    +' · PRJ Adet: '+Math.round(Number(a0.prj_adet)||0)+pctSpan(a0.prj_adet,a1.prj_adet)+'</div>';
+  view.innerHTML=`${hStamp}
+    <style>.hblk table{font-size:11.5px}.hblk th,.hblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.hblk thead th{vertical-align:bottom}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{width:3ch}.h5>span{width:5ch}.h8>span{width:8ch}.h15>span{width:15ch}.h20>span{width:68ch}.h25>span{width:25ch}.hdt>span{width:12.45ch}</style>
     ${block("pem")}
     ${block("prj")}`;
 }
