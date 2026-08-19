@@ -65,8 +65,10 @@
   table.aup th.note,table.aup td.note{white-space:normal;min-width:160px;max-width:34ch}
   table.aup th.ss,table.aup th.ur{white-space:nowrap}
   table.aupmain thead th:nth-child(n+4):nth-child(-n+10){text-align:right}
-  table.aup td.ss>.cx{display:block;width:20ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
-  table.aup td.ur>.cx{display:block;width:45ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.aup td.ss>.cx{display:block;width:40ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.aup td.ur>.cx{display:block;width:67.5ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.aup th.pstd{font-size:9.5px;padding-left:2px;padding-right:2px}
+  table.aup td.pstd{padding-left:2px;padding-right:2px;width:1%}
   table.so{width:auto}
   table.so th,table.so td{white-space:nowrap}
   table.so td.c7>.cx,table.so td.c15>.cx,table.so td.c20>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
@@ -704,7 +706,7 @@ async function loadAup(){
       <td class="num">${fdate(r.mvt)}</td>
       <td class="num">${fdate(r.aup)}</td>
       <td class="num">${fdate(r.gyt)}</td>
-      <td class="num ${ga<0?'red':''}">${ga==null?'':ga}</td>
+      <td class="num pstd ${ga<0?'red':''}">${ga==null?'':ga}</td>
       <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
       <td class="num">${money(r.anlasma_fiyati)}</td>
       <td class="ss${r.satis_santiye_notlari?' snpink':''}"><div class="cx">${esc(r.satis_santiye_notlari)}</div></td>
@@ -714,12 +716,11 @@ async function loadAup(){
   const st=await erpStamp();
   const o0=(oz.data&&oz.data[0])||{}, o1=(oz.data&&oz.data[1])||{};
   const pct=(a,b)=>{ a=Number(a)||0; b=Number(b)||0; if(!b) return ""; const v=Math.round((a-b)/Math.abs(b)*100); return ' <span style="color:'+(v>=0?'#0a6b3f':'#b23a2e')+'">('+(v>=0?'+':'−')+Math.abs(v)+'%)</span>'; };
-  const dgun=(a,b)=>{ const v=Math.round((Number(a)||0)-(Number(b)||0)); const c=v>0?'#0a6b3f':(v<0?'#b23a2e':'#6a7888'); return ' <span style="color:'+c+'">('+(v>0?'+':(v<0?'−':''))+Math.abs(v)+' gün)</span>'; };
   const gk=Number(o0.global_kayma||0).toFixed(1).replace(".",",");
-  const stamp='<div class="stamp">Son güncelleme: '+(st||"—")+' · Adet: '+money(o0.toplam_adet)+pct(o0.toplam_adet,o1.toplam_adet)+' · Tutar: '+money(o0.toplam_tutar)+' €'+pct(o0.toplam_tutar,o1.toplam_tutar)+' · Global kayma: '+gk+' gün'+dgun(o0.global_kayma,o1.global_kayma)+'</div>';
-  view.innerHTML=`${stamp}<div class="hint">AÜP — ERP snapshot üstünde canlı görüntü (salt-okur). ${data.length} proje · PST-AÜP&lt;0 ve Kayma≥3 kırmızı.</div>
+  const stamp='<div class="stamp">Son güncelleme: '+(st||"—")+' · Adet: '+money(o0.toplam_adet)+pct(o0.toplam_adet,o1.toplam_adet)+' · Tutar: '+money(o0.toplam_tutar)+' €'+pct(o0.toplam_tutar,o1.toplam_tutar)+' · Global kayma: '+gk+' gün</div>';
+  view.innerHTML=`${stamp}
     <div class="scroll"><table class="aup aupmain">
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th>PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
