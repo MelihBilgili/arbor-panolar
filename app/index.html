@@ -266,8 +266,23 @@ function fitHeads(){
     }
   });
 }
+/* ---------- Taşan hücre içeriği hover'da tam görünsün (title) — TÜM panolar.
+   Sütun genişliği yüzünden kırpılan her hücreye (td / içindeki span-div) tam metni
+   title olarak koyar; tarayıcı hover'da gösterir. Ölçüm ve yazma iki ayrı geçişte
+   (layout thrash yok). title'ı zaten olan öğeye dokunulmaz. Attribute değişimi
+   MutationObserver (childList) tetiklemez → döngü yok. ---------- */
+function fitTitles(){
+  const app=document.getElementById("app"); if(!app) return;
+  const todo=[];
+  app.querySelectorAll("td,td span,td div").forEach(el=>{
+    if(el.hasAttribute("title")) return;
+    if(el.firstElementChild&&el.querySelector("button,input,select,textarea,a,table,iframe")) return;
+    if(el.scrollWidth>el.clientWidth+1) todo.push(el);
+  });
+  todo.forEach(el=>{ const t=(el.innerText||el.textContent||"").replace(/\s+/g," ").trim(); if(t) el.setAttribute("title",t); });
+}
 (function(){
-  const run=()=>{ clearTimeout(window._fhT); window._fhT=setTimeout(fitHeads,60); };
+  const run=()=>{ clearTimeout(window._fhT); window._fhT=setTimeout(()=>{ fitHeads(); fitTitles(); },60); };
   const app=document.getElementById("app");
   if(app) new MutationObserver(run).observe(app,{childList:true,subtree:true});
 })();
@@ -321,11 +336,36 @@ async function loadGundem(){
     const title=(tip==='pem'?'PEM-':'PRJ-')+rowsX.length;
     return `<h3 class="sec">${title}</h3><div class="scroll gblk"><table><thead><tr><th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>Durum</th><th>${dateHd}</th><th>Konu</th><th></th></tr></thead><tbody>${body}</tbody></table></div>`;
   };
+  /* ARGE bloğu: kendi 4 sütunlu tablosu — No(xxxx) · Öncelik · Durum · Arge Konusu.
+     Alanlar gundem_arge view'inden (arge_no/oncelik/durum/proje_adi/arge_konusu/acilis_tarihi);
+     yoksa eski kod/son_durum/konu metinlerinden çözülür. Sıra: öncelik → açılış tarihi. */
+  const aNo=r=> r.arge_no!=null?String(r.arge_no):String(r.kod||"").replace(/\D+/g,"");
+  const aOnc=r=> r.oncelik!=null?Number(r.oncelik):onc(r);
+  const aDur=r=>{ if(r.durum!=null&&String(r.durum).trim()!=="") return String(r.durum).trim();
+    const m=String(r.son_durum||"").match(/DURUM\s+([^·]+)/i); return m?m[1].trim():""; };
+  const aDt=r=>{ if(r.acilis_tarihi) return String(r.acilis_tarihi); const m=String(r.son_durum||"").match(/(\d{2})\.(\d{2})\.(\d{4})/); return m?(m[3]+"-"+m[2]+"-"+m[1]):""; };
+  const aKon=r=>{ const k=String(r.arge_konusu||"").trim();
+    if(!k) return String(r.konu||"").replace(/^ARGE\s*\d+\s*[—-]\s*/,"");
+    return (r.proje_adi?String(r.proje_adi).trim()+" · ":"")+k; };
+  const argeBlock=rows=>{
+    if(!rows||!rows.length) return "";
+    const s=[...rows].sort((a,b)=>{
+      const oa=aOnc(a),ob=aOnc(b); if(oa!==ob) return oa-ob;
+      const da=aDt(a)||"9999-99-99", db=aDt(b)||"9999-99-99"; if(da!==db) return da<db?-1:1;
+      return (Number(aNo(a))||0)-(Number(aNo(b))||0); });
+    const body=s.map(r=>`<tr>`
+      +`<td class="c a5"><span>${esc(aNo(r))}</span></td>`
+      +`<td class="c a3"><span>${esc(aOnc(r))}</span></td>`
+      +`<td class="c a10"><span>${esc(aDur(r))}</span></td>`
+      +`<td class="c a100"><span>${esc(aKon(r))}</span></td></tr>`).join("");
+    return `<h3 class="sec">ARGE · ${s.length}</h3><div class="scroll gblk"><table class="agt"><thead><tr><th>No</th><th>Önc</th><th>Durum</th><th>Arge Konusu</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  };
   const persons=[...new Set(["MB","EA","OE","CTP","EU"].concat(keys.filter(k=>k!=='ARGE')))];
   const ilgSel=persons.map(k=>`<option value="${esc(k)}"${k==='MB'?' selected':''}>${esc(k)}</option>`).join("")+`<option value="PEM">PEM (takip)</option><option value="PRJ">PRJ (takip)</option><option value="__new__">Diğer…</option>`;
-  const restKeys=keys.filter(k=>k!=='MB');
+  const restKeys=keys.filter(k=>k!=='MB'&&k!=='ARGE');
   view.innerHTML=`
     <style>.gblk table{font-size:11.5px}.gblk th,.gblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.gblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.gblk .c>span::-webkit-scrollbar{display:none}.c3>span{max-width:3ch}.c5>span{max-width:5ch}.c8>span{max-width:8ch}.c10>span{max-width:10ch}.c12>span{max-width:12ch}.c15>span{max-width:15ch}.c20>span{max-width:20ch}.c25>span{max-width:25ch}.cdur>span{max-width:13ch}.ckon>span{max-width:32.5ch}
+    .a3>span{max-width:3ch}.a5>span{max-width:5ch}.a10>span{max-width:10ch}.a100>span{max-width:100ch}
     .ag-wrap .scroll{max-height:none;overflow-y:visible;overflow-x:auto;border:0;background:transparent;border-radius:0;margin:0 0 12px}
     .gblk button.fmail{display:none}</style>
     <div class="addbar">
@@ -339,6 +379,7 @@ async function loadGundem(){
     ${pemPrjBlock(pemRows,'pem')}
     ${pemPrjBlock(prjRows,'prj')}
     ${grpTable(restKeys)}
+    ${argeBlock(groups['ARGE'])}
     </div>`;
   view.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
   const selEl=document.getElementById("ag-ilgili"), kodInp=document.getElementById("ag-kod");
