@@ -1271,7 +1271,11 @@ async function loadFiyat(target){
   const aTbl=`<h3 class="sec">Ahşap Türü ve Durumu</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Tür</th><th>Durum</th><th>Açıklama</th><th></th></tr></thead><tbody>${aRows}`
     +`<tr class="faddrow"><td><input id="fa-ad" placeholder="Tür"></td><td><input id="fa-durum" placeholder="Mevcut/Sıkıntılı"></td><td><input id="fa-ac" placeholder="Açıklama"></td><td><button class="btn" id="fa-add">Ekle</button></td></tr>`
     +`</tbody></table></div>`;
-  // C/D) Müşteri sınıfları — iki tablo birebir aynı format, şirketler alfabetik
+  /* C/D) Müşteri sınıfları — altı liste, birebir aynı format, şirketler alfabetik.
+     sinif kodu: 1=Fransa 1. · 2=Fransa 2. · 3=İngiltere 1. · 4=İngiltere 2. · 5=Almanya 1. · 6=Almanya 2. */
+  const SINIFLAR=[[1,"1. Sınıf Fransa Şirketleri"],[2,"2. Sınıf Fransa Şirketleri"],
+                  [3,"1. Sınıf İngiltere Şirketleri"],[4,"2. Sınıf İngiltere Şirketleri"],
+                  [5,"1. Sınıf Almanya Şirketleri"],[6,"2. Sınıf Almanya Şirketleri"]];
   const msBlock=(sinif,title)=>{
     const rows=M.filter(r=>r.sinif===sinif).slice().sort((a,b)=>String(a.ad||"").localeCompare(String(b.ad||""),"tr"));
     let body=rows.map(r=>`<tr data-id="${r.id}"><td class="fc"><div class="mcx">${ec("fiyat_musteri_sinif",r.id,"ad",r.ad)}</div></td><td><button class="fdel" data-t="fiyat_musteri_sinif" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
@@ -1300,7 +1304,7 @@ async function loadFiyat(target){
   </style>`;
   view.innerHTML=`${style}
     <div class="fbar"><button id="fiyat-guncelle">GÜNCELLE</button><span class="fpub">${yr.yayin_at?("Son yayın: "+dOnly(yr.yayin_at)+" <span class=\"fpubx\">(bu düğmeye son basılıp fiyatlandırma formuna aktarıldığı tarih)</span>"):"Henüz yayınlanmadı"}${yr.bildirim_beklemede?" · <b style=color:#b47800>bildirim beklemede</b>":""}</span></div>
-    ${pTbl}${aTbl}${msBlock(1,"1. Sınıf Fransa Şirketleri")}${msBlock(2,"2. Sınıf Fransa Şirketleri")}`;
+    ${pTbl}${aTbl}${SINIFLAR.map(s=>msBlock(s[0],s[1])).join("")}`;
   // olaylar
   view.querySelectorAll(".fedit").forEach(el=>el.onclick=()=>startFiyEdit(el));
   view.querySelectorAll(".fdel").forEach(b=>b.onclick=()=>fiyDel(b.dataset.t,b.dataset.id));
@@ -1309,7 +1313,7 @@ async function loadFiyat(target){
     const rec={ad,durum:document.getElementById("fa-durum").value.trim()||null,aciklama:document.getElementById("fa-ac").value.trim()||null,sira:(A.length?Math.max(...A.map(x=>x.sira||0))+1:1)};
     const {error}=await sb.from("fiyat_ahsap").insert(rec); if(error){alert(error.message);return;} loadFiyat();
   };
-  [1,2].forEach(sn=>{ document.getElementById("fm"+sn+"-add").onclick=async()=>{
+  SINIFLAR.map(s=>s[0]).forEach(sn=>{ document.getElementById("fm"+sn+"-add").onclick=async()=>{
     const ad=document.getElementById("fm"+sn+"-ad").value.trim(); if(!ad){alert("Şirket adı gir.");return;}
     const rec={ad,sinif:sn,sira:(M.length?Math.max(...M.map(x=>x.sira||0))+1:1)};
     const {error}=await sb.from("fiyat_musteri_sinif").insert(rec); if(error){alert(error.message);return;} loadFiyat();
