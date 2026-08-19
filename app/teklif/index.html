@@ -59,10 +59,11 @@ td.note{color:#52617a;font-size:12.5px;}
 .ihr{margin-top:8px;font-size:12.5px;color:#33465c;}
 .ihr b{color:#1c3d5a;}
 /* Termin MVT tablosu */
-.mvt{margin-top:10px;}
-.mvt th{white-space:normal;}
+.mvt th{white-space:normal;vertical-align:bottom;}
 .mvt td.c,.mvt th.c{text-align:center;}
-.tnote{font-size:12.5px;color:#52617a;margin-top:6px;}
+.mvt td.val{font-size:14px;}
+.mvt td.na{background:#eceff3;}
+.tnote{font-size:12.5px;color:#52617a;margin-top:5px;}
 </style>
 </head>
 <body>
@@ -132,21 +133,23 @@ td.note{color:#52617a;font-size:12.5px;}
 <section class="card">
   <h2>Termin</h2>
   <div class="body">
-    <table><thead><tr><th>Konu</th><th>Süre</th><th>Açıklama</th></tr></thead><tbody id="terminBody"></tbody></table>
-
-    <div class="mvt">
-      <table>
-        <thead><tr><th>MVT termin hesabı — tip</th><th class="c">Max. adet</th><th class="c">Min. termin</th><th class="c">İçeriğinde 68p / 78t / 78a bulunanlar</th></tr></thead>
-        <tbody>
-          <tr><td>Numune</td><td class="c">3</td><td class="c val">3 hafta</td><td class="c val">6 hafta</td></tr>
-          <tr><td>Temoin / numune daire</td><td class="c">10</td><td class="c val">4 hafta</td><td class="c val">6 hafta</td></tr>
-          <tr><td>İlave</td><td class="c">5</td><td class="c val">4 hafta</td><td class="c val">6 hafta</td></tr>
-          <tr><td>10 adete kadar olan parti</td><td class="c">10</td><td class="c val">6 hafta</td><td class="c val">6 hafta</td></tr>
-          <tr><td>10–80 adet arası parti</td><td class="c">80</td><td class="c val">10 hafta</td><td class="c val">10 hafta</td></tr>
-        </tbody>
-      </table>
-      <div class="tnote">Proje MVT tarihleri adet, proje tipi ve partilere göre <b>formüllü</b> olarak belirlenir. ERP'nin verdiği tarihten daha erken çıkması gereken proje için Melih Bey'den onay alınıp Enes Uzun'a iletilir. Aynı PGD'den türemiş, parti olarak açılan 2 projenin termini arasında <b>min. 7 gün</b> olmalıdır. <i>(Kaynak: 04.08.2026 tarihli ERP duyurusu · Enes Uzun)</i></div>
-    </div>
+    <table class="mvt">
+      <thead><tr>
+        <th>Projedeki Ürün ya da<br>Cephedeki Cam</th>
+        <th class="c">68p, 78t veya 78a<br>İçeren Projeler</th>
+        <th class="c">68p, 78t veya 78a İçermeyen ve Hızlandırmak için<br>Standart (4/16/4) Cam Kullanılabilen Numuneler</th>
+        <th class="c">68p, 78t veya 78a İçermeyen ve<br>Standart (4/16/4) Dışı Cam Kullanılan Projeler</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>1–4 adet</td><td class="c val">6</td><td class="c val">3</td><td class="c val">4</td></tr>
+        <tr><td>5–6 adet</td><td class="c val">6</td><td class="c na"></td><td class="c val">4</td></tr>
+        <tr><td>7–10 adet</td><td class="c val">6</td><td class="c na"></td><td class="c val">6</td></tr>
+        <tr><td>11–80 adet</td><td class="c val">10</td><td class="c na"></td><td class="c val">10</td></tr>
+      </tbody>
+    </table>
+    <div class="tnote">Süreler <b>hafta</b> cinsindendir.</div>
+    <div class="tnote">Bir proje maksimum bir kamyon (~80 adet) üründen oluşur.</div>
+    <div class="tnote">Bir hafta zarfında aynı PGD'ye ait maksimum bir proje üretilir.</div>
   </div>
 </section>
 
@@ -173,16 +176,15 @@ const KONUM={
   fr:["75 ile 78 veya 91 ile 95 arası bir departmanda","Bunların dışındaki (uzak) bölgeler"],
   du:["Ofislerimizden araçla 3 saat mesafe içerisinde","Bunların dışındaki (uzak) bölgeler"]
 };
-const DIS_SUR=0.40;        // Duvar dışına montaj sürşarjı (eski adı: applique extérieure)
-
 // ---- hesaplama oranları (seçili bölgeye göre; iskonto/sürşarj panodan, montaj €/m² sabit) ----
-const R={ baz:0.51, s1:0.14, s2:0.05, reno:0.10, uzak:0.65,
+const R={ baz:0.51, s1:0.14, s2:0.05, reno:0.10, uzak:0.65, disi:0.40,
   brk:[[50000,0.45],[250000,0.15],[500000,0.10],[Infinity,0.05]],
   mont:[[50,160],[150,125],[300,105],[500,95],[Infinity,90]], cephe:190 };
 function buildRates(){
   if(P.baz_iskonto){
     R.baz=ppct(val('baz_iskonto')); R.s1=ppct(val('s1_iskonto')); R.s2=ppct(val('s2_iskonto'));
     R.reno=ppct(val('renovasyon')); R.uzak=ppct(val('uzak_montaj'))||0.65;
+    R.disi=P.duvar_disi?ppct(val('duvar_disi')):0.40;   // Duvar dışına montaj (eski adı applique extérieure)
     R.brk=[[50000,ppct(val('buyukluk_50k'))],[250000,ppct(val('buyukluk_50_250k'))],[500000,ppct(val('buyukluk_250_500k'))],[Infinity,ppct(val('buyukluk_500k'))]];
   }
   // Montaj €/m² panoda yok → bölgeye göre sabit
@@ -223,7 +225,7 @@ function calcMont(){
   const uzak = k.selectedIndex === k.options.length-1;   // yalnız SON seçenek uzak bölge
   const birim = cephe ? R.cephe : pick(R.mont, adet);
   let f=1; const parts=[];
-  if(dis){ f*=(1+DIS_SUR); parts.push('Duvar dışına montaj +'+pct(DIS_SUR)); }
+  if(dis){ f*=(1+R.disi); parts.push('Duvar dışına montaj +'+pct(R.disi)); }
   if(uzak){ f*=(1+R.uzak); parts.push('Uzak bölge +'+pct(R.uzak)); }
   const tut=m2*birim*f;
   $('montOut').textContent=eur(tut);
@@ -253,7 +255,7 @@ const GARANTI='İngiltere ve Almanya dışındaki ülkeler için ürün garantis
 function iskSatirlari(){
   return `<div class="gs"><b>${bl('baz_iskonto')}:</b> ${vale('baz_iskonto')} &nbsp;·&nbsp; <b>${bl('s1_iskonto')}:</b> ${vale('s1_iskonto')} &nbsp;·&nbsp; <b>${bl('s2_iskonto')}:</b> ${vale('s2_iskonto')}</div>`
     +`<div class="gs"><b>Proje büyüklüğü sürşarjları:</b> ${bl('buyukluk_50k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_50k')} &nbsp;·&nbsp; ${bl('buyukluk_50_250k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_50_250k')} &nbsp;·&nbsp; ${bl('buyukluk_250_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_250_500k')} &nbsp;·&nbsp; ${bl('buyukluk_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_500k')}</div>`
-    +`<div class="gs"><b>Diğer sürşarjlar:</b> ${bl('renovasyon')}: ${vale('renovasyon')} &nbsp;·&nbsp; ${bl('cephe_montaj')}: ${vale('cephe_montaj')} &nbsp;·&nbsp; ${bl('uzak_montaj')}: ${vale('uzak_montaj')} &nbsp;·&nbsp; Duvar dışına montaj: ${pct(DIS_SUR)}</div>`;
+    +`<div class="gs"><b>Diğer sürşarjlar:</b> ${bl('renovasyon')}: ${vale('renovasyon')} &nbsp;·&nbsp; ${bl('cephe_montaj')}: ${vale('cephe_montaj')} &nbsp;·&nbsp; ${bl('uzak_montaj')}: ${vale('uzak_montaj')} &nbsp;·&nbsp; ${bl('duvar_disi')}: ${vale('duvar_disi')}</div>`;
 }
 function renderGenel(){
   // İhracat + min adet artık hesaplayıcının içinde (Ahşap türü seçiminin hemen üstünde)
@@ -271,15 +273,6 @@ function renderGenel(){
   g+=`<div class="gs">${LISTE_SON}</div>`;
   g+=iskSatirlari();
   $('genelBody').innerHTML=g;
-
-  const AC={
-    genel_termin:'Teklif aşamasında müşteriye taahhüt edilebilecek asgari proje termini (10–80 adet arası partiler).',
-    yukleme_araligi:'Aynı PGD\'den türemiş, parti olarak açılan 2 projenin termini arasında bırakılması gereken asgari süre.',
-    std_termin:'Temoin / numune daire (max. 10 ad.) ve ilave (max. 5 ad.) için asgari termin; numune (max. 3 ad.) 3 haftadır.',
-    stddisi_termin:'İçeriğinde 68p, 78t veya 78a bulunan ürünlerde asgari termin; 10 adete kadar olan partiler de 6 haftadır.'
-  };
-  const trow=k=>`<tr><td>${bl(k)}</td><td class="val">${vale(k)}</td><td class="note">${AC[k]}</td></tr>`;
-  $('terminBody').innerHTML=trow('genel_termin')+trow('yukleme_araligi')+trow('std_termin')+trow('stddisi_termin');
 }
 function renderKonum(){
   const k=$('konum'), i=k.selectedIndex<0?0:k.selectedIndex;
