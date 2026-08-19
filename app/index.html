@@ -32,6 +32,9 @@
   thead th{position:sticky;top:0;background:#16324f;color:#fff;font-weight:600;font-size:10.5px;padding:3px 6px;text-align:left;white-space:nowrap;z-index:2;vertical-align:bottom}
   thead th.thsm{font-size:9.5px;letter-spacing:-.1px}
   thead th .thw{display:inline-block;max-width:14ch;white-space:normal;line-height:11px;vertical-align:bottom}
+  /* Sayısal başlık iki-üç satıra sarınca sağa dayalı satırlar kaymış görünüyordu ("FR" / "İsk." / "(%)")
+     → sarılan başlık satırları ortalanır; veri hücreleri sağa dayalı kalır. */
+  thead th.num .thw{text-align:center}
   td{border-bottom:1px solid #eef1f5;padding:2px 6px;vertical-align:middle;line-height:16px;white-space:nowrap}
   tbody tr:nth-child(even){background:#fbfcfe}
   tbody tr:hover td{background:#eef6ff}
@@ -857,6 +860,13 @@ async function loadIcmal(tgt){
     for(; j<rowsA.length && !rowsA[j].is_total; j++) AVGF.forEach(f=>{ const v=trNum(rowsA[j][f]); if(v) acc[f].push(v); });
     AVGF.forEach(f=>{ if((rowsA[i][f]==null||rowsA[i][f]==="")&&acc[f].length) rowsA[i][f]=money(acc[f].reduce((a,b)=>a+b,0)/acc[f].length); });
   }
+  /* "Yurt Dışı" sütunu = Yurt Dışı 1 (fa_*) + Yurt Dışı 2 (fy2_*); FY2 girilmemiş aylarda
+     yalnız FY görünür. FY2 doluysa Toplam da (Yurt İçi + YD1 + YD2) olarak yeniden hesaplanır. */
+  rowsA.forEach(r=>{
+    const yd2a=trNum(r.fy2_alinan_eur), yd2m=trNum(r.fy2_muht_eur);
+    if(yd2a){ r.fa_alinan_eur=money((trNum(r.fa_alinan_eur)||0)+yd2a); r.top_alinan_eur=money((trNum(r.so_alinan_eur)||0)+(trNum(r.fa_alinan_eur)||0)); }
+    if(yd2m){ r.fa_muht_eur=money((trNum(r.fa_muht_eur)||0)+yd2m); r.top_muht_eur=money((trNum(r.so_muht_eur)||0)+(trNum(r.fa_muht_eur)||0)); }
+  });
   let rows="";
   rowsA.forEach(r=>{
     let tds='<td class="kod">'+esc(r.donem)+'</td>';
@@ -864,7 +874,7 @@ async function loadIcmal(tgt){
     rows+='<tr'+(r.is_total?' class="itot"':'')+'>'+tds+'</tr>';
   });
   const st=await tblStamp("icmal_yil");
-  const TH=["D\u00f6nem","Miktar (Ad)","DK1 (Ad)","Miktar (m\u00b2)","Net Tutar (\u20ac)","Ort. Kur","Net Tutar (TL)","Net Fi. (\u20ac/m\u00b2)","Net Fi. (\u20ac/ad)","\u0130d.Per (Ki\u015fi)","\u00dcr.Per (Ki\u015fi)","Top.Per (ki\u015fi)","Ciro/Per (\u20ac/ki\u015fi)","\u0130sk (%)","Kapasite (Ad/Ay)","0..4 Onays\u0131z (Ad)","Onay Ter (hf)","4.1\u20267 \u00dcrt (Ad)","Son Proje \u00c7\u0131k\u0131\u015f","SO al\u0131nan Prj (\u20ac)","SO muht. Prj (\u20ac)","FA al\u0131nan Prj (\u20ac)","FA muht. Prj (\u20ac)","Top.al\u0131nan Prj (\u20ac)","Al.Ter. (hf)","Top.muht. Prj (\u20ac)","FR \u0130sk. (%)","Di\u011f \u0130sk. (%)"];
+  const TH=["D\u00f6nem","Miktar (Ad)","DK1 (Ad)","Miktar (m\u00b2)","Net Tutar (\u20ac)","Ort. Kur","Net Tutar (TL)","Net Fi. (\u20ac/m\u00b2)","Net Fi. (\u20ac/ad)","\u0130d.Per (Ki\u015fi)","\u00dcr.Per (Ki\u015fi)","Top.Per (ki\u015fi)","Ciro/Per (\u20ac/ki\u015fi)","\u0130sk (%)","Kapasite (Ad/Ay)","0..4 Onays\u0131z (Ad)","Onay Ter (hf)","4.1\u20267 \u00dcrt (Ad)","Son Proje \u00c7\u0131k\u0131\u015f","Yurt \u0130\u00e7i al\u0131nan Prj (\u20ac)","Yurt \u0130\u00e7i muht. Prj (\u20ac)","Yurt D\u0131\u015f\u0131 al\u0131nan Prj (\u20ac)","Yurt D\u0131\u015f\u0131 muht. Prj (\u20ac)","Top.al\u0131nan Prj (\u20ac)","Al.Ter. (hf)","Top.muht. Prj (\u20ac)","FR \u0130sk. (%)","Di\u011f \u0130sk. (%)"];
   const head=TH.map((h,i)=>i===0?('<th>'+h+'</th>'):('<th class="num">'+h+'</th>')).join("");
   view.innerHTML=`${stampHTML(st)}
     <div class="scroll"><table>
