@@ -27,25 +27,25 @@ header .upd{color:#dbe7f3;font-size:12px;}
 .card h2{ margin:0;padding:9px 14px;font-size:14px; background:#fbfcfd;border-bottom:1px solid #eef2f6;}
 .body{padding:8px 14px 12px;}
 table{width:100%;border-collapse:collapse;font-size:13.5px;}
-th,td{padding:5px 8px;text-align:left;border-bottom:1px solid #eef2f6;vertical-align:top;}
+th,td{padding:4px 8px;text-align:left;border-bottom:1px solid #eef2f6;vertical-align:top;}
 th{font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:#7587a0;font-weight:600;}
 tr:last-child td{border-bottom:0;}
 td.val{font-weight:700;color:#1c3d5a;white-space:nowrap;}
-td.note{color:#52617a;font-size:13px;}
-.row1{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 12px;margin:2px 0;}
-.row4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 12px;margin:8px 0 2px;}
-@media(max-width:640px){.row1,.row4{grid-template-columns:1fr 1fr;}}
-.fld label{display:block;font-size:12px;font-weight:600;color:#5a6b80;margin-bottom:3px;}
-.fld input,.fld select{ width:100%;padding:7px 10px;border:1px solid #cdd6e0;border-radius:9px;
-  font-size:14px;background:#fff;color:#1d2733; }
-.line{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 2px;font-size:12.5px;color:#52617a;}
+td.note{color:#52617a;font-size:12.5px;}
+/* Girdi ızgarası — kompakt: geniş ekranda 4 sütun, dar ekranda 2 */
+.gridf{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 10px;margin:2px 0 6px;}
+@media(max-width:760px){.gridf{grid-template-columns:1fr 1fr;}}
+.fld label{display:block;font-size:11.5px;font-weight:600;color:#5a6b80;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fld input,.fld select{ width:100%;padding:5px 8px;border:1px solid #cdd6e0;border-radius:8px;
+  font-size:13.5px;background:#fff;color:#1d2733; }
+.line{display:flex;flex-wrap:wrap;gap:4px 16px;margin:4px 0 2px;font-size:12px;color:#52617a;}
 .line b{color:#1c3d5a;font-variant-numeric:tabular-nums;}
-.res3{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;}
-.res3 .box{flex:1;min-width:180px;background:#f4f8fc;border:1px solid #d6e4f2;border-radius:11px;padding:9px 12px;}
+.res3{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.res3 .box{flex:1;min-width:170px;background:#f4f8fc;border:1px solid #d6e4f2;border-radius:10px;padding:7px 11px;}
 .res3 .box.tot{background:#1c3d5a;border-color:#1c3d5a;}
-.res3 .lbl{font-size:12px;font-weight:600;color:#5a6b80;display:block;}
+.res3 .lbl{font-size:11.5px;font-weight:600;color:#5a6b80;display:block;}
 .res3 .box.tot .lbl{color:#c7d6e6;}
-.res3 .amt{font-size:20px;font-weight:800;color:#1c3d5a;}
+.res3 .amt{font-size:19px;font-weight:800;color:#1c3d5a;}
 .res3 .box.tot .amt{color:#fff;}
 /* Genel Şartlar: her paragrafta madde imi, sola hizalı */
 .gs{font-size:13px;color:#33465c;margin:6px 0;text-align:left;padding-left:14px;position:relative;}
@@ -53,6 +53,16 @@ td.note{color:#52617a;font-size:13px;}
 .gs b{color:#1c3d5a;}
 .gs .co{color:#33465c;}
 .ahsap-wrap{max-width:360px;margin-top:6px;}
+/* Yönetim onayı uyarısı + ihracat/min adet satırı */
+.warn{margin-top:9px;background:#fff6e0;border:1px solid #f0d9a5;color:#8a6100;
+  border-radius:9px;padding:6px 11px;font-size:12.5px;font-weight:700;}
+.ihr{margin-top:8px;font-size:12.5px;color:#33465c;}
+.ihr b{color:#1c3d5a;}
+/* Termin MVT tablosu */
+.mvt{margin-top:10px;}
+.mvt th{white-space:normal;}
+.mvt td.c,.mvt th.c{text-align:center;}
+.tnote{font-size:12.5px;color:#52617a;margin-top:6px;}
 </style>
 </head>
 <body>
@@ -70,31 +80,30 @@ td.note{color:#52617a;font-size:13px;}
 <section class="card">
   <h2>Teklif Hesaplayıcı</h2>
   <div class="body">
-    <div class="row1">
-      <div class="fld"><label>Brüt tutar (€)</label>
+    <div class="gridf">
+      <div class="fld"><label>Brüt Tutar (€)</label>
         <input id="brut" type="number" min="0" step="1000" value="700000"></div>
-      <div class="fld"><label>Müşteri sınıfı</label>
+      <div class="fld"><label>Ürün m²</label>
+        <input id="m2" type="number" min="0" step="1" value="277"></div>
+      <div class="fld"><label>Ürün Adedi</label>
+        <input id="adet" type="number" min="0" step="1" value="300"></div>
+      <div class="fld"><label>Müşteri Sınıfı</label>
         <select id="sinif">
-          <option value="1">1. Sınıf müşteri</option>
-          <option value="2">2. Sınıf müşteri</option>
-          <option value="0">Liste dışı / sınıf yok</option>
+          <option value="1">1. Sınıf</option>
+          <option value="2">2. Sınıf</option>
+          <option value="0">Diğer</option>
         </select></div>
-      <div class="fld"><label>Proje türü</label>
-        <select id="proje">
-          <option value="diger">Diğer</option>
-          <option value="reno">Renovasyon (mevcut doğrama değişimi)</option>
-        </select></div>
+      <div class="fld"><label>Ürün Tipi</label>
+        <select id="mtip"><option value="cephe">Cephe</option><option value="std" selected>Diğer</option></select></div>
+      <div class="fld"><label>Binadaki Eski Doğramalar</label>
+        <select id="eski"><option value="1">Sökülecek</option><option value="0" selected>Sökülmeyecek</option></select></div>
+      <div class="fld"><label>Duvar Dışına Montaj</label>
+        <select id="dism"><option value="1">Yapılacak</option><option value="0" selected>Yapılmayacak</option></select></div>
+      <div class="fld"><label>Şantiye Konumu</label>
+        <select id="konum"></select></div>
     </div>
-    <div class="line" id="netBd"></div>
 
-    <div class="row4">
-      <div class="fld"><label>Ürün m²</label><input id="m2" type="number" min="0" step="1" value="277"></div>
-      <div class="fld"><label>Ürün adedi</label><input id="adet" type="number" min="0" step="1" value="300"></div>
-      <div class="fld"><label>Proje tipi</label>
-        <select id="mtip"><option value="std">Standart (pencere/kapı)</option><option value="cephe">Cephe projesi</option></select></div>
-      <div class="fld"><label>Zorluk sürşarjları</label>
-        <select id="msur"><option value="0">Yok</option><option value="ap">Applique extérieure (+%40)</option><option value="uzak">Uzak bölge (+%65)</option><option value="apuzak">Applique + Uzak bölge</option></select></div>
-    </div>
+    <div class="line" id="netBd"></div>
     <div class="line" id="montBd"></div>
 
     <div class="res3">
@@ -103,8 +112,11 @@ td.note{color:#52617a;font-size:13px;}
       <div class="box tot"><span class="lbl">Toplam Teklif Tutarı</span><span class="amt" id="grandOut">—</span></div>
     </div>
 
+    <div class="warn" id="onayNot" style="display:none">Teklif edilecek ödeme şartları için yönetimden onay alınmalıdır.</div>
+    <div class="ihr" id="ihrLine">—</div>
+
     <div class="ahsap-wrap fld">
-      <label>Ahşap türü seçin</label>
+      <label>Ahşap Türü Seçin</label>
       <select id="ahsap"></select>
     </div>
   </div>
@@ -113,29 +125,28 @@ td.note{color:#52617a;font-size:13px;}
 <!-- ===== GENEL ŞARTLAR ===== -->
 <section class="card">
   <h2>Genel Şartlar</h2>
-  <div class="body">
-    <div class="gs" id="genelTop">—</div>
-
-    <div class="gs">Pencad'den alınamayan tüm fiyatlar için Enes Uzun'a müracaat edilir.</div>
-    <div class="gs">Fransa, İngiltere ve Almanya dışındaki ülkeler için ürün garantisi ve montaj teklifi verilmemeli, teklife şu not eklenmelidir: <i>"Ürünlerimizi yüklemek için sizden fabrika sahasında muayene ederek yükleme onayı vermenizi rica edeceğiz. Yükleme gerçekleştikten sonra ürünlerimizle ilgili herhangi bir garantimiz bulunmamaktadır."</i></div>
-
-    <div class="gs">Tüm İngiltere müşterilerine ek olarak aşağıdaki şirketler 1. Sınıf Müşteri sayılır:<br><span class="co" id="listS1">—</span></div>
-    <div class="gs">Tüm Almanya müşterilerine ek olarak aşağıdaki şirketler 2. Sınıf Müşteri sayılır:<br><span class="co" id="listS2">—</span></div>
-
-    <div class="gs">Fransa'da olup 1 ve 2. sınıfların dışındaki şirketler ve Fransa, İngiltere ve Almanya dışındaki ülkelerdeki tüm müşteriler "Liste dışı" sayılır.</div>
-    <div class="gs">Köln ve Londra'daki ofislerimizden otomobille 3 saat ve daha uzun sürede ulaşılan Almanya ve İngiltere şantiyelerine ek olarak 75, 77, 78, 91, 92, 93, 94 ve 95 dışındaki tüm Fransa departmanlarına Uzak Bölge sürşarjı uygulanır.</div>
-
-    <div class="gs" id="lineIsk">—</div>
-    <div class="gs" id="lineBuyukluk">—</div>
-    <div class="gs" id="lineDiger">—</div>
-  </div>
+  <div class="body" id="genelBody"></div>
 </section>
 
 <!-- ===== TERMİN ===== -->
 <section class="card">
   <h2>Termin</h2>
   <div class="body">
-    <table><tbody id="terminBody"></tbody></table>
+    <table><thead><tr><th>Konu</th><th>Süre</th><th>Açıklama</th></tr></thead><tbody id="terminBody"></tbody></table>
+
+    <div class="mvt">
+      <table>
+        <thead><tr><th>MVT termin hesabı — tip</th><th class="c">Max. adet</th><th class="c">Min. termin</th><th class="c">İçeriğinde 68p / 78t / 78a bulunanlar</th></tr></thead>
+        <tbody>
+          <tr><td>Numune</td><td class="c">3</td><td class="c val">3 hafta</td><td class="c val">6 hafta</td></tr>
+          <tr><td>Temoin / numune daire</td><td class="c">10</td><td class="c val">4 hafta</td><td class="c val">6 hafta</td></tr>
+          <tr><td>İlave</td><td class="c">5</td><td class="c val">4 hafta</td><td class="c val">6 hafta</td></tr>
+          <tr><td>10 adete kadar olan parti</td><td class="c">10</td><td class="c val">6 hafta</td><td class="c val">6 hafta</td></tr>
+          <tr><td>10–80 adet arası parti</td><td class="c">80</td><td class="c val">10 hafta</td><td class="c val">10 hafta</td></tr>
+        </tbody>
+      </table>
+      <div class="tnote">Proje MVT tarihleri adet, proje tipi ve partilere göre <b>formüllü</b> olarak belirlenir. ERP'nin verdiği tarihten daha erken çıkması gereken proje için Melih Bey'den onay alınıp Enes Uzun'a iletilir. Aynı PGD'den türemiş, parti olarak açılan 2 projenin termini arasında <b>min. 7 gün</b> olmalıdır. <i>(Kaynak: 04.08.2026 tarihli ERP duyurusu · Enes Uzun)</i></div>
+    </div>
   </div>
 </section>
 
@@ -148,7 +159,7 @@ const $=id=>document.getElementById(id);
 
 let REGION='fr';           // varsayılan açılış = Fransa
 let P={};                  // fiyat_parametre (anahtar -> satır)
-let MS=[];                 // müşteri sınıf listesi
+let MS=[];                 // müşteri sınıf listesi (sinif: 1 FR1 · 2 FR2 · 3 UK1 · 4 UK2 · 5 DE1 · 6 DE2)
 
 // seçili bölgeye göre parametre metin değeri
 const val=k=> P[k] ? (REGION==='fr'?P[k].fransa_deger:P[k].diger_deger) : "";
@@ -157,13 +168,21 @@ const bl=k=> P[k]?esc(P[k].baslik):k;
 // "%51" / "%75" -> 0.51 / 0.75
 const ppct=s=>{ const m=String(s||"").replace(',','.').match(/-?\d+(\.\d+)?/); return m?parseFloat(m[0])/100:0; };
 
+// Şantiye konumu seçenekleri bölgeye bağlı; UZAK BÖLGE = yalnız SON seçenek
+const KONUM={
+  fr:["75 ile 78 veya 91 ile 95 arası bir departmanda","Bunların dışındaki (uzak) bölgeler"],
+  du:["Ofislerimizden araçla 3 saat mesafe içerisinde","Bunların dışındaki (uzak) bölgeler"]
+};
+const DIS_SUR=0.40;        // Duvar dışına montaj sürşarjı (eski adı: applique extérieure)
+
 // ---- hesaplama oranları (seçili bölgeye göre; iskonto/sürşarj panodan, montaj €/m² sabit) ----
-const R={ baz:0.51, s1:0.14, s2:0.05, reno:0.10,
+const R={ baz:0.51, s1:0.14, s2:0.05, reno:0.10, uzak:0.65,
   brk:[[50000,0.45],[250000,0.15],[500000,0.10],[Infinity,0.05]],
   mont:[[50,160],[150,125],[300,105],[500,95],[Infinity,90]], cephe:190 };
 function buildRates(){
   if(P.baz_iskonto){
-    R.baz=ppct(val('baz_iskonto')); R.s1=ppct(val('s1_iskonto')); R.s2=ppct(val('s2_iskonto')); R.reno=ppct(val('renovasyon'));
+    R.baz=ppct(val('baz_iskonto')); R.s1=ppct(val('s1_iskonto')); R.s2=ppct(val('s2_iskonto'));
+    R.reno=ppct(val('renovasyon')); R.uzak=ppct(val('uzak_montaj'))||0.65;
     R.brk=[[50000,ppct(val('buyukluk_50k'))],[250000,ppct(val('buyukluk_50_250k'))],[500000,ppct(val('buyukluk_250_500k'))],[Infinity,ppct(val('buyukluk_500k'))]];
   }
   // Montaj €/m² panoda yok → bölgeye göre sabit
@@ -179,7 +198,7 @@ function pick(arr,x){ for(const [lim,v] of arr){ if(x<=lim) return v; } return a
 function calcNet(){
   const brut=parseFloat($('brut').value)||0;
   const sinif=$('sinif').value;
-  const reno=$('proje').value==='reno';
+  const reno=$('eski').value==='1';           // Binadaki eski doğramalar sökülecek = renovasyon
   const musk = sinif==='1'?R.s1 : sinif==='2'?R.s2 : 0;
   const sur = pick(R.brk, brut);
   let kat=(1-R.baz)*(1-musk)*(1+sur);
@@ -188,21 +207,24 @@ function calcNet(){
   $('netOut').textContent=eur(net);
   $('netBd').innerHTML=
     `<span>Baz iskonto <b>−${pct(R.baz)}</b></span>`+
-    `<span>Müşteri iskontosu (${sinif==='0'?'yok':sinif+'. sınıf'}) <b>−${pct(musk)}</b></span>`+
+    `<span>Müşteri iskontosu (${sinif==='0'?'diğer':sinif+'. sınıf'}) <b>−${pct(musk)}</b></span>`+
     `<span>Büyüklük sürşarjı <b>+${pct(sur)}</b></span>`+
-    (reno?`<span>Renovasyon <b>+${pct(R.reno)}</b></span>`:'')+
+    (reno?`<span>Renovasyon (eski doğrama sökümü) <b>+${pct(R.reno)}</b></span>`:'')+
     `<span>Katsayı <b>${kat.toLocaleString('tr-TR',{maximumFractionDigits:5})}</b></span>`;
+  $('onayNot').style.display = sinif==='0' ? '' : 'none';
   return net;
 }
 function calcMont(){
   const m2=parseFloat($('m2').value)||0;
   const adet=parseFloat($('adet').value)||0;
   const cephe=$('mtip').value==='cephe';
-  const sur=$('msur').value;
+  const dis=$('dism').value==='1';
+  const k=$('konum');
+  const uzak = k.selectedIndex === k.options.length-1;   // yalnız SON seçenek uzak bölge
   const birim = cephe ? R.cephe : pick(R.mont, adet);
   let f=1; const parts=[];
-  if(sur==='ap'||sur==='apuzak'){ f*=1.40; parts.push('Applique +%40'); }
-  if(sur==='uzak'||sur==='apuzak'){ f*=1.65; parts.push('Uzak bölge +%65'); }
+  if(dis){ f*=(1+DIS_SUR); parts.push('Duvar dışına montaj +'+pct(DIS_SUR)); }
+  if(uzak){ f*=(1+R.uzak); parts.push('Uzak bölge +'+pct(R.uzak)); }
   const tut=m2*birim*f;
   $('montOut').textContent=eur(tut);
   $('montBd').innerHTML=
@@ -212,24 +234,59 @@ function calcMont(){
   return tut;
 }
 function recalc(){ const net=calcNet(), mont=calcMont(); $('grandOut').textContent=eur(net+mont); }
-['brut','sinif','proje','m2','adet','mtip','msur'].forEach(id=>{
+['brut','sinif','m2','adet','mtip','eski','dism','konum'].forEach(id=>{
   $(id).addEventListener('input',recalc); $(id).addEventListener('change',recalc);
 });
 
+// ---- şirket listeleri ----
+const liste=(...siniflar)=>{
+  const ad=MS.filter(r=>siniflar.includes(r.sinif)).map(r=>r.ad)
+             .sort((a,b)=>String(a).localeCompare(String(b),'tr'));
+  return ad.length?esc(ad.join(" · ")):"—";
+};
+
 // ---- bölgeye bağlı içeriği çiz (canlı değerler) ----
-function renderGenel(){
-  // Genel Şartlar ilk satır: İhracat + Min adet (tek satır)
-  $('genelTop').innerHTML=`<b>İhracat fatura oranı:</b> ${vale('ihracat_fatura')} &nbsp;·&nbsp; <b>Minimum ürün adedi:</b> ${vale('min_adet')}`;
-  $('lineIsk').innerHTML=`<b>${bl('baz_iskonto')}:</b> ${vale('baz_iskonto')} &nbsp;·&nbsp; <b>${bl('s1_iskonto')}:</b> ${vale('s1_iskonto')} &nbsp;·&nbsp; <b>${bl('s2_iskonto')}:</b> ${vale('s2_iskonto')}`;
-  $('lineBuyukluk').innerHTML=`<b>Proje büyüklüğü sürşarjları:</b> ${bl('buyukluk_50k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_50k')} &nbsp;·&nbsp; ${bl('buyukluk_50_250k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_50_250k')} &nbsp;·&nbsp; ${bl('buyukluk_250_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_250_500k')} &nbsp;·&nbsp; ${bl('buyukluk_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_500k')}`;
-  $('lineDiger').innerHTML=`<b>Diğer sürşarjlar:</b> ${bl('renovasyon')}: ${vale('renovasyon')} &nbsp;·&nbsp; ${bl('cephe_montaj')}: ${vale('cephe_montaj')} &nbsp;·&nbsp; ${bl('uzak_montaj')}: ${vale('uzak_montaj')}`;
-  $('terminBody').innerHTML=
-    `<tr><td>${bl('genel_termin')}</td><td class="val">${vale('genel_termin')}</td></tr>`+
-    `<tr><td>${bl('yukleme_araligi')}</td><td class="val">${vale('yukleme_araligi')}</td></tr>`+
-    `<tr><td>${bl('std_termin')}</td><td class="val">${vale('std_termin')}</td></tr>`+
-    `<tr><td>${bl('stddisi_termin')}</td><td class="val">${vale('stddisi_termin')}</td></tr>`;
+const LISTE_SON='Diğer tüm müşteriler "Liste dışı" sayılır. Fiyat avantajı sunduğumuz bu listelere yeni firmalar eklemek için yönetime müracaat ediniz.';
+const PENCAD="Pencad'den alınamayan tüm fiyatlar için Enes Uzun'a müracaat edilir.";
+const GARANTI='İngiltere ve Almanya dışındaki ülkeler için ürün garantisi ve montaj teklifi verilmemeli, teklife şu not eklenmelidir: <i>"Ürünlerimizi yüklemek için sizden fabrika sahasında muayene ederek yükleme onayı vermenizi rica edeceğiz. Yükleme gerçekleştikten sonra ürünlerimizle ilgili herhangi bir garantimiz bulunmamaktadır."</i>';
+
+function iskSatirlari(){
+  return `<div class="gs"><b>${bl('baz_iskonto')}:</b> ${vale('baz_iskonto')} &nbsp;·&nbsp; <b>${bl('s1_iskonto')}:</b> ${vale('s1_iskonto')} &nbsp;·&nbsp; <b>${bl('s2_iskonto')}:</b> ${vale('s2_iskonto')}</div>`
+    +`<div class="gs"><b>Proje büyüklüğü sürşarjları:</b> ${bl('buyukluk_50k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_50k')} &nbsp;·&nbsp; ${bl('buyukluk_50_250k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_50_250k')} &nbsp;·&nbsp; ${bl('buyukluk_250_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_250_500k')} &nbsp;·&nbsp; ${bl('buyukluk_500k').replace(' için Proje büyüklüğü sürşarjı','')} → ${vale('buyukluk_500k')}</div>`
+    +`<div class="gs"><b>Diğer sürşarjlar:</b> ${bl('renovasyon')}: ${vale('renovasyon')} &nbsp;·&nbsp; ${bl('cephe_montaj')}: ${vale('cephe_montaj')} &nbsp;·&nbsp; ${bl('uzak_montaj')}: ${vale('uzak_montaj')} &nbsp;·&nbsp; Duvar dışına montaj: ${pct(DIS_SUR)}</div>`;
 }
-function applyRegion(){ buildRates(); recalc(); renderGenel(); }
+function renderGenel(){
+  // İhracat + min adet artık hesaplayıcının içinde (Ahşap türü seçiminin hemen üstünde)
+  $('ihrLine').innerHTML=`<b>İhracat fatura oranı:</b> ${vale('ihracat_fatura')} &nbsp;·&nbsp; <b>Minimum ürün adedi:</b> ${vale('min_adet')}`;
+
+  let g=`<div class="gs">${PENCAD}</div>`;
+  if(REGION==='fr'){
+    g+=`<div class="gs">Aşağıdaki şirketler <b>1. Sınıf Müşteri</b> sayılır:<br><span class="co">${liste(1)}</span></div>`;
+    g+=`<div class="gs">Aşağıdaki şirketler <b>2. Sınıf Müşteri</b> sayılır:<br><span class="co">${liste(2)}</span></div>`;
+  }else{
+    g+=`<div class="gs">${GARANTI}</div>`;
+    g+=`<div class="gs">Aşağıdaki İngiliz ve Almanya şirketleri <b>1. Sınıf Müşteri</b> sayılır:<br><span class="co">${liste(3,5)}</span></div>`;
+    g+=`<div class="gs">Aşağıdaki İngiliz ve Almanya şirketleri <b>2. Sınıf Müşteri</b> sayılır:<br><span class="co">${liste(4,6)}</span></div>`;
+  }
+  g+=`<div class="gs">${LISTE_SON}</div>`;
+  g+=iskSatirlari();
+  $('genelBody').innerHTML=g;
+
+  const AC={
+    genel_termin:'Teklif aşamasında müşteriye taahhüt edilebilecek asgari proje termini (10–80 adet arası partiler).',
+    yukleme_araligi:'Aynı PGD\'den türemiş, parti olarak açılan 2 projenin termini arasında bırakılması gereken asgari süre.',
+    std_termin:'Temoin / numune daire (max. 10 ad.) ve ilave (max. 5 ad.) için asgari termin; numune (max. 3 ad.) 3 haftadır.',
+    stddisi_termin:'İçeriğinde 68p, 78t veya 78a bulunan ürünlerde asgari termin; 10 adete kadar olan partiler de 6 haftadır.'
+  };
+  const trow=k=>`<tr><td>${bl(k)}</td><td class="val">${vale(k)}</td><td class="note">${AC[k]}</td></tr>`;
+  $('terminBody').innerHTML=trow('genel_termin')+trow('yukleme_araligi')+trow('std_termin')+trow('stddisi_termin');
+}
+function renderKonum(){
+  const k=$('konum'), i=k.selectedIndex<0?0:k.selectedIndex;
+  k.innerHTML=KONUM[REGION].map(o=>`<option>${esc(o)}</option>`).join("");
+  k.selectedIndex=Math.min(i,k.options.length-1);
+}
+function applyRegion(){ buildRates(); renderKonum(); recalc(); renderGenel(); }
 
 // bölge düğmeleri
 document.querySelectorAll('.region button').forEach(b=>b.onclick=()=>{
@@ -250,13 +307,9 @@ async function loadCanli(){
   const ups=(pp.data||[]).map(r=>r.updated_at).filter(Boolean).sort();
   $('stamp').textContent="Son Güncelleme: "+(ups.length?dk(ups[ups.length-1]):"—");
   $('ahsap').innerHTML=(ah.data||[]).map(r=>`<option>${esc(r.ad)}</option>`).join("");
-  // Şirket listeleri (Fransa bağlamlı sabit — bölgeyle değişmez, alfabetik)
-  const s1=MS.filter(r=>r.sinif===1).map(r=>r.ad).sort((a,b)=>a.localeCompare(b,'tr'));
-  const s2=MS.filter(r=>r.sinif===2).map(r=>r.ad).sort((a,b)=>a.localeCompare(b,'tr'));
-  $('listS1').textContent=s1.length?s1.join(" · "):"—";
-  $('listS2').textContent=s2.length?s2.join(" · "):"—";
   applyRegion();
 }
+renderKonum();
 recalc();
 loadCanli();
 </script>
