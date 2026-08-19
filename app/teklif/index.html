@@ -140,16 +140,11 @@ td.note{color:#52617a;font-size:12.5px;}
         <th class="c">68p, 78t veya 78a İçermeyen ve Hızlandırmak için<br>Standart (4/16/4) Cam Kullanılabilen Numuneler</th>
         <th class="c">68p, 78t veya 78a İçermeyen ve<br>Standart (4/16/4) Dışı Cam Kullanılan Projeler</th>
       </tr></thead>
-      <tbody>
-        <tr><td>1–4 adet</td><td class="c val">6</td><td class="c val">3</td><td class="c val">4</td></tr>
-        <tr><td>5–6 adet</td><td class="c val">6</td><td class="c na"></td><td class="c val">4</td></tr>
-        <tr><td>7–10 adet</td><td class="c val">6</td><td class="c na"></td><td class="c val">6</td></tr>
-        <tr><td>11–80 adet</td><td class="c val">10</td><td class="c na"></td><td class="c val">10</td></tr>
-      </tbody>
+      <tbody id="terminBody"></tbody>
     </table>
     <div class="tnote">Süreler <b>hafta</b> cinsindendir.</div>
-    <div class="tnote">Bir proje maksimum bir kamyon (~80 adet) üründen oluşur.</div>
-    <div class="tnote">Bir hafta zarfında aynı PGD'ye ait maksimum bir proje üretilir.</div>
+    <div class="tnote" id="tnot1">—</div>
+    <div class="tnote" id="tnot2">—</div>
   </div>
 </section>
 
@@ -163,6 +158,7 @@ const $=id=>document.getElementById(id);
 let REGION='fr';           // varsayılan açılış = Fransa
 let P={};                  // fiyat_parametre (anahtar -> satır)
 let MS=[];                 // müşteri sınıf listesi (sinif: 1 FR1 · 2 FR2 · 3 UK1 · 4 UK2 · 5 DE1 · 6 DE2)
+let TT=[];                 // fiyat_termin — MVT hafta tablosu (panodan)
 
 // seçili bölgeye göre parametre metin değeri
 const val=k=> P[k] ? (REGION==='fr'?P[k].fransa_deger:P[k].diger_deger) : "";
@@ -273,6 +269,14 @@ function renderGenel(){
   g+=`<div class="gs">${LISTE_SON}</div>`;
   g+=iskSatirlari();
   $('genelBody').innerHTML=g;
+
+  // Termin tablosu tamamen panodan (fiyat_termin) — boş hücre = gri (uygulanmaz)
+  const cell=v=> (v==null||String(v).trim()==="") ? '<td class="c na"></td>' : `<td class="c val">${esc(v)}</td>`;
+  $('terminBody').innerHTML = TT.length
+    ? TT.map(r=>`<tr><td>${esc(r.aralik||"")}</td>${cell(r.ic_68)}${cell(r.numune)}${cell(r.std_disi)}</tr>`).join("")
+    : '<tr><td colspan="4">—</td></tr>';
+  $('tnot1').textContent=val('termin_not1')||"";
+  $('tnot2').textContent=val('termin_not2')||"";
 }
 function renderKonum(){
   const k=$('konum'), i=k.selectedIndex<0?0:k.selectedIndex;
@@ -291,12 +295,13 @@ document.querySelectorAll('.region button').forEach(b=>b.onclick=()=>{
 // ---- CANLI: Fiyatlandırma panosu tablolarından oku ----
 const dk=iso=>{ if(!iso) return "—"; const s=String(iso); return s.slice(8,10)+"."+s.slice(5,7)+"."+s.slice(2,4); };
 async function loadCanli(){
-  const [pp,ms,ah]=await Promise.all([
+  const [pp,ms,ah,tt]=await Promise.all([
     sb.from("fiyat_parametre").select("*").order("sira"),
     sb.from("fiyat_musteri_sinif").select("*"),
-    sb.from("fiyat_ahsap").select("ad,sira").order("sira").order("id")
+    sb.from("fiyat_ahsap").select("ad,sira").order("sira").order("id"),
+    sb.from("fiyat_termin").select("*").order("sira").order("id")
   ]);
-  P={}; (pp.data||[]).forEach(r=>P[r.anahtar]=r); MS=ms.data||[];
+  P={}; (pp.data||[]).forEach(r=>P[r.anahtar]=r); MS=ms.data||[]; TT=(tt&&!tt.error)?(tt.data||[]):[];
   const ups=(pp.data||[]).map(r=>r.updated_at).filter(Boolean).sort();
   $('stamp').textContent="Son Güncelleme: "+(ups.length?dk(ups[ups.length-1]):"—");
   $('ahsap').innerHTML=(ah.data||[]).map(r=>`<option>${esc(r.ad)}</option>`).join("");
