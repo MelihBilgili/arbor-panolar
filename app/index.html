@@ -65,8 +65,9 @@
   table.aup th.note,table.aup td.note{white-space:normal;min-width:160px;max-width:34ch}
   table.aup th.ss,table.aup th.ur{white-space:nowrap}
   table.aupmain thead th:nth-child(n+4):nth-child(-n+10){text-align:right}
-  table.aup td.ss>.cx{display:block;width:40ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
-  table.aup td.ur>.cx{display:block;width:67.5ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.aup td.ss>.cx{display:block;width:40ch;white-space:normal;overflow-wrap:anywhere}
+  table.aup td.ur>.cx{display:block;width:67.5ch;white-space:normal;overflow-wrap:anywhere}
+  table.aup td.ss,table.aup td.ur{white-space:normal;vertical-align:top}
   table.aup th.pstd{font-size:9.5px;padding-left:2px;padding-right:2px}
   table.aup td.pstd{padding-left:2px;padding-right:2px;width:1%}
   table.so{width:auto}
