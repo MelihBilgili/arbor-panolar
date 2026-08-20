@@ -762,13 +762,18 @@ async function loadAup(){
   const [{data,error},oz]=await Promise.all([sb.from("aup_panosu").select("*").order("aup",{ascending:true}), sb.from("aup_ozet").select("*").order("damga",{ascending:false}).limit(2)]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const dk=d=>{ d=String(d||""); const i=d.indexOf(" "); return i<0?d:(d.slice(0,i)+" "+d.slice(i+1,i+4)); };
+  /* Hücre deseni = Hazır PEM/PRJ panosu: her hücre tek satır, sığmayan içerik yatayda kaydırılır
+     (scrollbar gizli), tam metin title ile hover'da görünür. Metin KIRPILMAZ — sütun genişliği
+     kadarı görünür, gerisi kaydırılarak okunur. */
   let rows="";
   data.forEach(r=>{
     const ga=r.gyt_aup, ky=r.kayma;
+    const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
+    const sn=String(r.satis_santiye_notlari||""), un=String(r.uretim_notlari||"");
     rows+=`<tr>
-      <td class="kod">${esc(String(r.proje_no||"").slice(-6))}</td>
-      <td>${esc(String(r.proje_adi||"").slice(0,30))}</td>
-      <td>${esc(dk(r.proje_durumu))}</td>
+      <td class="c kod a6"><span title="${esc(r.proje_no)}">${esc(String(r.proje_no||"").slice(-6))}</span></td>
+      <td class="c a30"><span title="${esc(pad)}">${esc(pad)}</span></td>
+      <td class="c a10"><span title="${esc(dur)}">${esc(dk(r.proje_durumu))}</span></td>
       <td class="num">${esc(r.adet)}</td>
       <td class="num">${fdate(r.mvt)}</td>
       <td class="num">${fdate(r.aup)}</td>
@@ -776,8 +781,8 @@ async function loadAup(){
       <td class="num pstd ${ga<0?'red':''}">${ga==null?'':ga}</td>
       <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
       <td class="num">${money(r.anlasma_fiyati)}</td>
-      <td class="ss${r.satis_santiye_notlari?' snpink':''}"><div class="cx">${esc(r.satis_santiye_notlari)}</div></td>
-      <td class="ur"><div class="cx">${esc(r.uretim_notlari)}</div></td>
+      <td class="c ss${r.satis_santiye_notlari?' snpink':''}"><span title="${esc(sn)}">${esc(sn)}</span></td>
+      <td class="c ur"><span title="${esc(un)}">${esc(un)}</span></td>
     </tr>`;
   });
   const st=await erpStamp();
@@ -786,6 +791,17 @@ async function loadAup(){
   const gk=Number(o0.global_kayma||0).toFixed(1).replace(".",",");
   const stamp='<div class="stamp">Son güncelleme: '+(st||"—")+' · Adet: '+money(o0.toplam_adet)+pct(o0.toplam_adet,o1.toplam_adet)+' · Tutar: '+money(o0.toplam_tutar)+' €'+pct(o0.toplam_tutar,o1.toplam_tutar)+' · Global kayma: '+gk+' gün</div>';
   view.innerHTML=`${stamp}
+    <style>
+    #view table.aupmain td,#view table.aupmain th{white-space:nowrap;padding:2px 6px;line-height:16px}
+    #view table.aupmain td.c>span{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+    #view table.aupmain td.c>span::-webkit-scrollbar{display:none}
+    #view table.aupmain td.ss,#view table.aupmain td.ur{white-space:nowrap;vertical-align:middle}
+    #view table.aupmain td.a6>span{width:6ch}
+    #view table.aupmain td.a30>span{width:30ch}
+    #view table.aupmain td.a10>span{width:10ch}
+    #view table.aupmain td.ss>span{width:40ch}
+    #view table.aupmain td.ur>span{width:67.5ch}
+    </style>
     <div class="scroll"><table class="aup aupmain">
     <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
@@ -820,28 +836,62 @@ async function loadBilanco(tgt){
     const p=v=>(v==null||tg==null||Number(tg)===0)?'<td class="num" style="color:#c2ccd6">—</td>':`<td class="num" style="color:#6a7888">%${Math.round(v/tg*100)}</td>`;
     rows+=`<tr><td class="kod">${esc(r.yil)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${money(r.net_eur)}</td>${g(r.k710_tl)}${p(r.k710_tl)}${g(r.k720_tl)}${p(r.k720_tl)}${g(r.k730_tl)}${p(r.k730_tl)}${g(r.toplam_gider_tl)}${kc}${mc}</tr>`;
   });
-  /* 710 kalem listesi — dönem başına açılır kutu (kaynak: SB malzeme tablosu, gider_710_kalem). */
+  /* 710 kalem listesi — TEK liste, dönemler YAN YANA (yeni → eski).
+     Sabit sütunlar: Sıra · Cinsi · Birim. Her dönem için: Dönem İçi Alınan (€) · Birim Fiyat (€) · Pay (%).
+     Kaynak TL'dir; € = TL / dönemin ORTALAMA EUR/TRY kuru (x-rates.com aylık ortalamalarının
+     gün-ağırlıklı ortalaması): 2025 (12 ay) = 44,82 · 2026-6 (Oca–Haz) = 52,05.
+     YENİ DÖNEM EKLENDİĞİNDE kurunu da G7KUR'a ekle; kuru olmayan dönem "—" gösterir.
+     Birim Fiyat = dönem içi alınan tutar / dönem içi alınan miktar. Pay = dönem toplamına oran. */
+  const G7KUR={"2025":44.82,"2026-6":52.05};
   const g7rows=(g7&&!g7.error)?(g7.data||[]):[];
   const donemler=[...new Set(g7rows.map(r=>r.donem))].sort().reverse();
-  const g710Box=d=>{
-    const rs=g7rows.filter(r=>r.donem===d);
-    if(!rs.length) return "";
-    const tot=rs.filter(r=>r.grup).reduce((a,r)=>a+(Number(r.tutar)||0),0);
-    const pay=v=>tot?Math.round((Number(v)||0)/tot*100)+"%":"";
-    const body=rs.map(r=>`<tr${r.grup?' class="grp"':''}><td class="kod">${esc(r.sira)}</td><td>${esc(r.cinsi)}</td><td>${esc(r.birim||"")}</td><td class="num">${money(r.miktar)}</td><td class="num">${money(r.alinan_tutar)}</td><td class="num">${money(r.tutar)}</td><td class="num">${r.grup?pay(r.tutar):""}</td></tr>`).join("");
-    return `<details class="g7box"><summary>710 — Direkt İlk Madde/Malzeme listesi · ${esc(d)} <span class="muted">(${rs.filter(r=>!r.grup).length} kalem · ${money(tot)} TL)</span></summary>
-      <div class="scroll"><table><thead><tr><th>Sıra</th><th>Cinsi</th><th>Birim</th><th class="num">Toplam Miktar</th><th class="num">Dönem İçi Alınan (TL)</th><th class="num">Toplam Tutar (TL)</th><th class="num">Pay</th></tr></thead><tbody>${body}<tr class="itot"><td></td><td>LİSTE TOPLAMI</td><td></td><td></td><td></td><td class="num">${money(tot)}</td><td class="num">100%</td></tr></tbody></table></div></details>`;
+  const eur=(tl,k)=>(!k||tl==null||!isFinite(Number(tl)))?null:Number(tl)/k;
+  const e0=v=>v==null?"":Math.round(v).toLocaleString("tr-TR");
+  const e2=v=>v==null?"":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const g710Box=()=>{
+    if(!g7rows.length||!donemler.length) return "";
+    /* Satır kimliği = sira_no (dönemler arasında birebir aynı liste). */
+    const keys=[...new Set(g7rows.map(r=>r.sira_no))].sort((a,b)=>a-b);
+    const byK={}; g7rows.forEach(r=>{ (byK[r.sira_no]=byK[r.sira_no]||{})[r.donem]=r; });
+    const tot={}; donemler.forEach(d=>{ tot[d]=g7rows.filter(r=>r.donem===d&&r.grup).reduce((a,r)=>a+(Number(r.alinan_tutar)||0),0); });
+    const cells=(r,d)=>{
+      const k=G7KUR[d];
+      if(!r||!k) return `<td class="num g7s" style="color:#c2ccd6">—</td><td class="num" style="color:#c2ccd6">—</td><td class="num" style="color:#c2ccd6">—</td>`;
+      const tl=Number(r.alinan_tutar)||0, mk=Number(r.alinan_miktar)||0;
+      const e=eur(tl,k), bf=(mk>0&&tl>0)?eur(tl/mk,k):null;
+      const py=tot[d]&&tl?(tl/tot[d]*100):null;
+      return `<td class="num g7s">${tl?e0(e):""}</td><td class="num">${bf==null?"":e2(bf)}</td>`
+        +`<td class="num" style="color:#6a7888">${py==null?"":("%"+py.toLocaleString("tr-TR",{minimumFractionDigits:1,maximumFractionDigits:1}))}</td>`;
+    };
+    const body=keys.map(k=>{
+      const any=donemler.map(d=>byK[k]&&byK[k][d]).find(Boolean)||{};
+      return `<tr${any.grup?' class="grp"':''}><td class="kod">${esc(any.sira)}</td><td>${esc(any.cinsi)}</td><td>${esc(any.birim||"")}</td>`
+        +donemler.map(d=>cells(byK[k]&&byK[k][d],d)).join("")+`</tr>`;
+    }).join("");
+    const totRow=`<tr class="itot"><td></td><td>LİSTE TOPLAMI</td><td></td>`
+      +donemler.map(d=>`<td class="num g7s">${G7KUR[d]?e0(eur(tot[d],G7KUR[d])):"—"}</td><td class="num"></td><td class="num">${G7KUR[d]?"%100,0":""}</td>`).join("")
+      +`</tr>`;
+    const h1=`<tr><th rowspan="2">Sıra</th><th rowspan="2">Cinsi</th><th rowspan="2">Birim</th>`
+      +donemler.map(d=>`<th colspan="3" class="g7s g7h">${esc(d)}${G7KUR[d]?` <span class="g7k">(kur ${String(G7KUR[d]).replace(".",",")})</span>`:""}</th>`).join("")+`</tr>`;
+    const h2=`<tr>`+donemler.map(()=>`<th class="num g7s">Dönem İçi Alınan (€)</th><th class="num">Birim Fiyat (€)</th><th class="num">Pay (%)</th>`).join("")+`</tr>`;
+    const adet=g7rows.filter(r=>r.donem===donemler[0]&&!r.grup).length;
+    return `<details class="g7box"><summary>710 — Direkt İlk Madde/Malzeme listesi <span class="muted">(${adet} kalem · ${esc(donemler.join(" · "))})</span></summary>
+      <div class="scroll"><table class="g7t"><thead>${h1}${h2}</thead><tbody>${body}${totRow}</tbody></table></div></details>`;
   };
   const st=await tblStamp("bilanco_yil");
   view.innerHTML=`${stampHTML(st)}
     <style>.g7box{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:4px 10px;margin:6px 0;width:max-content;max-width:100%}
     .g7box>summary{cursor:pointer;font-weight:700;color:#16324f;font-size:12px;padding:2px 0}
-    .g7box[open]>summary{margin-bottom:4px}</style>
+    .g7box[open]>summary{margin-bottom:4px}
+    table.g7t td.g7s,table.g7t th.g7s{border-left:2px solid #cdd8e4}
+    table.g7t th.g7h{text-align:center;background:#22456b}
+    table.g7t .g7k{font-weight:400;opacity:.8}
+    table.g7t thead th{vertical-align:bottom}</style>
     ${cards}
     <div class="scroll"><table>
     <thead><tr><th>Yıl</th><th class="num">Net Satış (TL)</th><th class="num">Net (€)</th><th class="num">710 Malzeme</th><th class="num">710 %</th><th class="num">720 İşçilik</th><th class="num">720 %</th><th class="num">730 GÜG</th><th class="num">730 %</th><th class="num">Toplam Gider</th><th class="num">Kâr/Zarar</th><th class="num">Marj</th></tr></thead>
     <tbody>${rows}</tbody></table></div>
-    ${donemler.map(g710Box).join("")}`;
+    ${g710Box()}`;
 }
 
 
@@ -991,9 +1041,14 @@ function loadProsedur(){
   const HIDE_KEY="arbor_pros_iptal";
   const getHidden=()=>{ try{ return JSON.parse(localStorage.getItem(HIDE_KEY)||"[]"); }catch(e){ return []; } };
   const hidden=getHidden();
+  /* Grup içi sıra: YENİ → ESKİ. Tarih alanındaki bütün GG.AA.YYYY damgaları taranır, EN YENİSİ
+     alınır (revizyonlu maddeler revizyon tarihine göre sıralanır). Tarihsiz madde en sona. */
+  const dnum=t=>{ const re=/(\d{1,2})\.(\d{1,2})\.(\d{4})/g; let m,best=0;
+    while((m=re.exec(String(t||"")))){ const v=+(m[3]+String(m[2]).padStart(2,"0")+String(m[1]).padStart(2,"0")); if(v>best) best=v; }
+    return best; };
   let sec="";
   Object.keys(SECS).forEach(s=>{
-    const items=PROS.filter(d=>d.sec===s && !hidden.includes(d.no));
+    const items=PROS.filter(d=>d.sec===s && !hidden.includes(d.no)).sort((a,b)=>dnum(b.tarih)-dnum(a.tarih));
     if(!items.length) return;
     sec+=`<div class="secH">${esc(SECS[s])}</div>`;
     items.forEach(d=>{ sec+=`<div class="law" data-no="${esc(d.no)}"><div class="lno${d.ek?' ek':''}">${esc(d.no)}</div><div class="lbody"><div class="lhead"><span class="lcaret">▶</span><span class="ltitle">${esc(d.ad)}</span><span class="ldate">(${esc(d.tarih)})</span></div><div class="ltext">${d.metin}</div></div><div class="lx" title="İptal (gizle)">✕</div></div>`; });
@@ -1257,7 +1312,10 @@ async function loadFiyat(target){
   ]);
   const err=pp.error||ah.error||ms.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
-  const P=pp.data||[], A=ah.data||[], M=ms.data||[], T=(tt&&!tt.error)?(tt.data||[]):[];
+  /* termin_not1/2 panoda GÖSTERİLMEZ (satırlar DB'de kalır — teklif formu termin notlarını
+     oradan okumaya devam eder). */
+  const P=(pp.data||[]).filter(r=>!/^termin_not/.test(String(r.anahtar||"")));
+  const A=ah.data||[], M=ms.data||[], T=(tt&&!tt.error)?(tt.data||[]):[];
   const yr=(ya.data&&ya.data[0])||{};
   const ec=(t,id,f,v,type)=>`<span class="fedit" data-t="${t}" data-id="${id}" data-f="${f}"${type?` data-type="${type}"`:""} title="Düzenlemek için tıkla">${esc(v==null||v===""?"—":v)}</span>`;
   // Skalar parametreler
