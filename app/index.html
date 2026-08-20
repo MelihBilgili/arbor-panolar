@@ -1101,21 +1101,49 @@ async function loadFormlar(){
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
   const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap","selft/":"sel_ft","arbolacak/":"yd_alacak"};
-  const ft=await sb.from("form_takip").select("*");
+  /* Geciken = SON TARİHE göre hesaplanır (eskiden "son güncelleme + 7/30 gün" idi → hep 0 çıkıyordu):
+     "Her Salı" → bu haftanın Salı'sı · "Her ayın ilk iş günü" → bu ayın ilk iş günü · "Süresiz" → yok.
+     Son güncelleme = form_takip.son_guncelleme (elle ✓) ile formun CANLI izinin (pano_yayin /
+     ilgili tablonun en yeni updated_at'i) büyüğü. Son güncelleme son tarihten önceyse
+     geciken = bugün − son tarih (gün), değilse 0. */
+  const [ft,pyF,eaU,onU,obU]=await Promise.all([
+    sb.from("form_takip").select("*"),
+    sb.from("pano_yayin").select("anahtar,yayin_at"),
+    sb.from("so_ea_form").select("updated_at").order("updated_at",{ascending:false}).limit(1),
+    sb.from("sevk_durumu_onur").select("updated_at").order("updated_at",{ascending:false}).limit(1),
+    sb.from("ob_isler").select("updated_at").order("updated_at",{ascending:false}).limit(1)
+  ]);
   const ftBy={}; ((ft&&!ft.error)?(ft.data||[]):[]).forEach(r=>ftBy[r.form_key]=r);
+  const pyBy={}; ((pyF&&!pyF.error)?(pyF.data||[]):[]).forEach(r=>pyBy[r.anahtar]=r.yayin_at);
+  const one=r=>(r&&!r.error&&r.data&&r.data[0])?r.data[0].updated_at:null;
+  const CANLI={ ea_so:one(eaU), onur_sevk:one(onU), ob_rapor:[pyBy.ob_rapor,one(obU)].sort().reverse()[0],
+                ahsap:pyBy.ahsap, sel_ft:pyBy.sel_arb, yd_alacak:pyBy.sel_arb };
   const today=new Date(); today.setHours(0,0,0,0);
   const dParse=s=>{ if(!s) return null; const p=String(s).slice(0,10).split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
-  const addPeriod=(d,sik)=>{ const x=new Date(d); if(/ay/i.test(sik)){ x.setMonth(x.getMonth()+1); } else { x.setDate(x.getDate()+7); } return x; };
+  const isIs=d=>{ const w=d.getDay(); return w!==0&&w!==6; };
+  const sonTarih=sik=>{
+    if(/sal[ıi]/i.test(sik)){ const d=new Date(today); d.setDate(d.getDate()-((d.getDay()-2+7)%7)); return d; }
+    if(/ay/i.test(sik)){ const d=new Date(today.getFullYear(),today.getMonth(),1); while(!isIs(d)) d.setDate(d.getDate()+1); return d; }
+    return null;
+  };
+  const sonGuncelleme=r=>{
+    const a=dParse(r.son_guncelleme), b=dParse(CANLI[r.form_key]);
+    return (a&&b)?(a>b?a:b):(a||b);
+  };
   const gecikenGun=r=>{
-    let ref=dParse(r.son_guncelleme); if(!ref) ref=new Date(today);
-    const gun=Math.floor((today-addPeriod(ref,r.gunc_sikligi||""))/86400000);
-    return gun>0?gun:0;
+    const due=sonTarih(r.gunc_sikligi||""); if(!due) return 0;
+    const son=sonGuncelleme(r);
+    if(son&&son>=due) return 0;
+    return Math.max(0,Math.round((today-due)/86400000));
   };
   const body=forms.map(f=>{
     const r=ftBy[FK[f.url]];
     const sik=r?(r.gunc_sikligi||f.sik):f.sik;
     const g=r?gecikenGun(r):null;
-    const gc=g==null?'<span class="muted">—</span>':(g>0?`<b style="color:#b40000">${g}</b>`:`<span style="color:#7a8896">0</span>`);
+    let gt="";
+    if(r){ const d=sonTarih(r.gunc_sikligi||""), s=sonGuncelleme(r);
+      gt=` title="Son tarih: ${d?fdate(d.toISOString()):"—"} · Son güncelleme: ${s?fdate(s.toISOString()):"—"}"`; }
+    const gc=g==null?'<span class="muted">—</span>':(g>0?`<b style="color:#b40000"${gt}>${g}</b>`:`<span style="color:#7a8896"${gt}>0</span>`);
     const mail=r?`<button class="fmail" data-fk="${esc(r.form_key)}" title="${esc(r.ilgili_ad)} · ${esc(r.ilgili_email)} (cc: int@arbor.com.tr)">${(r.mail_sayac||0)+1}. mail</button>`
                  +` <button class="freset" data-fk="${esc(r.form_key)}" title="Güncellendi olarak işaretle (geciken + mail sayacı sıfırlanır)">✓</button>`
                :'<span class="muted">—</span>';
