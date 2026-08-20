@@ -46,22 +46,11 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </header>
 <div class="wrap">
   <div class="bar">
-    <label>Filtre:</label>
-    <select id="turSel"><option value="">Tümü</option><option value="PEM">PEM</option><option value="PRJ">PRJ</option></select>
+    <button id="ay_btn" style="background:#8a6100;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:13px">AYLIK GÜNCELLE</button>
     <span id="msg" class="msg"></span>
-    <span id="sum" class="sum"></span>
+    <span class="msg" id="ay_msg"></span>
   </div>
   <div id="list" class="card"><div class="load">Yükleniyor…</div></div>
-
-  <div class="card" style="background:#fff8ea;border-color:#e8cf95">
-    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-      <button id="ay_btn" style="background:#8a6100;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:13px">AYLIK GÜNCELLEME (değişim özetini üret)</button>
-      <div style="font-size:11.5px;color:#8a6100;flex:1;min-width:220px">Ay kapanınca / sevk durumları oturunca çalıştır: her kalemin <b>önceki→güncel</b> sevk durumu değişiminin özeti üretilip panoya yazılır, sonra güncel değer "önceki"ye kaydırılır (bir sonraki döngü için). Önceki yoksa özet boş kalır.</div>
-    </div>
-    <div class="msg" id="ay_msg" style="margin-top:8px"></div>
-  </div>
-
-  <div class="hint">"Güncel" sütununa yazdığın değer anında Supabase'e kaydedilir (sevk_durumu_onur). Bu form yalnız sevk durumunu değiştirir; Melih'in panolarına doğrudan yazmaz — sonuç Hazır PEM/PRJ panosuna salt-okur yansır.</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -131,10 +120,7 @@ async function load(){
   render();
 }
 function render(){
-  const f=document.getElementById("turSel").value;
-  const rows=ROWS.filter(r=>!f||r.tur===f);
-  const done=rows.filter(r=>r.onur_guncel&&String(r.onur_guncel).trim()).length;
-  document.getElementById("sum").textContent=done+" / "+rows.length+" durum girildi";
+  const rows=ROWS;
   let html='<table><thead><tr><th>Tür</th><th>No</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Hazır Tarihi</th><th>Önceki</th><th>Güncel Sevk Durumu</th></tr></thead><tbody>';
   let last="";
   rows.forEach((r,i)=>{
@@ -169,14 +155,12 @@ function edit(el){
     if(error){ msg.className="msg err"; msg.textContent=error.message; el.textContent=cur||"+ durum"; return; }
     r.onur_guncel=val; msg.className="msg ok"; msg.textContent="Kaydedildi ("+r.tur+" "+r.no+")"; setTimeout(()=>msg.textContent="",1500);
     el.className="ed "+(val?"":"empty"); el.textContent=val||"+ durum"; el.classList.add("saveflash"); setTimeout(()=>el.classList.remove("saveflash"),400);
-    document.getElementById("sum").textContent=(function(){const f=document.getElementById("turSel").value;const rs=ROWS.filter(x=>!f||x.tur===f);return rs.filter(x=>x.onur_guncel&&String(x.onur_guncel).trim()).length+" / "+rs.length+" durum girildi";})();
   };
   inp.onblur=commit;
   inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();inp.blur();} if(e.key==="Escape"){el.className="ed "+(cur?"":"empty");el.textContent=cur||"+ durum";} };
 }
-document.getElementById("turSel").onchange=render;
 document.getElementById("ay_btn").onclick=async()=>{
-  if(!confirm("AYLIK GÜNCELLEME\n\nHer kalemin önceki→güncel sevk durumu değişiminin özeti üretilecek ve panoya yazılacak; sonra güncel değer 'önceki'ye kaydırılacak. Ayda bir yapılır. Devam?")) return;
+  if(!confirm("AYLIK GÜNCELLE\n\nHer kalemin önceki→güncel sevk durumu değişiminin özeti üretilecek ve panoya yazılacak; sonra güncel değer 'önceki'ye kaydırılacak. Ayda bir yapılır. Devam?")) return;
   const btn=document.getElementById("ay_btn"), m=document.getElementById("ay_msg");
   btn.disabled=true; m.className="msg ok"; m.textContent="Özetler üretiliyor…";
   try{
