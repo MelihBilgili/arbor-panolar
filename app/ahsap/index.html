@@ -10,78 +10,45 @@
   body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
   header{background:#6b4a12;color:#fff;padding:12px 16px}
   header h1{font-size:17px;margin:0;font-weight:700}
-  header .sub{font-size:12px;color:#f0dbb0;margin-top:3px}
-  .wrap{max-width:760px;margin:0 auto;padding:16px 16px 60px}
-  .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:14px 16px;margin-bottom:14px}
-  .warn{background:#fff8ea;border:1px solid #e8cf95;border-radius:9px;padding:11px 13px;font-size:12.5px;line-height:1.5;color:#6b4a12;margin-bottom:14px}
-  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
-  .f{display:flex;flex-direction:column;gap:4px}
-  .f.grow{flex:1;min-width:200px}
-  .f label{font-size:11px;color:#6b4a12;font-weight:700}
-  input,select{font:inherit;padding:8px 10px;border:1px solid #cdd6df;border-radius:7px;background:#fffdf5;width:100%}
-  input:disabled{background:#eee;color:#888}
-  .save{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px 18px;font-weight:600;cursor:pointer;font-size:14px}
-  .upd{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:13px}
-  .msg{font-size:13px;min-height:18px;margin-top:8px}.msg.ok{color:#2e7d54;font-weight:600}.msg.err{color:#b40000;font-weight:600}
+  .wrap{max-width:1180px;margin:0 auto;padding:16px 16px 60px}
+  h2.ttl{font-size:16px;color:#6b4a12;margin:0 0 8px}
+  .warn{background:#fff8ea;border:1px solid #e8cf95;border-radius:9px;padding:11px 13px;font-size:12.5px;line-height:1.5;color:#6b4a12;margin-bottom:12px}
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+  .save{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:13.5px}
+  .upd{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:13.5px}
+  .msg{font-size:13px;min-height:18px}.msg.ok{color:#2e7d54;font-weight:600}.msg.err{color:#b40000;font-weight:600}
   .hint{font-size:12px;color:#8a97a4;margin:10px 2px}
-  table{border-collapse:collapse;width:100%;font-size:12.5px;margin-top:6px}
-  th{background:#6b4a12;color:#fff;font-weight:600;padding:6px 8px;text-align:left;font-size:11px}
-  td{border-bottom:1px solid #eef1f5;padding:5px 8px}
-  .updbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  .updnote{font-size:11.5px;color:#8a6100;flex:1;min-width:220px}
-
-html,body{max-width:100vw;overflow-x:hidden}
-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+  .load{padding:18px;color:#8a97a4;font-size:13px}
+  .tblbox{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:0;overflow-x:auto}
+  table.atbl{border-collapse:collapse;width:100%;font-size:12.5px}
+  table.atbl th{background:#6b4a12;color:#fff;font-weight:600;padding:6px 8px;text-align:left;font-size:11px;white-space:nowrap}
+  table.atbl td{border-bottom:1px solid #eef1f5;padding:3px 6px;vertical-align:middle}
+  table.atbl tr.yeni td{background:#f3f9f4}
+  table.atbl input,table.atbl select{font:inherit;font-size:12.5px;padding:5px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fff;width:100%}
+  table.atbl input:focus,table.atbl select:focus{outline:2px solid #b7d3c2;border-color:#2e7d54}
+  td.wnum input{text-align:right}
+  .adel{border:1px solid #e3b3b3;background:#fff;color:#b40000;border-radius:6px;cursor:pointer;padding:3px 8px;font-weight:700}
+  .adel:hover{background:#b40000;color:#fff}
+  .eur{font-size:11px;color:#6b4a12;white-space:nowrap}
+  html,body{max-width:100vw;overflow-x:hidden}
 </style>
 </head>
 <body>
 <header>
   <h1>Ahşap Maliyet Formu · Timber 72x86</h1>
-  <div class="sub">Sipariş verilmiş ahşap alımlarını buradan işleyin. Melih'in Ahşap panosuna ağaç çeşidi + tedarikçi kırılımıyla € ağırlıklı ortalama olarak yansır.</div>
 </header>
 <div class="wrap">
+  <h2 class="ttl">72 x 86 Ahşap Siparişleri</h2>
   <div class="warn">Buraya sadece gerçekten siparişi verilmiş alımlar işlenir. Satınalmaya dönüşmeyen fiyatlar işlenmez. Tüm fiyatların Türkiye teslimi olması gerekir. Yurt dışında teslim alınan ürünlere navlun maliyeti yansıtılarak Türkiye teslimi birim fiyatları bulunup işlenir.</div>
 
-  <div class="card">
-    <div class="row">
-      <div class="f grow">
-        <label>ÜRÜN ÇEŞİDİ (kesit 72 x 86)</label>
-        <select id="agac"></select>
-      </div>
-      <div class="f grow">
-        <label>TEDARİKÇİ</label>
-        <input id="tedarikci" placeholder="Tedarikçi adı">
-      </div>
-    </div>
-    <div class="row">
-      <div class="f grow"><label>UZUNLUK</label><input id="uzunluk" placeholder="ör. 3 m / 3000 mm"></div>
-      <div class="f grow"><label>TOPLAM CBM</label><input id="cbm" inputmode="decimal" placeholder="ör. 12,5"></div>
-    </div>
-    <div class="row">
-      <div class="f grow"><label>FİYAT (birim)</label><input id="fiyat" inputmode="decimal" placeholder="ör. 1000"></div>
-      <div class="f"><label>PARA BİRİMİ</label>
-        <select id="pb"><option value="EUR">EUR (€)</option><option value="TL">TL</option><option value="USD">USD ($)</option></select>
-      </div>
-    </div>
-    <div class="row" style="margin-bottom:0">
-      <div class="f" style="justify-content:flex-end"><button class="save" id="save">Alımı ekle</button></div>
-      <div class="f grow" style="justify-content:center"><div class="msg" id="msg"></div></div>
-    </div>
+  <div class="bar">
+    <button class="save" id="aAdd">+ Yeni Sipariş Ekle</button>
+    <button class="upd" id="aUpd">Aylık Güncelleme</button>
+    <div class="msg" id="msg"></div>
   </div>
 
-  <div class="card">
-    <div class="updbar">
-      <button class="upd" id="update">Aylık güncelleme (ayı kapat)</button>
-      <div class="updnote">Ay kapanınca çalıştır: mevcut alımların ağırlıklı ortalaması <b>"önceki"ye</b> kayar, yeni alımlar yeni dönemi oluşturur. Ayda bir kullanılır — gün içinde tek tek alım eklemek için bu düğmeye gerek yok.</div>
-    </div>
-    <div class="msg" id="umsg"></div>
-  </div>
-
-  <div class="card" id="seswrap" style="display:none">
-    <div style="font-size:12px;color:#6b4a12;font-weight:700;margin-bottom:2px">Bu oturumda eklenenler</div>
-    <table><thead><tr><th>Ürün</th><th>Tedarikçi</th><th>CBM</th><th>Fiyat</th><th>€ birim</th></tr></thead><tbody id="sesbody"></tbody></table>
-  </div>
-  <div class="hint">Kayıtlar Supabase'e yazılır (yalnızca ekleme). Fiyat hangi para biriminde girilirse girilsin, kayıt anında otomatik alınan güncel kurla €'ya çevrilip kaydedilir; kullanılan kur ve kur tarihi satıra yazılır (tarihsel doğruluk).</div>
+  <div class="tblbox"><div id="aList" class="load">Yükleniyor…</div></div>
+  <div class="hint">Her hücre değiştirildiği anda kaydedilir. Fiyat € dışında bir para biriminde girilirse kayıt anında otomatik alınan güncel kurla €'ya çevrilir; kullanılan kur ve kur tarihi satıra yazılır.</div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -134,53 +101,100 @@ if (document.readyState === "loading") document.addEventListener("DOMContentLoad
 const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const AGAC=["Çam DKD","Çam KKK-20cm","Çam KKK-70cm","İroko DKD","Lareks DKD","Meranti DKD","Meşe DKD","Accoya DKD","Okaliptus DKD","Okaliptus KKK","Sapelli DKD"];
-$("agac").innerHTML='<option value="">— ürün seç —</option>'+AGAC.map(a=>'<option value="'+esc(a)+'">'+esc(a)+' 72 x 86</option>').join("");
+const AGAC=["Çam KKK-20cm","Çam KKK-70cm","Çam DKD","Okaliptus KKK","Okaliptus DKD","Meşe DKD","Lareks DKD","Meranti DKD","Sapelli DKD","İroko DKD","Accoya DKD"];
+const PB=["EUR","TL","USD"];
+const bugun=()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
 const num=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null; if(t.indexOf(",")>-1 && t.indexOf(".")>-1){ t=t.replace(/\./g,"").replace(",","."); } else { t=t.replace(",","."); } const v=parseFloat(t); return isNaN(v)?null:v; };
-function msg(el,t,ok){ const m=$(el); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
-const SES=[];
-function renderSes(){ if(!SES.length) return; $("seswrap").style.display="block"; $("sesbody").innerHTML=SES.map(r=>'<tr><td>'+esc(r.agac)+'</td><td>'+esc(r.tedarikci)+'</td><td>'+esc(r.cbm)+'</td><td>'+esc(r.fiyat)+' '+esc(r.pb)+'</td><td>'+Math.round(r.eur)+' €</td></tr>').join(""); }
-$("save").onclick=async()=>{
-  const agac=$("agac").value, tedarikci=$("tedarikci").value.trim(), uzunluk=$("uzunluk").value.trim();
-  const cbm=num($("cbm").value), fiyat=num($("fiyat").value), pb=$("pb").value;
-  if(!agac){ msg("msg","Ürün çeşidi seç.",false); return; }
-  if(!tedarikci){ msg("msg","Tedarikçi gir.",false); return; }
-  if(cbm==null||cbm<=0){ msg("msg","Toplam CBM gir.",false); return; }
-  if(fiyat==null||fiyat<=0){ msg("msg","Fiyat gir.",false); return; }
-  $("save").disabled=true;
-  let kur=1, kur_tarihi=null;
-  if(pb!=="EUR"){
-    msg("msg","Güncel kur alınıyor…",true);
-    try{
-      const {data:kd,error:ke}=await sb.functions.invoke("ahsap-kur",{body:{}});
-      if(ke||!kd||!kd.ok||!(kd.rates&&kd.rates[pb]>0)) throw new Error("kur");
-      kur=kd.rates[pb]; kur_tarihi=kd.tarih||null;
-    }catch(e){ $("save").disabled=false; msg("msg","Kur alınamadı (internet/kaynak). Kayıt yapılmadı — lütfen tekrar deneyin.",false); return; }
+function msg(t,ok){ const m=$("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{ if(m.textContent===t) m.textContent=""; },2500); }
+
+let AROWS=[];
+/* Siralama: en yeni tarih en ustte (tarihsiz en ustte), esitlikte en yeni kayit ustte
+   -> "Yeni Sipariş Ekle" ile acilan bos satir daima en ust satirdir. */
+function sortRows(){ AROWS.sort((a,b)=>{ const ta=a.tarih||"9999-99-99", tb=b.tarih||"9999-99-99"; if(ta!==tb) return ta<tb?1:-1; return (b.id||0)-(a.id||0); }); }
+async function loadAlim(){
+  const {data,error}=await sb.from("ahsap_alim").select("*");
+  if(error){ $("aList").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
+  AROWS=data||[]; sortRows(); render();
+}
+const opts=(arr,v)=>'<option value=""></option>'+arr.map(a=>'<option'+(a===v?' selected':'')+'>'+esc(a)+'</option>').join("");
+function render(){
+  let h='<table class="atbl"><thead><tr>'
+    +'<th>ÜRÜN ÇEŞİDİ (kesit 72 x 86)</th><th>TEDARİKÇİ</th><th>UZUNLUK</th><th>TOPLAM CBM</th>'
+    +'<th>FİYAT (birim)</th><th>PARA BİRİMİ</th><th>TARİH</th><th></th></tr></thead><tbody>';
+  AROWS.forEach(r=>{
+    const bos=!r.agac&&!r.tedarikci&&!r.fiyat;
+    h+='<tr data-id="'+r.id+'"'+(bos?' class="yeni"':'')+'>'
+      +'<td style="min-width:170px"><select class="ac" data-f="agac">'+opts(AGAC,r.agac)+'</select></td>'
+      +'<td style="min-width:150px"><input class="ac" data-f="tedarikci" value="'+esc(r.tedarikci)+'" placeholder="Tedarikçi"></td>'
+      +'<td style="min-width:90px"><input class="ac" data-f="uzunluk" value="'+esc(r.uzunluk)+'" placeholder="ör. 6000"></td>'
+      +'<td class="wnum" style="min-width:90px"><input class="ac" data-f="toplam_cbm" value="'+esc(r.toplam_cbm==null?"":r.toplam_cbm)+'" placeholder="0"></td>'
+      +'<td class="wnum" style="min-width:100px"><input class="ac" data-f="fiyat" value="'+esc(r.fiyat==null?"":r.fiyat)+'" placeholder="0"></td>'
+      +'<td style="min-width:80px"><select class="ac" data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select>'
+      +(r.para_birimi&&r.para_birimi!=="EUR"&&r.fiyat_eur?'<div class="eur">= '+Math.round(r.fiyat_eur)+' €</div>':'')+'</td>'
+      +'<td style="min-width:130px"><input class="ac" type="date" data-f="tarih" value="'+esc(r.tarih)+'"></td>'
+      +'<td><button class="adel" title="Satırı sil">✕</button></td></tr>';
+  });
+  if(!AROWS.length) h+='<tr><td colspan="8" class="load">Kayıt yok — "+ Yeni Sipariş Ekle" ile başla.</td></tr>';
+  h+='</tbody></table>';
+  const list=$("aList"); list.className=""; list.innerHTML=h;
+  list.querySelectorAll("[data-f]").forEach(el=>{ el.addEventListener("change",()=>saveCell(+el.closest("tr").dataset.id,el.dataset.f,el.value)); });
+  list.querySelectorAll(".adel").forEach(b=>b.onclick=()=>delRow(+b.closest("tr").dataset.id));
+}
+async function saveCell(id,f,v){
+  const r=AROWS.find(x=>x.id===id); if(!r) return;
+  const rec={};
+  if(f==="toplam_cbm"||f==="fiyat") rec[f]=num(v);
+  else rec[f]=(v===""?null:v);
+  /* Fiyat ya da para birimi degisince € karsiligi yeniden hesaplanir */
+  if(f==="fiyat"||f==="para_birimi"){
+    const fiyat = f==="fiyat"? rec.fiyat : (r.fiyat==null?null:Number(r.fiyat));
+    const pb    = f==="para_birimi"? (rec.para_birimi||"EUR") : (r.para_birimi||"EUR");
+    if(fiyat==null){ rec.eur_kur=null; rec.fiyat_eur=null; }
+    else if(pb==="EUR"){ rec.eur_kur=1; rec.fiyat_eur=fiyat; rec.kur_tarihi=null; }
+    else{
+      msg("Güncel kur alınıyor…",true);
+      try{
+        const {data:kd,error:ke}=await sb.functions.invoke("ahsap-kur",{body:{}});
+        if(ke||!kd||!kd.ok||!(kd.rates&&kd.rates[pb]>0)) throw new Error("kur");
+        rec.eur_kur=kd.rates[pb]; rec.fiyat_eur=fiyat/kd.rates[pb]; rec.kur_tarihi=kd.tarih||null;
+      }catch(e){ msg("Kur alınamadı — € karşılığı boş bırakıldı, tekrar dene.",false); rec.eur_kur=null; rec.fiyat_eur=null; }
+    }
   }
-  const fiyat_eur = fiyat/kur;
-  const rec={ agac, kesit:"72 x 86", uzunluk:uzunluk||null, tedarikci, toplam_cbm:cbm, fiyat, para_birimi:pb, eur_kur:kur, fiyat_eur, kur_tarihi };
-  const {error}=await sb.from("ahsap_alim").insert(rec);
-  $("save").disabled=false;
-  if(error){ msg("msg","Kayıt hatası: "+error.message,false); return; }
-  SES.unshift({agac,tedarikci,cbm,fiyat,pb,eur:fiyat_eur}); renderSes();
-  msg("msg","Alım eklendi ("+agac+" · "+tedarikci+")"+(pb!=="EUR"?" · kur otomatik":"")+".",true);
-  $("tedarikci").value=""; $("uzunluk").value=""; $("cbm").value=""; $("fiyat").value=""; $("agac").value="";
-};
-$("update").onclick=async()=>{
-  if(!confirm("AYLIK GÜNCELLEME\n\nMevcut (açık) alımlar kapatılacak: bu dönemin ağırlıklı ortalaması 'önceki' olacak, bundan sonraki alımlar yeni dönemi oluşturacak.\n\nBu işlem ayda bir, ay kapanınca yapılır. Devam edilsin mi?")) return;
-  $("update").disabled=true;
-  const {data,error}=await sb.rpc("ahsap_ay_kapat");
-  $("update").disabled=false;
-  if(error){ msg("umsg","Güncelleme hatası: "+error.message,false); return; }
-  const mm=(data||"").match(/\((\d{4})-(\d{2})\)/);
-  let ay="";
-  if(mm){ const AY=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]; ay=AY[parseInt(mm[2],10)-1]+" "+mm[1]; }
-  /* Panodaki "Son güncelleme" damgası = bu düğmeye basılma anı */
+  const {error}=await sb.from("ahsap_alim").update(rec).eq("id",id);
+  if(error){ msg("Hata: "+error.message,false); return; }
+  Object.assign(r,rec);
+  msg("Kaydedildi",true);
+  if(f==="tarih"||f==="fiyat"||f==="para_birimi"){ sortRows(); render(); }
+}
+async function addRow(){
+  const rec={ kesit:"72 x 86", tarih:bugun(), para_birimi:"EUR", aktif:true };
+  const {data,error}=await sb.from("ahsap_alim").insert(rec).select();
+  if(error){ msg(error.message,false); return; }
+  AROWS.push(data[0]); sortRows(); render();
+  const s=document.querySelector('#aList tbody tr select[data-f="agac"]'); if(s) s.focus();
+}
+async function delRow(id){
+  if(!confirm("Bu sipariş satırı silinsin mi? (geri alınamaz)")) return;
+  const {error}=await sb.from("ahsap_alim").delete().eq("id",id);
+  if(error){ msg(error.message,false); return; }
+  AROWS=AROWS.filter(x=>x.id!==id); render(); msg("Silindi",true);
+}
+async function aylikGuncelle(){
+  if(!confirm("AYLIK GÜNCELLEME\n\nMelih'in Ahşap panosundaki 'Son güncelleme' tarihi bugüne çekilecek ve ay kapatılacak.\n\nDevam edilsin mi?")) return;
+  const btn=$("aUpd"); btn.disabled=true;
+  let note="";
+  try{ const {data,error}=await sb.rpc("ahsap_ay_kapat"); if(!error&&data) note=" "+data; }catch(e){}
   try{ await sb.from("pano_yayin").upsert({anahtar:"ahsap",yayin_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"anahtar"}); }catch(e){}
-  let mailNote="";
-  try{ const mr=await sb.functions.invoke("ahsap-ay-mail",{body:{ay}}); if(mr&&!mr.error){ mailNote=" · Bildirim maili gönderildi (int@arbor.com.tr)."; } }catch(e){}
-  msg("umsg","Aylık güncelleme yapıldı. "+(data||"")+mailNote,true);
-};
+  const AY=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+  const d=new Date(); const ay=AY[d.getMonth()]+" "+d.getFullYear();
+  try{ const mr=await sb.functions.invoke("ahsap-ay-mail",{body:{ay}}); if(mr&&!mr.error) note+=" · Bildirim maili gönderildi."; }catch(e){}
+  btn.disabled=false;
+  msg("Aylık güncelleme yapıldı."+note,true);
+  loadAlim();
+}
+$("aAdd").onclick=addRow;
+$("aUpd").onclick=aylikGuncelle;
+loadAlim();
 </script>
 </body>
 </html>
