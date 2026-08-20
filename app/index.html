@@ -796,14 +796,15 @@ async function loadAup(){
     #view table.aupmain td.c>span{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
     #view table.aupmain td.c>span::-webkit-scrollbar{display:none}
     #view table.aupmain td.ss,#view table.aupmain td.ur{white-space:nowrap;vertical-align:middle}
-    /* Genişlik HÜCREde, span hücrenin tamamını kullanır (aksi halde sabit ch genişliği
-       hücreden dar kalıp sağda boşluk bırakıyordu). */
-    #view table.aupmain td.c>span{width:100%}
-    #view table.aupmain td.a6{width:6ch}
-    #view table.aupmain td.a30{width:30ch}
-    #view table.aupmain td.a10{width:10ch}
-    #view table.aupmain td.ss{width:40ch}
-    #view table.aupmain td.ur{width:67.5ch}
+    /* Sütun genişliği span'ın ch genişliğiyle belirlenir (tablonun içeriğe göre şişmemesi için),
+       ama span hücre daha genişse hücrenin TAMAMINI kullanır (min-width:100%) — aksi halde
+       son iki sütunda sağda kullanılmayan boşluk kalıyordu. */
+    #view table.aupmain td.c>span{min-width:100%}
+    #view table.aupmain td.a6>span{width:6ch}
+    #view table.aupmain td.a30>span{width:30ch}
+    #view table.aupmain td.a10>span{width:10ch}
+    #view table.aupmain td.ss>span{width:40ch}
+    #view table.aupmain td.ur>span{width:67.5ch}
     </style>
     <div class="scroll"><table class="aup aupmain">
     <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
