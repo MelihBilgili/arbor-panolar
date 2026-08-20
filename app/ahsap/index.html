@@ -196,6 +196,7 @@ $("aAdd").onclick=addRow;
 $("aUpd").onclick=aylikGuncelle;
 loadAlim();
 </script>
+
 <!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
@@ -213,17 +214,22 @@ loadAlim();
     var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
     return okx||oky;
   }
+  function start(n,e){
+    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+    document.body.classList.add("arb-dragging"); e.preventDefault();
+  }
   document.addEventListener("mousedown",function(e){
     if(e.button!==0||skip(e.target)) return;
-    var n=e.target;
+    var n=e.target, hucre=null;
     while(n && n.nodeType===1 && n!==document.body){
-      /* hucre ici mini-kaydiricilari atla: kaydirilmasi istenen tablo/kutu kapsayicisidir */
-      if(!(n.closest("td,th")) && scrollable(n)){
-        el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
-        document.body.classList.add("arb-dragging"); e.preventDefault(); return;
+      if(scrollable(n)){
+        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
+        if(!n.closest("td,th")) return start(n,e);
+        if(!hucre) hucre=n;
       }
       n=n.parentElement;
     }
+    if(hucre) return start(hucre,e);
   },true);
   document.addEventListener("mousemove",function(e){
     if(!el) return;
