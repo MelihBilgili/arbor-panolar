@@ -43,14 +43,14 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <body>
 <header>
   <h1>Yurtiçi Satış Formu</h1>
-  <div class="sub">Sinan · Yurtiçi. Muhtemel/Alınan projelerini gir. Üretimdeki (sevke gönderilmiş) projeleri EKLEME. Bitince <b>“Kaydet ve Yayınla”</b>ya bas.</div>
+  <div class="sub">Her ayın son günü Muhtemel ve Alınan projelerin güncel durumları işlenip “Aylık Güncelle” düğmesine basılır. <b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler.</div>
 </header>
 <div class="wrap">
-  <div class="aybar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:6px 0 2px">
-    <button class="btn" id="ayBtn">Aylık güncelleme (ayı kapat)</button>
+  <div class="aybar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:6px 0 12px">
+    <button class="btn" id="ayBtn">Aylık Güncelle</button>
+    <span style="color:#b25a00;font-size:12px;flex:1;min-width:220px">Bu düğmeye yalnız aylık güncelleme için basınız, düzeltme ve revizyon durumunda lütfen basmayınız.</span>
     <span class="msg" id="ayMsg"></span>
   </div>
-  <div style="margin:0 2px 12px;color:#b25a00;font-size:12px">Bu düğmeye yalnız aylık güncelleme için basınız, düzeltme ve revizyon durumunda lütfen basmayınız.</div>
   <div class="bar">
     <button class="btn sec" id="addM">+ Muhtemel satır</button>
     <button class="btn sec" id="addA">+ Alınan satır</button>
@@ -58,11 +58,6 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <span class="msg" id="msg"></span>
   </div>
   <div id="list" class="card"><div class="load">Yükleniyor…</div></div>
-  <div class="addrow">
-    <button class="btn" id="publish">Kaydet ve Yayınla</button>
-    <button class="btn sec" id="reload">Vazgeç / yeniden yükle</button>
-  </div>
-  <div class="hint"><b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler. — “Kaydet ve Yayınla” tüm listeyi yeni bir çekim olarak kaydeder; Satış panosunda önceki çekime göre eklenen/çıkan ve fark otomatik gösterilir.</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -123,7 +118,7 @@ async function load(){
   if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
   const d=(data||[]).slice().sort((a,b)=> (a.statu||"").localeCompare(b.statu||"") || (Number(b.net_eur)||0)-(Number(a.net_eur)||0));
   OLD_IDS=d.map(r=>r.id);
-  ROWS=d.map(r=>({statu:r.statu||"Muhtemel",proje:r.proje||"",musteri:r.musteri||"",net_eur:r.net_eur,durum:r.durum||""}));
+  ROWS=d.map(r=>({id:r.id,statu:r.statu||"Muhtemel",proje:r.proje||"",musteri:r.musteri||"",net_eur:r.net_eur,durum:r.durum||""}));
   dirty=false; render();
 }
 function setMsg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; }
@@ -147,14 +142,43 @@ function render(){
   });
   h+='</tbody></table>';
   const list=document.getElementById("list"); list.innerHTML=h;
+  /* Her hücre değişikliği ANINDA Supabase'e yazılır (Aylık Güncelle'ye basılmasa da kalıcı). */
   list.querySelectorAll("[data-f]").forEach(el=>{
-    const i=+el.closest("tr").dataset.i, f=el.dataset.f, ev=el.tagName==="SELECT"?"change":"input";
-    el.addEventListener(ev,()=>{ ROWS[i][f]=el.value; markDirty(); });
+    const i=+el.closest("tr").dataset.i, f=el.dataset.f;
+    el.addEventListener("input",()=>{ ROWS[i][f]=el.value; sums(); });
+    el.addEventListener("change",()=>{ ROWS[i][f]=el.value; saveRow(i,f); });
   });
-  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>{ ROWS.splice(+b.closest("tr").dataset.i,1); markDirty(); render(); });
+  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delRow(+b.closest("tr").dataset.i));
   sums();
 }
-function addRow(statu){ ROWS.push({statu,proje:"",musteri:"",net_eur:null,durum:""}); markDirty(); render(); const inps=document.querySelectorAll('#list input[data-f="proje"]'); if(inps.length) inps[inps.length-1].focus(); }
+const stat=r=>/^al/i.test(r.statu)?"Alınan":"Muhtemel";
+async function saveRow(i,f){
+  const r=ROWS[i]; if(!r) return;
+  if(!r.id){
+    if(!(r.proje||"").trim()) return;   /* proje yazılana kadar kayıt açılmaz */
+    const rec={grup:"Yurtiçi",kaynak:"SO",statu:stat(r),proje:(r.proje||"").trim(),musteri:(r.musteri||"").trim(),
+               net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),ulke:"TR",cekim:new Date().toISOString().slice(0,10),aktif:true};
+    const {data,error}=await sb.from("satis_yorum").insert(rec).select();
+    if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
+    r.id=data[0].id; OLD_IDS.push(r.id); dirty=false; setMsg("Kaydedildi ✓",true); sums(); return;
+  }
+  const rec={};
+  rec[f]= f==="net_eur" ? parseNet(r.net_eur) : (f==="statu" ? stat(r) : String(r[f]||"").trim());
+  const {error}=await sb.from("satis_yorum").update(rec).eq("id",r.id);
+  if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
+  dirty=false; setMsg("Kaydedildi ✓",true); sums();
+}
+async function delRow(i){
+  const r=ROWS[i]; if(!r) return;
+  if(r.id){
+    if(!confirm("Bu satır silinsin mi? (geri alınamaz)")) return;
+    const {error}=await sb.from("satis_yorum").delete().eq("id",r.id);
+    if(error){ setMsg("Silinemedi: "+error.message,false); return; }
+    OLD_IDS=OLD_IDS.filter(x=>x!==r.id);
+  }
+  ROWS.splice(i,1); render(); setMsg("Silindi",true);
+}
+function addRow(statu){ ROWS.push({statu,proje:"",musteri:"",net_eur:null,durum:""}); render(); const inps=document.querySelectorAll('#list input[data-f="proje"]'); if(inps.length) inps[inps.length-1].focus(); }
 async function publish(){
   const clean=[];
   for(const r of ROWS){
@@ -162,20 +186,18 @@ async function publish(){
     const statu=/^al/i.test(r.statu)?"Alınan":"Muhtemel";
     clean.push({grup:"Yurtiçi",kaynak:"SO",statu,proje,musteri:(r.musteri||"").trim(),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),ulke:"TR",cekim:new Date().toISOString().slice(0,10),aktif:true});
   }
-  if(!clean.length){ setMsg("En az bir dolu (projesi olan) satır gerekli.",false); return; }
-  const btn=document.getElementById("publish"); btn.disabled=true; btn.textContent="Yayınlanıyor…"; setMsg("Kaydediliyor…",true);
+  if(!clean.length){ setMsg("En az bir dolu (projesi olan) satır gerekli.",false); return false; }
+  setMsg("Kaydediliyor…",true);
   const {error:eIns}=await sb.from("satis_yorum").insert(clean);
-  if(eIns){ btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Ekleme hatası: "+eIns.message,false); return; }
+  if(eIns){ setMsg("Ekleme hatası: "+eIns.message,false); return false; }
   if(OLD_IDS.length){ const {error:eA}=await sb.from("satis_yorum").update({aktif:false}).in("id",OLD_IDS);
-    if(eA){ btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Eklendi ama önceki arşivlenemedi: "+eA.message,false); return; } }
-  btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Yayınlandı ✓ ("+clean.length+" proje). Satış panosu güncel.",true);
+    if(eA){ setMsg("Eklendi ama önceki arşivlenemedi: "+eA.message,false); return false; } }
+  setMsg("Yayınlandı ✓ ("+clean.length+" proje). Satış panosu güncel.",true);
   await load();
+  return true;
 }
 document.getElementById("addM").onclick=()=>addRow("Muhtemel");
 document.getElementById("addA").onclick=()=>addRow("Alınan");
-document.getElementById("publish").onclick=publish;
-document.getElementById("reload").onclick=()=>{ if(!dirty||confirm("Kaydedilmemiş değişiklikler silinecek. Devam?")) load(); };
-window.addEventListener("beforeunload",e=>{ if(dirty){ e.preventDefault(); e.returnValue=""; } });
 /* ===== Aylık güncelleme işareti (satis_ay_islendi + mail; yurtiçi takip yok) ===== */
 setupAyIsaret("SO",null);
 function setupAyIsaret(KAYNAK,SNAP){
@@ -185,8 +207,12 @@ function setupAyIsaret(KAYNAK,SNAP){
   const ay=AYLAR[now.getMonth()]+" "+now.getFullYear();
   btn0.onclick=async()=>{
     const m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
-    if(!confirm('"'+ay+'" ayı için aylık güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN.\n\nOnaylıyor musunuz?')) return;
-    btn.disabled=true; m.className="msg"; m.textContent="İşaretleniyor…";
+    if(!confirm('"'+ay+'" ayı kapatılacak: liste yeni bir çekim olarak panoya yayınlanacak ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN (girişler zaten anında kaydediliyor).\n\nOnaylıyor musunuz?')) return;
+    btn.disabled=true; m.className="msg"; m.textContent="Yayınlanıyor…";
+    /* Önce listeyi yeni çekim olarak yayınla (pano önceki çekime göre farkı gösterir) */
+    const ok=await publish();
+    if(!ok){ btn.disabled=false; m.className="msg err"; m.textContent="Yayınlanamadı — mesajı kontrol et."; return; }
+    m.className="msg"; m.textContent="İşaretleniyor…";
     const {error}=await sb.from("satis_ay_islendi").upsert({kaynak:KAYNAK,ay,mail_gonderildi:false,updated_at:new Date().toISOString()},{onConflict:"kaynak"});
     if(error){ btn.disabled=false; m.className="msg err"; m.textContent="Hata: "+error.message; return; }
     if(SNAP){ try{ await sb.rpc(SNAP); }catch(e){} }
