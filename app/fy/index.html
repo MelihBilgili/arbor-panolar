@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Yurtdışı Satış Formu</title>
+<title>Yurt Dışı 1 Satış Formu</title>
 <style>
   :root{color-scheme:light}
   *{box-sizing:border-box}
   body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
   header{background:#16324f;color:#fff;padding:12px 16px}
   header h1{font-size:17px;margin:0;font-weight:700}
+  header .hsub{font-size:12px;color:#d7e6f5;margin-top:3px}
   .wrap{max-width:1320px;margin:0 auto;padding:14px 16px 60px}
   .sechead{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin:22px 2px 8px}
   h2.sec{color:#16324f;font-size:15px;margin:0}
@@ -36,8 +37,10 @@
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
   .colp{width:1%;white-space:nowrap}
   /* iliskili sutun ciftleri (Son Takip T. + Notlari) ortak zemin + sol sinir ile gruplanir */
-  th.pairA,td.pairA{background:#eaf5ee}
-  th.pairB,td.pairB{background:#f0eefb}
+  td.pairA{background:#eaf5ee}
+  td.pairB{background:#f0eefb}
+  thead th.pairA{background:#1f6b45}
+  thead th.pairB{background:#4a3f8f}
   tbody tr:nth-child(even) td.pairA{background:#e3f1e8}
   tbody tr:nth-child(even) td.pairB{background:#eae7f7}
   th.gs,td.gs{border-left:2px solid #9db8a6}
@@ -48,22 +51,23 @@
   .load{padding:30px;text-align:center;color:#8a97a4}
 
 html,body{max-width:100vw;overflow-x:hidden}
-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+/* tek scroller = .card (tablonun kendi kaydirma cubugu kaldirildi) */
 </style>
 </head>
 <body>
 <header>
-  <h1>Yurtdışı Satış Formu</h1>
+  <h1>Yurt Dışı 1 Satış Formu</h1>
+  <div class="hsub"><b>Bu tabloda her hücre anında kaydedilir.</b></div>
 </header>
 <div class="wrap">
   <div class="aybar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:6px 0 2px">
-    <button class="btn" id="ayBtn">Aylık güncelleme (ayı kapat)</button>
+    <button class="btn" id="ayBtn">Aylık Güncelle</button>
+    <span style="color:#b25a00;font-size:12px;flex:1;min-width:220px">Bu düğmeye yalnız aylık güncelleme için basınız, düzeltme ve revizyon durumunda lütfen basmayınız.</span>
     <span class="msg" id="ayMsg"></span>
   </div>
-  <div class="hint" style="margin:0 2px 12px;color:#b25a00">Bu düğmeye yalnız aylık güncelleme için basınız, düzeltme ve revizyon durumunda lütfen basmayınız.</div>
   <div class="sechead" style="margin-top:4px">
     <h2 class="sec">Muhtemel / Alınan Projeler</h2>
-    <div class="desc">Her takvim ayının bitiminde, Türkiye dışındaki tüm Muhtemel/Alınan projelerini gir. Üretimdeki (sevke gönderilmiş) projeleri EKLEME. Bitince “Kaydet ve Yayınla”ya bas. <b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler. “Kaydet ve Yayınla” tüm listeyi yeni bir çekim olarak kaydeder; Satış panosunda önceki çekime göre eklenen/çıkan ve fark otomatik gösterilir.</div>
+    <div class="desc">Her ayın son günü Muhtemel ve Alınan projelerin güncel durumları işlenip “Aylık Güncelle” düğmesine basılır. <b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler.</div>
   </div>
   <div class="bar">
     <button class="btn sec" id="addM">+ Muhtemel satır</button>
@@ -72,10 +76,6 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <span class="msg" id="msg"></span>
   </div>
   <div id="list" class="card"><div class="load">Yükleniyor…</div></div>
-  <div class="addrow">
-    <button class="btn" id="publish">Kaydet ve Yayınla</button>
-    <button class="btn sec" id="reload">Vazgeç / yeniden yükle</button>
-  </div>
 
   <div class="sechead">
     <h2 class="sec">Takipteki Teklifler <span class="sum">(yurtdışı — anlık kaydedilir)</span></h2>
@@ -149,6 +149,7 @@ function toISO(s){ if(s==null) return null; s=String(s).trim(); if(s==="") retur
   if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   return undefined; /* gecersiz */ }
 
+const KAYNAK_KEY="FY";
 /* ===== Muhtemel/Alınan (satis_yorum, FY) ===== */
 let ROWS=[], OLD_IDS=[], dirty=false;
 async function load(){
@@ -156,7 +157,7 @@ async function load(){
   if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
   const d=(data||[]).slice().sort((a,b)=> (a.statu||"").localeCompare(b.statu||"") || (Number(b.net_eur)||0)-(Number(a.net_eur)||0));
   OLD_IDS=d.map(r=>r.id);
-  ROWS=d.map(r=>({statu:r.statu||"Muhtemel",proje:r.proje||"",musteri:r.musteri||"",ulke:r.ulke||"FR",iskonto:(r.iskonto==null?"":r.iskonto),net_eur:r.net_eur,durum:r.durum||""}));
+  ROWS=d.map(r=>({id:r.id,statu:r.statu||"Muhtemel",proje:r.proje||"",musteri:r.musteri||"",ulke:r.ulke||"FR",iskonto:(r.iskonto==null?"":r.iskonto),net_eur:r.net_eur,durum:r.durum||""}));
   dirty=false; render();
 }
 function setMsg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; }
@@ -183,32 +184,63 @@ function render(){
   });
   h+='</tbody></table>';
   const list=document.getElementById("list"); list.innerHTML=h;
+  /* Her hucre degisikligi ANINDA kaydedilir (Aylik Guncelle beklenmez). */
   list.querySelectorAll("[data-f]").forEach(el=>{
-    const i=+el.closest("tr").dataset.i, f=el.dataset.f, ev=el.tagName==="SELECT"?"change":"input";
-    el.addEventListener(ev,()=>{ ROWS[i][f]=el.value; el.classList.toggle("bad", !String(el.value||"").trim()); markDirty(); });
+    const i=+el.closest("tr").dataset.i, f=el.dataset.f;
+    el.addEventListener("input",()=>{ ROWS[i][f]=el.value; el.classList.toggle("bad", !String(el.value||"").trim()); sums(); });
+    el.addEventListener("change",()=>{ ROWS[i][f]=el.value; saveRow(i,f); });
     if(f==="net_eur") el.addEventListener("blur",()=>{ const v=parseNet(el.value); el.value=(v==null?"":money(v)); });
   });
-  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>{ if(!confirm("Bu satır silinsin mi?")) return; ROWS.splice(+b.closest("tr").dataset.i,1); markDirty(); render(); });
+  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delRow(+b.closest("tr").dataset.i));
   sums();
 }
-function addRow(statu){ ROWS.push({statu,proje:"",musteri:"",ulke:"FR",iskonto:"",net_eur:null,durum:""}); markDirty(); render(); const inps=document.querySelectorAll('#list input[data-f="proje"]'); if(inps.length) inps[inps.length-1].focus(); }
+const stat=r=>/^al/i.test(r.statu)?"Alınan":"Muhtemel";
+async function saveRow(i,f){
+  const r=ROWS[i]; if(!r) return;
+  if(!r.id){
+    if(!(r.proje||"").trim()) return;   /* proje yazilana kadar kayit acilmaz */
+    const rec={grup:"Yurtdışı",kaynak:KAYNAK_KEY,statu:stat(r),proje:(r.proje||"").trim(),musteri:(r.musteri||"").trim(),
+               iskonto:parseNet(r.iskonto),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),
+               ulke:(r.ulke||"").trim()||"FR",cekim:new Date().toISOString().slice(0,10),aktif:true};
+    const {data,error}=await sb.from("satis_yorum").insert(rec).select();
+    if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
+    r.id=data[0].id; OLD_IDS.push(r.id); dirty=false; setMsg("Kaydedildi ✓",true); sums(); return;
+  }
+  const rec={};
+  rec[f]= (f==="net_eur"||f==="iskonto") ? parseNet(r[f]) : (f==="statu" ? stat(r) : String(r[f]||"").trim());
+  const {error}=await sb.from("satis_yorum").update(rec).eq("id",r.id);
+  if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
+  dirty=false; setMsg("Kaydedildi ✓",true); sums();
+}
+async function delRow(i){
+  const r=ROWS[i]; if(!r) return;
+  if(r.id){
+    if(!confirm("Bu satır silinsin mi? (geri alınamaz)")) return;
+    const {error}=await sb.from("satis_yorum").delete().eq("id",r.id);
+    if(error){ setMsg("Silinemedi: "+error.message,false); return; }
+    OLD_IDS=OLD_IDS.filter(x=>x!==r.id);
+  }
+  ROWS.splice(i,1); render(); setMsg("Silindi",true);
+}
+function addRow(statu){ ROWS.push({statu,proje:"",musteri:"",ulke:"FR",iskonto:"",net_eur:null,durum:""}); render(); const inps=document.querySelectorAll('#list input[data-f="proje"]'); if(inps.length) inps[inps.length-1].focus(); }
 function validateList(){
   let bad=false;
   document.querySelectorAll('#list .req').forEach(el=>{ const empty=!String(el.value||"").trim(); el.classList.toggle("bad",empty); if(empty) bad=true; });
   return !bad;
 }
 async function publish(){
-  if(!ROWS.length){ setMsg("En az bir satır ekleyin.",false); return; }
-  if(!validateList()){ setMsg("Tüm hücreleri doldurun — hiçbir hücre boş/belirsiz bırakılamaz.",false); return; }
+  if(!ROWS.length){ setMsg("En az bir satır ekleyin.",false); return false; }
+  if(!validateList()){ setMsg("Tüm hücreleri doldurun — hiçbir hücre boş/belirsiz bırakılamaz.",false); return false; }
   const clean=ROWS.map(r=>({grup:"Yurtdışı",kaynak:"FY",statu:(/^al/i.test(r.statu)?"Alınan":"Muhtemel"),proje:(r.proje||"").trim(),musteri:(r.musteri||"").trim(),iskonto:parseNet(r.iskonto),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),ulke:(r.ulke||"").trim()||"FR",cekim:new Date().toISOString().slice(0,10),aktif:true}));
-  const btn=document.getElementById("publish"); btn.disabled=true; btn.textContent="Yayınlanıyor…"; setMsg("Kaydediliyor…",true);
+  setMsg("Kaydediliyor…",true);
   const {error:eIns}=await sb.from("satis_yorum").insert(clean);
-  if(eIns){ btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Ekleme hatası: "+eIns.message,false); return; }
+  if(eIns){ setMsg("Ekleme hatası: "+eIns.message,false); return false; }
   if(OLD_IDS.length){ const {error:eA}=await sb.from("satis_yorum").update({aktif:false}).in("id",OLD_IDS);
-    if(eA){ btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Eklendi ama önceki arşivlenemedi: "+eA.message,false); return; } }
-  btn.disabled=false; btn.textContent="Kaydet ve Yayınla"; setMsg("Yayınlandı ✓ ("+clean.length+" proje). Satış panosu güncel.",true);
+    if(eA){ setMsg("Eklendi ama önceki arşivlenemedi: "+eA.message,false); return false; } }
+  setMsg("Yayınlandı ✓ ("+clean.length+" proje). Satış panosu güncel.",true);
   try{ await sb.rpc("satis_takip_snapshot_al"); }catch(e){}
   await load();
+  return true;
 }
 
 /* ===== Takipteki teklifler (satis_takip) — anlık kayıt ===== */
@@ -301,8 +333,6 @@ async function delTk(i){
 
 document.getElementById("addM").onclick=()=>addRow("Muhtemel");
 document.getElementById("addA").onclick=()=>addRow("Alınan");
-document.getElementById("publish").onclick=publish;
-document.getElementById("reload").onclick=()=>{ if(!dirty||confirm("Kaydedilmemiş değişiklikler silinecek. Devam?")) load(); };
 document.getElementById("tkAdd").onclick=addTk;
 /* ===== Aylık güncelleme işareti (satis_ay_islendi + snapshot + mail) ===== */
 setupAyIsaret("FY","satis_takip_snapshot_al");
@@ -313,8 +343,11 @@ function setupAyIsaret(KAYNAK,SNAP){
   const ay=AYLAR[now.getMonth()]+" "+now.getFullYear();
   btn0.onclick=async()=>{
     const m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
-    if(!confirm('"'+ay+'" ayı için aylık güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN.\n\nOnaylıyor musunuz?')) return;
-    btn.disabled=true; m.className="msg"; m.textContent="İşaretleniyor…";
+    if(!confirm('"'+ay+'" ayı için aylık güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN (girişler zaten anında kaydediliyor).\n\nOnaylıyor musunuz?')) return;
+    btn.disabled=true; m.className="msg"; m.textContent="Yayınlanıyor…";
+    const ok=await publish();
+    if(!ok){ btn.disabled=false; m.className="msg err"; m.textContent="Yayınlanamadı — mesajı kontrol et."; return; }
+    m.className="msg"; m.textContent="İşaretleniyor…";
     const {error}=await sb.from("satis_ay_islendi").upsert({kaynak:KAYNAK,ay,mail_gonderildi:false,updated_at:new Date().toISOString()},{onConflict:"kaynak"});
     if(error){ btn.disabled=false; m.className="msg err"; m.textContent="Hata: "+error.message; return; }
     if(SNAP){ try{ await sb.rpc(SNAP); }catch(e){} }
@@ -326,8 +359,49 @@ function setupAyIsaret(KAYNAK,SNAP){
     btn.disabled=false; m.className="msg ok"; m.textContent="✓ "+ay+" ayı işaretlendi — panoda görünecek."+note;
   };
 }
-window.addEventListener("beforeunload",e=>{ if(dirty){ e.preventDefault(); e.returnValue=""; } });
 load(); loadTakip();
 </script>
+<!-- ARBOR-DRAGSCROLL -->
+<style>
+  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
+  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+<script>
+(function(){
+  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
+  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
+  function scrollable(n){
+    var st=getComputedStyle(n);
+    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
+    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
+    return okx||oky;
+  }
+  document.addEventListener("mousedown",function(e){
+    if(e.button!==0||skip(e.target)) return;
+    var n=e.target;
+    while(n && n.nodeType===1 && n!==document.body){
+      /* hucre ici mini-kaydiricilari atla: kaydirilmasi istenen tablo/kutu kapsayicisidir */
+      if(!(n.closest("td,th")) && scrollable(n)){
+        el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+        document.body.classList.add("arb-dragging"); e.preventDefault(); return;
+      }
+      n=n.parentElement;
+    }
+  },true);
+  document.addEventListener("mousemove",function(e){
+    if(!el) return;
+    var dx=e.clientX-sx, dy=e.clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    el.scrollLeft=l-dx; el.scrollTop=t-dy;
+  });
+  document.addEventListener("mouseup",function(){
+    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
+  });
+  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
+})();
+</script>
+<!-- /ARBOR-DRAGSCROLL -->
 </body>
 </html>
