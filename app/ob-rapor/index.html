@@ -54,8 +54,9 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 
   <div class="grp"><h2>Dépenses — Tedarikçi Giderleri</h2>
     <div class="ibtns">
-      <select id="dYil" class="dsel" title="Yıl"></select>
-      <select id="dAy" class="dsel" title="Ay"></select>
+      <span class="hint" style="margin:0;align-self:center">Yeni gider ayı:</span>
+      <select id="dYil" class="dsel" title="Yeni kaydın yılı"></select>
+      <select id="dAy" class="dsel" title="Yeni kaydın ayı"></select>
       <button class="iadd" id="dAdd">+ Tedarikçi Ekle</button>
       <button class="wkbtn" id="dPub">Panoya Aktar</button>
       <span id="dPubInfo" class="hint" style="margin:0;align-self:center"></span>
@@ -206,13 +207,13 @@ let DROWS=[];
   let ys=""; for(let y=now.getFullYear()+1;y>=now.getFullYear()-3;y--) ys+='<option'+(y===now.getFullYear()?' selected':'')+'>'+y+'</option>';
   yEl.innerHTML=ys;
   aEl.innerHTML=DAY.map((a,i)=>'<option value="'+(i+1)+'"'+((i+1)===now.getMonth()+1?' selected':'')+'>'+a+'</option>').join("");
-  yEl.onchange=loadDep; aEl.onchange=loadDep;
 })();
 const dYil=()=>parseInt(document.getElementById("dYil").value,10);
 const dAy=()=>parseInt(document.getElementById("dAy").value,10);
+/* Tüm aylar tek listede, yeni ay en üstte; yeni gider seçili ayın en üstüne eklenir. */
 async function loadDep(){
   const [k,y]=await Promise.all([
-    sb.from("depenses_kalem").select("*").eq("yil",dYil()).eq("ay",dAy()).order("tutar",{ascending:false}),
+    sb.from("depenses_kalem").select("*").order("yil",{ascending:false}).order("ay",{ascending:false}).order("id",{ascending:false}),
     sb.from("depenses_yayin").select("yayin_at").limit(1)
   ]);
   if(k.error){ document.getElementById("dList").innerHTML='<div class="load">Hata: '+esc(k.error.message)+'</div>'; return; }
@@ -222,16 +223,23 @@ async function loadDep(){
   renderDep();
 }
 function renderDep(){
-  const top=DROWS.reduce((a,r)=>a+(Number(r.tutar)||0),0);
-  let h='<table class="itbl"><thead><tr><th>Tedarikçi</th><th style="text-align:right">Tutar (€)</th><th></th></tr></thead><tbody>';
-  DROWS.forEach(r=>{
-    h+='<tr data-id="'+r.id+'">'
-      +'<td><input class="ic" data-f="tedarikci" value="'+esc(r.tedarikci)+'" placeholder="Tedarikçi adı"></td>'
-      +'<td style="text-align:right"><input class="ic" data-f="tutar" type="number" step="0.01" value="'+esc(r.tutar)+'" placeholder="0"></td>'
-      +'<td><button class="ddel" title="Sil">✕</button></td></tr>';
+  const keys=[...new Set(DROWS.map(r=>r.yil*100+r.ay))].sort((a,b)=>b-a);
+  let h='<table class="itbl"><thead><tr><th>Ay</th><th>Tedarikçi</th><th style="text-align:right">Tutar (€)</th><th></th></tr></thead><tbody>';
+  keys.forEach(k=>{
+    const yil=Math.floor(k/100), ay=k%100;
+    const rs=DROWS.filter(r=>r.yil===yil&&r.ay===ay);
+    const top=rs.reduce((a,r)=>a+(Number(r.tutar)||0),0);
+    h+='<tr class="dtot"><td colspan="2">'+DAY[ay-1]+' '+yil+' <span style="font-weight:400;color:#8a97a4">('+rs.length+' tedarikçi)</span></td>'
+      +'<td style="text-align:right">'+dEur(top)+'</td><td></td></tr>';
+    rs.forEach(r=>{
+      h+='<tr data-id="'+r.id+'">'
+        +'<td style="color:#8a97a4;white-space:nowrap">'+DAY[ay-1].slice(0,3)+' '+String(yil).slice(2)+'</td>'
+        +'<td><input class="ic" data-f="tedarikci" value="'+esc(r.tedarikci)+'" placeholder="Tedarikçi adı"></td>'
+        +'<td style="text-align:right"><input class="ic" data-f="tutar" type="number" step="0.01" value="'+esc(r.tutar)+'" placeholder="0"></td>'
+        +'<td><button class="ddel" title="Sil">✕</button></td></tr>';
+    });
   });
-  if(!DROWS.length) h+='<tr><td colspan="3" style="color:#8a97a4;padding:10px">Bu ay için kayıt yok — "+ Tedarikçi Ekle" ile başla.</td></tr>';
-  h+='<tr class="dtot"><td>TOPLAM</td><td style="text-align:right">'+dEur(top)+'</td><td></td></tr>';
+  if(!DROWS.length) h+='<tr><td colspan="4" style="color:#8a97a4;padding:10px">Kayıt yok — "+ Tedarikçi Ekle" ile başla.</td></tr>';
   h+='</tbody></table>';
   const list=document.getElementById("dList"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{ el.addEventListener("change",()=>saveDep(+el.closest("tr").dataset.id,el.dataset.f,el.value)); });
@@ -248,8 +256,9 @@ async function saveDep(id,f,v){
 async function addDep(){
   const {data,error}=await sb.from("depenses_kalem").insert({yil:dYil(),ay:dAy(),tedarikci:"",tutar:0}).select();
   if(error){ msg(error.message,false); return; }
-  DROWS.push(data[0]); renderDep();
-  const inps=document.querySelectorAll('#dList input[data-f="tedarikci"]'); if(inps.length) inps[inps.length-1].focus();
+  DROWS.unshift(data[0]); renderDep();   /* yeni satır kendi ayının en üstünde */
+  const tr=document.querySelector('#dList tr[data-id="'+data[0].id+'"]');
+  const inp=tr&&tr.querySelector('input[data-f="tedarikci"]'); if(inp){ inp.focus(); tr.scrollIntoView({block:"center"}); }
 }
 async function delDep(id){
   if(!confirm("Bu tedarikçi satırı silinsin mi?")) return;
