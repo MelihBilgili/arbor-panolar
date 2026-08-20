@@ -58,7 +58,8 @@ function calc(){const f=feats();$('ortaWrap').style.display=f.triple?'block':'no
   let mh='';if(pr.length){mh='<h3>Eşleşen geçmiş teklifler ('+pr.length+')</h3><table><thead><tr><th>Cam Kombinasyonu</th><th class="num">€/m²</th></tr></thead><tbody>';mt.sort((a,b)=>a.bf-b.bf).slice(0,12).forEach(r=>mh+='<tr><td>'+r.komb+'</td><td class="num">'+fmt(r.bf)+'</td></tr>');mh+='</tbody></table>'+(mt.length>12?'<div class="hint">… '+(mt.length-12)+' kayıt daha</div>':'');}else mh='<h3>Bu kombinasyon için geçmiş teklif yok — model tahmini kullanıldı.</h3>';$('matches').innerHTML=mh;
   $('formula').innerHTML='<b>Çarpımsal model:</b> €/m² = e^( '+M.intercept.toFixed(2)+' + '+M.totglass.toFixed(3)+'·kalınlık(mm) + Σ katsayı·parametre ) − 1. Seçili toplam cam kalınlığı <b>'+f.totglass+' mm</b>. Etkiler (×): Low-e ×'+Math.exp(M.lowe).toFixed(2)+' · Akustik ×'+Math.exp(M.acoustic).toFixed(2)+' · Temperli ×'+Math.exp(M.temper).toFixed(2)+' · Cool Lite ×'+Math.exp(M.coollite).toFixed(2)+' · AGC Energy ×'+Math.exp(M.energy).toFixed(2)+' · Fire Proof ×'+Math.exp(M.fireproof).toFixed(1)+' · Eğrisel ×'+Math.exp(M.egrisel).toFixed(2)+' · Kemerli ×'+Math.exp(M.kemerli).toFixed(2)+'.';}
 document.querySelectorAll('select,input').forEach(e=>e.addEventListener('input',calc));calc();
-</script><!-- ARBOR-DRAGSCROLL -->
+</script>
+<!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
   *{scrollbar-width:none;-ms-overflow-style:none}
@@ -75,17 +76,22 @@ document.querySelectorAll('select,input').forEach(e=>e.addEventListener('input',
     var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
     return okx||oky;
   }
+  function start(n,e){
+    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+    document.body.classList.add("arb-dragging"); e.preventDefault();
+  }
   document.addEventListener("mousedown",function(e){
     if(e.button!==0||skip(e.target)) return;
-    var n=e.target;
+    var n=e.target, hucre=null;
     while(n && n.nodeType===1 && n!==document.body){
-      /* hucre ici mini-kaydiricilari atla: kaydirilmasi istenen tablo/kutu kapsayicisidir */
-      if(!(n.closest("td,th")) && scrollable(n)){
-        el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
-        document.body.classList.add("arb-dragging"); e.preventDefault(); return;
+      if(scrollable(n)){
+        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
+        if(!n.closest("td,th")) return start(n,e);
+        if(!hucre) hucre=n;
       }
       n=n.parentElement;
     }
+    if(hucre) return start(hucre,e);
   },true);
   document.addEventListener("mousemove",function(e){
     if(!el) return;
