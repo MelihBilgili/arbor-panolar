@@ -91,6 +91,39 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+/* ===== ARBOR FORM KAPISI (2026-08-20) — anon erisim kapali, rol hesabiyla giris ===== */
+const ARB_ROLE_EMAIL = "fy2.form@arbor.com.tr";
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+function arbGateUI(msg){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:310px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:3px">Arbor — Form Girisi</div>'
+    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:12px">'+ARB_ROLE_EMAIL+'</div>'
+    +'<input id="arb-pw" type="password" placeholder="Parola" autocomplete="current-password" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giris</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px">'+(msg||"")+'</div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var pw=document.getElementById("arb-pw").value;
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giris yapiliyor...";
+    var r=await ARB_GATE_SB.auth.signInWithPassword({email:ARB_ROLE_EMAIL,password:pw});
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent="Parola hatali"; return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+(async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  if(em===ARB_ROLE_EMAIL){ (0,eval)(document.getElementById("arbmain").textContent); }
+  else { if(em){ await ARB_GATE_SB.auth.signOut(); } arbGateUI(); }
+})();
+</script>
+<script type="text/plain" id="arbmain">
 const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money=n=>{const v=Math.round(Number(n)||0);return v.toLocaleString("tr-TR");};
