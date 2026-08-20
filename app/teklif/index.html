@@ -108,6 +108,7 @@ td.note{color:#52617a;font-size:12.5px;}
     <div class="line" id="montBd"></div>
 
     <div class="res3">
+      <div class="box"><span class="lbl">Katsayı</span><span class="amt" id="katOut">—</span></div>
       <div class="box"><span class="lbl">Ürün Satış Net Tutarı</span><span class="amt" id="netOut">—</span></div>
       <div class="box"><span class="lbl">Montaj Teklif Tutarı</span><span class="amt" id="montOut">—</span></div>
       <div class="box tot"><span class="lbl">Toplam Teklif Tutarı</span><span class="amt" id="grandOut">—</span></div>
@@ -253,8 +254,8 @@ function calcNet(){
     `<span>Baz iskonto <b>−${pct(R.baz)}</b></span>`+
     `<span>Müşteri iskontosu (${sinif==='0'?'diğer':sinif+'. sınıf'}) <b>−${pct(musk)}</b></span>`+
     `<span>Büyüklük sürşarjı <b>+${pct(sur)}</b></span>`+
-    (reno?`<span>Renovasyon (eski doğrama sökümü) <b>+${pct(R.reno)}</b></span>`:'')+
-    `<span>Katsayı <b>${kat.toLocaleString('tr-TR',{maximumFractionDigits:5})}</b></span>`;
+    (reno?`<span>Renovasyon (eski doğrama sökümü) <b>+${pct(R.reno)}</b></span>`:'');
+  $('katOut').textContent=kat.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
   $('onayNot').style.display = sinif==='0' ? '' : 'none';
   return net;
 }
