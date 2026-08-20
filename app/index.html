@@ -805,8 +805,12 @@ async function loadAup(){
     #view table.aupmain td.a10>span{width:10ch}
     #view table.aupmain td.ss>span{width:40ch}
     #view table.aupmain td.ur>span{width:67.5ch}
+    /* Tablo ekranın tamamını kullanır; artan genişlik iki not sütununa dağılır
+       (sabit ch genişlikleri artık ALT sınır). */
+    #view .aupwrap{width:100%}
+    #view table.aupmain{width:100%}
     </style>
-    <div class="scroll"><table class="aup aupmain">
+    <div class="scroll aupwrap"><table class="aup aupmain">
     <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
