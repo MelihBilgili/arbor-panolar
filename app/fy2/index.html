@@ -149,8 +149,8 @@ function toISO(s){ if(s==null) return null; s=String(s).trim(); if(s==="") retur
   if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   return undefined; /* gecersiz */ }
 
-const KAYNAK_KEY="FY";
-/* ===== Muhtemel/Alınan (satis_yorum_2, FY) ===== */
+const KAYNAK_KEY="FY2";
+/* ===== Muhtemel/Alınan (satis_yorum_2, FY2) ===== */
 let ROWS=[], OLD_IDS=[], dirty=false;
 async function load(){
   const {data,error}=await sb.from("satis_yorum_2").select("*").eq("kaynak","FY2").eq("aktif",true);
