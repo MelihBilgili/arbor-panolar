@@ -887,7 +887,9 @@ async function loadBilanco(tgt){
     table.g7t td.g7s,table.g7t th.g7s{border-left:2px solid #cdd8e4}
     table.g7t th.g7h{text-align:center;background:#22456b}
     table.g7t .g7k{font-weight:400;opacity:.8}
-    table.g7t thead th{vertical-align:bottom}</style>
+    table.g7t thead th{vertical-align:bottom}
+    table.g7t thead tr:first-child th{top:0;z-index:3}
+    table.g7t thead tr:nth-child(2) th{top:22px;z-index:2}</style>
     ${cards}
     <div class="scroll"><table>
     <thead><tr><th>Yıl</th><th class="num">Net Satış (TL)</th><th class="num">Net (€)</th><th class="num">710 Malzeme</th><th class="num">710 %</th><th class="num">720 İşçilik</th><th class="num">720 %</th><th class="num">730 GÜG</th><th class="num">730 %</th><th class="num">Toplam Gider</th><th class="num">Kâr/Zarar</th><th class="num">Marj</th></tr></thead>
@@ -1143,40 +1145,77 @@ async function loadFormlar(){
   view.querySelectorAll(".freset").forEach(b=>b.onclick=()=>formReset(b.dataset.fk));
 }
 /* ---------- Ortak: tek pano_ozel bölümünü hedef elemana render et (bölüm-RLS; anon 401) ---------- */
-/* ---------- AHŞAP — Timber 72x86: ahsap_alim'den derlenir (ağaç+tedarikçi, CBM ağırlıklı € ort). Bölüm-RLS; anon 401. ---------- */
+/* ---------- AHŞAP — Timber 72x86: ahsap_alim'den derlenir (ürün bazında CBM-ağırlıklı € ortalama).
+   Sütunlar: Pencad · Son Alım Ayı · <yıl> Ort. · (yıl başlığına tıklayınca açılan ay sütunları).
+   Kaynak yalnız ahsap_alim.tarih + fiyat_eur + toplam_cbm — form her satırı tarihiyle yazar. ---------- */
 const AY_TR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+/* Pencad birim maliyetleri (bir defalık, 2026-08-20'de Melih'in verdiği liste). Accoya'nın Pencad değeri yok. */
+const AHS_PENCAD={"Çam KKK-20cm":615,"Çam KKK-70cm":733,"Çam DKD":1197,"Okaliptus KKK":1368,"Okaliptus DKD":1465,
+                  "Meşe DKD":1856,"Lareks DKD":1358,"Meranti DKD":1064,"Sapelli DKD":2051,"İroko DKD":2823,"Accoya DKD":null};
+const AHS_SIRA=["Çam KKK-20cm","Çam KKK-70cm","Çam DKD","Okaliptus KKK","Okaliptus DKD","Meşe DKD",
+                "Lareks DKD","Meranti DKD","Sapelli DKD","İroko DKD","Accoya DKD"];
 async function loadAhsap(tgt){
   const body=document.getElementById(tgt);
   const {data,error}=await sb.from("ahsap_alim").select("*");
   if(error){ body.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
-  const rows=data||[];
-  const cur=rows.filter(r=>r.aktif), closed=rows.filter(r=>!r.aktif);
-  let pd=null; closed.forEach(r=>{ if(r.kapanis_donem&&(pd==null||r.kapanis_donem>pd)) pd=r.kapanis_donem; });
-  const prev=closed.filter(r=>r.kapanis_donem===pd);
-  const wavg=arr=>{ let s=0,c=0; arr.forEach(r=>{ const cbm=Number(r.toplam_cbm)||0, fe=Number(r.fiyat_eur); if(cbm>0&&isFinite(fe)){ s+=fe*cbm; c+=cbm; } }); return c>0?s/c:null; };
-  const scbm=arr=>arr.reduce((a,r)=>a+(Number(r.toplam_cbm)||0),0);
-  const int=v=>v==null?"—":Math.round(v).toLocaleString("tr-TR");
-  const chg=(cu,pr)=>{ if(cu==null||pr==null||pr===0) return '<td class="num" style="color:#c2ccd6">—</td>'; const p=Math.round((cu-pr)/pr*100); const col=p>0?'#b23a2e':(p<0?'#0a6b3f':'#6a7888'); return `<td class="num" style="color:${col}">${p>0?'+':''}${p}%</td>`; };
-  const agaclar=["Çam DKD","Çam KKK-20cm","Çam KKK-70cm","İroko DKD","Lareks DKD","Meranti DKD","Meşe DKD","Accoya DKD","Okaliptus DKD","Okaliptus KKK","Sapelli DKD"];
+  const rows=(data||[]).filter(r=>r.tarih&&Number(r.toplam_cbm)>0&&isFinite(Number(r.fiyat_eur)));
+  /* CBM ağırlıklı € ortalama */
+  const acc={};                                  /* acc[ürün][anahtar] = {s:Σ fiyat×cbm, c:Σ cbm} */
+  const add=(ag,k,fe,cbm)=>{ const o=(acc[ag]=acc[ag]||{}); const t=(o[k]=o[k]||{s:0,c:0}); t.s+=fe*cbm; t.c+=cbm; };
+  const yset=new Set();
+  rows.forEach(r=>{
+    const ym=String(r.tarih).slice(0,7), yy=ym.slice(0,4), fe=Number(r.fiyat_eur), cbm=Number(r.toplam_cbm);
+    yset.add(yy); add(r.agac,"M"+ym,fe,cbm); add(r.agac,"Y"+yy,fe,cbm);
+  });
+  const avg=(ag,k)=>{ const t=acc[ag]&&acc[ag][k]; return (t&&t.c>0)?t.s/t.c:null; };
+  const int=v=>v==null?'<span style="color:#c2ccd6">—</span>':Math.round(v).toLocaleString("tr-TR");
+  const now=new Date(), cy=now.getFullYear(), cm=now.getMonth()+1;
+  const yillar=[...yset].sort().reverse();
+  /* Yıl başına ay listesi: cari yılda cari aydan geriye, geçmiş yıllarda Aralık→Ocak */
+  const aylar=y=>{ const son=(Number(y)===cy)?cm:12; const a=[]; for(let m=son;m>=1;m--) a.push(String(y)+"-"+String(m).padStart(2,"0")); return a; };
+  /* Son Alım Ayı = o ürünün veri bulunan EN YENİ ayı; 6 aydan eskiyse gri */
+  const sonAy=ag=>{ const ks=Object.keys(acc[ag]||{}).filter(k=>k[0]==="M").map(k=>k.slice(1)).sort(); return ks.length?ks[ks.length-1]:null; };
+  const aySayisi=ym=>{ const y=+ym.slice(0,4), m=+ym.slice(5,7); return (cy-y)*12+(cm-m); };
   let rh="";
-  agaclar.forEach(ag=>{
-    const cc=cur.filter(r=>r.agac===ag), pp=prev.filter(r=>r.agac===ag);
-    if(!cc.length&&!pp.length){ rh+=`<tr style="font-weight:700;background:#f4efe6"><td>${esc(ag)}</td><td class="num" style="color:#c2ccd6">—</td><td class="num" style="color:#c2ccd6">—</td><td class="num" style="color:#c2ccd6">—</td><td class="num" style="color:#c2ccd6">—</td></tr>`; return; }
-    const ca=wavg(cc), pa=wavg(pp);
-    rh+=`<tr style="font-weight:700;background:#f4efe6"><td>${esc(ag)}</td><td class="num">${int(scbm(cc))}</td><td class="num">${ca==null?"—":int(ca)+" €"}</td><td class="num">${pa==null?"—":int(pa)+" €"}</td>${chg(ca,pa)}</tr>`;
-    const teds=[...new Set(cc.map(r=>r.tedarikci).concat(pp.map(r=>r.tedarikci)))].sort((a,b)=>String(a).localeCompare(String(b),'tr'));
-    teds.forEach(td=>{
-      const tc=cc.filter(r=>r.tedarikci===td), tp=pp.filter(r=>r.tedarikci===td);
-      const tca=wavg(tc), tpa=wavg(tp);
-      rh+=`<tr><td style="padding-left:22px;color:#5a6b7d">${esc(td==null||td===""?"—":td)}</td><td class="num">${int(scbm(tc))}</td><td class="num">${tca==null?"—":int(tca)+" €"}</td><td class="num">${tpa==null?"—":int(tpa)+" €"}</td>${chg(tca,tpa)}</tr>`;
+  AHS_SIRA.forEach(ag=>{
+    const pc=AHS_PENCAD[ag], sa=sonAy(ag), sv=sa?avg(ag,"M"+sa):null, eski=sa?aySayisi(sa)>6:false;
+    rh+=`<tr><td class="ahnm">${esc(ag)}</td>`
+      +`<td class="num">${pc==null?'<span style="color:#c2ccd6">—</span>':int(pc)}</td>`
+      +`<td class="num${eski?" ahold":""}"${sa?` title="${esc(AY_TR[+sa.slice(5,7)-1]+" "+sa.slice(0,4))}"`:""}>${int(sv)}</td>`;
+    yillar.forEach(y=>{
+      rh+=`<td class="num ahy">${int(avg(ag,"Y"+y))}</td>`;
+      aylar(y).forEach(ym=>{ rh+=`<td class="num ahm ahm-${y} ahhide">${int(avg(ag,"M"+ym))}</td>`; });
     });
+    rh+=`</tr>`;
+  });
+  let hh=`<th>Ürün</th><th class="num">Pencad (€/m3)</th><th class="num">Son Alım Ayı (€/m3)</th>`;
+  yillar.forEach(y=>{
+    hh+=`<th class="num ahy ahyh" data-y="${y}" title="Ay sütunlarını aç/kapa">${y} Ort. (€/m3) <span class="ahcar" id="ahc-${y}">▸</span></th>`;
+    aylar(y).forEach(ym=>{ hh+=`<th class="num ahm ahm-${y} ahhide">${esc(AY_TR[+ym.slice(5,7)-1])} Ort. (€/m3)</th>`; });
   });
   /* Son güncelleme = Ahşap formundaki AYLIK GÜNCELLEME düğmesine son basılma (pano_yayin) */
   const py=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","ahsap").limit(1);
   const pyAt=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
-  body.innerHTML=`<style>table.ahs{width:auto}table.ahs th,table.ahs td{white-space:nowrap}</style>
-    <div class="stamp">Son güncelleme: ${pyAt?dOnly(pyAt):"—"}</div>
-    <div class="scroll"><table class="ahs"><thead><tr><th>Ağaç Çeşidi / Tedarikçi</th><th class="num">Top. CBM</th><th class="num">Ağ. Ort. €</th><th class="num">Önceki Ort. €</th><th class="num">Değişim %</th></tr></thead><tbody>${rh||'<tr><td colspan="5" class="load">Kayıt yok.</td></tr>'}</tbody></table></div>`;
+  body.innerHTML=`<style>
+    table.ahs{width:auto;border-collapse:collapse;font-size:11.5px}
+    table.ahs th,table.ahs td{white-space:nowrap;padding:2px 8px;border-bottom:1px solid #eef1f5;line-height:16px}
+    table.ahs thead th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px;vertical-align:bottom}
+    table.ahs th.ahyh{cursor:pointer;background:#22456b}
+    table.ahs th.ahyh:hover{background:#2d5a8a}
+    table.ahs .ahcar{font-size:9px;opacity:.85}
+    table.ahs td.ahnm{font-weight:700;color:#16324f;background:#f4efe6}
+    table.ahs td.ahy{background:#f7fafd;font-weight:600}
+    table.ahs td.ahold{color:#b0b8c1}
+    table.ahs .ahhide{display:none}
+  </style>
+    <div class="stamp">Son güncelleme: ${pyAt?dOnly(pyAt):"—"} · ${rows.length} sipariş kaydı</div>
+    <div class="hint">Fiyatlar CBM ağırlıklı ortalama, Türkiye teslimi (€/m3). Yıl başlığına tıklayınca o yılın ay sütunları açılır. Son Alım Ayı 6 aydan eskiyse gri gösterilir.</div>
+    <div class="scroll"><table class="ahs"><thead><tr>${hh}</tr></thead><tbody>${rh}</tbody></table></div>`;
+  body.querySelectorAll("th.ahyh").forEach(th=>{ th.onclick=()=>{
+    const y=th.dataset.y, on=th.dataset.on==="1";
+    body.querySelectorAll(".ahm-"+y).forEach(c=>c.classList.toggle("ahhide",on));
+    th.dataset.on=on?"0":"1"; const c=document.getElementById("ahc-"+y); if(c) c.textContent=on?"▸":"▾";
+  }; });
 }
 async function loadPanoBolum(bolum, tgt){
   const body=document.getElementById(tgt);
@@ -1220,6 +1259,7 @@ async function loadSelArb(tgt){
   const dLbl=t=>t.slice(8,10)+"."+t.slice(5,7)+"."+t.slice(2,4);
   const fmt=v=>(v==null||v==="")?"":Math.round(v).toLocaleString("tr-TR");
   const delta=arr=>{ const p=arr.filter(v=>v!=null); if(p.length<2) return ""; const dl=Math.round(p[p.length-1]-p[0]); if(dl===0) return ""; return (dl>0?"+":"−")+Math.abs(dl).toLocaleString("tr-TR"); };
+  /* Sütun sırası: Proje · Firma · Δ eski→yeni € · tarih sütunları (yeni→eski) */
   const basliklar=["Proje","Firma",...dates.map(dLbl),"Δ eski→yeni"];
   const rows=[];
   firmalar.forEach(f=>{ const series=dates.map(d=>f.vals[d]==null?null:f.vals[d]); rows.push([f.proje,f.firma,...series.map(fmt),delta([...series].reverse())]); });
@@ -1248,7 +1288,8 @@ async function loadSelArb(tgt){
     return `<tr class="${isFoot?'sa-foot':''}${show?'':' sa-hide'}"${show?'':' style="display:none"'}>`
       +`<td class="sa-proje"><span class="c" title="${esc(h[0]||"")}">${esc(h[0]||"")}</span></td>`
       +`<td class="sa-firma"><span class="c" title="${esc(h[1]||"")}">${esc(h[1]||"")}</span></td>`
-      +mid.join("")+`<td class="sa-num sa-delta">${esc(h[2+nd]||"")}</td></tr>`;
+      +`<td class="sa-num sa-delta">${esc(h[2+nd]||"")}</td>`
+      +mid.join("")+`</tr>`;
   }).join("");
   const style=`<style>
   .sa-wrap table{border-collapse:collapse;width:auto;font-size:11.5px}
@@ -1260,12 +1301,18 @@ async function loadSelArb(tgt){
   .sa-proje>.c{font-weight:600;color:#16324f}
   .sa-num{text-align:right}
   tr.sa-foot td{font-weight:700;background:#eef3f8}
+  /* 2 satırlı başlık: global thead th{position:sticky;top:0} iki satırı üst üste bindiriyordu
+     (kayma görüntüsü). 1. satır top:0, 2. satır 1. satırın yüksekliği kadar aşağı. */
+  .sa-wrap thead tr:first-child th{top:0;z-index:3}
+  .sa-wrap thead tr:nth-child(2) th{top:20px;z-index:2}
+  .sa-wrap td.sa-delta{border-right:2px solid #cdd8e4}
+  .sa-wrap th.sa-dh{border-right:2px solid #cdd8e4}
   </style>`;
   const btn=hiddenCount?`<button class="btn" id="sa-toggle" data-on="0">Boş-alacak satırları göster (${hiddenCount})</button>`:"";
   const pyS=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","sel_arb").limit(1);
   const pyAtS=(pyS&&!pyS.error&&pyS.data&&pyS.data[0])?pyS.data[0].yayin_at:null;
   body.innerHTML=`${style}<div class="stamp">Son güncelleme: ${pyAtS?dOnly(pyAtS):esc(stamp)}</div>${btn?`<div class="hint">${btn}</div>`:""}<div class="sa-wrap scroll"><table><thead>`
-    +`<tr><th rowspan="2">${esc(basliklar[0]||"Proje")}</th><th rowspan="2">${esc(basliklar[1]||"Firma")}</th><th colspan="${nd}" class="sa-num" style="text-align:center">Arbor SAS Alacak €</th><th rowspan="2" class="sa-num">${esc(dlt)}</th></tr>`
+    +`<tr><th rowspan="2">${esc(basliklar[0]||"Proje")}</th><th rowspan="2">${esc(basliklar[1]||"Firma")}</th><th rowspan="2" class="sa-num sa-dh">${esc(dlt)}</th><th colspan="${nd}" class="sa-num" style="text-align:center">Arbor SAS Alacak €</th></tr>`
     +`<tr>${dateHdrs}</tr></thead><tbody>${trs}</tbody></table></div>`;
   const tg=document.getElementById("sa-toggle");
   if(tg) tg.onclick=()=>{ const on=tg.dataset.on==="1"; document.querySelectorAll("#"+tgt+" tr.sa-hide").forEach(x=>x.style.display=on?"none":""); tg.dataset.on=on?"0":"1"; tg.textContent=on?`Boş-alacak satırları göster (${hiddenCount})`:`Boş-alacak satırları gizle (${hiddenCount})`; };
@@ -1664,7 +1711,12 @@ async function loadOzelHtml(bolum,tgt){
   ifr.id="ozf"; ifr.setAttribute("data-b",bolum);
   ifr.style.cssText="width:100%;height:86vh;border:1px solid #dde3ea;border-radius:8px;background:#fff";
   body.innerHTML=""; body.appendChild(ifr);
-  ifr.srcdoc=data.html_raw;
+  /* Ham HTML panoları (Maaş-Prim vb.) Supabase REST'i kendi içinde publishable anahtarla çağırır;
+     anon kapatıldığı için bu 401 veriyordu. Iframe'e giren fetch'lere oturum token'ı eklenir. */
+  let _tok=""; try{ const s=await sb.auth.getSession(); _tok=(s&&s.data&&s.data.session&&s.data.session.access_token)||""; }catch(e){}
+  const _inj="<scr"+"ipt>(function(){var T="+JSON.stringify(_tok)+";if(!T)return;var of=window.fetch;"
+    +"window.fetch=function(u,o){o=o||{};try{if(String((u&&u.url)||u).indexOf('supabase.co')>-1){var h=new Headers(o.headers||{});h.set('Authorization','Bearer '+T);o.headers=h;}}catch(e){}return of(u,o);};})();</scr"+"ipt>";
+  ifr.srcdoc=_inj+data.html_raw;
 }
 /* PhD Notes: Supabase'ten notları parent'a yükle + kaydetme köprüsü (iframe içindeki script parent.__PHD_NOTES / parent.__phdSave kullanır). Kaynak Supabase, düzenlenebilir. */
 async function phdPrepare(){
