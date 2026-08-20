@@ -58,8 +58,6 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <select id="dYil" class="dsel" title="Yeni kaydın yılı"></select>
       <select id="dAy" class="dsel" title="Yeni kaydın ayı"></select>
       <button class="iadd" id="dAdd">+ Tedarikçi Ekle</button>
-      <button class="wkbtn" id="dPub">Panoya Aktar</button>
-      <span id="dPubInfo" class="hint" style="margin:0;align-self:center"></span>
     </div>
     <div id="dList"><div class="load">Yükleniyor…</div></div>
   </div>
@@ -181,7 +179,7 @@ async function delIsler(id){
 }
 async function haftalikGuncelle(){
   const sil=IROWS.filter(r=>r.durum==="Tamamlandı"||r.durum==="İptal oldu");
-  if(!confirm("Haftalık Güncelleme:\n\n• Aktif kalan işlerin önceki→son değişim özeti üretilip panoya yazılacak, sonra son değer 'önceki'ye kaydırılacak (ilk basışta baseline; özet boş).\n• Durumu Tamamlandı/İptal oldu olan "+sil.length+" iş TAMAMEN SİLİNECEK (geri alınamaz).\n\nDevam?")) return;
+  if(!confirm("Haftalık Güncelleme:\n\n• Aktif kalan işlerin önceki→son değişim özeti üretilip panoya yazılacak, sonra son değer 'önceki'ye kaydırılacak (ilk basışta baseline; özet boş).\n• Dépenses giderleri de panoya aktarılır (Son güncelleme bugüne çekilir).\n• Durumu Tamamlandı/İptal oldu olan "+sil.length+" iş TAMAMEN SİLİNECEK (geri alınamaz).\n\nDevam?")) return;
   const btn=document.getElementById("iWeek"); btn.disabled=true; msg("Değişim özetleri üretiliyor…",true);
   const {data,error}=await sb.functions.invoke("ob-degisim-ozet",{body:{}});
   if(error||!(data&&data.ok)){ btn.disabled=false; msg("Özet üretilemedi: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"),false); return; }
@@ -190,9 +188,12 @@ async function haftalikGuncelle(){
     if(e2){ btn.disabled=false; msg("Hata: "+e2.message,false); return; }
   }
   /* Panodaki "Son güncelleme" damgası = bu düğmeye basılma anı */
-  try{ await sb.from("pano_yayin").upsert({anahtar:"ob_rapor",yayin_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"anahtar"}); }catch(e){}
+  const _now=new Date().toISOString();
+  try{ await sb.from("pano_yayin").upsert({anahtar:"ob_rapor",yayin_at:_now,updated_at:_now},{onConflict:"anahtar"}); }catch(e){}
+  /* Dépenses de ayni düğmeyle panoya aktarilir (eski ayri "Panoya Aktar" düğmesi kaldirildi) */
+  try{ await sb.from("depenses_yayin").update({yayin_at:_now,updated_at:_now}).eq("id",1); }catch(e){}
   btn.disabled=false;
-  msg((data.note||"Özet güncellendi")+(sil.length?` · ${sil.length} iş silindi`:""),true); loadIsler();
+  msg((data.note||"Özet güncellendi")+(sil.length?` · ${sil.length} iş silindi`:"")+" · Dépenses panoya aktarıldı",true); loadIsler(); loadDep();
 }
 document.getElementById("iAdd").onclick=addIsler;
 document.getElementById("iWeek").onclick=haftalikGuncelle;
@@ -212,14 +213,9 @@ const dYil=()=>parseInt(document.getElementById("dYil").value,10);
 const dAy=()=>parseInt(document.getElementById("dAy").value,10);
 /* Tüm aylar tek listede, yeni ay en üstte; yeni gider seçili ayın en üstüne eklenir. */
 async function loadDep(){
-  const [k,y]=await Promise.all([
-    sb.from("depenses_kalem").select("*").order("yil",{ascending:false}).order("ay",{ascending:false}).order("id",{ascending:false}),
-    sb.from("depenses_yayin").select("yayin_at").limit(1)
-  ]);
-  if(k.error){ document.getElementById("dList").innerHTML='<div class="load">Hata: '+esc(k.error.message)+'</div>'; return; }
-  DROWS=k.data||[];
-  const ya=(y&&!y.error&&y.data&&y.data[0])?y.data[0].yayin_at:null;
-  document.getElementById("dPubInfo").textContent = ya?("Son aktarım: "+dDate(ya)):"Henüz aktarılmadı";
+  const {data,error}=await sb.from("depenses_kalem").select("*").order("yil",{ascending:false}).order("ay",{ascending:false}).order("id",{ascending:false});
+  if(error){ document.getElementById("dList").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
+  DROWS=data||[];
   renderDep();
 }
 function renderDep(){
@@ -266,16 +262,7 @@ async function delDep(id){
   if(error){ msg(error.message,false); return; }
   DROWS=DROWS.filter(x=>x.id!==id); renderDep();
 }
-async function pubDep(){
-  if(!confirm("Girilen gider kayıtları Melih'in Dépenses panosuna aktarılmış sayılacak ve panodaki 'Son güncelleme' tarihi bugüne çekilecek. Devam?")) return;
-  const btn=document.getElementById("dPub"); btn.disabled=true;
-  const {error}=await sb.from("depenses_yayin").update({yayin_at:new Date().toISOString(),updated_at:new Date().toISOString()}).eq("id",1);
-  btn.disabled=false;
-  if(error){ msg("Hata: "+error.message,false); return; }
-  msg("Panoya aktarıldı.",true); loadDep();
-}
 document.getElementById("dAdd").onclick=addDep;
-document.getElementById("dPub").onclick=pubDep;
 
 /* ===== Tıkanmış Şantiyeler — ÖB durum girişi + yeni şantiye (SEL-ARB seçiminden) ===== */
 const $$=id=>document.getElementById(id);
