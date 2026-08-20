@@ -172,6 +172,8 @@ function money(n){ if(n==null||n==="") return ""; const v=Math.round(Number(n));
 
 /* ---------- AUTH ---------- */
 function renderLogin(){
+  /* son giriş yapılan e-postayı hatırla → yalnız parola yazılır */
+  if(!state.email){ try{ state.email = safeStorage().getItem("arbor_son_email") || ""; }catch(e){} }
   app.innerHTML = `
    <div class="login">
      <h2>Arbor Panolar</h2>
@@ -192,6 +194,7 @@ async function doLogin(){
   state.email=email; msg("Giriş yapılıyor…",true);
   const {data,error}=await sb.auth.signInWithPassword({ email, password:pw });
   if(error){ msg("Hata: "+error.message); return; }
+  try{ safeStorage().setItem("arbor_son_email", email); }catch(e){}
   state.session=data.session; await loadPerms(); renderApp();
 }
 async function doLogout(){ await sb.auth.signOut(); state.session=null; state.allowed=null; state.tab="gundem"; renderLogin(); }
