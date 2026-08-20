@@ -92,12 +92,13 @@ function arbGateUI(msg){
   document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
   setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
 }
-(async function(){
+function ARB_BOOT(){ (async function(){
   var s=await ARB_GATE_SB.auth.getSession();
   var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
   if(em===ARB_ROLE_EMAIL){ (0,eval)(document.getElementById("arbmain").textContent); }
   else { if(em){ await ARB_GATE_SB.auth.signOut(); } arbGateUI(); }
-})();
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
 </script>
 <script type="text/plain" id="arbmain">
 const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
