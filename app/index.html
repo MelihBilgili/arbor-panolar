@@ -858,7 +858,8 @@ async function loadBilanco(tgt){
       const k=G7KUR[d];
       if(!r||!k) return `<td class="num g7s" style="color:#c2ccd6">—</td><td class="num" style="color:#c2ccd6">—</td><td class="num" style="color:#c2ccd6">—</td>`;
       const tl=Number(r.alinan_tutar)||0, mk=Number(r.alinan_miktar)||0;
-      const e=eur(tl,k), bf=(mk>0&&tl>0)?eur(tl/mk,k):null;
+      /* Grup satırında birim fiyat YOK — grup miktarı farklı birimlerin (m3+adet+kg) toplamıdır. */
+      const e=eur(tl,k), bf=(!r.grup&&mk>0&&tl>0)?eur(tl/mk,k):null;
       const py=tot[d]&&tl?(tl/tot[d]*100):null;
       return `<td class="num g7s">${tl?e0(e):""}</td><td class="num">${bf==null?"":e2(bf)}</td>`
         +`<td class="num" style="color:#6a7888">${py==null?"":("%"+py.toLocaleString("tr-TR",{minimumFractionDigits:1,maximumFractionDigits:1}))}</td>`;
