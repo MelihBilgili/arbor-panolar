@@ -78,8 +78,12 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 const ARB_ROLE_EMAIL = "selarb.form@arbor.com.tr";
 const ARB_STORE = "arbform_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
 const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
-/* form kodu kendi createClient cagirsa bile kapinin oturumlu istemcisi doner */
-supabase.createClient = function(){ return ARB_GATE_SB; };
+const ARB_MB = "int@arbor.com.tr";
+/* panolarin varsayilan oturumu (ayni origin, varsayilan storageKey) */
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+var ARB_ACTIVE = ARB_GATE_SB;
+/* form kodu kendi createClient cagirsa bile aktif oturumlu istemci doner */
+supabase.createClient = function(){ return ARB_ACTIVE; };
 function arbGateUI(msg){
   var d=document.createElement("div"); d.id="arb-gate";
   d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
@@ -105,7 +109,12 @@ function arbGateUI(msg){
 function ARB_BOOT(){ (async function(){
   var s=await ARB_GATE_SB.auth.getSession();
   var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
-  if(em===ARB_ROLE_EMAIL){ (0,eval)(document.getElementById("arbmain").textContent); }
+  if(em!==ARB_ROLE_EMAIL){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(em===ARB_ROLE_EMAIL || em===ARB_MB){ (0,eval)(document.getElementById("arbmain").textContent); }
   else { arbGateUI(); }
 })(); }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
