@@ -1781,5 +1781,47 @@ sb.auth.onAuthStateChange((_ev,s)=>{ if(!s){ state.session=null; renderLogin(); 
 boot();
 setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadView(); }, 300000);
 </script>
+<!-- ARBOR-DRAGSCROLL -->
+<style>
+  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
+  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+<script>
+(function(){
+  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
+  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
+  function scrollable(n){
+    var st=getComputedStyle(n);
+    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
+    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
+    return okx||oky;
+  }
+  document.addEventListener("mousedown",function(e){
+    if(e.button!==0||skip(e.target)) return;
+    var n=e.target;
+    while(n && n.nodeType===1 && n!==document.body){
+      /* hucre ici mini-kaydiricilari atla: kaydirilmasi istenen tablo/kutu kapsayicisidir */
+      if(!(n.closest("td,th")) && scrollable(n)){
+        el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+        document.body.classList.add("arb-dragging"); e.preventDefault(); return;
+      }
+      n=n.parentElement;
+    }
+  },true);
+  document.addEventListener("mousemove",function(e){
+    if(!el) return;
+    var dx=e.clientX-sx, dy=e.clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    el.scrollLeft=l-dx; el.scrollTop=t-dy;
+  });
+  document.addEventListener("mouseup",function(){
+    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
+  });
+  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
+})();
+</script>
+<!-- /ARBOR-DRAGSCROLL -->
 </body>
 </html>
