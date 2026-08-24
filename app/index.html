@@ -1018,7 +1018,7 @@ async function loadRef(){
       <p class="muted">ÖB'nin "Takipteki İşler" bloğu ayrıca ÖB Faaliyet panosuna yansır; Haftalık Güncelleme düğmesi <code>ob-degisim-ozet</code>'i çağırır, Tamamlandı/İptal olanlar silinir.</p>
     </div>
     <div class="flow"><b>14. Mali Panolar ve Yayın Damgası</b><span class="tag">form → pano</span>
-      <p>Mali sekmesindeki panolar ilgili formdan beslenir: <b>Ahşap</b> (Umut Aktaş), <b>SEL-ARB</b> (Sel Ft-Ödeme + Yurt Dışı Alacak · Onur Ekinci) ve altındaki <b>Dépenses</b> (ÖB formundaki tedarikçi gider satırları), <b>MK Faaliyet</b> (+Şantiye), <b>Maaş-Prim</b>, <b>Fiyatlandırma</b>. Her panonun "Son güncelleme" damgası, formdaki güncelleme düğmesine <b>son basılma</b> anıdır (<code>pano_yayin</code> / <code>depenses_yayin</code> / <code>fiyat_yayin</code>) — ERP damgası değildir.</p>
+      <p>Mali sekmesindeki panolar ilgili formdan beslenir: <b>Ahşap</b> (Umut Aktaş), <b>SEL-ARB</b> (Yurt Dışı Alacak · Özgül Bedestenci + OE Faaliyet · Onur Ekinci) ve altındaki <b>Dépenses</b> (ÖB formundaki tedarikçi gider satırları), <b>MK Faaliyet</b> (+Şantiye), <b>Maaş-Prim</b>, <b>Fiyatlandırma</b>. Her panonun "Son güncelleme" damgası, formdaki güncelleme düğmesine <b>son basılma</b> anıdır (<code>pano_yayin</code> / <code>depenses_yayin</code> / <code>fiyat_yayin</code>) — ERP damgası değildir.</p>
     </div>
     <div class="flow"><b>15. Form Takibi</b><span class="tag">Formlar sekmesi</span><span class="tag">elle</span>
       <p>12 formun tamamı tek listede: sorumlu, güncelleme sıklığı, son güncelleme ve <b>geciken gün</b>. Gecikme sıklığa göre hesaplanır; hatırlatma maili sıradaki numarasıyla <b>elle</b> gönderilir, ✓ ile sayaç sıfırlanır. Otomatik gönderim/zamanlama yoktur.</p>
@@ -1088,19 +1088,18 @@ async function loadFormlar(){
      Geciken/Mail sütunları eski Ana Gündem "Formlar" bloğundan buraya taşındı (form_takip). */
   const forms=[
     {ad:"SÖ Gündem",           who:"Enes Artan",        url:"ea/",          sik:"Her Salı"},
-    {ad:"Hazır PEM-PRJ Sevk",  who:"Onur Ekinci",       url:"onur/",        sik:"Her ayın ilk iş günü"},
+    {ad:"OE Faaliyet",         who:"Onur Ekinci",       url:"onur/",        sik:"Her ayın ilk iş günü"},
     {ad:"ÖB Faaliyet",         who:"Özgül Bedestenci",  url:"ob-rapor/",    sik:"Her ayın ilk iş günü"},
     {ad:"MK Faaliyet",         who:"Mehmet Konak",      url:"mk-prim/",     sik:"Her ayın ilk iş günü"},
     {ad:"Yurtiçi Satış",       who:"Sinan Oran",        url:"so/",          sik:"Her ayın ilk iş günü"},
     {ad:"Yurt Dışı 1 Satış",   who:"Mustafa Nas",       url:"fy/",          sik:"Her ayın ilk iş günü"},
     {ad:"Yurt Dışı 2 Satış",   who:"Melike Başaran",    url:"fy2/",         sik:"Her ayın ilk iş günü"},
     {ad:"Ahşap Maliyet",       who:"Umut Aktaş",        url:"ahsap/",       sik:"Her ayın ilk iş günü"},
-    {ad:"Sel Ft - Ödeme",      who:"Onur Ekinci",       url:"selft/",       sik:"Her ayın ilk iş günü"},
-    {ad:"Yurt Dışı Alacak",    who:"Onur Ekinci",       url:"arbolacak/",   sik:"Her ayın ilk iş günü"},
+    {ad:"Yurt Dışı Alacak",    who:"Özgül Bedestenci",  url:"arbolacak/",   sik:"Her ayın ilk iş günü"},
     {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
-  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap","selft/":"sel_ft","arbolacak/":"yd_alacak"};
+  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap","arbolacak/":"yd_alacak"};
   /* Geciken = SON TARİHE göre hesaplanır (eskiden "son güncelleme + 7/30 gün" idi → hep 0 çıkıyordu):
      "Her Salı" → bu haftanın Salı'sı · "Her ayın ilk iş günü" → bu ayın ilk iş günü · "Süresiz" → yok.
      Son güncelleme = form_takip.son_guncelleme (elle ✓) ile formun CANLI izinin (pano_yayin /
@@ -1117,7 +1116,7 @@ async function loadFormlar(){
   const pyBy={}; ((pyF&&!pyF.error)?(pyF.data||[]):[]).forEach(r=>pyBy[r.anahtar]=r.yayin_at);
   const one=r=>(r&&!r.error&&r.data&&r.data[0])?r.data[0].updated_at:null;
   const CANLI={ ea_so:one(eaU), onur_sevk:one(onU), ob_rapor:[pyBy.ob_rapor,one(obU)].sort().reverse()[0],
-                ahsap:pyBy.ahsap, sel_ft:pyBy.sel_arb, yd_alacak:pyBy.sel_arb };
+                ahsap:pyBy.ahsap, yd_alacak:pyBy.sel_arb };
   const today=new Date(); today.setHours(0,0,0,0);
   const dParse=s=>{ if(!s) return null; const p=String(s).slice(0,10).split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
   const isIs=d=>{ const w=d.getDay(); return w!==0&&w!==6; };
@@ -1275,8 +1274,8 @@ async function loadPanoBolum(bolum, tgt){
     +`${html||'<div class="load">Kayıt yok.</div>'}`;
 }
 /* ---------- SEL-ARB — özel render: Firma 15ch / Proje 20ch (nowrap+ellipsis, tam metin title/scroll), tarih sütunları üstünde "Arbor SAS Alacak €" spanning başlık, "Δ ilk→son €", son tarih dolu-alacak satırları görünür + boşlar gizli/toggle, footer daima görünür. Bölüm-RLS aynı (pano_ozel_*). ---------- */
-const SA_FOOT=new Set(["Selectron'a gönderilen","Selectron'a Borç (Σ E)","Toplam güncel alacak","Selectron'a Fatura Edilen Tutar","Arbor SAS faaliyet kaybı","TOPLAM GÜNCEL ALACAK"]);
-const SA_NOTE="Tarih sütunlarındaki tutarlar o tarihteki güncel ALACAK (receivable) tutarlarıdır · Selectron–Arbor SAS mutabakat · form-beslemeli (Sel Ft-Ödeme + Arbor SAS Alacak); aylık snapshot ile yeni tarih sütunu.";
+const SA_FOOT=new Set(["Selectron'a Gönderilen Toplam (€)","Selectron'a Borç (€)","Güncel Alacak Toplam (€)","Selectron'a Ft Edilen Toplam (€)","Arbor SAS Faaliyet Kaybı Toplam (€)","TOPLAM GÜNCEL ALACAK"]);
+const SA_NOTE="Tarih sütunlarındaki tutarlar o tarihteki güncel ALACAK (receivable) tutarlarıdır · Selectron–Arbor SAS mutabakat · form-beslemeli (Yurt Dışı Alacak + OE Faaliyet); aylık güncelleme ile ay başına tek sütun.";
 async function loadSelArb(tgt){
   const body=document.getElementById(tgt);
   const [s,o]=await Promise.all([
@@ -1285,7 +1284,8 @@ async function loadSelArb(tgt){
   ]);
   if(s.error||o.error){ body.innerHTML=`<div class="load">Hata: ${esc((s.error||o.error).message)}</div>`; return; }
   const snap=s.data||[], oz=o.data||[];
-  const datesAsc=[...new Set(snap.map(x=>x.tarih))].sort();
+  /* Sütun tarihleri = snapshot ∪ özet (OE Faaliyet yalnız özet satırı yazabilir) */
+  const datesAsc=[...new Set([...snap.map(x=>x.tarih),...oz.map(x=>x.tarih)])].sort();
   const dates=[...datesAsc].reverse();   /* Yeni→Eski: en yeni solda, sağa doğru azalır */
   const nd=dates.length;
   const ozBy={}; oz.forEach(x=>ozBy[x.tarih]=x);
@@ -1307,11 +1307,12 @@ async function loadSelArb(tgt){
   const kayip=dates.map((d,i)=> borc[i]==null?null : borc[i]-((gon[i]||0)+(topAlac[i]||0)+(fatE[i]||0)) );
   const fatDisp=fatE.map(v=>(v==null||Math.round(v)===0)?null:v);
   const foot=(label,series)=>[label,"",...series.map(fmt),delta(series)];
-  rows.push(foot("Selectron'a gönderilen",gon));
-  rows.push(foot("Selectron'a Borç (Σ E)",borc));
-  rows.push(foot("Toplam güncel alacak",topAlac));
-  rows.push(foot("Selectron'a Fatura Edilen Tutar",fatDisp));
-  rows.push(foot("Arbor SAS faaliyet kaybı",kayip));
+  /* Güncel Alacak Toplam, "Selectron'a Gönderilen"in ÜSTÜNE alındı (2026-08-24) */
+  rows.push(foot("Güncel Alacak Toplam (€)",topAlac));
+  rows.push(foot("Selectron'a Gönderilen Toplam (€)",gon));
+  rows.push(foot("Selectron'a Borç (€)",borc));
+  rows.push(foot("Selectron'a Ft Edilen Toplam (€)",fatDisp));
+  rows.push(foot("Arbor SAS Faaliyet Kaybı Toplam (€)",kayip));
   const stamp=nd?dLbl(dates[0]):"";
   const lastIdx=2;   /* en yeni tarih artık en soldaki tarih sütunu */
   const filled=c=>{ const raw=String(c==null?"":c).replace(/[^\d-]/g,""); return raw!==""&&Number(raw)!==0; };
