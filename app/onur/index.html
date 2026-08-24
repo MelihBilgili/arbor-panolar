@@ -138,13 +138,12 @@ let _R=null;
 async function rates(){
   if(_R) return _R;
   let r={EUR:1}, tarih=null;
-  try{ const {data}=await sb.functions.invoke("ahsap-kur",{body:{}});
+  /* arb-kur: EUR bazlı TL/USD/GBP (ECB). Tarayıcı dış kur API'sine erişemediği için sunucu tarafında alınır. */
+  try{ const {data}=await sb.functions.invoke("arb-kur",{body:{}});
     if(data&&data.ok&&data.rates){ r=Object.assign(r,data.rates); tarih=data.tarih||null; } }catch(e){}
-  const eksik=PB.filter(p=>p!=="EUR"&&!(r[p]>0));
-  if(eksik.length){
-    try{ const j=await (await fetch("https://api.frankfurter.app/latest?from=EUR&to="+eksik.map(p=>p==="TL"?"TRY":p).join(","))).json();
-      eksik.forEach(p=>{ const k=(p==="TL"?"TRY":p); if(j&&j.rates&&j.rates[k]>0) r[p]=j.rates[k]; });
-      if(!tarih&&j&&j.date) tarih=j.date; }catch(e){}
+  if(PB.some(p=>p!=="EUR"&&!(r[p]>0))){
+    try{ const {data}=await sb.functions.invoke("ahsap-kur",{body:{}});
+      if(data&&data.ok&&data.rates){ PB.forEach(p=>{ if(!(r[p]>0)&&data.rates[p]>0) r[p]=data.rates[p]; }); if(!tarih) tarih=data.tarih||null; } }catch(e){}
   }
   _R={rates:r,tarih:tarih}; return _R;
 }
