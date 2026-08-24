@@ -1226,7 +1226,9 @@ async function loadAhsap(tgt){
   let hh=`<th>Ürün</th><th class="num">Pencad (€/m3)</th><th class="num">Son Alım Ayı (€/m3)</th>`;
   yillar.forEach(y=>{
     hh+=`<th class="num ahy ahyh" data-y="${y}" title="Ay sütunlarını aç/kapa">${y} Ort. (€/m3) <span class="ahcar" id="ahc-${y}">▸</span></th>`;
-    aylar(y).forEach(ym=>{ hh+=`<th class="num ahm ahm-${y} ahhide">${esc(AY_TR[+ym.slice(5,7)-1])} Ort. (€/m3)</th>`; });
+    /* Ay sütunları açılırken fitHeads çalışmış olduğu (ve hücreler o an gizli olduğu) için
+       başlıklar sarılmıyordu → yıl sütunu gibi küçült + iki satıra sar (thsm/thw) elle verilir. */
+    aylar(y).forEach(ym=>{ hh+=`<th class="num ahm ahm-${y} ahhide thsm"><span class="thw">${esc(AY_TR[+ym.slice(5,7)-1])} Ort. (€/m3)</span></th>`; });
   });
   /* Son güncelleme = Ahşap formundaki AYLIK GÜNCELLEME düğmesine son basılma (pano_yayin) */
   const py=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","ahsap").limit(1);
