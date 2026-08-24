@@ -29,6 +29,7 @@
   .itbl thead th{background:#8a6100;color:#fff;font-weight:600}
   .itbl .ic{font:inherit;padding:2px 5px;border:1px solid #cdd6df;border-radius:5px;background:#fffdf5;width:150px}
   .itbl .ic[data-f="ob_notlari"]{width:40ch}
+  .itbl .ionc{width:7ch;text-align:center}
   .idel{background:#fff;border:1px solid #e0b4b4;color:#b40000;border-radius:5px;cursor:pointer;padding:0 7px;font-weight:700;line-height:18px}
   .dsel{font:inherit;padding:6px 9px;border:1px solid #cdd6df;border-radius:8px;background:#fffdf5;font-size:12.5px}
   .itbl .ic[data-f="tutar"]{width:130px;text-align:right}
@@ -58,6 +59,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <div class="ghd"><h2>Takipteki İşler</h2>
       <button class="iadd" id="iAdd">+ Yeni İş Ekle</button>
     </div>
+    <div class="hint" style="margin:0 2px 6px">Tasarım işleri için öncelik derecesi seçilmelidir. Birden çok iş için aynı öncelik derecesi seçilebilir.</div>
     <div id="iList"><div class="load">Yükleniyor…</div></div>
   </div>
 
@@ -147,6 +149,8 @@ function msg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(
 
 /* ===== Takipteki İşler (ob_isler) — anlık kayıt + haftalık arşiv ===== */
 const OBI_DURUM=["Henüz çalışılmadı","İlerliyor","Tamamlandı","İptal oldu"];
+/* Öncelik: "-" = öncelik söz konusu değil (varsayılan); tasarım işlerinde 1-3 seçilir */
+const OBI_ONCELIK=["-","1","2","3"];
 let IROWS=[];
 async function loadIsler(){
   const {data,error}=await sb.from("ob_isler").select("*").order("arsiv").order("id");
@@ -154,11 +158,13 @@ async function loadIsler(){
   IROWS=data||[]; renderIsler();
 }
 function durumOpts(v){ return OBI_DURUM.map(d=>'<option'+(d===v?' selected':'')+'>'+esc(d)+'</option>').join(""); }
+function oncelikOpts(v){ const c=(v==null||v==="")?"-":String(v); return OBI_ONCELIK.map(d=>'<option'+(d===c?' selected':'')+'>'+esc(d)+'</option>').join(""); }
 function renderIsler(){
-  let h='<table class="itbl"><thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th><th></th></tr></thead><tbody>';
+  let h='<table class="itbl"><thead><tr><th>Konu</th><th>Öncelik</th><th>Durum</th><th>ÖB Notları</th><th></th></tr></thead><tbody>';
   IROWS.forEach(r=>{
     h+='<tr data-id="'+r.id+'">'
       +'<td><input class="ic" data-f="konu" value="'+esc(r.konu)+'" placeholder="Konu"></td>'
+      +'<td><select class="ic ionc" data-f="oncelik">'+oncelikOpts(r.oncelik)+'</select></td>'
       +'<td><select class="ic" data-f="durum">'+durumOpts(r.durum)+'</select></td>'
       +'<td><input type="text" class="ic" data-f="ob_notlari" value="'+esc(r.ob_notlari)+'" placeholder="ÖB notları..."></td>'
       +'<td><button class="idel" title="Sil">✕</button></td></tr>';
@@ -175,7 +181,7 @@ async function saveIsler(id,f,v){
   const r=IROWS.find(x=>x.id===id); if(r) r[f]=v; msg("Kaydedildi",true);
 }
 async function addIsler(){
-  const {data,error}=await sb.from("ob_isler").insert({konu:"",durum:"Henüz çalışılmadı",ob_notlari:"",arsiv:false}).select();
+  const {data,error}=await sb.from("ob_isler").insert({konu:"",oncelik:"-",durum:"Henüz çalışılmadı",ob_notlari:"",arsiv:false}).select();
   if(error){ msg(error.message,false); return; }
   IROWS.push(data[0]); renderIsler();
   const inps=document.querySelectorAll('#iList input[data-f="konu"]'); if(inps.length) inps[inps.length-1].focus();
