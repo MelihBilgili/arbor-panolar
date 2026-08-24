@@ -15,6 +15,10 @@
   .msg{font-size:12.5px;min-height:16px}.msg.ok{color:#2e7d54;font-weight:600}.msg.err{color:#b40000;font-weight:600}
   .grp{margin:10px 0 4px}
   .grp h2{font-size:13px;margin:0 0 5px;color:#5c4300;border-bottom:2px solid #e6d3a3;padding-bottom:3px}
+  header .sub{line-height:1.5;max-width:900px}
+  /* Başlık + "Ekle" düğmesi aynı satırda (Haftalık Güncelleme en üste taşındı) */
+  .ghd{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 5px}
+  .ghd h2{border-bottom:0;margin:0;padding:0}
   .load{padding:30px;text-align:center;color:#8a97a4}
   .hint{font-size:11px;color:#8a97a4;margin:4px 2px}
   .ibtns{display:flex;gap:8px;flex-wrap:wrap;margin:5px 0}
@@ -41,13 +45,18 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </style>
 </head>
 <body>
+<header>
+  <h1>Faaliyet Formu</h1>
+  <div class="sub">Haftalık faaliyetler kaydedilir. Buraya takipteki işler, tedarikçi giderleri ve tıkanmış şantiyeler işlenir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak “Haftalık Güncelle” düğmesine basılmadıkça gönderilmez.</div>
+</header>
 <div class="wrap">
   <div id="msg" class="msg"></div>
 
-  <div class="grp"><h2>Takipteki İşler</h2>
-    <div class="ibtns">
+  <div class="ibtns" style="margin:2px 0 10px"><button class="wkbtn" id="iWeek">Haftalık Güncelleme</button></div>
+
+  <div class="grp">
+    <div class="ghd"><h2>Takipteki İşler</h2>
       <button class="iadd" id="iAdd">+ Yeni İş Ekle</button>
-      <button class="wkbtn" id="iWeek">Haftalık Güncelleme</button>
     </div>
     <div id="iList"><div class="load">Yükleniyor…</div></div>
   </div>
