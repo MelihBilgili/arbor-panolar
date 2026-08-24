@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Arbor SAS Alacak · Selectron mutabakat</title>
+<title>Yurt Dışı Alacak · Selectron mutabakat</title>
 <style>
   :root{color-scheme:light}*{box-sizing:border-box}
   body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
@@ -19,6 +19,7 @@
   .upd{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer;font-size:13px}
   .topbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:#fff8ea;border:1px solid #e8cf95;border-radius:10px;padding:11px 14px;margin-bottom:14px}
   .topbar .note{font-size:12px;color:#8a6100;flex:1;min-width:240px;line-height:1.45}
+  .topbar .msg{min-height:0;margin-top:0}
   .msg{font-size:12.5px;min-height:17px;margin-top:6px}.msg.ok{color:#0a6b3f;font-weight:600}.msg.err{color:#b40000;font-weight:600}
   .scroll{overflow-x:auto}
   table{border-collapse:collapse;width:100%;font-size:12.5px}
@@ -35,32 +36,32 @@ html,body{max-width:100vw;overflow-x:hidden}
 </head>
 <body>
 <header>
-  <h1>Arbor SAS Alacak</h1>
-  <div class="sub">Buraya Arbor SAS'ın müşterilerinden güncel alacakları, Selectron'a kestiği faturalar ve yaptığı ödemeler işlenir. Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak “Aylık Güncelle” düğmesine basılmadıkça gönderilmez.</div>
+  <h1>Yurt Dışı Alacak</h1>
+  <div class="sub">Buraya yurt dışındaki birimlerin (Arbor SAS ve Arbor Windows Ltd) müşterilerinden güncel alacakları, Selectron'a kestiği faturalar ve yaptığı ödemeler işlenir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak “Aylık Güncelle” düğmesine basılmadıkça gönderilmez.</div>
 </header>
 <div class="wrap">
 
   <div class="topbar">
     <button class="upd" id="ay_btn">Aylık Güncelle</button>
     <div class="note">Formdaki bilgiler, ”Aylık Güncelle” düğmesine ne zaman basılırsa o zaman SEL-ARB panosuna aktarılır.</div>
-    <div class="msg" id="ay_msg" style="flex-basis:100%"></div>
+    <div class="msg" id="ay_msg"></div>
   </div>
 
   <div class="card">
-    <div class="chd"><h2>1 · Arbor SAS'ın Firma/Proje Bazlı Güncel Alacakları <span class="cnt" id="c1"></span></h2>
+    <div class="chd"><h2>1 · Yurt Dışı Birimlerin Firma/Proje Bazlı Güncel Alacakları <span class="cnt" id="c1"></span></h2>
       <button class="add" id="a1">＋ Yeni Proje Ekle</button></div>
     <div class="scroll"><table><thead><tr>
-      <th style="width:30%">Firma</th><th style="width:30%">Proje</th><th style="width:16%">Alacak</th><th style="width:14%">Para Birimi</th><th class="x"></th>
-    </tr></thead><tbody id="t1"><tr><td colspan="5">Yükleniyor…</td></tr></tbody></table></div>
+      <th style="width:16%">Yurt Dışı Birim</th><th style="width:26%">Firma</th><th style="width:26%">Proje</th><th style="width:16%">Alacak</th><th style="width:14%">Para Birimi</th><th class="x"></th>
+    </tr></thead><tbody id="t1"><tr><td colspan="6">Yükleniyor…</td></tr></tbody></table></div>
     <div class="msg" id="m1"></div>
   </div>
 
   <div class="card">
-    <div class="chd"><h2>2 · Ödemeler <span class="cnt" id="c2"></span></h2>
+    <div class="chd"><h2>2 · Yurt Dışı Birimlerden Selectron’a Yapılan Ödemeler <span class="cnt" id="c2"></span></h2>
       <button class="add" id="a2">＋ Yeni Ödeme Ekle</button></div>
     <div class="scroll"><table><thead><tr>
-      <th style="width:20%">Ödeme Tarihi</th><th style="width:28%">Gönderen Banka</th><th style="width:22%">Tutar</th><th style="width:16%">Para Birimi</th><th class="x"></th>
-    </tr></thead><tbody id="t2"><tr><td colspan="5">Yükleniyor…</td></tr></tbody></table></div>
+      <th style="width:16%">Yurt Dışı Birim</th><th style="width:18%">Ödeme Tarihi</th><th style="width:24%">Gönderen Banka</th><th style="width:16%">Tutar</th><th style="width:14%">Para Birimi</th><th class="x"></th>
+    </tr></thead><tbody id="t2"><tr><td colspan="6">Yükleniyor…</td></tr></tbody></table></div>
     <div class="msg" id="m2"></div>
   </div>
 
@@ -132,6 +133,8 @@ function msg(el,t,ok){ const m=$(el); m.className="msg "+(ok?"ok":"err"); m.text
 const PB=["EUR","TL","GBP","USD"];
 const YDB=["Arbor SAS","Arbor Windows Ltd."];
 const opts=(list,cur)=>['<option value=""></option>'].concat(list.map(o=>'<option'+(String(cur||"")===o?" selected":"")+'>'+esc(o)+'</option>')).join("");
+/* Yurt Dışı Birim: boş seçenek YOK — seçim zorunlu, varsayılan Arbor SAS */
+const optsYDB=cur=>YDB.map(o=>'<option'+((String(cur||"")||YDB[0])===o?" selected":"")+'>'+esc(o)+'</option>').join("");
 
 /* ---- kur: ahsap-kur (EUR bazlı) + eksik para birimleri için frankfurter ---- */
 let _R=null;
@@ -159,40 +162,42 @@ async function eurOf(tutar,pb){
 let R1=[];
 async function load1(){
   const {data,error}=await sb.from("arbor_alacak_kalem").select("*").order("sira",{nullsFirst:true}).order("id");
-  if(error){ $("t1").innerHTML='<tr><td colspan="5">Hata: '+esc(error.message)+'</td></tr>'; return; }
+  if(error){ $("t1").innerHTML='<tr><td colspan="6">Hata: '+esc(error.message)+'</td></tr>'; return; }
   R1=data||[]; $("c1").textContent="("+R1.length+")";
   $("t1").innerHTML=R1.length?R1.map(r=>'<tr data-id="'+r.id+'">'
+    +'<td><select data-f="yd_birim">'+optsYDB(r.yd_birim)+'</select></td>'
     +'<td><input data-f="firma" value="'+esc(r.firma||"")+'"></td>'
     +'<td><input data-f="proje" value="'+esc(r.proje||"")+'"></td>'
     +'<td><input class="num" data-f="tutar" value="'+esc(r.tutar==null?"":r.tutar)+'"></td>'
     +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
     +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
-    :'<tr><td colspan="5">Kalem yok.</td></tr>';
+    :'<tr><td colspan="6">Kalem yok.</td></tr>';
   bind("t1","arbor_alacak_kalem","m1",load1);
 }
 $("a1").onclick=async()=>{
   const mn=R1.reduce((a,r)=>Math.min(a,r.sira==null?1e9:r.sira),1e9);
-  const {error}=await sb.from("arbor_alacak_kalem").insert({sira:(mn===1e9?1:mn-1),para_birimi:"EUR"});
+  const {error}=await sb.from("arbor_alacak_kalem").insert({sira:(mn===1e9?1:mn-1),para_birimi:"EUR",yd_birim:YDB[0]});
   if(error) msg("m1","Hata: "+error.message,false); else load1();
 };
 
-/* ================= BLOK 2 — Ödemeler ================= */
+/* ================= BLOK 2 — Yurt Dışı Birimlerden Selectron'a yapılan ödemeler ================= */
 let R2=[];
 async function load2(){
   const {data,error}=await sb.from("sel_odeme").select("*").order("id",{ascending:false});
-  if(error){ $("t2").innerHTML='<tr><td colspan="5">Hata: '+esc(error.message)+'</td></tr>'; return; }
+  if(error){ $("t2").innerHTML='<tr><td colspan="6">Hata: '+esc(error.message)+'</td></tr>'; return; }
   R2=data||[]; $("c2").textContent="("+R2.length+")";
   $("t2").innerHTML=R2.length?R2.map(r=>'<tr data-id="'+r.id+'">'
+    +'<td><select data-f="yd_birim">'+optsYDB(r.yd_birim)+'</select></td>'
     +'<td><input type="date" data-f="odeme_tarihi" value="'+esc(r.odeme_tarihi||"")+'"></td>'
     +'<td><select data-f="gonderen_banka">'+opts(["BNP","CA"],r.gonderen_banka)+'</select></td>'
     +'<td><input class="num" data-f="tutar" value="'+esc(r.tutar==null?"":r.tutar)+'"></td>'
     +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
     +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
-    :'<tr><td colspan="5">Ödeme yok.</td></tr>';
+    :'<tr><td colspan="6">Ödeme yok.</td></tr>';
   bind("t2","sel_odeme","m2",load2);
 }
 $("a2").onclick=async()=>{
-  const {error}=await sb.from("sel_odeme").insert({para_birimi:"EUR"});
+  const {error}=await sb.from("sel_odeme").insert({para_birimi:"EUR",yd_birim:YDB[0]});
   if(error) msg("m2","Hata: "+error.message,false); else load2();
 };
 
@@ -252,10 +257,10 @@ function bind(tb,tbl,mid,reload){
 }
 
 /* ---- boş alan denetimi ---- */
-const REQ={t1:["firma","proje","tutar","para_birimi"],
-           t2:["odeme_tarihi","gonderen_banka","tutar","para_birimi"],
+const REQ={t1:["yd_birim","firma","proje","tutar","para_birimi"],
+           t2:["yd_birim","odeme_tarihi","gonderen_banka","tutar","para_birimi"],
            t3:["yd_birim","ft_no","tarih","projeler","tutar","para_birimi"]};
-const BLOKAD={t1:"Güncel Alacaklar",t2:"Ödemeler",t3:"Kesilen Faturalar"};
+const BLOKAD={t1:"Güncel Alacaklar",t2:"Selectron'a Yapılan Ödemeler",t3:"Kesilen Faturalar"};
 function bosVar(){
   let eksik=[];
   document.querySelectorAll(".miss").forEach(e=>e.classList.remove("miss"));
