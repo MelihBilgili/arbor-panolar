@@ -1398,6 +1398,12 @@ async function loadObrapor(tgt){
   });
   if(!iRows.length) ib+=`<tr><td colspan="5" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
   ib+=`</tbody></table></div>`;
+  /* Panonun altında serbest metin kutusu → ÖB'ye anında mail (pano-mesaj-mail, alıcı form_takip'ten) */
+  ib+=`<div class="obmail">
+    <div class="obmh">ÖB'ye Mail Gönder</div>
+    <textarea id="ob-mail-tx" placeholder="Özgül Bedestenci'ye iletilecek mesaj…"></textarea>
+    <div class="obmr"><button class="btn" id="ob-mail-btn">Mail Gönder</button><span class="msg" id="ob-mail-msg"></span></div>
+  </div>`;
   view.innerHTML=`<style>
     table.obt{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
     table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k40{width:40ch}table.obt col.k60{width:48ch}table.obt col.k100{width:59.5ch}
@@ -1409,10 +1415,31 @@ async function loadObrapor(tgt){
     table.obt .cx{overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
     table.obt .cx::-webkit-scrollbar{display:none}
     table.obt td.sb .cx{font-weight:700;color:#16324f}
+    .obmail{margin-top:12px;background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 12px;max-width:900px}
+    .obmail .obmh{font-size:12.5px;font-weight:700;color:#16324f;margin-bottom:6px}
+    .obmail textarea{width:100%;min-height:88px;font:inherit;font-size:12.5px;line-height:1.45;padding:7px 9px;border:1px solid #cdd6df;border-radius:8px;background:#fffdf8;resize:vertical}
+    .obmail .obmr{display:flex;gap:10px;align-items:center;margin-top:7px}
+    .obmail button{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:7px 15px;font-weight:700;cursor:pointer;font-size:12.5px}
+    .obmail button:disabled{opacity:.55;cursor:default}
+    .obmail .msg{font-size:12px}.obmail .msg.ok{color:#0a6b3f;font-weight:600}.obmail .msg.err{color:#b40000;font-weight:600}
   </style>
   <div class="stamp">Son güncelleme: ${pyAt?dOnly(pyAt):"—"}</div>${ib}`;
   const wh=document.getElementById("ob-wk");
   if(wh) wh.onclick=()=>{ obWeeksOpen=!obWeeksOpen; loadObrapor(tgt); };
+  const mb=document.getElementById("ob-mail-btn");
+  if(mb) mb.onclick=async()=>{
+    const tx=document.getElementById("ob-mail-tx"), mg=document.getElementById("ob-mail-msg");
+    const metin=(tx.value||"").trim();
+    if(!metin){ mg.className="msg err"; mg.textContent="Önce mesajı yazın."; return; }
+    if(!confirm("Bu mesaj Özgül Bedestenci'ye mail olarak gönderilecek (cc: int@arbor.com.tr). Devam?")) return;
+    mb.disabled=true; mg.className="msg"; mg.textContent="Gönderiliyor…";
+    try{
+      const {data,error}=await sb.functions.invoke("pano-mesaj-mail",{body:{form_key:"ob_rapor",metin}});
+      if(error||!(data&&data.ok)){ mg.className="msg err"; mg.textContent="Hata: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"); }
+      else { mg.className="msg ok"; mg.textContent="Gönderildi → "+data.to; tx.value=""; }
+    }catch(e){ mg.className="msg err"; mg.textContent="Hata: "+e; }
+    mb.disabled=false;
+  };
 }
 
 /* ---------- FİYATLANDIRMA — kaynak veri + editör (fiyat_* tabloları, anon dar). GÜNCELLE = yayınla + bildir. ---------- */
