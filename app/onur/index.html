@@ -3,22 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Onur — Sevk Durumu Formu</title>
+<title>OE Faaliyet Formu</title>
 <style>
   :root{color-scheme:light}
   *{box-sizing:border-box}
   body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
   header{background:#16324f;color:#fff;padding:12px 16px}
   header h1{font-size:17px;margin:0;font-weight:700}
-  header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
-  .wrap{max-width:1120px;margin:0 auto;padding:14px 16px 48px}
-  .bar{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 14px;margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  .bar label{font-weight:600;color:#16324f}
-  select{font:inherit;padding:8px 10px;border:1px solid #cdd6df;border-radius:8px}
-  .sum{font-size:12.5px;color:#5a6b7d;margin-left:auto}
+  header .sub{font-size:12px;color:#cfe0f0;margin-top:4px;line-height:1.5;max-width:900px}
+  .wrap{max-width:1180px;margin:0 auto;padding:14px 16px 48px}
+  .topbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:#fff8ea;border:1px solid #e8cf95;border-radius:10px;padding:11px 14px;margin-bottom:14px}
+  .topbar .note{font-size:12px;color:#8a6100;flex:1;min-width:240px;line-height:1.45}
+  .upd{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer;font-size:13px}
   .msg{font-size:12.5px;min-height:16px;font-weight:600}
   .msg.ok{color:#2e7d54}.msg.err{color:#b40000}
-  .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;overflow:hidden}
+  .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;overflow:hidden;margin-bottom:14px}
+  .card.pad{padding:12px 14px}
+  .chd{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .chd h2{font-size:14px;margin:0;color:#16324f}
+  .cnt{font-weight:400;color:#7a8896;font-size:12px}
+  .add{background:#0a6b57;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer;font-size:12.5px}
   table{border-collapse:collapse;width:100%;font-size:13px}
   thead th{background:#16324f;color:#fff;font-weight:600;font-size:11.5px;padding:8px 9px;text-align:left;white-space:nowrap;position:sticky;top:0}
   td{border-bottom:1px solid #eef1f5;padding:6px 9px;vertical-align:top}
@@ -32,25 +36,41 @@
   .ed:hover{border-color:#2e7d54;background:#f6fbf7}
   .ed.empty{color:#b7c6d6}
   .saveflash{outline:2px solid #2e7d54}
-  .hint{font-size:12px;color:#8a97a4;margin:8px 2px}
   .load{padding:30px;text-align:center;color:#8a97a4}
-
+  #ftt td{padding:3px 5px}
+  #ftt input,#ftt select{font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8;width:100%}
+  #ftt input.num{text-align:right}
+  td.x{width:26px;text-align:center}
+  .del{border:0;background:transparent;color:#c62828;font-weight:800;font-size:15px;cursor:pointer;line-height:1;padding:0 4px}
+  .del:hover{color:#8e0000}
+  .miss{border-color:#c62828!important;background:#fff2f2!important}
+  .scroll{overflow-x:auto}
 html,body{max-width:100vw;overflow-x:hidden}
-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
 </style>
 </head>
 <body>
 <header>
-  <h1>Onur — Sevk Durumu Formu</h1>
-  <div class="sub">Onur Ekinci · Sevke hazır PEM/PRJ kalemlerinin güncel sevk durumunu buradan gir. Hücreye tıkla, yaz, Enter'a bas.</div>
+  <h1>Faaliyet Formu</h1>
+  <div class="sub">Haftalık faaliyetler kaydedilir. Buraya sevke hazır PEM ve Proje ürünlerinin sevkiyat durumu ve Selectron'un yurt dışı birimlerine kestiği faturalar işlenir. Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak “Aylık Güncelle” düğmesine basılmadıkça gönderilmez.</div>
 </header>
 <div class="wrap">
-  <div class="bar">
-    <button id="ay_btn" style="background:#8a6100;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;font-size:13px">AYLIK GÜNCELLE</button>
-    <span id="msg" class="msg"></span>
-    <span class="msg" id="ay_msg"></span>
+
+  <div class="topbar">
+    <button class="upd" id="ay_btn">Aylık Güncelle</button>
+    <div class="note">Formdaki bilgiler, ”Aylık Güncelle” düğmesine ne zaman basılırsa o zaman aktarılır.</div>
+    <div class="msg" id="ay_msg" style="flex-basis:100%"></div>
   </div>
-  <div id="list" class="card"><div class="load">Yükleniyor…</div></div>
+
+  <div class="card pad">
+    <div class="chd"><h2>Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar <span class="cnt" id="cf"></span></h2>
+      <button class="add" id="af">＋ Yeni Fatura Ekle</button></div>
+    <div class="scroll"><table id="ftt"><thead><tr>
+      <th style="width:16%">Yurt Dışı Birim</th><th style="width:13%">Fatura No</th><th style="width:13%">Tarih</th><th style="width:24%">Proje(ler)</th><th style="width:14%">Tutar</th><th style="width:12%">Para Birimi</th><th class="x"></th>
+    </tr></thead><tbody id="tf"><tr><td colspan="7">Yükleniyor…</td></tr></tbody></table></div>
+    <div class="msg" id="mf"></div>
+  </div>
+
+  <div class="card"><span id="msg" class="msg"></span><div id="list"><div class="load">Yükleniyor…</div></div></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -103,15 +123,99 @@ if (document.readyState === "loading") document.addEventListener("DOMContentLoad
 <script type="text/plain" id="arbmain">
 const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $=id=>document.getElementById(id);
 const fd=d=>{ if(!d) return ""; const x=new Date(d); return isNaN(x)?"":String(x.getDate()).padStart(2,"0")+"."+String(x.getMonth()+1).padStart(2,"0")+"."+String(x.getFullYear()).slice(2); };
+const num=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null;
+  if(t.indexOf(",")>-1&&t.indexOf(".")>-1){t=t.replace(/\./g,"").replace(",",".");}else{t=t.replace(",",".");}
+  const v=parseFloat(t); return isNaN(v)?null:v; };
+function fmsg(el,t,ok){ const m=$(el); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3000); }
+const PB=["EUR","TL","GBP","USD"];
+const YDB=["Arbor SAS","Arbor Windows Ltd."];
+const opts=(list,cur)=>['<option value=""></option>'].concat(list.map(o=>'<option'+(String(cur||"")===o?" selected":"")+'>'+esc(o)+'</option>')).join("");
+
+/* ---------- kur ---------- */
+let _R=null;
+async function rates(){
+  if(_R) return _R;
+  let r={EUR:1}, tarih=null;
+  try{ const {data}=await sb.functions.invoke("ahsap-kur",{body:{}});
+    if(data&&data.ok&&data.rates){ r=Object.assign(r,data.rates); tarih=data.tarih||null; } }catch(e){}
+  const eksik=PB.filter(p=>p!=="EUR"&&!(r[p]>0));
+  if(eksik.length){
+    try{ const j=await (await fetch("https://api.frankfurter.app/latest?from=EUR&to="+eksik.map(p=>p==="TL"?"TRY":p).join(","))).json();
+      eksik.forEach(p=>{ const k=(p==="TL"?"TRY":p); if(j&&j.rates&&j.rates[k]>0) r[p]=j.rates[k]; });
+      if(!tarih&&j&&j.date) tarih=j.date; }catch(e){}
+  }
+  _R={rates:r,tarih:tarih}; return _R;
+}
+async function eurOf(tutar,pb){
+  if(tutar==null) return {tutar_eur:null,eur_kur:null,kur_tarihi:null};
+  if(!pb||pb==="EUR") return {tutar_eur:tutar,eur_kur:1,kur_tarihi:null};
+  const k=await rates();
+  if(!(k.rates[pb]>0)) throw new Error("kur yok: "+pb);
+  return {tutar_eur:tutar/k.rates[pb],eur_kur:k.rates[pb],kur_tarihi:k.tarih};
+}
+
+/* ---------- BLOK: Selectron -> yurt dışı birim faturaları (ihracat_fatura) ---------- */
+let FT=[];
+async function loadFt(){
+  const {data,error}=await sb.from("ihracat_fatura").select("*").order("id",{ascending:false});
+  if(error){ $("tf").innerHTML='<tr><td colspan="7">Hata: '+esc(error.message)+'</td></tr>'; return; }
+  FT=data||[]; $("cf").textContent="("+FT.length+")";
+  $("tf").innerHTML=FT.length?FT.map(r=>'<tr data-id="'+r.id+'">'
+    +'<td><select data-f="yd_birim">'+opts(YDB,r.yd_birim)+'</select></td>'
+    +'<td><input data-f="ft_no" value="'+esc(r.ft_no||"")+'"></td>'
+    +'<td><input type="date" data-f="tarih" value="'+esc(r.tarih||"")+'"></td>'
+    +'<td><input data-f="projeler" value="'+esc(r.projeler||"")+'"></td>'
+    +'<td><input class="num" data-f="tutar" value="'+esc(r.tutar==null?"":r.tutar)+'"></td>'
+    +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
+    +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
+    :'<tr><td colspan="7">Fatura yok.</td></tr>';
+  document.querySelectorAll("#tf tr[data-id]").forEach(tr=>{
+    const id=tr.getAttribute("data-id");
+    tr.querySelectorAll("[data-f]").forEach(el=>{
+      el.onchange=async()=>{
+        el.classList.remove("miss");
+        const f=el.getAttribute("data-f"); let body={};
+        if(f==="tutar"){ const t=num(el.value); const p=tr.querySelector('[data-f="para_birimi"]');
+          try{ body=Object.assign({tutar:t},await eurOf(t,p?p.value:"EUR")); }catch(e){ fmsg("mf","Kur alınamadı.",false); body={tutar:t}; } }
+        else if(f==="para_birimi"){ const tEl=tr.querySelector('[data-f="tutar"]'); const t=tEl?num(tEl.value):null;
+          try{ body=Object.assign({para_birimi:el.value},await eurOf(t,el.value)); }catch(e){ fmsg("mf","Kur alınamadı.",false); body={para_birimi:el.value}; } }
+        else body[f]=(el.value===""?null:el.value);
+        const {error}=await sb.from("ihracat_fatura").update(body).eq("id",id);
+        if(error) fmsg("mf","Hata: "+error.message,false); else fmsg("mf","Kaydedildi.",true);
+      };
+    });
+    const b=tr.querySelector(".del");
+    if(b) b.onclick=async()=>{ if(!confirm("Bu fatura silinsin mi?")) return;
+      const {error}=await sb.from("ihracat_fatura").delete().eq("id",id);
+      if(error) fmsg("mf","Hata: "+error.message,false); else loadFt(); };
+  });
+}
+$("af").onclick=async()=>{
+  const {error}=await sb.from("ihracat_fatura").insert({para_birimi:"EUR",yd_birim:"Arbor SAS"});
+  if(error) fmsg("mf","Hata: "+error.message,false); else loadFt();
+};
+const REQF=["yd_birim","ft_no","tarih","projeler","tutar","para_birimi"];
+function bosVar(){
+  let eksik=false;
+  document.querySelectorAll("#tf .miss").forEach(e=>e.classList.remove("miss"));
+  document.querySelectorAll("#tf tr[data-id]").forEach(tr=>{
+    REQF.forEach(f=>{ const el=tr.querySelector('[data-f="'+f+'"]');
+      if(el&&String(el.value).trim()===""){ el.classList.add("miss"); eksik=true; } });
+  });
+  return eksik;
+}
+
+/* ---------- BLOK: sevke hazır PEM/PRJ sevk durumu ---------- */
 let ROWS=[];
 async function load(){
   const [{data,error},dg]=await Promise.all([
     sb.from("hazir_pem_prj").select("*"),
     sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1)
   ]);
-  if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
-  /* Hazır PEM/PRJ panosuyla AYNI kural: yalnız hazir_tarihi < (en yeni ERP damgası − 10 gün) görünür; band-içi + gelecek + boş gizli */
+  if(error){ $("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
+  /* Hazır PEM/PRJ panosuyla AYNI kural: yalnız hazir_tarihi < (en yeni ERP damgası − 10 gün) görünür */
   const _dmg=String((dg&&dg.data&&dg.data[0]&&dg.data[0].damga)||"");
   const _ref=/^\d{6}$/.test(_dmg)? new Date(2000+Number(_dmg.slice(0,2)),Number(_dmg.slice(2,4))-1,Number(_dmg.slice(4,6))) : new Date();
   _ref.setHours(23,59,59,999);
@@ -123,7 +227,7 @@ function render(){
   const rows=ROWS;
   let html='<table><thead><tr><th>Tür</th><th>No</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Hazır Tarihi</th><th>Önceki</th><th>Güncel Sevk Durumu</th></tr></thead><tbody>';
   let last="";
-  rows.forEach((r,i)=>{
+  rows.forEach(r=>{
     if(r.tur!==last){ last=r.tur; html+='<tr class="grp"><td colspan="8">'+esc(r.tur)+'</td></tr>'; }
     const g=r.onur_guncel||"";
     html+='<tr data-i="'+ROWS.indexOf(r)+'">'
@@ -138,7 +242,7 @@ function render(){
       +'</tr>';
   });
   html+='</tbody></table>';
-  const list=document.getElementById("list"); list.innerHTML=html;
+  const list=$("list"); list.innerHTML=html;
   list.querySelectorAll(".ed").forEach(el=>el.onclick=()=>edit(el));
 }
 function edit(el){
@@ -151,7 +255,7 @@ function edit(el){
     const val=inp.value.trim();
     const rec={tur:r.tur, kalem_key:String(r.no), guncel:val||null, updated_at:new Date().toISOString()};
     const {error}=await sb.from("sevk_durumu_onur").upsert(rec,{onConflict:"tur,kalem_key"});
-    const msg=document.getElementById("msg");
+    const msg=$("msg");
     if(error){ msg.className="msg err"; msg.textContent=error.message; el.textContent=cur||"+ durum"; return; }
     r.onur_guncel=val; msg.className="msg ok"; msg.textContent="Kaydedildi ("+r.tur+" "+r.no+")"; setTimeout(()=>msg.textContent="",1500);
     el.className="ed "+(val?"":"empty"); el.textContent=val||"+ durum"; el.classList.add("saveflash"); setTimeout(()=>el.classList.remove("saveflash"),400);
@@ -159,18 +263,29 @@ function edit(el){
   inp.onblur=commit;
   inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();inp.blur();} if(e.key==="Escape"){el.className="ed "+(cur?"":"empty");el.textContent=cur||"+ durum";} };
 }
-document.getElementById("ay_btn").onclick=async()=>{
-  if(!confirm("AYLIK GÜNCELLE\n\nHer kalemin önceki→güncel sevk durumu değişiminin özeti üretilecek ve panoya yazılacak; sonra güncel değer 'önceki'ye kaydırılacak. Ayda bir yapılır. Devam?")) return;
-  const btn=document.getElementById("ay_btn"), m=document.getElementById("ay_msg");
-  btn.disabled=true; m.className="msg ok"; m.textContent="Özetler üretiliyor…";
+
+/* ---------- AYLIK GÜNCELLE ---------- */
+$("ay_btn").onclick=async()=>{
+  if(bosVar()){ alert("Aylık güncelleme yapılamaz — fatura listesinde boş alan var.\n\nKırmızı işaretli alanları doldurun."); fmsg("ay_msg","Boş alan var — kırmızı hücreleri doldurun.",false); return; }
+  if(!confirm("AYLIK GÜNCELLE\n\n1) Her kalemin önceki→güncel sevk durumu değişim özeti üretilip panoya yazılacak, güncel değer 'önceki'ye kaydırılacak.\n2) Bu ay eklenen faturaların € toplamı SEL-ARB panosundaki \"Selectron'a Borç\" tutarına eklenecek.\n\nDevam?")) return;
+  const btn=$("ay_btn"); btn.disabled=true; fmsg("ay_msg","Aktarılıyor…",true);
+  let notlar=[];
+  try{
+    const f=await sb.functions.invoke("sel-arb-ay-kapat",{body:{kaynak:"oe"}});
+    if(f.error||!(f.data&&f.data.ok)) notlar.push("SEL-ARB hata: "+((f.error&&f.error.message)||(f.data&&f.data.error)||"bilinmiyor"));
+    else notlar.push(f.data.note||("SEL-ARB güncellendi ("+f.data.tarih+")"));
+  }catch(e){ notlar.push("SEL-ARB hata: "+e); }
   try{
     const {data,error}=await sb.functions.invoke("sevk-degisim-ozet",{body:{}});
-    if(error||!(data&&data.ok)){ m.className="msg err"; m.textContent="Hata: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"); }
-    else{ m.className="msg ok"; m.textContent=data.note||("Tamam ("+data.updated+" kalem)"); load(); }
-  }catch(e){ m.className="msg err"; m.textContent="Hata: "+e; }
-  btn.disabled=false;
+    if(error||!(data&&data.ok)) notlar.push("Sevk özeti hata: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"));
+    else notlar.push(data.note||("Sevk özeti: "+data.updated+" kalem"));
+  }catch(e){ notlar.push("Sevk özeti hata: "+e); }
+  const hata=notlar.some(n=>n.indexOf("hata")>-1);
+  fmsg("ay_msg",notlar.join(" · "),!hata);
+  btn.disabled=false; loadFt(); load();
 };
-load();
+
+loadFt(); load();
 </script>
 
 <!-- ARBOR-DRAGSCROLL -->
