@@ -1358,25 +1358,52 @@ async function loadSelArb(tgt){
   if(tg) tg.onclick=()=>{ const on=tg.dataset.on==="1"; document.querySelectorAll("#"+tgt+" tr.sa-hide").forEach(x=>x.style.display=on?"none":""); tg.dataset.on=on?"0":"1"; tg.textContent=on?`Boş-alacak satırları göster (${hiddenCount})`:`Boş-alacak satırları gizle (${hiddenCount})`; };
 }
 /* ---------- ÖB Rapor — bağımsız üst-nav sekmesi (Takipteki İşler / ob_isler; ÖB formu yazar, owner salt-okur) ---------- */
+/* Geçmiş hafta not sütunları açık mı (Son ÖB Notları başlığına tıklanınca) */
+let obWeeksOpen=false;
 async function loadObrapor(tgt){
   const view=document.getElementById(tgt||"view");
   const isl=await sb.from("ob_isler").select("*").order("arsiv").order("id");
   if(isl.error){ view.innerHTML=`<div class="load">Hata: ${esc(isl.error.message)}</div>`; return; }
   const iRows=isl.data||[];
+  /* Haftalık geçmiş (ob_isler_log) — her HAFTALIK GÜNCELLEME'de o haftanın notu yazılır */
+  const lg=await sb.from("ob_isler_log").select("is_id,hafta,ob_notlari").order("hafta",{ascending:false});
+  const lRows=(lg&&!lg.error)?(lg.data||[]):[];
+  const notByWeek={};                                   /* notByWeek[hafta][is_id] = not */
+  lRows.forEach(r=>{ (notByWeek[r.hafta]=notByWeek[r.hafta]||{})[String(r.is_id)]=r.ob_notlari; });
+  /* En yeni hafta = "Son ÖB Notları" sütunu; gizli sütunlar ondan öncekiler (yeni→eski) */
+  const haftalar=Object.keys(notByWeek).sort().reverse().slice(1);
+  const isoWk=d=>{ const t=new Date(d+"T00:00:00Z"); const g=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate()));
+    g.setUTCDate(g.getUTCDate()+4-(g.getUTCDay()||7)); const y0=new Date(Date.UTC(g.getUTCFullYear(),0,1));
+    return Math.ceil(((g-y0)/86400000+1)/7); };
+  const dgun=d=>d.slice(8,10)+"."+d.slice(5,7)+"."+d.slice(2,4);
   /* Son güncelleme = ÖB formundaki HAFTALIK GÜNCELLEME düğmesine son basılma (pano_yayin) */
   const py=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","ob_rapor").limit(1);
   const pyAt=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
   const cx=(v,cls)=>`<td class="${cls||""}"><div class="cx">${esc(v==null?"":v)}</div></td>`;
+  const kar=obWeeksOpen?"▾":"▸";
+  let cg=`<col class="k35"><col class="k20"><col class="k100">`
+    + (obWeeksOpen?haftalar.map(()=>`<col class="k40">`).join(""):"")
+    + `<col class="k60"><col class="k60">`;
+  let hd=`<th>Konu</th><th>Durum</th><th class="obwh" id="ob-wk" title="Geçmiş hafta notlarını aç/kapa">Son ÖB Notları <span class="ahcar">${kar}</span></th>`
+    + (obWeeksOpen?haftalar.map(h=>`<th class="thsm" title="${dgun(h)}"><span class="thw">${isoWk(h)}. Hafta ÖB Notu</span></th>`).join(""):"")
+    + `<th>Son Değişim Özeti</th><th>Toplam Değişim Özeti</th>`;
   let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3>`
     +`<div class="scroll"><table class="obt">`
-    +`<colgroup><col class="k35"><col class="k20"><col class="k100"><col class="k60"></colgroup>`
-    +`<thead><tr><th>Konu</th><th>Durum</th><th>ÖB Notları</th><th>Değişim Özeti</th></tr></thead><tbody>`;
-  iRows.forEach(r=>{ ib+=`<tr>${cx(r.konu,"sb")}${cx(r.durum)}${cx(r.ob_notlari)}${cx(r.degisim_ozet)}</tr>`; });
-  if(!iRows.length) ib+=`<tr><td colspan="4" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
+    +`<colgroup>${cg}</colgroup>`
+    +`<thead><tr>${hd}</tr></thead><tbody>`;
+  iRows.forEach(r=>{
+    ib+=`<tr>${cx(r.konu,"sb")}${cx(r.durum)}${cx(r.ob_notlari)}`
+      + (obWeeksOpen?haftalar.map(h=>cx((notByWeek[h]||{})[String(r.id)])).join(""):"")
+      + `${cx(r.degisim_ozet)}${cx(r.toplam_ozet)}</tr>`;
+  });
+  if(!iRows.length) ib+=`<tr><td colspan="5" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
   ib+=`</tbody></table></div>`;
   view.innerHTML=`<style>
     table.obt{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
-    table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k60{width:60ch}table.obt col.k100{width:85ch}
+    table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k40{width:40ch}table.obt col.k60{width:60ch}table.obt col.k100{width:85ch}
+    table.obt th.obwh{cursor:pointer;background:#22456b}
+    table.obt th.obwh:hover{background:#2d5a8a}
+    table.obt .ahcar{font-size:9px;opacity:.85}
     table.obt th,table.obt td{border-bottom:1px solid #eef1f5;padding:2px 8px;text-align:left;vertical-align:middle;height:20px;line-height:16px}
     table.obt thead th{background:#16324f;color:#fff;font-weight:600;font-size:11px;white-space:nowrap;padding:4px 8px}
     table.obt .cx{overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
@@ -1384,6 +1411,8 @@ async function loadObrapor(tgt){
     table.obt td.sb .cx{font-weight:700;color:#16324f}
   </style>
   <div class="stamp">Son güncelleme: ${pyAt?dOnly(pyAt):"—"}</div>${ib}`;
+  const wh=document.getElementById("ob-wk");
+  if(wh) wh.onclick=()=>{ obWeeksOpen=!obWeeksOpen; loadObrapor(tgt); };
 }
 
 /* ---------- FİYATLANDIRMA — kaynak veri + editör (fiyat_* tabloları, anon dar). GÜNCELLE = yayınla + bildir. ---------- */
