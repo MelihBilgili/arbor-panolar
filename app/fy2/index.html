@@ -340,7 +340,10 @@ function setupAyIsaret(KAYNAK,SNAP){
   const AYLAR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
   const btn0=document.getElementById("ayBtn"); if(!btn0) return;
   const now=new Date();
-  const ay=AYLAR[now.getMonth()]+" "+now.getFullYear();
+  /* ICMAL-AY-GERI: aylik guncelleme BIR ONCEKI ayi kapatir (form ayin ilk is gunu doldurulur) */
+  const kapAy=new Date(now.getFullYear(),now.getMonth()-1,1);
+  const ay=AYLAR[kapAy.getMonth()]+" "+kapAy.getFullYear();
+  const donem=String(kapAy.getMonth()+1).padStart(2,"0")+"."+String(kapAy.getFullYear()).slice(-2);
   btn0.onclick=async()=>{
     const m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
     if(!confirm('"'+ay+'" ayı için aylık güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN (girişler zaten anında kaydediliyor).\n\nOnaylıyor musunuz?')) return;
@@ -351,6 +354,8 @@ function setupAyIsaret(KAYNAK,SNAP){
     const {error}=await sb.from("satis_ay_islendi").upsert({kaynak:KAYNAK,ay,mail_gonderildi:false,updated_at:new Date().toISOString()},{onConflict:"kaynak"});
     if(error){ btn.disabled=false; m.className="msg err"; m.textContent="Hata: "+error.message; return; }
     if(SNAP){ try{ await sb.rpc(SNAP); }catch(e){} }
+    /* ICMAL-YAZ: Icmal panosunun satis sutunlari (Yurt Disi = YD1+YD2, Toplam = Yurt Ici+YD) */
+    try{ await sb.rpc("icmal_satis_yaz",{p_kaynak:KAYNAK,p_donem:donem}); }catch(e){}
     let note="";
     try{ const r=await sb.functions.invoke("satis-ay-mail",{body:{kaynak:KAYNAK,ay}});
       if(r.error){ note=" (mail gönderilemedi: "+(r.error.message||r.error)+")"; }
