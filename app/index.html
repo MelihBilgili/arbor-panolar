@@ -959,13 +959,26 @@ async function loadRef(){
   ]);
   const err=k.error||p.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
-  let kr=""; (k.data||[]).forEach(r=>{ kr+=`<tr><td class="kod">${esc(r.kod)}</td><td>${esc(r.tam_ad)}</td><td>${esc(r.bolum)||''}</td><td>${esc(r.email)||'<span style=color:#b7c6d6>—</span>'}</td><td>${esc(r.rol)||''}</td></tr>`; });
+  const kc=(kod,f,v)=>`<td><span class="ed kicell" data-kod="${esc(kod)}" data-f="${f}">${v?esc(v):'—'}</span></td>`;
+  let kr=""; (k.data||[]).forEach(r=>{ kr+=`<tr data-kod="${esc(r.kod)}"><td class="kod"><span class="ed kicell" data-kod="${esc(r.kod)}" data-f="kod">${esc(r.kod)}</span></td>`+kc(r.kod,"tam_ad",r.tam_ad)+kc(r.kod,"bolum",r.bolum)+kc(r.kod,"email",r.email)+kc(r.kod,"rol",r.rol)+`<td><button class="kdel" data-kod="${esc(r.kod)}" title="Sil">✕</button></td></tr>`; });
   let pr=""; (p.data||[]).forEach(r=>{ pr+=`<tr><td class="kod">${esc(r.anahtar)}</td><td>${esc(typeof r.deger==='string'?r.deger:JSON.stringify(r.deger))}</td><td>${esc(r.aciklama)}</td></tr>`; });
   const st=await tblStamp("kisiler");
   view.innerHTML=`${stampHTML(st)}
     <div class="flow"><b>Güncel işleyiş:</b> <span class="step">Melih ERP'yi manuel çeker</span><span class="arr">→</span><span class="step">Arbor\\ERP\\&lt;YYMMDD&gt;\\ (geçici giriş kutusu)</span><span class="arr">→</span><span class="step">worker · upsert</span><span class="arr">→</span><span class="step">Postgres snapshot</span><span class="arr">→</span><span class="step">bu app</span></div>
+    <style>
+     .kitbl{border-collapse:collapse;width:auto;font-size:12px}
+     .kitbl th,.kitbl td{border-bottom:1px solid #eef1f5;padding:2px 7px;text-align:left;white-space:nowrap;vertical-align:middle}
+     .kitbl thead th{background:#16324f;color:#fff;font-weight:600}
+     .kitbl .kaddrow td{background:#f6f9fc}
+     .kitbl .kbtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:3px 10px;font-weight:600;cursor:pointer;font-size:11.5px}
+     .kitbl .kbtn:hover{background:#22456b}
+     .kitbl .kdel{border:1px solid #e3b3b3;background:#fff;color:#b40000;border-radius:5px;cursor:pointer;padding:1px 8px}
+     .kitbl .kdel:hover{background:#b40000;color:#fff}
+     .kitbl .ed{display:inline-block;min-width:40px}
+    </style>
     <h3 class="sec">Kişiler (${(k.data||[]).length})</h3>
-    <div class="scroll"><table><thead><tr><th>Kod</th><th>Ad Soyad</th><th>Bölüm</th><th>E-posta</th><th>Rol</th></tr></thead><tbody>${kr}</tbody></table></div>
+    <div class="hint">Hücreye tıklayıp düzenleyin (Enter kaydeder). Alt satırdan yeni kişi ekleyin; ✕ ile silin. Yazma yetkisi yalnız yetkili (int@arbor.com.tr) oturumundadır.</div>
+    <div class="scroll"><table class="kitbl"><thead><tr><th>Kod</th><th>Ad Soyad</th><th>Bölüm</th><th>E-posta</th><th>Rol</th><th></th></tr></thead><tbody>${kr}<tr class="kaddrow"><td><input id="ki-kod" class="cell" placeholder="Kod"></td><td><input id="ki-ad" class="cell" placeholder="Ad Soyad"></td><td><input id="ki-bolum" class="cell" placeholder="Bölüm"></td><td><input id="ki-email" class="cell" placeholder="E-posta"></td><td><input id="ki-rol" class="cell" placeholder="Rol"></td><td><button class="kbtn" id="ki-add">Ekle</button></td></tr></tbody></table></div>
     <div class="hint">Ödemeler (referans — süreç yok) bloğu <b>Mali → Maaş-Prim</b> panosuna taşındı.</div>
     <h3 class="sec">Parametreler</h3>
     <div class="scroll"><table><thead><tr><th>Anahtar</th><th>Değer</th><th>Açıklama</th></tr></thead><tbody>${pr}</tbody></table></div>
@@ -1028,6 +1041,46 @@ async function loadRef(){
       <p>12 formun tamamı tek listede: sorumlu, güncelleme sıklığı, son güncelleme ve <b>geciken gün</b>. Gecikme sıklığa göre hesaplanır; hatırlatma maili sıradaki numarasıyla <b>elle</b> gönderilir, ✓ ile sayaç sıfırlanır. Otomatik gönderim/zamanlama yoktur.</p>
     </div>
 `;
+  view.querySelectorAll(".kicell").forEach(el=>el.onclick=()=>startKisiEdit(el));
+  view.querySelectorAll(".kdel").forEach(b=>b.onclick=()=>kisiDel(b.dataset.kod));
+  const _ka=document.getElementById("ki-add"); if(_ka) _ka.onclick=kisiAdd;
+}
+
+/* ---------- KİŞİLER satır düzeni (Referans panosu) — yazma yalnız authenticated int@arbor.com.tr; anon RLS ile kapalı ---------- */
+function startKisiEdit(el){
+  if(el.querySelector("input")) return;
+  const kod=el.dataset.kod, f=el.dataset.f;
+  const cur=el.textContent==="—"?"":el.textContent;
+  const inp=document.createElement("input"); inp.className="cell"; inp.value=cur;
+  el.textContent=""; el.appendChild(inp); inp.focus(); inp.select();
+  const commit=async()=>{
+    const val=inp.value.trim();
+    if((f==="kod"||f==="tam_ad") && !val){ el.textContent=cur||"—"; return; }
+    if(val===cur){ el.textContent=cur||"—"; return; }
+    const patch={}; patch[f]=(f==="kod"||f==="tam_ad")?val:(val||null); patch.updated_at=new Date().toISOString();
+    const {error}=await sb.from("kisiler").update(patch).eq("kod",kod);
+    if(error){ el.textContent="hata"; alert(error.message); return; }
+    if(f==="kod"){ const tr=el.closest("tr"); if(tr){ tr.dataset.kod=val; tr.querySelectorAll(".kicell").forEach(x=>x.dataset.kod=val); const db=tr.querySelector(".kdel"); if(db) db.dataset.kod=val; } }
+    el.textContent=val||"—"; el.classList.add("saveflash"); setTimeout(()=>el.classList.remove("saveflash"),400);
+  };
+  inp.onblur=commit;
+  inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();inp.blur();} if(e.key==="Escape"){el.textContent=cur||"—";} };
+}
+async function kisiAdd(){
+  const g=id=>document.getElementById(id).value.trim();
+  const kod=g("ki-kod"), tam_ad=g("ki-ad");
+  if(!kod){ alert("Kod gir."); return; }
+  if(!tam_ad){ alert("Ad Soyad gir."); return; }
+  const rec={kod,tam_ad,bolum:g("ki-bolum")||null,email:g("ki-email")||null,rol:g("ki-rol")||null,updated_at:new Date().toISOString()};
+  const {error}=await sb.from("kisiler").insert(rec);
+  if(error){ alert(error.message); return; }
+  loadRef();
+}
+async function kisiDel(kod){
+  if(!confirm("Bu kişi silinsin mi? ("+kod+")")) return;
+  const {error}=await sb.from("kisiler").delete().eq("kod",kod);
+  if(error){ alert(error.message); return; }
+  loadRef();
 }
 
 /* ---------- PROSEDÜRLER (firma içi kurallar — pinli statik kayıt, ERP Genel Duyurular'dan) ---------- */
