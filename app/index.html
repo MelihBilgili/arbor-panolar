@@ -1035,7 +1035,7 @@ async function loadRef(){
       <p class="muted">ÖB'nin "Takipteki İşler" bloğu ayrıca ÖB Faaliyet panosuna yansır; Haftalık Güncelleme düğmesi <code>ob-degisim-ozet</code>'i çağırır, Tamamlandı/İptal olanlar silinir.</p>
     </div>
     <div class="flow"><b>14. Mali Panolar ve Yayın Damgası</b><span class="tag">form → pano</span>
-      <p>Mali sekmesindeki panolar ilgili formdan beslenir: <b>Ahşap</b> (Umut Aktaş), <b>SEL-ARB</b> (Yurt Dışı Alacak · Özgül Bedestenci + OE Faaliyet · Onur Ekinci) ve altındaki <b>Dépenses</b> (ÖB formundaki tedarikçi gider satırları), <b>MK Faaliyet</b> (+Şantiye), <b>Maaş-Prim</b>, <b>Fiyatlandırma</b>. Her panonun "Son güncelleme" damgası, formdaki güncelleme düğmesine <b>son basılma</b> anıdır (<code>pano_yayin</code> / <code>depenses_yayin</code> / <code>fiyat_yayin</code>) — ERP damgası değildir.</p>
+      <p>Mali sekmesindeki panolar ilgili formdan beslenir: <b>Ahşap</b> (Umut Aktaş), <b>SEL-ARB</b> (alacaklar MK Blok 1'de, Selectron ödeme/kesilen faturalar ÖB formunda girilir; ÖB "Haftalık Güncelle" düğmesi SEL-ARB panosuna kapatır + OE Faaliyet · Onur Ekinci) ve altındaki <b>Dépenses</b> (ÖB formundaki tedarikçi gider satırları), <b>MK Faaliyet</b> (+Şantiye), <b>Maaş-Prim</b>, <b>Fiyatlandırma</b>. Her panonun "Son güncelleme" damgası, formdaki güncelleme düğmesine <b>son basılma</b> anıdır (<code>pano_yayin</code> / <code>depenses_yayin</code> / <code>fiyat_yayin</code>) — ERP damgası değildir.</p>
     </div>
     <div class="flow"><b>15. Form Takibi</b><span class="tag">Formlar sekmesi</span><span class="tag">elle</span>
       <p>12 formun tamamı tek listede: sorumlu, güncelleme sıklığı, son güncelleme ve <b>geciken gün</b>. Gecikme sıklığa göre hesaplanır; hatırlatma maili sıradaki numarasıyla <b>elle</b> gönderilir, ✓ ile sayaç sıfırlanır. Otomatik gönderim/zamanlama yoktur.</p>
@@ -1152,11 +1152,10 @@ async function loadFormlar(){
     {ad:"Yurt Dışı 1 Satış",   who:"Mustafa Nas",       url:"fy/",          sik:"Her ayın ilk iş günü"},
     {ad:"Yurt Dışı 2 Satış",   who:"Melike Başaran",    url:"fy2/",         sik:"Her ayın ilk iş günü"},
     {ad:"Ahşap Maliyet",       who:"Umut Aktaş",        url:"ahsap/",       sik:"Her ayın ilk iş günü"},
-    {ad:"Yurt Dışı Alacak",    who:"Özgül Bedestenci",  url:"arbolacak/",   sik:"Her ayın ilk iş günü"},
     {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
-  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap","arbolacak/":"yd_alacak"};
+  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap"};
   /* Geciken = SON TARİHE göre hesaplanır (eskiden "son güncelleme + 7/30 gün" idi → hep 0 çıkıyordu):
      "Her Salı" → bu haftanın Salı'sı · "Her ayın ilk iş günü" → bu ayın ilk iş günü · "Süresiz" → yok.
      Son güncelleme = form_takip.son_guncelleme (elle ✓) ile formun CANLI izinin (pano_yayin /
