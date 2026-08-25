@@ -1851,7 +1851,8 @@ function loadOzel(){
   const isAdmin=state.allowed===null;
   const htmlTabs=OZEL_HTML.filter(t=> isAdmin || state.allowed.includes(t[0]));
   const showG = isAdmin || state.allowed.includes('gmenkul');
-  const tabs=htmlTabs.concat(showG?[["gmenkul","🏢 G.menkul"]]:[]);
+  const showS = isAdmin || state.allowed.includes('ozel_sozluk');
+  const tabs=htmlTabs.concat(showG?[["gmenkul","🏢 G.menkul"]]:[]).concat(showS?[["ozel_sozluk","📖 Sözlük"]]:[]);
   if(!tabs.length){ view.innerHTML=`<div class="load">Bu hesapta özel bölüm yetkisi yok.</div>`; return; }
   if(!state.ozelSub || !tabs.some(t=>t[0]===state.ozelSub)) state.ozelSub=tabs[0][0];
   const cur=document.getElementById("ozf");
@@ -1860,6 +1861,7 @@ function loadOzel(){
   view.innerHTML=`<div class="malibar">${bar}</div><div id="ozel-body"><div class="load">Yükleniyor…</div></div>`;
   view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.ozelSub=btn.dataset.o; loadOzel(); });
   if(state.ozelSub==="gmenkul"){ loadPanoBolum("gmenkul","ozel-body"); return; }
+  if(state.ozelSub==="ozel_sozluk"){ loadSozluk("ozel-body"); return; }
   loadOzelHtml(state.ozelSub,"ozel-body");
 }
 /* pano_ozel_html satırını iframe srcdoc olarak tam sadakatle render et (CSS+script izole çalışır) */
@@ -1894,6 +1896,28 @@ async function phdPrepare(){
       if(del.length) await sb.from('phd_notes').delete().in('id',del);
     }catch(e){ console.error('phdSave',e); alert('PhD kaydetme hatası: '+(e.message||e)); }
   };
+}
+
+/* ---------- SÖZLÜK (Özel grubu) — otomatik büyüyen sözlük; kaynak Supabase 'sozluk' (schiller→phd_notes deseninin eşleniği). Bölüm-RLS; anon 401. ---------- */
+async function loadSozluk(tgt){
+  const body=document.getElementById(tgt);
+  const {data,error}=await sb.from("sozluk").select("*").order("kelime",{ascending:true});
+  if(error){ body.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const rows=data||[];
+  if(!rows.length){ body.innerHTML=`<div class="load">Henüz sözlük girişi yok — <b>vocabulary</b> projesi ekledikçe otomatik dolacak.</div>`; return; }
+  const st=await tblStamp("sozluk");
+  let h=`<style>
+    .szt{border-collapse:collapse;width:100%;font-size:13px}
+    .szt th{background:#16324f;color:#fff;font-weight:600;padding:5px 8px;text-align:left}
+    .szt td{border-bottom:1px solid #eef1f5;padding:4px 8px;vertical-align:top;line-height:1.45}
+    .szt td.szk{font-weight:700;color:#16324f;white-space:nowrap}
+  </style>`;
+  h+=stampHTML(st);
+  h+=`<div class="hint">Otomatik büyüyen sözlük — kaynak Supabase <code>sozluk</code>; <b>vocabulary</b> projesi girişleri ekledikçe büyür. ${rows.length} kelime.</div>`;
+  h+='<div class="scroll"><table class="szt"><thead><tr><th>Kelime</th><th>Anlam</th></tr></thead><tbody>';
+  rows.forEach(r=>{ h+='<tr><td class="szk">'+esc(r.kelime)+'</td><td>'+esc(r.anlam||"")+'</td></tr>'; });
+  h+='</tbody></table></div>';
+  body.innerHTML=h;
 }
 
 /* ---------- BOOT (Supabase Auth oturumu — e-posta+parola) ---------- */
