@@ -232,9 +232,30 @@ async function delIsler(id){
   if(error){ msg(error.message,false); return; }
   IROWS=IROWS.filter(x=>x.id!==id); renderIsler();
 }
+/* SEL-ARB boş-alan guard (arbolacak formundan taşındı) — üç tablo doğrudan sorgulanır; Blok 1 MK'da olsa da tablo aynı */
+const SELARB_REQ=[
+  ["arbor_alacak_kalem",["yd_birim","firma","proje","tutar","para_birimi"],"Güncel Alacaklar (MK Blok 1)"],
+  ["sel_odeme",["yd_birim","odeme_tarihi","gonderen_banka","tutar","para_birimi"],"Selectron'a Ödemeler (ÖB Blok 2)"],
+  ["arbor_kesilen_fatura",["yd_birim","ft_no","tarih","projeler","tutar","para_birimi"],"Kesilen Faturalar (ÖB Blok 3)"]
+];
+async function selArbBosVar(){
+  const eksik=[];
+  for(const [tbl,cols,ad] of SELARB_REQ){
+    const {data,error}=await sb.from(tbl).select(cols.join(","));
+    if(error){ eksik.push(ad+" (okunamadı)"); continue; }
+    if((data||[]).some(row=>cols.some(c=>row[c]===null||String(row[c]).trim()===""))) eksik.push(ad);
+  }
+  return eksik;
+}
 async function haftalikGuncelle(){
   const sil=IROWS.filter(r=>r.durum==="Tamamlandı"||r.durum==="İptal oldu");
-  if(!confirm("Haftalık Güncelleme:\n\n• Aktif kalan işlerin önceki→son değişim özeti üretilip panoya yazılacak, sonra son değer 'önceki'ye kaydırılacak (ilk basışta baseline; özet boş).\n• Dépenses giderleri de panoya aktarılır (Son güncelleme bugüne çekilir).\n• Durumu Tamamlandı/İptal oldu olan "+sil.length+" iş TAMAMEN SİLİNECEK (geri alınamaz).\n\nDevam?")) return;
+  /* SEL-ARB aylık kapatma artık bu düğmeyle tetikleniyor (arbolacak formu kaldırıldı). Guard eksikse yalnız kapatma atlanır; haftalık iş yürür. */
+  const eksik=await selArbBosVar();
+  const selArbOk=eksik.length===0;
+  const selLine = selArbOk
+    ? "\n• SEL-ARB aylık kapatma: güncel alacaklar SEL-ARB panosuna yazılacak; bu dönem ödemeler + kesilen faturalar toplama eklenecek; int@arbor'a mail."
+    : "\n• SEL-ARB kapatma ATLANACAK — eksik alan var: "+eksik.join(", ")+" (ilgili blokları tamamlayın).";
+  if(!confirm("Haftalık Güncelleme:\n\n• Aktif kalan işlerin önceki→son değişim özeti üretilip panoya yazılacak, sonra son değer 'önceki'ye kaydırılacak (ilk basışta baseline; özet boş).\n• Dépenses giderleri de panoya aktarılır (Son güncelleme bugüne çekilir).\n• Durumu Tamamlandı/İptal oldu olan "+sil.length+" iş TAMAMEN SİLİNECEK (geri alınamaz)."+selLine+"\n\nDevam?")) return;
   const btn=document.getElementById("iWeek"); btn.disabled=true; msg("Değişim özetleri üretiliyor…",true);
   const {data,error}=await sb.functions.invoke("ob-degisim-ozet",{body:{}});
   if(error||!(data&&data.ok)){ btn.disabled=false; msg("Özet üretilemedi: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"),false); return; }
@@ -247,8 +268,17 @@ async function haftalikGuncelle(){
   try{ await sb.from("pano_yayin").upsert({anahtar:"ob_rapor",yayin_at:_now,updated_at:_now},{onConflict:"anahtar"}); }catch(e){}
   /* Dépenses de ayni düğmeyle panoya aktarilir (eski ayri "Panoya Aktar" düğmesi kaldirildi) */
   try{ await sb.from("depenses_yayin").update({yayin_at:_now,updated_at:_now}).eq("id",1); }catch(e){}
+  /* SEL-ARB kapatma: üç tabloyu (alacak snapshot + ödeme + fatura) edge fonksiyonu atomik işler */
+  let selNote="";
+  if(selArbOk){
+    try{ const {data:sd,error:se}=await sb.functions.invoke("sel-arb-ay-kapat",{body:{kaynak:"alacak"}});
+      if(!se && sd && sd.ok){ try{ await sb.from("pano_yayin").upsert({anahtar:"sel_arb",yayin_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:"anahtar"}); }catch(e){}
+        selNote=" · SEL-ARB: "+(sd.note||("aktarıldı "+sd.tarih)); }
+      else selNote=" · SEL-ARB HATA: "+((se&&se.message)||(sd&&sd.error)||"bilinmiyor");
+    }catch(e){ selNote=" · SEL-ARB hata: "+e; }
+  } else { selNote=" · SEL-ARB kapatma atlandı (eksik alan)"; }
   btn.disabled=false;
-  msg((data.note||"Özet güncellendi")+(sil.length?` · ${sil.length} iş silindi`:"")+" · Dépenses panoya aktarıldı",true); loadIsler(); loadDep();
+  msg((data.note||"Özet güncellendi")+(sil.length?` · ${sil.length} iş silindi`:"")+" · Dépenses panoya aktarıldı"+selNote,true); loadIsler(); loadDep();
 }
 document.getElementById("iAdd").onclick=addIsler;
 document.getElementById("iWeek").onclick=haftalikGuncelle;
