@@ -1381,10 +1381,10 @@ async function loadObrapor(tgt){
   const pyAt=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
   const cx=(v,cls)=>`<td class="${cls||""}"><div class="cx">${esc(v==null?"":v)}</div></td>`;
   const kar=obWeeksOpen?"▾":"▸";
-  let cg=`<col class="k35"><col class="k20"><col class="k100">`
+  let cg=`<col class="k35"><col class="k20"><col class="k20"><col class="k100">`
     + (obWeeksOpen?haftalar.map(()=>`<col class="k40">`).join(""):"")
     + `<col class="k60"><col class="k60">`;
-  let hd=`<th>Konu</th><th>Durum</th><th class="obwh" id="ob-wk" title="Geçmiş hafta notlarını aç/kapa">Son ÖB Notları <span class="ahcar">${kar}</span></th>`
+  let hd=`<th>Konu</th><th>Durum</th><th>Öncelik</th><th class="obwh" id="ob-wk" title="Geçmiş hafta notlarını aç/kapa">Son ÖB Notları <span class="ahcar">${kar}</span></th>`
     + (obWeeksOpen?haftalar.map(h=>`<th class="thsm" title="${dgun(h)}"><span class="thw">${isoWk(h)}. Hafta ÖB Notu</span></th>`).join(""):"")
     + `<th>Son Değişim Özeti</th><th>Toplam Değişim Özeti</th>`;
   let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3>`
@@ -1392,11 +1392,11 @@ async function loadObrapor(tgt){
     +`<colgroup>${cg}</colgroup>`
     +`<thead><tr>${hd}</tr></thead><tbody>`;
   iRows.forEach(r=>{
-    ib+=`<tr>${cx(r.konu,"sb")}${cx(r.durum)}${cx(r.ob_notlari)}`
+    ib+=`<tr>${cx(r.konu,"sb")}${cx(r.durum)}${cx(r.oncelik)}${cx(r.ob_notlari)}`
       + (obWeeksOpen?haftalar.map(h=>cx((notByWeek[h]||{})[String(r.id)])).join(""):"")
       + `${cx(r.degisim_ozet)}${cx(r.toplam_ozet)}</tr>`;
   });
-  if(!iRows.length) ib+=`<tr><td colspan="5" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
+  if(!iRows.length) ib+=`<tr><td colspan="6" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
   ib+=`</tbody></table></div>`;
   /* Panonun altında serbest metin kutusu → ÖB'ye anında mail (pano-mesaj-mail, alıcı form_takip'ten) */
   ib+=`<div class="obmail">
