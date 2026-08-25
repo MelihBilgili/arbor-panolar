@@ -94,6 +94,46 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <textarea id="s_durum" class="dsel" style="width:100%;min-height:60px" placeholder="Bu tarihteki durum / gelişme…"></textarea>
     <div id="s_akis"></div>
   </div>
+
+  <!-- === Yurt Dışı Alacak — Blok 2 & 3 (sel_odeme / arbor_kesilen_fatura) — SEL-ARB'a "Aylık Güncelle" (Yurt Dışı Alacak formu) ile aktarılır === -->
+  <div id="sa23wrap">
+   <style>
+    #sa23wrap .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:12px 14px;margin-top:16px}
+    #sa23wrap .chd{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+    #sa23wrap .chd h2{font-size:14px;margin:0;color:#16324f}
+    #sa23wrap .cnt{font-weight:400;color:#7a8896;font-size:12px}
+    #sa23wrap .add{background:#0a6b57;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer;font-size:12.5px}
+    #sa23wrap .scroll{overflow-x:auto}
+    #sa23wrap table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:0;display:table}
+    #sa23wrap th{background:#16324f;color:#fff;font-weight:600;padding:5px 7px;text-align:left;font-size:10.5px;white-space:nowrap;border:0}
+    #sa23wrap td{border-bottom:1px solid #eef1f5;padding:3px 5px;vertical-align:middle}
+    #sa23wrap td input,#sa23wrap td select{font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8;width:100%}
+    #sa23wrap td input.num{text-align:right}
+    #sa23wrap td.x{width:26px;text-align:center}
+    #sa23wrap .del{border:0;background:transparent;color:#c62828;font-weight:800;font-size:15px;cursor:pointer;line-height:1;padding:0 4px}
+    #sa23wrap .del:hover{color:#8e0000}
+    #sa23wrap .msg{font-size:12.5px;min-height:17px;margin-top:6px}#sa23wrap .msg.ok{color:#0a6b3f;font-weight:600}#sa23wrap .msg.err{color:#b40000;font-weight:600}
+   </style>
+   <div class="card">
+    <div class="chd"><h2>Yurt Dışı Alacak · Yurt Dışı Birimlerden Selectron’a Yapılan Ödemeler <span class="cnt" id="c2"></span></h2>
+      <button class="add" id="a2">＋ Yeni Ödeme Ekle</button></div>
+    <div class="hint" style="margin:0 2px 8px">SEL-ARB panosuna <b>Yurt Dışı Alacak</b> formundaki “Aylık Güncelle” ile aktarılır (veri aynı tabloda: sel_odeme).</div>
+    <div class="scroll"><table><thead><tr>
+      <th style="width:16%">Yurt Dışı Birim</th><th style="width:18%">Ödeme Tarihi</th><th style="width:24%">Gönderen Banka</th><th style="width:16%">Tutar</th><th style="width:14%">Para Birimi</th><th class="x"></th>
+    </tr></thead><tbody id="t2"><tr><td colspan="6">Yükleniyor…</td></tr></tbody></table></div>
+    <div class="msg" id="m2"></div>
+   </div>
+
+   <div class="card">
+    <div class="chd"><h2>Yurt Dışı Alacak · Arbor SAS → Selectron Kesilen Faturalar <span class="cnt" id="c3"></span></h2>
+      <button class="add" id="a3">＋ Yeni Fatura Ekle</button></div>
+    <div class="hint" style="margin:0 2px 8px">SEL-ARB panosuna <b>Yurt Dışı Alacak</b> formundaki “Aylık Güncelle” ile aktarılır (veri aynı tabloda: arbor_kesilen_fatura).</div>
+    <div class="scroll"><table><thead><tr>
+      <th style="width:16%">Yurt Dışı Birim</th><th style="width:13%">Fatura No</th><th style="width:13%">Tarih</th><th style="width:24%">Proje(ler)</th><th style="width:14%">Tutar</th><th style="width:12%">Para Birimi</th><th class="x"></th>
+    </tr></thead><tbody id="t3"><tr><td colspan="7">Yükleniyor…</td></tr></tbody></table></div>
+    <div class="msg" id="m3"></div>
+   </div>
+  </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -377,6 +417,88 @@ $$("s_btn").onclick=async()=>{
 loadIsler();
 loadDep();
 sLoadListe(); loadSelArbListe(); sLoadAkis();
+
+/* ===== Yurt Dışı Alacak — Blok 2 (sel_odeme) & Blok 3 (arbor_kesilen_fatura) — Yurt Dışı Alacak formundan taşındı; veri aynı tablolarda, SEL-ARB'a Aylık Güncelle ile aktarılır ===== */
+(function(){
+  const $=id=>document.getElementById(id);
+  const escq=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const num=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null; if(t.indexOf(",")>-1&&t.indexOf(".")>-1){t=t.replace(/\./g,"").replace(",",".");}else{t=t.replace(",",".");} const v=parseFloat(t); return isNaN(v)?null:v; };
+  function bmsg(el,t,ok){ const m=$(el); if(!m) return; m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
+  const PB=["EUR","TL","GBP","USD"];
+  const YDB=["Arbor SAS","Arbor Windows Ltd."];
+  const opts=(list,cur)=>['<option value=""></option>'].concat(list.map(o=>'<option'+(String(cur||"")===o?" selected":"")+'>'+escq(o)+'</option>')).join("");
+  const optsYDB=cur=>YDB.map(o=>'<option'+((String(cur||"")||YDB[0])===o?" selected":"")+'>'+escq(o)+'</option>').join("");
+  let _R=null;
+  async function rates(){ if(_R) return _R; let r={EUR:1},tarih=null;
+    try{ const {data}=await sb.functions.invoke("arb-kur",{body:{}}); if(data&&data.ok&&data.rates){ r=Object.assign(r,data.rates); tarih=data.tarih||null; } }catch(e){}
+    if(PB.some(p=>p!=="EUR"&&!(r[p]>0))){ try{ const {data}=await sb.functions.invoke("ahsap-kur",{body:{}}); if(data&&data.ok&&data.rates){ PB.forEach(p=>{ if(!(r[p]>0)&&data.rates[p]>0) r[p]=data.rates[p]; }); if(!tarih) tarih=data.tarih||null; } }catch(e){} }
+    _R={rates:r,tarih:tarih}; return _R; }
+  async function eurOf(tutar,pb){ if(tutar==null) return {tutar_eur:null,eur_kur:null,kur_tarihi:null};
+    if(!pb||pb==="EUR") return {tutar_eur:tutar,eur_kur:1,kur_tarihi:null};
+    const k=await rates(); if(!(k.rates[pb]>0)) throw new Error("kur yok: "+pb);
+    return {tutar_eur:tutar/k.rates[pb],eur_kur:k.rates[pb],kur_tarihi:k.tarih}; }
+  function bind(tb,tbl,mid,reload){
+    document.querySelectorAll("#"+tb+" tr[data-id]").forEach(tr=>{
+      const id=tr.getAttribute("data-id");
+      tr.querySelectorAll("[data-f]").forEach(el=>{
+        el.onchange=async()=>{
+          const f=el.getAttribute("data-f"); let body={};
+          if(f==="tutar"){ const t=num(el.value); const pbEl=tr.querySelector('[data-f="para_birimi"]');
+            try{ body=Object.assign({tutar:t},await eurOf(t,pbEl?pbEl.value:"EUR")); }catch(e){ bmsg(mid,"Kur alınamadı — tutar €'ya çevrilemedi.",false); body={tutar:t}; }
+          }else if(f==="para_birimi"){ const tEl=tr.querySelector('[data-f="tutar"]'); const t=tEl?num(tEl.value):null;
+            try{ body=Object.assign({para_birimi:el.value},await eurOf(t,el.value)); }catch(e){ bmsg(mid,"Kur alınamadı.",false); body={para_birimi:el.value}; }
+          }else{ body[f]=(el.value===""?null:el.value); }
+          const {error}=await sb.from(tbl).update(body).eq("id",id);
+          if(error) bmsg(mid,"Hata: "+error.message,false); else bmsg(mid,"Kaydedildi.",true);
+        };
+      });
+      const b=tr.querySelector(".del");
+      if(b) b.onclick=async()=>{ if(!confirm("Bu satır silinsin mi?")) return;
+        const {error}=await sb.from(tbl).delete().eq("id",id);
+        if(error) bmsg(mid,"Hata: "+error.message,false); else reload(); };
+    });
+  }
+  let R2=[];
+  async function load2(){
+    const {data,error}=await sb.from("sel_odeme").select("*").order("id",{ascending:false});
+    if(error){ $("t2").innerHTML='<tr><td colspan="6">Hata: '+escq(error.message)+'</td></tr>'; return; }
+    R2=data||[]; $("c2").textContent="("+R2.length+")";
+    $("t2").innerHTML=R2.length?R2.map(r=>'<tr data-id="'+r.id+'">'
+      +'<td><select data-f="yd_birim">'+optsYDB(r.yd_birim)+'</select></td>'
+      +'<td><input type="date" data-f="odeme_tarihi" value="'+escq(r.odeme_tarihi||"")+'"></td>'
+      +'<td><select data-f="gonderen_banka">'+opts(["BNP","CA"],r.gonderen_banka)+'</select></td>'
+      +'<td><input class="num" data-f="tutar" value="'+escq(r.tutar==null?"":r.tutar)+'"></td>'
+      +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
+      +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
+      :'<tr><td colspan="6">Ödeme yok.</td></tr>';
+    bind("t2","sel_odeme","m2",load2);
+  }
+  $("a2").onclick=async()=>{
+    const {error}=await sb.from("sel_odeme").insert({para_birimi:"EUR",yd_birim:YDB[0]});
+    if(error) bmsg("m2","Hata: "+error.message,false); else load2();
+  };
+  let R3=[];
+  async function load3(){
+    const {data,error}=await sb.from("arbor_kesilen_fatura").select("*").order("id",{ascending:false});
+    if(error){ $("t3").innerHTML='<tr><td colspan="7">Hata: '+escq(error.message)+'</td></tr>'; return; }
+    R3=data||[]; $("c3").textContent="("+R3.length+")";
+    $("t3").innerHTML=R3.length?R3.map(r=>'<tr data-id="'+r.id+'">'
+      +'<td><select data-f="yd_birim">'+opts(YDB,r.yd_birim)+'</select></td>'
+      +'<td><input data-f="ft_no" value="'+escq(r.ft_no||"")+'"></td>'
+      +'<td><input type="date" data-f="tarih" value="'+escq(r.tarih||"")+'"></td>'
+      +'<td><input data-f="projeler" value="'+escq(r.projeler||"")+'"></td>'
+      +'<td><input class="num" data-f="tutar" value="'+escq(r.tutar==null?"":r.tutar)+'"></td>'
+      +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
+      +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
+      :'<tr><td colspan="7">Fatura yok.</td></tr>';
+    bind("t3","arbor_kesilen_fatura","m3",load3);
+  }
+  $("a3").onclick=async()=>{
+    const {error}=await sb.from("arbor_kesilen_fatura").insert({para_birimi:"EUR",yd_birim:"Arbor SAS"});
+    if(error) bmsg("m3","Hata: "+error.message,false); else load3();
+  };
+  load2(); load3();
+})();
 </script>
 
 <!-- ARBOR-DRAGSCROLL -->
