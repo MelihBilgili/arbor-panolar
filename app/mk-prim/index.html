@@ -357,7 +357,6 @@ document.getElementById("s_btn").onclick=async()=>{
 sLoadListe(); sLoadAkis();
 
 BLOCKS.forEach(b=>DATA[b.tur].push(blankRow(b)));
-render();
 
 /* ===== Yurt Dışı Alacak — Blok 1 (arbor_alacak_kalem) — Yurt Dışı Alacak formundan taşındı; veri aynı tabloda, SEL-ARB'a Aylık Güncelle ile aktarılır ===== */
 (function(){
@@ -422,6 +421,8 @@ render();
   }
   load1();
 })();
+
+render();
 </script>
 
 <!-- ARBOR-DRAGSCROLL -->
