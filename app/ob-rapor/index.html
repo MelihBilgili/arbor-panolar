@@ -150,7 +150,7 @@ function msg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(
 /* ===== Takipteki İşler (ob_isler) — anlık kayıt + haftalık arşiv ===== */
 const OBI_DURUM=["Henüz çalışılmadı","İlerliyor","Tamamlandı","İptal oldu"];
 /* Öncelik: "-" = öncelik söz konusu değil (varsayılan); tasarım işlerinde 1-3 seçilir */
-const OBI_ONCELIK=["-","1","2","3"];
+const OBI_ONCELIK=["-","1","2","3","Rutin"];
 let IROWS=[];
 async function loadIsler(){
   const {data,error}=await sb.from("ob_isler").select("*").order("arsiv").order("id");
