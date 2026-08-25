@@ -1368,13 +1368,22 @@ async function loadObrapor(tgt){
   /* Haftalık geçmiş (ob_isler_log) — her HAFTALIK GÜNCELLEME'de o haftanın notu yazılır */
   const lg=await sb.from("ob_isler_log").select("is_id,hafta,ob_notlari").order("hafta",{ascending:false});
   const lRows=(lg&&!lg.error)?(lg.data||[]):[];
-  const notByWeek={};                                   /* notByWeek[hafta][is_id] = not */
-  lRows.forEach(r=>{ (notByWeek[r.hafta]=notByWeek[r.hafta]||{})[String(r.is_id)]=r.ob_notlari; });
-  /* En yeni hafta = "Son ÖB Notları" sütunu; gizli sütunlar ondan öncekiler (yeni→eski) */
-  const haftalar=Object.keys(notByWeek).sort().reverse().slice(1);
   const isoWk=d=>{ const t=new Date(d+"T00:00:00Z"); const g=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate()));
     g.setUTCDate(g.getUTCDate()+4-(g.getUTCDay()||7)); const y0=new Date(Date.UTC(g.getUTCFullYear(),0,1));
     return Math.ceil(((g-y0)/86400000+1)/7); };
+  const isoYr=d=>{ const t=new Date(d+"T00:00:00Z"); const g=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate()));
+    g.setUTCDate(g.getUTCDate()+4-(g.getUTCDay()||7)); return g.getUTCFullYear(); };
+  const wkKey=d=> isoYr(d)+"-"+String(isoWk(d)).padStart(2,"0");
+  /* Geçmiş haftalar HAM TARİH yerine ISO HAFTA bazlı gruplanır: aynı ISO haftaya düşen birden çok
+     log tarihi tek "N. Hafta" sütununda birleşir. İş bazında en yeni not alınır (lRows tarih-DESC);
+     yeni not BOŞsa aynı haftanın daha eski DOLU notu korunur (boş, doluyu ezmez). */
+  const weekMap={};                                     /* wkKey -> {maxDate, notes:{is_id:not}} */
+  lRows.forEach(r=>{ const k=wkKey(r.hafta); const w=weekMap[k]||(weekMap[k]={maxDate:r.hafta,notes:{}});
+    if(r.hafta>w.maxDate) w.maxDate=r.hafta; const id=String(r.is_id);
+    if(!(id in w.notes)) w.notes[id]=r.ob_notlari;
+    else if(String(r.ob_notlari||"").trim()!=="" && String(w.notes[id]||"").trim()==="") w.notes[id]=r.ob_notlari; });
+  /* En yeni ISO hafta = "Son ÖB Notları" sütunu; gizli sütunlar ondan öncekiler (yeni→eski) */
+  const haftaKeys=Object.keys(weekMap).sort().reverse().slice(1);
   const dgun=d=>d.slice(8,10)+"."+d.slice(5,7)+"."+d.slice(2,4);
   /* Son güncelleme = ÖB formundaki HAFTALIK GÜNCELLEME düğmesine son basılma (pano_yayin) */
   const py=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","ob_rapor").limit(1);
@@ -1382,10 +1391,10 @@ async function loadObrapor(tgt){
   const cx=(v,cls)=>`<td class="${cls||""}"><div class="cx">${esc(v==null?"":v)}</div></td>`;
   const kar=obWeeksOpen?"▾":"▸";
   let cg=`<col class="k35"><col class="k20"><col class="k20"><col class="k100">`
-    + (obWeeksOpen?haftalar.map(()=>`<col class="k40">`).join(""):"")
+    + (obWeeksOpen?haftaKeys.map(()=>`<col class="k40">`).join(""):"")
     + `<col class="k60"><col class="k60">`;
   let hd=`<th>Konu</th><th>Durum</th><th>Öncelik</th><th class="obwh" id="ob-wk" title="Geçmiş hafta notlarını aç/kapa">Son ÖB Notları <span class="ahcar">${kar}</span></th>`
-    + (obWeeksOpen?haftalar.map(h=>`<th class="thsm" title="${dgun(h)}"><span class="thw">${isoWk(h)}. Hafta ÖB Notu</span></th>`).join(""):"")
+    + (obWeeksOpen?haftaKeys.map(k=>`<th class="thsm" title="${dgun(weekMap[k].maxDate)}"><span class="thw">${isoWk(weekMap[k].maxDate)}. Hafta ÖB Notu</span></th>`).join(""):"")
     + `<th>Son Değişim Özeti</th><th>Toplam Değişim Özeti</th>`;
   let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3>`
     +`<div class="scroll"><table class="obt">`
@@ -1393,7 +1402,7 @@ async function loadObrapor(tgt){
     +`<thead><tr>${hd}</tr></thead><tbody>`;
   iRows.forEach(r=>{
     ib+=`<tr>${cx(r.konu,"sb")}${cx(r.durum)}${cx(r.oncelik)}${cx(r.ob_notlari)}`
-      + (obWeeksOpen?haftalar.map(h=>cx((notByWeek[h]||{})[String(r.id)])).join(""):"")
+      + (obWeeksOpen?haftaKeys.map(k=>cx((weekMap[k].notes||{})[String(r.id)])).join(""):"")
       + `${cx(r.degisim_ozet)}${cx(r.toplam_ozet)}</tr>`;
   });
   if(!iRows.length) ib+=`<tr><td colspan="6" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
