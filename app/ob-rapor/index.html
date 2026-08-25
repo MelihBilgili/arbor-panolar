@@ -273,17 +273,22 @@ async function loadDep(){
   DROWS=data||[];
   renderDep();
 }
+/* Dépenses ay-accordion: cari ay varsayılan açık, geçmiş aylar gizli; başlığa tıkla aç/kapat */
+let DOPEN=null;
 function renderDep(){
   const keys=[...new Set(DROWS.map(r=>r.yil*100+r.ay))].sort((a,b)=>b-a);
+  const _now=new Date(); const CURKEY=String(_now.getFullYear()*100+(_now.getMonth()+1));
+  if(DOPEN===null){ DOPEN=new Set([CURKEY]); }   /* ilk render: yalnız cari ay açık */
   let h='<table class="itbl"><thead><tr><th>Ay</th><th>Tedarikçi</th><th style="text-align:right">Tutar (€)</th><th></th></tr></thead><tbody>';
   keys.forEach(k=>{
-    const yil=Math.floor(k/100), ay=k%100;
+    const yil=Math.floor(k/100), ay=k%100, ks=String(k);
     const rs=DROWS.filter(r=>r.yil===yil&&r.ay===ay);
     const top=rs.reduce((a,r)=>a+(Number(r.tutar)||0),0);
-    h+='<tr class="dtot"><td colspan="2">'+DAY[ay-1]+' '+yil+' <span style="font-weight:400;color:#8a97a4">('+rs.length+' tedarikçi)</span></td>'
+    const acik=DOPEN.has(ks);
+    h+='<tr class="dtot dhead" data-mk="'+ks+'" style="cursor:pointer" title="Ayı aç/kapat"><td colspan="2"><span class="dcaret" style="display:inline-block;width:14px;color:#8a6100">'+(acik?"▾":"▸")+'</span>'+DAY[ay-1]+' '+yil+' <span style="font-weight:400;color:#8a97a4">('+rs.length+' tedarikçi)</span></td>'
       +'<td style="text-align:right">'+dEur(top)+'</td><td></td></tr>';
     rs.forEach(r=>{
-      h+='<tr data-id="'+r.id+'">'
+      h+='<tr data-id="'+r.id+'" data-mk="'+ks+'"'+(acik?'':' style="display:none"')+'>'
         +'<td style="color:#8a97a4;white-space:nowrap">'+DAY[ay-1].slice(0,3)+' '+String(yil).slice(2)+'</td>'
         +'<td><input class="ic" data-f="tedarikci" value="'+esc(r.tedarikci)+'" placeholder="Tedarikçi adı"></td>'
         +'<td style="text-align:right"><input class="ic" data-f="tutar" type="number" step="0.01" value="'+esc(r.tutar)+'" placeholder="0"></td>'
@@ -295,6 +300,13 @@ function renderDep(){
   const list=document.getElementById("dList"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{ el.addEventListener("change",()=>saveDep(+el.closest("tr").dataset.id,el.dataset.f,el.value)); });
   list.querySelectorAll(".ddel").forEach(b=>b.onclick=()=>delDep(+b.closest("tr").dataset.id));
+  list.querySelectorAll("tr.dhead").forEach(hd=>hd.addEventListener("click",e=>{
+    if(e.target.closest("input,button,select")) return;
+    const k=hd.dataset.mk; if(DOPEN.has(k)) DOPEN.delete(k); else DOPEN.add(k);
+    const acik=DOPEN.has(k);
+    list.querySelectorAll('tr[data-mk="'+k+'"][data-id]').forEach(tr=>{ tr.style.display=acik?"":"none"; });
+    const car=hd.querySelector(".dcaret"); if(car) car.textContent=acik?"▾":"▸";
+  }));
 }
 async function saveDep(id,f,v){
   const rec={}; rec[f]= f==="tutar" ? (v===""?0:Number(v)) : v;
@@ -307,6 +319,7 @@ async function saveDep(id,f,v){
 async function addDep(){
   const {data,error}=await sb.from("depenses_kalem").insert({yil:dYil(),ay:dAy(),tedarikci:"",tutar:0}).select();
   if(error){ msg(error.message,false); return; }
+  if(DOPEN) DOPEN.add(String(data[0].yil*100+data[0].ay));   /* eklenen ay açık kalsın */
   DROWS.unshift(data[0]); renderDep();   /* yeni satır kendi ayının en üstünde */
   const tr=document.querySelector('#dList tr[data-id="'+data[0].id+'"]');
   const inp=tr&&tr.querySelector('input[data-f="tedarikci"]'); if(inp){ inp.focus(); tr.scrollIntoView({block:"center"}); }
