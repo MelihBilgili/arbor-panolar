@@ -960,7 +960,7 @@ async function loadRef(){
   const err=k.error||p.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
   const kc=(kod,f,v)=>`<td><span class="ed kicell" data-kod="${esc(kod)}" data-f="${f}">${v?esc(v):'—'}</span></td>`;
-  let kr=""; (k.data||[]).forEach(r=>{ kr+=`<tr data-kod="${esc(r.kod)}"><td class="kod"><span class="ed kicell" data-kod="${esc(r.kod)}" data-f="kod">${esc(r.kod)}</span></td>`+kc(r.kod,"tam_ad",r.tam_ad)+kc(r.kod,"bolum",r.bolum)+kc(r.kod,"email",r.email)+kc(r.kod,"rol",r.rol)+`<td><button class="kdel" data-kod="${esc(r.kod)}" title="Sil">✕</button></td></tr>`; });
+  let kr=""; (k.data||[]).forEach(r=>{ kr+=`<tr data-kod="${esc(r.kod)}"><td class="kod" title="Kod değiştirilemez">${esc(r.kod)}</td>`+kc(r.kod,"tam_ad",r.tam_ad)+kc(r.kod,"bolum",r.bolum)+kc(r.kod,"email",r.email)+kc(r.kod,"rol",r.rol)+`<td><button class="kdel" data-kod="${esc(r.kod)}" title="Sil">✕</button></td></tr>`; });
   let pr=""; (p.data||[]).forEach(r=>{ pr+=`<tr><td class="kod">${esc(r.anahtar)}</td><td>${esc(typeof r.deger==='string'?r.deger:JSON.stringify(r.deger))}</td><td>${esc(r.aciklama)}</td></tr>`; });
   const st=await tblStamp("kisiler");
   view.innerHTML=`${stampHTML(st)}
@@ -977,7 +977,7 @@ async function loadRef(){
      .kitbl .ed{display:inline-block;min-width:40px}
     </style>
     <h3 class="sec">Kişiler (${(k.data||[]).length})</h3>
-    <div class="hint">Hücreye tıklayıp düzenleyin (Enter kaydeder). Alt satırdan yeni kişi ekleyin; ✕ ile silin. Yazma yetkisi yalnız yetkili (int@arbor.com.tr) oturumundadır.</div>
+    <div class="hint">Hücreye tıklayıp düzenleyin (Enter kaydeder). <b>Kod</b> mevcut satırlarda değiştirilemez (yalnız yeni kişide girilir). Alt satırdan yeni kişi ekleyin; ✕ ile silin. Yazma yetkisi yalnız yetkili (int@arbor.com.tr) oturumundadır.</div>
     <div class="scroll"><table class="kitbl"><thead><tr><th>Kod</th><th>Ad Soyad</th><th>Bölüm</th><th>E-posta</th><th>Rol</th><th></th></tr></thead><tbody>${kr}<tr class="kaddrow"><td><input id="ki-kod" class="cell" placeholder="Kod"></td><td><input id="ki-ad" class="cell" placeholder="Ad Soyad"></td><td><input id="ki-bolum" class="cell" placeholder="Bölüm"></td><td><input id="ki-email" class="cell" placeholder="E-posta"></td><td><input id="ki-rol" class="cell" placeholder="Rol"></td><td><button class="kbtn" id="ki-add">Ekle</button></td></tr></tbody></table></div>
     <div class="hint">Ödemeler (referans — süreç yok) bloğu <b>Mali → Maaş-Prim</b> panosuna taşındı.</div>
     <h3 class="sec">Parametreler</h3>
