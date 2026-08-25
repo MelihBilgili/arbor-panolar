@@ -326,7 +326,7 @@ async function loadGundem(){
   }));
   const keys=Object.keys(groups).sort((a,b)=> ((b==="MB")-(a==="MB")) || ((a==="ARGE")-(b==="ARGE")) || groups[b].length-groups[a].length || a.localeCompare(b));
   const rowHtml=r=> r._ed
-    ? `<tr data-id="${r.id}"><td class="kod">${esc(r.kod)}</td><td>${esc(r.konu)}</td><td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`
+    ? `<tr data-id="${r.id}"><td class="kod ged" data-f="kod" data-type="text">${esc(r.kod)}</td><td class="ged" data-f="konu" data-type="text">${esc(r.konu)}</td><td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`
     : `<tr style="background:#fafbfd" title="ERP-türevi · salt-okur"><td class="kod" style="color:#5a6b7d">${esc(r.kod)}</td><td>${esc(r.konu)}</td><td></td></tr>`;
   const grpTable=ks=>{ let rr=""; ks.forEach(k=>{ if(!groups[k]) return; rr+=`<tr class="grp"><td colspan="3">${esc(k)} · ${groups[k].length}</td></tr>`; groups[k].forEach(r=>rr+=rowHtml(r)); }); return rr?`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${rr}</tbody></table></div>`:""; };
   const ev=(r,k)=> (r.erp&&r.erp[k]!=null)?String(r.erp[k]):"";
@@ -336,13 +336,13 @@ async function loadGundem(){
     const noteHd=tip==='pem'?'Ek Bilgi':'Satış/Şantiye Notları', dateHd=tip==='pem'?'Termin Tarihi':'AÜP Tarihi', kodW=tip==='pem'?'c5':'c8';
     const sorted=[...rowsX].sort((a,b)=>(ev(a,dcol)||'99999999').localeCompare(ev(b,dcol)||'99999999'));
     const body=sorted.map(r=>`<tr data-id="${r.id}">`
-      +`<td class="c ${kodW}"><span title="${esc(r.kod)}">${esc(r.kod)}</span></td>`
+      +`<td class="c ${kodW} ged" data-f="kod" data-type="text"><span title="${esc(r.kod)}">${esc(r.kod)}</span></td>`
       +`<td class="c c15"><span title="${esc(ev(r,'proje'))}">${esc(ev(r,'proje'))}</span></td>`
       +`<td class="c c25"><span title="${esc(ev(r,noteCol))}">${esc(ev(r,noteCol))}</span></td>`
       +`<td class="c c3"><span>${esc(ev(r,'adet'))}</span></td>`
       +`<td class="c cdur"><span title="${esc(ev(r,'durum'))}">${esc(ev(r,'durum'))}</span></td>`
       +`<td class="c c8"><span>${fdate(ev(r,dcol))}</span></td>`
-      +`<td class="c ckon"><span title="${esc(r.konu)}">${esc(r.konu)}</span></td>`
+      +`<td class="c ckon ged" data-f="konu" data-type="text"><span title="${esc(r.konu)}">${esc(r.konu)}</span></td>`
       +`<td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
     const title=(tip==='pem'?'PEM-':'PRJ-')+rowsX.length;
     return `<h3 class="sec">${title}</h3><div class="scroll gblk"><table><thead><tr><th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>Durum</th><th>${dateHd}</th><th>Konu</th><th></th></tr></thead><tbody>${body}</tbody></table></div>`;
@@ -378,7 +378,9 @@ async function loadGundem(){
     <style>.gblk table{font-size:11.5px}.gblk th,.gblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.gblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.gblk .c>span::-webkit-scrollbar{display:none}.c3>span{max-width:3ch}.c5>span{max-width:5ch}.c8>span{max-width:8ch}.c10>span{max-width:10ch}.c12>span{max-width:12ch}.c15>span{max-width:15ch}.c20>span{max-width:20ch}.c25>span{max-width:25ch}.cdur>span{max-width:13ch}.ckon>span{max-width:32.5ch}
     .a3>span{max-width:3ch}.a5>span{max-width:5ch}.a10>span{max-width:10ch}.a100>span{max-width:100ch}
     .ag-wrap .scroll{max-height:none;overflow-y:visible;overflow-x:auto;border:0;background:transparent;border-radius:0;margin:0 0 12px}
-    .gblk button.fmail{display:none}</style>
+    .gblk button.fmail{display:none}
+    .ged{cursor:text}.ged:hover{background:#eef5ff;box-shadow:inset 0 0 0 1px #cfe0f1}.saveflash{background:#e6f6ea!important;transition:background .3s}
+    .gnb td .cell,.gblk td .cell{width:100%;box-sizing:border-box;font:inherit;padding:2px 5px;border:1px solid #2e6da4;border-radius:5px}</style>
     <div class="addbar">
       <select id="ag-ilgili" title="İlgili">${ilgSel}</select>
       <input id="ag-kod" placeholder="Kod" style="display:none;max-width:120px">
@@ -393,6 +395,8 @@ async function loadGundem(){
     ${argeBlock(groups['ARGE'])}
     </div>`;
   view.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
+  /* Elle girilen sütunlar (Kod, Konu) inline düzenlenebilir; ERP-türevi sütunlar salt-okur. */
+  view.querySelectorAll(".ged").forEach(el=>el.onclick=()=>startEdit(el));
   const selEl=document.getElementById("ag-ilgili"), kodInp=document.getElementById("ag-kod");
   const syncKod=()=>{ const v=selEl.value, on=(v==='PEM'||v==='PRJ'); kodInp.style.display=on?'':'none'; kodInp.placeholder=v==='PEM'?'Kod (son 5)':(v==='PRJ'?'Kod (son 8)':'Kod'); };
   selEl.onchange=syncKod; syncKod();
