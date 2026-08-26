@@ -286,11 +286,37 @@ async function save(){
 document.getElementById("save").onclick=save;
 document.getElementById("clear").onclick=()=>{ if(confirm("Tüm girilen satırlar temizlensin mi?")){ BLOCKS.forEach(b=>DATA[b.tur]=[]); render(); setMsg("",true); } };
 
+/* ===== ARBOR-ONAY — blok bazlı "bilgiler güncel" onayı (26.08.2026, Melih kararı) =====
+   Her blokta EKLE düğmesinin sağında bir onay düğmesi durur. Aylık/haftalık güncelleme
+   düğmesi ancak BÜTÜN blok onayları verilmişse çalışır; eksikse uyarı verir ve durur.
+   Onay dönem bazlı localStorage'da tutulur (sayfa yenilense de kalır), başarılı
+   güncellemeden sonra sıfırlanır. Yeni blok eklenirse tek satır onayKur(...) yeter. */
+const ONAY_FORM="mk";
+const ONAY_DONEM=(function(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); })();
+document.head.insertAdjacentHTML("beforeend","<style>.onaybtn{background:#fff;border:1.5px solid #0a6b57;color:#0a6b57;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer;font-size:12.5px;line-height:1.3;text-align:left}.onaybtn:hover{background:#eaf6f1}.onaybtn.ok{background:#0a6b57;border-color:#0a6b57;color:#fff}</style>");
+const ONAYLAR={};
+function onayKey(id){ return "arb_onay_"+ONAY_FORM+"_"+id+"_"+ONAY_DONEM; }
+function onayVar(id){ try{ return localStorage.getItem(onayKey(id))==="1"; }catch(e){ return false; } }
+function onayKur(hedefId,id,ad){
+  const h=document.getElementById(hedefId); if(!h) return;
+  const b=document.createElement("button"); b.type="button"; b.className="onaybtn"; b.id="onay_"+id;
+  ONAYLAR[id]={ad:ad,el:b};
+  const ciz=()=>{ const v=onayVar(id); b.classList.toggle("ok",v); b.textContent=(v?"✓ ":"")+ad; };
+  b.onclick=()=>{ const v=!onayVar(id); try{ v?localStorage.setItem(onayKey(id),"1"):localStorage.removeItem(onayKey(id)); }catch(e){} ciz(); };
+  ciz(); h.insertAdjacentElement("afterend",b);
+}
+function onayEksik(){ return Object.keys(ONAYLAR).filter(id=>!onayVar(id)).map(id=>ONAYLAR[id].ad); }
+function onayKapi(){ const e=onayEksik(); if(e.length){ alert("Güncelleme yapılamadı.\n\nÖnce aşağıdaki onay düğmelerine basmalısınız:\n\n• "+e.join("\n\n• ")); return false; } return true; }
+function onaySifirla(){ Object.keys(ONAYLAR).forEach(id=>{ try{ localStorage.removeItem(onayKey(id)); }catch(e){} const o=ONAYLAR[id]; o.el.classList.remove("ok"); o.el.textContent=o.ad; }); }
+onayKur("s_btn","santiye","Tıkanmış Şantiyelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
+onayKur("a1","alacak","Yurt Dışı Alacaklara İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
+
 /* ===== Aylık güncelleme: mk_ay_islendi (append) + mk-faaliyet-mail ===== */
 const AYLAR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 const DONEM=AYLAR[new Date().getMonth()]+" "+new Date().getFullYear();
 document.getElementById("ayBtn").onclick=async()=>{
   const m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
+  if(!onayKapi()) return;
   if(!confirm('"'+DONEM+'" ayı için aylık güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN.\n\nOnaylıyor musunuz?')) return;
   btn.disabled=true; m.className="msg"; m.textContent="İşaretleniyor…";
   const {error}=await sb.from("mk_ay_islendi").insert({ay:DONEM});
@@ -305,7 +331,7 @@ document.getElementById("ayBtn").onclick=async()=>{
   try{ const r=await sb.functions.invoke("mk-faaliyet-mail",{body:{ay:DONEM}});
     if(r.error){ note=" (mail gönderilemedi: "+(r.error.message||r.error)+")"; }
   }catch(e){ note=" (mail gönderilemedi)"; }
-  sLoadAkis();
+  sLoadAkis(); onaySifirla();
   btn.disabled=false; m.className="msg ok"; m.textContent="✓ "+DONEM+" ayı işaretlendi."+snapNote+note;
 };
 /* ===== Tıkanmış Şantiyeler — MK durum girişi (santiye_durum_log, kim='MK') ===== */
