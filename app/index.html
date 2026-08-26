@@ -1912,13 +1912,27 @@ async function loadSozluk(tgt){
     .szt th{background:#16324f;color:#fff;font-weight:600;padding:5px 8px;text-align:left}
     .szt td{border-bottom:1px solid #eef1f5;padding:4px 8px;vertical-align:top;line-height:1.45}
     .szt td.szk{font-weight:700;color:#16324f;white-space:nowrap}
+    .szt th.szxh,.szt td.szx{width:28px;padding:4px 6px;text-align:center}
+    .szdel{border:0;background:none;cursor:pointer;color:#b9c2cc;font-size:14px;line-height:1;padding:2px 4px;border-radius:4px}
+    .szdel:hover{color:#c0392b;background:#fdecea}
+    .szdel[disabled]{opacity:.4;cursor:default}
   </style>`;
   h+=stampHTML(st);
   h+=`<div class="hint">Otomatik büyüyen sözlük — kaynak Supabase <code>sozluk</code>; <b>vocabulary</b> projesi girişleri ekledikçe büyür. ${rows.length} kelime.</div>`;
-  h+='<div class="scroll"><table class="szt"><thead><tr><th>Kelime</th><th>Anlam</th></tr></thead><tbody>';
-  rows.forEach(r=>{ h+='<tr><td class="szk">'+esc(r.kelime)+'</td><td>'+esc(r.anlam||"")+'</td></tr>'; });
+  h+='<div class="scroll"><table class="szt"><thead><tr><th>Kelime</th><th>Anlam</th><th class="szxh"></th></tr></thead><tbody>';
+  rows.forEach(r=>{ h+='<tr><td class="szk">'+esc(r.kelime)+'</td><td>'+esc(r.anlam||"")+'</td><td class="szx"><button class="szdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(r.kelime)+'">✕</button></td></tr>'; });
   h+='</tbody></table></div>';
   body.innerHTML=h;
+  /* Satır silme: tablodan kalıcı siler. Delta dosyaları sync sonrası arşive taşındığı için geri gelmez. */
+  body.querySelectorAll(".szdel").forEach(b=>{
+    b.onclick=async()=>{
+      if(!confirm('"'+b.dataset.k+'" sözlükten silinsin mi?')) return;
+      b.disabled=true;
+      const {error:de}=await sb.from("sozluk").delete().eq("id",b.dataset.id);
+      if(de){ b.disabled=false; alert("Silme hatası: "+(de.message||de)); return; }
+      const tr=b.closest("tr"); if(tr) tr.remove();
+    };
+  });
 }
 
 /* ---------- BOOT (Supabase Auth oturumu — e-posta+parola) ---------- */
