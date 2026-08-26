@@ -916,17 +916,35 @@ async function loadIcmal(tgt){
   const {data,error}=await sb.from("icmal_satir").select("*").order("sira",{ascending:true});
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const F=["adet","dk1_ad","m2","net_eur","ort_kur","net_tl","netfi_eur_m2","netfi_eur_ad","id_per","ur_per","top_per","ciro_per_eur","isk","kapasite_ad_ay","onaysiz_ad","onay_ter_hf","urt_ad","son_proje_cikis","so_alinan_eur","so_muht_eur","fa_alinan_eur","fa_muht_eur","top_alinan_eur","alinan_ter_hf","top_muht_eur","fr_isk_pct","dig_isk_pct"];
-  /* Yıl toplam satırı: personel sayıları ve ciro/personel TOPLANMAZ, o yılın dolu aylarının
-     ORTALAMASI gösterilir (tamsayı). Satır düzeni: toplam satırı, ardından o yılın ayları. */
+  /* YIL TOPLAM SATIRI PANODA HESAPLANIR (DB'deki değer kullanılmaz).
+     Sebep: icmal_satir'ın is_total satırlarını hiçbir betik güncellemiyordu (worker/us_icmal ve
+     icmal_satis_yaz yalnız is_total=false satırlara yazar) → yeni ay girilince yıl toplamı
+     geride kalıyordu (07.26 eklendiğinde "2026 Top." Ocak–Haziran'da kalmıştı).
+     Kural: SUMF = altındaki ayların toplamı · türevler orandan · personel/Ciro-Per dolu ayların
+     ORTALAMASI · İsk brüt-ağırlıklı (brüt = net/(1-isk/100)). Ayların hiçbirinde veri yoksa
+     sütun DB'deki haliyle bırakılır (2011-13 dk1_ad gibi). Satır düzeni: toplam, sonra o yılın ayları. */
+  const SUMF=["adet","dk1_ad","m2","net_eur","net_tl"];
   const AVGF=["id_per","ur_per","top_per","ciro_per_eur"];
   const trNum=s=>{ if(s==null||s==="") return null; const v=parseFloat(String(s).replace(/\./g,"").replace(",",".")); return isFinite(v)?v:null; };
   const rowsA=(data||[]).slice();
   for(let i=0;i<rowsA.length;i++){
     if(!rowsA[i].is_total) continue;
-    const acc={}; AVGF.forEach(f=>acc[f]=[]);
-    let j=i+1;
-    for(; j<rowsA.length && !rowsA[j].is_total; j++) AVGF.forEach(f=>{ const v=trNum(rowsA[j][f]); if(v) acc[f].push(v); });
-    AVGF.forEach(f=>{ if((rowsA[i][f]==null||rowsA[i][f]==="")&&acc[f].length) rowsA[i][f]=money(acc[f].reduce((a,b)=>a+b,0)/acc[f].length); });
+    const T=rowsA[i], acc={}, sum={}, cnt={};
+    AVGF.forEach(f=>acc[f]=[]); SUMF.forEach(f=>{ sum[f]=0; cnt[f]=0; });
+    let net=0, brut=0;
+    for(let j=i+1; j<rowsA.length && !rowsA[j].is_total; j++){
+      const m=rowsA[j];
+      AVGF.forEach(f=>{ const v=trNum(m[f]); if(v) acc[f].push(v); });
+      SUMF.forEach(f=>{ const v=trNum(m[f]); if(v!=null){ sum[f]+=v; cnt[f]++; } });
+      const ne=trNum(m.net_eur), ik=trNum(m.isk);
+      if(ne!=null && ik!=null && ik!==100){ net+=ne; brut+=ne/(1-ik/100); }
+    }
+    SUMF.forEach(f=>{ if(cnt[f]) T[f]=money(sum[f]); });
+    if(cnt.net_eur && sum.net_tl)  T.ort_kur=money(sum.net_tl/sum.net_eur);
+    if(cnt.net_eur && sum.m2)      T.netfi_eur_m2=money(sum.net_eur/sum.m2);
+    if(cnt.net_eur && sum.adet)    T.netfi_eur_ad=money(sum.net_eur/sum.adet);
+    if(brut) T.isk=money((1-net/brut)*100);
+    AVGF.forEach(f=>{ if(acc[f].length) T[f]=money(acc[f].reduce((a,b)=>a+b,0)/acc[f].length); });
   }
   /* "Yurt Dışı" sütunu = Yurt Dışı 1 (fa_*) + Yurt Dışı 2 (fy2_*); FY2 girilmemiş aylarda
      yalnız FY görünür. FY2 doluysa Toplam da (Yurt İçi + YD1 + YD2) olarak yeniden hesaplanır. */
@@ -942,7 +960,7 @@ async function loadIcmal(tgt){
     rows+='<tr'+(r.is_total?' class="itot"':'')+'>'+tds+'</tr>';
   });
   const st=await tblStamp("icmal_yil");
-  const TH=["D\u00f6nem","Miktar (Ad)","DK1 (Ad)","Miktar (m\u00b2)","Net Tutar (\u20ac)","Ort. Kur","Net Tutar (TL)","Net Fi. (\u20ac/m\u00b2)","Net Fi. (\u20ac/ad)","\u0130d.Per (Ki\u015fi)","\u00dcr.Per (Ki\u015fi)","Top.Per (ki\u015fi)","Ciro/Per (\u20ac/ki\u015fi)","\u0130sk (%)","Kapasite (Ad/Ay)","0..4 Onays\u0131z (Ad)","Onay Ter (hf)","4.1\u20267 \u00dcrt (Ad)","Son Proje \u00c7\u0131k\u0131\u015f","Yurt \u0130\u00e7i al\u0131nan Prj (\u20ac)","Yurt \u0130\u00e7i muht. Prj (\u20ac)","Yurt D\u0131\u015f\u0131 al\u0131nan Prj (\u20ac)","Yurt D\u0131\u015f\u0131 muht. Prj (\u20ac)","Top.al\u0131nan Prj (\u20ac)","Al.Ter. (hf)","Top.muht. Prj (\u20ac)","FR \u0130sk. (%)","Di\u011f \u0130sk. (%)"];
+  const TH=["D\u00f6nem","Miktar (Ad)","DK1 (Ad)","Miktar (m\u00b2)","Net Tutar (\u20ac)","Ort. Kur","Net Tutar (TL)","Net Fi. (\u20ac/m\u00b2)","Net Fi. (\u20ac/ad)","\u0130d.Per (Ki\u015fi)","\u00dcr.Per (Ki\u015fi)","Top.Per (ki\u015fi)","Ciro/Per (\u20ac/ki\u015fi)","\u0130sk (%)","Kapasite (Ad/Ay)","0..4 Onays\u0131z (Ad)","Onay Ter (hf)","4.1\u20267 \u00dcrt (Ad)","Son Proje \u00c7\u0131k\u0131\u015f","Yurt \u0130\u00e7i al\u0131nan Prj (\u20ac)","Yurt \u0130\u00e7i muht. Prj (\u20ac)","Yurt D\u0131\u015f\u0131 al\u0131nan Prj (\u20ac)","Yurt D\u0131\u015f\u0131 muht. Prj (\u20ac)","Top.al\u0131nan Prj (\u20ac)","Al.Ter. (hf)","Top.muht. Prj (\u20ac)","YD1 \u0130sk. (%)","YD2 \u0130sk. (%)"];
   const head=TH.map((h,i)=>i===0?('<th>'+h+'</th>'):('<th class="num">'+h+'</th>')).join("");
   view.innerHTML=`${stampHTML(st)}
     <div class="scroll"><table>
