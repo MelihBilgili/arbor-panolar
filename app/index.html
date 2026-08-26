@@ -913,7 +913,11 @@ async function loadBilanco(tgt){
 /* ---------- YILLIK İCMAL (icmal_ozet view) ---------- */
 async function loadIcmal(tgt){
   const view=document.getElementById(tgt||"view");
-  const {data,error}=await sb.from("icmal_satir").select("*").order("sira",{ascending:true});
+  const [ic,bl]=await Promise.all([
+    sb.from("icmal_satir").select("*").order("sira",{ascending:true}),
+    sb.from("fiyat_parametre_log").select("*").eq("anahtar","baz_iskonto").order("gecerli_baslangic",{ascending:true})
+  ]);
+  const {data,error}=ic;
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const F=["adet","dk1_ad","m2","net_eur","ort_kur","net_tl","netfi_eur_m2","netfi_eur_ad","id_per","ur_per","top_per","ciro_per_eur","isk","kapasite_ad_ay","onaysiz_ad","onay_ter_hf","urt_ad","son_proje_cikis","so_alinan_eur","so_muht_eur","fa_alinan_eur","fa_muht_eur","top_alinan_eur","alinan_ter_hf","top_muht_eur","fr_isk_pct","dig_isk_pct"];
   /* YIL TOPLAM SATIRI PANODA HESAPLANIR (DB'deki değer kullanılmaz).
@@ -952,6 +956,20 @@ async function loadIcmal(tgt){
     const yd2a=trNum(r.fy2_alinan_eur), yd2m=trNum(r.fy2_muht_eur);
     if(yd2a){ r.fa_alinan_eur=money((trNum(r.fa_alinan_eur)||0)+yd2a); r.top_alinan_eur=money((trNum(r.so_alinan_eur)||0)+(trNum(r.fa_alinan_eur)||0)); }
     if(yd2m){ r.fa_muht_eur=money((trNum(r.fa_muht_eur)||0)+yd2m); r.top_muht_eur=money((trNum(r.so_muht_eur)||0)+(trNum(r.fa_muht_eur)||0)); }
+  });
+  /* YD1 İsk. / YD2 İsk. = o aya isabet eden SON baz iskonto (Fiyatlandırma panosu: FR / Diğer).
+     Kaynak fiyat_parametre_log — fiyat_parametre üstündeki trigger her değer değişiminde bir satır
+     bırakır (kod/fiyat_parametre_log_260826.sql). Log'un başlangıcından ÖNCEKİ aylar icmal_satir'daki
+     elle girilmiş değerde kalır (Melih kararı 26.08.2026). */
+  const BIL=(bl&&!bl.error)?(bl.data||[]):[];
+  const pctNum=s=>{ const m=String(s==null?"":s).match(/-?\d+([.,]\d+)?/); return m?m[0].replace(",","."):null; };
+  if(BIL.length) rowsA.forEach(r=>{
+    if(r.is_total) return;
+    const d=String(r.donem||""); if(!/^\d{2}\.\d{2}$/.test(d)) return;
+    const ay=+d.slice(0,2), yil=2000+ +d.slice(3,5);
+    const sonGun=new Date(Date.UTC(yil,ay,0)).toISOString().slice(0,10);
+    let hit=null; BIL.forEach(x=>{ if(String(x.gecerli_baslangic)<=sonGun) hit=x; });
+    if(hit){ r.fr_isk_pct=pctNum(hit.fransa_deger); r.dig_isk_pct=pctNum(hit.diger_deger); }
   });
   let rows="";
   rowsA.forEach(r=>{
@@ -1312,6 +1330,9 @@ async function loadAhsap(tgt){
     table.ahs{width:auto;border-collapse:collapse;font-size:11.5px}
     table.ahs th,table.ahs td{white-space:nowrap;padding:2px 8px;border-bottom:1px solid #eef1f5;line-height:16px}
     table.ahs thead th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px;vertical-align:bottom}
+    /* Ay başlıkları .thw ile sarılıyor; global "thead th.num .thw{text-align:center}" kuralı
+       onları ortalayıp sağa dayalı sayılarla hizasız bırakıyordu → sağa yaslanır. */
+    table.ahs thead th.num .thw{text-align:right}
     table.ahs th.ahyh{cursor:pointer;background:#22456b}
     table.ahs th.ahyh:hover{background:#2d5a8a}
     table.ahs .ahcar{font-size:9px;opacity:.85}
