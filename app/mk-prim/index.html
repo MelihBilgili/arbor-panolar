@@ -51,6 +51,10 @@
   table.pivt td.ssan,table.pivt th.ssan{white-space:nowrap;font-weight:700;color:#16324f}
   table.pivt td.sdt,table.pivt th.sdt{white-space:nowrap;color:#5a6b7d}
   table.pivt .sxc{display:block;width:42ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.pivt .sed{cursor:text;border:1px dashed #cdd6df;border-radius:5px;padding:2px 5px;min-height:20px}
+  table.pivt .sed:hover{border-color:#0a6b57;background:#f4fbf8}
+  table.pivt .sed.bos{color:#b7c6d6}
+  table.pivt .sed textarea{white-space:normal}
   table.pivt .sxc::-webkit-scrollbar{display:none}
 
 html,body{max-width:100vw;overflow-x:hidden}
@@ -59,49 +63,16 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </head>
 <body>
 <header>
-  <h1>MK — Faaliyet &amp; Prim Formu</h1>
-  <div class="sub">Mehmet Konak. Dört blokta faaliyetlerini gir; prim <b>kontrat/tutar</b> alanlarından otomatik hesaplanır. Bitince <b>“Kaydet”</b>e bas.</div>
+  <h1>Faaliyet Formu</h1>
+  <div class="sub">Aylık faaliyetler kaydedilir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak güncelleme düğmelerine basılmadıkça gönderilmez.</div>
 </header>
 <div class="wrap">
-  <div class="hint">Her blok kendi kuralıyla prim üretir. Girdiğin satırlar “Kaydet” ile kaydedilir; toplam prim dört kriterin (Memnuniyet · TS · FR Satış · Diğer Satış) tümünü kapsar.</div>
   <div class="aybar">
-    <button class="btn" id="ayBtn">Aylık güncelleme (ayı kapat)</button>
+    <button class="btn" id="ayBtn">Aylık Güncelle</button>
     <span class="msg" id="ayMsg"></span>
-    <span class="aywarn">Yalnız aylık güncelleme için basınız; düzeltme/revizyon için basmayınız.</span>
   </div>
   <div id="blocks"></div>
-  <div class="totbar">
-    <div>Toplam Prim: <span class="big" id="grand">0 €</span></div>
-    <button class="btn" id="save">Kaydet</button>
-    <button class="btn sec" id="clear">Temizle</button>
-    <span class="msg" id="msg"></span>
-  </div>
-
-  <div class="blk b2" style="margin-top:18px">
-    <h2>Tıkanmış Şantiyeler — Durum Girişi (MK)</h2>
-    <div style="padding:12px 14px">
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-        <div style="flex:1;min-width:220px">
-          <div style="font-size:11px;color:#0a6b57;font-weight:700;margin-bottom:3px">ŞANTİYE</div>
-          <select id="s_sec" class="cell"><option value="">Yükleniyor…</option></select>
-        </div>
-        <div>
-          <div style="font-size:11px;color:#0a6b57;font-weight:700;margin-bottom:3px">TARİH</div>
-          <input id="s_tarih" type="date" class="cell" style="width:160px">
-        </div>
-      </div>
-      <div style="margin-top:10px">
-        <div style="font-size:11px;color:#0a6b57;font-weight:700;margin-bottom:3px">DURUM / GELİŞME</div>
-        <textarea id="s_durum" class="cell" style="min-height:60px" placeholder="Bu tarihteki durum / gelişme…"></textarea>
-      </div>
-      <div style="margin-top:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <button class="btn" id="s_btn">Durumu ekle</button>
-        <span class="msg" id="s_msg" style="font-size:12.5px;font-weight:600"></span>
-      </div>
-      <div class="hint" style="margin:10px 2px 0">Yeni tıkanmış şantiyeyi <b>ÖB</b> ekler (ÖB Faaliyet formu); buradan mevcut şantiyelere MK durumu girilir. Melih'in <b>Mali → MK Faaliyet</b> panosuna yansır.</div>
-      <div id="s_akis" style="margin-top:10px"></div>
-    </div>
-  </div>
+  <span class="msg" id="msg"></span>
 
   <!-- === Yurt Dışı Alacak — Blok 1 (arbor_alacak_kalem) — SEL-ARB'a "Aylık Güncelle" (Yurt Dışı Alacak formu) ile aktarılır === -->
   <div id="sa1wrap">
@@ -123,9 +94,14 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     #sa1wrap .msg{font-size:12.5px;min-height:17px;margin-top:6px}#sa1wrap .msg.ok{color:#0a6b3f;font-weight:600}#sa1wrap .msg.err{color:#b40000;font-weight:600}
    </style>
    <div class="card">
-    <div class="chd"><h2>Yurt Dışı Alacak · Yurt Dışı Birimlerin Firma/Proje Bazlı Güncel Alacakları <span class="cnt" id="c1"></span></h2>
+    <div class="chd"><h2 id="sanH2">Tıkanmış Şantiyeler <span class="cnt" id="cs"></span></h2>
+      <span class="msg" id="s_msg" style="font-size:12.5px;font-weight:600"></span></div>
+    <div id="s_akis"></div>
+   </div>
+
+   <div class="card">
+    <div class="chd"><h2>Yurt Dışı Birimlerin Firma/Proje Bazlı Güncel Alacakları <span class="cnt" id="c1"></span></h2>
       <button class="add" id="a1">＋ Yeni Proje Ekle</button></div>
-    <div class="hint" style="margin:0 2px 8px">Güncel alacaklar burada tutulur; SEL-ARB panosuna <b>Yurt Dışı Alacak</b> formundaki “Aylık Güncelle” ile aktarılır (veri aynı tabloda: arbor_alacak_kalem).</div>
     <div class="scroll"><table><thead><tr>
       <th style="width:16%">Yurt Dışı Birim</th><th style="width:26%">Firma</th><th style="width:26%">Proje</th><th style="width:16%">Alacak</th><th style="width:14%">Para Birimi</th><th class="x"></th>
     </tr></thead><tbody id="t1"><tr><td colspan="6">Yükleniyor…</td></tr></tbody></table></div>
@@ -244,8 +220,15 @@ function render(){
     blk.querySelectorAll("[data-f]").forEach(el=>{
       const i=+el.closest("tr").dataset.i, f=el.dataset.f, ev=el.tagName==="TEXTAREA"?"input":(el.type==="date"?"change":"input");
       el.addEventListener(ev,()=>{ DATA[tur][i][f]=el.value; recalcRow(blk,i); });
+      el.addEventListener("change",()=>{ saveRow(tur,i); });
+      el.addEventListener("blur",()=>{ saveRow(tur,i); });
     });
-    blk.querySelectorAll(".del").forEach(btn=>btn.onclick=()=>{ DATA[tur].splice(+btn.closest("tr").dataset.i,1); render(); });
+    blk.querySelectorAll(".del").forEach(btn=>btn.onclick=async()=>{
+      const i=+btn.closest("tr").dataset.i, r=DATA[tur][i];
+      if(r && r.id){ const {error}=await sb.from("mk_faaliyet").delete().eq("id",r.id);
+        if(error){ setMsg("Silinemedi: "+error.message,false); return; } }
+      DATA[tur].splice(i,1); render(); setMsg("Satır silindi.",true);
+    });
     blk.querySelector(".addr").onclick=()=>{ DATA[tur].push(blankRow(b)); render(); const rows=blk.querySelectorAll("tbody input.cell"); };
   });
   refreshTotals();
@@ -259,32 +242,48 @@ function recalcRow(blk,i){
 function refreshTotals(blk){
   if(blk){ const tur=blk.dataset.tur; const bt=blk.querySelector("[data-bt]"); if(bt) bt.textContent=eur(blockTotal(tur)); }
   else document.querySelectorAll(".blk").forEach(b=>{ const t=b.querySelector("[data-bt]"); if(t) t.textContent=eur(blockTotal(b.dataset.tur)); });
-  document.getElementById("grand").textContent=eur(grandTotal());
+  const g=document.getElementById("grand"); if(g) g.textContent=eur(grandTotal());
 }
 function setMsg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; }
 function isFilled(tur,r){
   if(tur==="memnuniyet"||tur==="ts") return (r.firma||r.proje||"").trim()!=="" || parseNum(r.kontrat_tutari)!=null || parseNum(r.ts_tutari)!=null;
   return (r.firma||r.proje||"").trim()!=="" || parseNum(r.kontrat_tutari)!=null;
 }
-async function save(){
-  const rows=[];
-  BLOCKS.forEach(b=>{ DATA[b.tur].forEach(r=>{ if(!isFilled(b.tur,r)) return;
-    rows.push({tur:b.tur,
-      firma:(r.firma||"").trim()||null, proje:(r.proje||"").trim()||null,
-      memnuniyet_kriterleri:(r.memnuniyet_kriterleri||"").trim()||null,
-      memnuniyet_orani:parseNum(r.memnuniyet_orani),
-      ts_notlari:(r.ts_notlari||"").trim()||null, ts_tutari:parseNum(r.ts_tutari),
-      kontrat_tarihi:(r.kontrat_tarihi||"")||null, kontrat_tutari:parseNum(r.kontrat_tutari)}); }); });
-  if(!rows.length){ setMsg("En az bir dolu satır gerekli.",false); return; }
-  const btn=document.getElementById("save"); btn.disabled=true; btn.textContent="Kaydediliyor…"; setMsg("Kaydediliyor…",true);
-  const {error}=await sb.from("mk_faaliyet").insert(rows);
-  btn.disabled=false; btn.textContent="Kaydet";
-  if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
-  setMsg("Kaydedildi ✓ ("+rows.length+" faaliyet · "+eur(grandTotal())+"). Mali → MK Prim panosuna yansıdı.",true);
-  BLOCKS.forEach(b=>DATA[b.tur]=[]); render();
+/* SATIR BAZLI ANINDA KAYIT (27.08.2026): alttaki "Toplam Prim / Kaydet / Temizle" bandı kalktı;
+   her hücre değişiminde dolu satır mk_faaliyet'e yazılır (id yoksa INSERT, varsa UPDATE). */
+function mkRow(tur,r){
+  return {tur:tur,
+    firma:(r.firma||"").trim()||null, proje:(r.proje||"").trim()||null,
+    memnuniyet_kriterleri:(r.memnuniyet_kriterleri||"").trim()||null,
+    memnuniyet_orani:parseNum(r.memnuniyet_orani),
+    ts_notlari:(r.ts_notlari||"").trim()||null, ts_tutari:parseNum(r.ts_tutari),
+    kontrat_tarihi:(r.kontrat_tarihi||"")||null, kontrat_tutari:parseNum(r.kontrat_tutari)};
 }
-document.getElementById("save").onclick=save;
-document.getElementById("clear").onclick=()=>{ if(confirm("Tüm girilen satırlar temizlensin mi?")){ BLOCKS.forEach(b=>DATA[b.tur]=[]); render(); setMsg("",true); } };
+async function saveRow(tur,i){
+  const r=DATA[tur][i]; if(!r) return;
+  if(!isFilled(tur,r)) return;
+  const body=mkRow(tur,r);
+  if(r.id){
+    const {error}=await sb.from("mk_faaliyet").update(body).eq("id",r.id);
+    if(error){ setMsg("Kaydedilemedi: "+error.message,false); return; }
+  }else{
+    const {data,error}=await sb.from("mk_faaliyet").insert(body).select("id").limit(1);
+    if(error){ setMsg("Kaydedilemedi: "+error.message,false); return; }
+    if(data&&data[0]) r.id=data[0].id;
+  }
+  setMsg("Kaydedildi.",true); setTimeout(()=>setMsg("",true),1500);
+}
+async function loadMK(){
+  const {data,error}=await sb.from("mk_faaliyet").select("*").order("id");
+  if(error){ setMsg("Kayıtlar okunamadı: "+error.message,false); return; }
+  BLOCKS.forEach(b=>DATA[b.tur]=[]);
+  (data||[]).forEach(r=>{ if(DATA[r.tur]) DATA[r.tur].push(Object.assign({},r,{
+    memnuniyet_orani:r.memnuniyet_orani==null?"":String(r.memnuniyet_orani),
+    ts_tutari:r.ts_tutari==null?"":String(r.ts_tutari),
+    kontrat_tutari:r.kontrat_tutari==null?"":String(r.kontrat_tutari),
+    kontrat_tarihi:r.kontrat_tarihi||"" })); });
+  render();
+}
 
 /* ===== ARBOR-ONAY — blok bazlı "bilgiler güncel" onayı (26.08.2026, Melih kararı) =====
    Her blokta EKLE düğmesinin sağında bir onay düğmesi durur. Aylık/haftalık güncelleme
@@ -308,7 +307,7 @@ function onayKur(hedefId,id,ad){
 function onayEksik(){ return Object.keys(ONAYLAR).filter(id=>!onayVar(id)).map(id=>ONAYLAR[id].ad); }
 function onayKapi(){ const e=onayEksik(); if(e.length){ alert("Güncelleme yapılamadı.\n\nÖnce aşağıdaki onay düğmelerine basmalısınız:\n\n• "+e.join("\n\n• ")); return false; } return true; }
 function onaySifirla(){ Object.keys(ONAYLAR).forEach(id=>{ try{ localStorage.removeItem(onayKey(id)); }catch(e){} const o=ONAYLAR[id]; o.el.classList.remove("ok"); o.el.textContent=o.ad; }); }
-onayKur("s_btn","santiye","Tıkanmış Şantiyelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
+onayKur("sanH2","santiye","Tıkanmış Şantiyelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("a1","alacak","Yurt Dışı Alacaklara İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 
 /* ===== Aylık güncelleme: mk_ay_islendi (append) + mk-faaliyet-mail ===== */
@@ -337,52 +336,54 @@ document.getElementById("ayBtn").onclick=async()=>{
 /* ===== Tıkanmış Şantiyeler — MK durum girişi (santiye_durum_log, kim='MK') ===== */
 function sMsg(t,ok){ const m=document.getElementById("s_msg"); m.className="msg "+(ok?"ok":"err"); m.style.color=ok?"#2e7d54":"#b40000"; m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3000); }
 const sDk=t=>t?String(t).slice(8,10)+"."+String(t).slice(5,7)+"."+String(t).slice(2,4):"";
-async function sLoadListe(sel){
-  const {data,error}=await sb.from("santiye_liste").select("*").order("santiye");
-  const s=document.getElementById("s_sec");
-  if(error){ s.innerHTML='<option value="">Hata: '+esc(error.message)+'</option>'; return; }
-  s.innerHTML='<option value="">— şantiye seç —</option>'+(data||[]).map(r=>'<option value="'+r.id+'"'+(sel===r.id?' selected':'')+'>'+esc(r.santiye)+'</option>').join("");
-}
 async function sLoadAkis(){
   const {data,error}=await sb.from("santiye_durum_akis").select("*").order("tarih",{ascending:false}).order("id",{ascending:false});
   const el=document.getElementById("s_akis");
   if(error){ el.innerHTML='<div class="hint">Akış okunamadı.</div>'; return; }
   /* Şantiye başına TEK satır (pivot): en güncel ÖB + en güncel MK yan yana. Veri tarih desc, id desc sıralı. */
   const piv={};
-  (data||[]).forEach(r=>{ const k=r.santiye_id; if(!(k in piv)) piv[k]={santiye:r.santiye,ob:null,mk:null};
+  (data||[]).forEach(r=>{ const k=r.santiye_id; if(!(k in piv)) piv[k]={sid:k,santiye:r.santiye,ob:null,mk:null};
     if(r.kim==="OB"&&!piv[k].ob) piv[k].ob=r;
     if(r.kim==="MK"&&!piv[k].mk) piv[k].mk=r; });
   const list=Object.values(piv).sort((a,b)=>String(a.santiye||"").localeCompare(String(b.santiye||""),"tr"));
   if(!list.length){ el.innerHTML='<div class="hint">Henüz durum kaydı yok.</div>'; return; }
   const dc=v=>'<div class="sxc">'+esc(v||"")+'</div>';
+  const cnt=document.getElementById("cs"); if(cnt) cnt.textContent="("+list.length+")";
+  /* MK "Durum / Gelişme" hücresi düzenlenebilir (27.08.2026): ayrı giriş kutusu kaldırıldı,
+     hücreye tıklanıp yazılınca santiye_durum_log'a BUGÜNÜN tarihiyle yeni MK kaydı düşer. */
   el.innerHTML='<div class="tblwrap"><table class="pivt"><thead>'
     +'<tr><th rowspan="2" class="ssan">Şantiye</th><th colspan="2" class="grp">ÖB</th><th colspan="2" class="grp mkg">MK</th></tr>'
     +'<tr><th class="sdt">Tarih</th><th>Durum / Gelişme</th><th class="sdt">Tarih</th><th>Durum / Gelişme</th></tr></thead><tbody>'
     +list.map(p=>'<tr><td class="ssan">'+esc(p.santiye)+'</td>'
       +'<td class="sdt">'+(p.ob?sDk(p.ob.tarih):"")+'</td><td>'+dc(p.ob&&p.ob.durum)+'</td>'
-      +'<td class="sdt">'+(p.mk?sDk(p.mk.tarih):"")+'</td><td>'+dc(p.mk&&p.mk.durum)+'</td></tr>').join("")
+      +'<td class="sdt">'+(p.mk?sDk(p.mk.tarih):"")+'</td>'
+      +'<td><div class="sxc sed'+((p.mk&&p.mk.durum)?'':' bos')+'" data-sid="'+p.sid+'">'+((p.mk&&p.mk.durum)?esc(p.mk.durum):"+ durum")+'</div></td></tr>').join("")
     +'</tbody></table></div>';
+  el.querySelectorAll(".sed").forEach(d=>d.onclick=()=>sEdit(d));
 }
-document.getElementById("s_tarih").value=new Date().toISOString().slice(0,10);
-document.getElementById("s_btn").onclick=async()=>{
-  const sid=document.getElementById("s_sec").value;
-  const durum=document.getElementById("s_durum").value.trim();
-  const tarih=document.getElementById("s_tarih").value;
-  if(!sid){ sMsg("Şantiye seç.",false); return; }
-  if(!durum){ sMsg("Durum metni gir.",false); return; }
-  if(!tarih){ sMsg("Tarih gir.",false); return; }
-  const btn=document.getElementById("s_btn"); btn.disabled=true;
-  const {error}=await sb.from("santiye_durum_log").insert({santiye_id:parseInt(sid),kim:"MK",durum,tarih});
-  btn.disabled=false;
-  if(error){ sMsg("Hata: "+error.message,false); return; }
-  sMsg("Durum eklendi (MK · "+tarih+").",true);
-  document.getElementById("s_durum").value="";
-  try{ await sb.functions.invoke("santiye-degisim-ozet",{body:{santiye_id:parseInt(sid)}}); }catch(e){}
-  sLoadAkis();
-};
-sLoadListe(); sLoadAkis();
+function sEdit(el){
+  if(el.querySelector("textarea")) return;
+  const sid=parseInt(el.dataset.sid), cur=el.classList.contains("bos")?"":el.textContent;
+  const ta=document.createElement("textarea");
+  ta.className="cell"; ta.style.minHeight="54px"; ta.style.width="100%"; ta.value=cur;
+  el.innerHTML=""; el.appendChild(ta); ta.focus();
+  let bitti=false;
+  const commit=async()=>{
+    if(bitti) return; bitti=true;
+    const v=ta.value.trim();
+    if(!v || v===cur){ el.className="sxc sed"+(cur?"":" bos"); el.textContent=cur||"+ durum"; return; }
+    const tarih=new Date().toISOString().slice(0,10);
+    const {error}=await sb.from("santiye_durum_log").insert({santiye_id:sid,kim:"MK",durum:v,tarih});
+    if(error){ sMsg("Hata: "+error.message,false); el.className="sxc sed"+(cur?"":" bos"); el.textContent=cur||"+ durum"; return; }
+    sMsg("Durum kaydedildi (MK · "+sDk(tarih)+").",true);
+    try{ await sb.functions.invoke("santiye-degisim-ozet",{body:{santiye_id:sid}}); }catch(e){}
+    sLoadAkis();
+  };
+  ta.onblur=commit;
+  ta.onkeydown=e=>{ if(e.key==="Escape"){ bitti=true; el.className="sxc sed"+(cur?"":" bos"); el.textContent=cur||"+ durum"; } };
+}
+sLoadAkis();
 
-BLOCKS.forEach(b=>DATA[b.tur].push(blankRow(b)));
 
 /* ===== Yurt Dışı Alacak — Blok 1 (arbor_alacak_kalem) — Yurt Dışı Alacak formundan taşındı; veri aynı tabloda, SEL-ARB'a Aylık Güncelle ile aktarılır ===== */
 (function(){
@@ -448,7 +449,8 @@ BLOCKS.forEach(b=>DATA[b.tur].push(blankRow(b)));
   load1();
 })();
 
-render();
+/* Kayıtlı satırları yükle; her blokta en az bir boş satır dursun. */
+loadMK().then(()=>{ BLOCKS.forEach(b=>{ if(!DATA[b.tur].length) DATA[b.tur].push(blankRow(b)); }); render(); });
 </script>
 
 <!-- ARBOR-DRAGSCROLL -->
