@@ -829,15 +829,16 @@ async function loadBilanco(tgt){
   ]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const rowsD=(data||[]).slice().sort((a,b)=>b.yil-a.yil);
-  const cur=rowsD[0]||{};
-  const kar=cur.kar_tl, zar=kar<0;
-  function card(t,v,s2,cls){ return `<div style="background:#fff;border:1px solid #e3e8ee;border-radius:10px;padding:10px 12px;border-left:4px solid ${cls}"><div style="font-size:11px;color:#6a7888">${t}</div><div style="font-size:18px;font-weight:700;color:#16324f">${v}</div><div style="font-size:10.5px;color:#93a1b0;margin-top:3px">${s2}</div></div>`; }
-  const cards=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:6px 0 12px">
-    ${card("Net Satış ("+cur.yil+")", money(cur.net_tl)+" TL", "≈ "+money(cur.net_eur)+" €", "#0a6b3f")}
-    ${card("Toplam Maliyet", money(cur.toplam_gider_tl)+" TL", "710 + 720 + 730", "#b8863a")}
-    ${card("Kâr/Zarar", (zar?"−":"+")+money(Math.abs(kar))+" TL", "Net − Maliyet", zar?"#b23a2e":"#0a6b3f")}
-    ${card("Kâr Marjı", (cur.marj==null?"":Number(cur.marj).toFixed(1).replace(".",","))+" %", "Kapsam: Arbor Türkiye", zar?"#b23a2e":"#0a6b3f")}
-  </div>`;
+  /* Üstteki 4 KPI kutusu (Net Satış · Toplam Maliyet · Kâr/Zarar · Kâr Marjı) KALDIRILDI
+     (26.08.2026, Melih): aynı bilgi tablonun ilk satırında zaten var. */
+  /* 710 MALZEME İKİYE AYRILDI: "710 Ahşap Mlz" = 710 listesinin ilk grubu (1 AHŞAP HAMMADDE
+     ALIMLARI) · "710 Diğer Mlz" = k710_tl − Ahşap. Ahşap değeri 2025 ve sonrası için CANLI
+     olarak gider_710_kalem'den (grup satırı, sira="1") gelir; 2024 ve öncesi SB tablosundan
+     bilanco_yil.k710_ahsap_tl'ye yazılmıştır ve o değer önceliklidir. */
+  const g7all=(g7&&!g7.error)?(g7.data||[]):[];
+  const ahsapYil={};
+  g7all.forEach(r=>{ if(r.grup && String(r.sira||"").trim()==="1"){ const y=parseInt(String(r.donem).slice(0,4),10); if(y) ahsapYil[y]=Number(r.alinan_tutar)||0; } });
+  const ahsapOf=r=>(r.k710_ahsap_tl!=null?Number(r.k710_ahsap_tl):(ahsapYil[r.yil]!=null?ahsapYil[r.yil]:null));
   let rows="";
   rowsD.forEach(r=>{
     const k=r.kar_tl, hasK=k!=null;
@@ -846,7 +847,8 @@ async function loadBilanco(tgt){
     const g=v=>v==null?'<td class="num" style="color:#c2ccd6">—</td>':`<td class="num">${money(v)}</td>`;
     const tg=r.toplam_gider_tl;
     const p=v=>(v==null||tg==null||Number(tg)===0)?'<td class="num" style="color:#c2ccd6">—</td>':`<td class="num" style="color:#6a7888">%${Math.round(v/tg*100)}</td>`;
-    rows+=`<tr><td class="kod">${esc(r.yil)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${money(r.net_eur)}</td>${g(r.k710_tl)}${p(r.k710_tl)}${g(r.k720_tl)}${p(r.k720_tl)}${g(r.k730_tl)}${p(r.k730_tl)}${g(r.toplam_gider_tl)}${kc}${mc}</tr>`;
+    const ah=ahsapOf(r), dg=(ah==null||r.k710_tl==null)?null:(Number(r.k710_tl)-ah);
+    rows+=`<tr><td class="kod">${esc(r.yil)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${money(r.net_eur)}</td>${g(ah)}${p(ah)}${g(dg)}${p(dg)}${g(r.k720_tl)}${p(r.k720_tl)}${g(r.k730_tl)}${p(r.k730_tl)}${g(r.toplam_gider_tl)}${kc}${mc}</tr>`;
   });
   /* 710 kalem listesi — TEK liste, dönemler YAN YANA (yeni → eski).
      Sabit sütunlar: Sıra · Cinsi · Birim. Her dönem için: Dönem İçi Alınan (€) · Birim Fiyat (€) · Pay (%).
@@ -902,9 +904,8 @@ async function loadBilanco(tgt){
     table.g7t thead th{vertical-align:bottom}
     table.g7t thead tr:first-child th{top:0;z-index:3}
     table.g7t thead tr:nth-child(2) th{top:22px;z-index:2}</style>
-    ${cards}
     <div class="scroll"><table>
-    <thead><tr><th>Yıl</th><th class="num">Net Satış (TL)</th><th class="num">Net (€)</th><th class="num">710 Malzeme</th><th class="num">710 %</th><th class="num">720 İşçilik</th><th class="num">720 %</th><th class="num">730 GÜG</th><th class="num">730 %</th><th class="num">Toplam Gider</th><th class="num">Kâr/Zarar</th><th class="num">Marj</th></tr></thead>
+    <thead><tr><th>Yıl</th><th class="num">Net Satış (TL)</th><th class="num">Net (€)</th><th class="num">710 Ahşap Mlz</th><th class="num">Ahşap %</th><th class="num">710 Diğer Mlz</th><th class="num">Diğer %</th><th class="num">720 İşçilik</th><th class="num">720 %</th><th class="num">730 GÜG</th><th class="num">730 %</th><th class="num">Toplam Gider</th><th class="num">Kâr/Zarar</th><th class="num">Marj</th></tr></thead>
     <tbody>${rows}</tbody></table></div>
     ${g710Box()}`;
 }
