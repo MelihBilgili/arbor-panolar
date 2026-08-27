@@ -1011,7 +1011,9 @@ async function loadIcmal(tgt){
         Al.Ter., YD1/YD2 İsk. …) başlık sütunu gereksiz genişletip solda boşluk bırakıyordu.
         8ch'e indirildi — verisi geniş sütunlar zaten veriden ölçüldüğü için etkilenmez. */
      table.icm thead th .thw{max-width:8ch}
-     table.icm thead th.icn .thw{max-width:4.5ch}
+     /* min-width:min-content ŞART — max-width tek başına uzun sözcüğü (Kapasite, Top.Per)
+        kırpıyordu ("Kapasi", "Top.Pe"); artık taban en uzun sözcüğün genişliği. */
+     table.icm thead th.icn .thw{max-width:4.5ch;min-width:min-content}
      table.icm th,table.icm td{padding-left:5px;padding-right:5px}
     </style>
     <div class="scroll"><table class="icm">
