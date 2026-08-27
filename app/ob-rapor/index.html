@@ -362,7 +362,7 @@ function afRender(){
     +'<div class="afr"><b>Yerinde Sayan İşler:</b>'+afListe(r.yerinde_sayan)+'</div>'
     +'<div class="afr"><b>Aylık Faaliyete İlişkin Özgül Bedestenci Yorumu:</b>'
     +'<textarea id="afYorum" class="dsel" style="width:100%;min-height:70px;margin-top:3px" placeholder="Bu ayın faaliyetine ilişkin değerlendirmeniz…">'+afEsc(r.ob_yorum)+'</textarea>'
-    +'<div class="hint" style="margin:2px">Bu bölüm doldurulmadan Aylık Güncelleme yapılamaz.</div></div>';
+    +'</div>';
   const ta=document.getElementById("afYorum");
   ta.onblur=async()=>{
     const v=ta.value.trim();
