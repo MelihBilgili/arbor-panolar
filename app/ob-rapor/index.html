@@ -267,12 +267,11 @@ async function selArbBosVar(){
 /* ===== ARBOR-ONAY — blok bazlı "bilgiler güncel" onayı (26.08.2026, Melih kararı) =====
    Dépenses ve sonraki her blokta EKLE düğmesinin sağında bir onay düğmesi durur.
    "Haftalık Güncelleme" ancak BÜTÜN blok onayları verilmişse çalışır; eksikse uyarı verip durur.
-   Onay hafta bazlı localStorage'da tutulur (sayfa yenilense de kalır), başarılı güncellemeden
+   Onay ay bazlı localStorage'da tutulur (sayfa yenilense de kalır), başarılı güncellemeden
    sonra sıfırlanır. Yeni blok eklenirse tek satır onayKur(...) yeter. */
 const ONAY_FORM="ob";
-const ONAY_DONEM=(function(){ const d=new Date(); const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
-  t.setUTCDate(t.getUTCDate()+4-(t.getUTCDay()||7)); const y0=new Date(Date.UTC(t.getUTCFullYear(),0,1));
-  return t.getUTCFullYear()+"-H"+String(Math.ceil(((t-y0)/86400000+1)/7)).padStart(2,"0"); })();
+/* Onaylar artık AYLIK güncellemeyi kapıyor → dönem anahtarı ay bazlı (27.08.2026). */
+const ONAY_DONEM=(function(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); })();
 document.head.insertAdjacentHTML("beforeend","<style>.onaybtn{background:#fff;border:1.5px solid #0a6b57;color:#0a6b57;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer;font-size:12.5px;line-height:1.3;text-align:left}.onaybtn:hover{background:#eaf6f1}.onaybtn.ok{background:#0a6b57;border-color:#0a6b57;color:#fff}</style>");
 const ONAYLAR={};
 function onayKey(id){ return "arb_onay_"+ONAY_FORM+"_"+id+"_"+ONAY_DONEM; }
@@ -286,7 +285,7 @@ function onayKur(hedefId,id,ad){
   ciz(); h.insertAdjacentElement("afterend",b);
 }
 function onayEksik(){ return Object.keys(ONAYLAR).filter(id=>!onayVar(id)).map(id=>ONAYLAR[id].ad); }
-function onayKapi(){ const e=onayEksik(); if(e.length){ alert("Haftalık Güncelleme yapılamadı.\n\nÖnce aşağıdaki onay düğmelerine basmalısınız:\n\n• "+e.join("\n\n• ")); return false; } return true; }
+function onayKapi(){ const e=onayEksik(); if(e.length){ alert("Aylık Güncelleme yapılamadı.\n\nÖnce aşağıdaki onay düğmelerine basmalısınız:\n\n• "+e.join("\n\n• ")); return false; } return true; }
 function onaySifirla(){ Object.keys(ONAYLAR).forEach(id=>{ try{ localStorage.removeItem(onayKey(id)); }catch(e){} const o=ONAYLAR[id]; o.el.classList.remove("ok"); o.el.textContent=o.ad; }); }
 onayKur("dAdd","depenses","Tedarikçi Giderlerine İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("s_btn","santiye","Tıkanmış Şantiyelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
