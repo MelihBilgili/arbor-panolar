@@ -927,6 +927,10 @@ async function loadIcmal(tgt){
   const F=["dk1_ad","adet","m2","net_eur","ort_kur","net_tl","netfi_eur_m2","netfi_eur_ad","top_per","id_per","ur_per","ciro_per_eur","isk","kapasite_ad_ay","onaysiz_ad","onay_ter_hf","urt_ad","son_proje_cikis","so_alinan_eur","so_muht_eur","fa_alinan_eur","fa_muht_eur","top_alinan_eur","alinan_ter_hf","top_muht_eur","fr_isk_pct","dig_isk_pct"];
   const IC_LIDER={dk1_ad:"mik", top_per:"per"};          /* lider sütun → grup kodu */
   const IC_GIZLI={adet:"mik", m2:"mik", id_per:"per", ur_per:"per"};   /* gizli ayrıntı sütunları */
+  /* DAR sütunlar: verisi en çok 4-5 hane olanlar. Başlık sarma sınırı bunlarda 4,5ch'e iner
+     (uzun sözcük varsa sözcük genişliği taban olur) → başlığın açtığı sol boşluk kalkar.
+     Verisi geniş sütunlara uygulanmaz; orada sınırı düşürmek başlığı uzatır, sütunu daraltmaz. */
+  const IC_DAR=new Set(["adet","m2","ort_kur","netfi_eur_m2","netfi_eur_ad","id_per","ur_per","top_per","isk","kapasite_ad_ay","onaysiz_ad","onay_ter_hf","urt_ad","alinan_ter_hf","fr_isk_pct","dig_isk_pct"]);
   /* YIL TOPLAM SATIRI PANODA HESAPLANIR (DB'deki değer kullanılmaz).
      Sebep: icmal_satir'ın is_total satırlarını hiçbir betik güncellemiyordu (worker/us_icmal ve
      icmal_satis_yaz yalnız is_total=false satırlara yazar) → yeni ay girilince yıl toplamı
@@ -992,9 +996,10 @@ async function loadIcmal(tgt){
   const head=TH.map((h,i)=>{
     if(i===0) return '<th>'+h+'</th>';
     const f=F[i-1], lid=IC_LIDER[f], giz=IC_GIZLI[f];
-    if(lid) return '<th class="num iclead" data-g="'+lid+'" title="Ayrıntı sütunlarını aç/kapa">'+h+' <span class="iccar" id="icc-'+lid+'">▸</span></th>';
-    if(giz) return '<th class="num icg icg-'+giz+' ichide thsm"><span class="thw">'+h+'</span></th>';
-    return '<th class="num">'+h+'</th>';
+    const dar=IC_DAR.has(f)?" icn":"";
+    if(lid) return '<th class="num iclead'+dar+'" data-g="'+lid+'" title="Ayrıntı sütunlarını aç/kapa">'+h+' <span class="iccar" id="icc-'+lid+'">▸</span></th>';
+    if(giz) return '<th class="num icg icg-'+giz+' ichide thsm'+dar+'"><span class="thw">'+h+'</span></th>';
+    return '<th class="num'+dar+'">'+h+'</th>';
   }).join("");
   view.innerHTML=`${stampHTML(st)}
     <style>
@@ -1006,6 +1011,7 @@ async function loadIcmal(tgt){
         Al.Ter., YD1/YD2 İsk. …) başlık sütunu gereksiz genişletip solda boşluk bırakıyordu.
         8ch'e indirildi — verisi geniş sütunlar zaten veriden ölçüldüğü için etkilenmez. */
      table.icm thead th .thw{max-width:8ch}
+     table.icm thead th.icn .thw{max-width:4.5ch}
      table.icm th,table.icm td{padding-left:5px;padding-right:5px}
     </style>
     <div class="scroll"><table class="icm">
