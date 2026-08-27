@@ -921,7 +921,12 @@ async function loadIcmal(tgt){
   ]);
   const {data,error}=ic;
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
-  const F=["adet","dk1_ad","m2","net_eur","ort_kur","net_tl","netfi_eur_m2","netfi_eur_ad","id_per","ur_per","top_per","ciro_per_eur","isk","kapasite_ad_ay","onaysiz_ad","onay_ter_hf","urt_ad","son_proje_cikis","so_alinan_eur","so_muht_eur","fa_alinan_eur","fa_muht_eur","top_alinan_eur","alinan_ter_hf","top_muht_eur","fr_isk_pct","dig_isk_pct"];
+  /* Sütun sırası (27.08.2026, Melih): Miktar (DK1) ve Top.Per birer "lider" sütun — sağlarındaki
+     ikişer ayrıntı sütunu (Miktar Ad + m² · İd.Per + Ür.Per) VARSAYILAN GİZLİ, lider başlığa
+     tıklanınca açılır/kapanır (Ahşap panosundaki yıl→ay deseninin aynısı). */
+  const F=["dk1_ad","adet","m2","net_eur","ort_kur","net_tl","netfi_eur_m2","netfi_eur_ad","top_per","id_per","ur_per","ciro_per_eur","isk","kapasite_ad_ay","onaysiz_ad","onay_ter_hf","urt_ad","son_proje_cikis","so_alinan_eur","so_muht_eur","fa_alinan_eur","fa_muht_eur","top_alinan_eur","alinan_ter_hf","top_muht_eur","fr_isk_pct","dig_isk_pct"];
+  const IC_LIDER={dk1_ad:"mik", top_per:"per"};          /* lider sütun → grup kodu */
+  const IC_GIZLI={adet:"mik", m2:"mik", id_per:"per", ur_per:"per"};   /* gizli ayrıntı sütunları */
   /* YIL TOPLAM SATIRI PANODA HESAPLANIR (DB'deki değer kullanılmaz).
      Sebep: icmal_satir'ın is_total satırlarını hiçbir betik güncellemiyordu (worker/us_icmal ve
      icmal_satis_yaz yalnız is_total=false satırlara yazar) → yeni ay girilince yıl toplamı
@@ -976,16 +981,37 @@ async function loadIcmal(tgt){
   let rows="";
   rowsA.forEach(r=>{
     let tds='<td class="kod">'+esc(r.donem)+'</td>';
-    F.forEach(f=>{ tds+='<td class="num">'+esc(r[f])+'</td>'; });
+    F.forEach(f=>{ const g=IC_GIZLI[f]; tds+='<td class="num'+(g?' icg icg-'+g+' ichide':'')+'">'+esc(r[f])+'</td>'; });
     rows+='<tr'+(r.is_total?' class="itot"':'')+'>'+tds+'</tr>';
   });
   const st=await tblStamp("icmal_yil");
-  const TH=["D\u00f6nem","Miktar (Ad)","DK1 (Ad)","Miktar (m\u00b2)","Net Tutar (\u20ac)","Ort. Kur","Net Tutar (TL)","Net Fi. (\u20ac/m\u00b2)","Net Fi. (\u20ac/ad)","\u0130d.Per (Ki\u015fi)","\u00dcr.Per (Ki\u015fi)","Top.Per (ki\u015fi)","Ciro/Per (\u20ac/ki\u015fi)","\u0130sk (%)","Kapasite (Ad/Ay)","0..4 Onays\u0131z (Ad)","Onay Ter (hf)","4.1\u20267 \u00dcrt (Ad)","Son Proje \u00c7\u0131k\u0131\u015f","Yurt \u0130\u00e7i al\u0131nan Prj (\u20ac)","Yurt \u0130\u00e7i muht. Prj (\u20ac)","Yurt D\u0131\u015f\u0131 al\u0131nan Prj (\u20ac)","Yurt D\u0131\u015f\u0131 muht. Prj (\u20ac)","Top.al\u0131nan Prj (\u20ac)","Al.Ter. (hf)","Top.muht. Prj (\u20ac)","YD1 \u0130sk. (%)","YD2 \u0130sk. (%)"];
-  const head=TH.map((h,i)=>i===0?('<th>'+h+'</th>'):('<th class="num">'+h+'</th>')).join("");
+  const TH=["D\u00f6nem","Miktar (DK1)","Miktar (Ad)","Miktar (m\u00b2)","Net Tutar (\u20ac)","Ort. Kur","Net Tutar (TL)","Net Fi. (\u20ac/m\u00b2)","Net Fi. (\u20ac/ad)","Top.Per (ki\u015fi)","\u0130d.Per (Ki\u015fi)","\u00dcr.Per (Ki\u015fi)","Ciro/Per (\u20ac/ki\u015fi)","\u0130sk (%)","Kapasite (Ad/Ay)","0..4 Onays\u0131z (Ad)","Onay Ter (hf)","4.1\u20267 \u00dcrt (Ad)","Son Proje \u00c7\u0131k\u0131\u015f","Yurt \u0130\u00e7i al\u0131nan Prj (\u20ac)","Yurt \u0130\u00e7i muht. Prj (\u20ac)","Yurt D\u0131\u015f\u0131 al\u0131nan Prj (\u20ac)","Yurt D\u0131\u015f\u0131 muht. Prj (\u20ac)","Top.al\u0131nan Prj (\u20ac)","Al.Ter. (hf)","Top.muht. Prj (\u20ac)","YD1 \u0130sk. (%)","YD2 \u0130sk. (%)"];
+  /* Gizli sütunların başlıkları fitHeads çalışırken display:none olduğu için ölçülemez
+     (genişlik 0 → atlanır) → Ahşap panosundaki gibi thsm/thw ELLE verilir; açılınca dar
+     ve iki satırlı gelirler. */
+  const head=TH.map((h,i)=>{
+    if(i===0) return '<th>'+h+'</th>';
+    const f=F[i-1], lid=IC_LIDER[f], giz=IC_GIZLI[f];
+    if(lid) return '<th class="num iclead" data-g="'+lid+'" title="Ayrıntı sütunlarını aç/kapa">'+h+' <span class="iccar" id="icc-'+lid+'">▸</span></th>';
+    if(giz) return '<th class="num icg icg-'+giz+' ichide thsm"><span class="thw">'+h+'</span></th>';
+    return '<th class="num">'+h+'</th>';
+  }).join("");
   view.innerHTML=`${stampHTML(st)}
+    <style>
+     .ichide{display:none}
+     thead th.iclead{cursor:pointer;background:#22456b}
+     thead th.iclead:hover{background:#2d5a8a}
+     .iccar{font-size:9px;opacity:.85}
+    </style>
     <div class="scroll"><table>
     <thead><tr>${head}</tr></thead>
     <tbody>${rows}</tbody></table></div>`;
+  view.querySelectorAll("th.iclead").forEach(th=>{ th.onclick=()=>{
+    const g=th.dataset.g, on=th.dataset.on==="1";
+    view.querySelectorAll(".icg-"+g).forEach(c=>c.classList.toggle("ichide",on));
+    th.dataset.on=on?"0":"1";
+    const c=view.querySelector("#icc-"+g); if(c) c.textContent=on?"▸":"▾";
+  }; });
 }
 
 /* ---------- REFERANS (kisiler / parametreler + işleyiş; ödemeler Maaş-Prim'e taşındı) ---------- */
