@@ -289,9 +289,30 @@ function onayKapi(){ const e=onayEksik(); if(e.length){ alert("Aylık Güncellem
 function onaySifirla(){ Object.keys(ONAYLAR).forEach(id=>{ try{ localStorage.removeItem(onayKey(id)); }catch(e){} const o=ONAYLAR[id]; o.el.classList.remove("ok"); o.el.textContent=o.ad; }); }
 onayKur("af","fatura","Yurt Dışı Birimlerine Kesilen Faturalara İlişkin Aşağıdaki Bilgilerin Doğruluğunu Onaylıyorum");
 
+/* Sevk durumu ANLAMLI girilmiş mi? (27.08.2026, Melih) — boş, üç karakterden kısa ya da hiç harf
+   içermeyen girişler ("-", ".", "x", "??", "1") bilgi sayılmaz; aylık güncellemeyi durdurur. */
+const sevkAnlamsiz=s=>{ const t=String(s||"").trim(); return t.length<3 || !/[A-Za-zÇĞİÖŞÜçğıöşü]/.test(t); };
+function sevkEksik(){
+  document.querySelectorAll("#list .ed.miss").forEach(e=>e.classList.remove("miss"));
+  const eksik=[];
+  ROWS.forEach((r,i)=>{
+    if(!sevkAnlamsiz(r.onur_guncel)) return;
+    eksik.push(r.tur+" "+r.no);
+    const el=document.querySelector('#list .ed[data-i="'+i+'"]'); if(el) el.classList.add("miss");
+  });
+  return eksik;
+}
+
 /* ---------- AYLIK GÜNCELLE ---------- */
 $("ay_btn").onclick=async()=>{
   if(!onayKapi()) return;
+  const _se=sevkEksik();
+  if(_se.length){
+    alert("Aylık güncelleme yapılamadı — "+_se.length+" satırda sevk durumu girilmemiş ya da anlamlı değil.\n\nKırmızı işaretli hücreleri doldurun:\n\n• "+_se.slice(0,15).join("\n• ")+(_se.length>15?"\n• … ("+(_se.length-15)+" satır daha)":""));
+    fmsg("ay_msg",_se.length+" satırda sevk durumu eksik — kırmızı hücreleri doldurun.",false);
+    const ilk=document.querySelector("#list .ed.miss"); if(ilk) ilk.scrollIntoView({block:"center"});
+    return;
+  }
   if(bosVar()){ alert("Aylık güncelleme yapılamaz — fatura listesinde boş alan var.\n\nKırmızı işaretli alanları doldurun."); fmsg("ay_msg","Boş alan var — kırmızı hücreleri doldurun.",false); return; }
   if(!confirm("AYLIK GÜNCELLE\n\n1) Her kalemin önceki→güncel sevk durumu değişim özeti üretilip panoya yazılacak, güncel değer 'önceki'ye kaydırılacak.\n2) Bu ay eklenen faturaların € toplamı SEL-ARB panosundaki \"Selectron'a Borç\" tutarına eklenecek.\n\nDevam?")) return;
   const btn=$("ay_btn"); btn.disabled=true; fmsg("ay_msg","Aktarılıyor…",true);
