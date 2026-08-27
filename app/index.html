@@ -1002,8 +1002,13 @@ async function loadIcmal(tgt){
      thead th.iclead{cursor:pointer;background:#22456b}
      thead th.iclead:hover{background:#2d5a8a}
      .iccar{font-size:9px;opacity:.85}
+     /* Başlık sarma genişliği global 14ch idi; dar sayılı sütunlarda (Kapasite, Onay Ter,
+        Al.Ter., YD1/YD2 İsk. …) başlık sütunu gereksiz genişletip solda boşluk bırakıyordu.
+        8ch'e indirildi — verisi geniş sütunlar zaten veriden ölçüldüğü için etkilenmez. */
+     table.icm thead th .thw{max-width:8ch}
+     table.icm th,table.icm td{padding-left:5px;padding-right:5px}
     </style>
-    <div class="scroll"><table>
+    <div class="scroll"><table class="icm">
     <thead><tr>${head}</tr></thead>
     <tbody>${rows}</tbody></table></div>`;
   view.querySelectorAll("th.iclead").forEach(th=>{ th.onclick=()=>{
