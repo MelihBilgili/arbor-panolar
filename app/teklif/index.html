@@ -248,15 +248,15 @@ function calcNet(){
   const sur = pick(R.brk, brut);
   let kat=(1-R.baz)*(1-musk)*(1+sur);
   if(reno) kat*=(1+R.reno);
-  kat = Math.round(kat*100)/100;   // Net tutar, ekranda gösterilen 2-haneye YUVARLANMIŞ katsayıyla hesaplanır (gösterim = hesap tutarlı)
-  const net=brut*kat;
+  const katR = Math.round(kat*100)/100;   // YALNIZ net için: ekranda gösterilen 2-haneye yuvarlanmış katsayı. kat HAM kalır (montaj hesabı bundan etkilenmez).
+  const net=brut*katR;
   $('netOut').textContent=eur(net);
   $('netBd').innerHTML=
     `<span>Baz iskonto <b>−${pct(R.baz)}</b></span>`+
     `<span>Müşteri iskontosu (${sinif==='0'?'diğer':sinif+'. sınıf'}) <b>−${pct(musk)}</b></span>`+
     `<span>Büyüklük sürşarjı <b>+${pct(sur)}</b></span>`+
     (reno?`<span>Renovasyon (eski doğrama sökümü) <b>+${pct(R.reno)}</b></span>`:'');
-  $('katOut').textContent=kat.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  $('katOut').textContent=katR.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2});
   $('onayNot').style.display = sinif==='0' ? '' : 'none';
   return net;
 }
