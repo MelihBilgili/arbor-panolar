@@ -1225,6 +1225,7 @@ async function loadFormlar(){
     {ad:"SÖ Gündem",           who:"Enes Artan",        url:"ea/",          sik:"Her Salı"},
     {ad:"OE Faaliyet",         who:"Onur Ekinci",       url:"onur/",        sik:"Her ayın ilk iş günü"},
     {ad:"ÖB Faaliyet",         who:"Özgül Bedestenci",  url:"ob-rapor/",    sik:"Her ayın ilk iş günü"},
+    {ad:"DA Faaliyet",         who:"Deniz Aslan",       url:"da-rapor/",    sik:"Her Salı"},
     {ad:"MK Faaliyet",         who:"Mehmet Konak",      url:"mk-prim/",     sik:"Her ayın ilk iş günü"},
     {ad:"Yurtiçi Satış",       who:"Sinan Oran",        url:"so/",          sik:"Her ayın ilk iş günü"},
     {ad:"Yurt Dışı 1 Satış",   who:"Mustafa Nas",       url:"fy/",          sik:"Her ayın ilk iş günü"},
@@ -1233,23 +1234,25 @@ async function loadFormlar(){
     {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
-  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap"};
+  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","da-rapor/":"da_faaliyet","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap"};
   /* Geciken = SON TARİHE göre hesaplanır (eskiden "son güncelleme + 7/30 gün" idi → hep 0 çıkıyordu):
      "Her Salı" → bu haftanın Salı'sı · "Her ayın ilk iş günü" → bu ayın ilk iş günü · "Süresiz" → yok.
      Son güncelleme = form_takip.son_guncelleme (elle ✓) ile formun CANLI izinin (pano_yayin /
      ilgili tablonun en yeni updated_at'i) büyüğü. Son güncelleme son tarihten önceyse
      geciken = bugün − son tarih (gün), değilse 0. */
-  const [ft,pyF,eaU,onU,obU]=await Promise.all([
+  const [ft,pyF,eaU,onU,obU,daU]=await Promise.all([
     sb.from("form_takip").select("*"),
     sb.from("pano_yayin").select("anahtar,yayin_at"),
     sb.from("so_ea_form").select("updated_at").order("updated_at",{ascending:false}).limit(1),
     sb.from("sevk_durumu_onur").select("updated_at").order("updated_at",{ascending:false}).limit(1),
-    sb.from("ob_isler").select("updated_at").order("updated_at",{ascending:false}).limit(1)
+    sb.from("ob_isler").select("updated_at").order("updated_at",{ascending:false}).limit(1),
+    sb.from("da_isler").select("updated_at").order("updated_at",{ascending:false}).limit(1)
   ]);
   const ftBy={}; ((ft&&!ft.error)?(ft.data||[]):[]).forEach(r=>ftBy[r.form_key]=r);
   const pyBy={}; ((pyF&&!pyF.error)?(pyF.data||[]):[]).forEach(r=>pyBy[r.anahtar]=r.yayin_at);
   const one=r=>(r&&!r.error&&r.data&&r.data[0])?r.data[0].updated_at:null;
   const CANLI={ ea_so:one(eaU), onur_sevk:one(onU), ob_rapor:[pyBy.ob_rapor,one(obU)].sort().reverse()[0],
+                da_faaliyet:[pyBy.da_rapor,one(daU)].sort().reverse()[0],
                 ahsap:pyBy.ahsap, yd_alacak:pyBy.sel_arb };
   const today=new Date(); today.setHours(0,0,0,0);
   const dParse=s=>{ if(!s) return null; const p=String(s).slice(0,10).split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
@@ -1852,7 +1855,7 @@ async function loadMali(){
   const b=state.maliBolum;
   let metaMap={};
   if(panoAllowed.length){ const m=await sb.from("pano_ozel_meta").select("*").in("bolum",panoAllowed); (m.data||[]).forEach(x=>metaMap[x.bolum]=x); }
-  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="fiyat"?"Fiyatlandırma" : x==="ahsap"?"Ahşap" : x==="mali_maasprim"?"Maaş-Prim" : x==="mali_mkprim"?"MK Faaliyet" : x==="ob_rapor"?"ÖB Faaliyet" : x==="da_rapor"?"DA Faaliyet" : ((metaMap[x]&&metaMap[x].etiket)||x);
+  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="fiyat"?"Fiyatlandırma" : x==="ahsap"?"Ahşap" : x==="mali_maasprim"?"Maaş-Prim" : x==="mali_mkprim"?"MK Faaliyet" : x==="ob_rapor"?"ÖB Faaliyet" : x==="da_rapor"?"DA Faaliyet — Deniz Aslan" : ((metaMap[x]&&metaMap[x].etiket)||x);
   const bar=all.map(x=>`<button class="malitab${x===b?' active':''}" data-b="${esc(x)}">${esc(label(x))}</button>`).join("");
   view.innerHTML=`<div class="malibar">${bar}</div><div id="mali-body"><div class="load">Yükleniyor…</div></div>`;
   view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.maliBolum=btn.dataset.b; loadMali(); });
