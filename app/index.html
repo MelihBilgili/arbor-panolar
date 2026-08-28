@@ -1624,6 +1624,86 @@ async function loadObrapor(tgt){
   };
 }
 
+/* ---------- DA Rapor — ÖB panosuna paralel (Takipteki İşler / da_isler + Aylık Faaliyet / da_aylik_faaliyet; DA formu yazar, owner salt-okur) ---------- */
+let daWeeksOpen=false;
+async function loadDaRapor(tgt){
+  const view=document.getElementById(tgt||"view");
+  const isl=await sb.from("da_isler").select("*").order("arsiv").order("id");
+  if(isl.error){ view.innerHTML=`<div class="load">Hata: ${esc(isl.error.message)}</div>`; return; }
+  const iRows=isl.data||[];
+  const lg=await sb.from("da_isler_log").select("is_id,hafta,da_notlari").order("hafta",{ascending:false});
+  const lRows=(lg&&!lg.error)?(lg.data||[]):[];
+  const isoWk=d=>{ const t=new Date(d+"T00:00:00Z"); const g=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate()));
+    g.setUTCDate(g.getUTCDate()+4-(g.getUTCDay()||7)); const y0=new Date(Date.UTC(g.getUTCFullYear(),0,1));
+    return Math.ceil(((g-y0)/86400000+1)/7); };
+  const isoYr=d=>{ const t=new Date(d+"T00:00:00Z"); const g=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth(),t.getUTCDate()));
+    g.setUTCDate(g.getUTCDate()+4-(g.getUTCDay()||7)); return g.getUTCFullYear(); };
+  const wkKey=d=> isoYr(d)+"-"+String(isoWk(d)).padStart(2,"0");
+  const weekMap={};
+  lRows.forEach(r=>{ const k=wkKey(r.hafta); const w=weekMap[k]||(weekMap[k]={maxDate:r.hafta,notes:{}});
+    if(r.hafta>w.maxDate) w.maxDate=r.hafta; const id=String(r.is_id);
+    if(!(id in w.notes)) w.notes[id]=r.da_notlari;
+    else if(String(r.da_notlari||"").trim()!=="" && String(w.notes[id]||"").trim()==="") w.notes[id]=r.da_notlari; });
+  const haftaKeys=Object.keys(weekMap).sort().reverse().slice(1);
+  const dgun=d=>d.slice(8,10)+"."+d.slice(5,7)+"."+d.slice(2,4);
+  const py=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","da_rapor").limit(1);
+  const pyAt=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
+  const cx=(v,cls)=>`<td class="${cls||""}"><div class="cx">${esc(v==null?"":v)}</div></td>`;
+  const kar=daWeeksOpen?"▾":"▸";
+  let cg=`<col class="k35"><col class="k20"><col class="k20"><col class="k100">`
+    + (daWeeksOpen?haftaKeys.map(()=>`<col class="k40">`).join(""):"")
+    + `<col class="k60"><col class="k60">`;
+  let hd=`<th>Konu</th><th>Durum</th><th>Öncelik</th><th class="obwh" id="da-wk" title="Geçmiş hafta notlarını aç/kapa">Son DA Notları <span class="ahcar">${kar}</span></th>`
+    + (daWeeksOpen?haftaKeys.map(k=>`<th class="thsm" title="${dgun(weekMap[k].maxDate)}"><span class="thw">${isoWk(weekMap[k].maxDate)}. Hafta DA Notu</span></th>`).join(""):"")
+    + `<th>Son Değişim Özeti</th><th>Aylık Değişim Özeti</th>`;
+  let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3>`
+    +`<div class="scroll"><table class="obt">`
+    +`<colgroup>${cg}</colgroup>`
+    +`<thead><tr>${hd}</tr></thead><tbody>`;
+  iRows.forEach(r=>{
+    ib+=`<tr>${cx(r.konu,"sb")}${cx(r.durum)}${cx(r.oncelik)}${cx(r.da_notlari)}`
+      + (daWeeksOpen?haftaKeys.map(k=>cx((weekMap[k].notes||{})[String(r.id)])).join(""):"")
+      + `${cx(r.degisim_ozet)}${cx(r.aylik_ozet)}</tr>`;
+  });
+  if(!iRows.length) ib+=`<tr><td colspan="6" class="muted">Henüz iş yok — DA formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
+  ib+=`</tbody></table></div>`;
+  /* AYLIK FAALİYET — Takipteki İşler'in altı: kapanan ayın tespitleri (Claude) + DA'nın yorumu (da_yorum). */
+  const AY_AD=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+  const _d=new Date(), _y=(_d.getMonth()===0)?_d.getFullYear()-1:_d.getFullYear(), _m=(_d.getMonth()===0)?12:_d.getMonth();
+  const afDon=_y+"-"+String(_m).padStart(2,"0"), afAd=AY_AD[_m-1]+" "+_y;
+  const afq=await sb.from("da_aylik_faaliyet").select("*").eq("donem",afDon).limit(1);
+  const afR=(afq&&!afq.error&&afq.data&&afq.data[0])?afq.data[0]:null;
+  const afList=s=>{ const t=String(s||"").split("\n").map(x=>x.trim()).filter(Boolean);
+    return t.length? '<ul style="margin:2px 0 0 16px;padding:0">'+t.map(x=>'<li>'+esc(x)+'</li>').join("")+'</ul>' : '<span class="muted">—</span>'; };
+  ib+=`<h3 class="sec">Aylık Faaliyet <span class="muted">(${esc(afAd)})</span></h3>
+    <div class="obaf">
+      <div class="obafh">Tamamlanan İşler</div><div class="obafy">${afR?afList(afR.tamamlanan):'<span class="muted">—</span>'}</div>
+      <div class="obafh" style="margin-top:9px">Gelişme Kaydedilen İşler</div><div class="obafy">${afR?afList(afR.gelisme):'<span class="muted">—</span>'}</div>
+      <div class="obafh" style="margin-top:9px">Gerçekleşen Faaliyet</div><div class="obafy">${afR&&afR.faaliyet?esc(afR.faaliyet):'<span class="muted">—</span>'}</div>
+      <div class="obafh" style="margin-top:9px">Yerinde Sayan İşler</div><div class="obafy">${afR?afList(afR.yerinde_sayan):'<span class="muted">—</span>'}</div>
+      <div class="obafh" style="margin-top:9px">Aylık Faaliyete İlişkin DA Yorumu</div>
+      <div class="obafy">${afR&&afR.da_yorum?esc(afR.da_yorum):'<span class="muted">— (DA formundaki Aylık Faaliyet bloğundan girilir)</span>'}</div>
+    </div>`;
+  view.innerHTML=`<style>
+    table.obt{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
+    table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k40{width:40ch}table.obt col.k60{width:48ch}table.obt col.k100{width:59.5ch}
+    table.obt th.obwh{cursor:pointer;background:#22456b}
+    table.obt th.obwh:hover{background:#2d5a8a}
+    table.obt .ahcar{font-size:9px;opacity:.85}
+    table.obt th,table.obt td{border-bottom:1px solid #eef1f5;padding:2px 8px;text-align:left;vertical-align:middle;height:20px;line-height:16px}
+    table.obt thead th{background:#16324f;color:#fff;font-weight:600;font-size:11px;white-space:nowrap;padding:4px 8px}
+    table.obt .cx{overflow-x:auto;white-space:nowrap;scrollbar-width:none;-ms-overflow-style:none}
+    table.obt .cx::-webkit-scrollbar{display:none}
+    table.obt td.sb .cx{font-weight:700;color:#16324f}
+    .obaf{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:9px 12px;max-width:900px}
+    .obaf .obafh{font-size:12px;font-weight:700;color:#16324f;margin-bottom:3px}
+    .obaf .obafy{font-size:12.5px;line-height:1.45;white-space:pre-wrap}
+  </style>
+  <div class="stamp">Son güncelleme: ${pyAt?dOnly(pyAt):"—"}</div>${ib}`;
+  const wh=document.getElementById("da-wk");
+  if(wh) wh.onclick=()=>{ daWeeksOpen=!daWeeksOpen; loadDaRapor(tgt); };
+}
+
 /* ---------- FİYATLANDIRMA — kaynak veri + editör (fiyat_* tabloları, anon dar). GÜNCELLE = yayınla + bildir. ---------- */
 let fiyatTarget="view";
 async function loadFiyat(target){
@@ -1764,18 +1844,20 @@ async function loadMali(){
   const isAdmin = state.allowed===null;
   const ek = [["bilanco","Bilanço"],["icmal","İcmal"],["fiyat","Fiyatlandırma"]].filter(x=> isAdmin || state.allowed.includes(x[0]));
   const obOk = isAdmin || state.allowed.includes("ob_rapor");
+  const daOk = isAdmin || state.allowed.includes("da_rapor");
   const panoAllowed = isAdmin ? MALI_BOLUM.slice() : MALI_BOLUM.filter(b=>state.allowed.includes(b));
-  const all = ek.map(x=>x[0]).concat(panoAllowed).concat(obOk?["ob_rapor"]:[]);
+  const all = ek.map(x=>x[0]).concat(panoAllowed).concat(obOk?["ob_rapor"]:[]).concat(daOk?["da_rapor"]:[]);
   if(!all.length){ view.innerHTML=`<div class="load">Bu hesapta mali bölüm yetkisi yok.</div>`; return; }
   if(!state.maliBolum || !all.includes(state.maliBolum)) state.maliBolum=all[0];
   const b=state.maliBolum;
   let metaMap={};
   if(panoAllowed.length){ const m=await sb.from("pano_ozel_meta").select("*").in("bolum",panoAllowed); (m.data||[]).forEach(x=>metaMap[x.bolum]=x); }
-  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="fiyat"?"Fiyatlandırma" : x==="ahsap"?"Ahşap" : x==="mali_maasprim"?"Maaş-Prim" : x==="mali_mkprim"?"MK Faaliyet" : x==="ob_rapor"?"ÖB Faaliyet" : ((metaMap[x]&&metaMap[x].etiket)||x);
+  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="fiyat"?"Fiyatlandırma" : x==="ahsap"?"Ahşap" : x==="mali_maasprim"?"Maaş-Prim" : x==="mali_mkprim"?"MK Faaliyet" : x==="ob_rapor"?"ÖB Faaliyet" : x==="da_rapor"?"DA Faaliyet" : ((metaMap[x]&&metaMap[x].etiket)||x);
   const bar=all.map(x=>`<button class="malitab${x===b?' active':''}" data-b="${esc(x)}">${esc(label(x))}</button>`).join("");
   view.innerHTML=`<div class="malibar">${bar}</div><div id="mali-body"><div class="load">Yükleniyor…</div></div>`;
   view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.maliBolum=btn.dataset.b; loadMali(); });
   if(b==="ob_rapor"){ loadObrapor("mali-body"); return; }
+  if(b==="da_rapor"){ loadDaRapor("mali-body"); return; }
   if(b==="bilanco"){ loadBilanco("mali-body"); return; }
   if(b==="icmal"){ loadIcmal("mali-body"); return; }
   /* MK Faaliyet = MK prim blokları + Tıkanmış Şantiyeler (eski ayrı Şantiye sekmesi buraya taşındı) */
