@@ -248,6 +248,7 @@ function calcNet(){
   const sur = pick(R.brk, brut);
   let kat=(1-R.baz)*(1-musk)*(1+sur);
   if(reno) kat*=(1+R.reno);
+  kat = Math.round(kat*100)/100;   // Net tutar, ekranda gösterilen 2-haneye YUVARLANMIŞ katsayıyla hesaplanır (gösterim = hesap tutarlı)
   const net=brut*kat;
   $('netOut').textContent=eur(net);
   $('netBd').innerHTML=
