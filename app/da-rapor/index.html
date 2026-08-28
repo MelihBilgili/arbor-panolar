@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DA — Faaliyet Formu</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
+  header{background:#8a6100;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#ffe9b8;margin-top:3px}
+  .wrap{max-width:1100px;margin:0 auto;padding:10px 14px 40px}
+  .msg{font-size:12.5px;min-height:16px}.msg.ok{color:#2e7d54;font-weight:600}.msg.err{color:#b40000;font-weight:600}
+  .grp{margin:10px 0 4px}
+  .grp h2{font-size:13px;margin:0 0 5px;color:#5c4300;border-bottom:2px solid #e6d3a3;padding-bottom:3px}
+  header .sub{line-height:1.5;max-width:900px}
+  .ghd{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:0 0 5px}
+  .ghd h2{border-bottom:0;margin:0;padding:0}
+  .load{padding:30px;text-align:center;color:#8a97a4}
+  .hint{font-size:11px;color:#8a97a4;margin:4px 2px}
+  .ibtns{display:flex;gap:8px;flex-wrap:wrap;margin:5px 0}
+  .ibtns .iadd{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:600;cursor:pointer;font-size:12.5px}
+  .ibtns .mnbtn{background:#0a6b57;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:600;cursor:pointer;font-size:12.5px}
+  .ibtns .wkbtn{background:#0b57d0;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:600;cursor:pointer;font-size:12.5px}
+  .itbl{border-collapse:collapse;width:auto;font-size:12px}
+  .itbl th,.itbl td{border-bottom:1px solid #eef1f5;padding:2px 6px;text-align:left;vertical-align:middle;line-height:16px;white-space:nowrap}
+  .itbl thead th{background:#8a6100;color:#fff;font-weight:600}
+  .itbl .ic{font:inherit;padding:2px 5px;border:1px solid #cdd6df;border-radius:5px;background:#fffdf5;width:150px}
+  .itbl .ic[data-f="da_notlari"]{width:40ch}
+  .itbl .ionc{width:7ch;text-align:center}
+  .idel{background:#fff;border:1px solid #e0b4b4;color:#b40000;border-radius:5px;cursor:pointer;padding:0 7px;font-weight:700;line-height:18px}
+  .dsel{font:inherit;padding:6px 9px;border:1px solid #cdd6df;border-radius:8px;background:#fffdf5;font-size:12.5px}
+  .afbox{background:#fff;border:1px solid #e6d3a3;border-radius:9px;padding:9px 12px;font-size:12.5px;line-height:1.45}
+  .afbox .afr{margin:0 0 7px}
+  .afbox .afr b{color:#5c4300}
+  .afbox ul li{margin:1px 0}
+
+html,body{max-width:100vw;overflow-x:hidden}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+</style>
+</head>
+<body>
+<header>
+  <h1>Faaliyet Formu</h1>
+  <div class="sub">Haftalık faaliyetler kaydedilir. Buraya takipteki işler işlenir; ay sonunda aylık faaliyet değerlendirmesi yapılır.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak güncelleme düğmelerine basılmadıkça gönderilmez.</div>
+</header>
+<div class="wrap">
+  <div id="msg" class="msg"></div>
+
+  <div class="ibtns" style="margin:2px 0 10px;align-items:center">
+    <button class="wkbtn" id="iWeek">Haftalık Güncelleme</button>
+    <span class="hint" style="margin:0;align-self:center">Sadece Takipteki İşlere ilişkin bilgiler aktarılır</span>
+    <button class="mnbtn" id="iMonth">Aylık Güncelleme</button>
+    <span class="hint" style="margin:0;align-self:center">Aylık Faaliyet bloğu için kapanan ayın tespitleri üretilir</span>
+  </div>
+
+  <div class="grp">
+    <div class="ghd"><h2>Takipteki İşler</h2>
+      <button class="iadd" id="iAdd">+ Yeni İş Ekle</button>
+    </div>
+    <div class="hint" style="margin:0 2px 6px">Tasarım işleri için öncelik derecesi seçilmelidir. Birden çok iş için aynı öncelik derecesi seçilebilir.</div>
+    <div id="iList"><div class="load">Yükleniyor…</div></div>
+  </div>
+
+  <div class="grp" id="afWrap">
+    <div class="ghd"><h2>Aylık Faaliyet</h2>
+      <span class="hint" style="margin:0">Kapanan aya ilişkin tespitler haftalık form kayıtlarından üretilir; son bölümü siz doldurursunuz.</span>
+    </div>
+    <div id="afBox" class="afbox"><div class="load">Yükleniyor…</div></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ===== ARBOR FORM KAPISI — anon erisim kapali, rol hesabiyla giris ===== */
+const ARB_ROLE_EMAIL = "da.form@arbor.com.tr";
+const ARB_STORE = "arbform_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
+const ARB_MB = "int@arbor.com.tr";
+/* panolarin varsayilan oturumu (ayni origin, varsayilan storageKey) */
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+var ARB_ACTIVE = ARB_GATE_SB;
+/* form kodu kendi createClient cagirsa bile aktif oturumlu istemci doner */
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(msg){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:310px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:3px">Arbor — Form Girisi</div>'
+    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:12px">'+ARB_ROLE_EMAIL+'</div>'
+    +'<input id="arb-pw" type="password" placeholder="Parola" autocomplete="current-password" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giris</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px">'+(msg||"")+'</div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var pw=document.getElementById("arb-pw").value;
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giris yapiliyor...";
+    var r=await ARB_GATE_SB.auth.signInWithPassword({email:ARB_ROLE_EMAIL,password:pw});
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent="Parola hatali"; return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  if(em!==ARB_ROLE_EMAIL){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(em===ARB_ROLE_EMAIL || em===ARB_MB){ (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script type="text/plain" id="arbmain">
+const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function msg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},1900); }
+
+/* ===== Takipteki İşler (da_isler) — anlık kayıt + haftalık arşiv ===== */
+const OBI_DURUM=["Henüz çalışılmadı","İlerliyor","Tamamlandı","İptal oldu"];
+/* Öncelik: "-" = öncelik söz konusu değil (varsayılan); tasarım işlerinde 1-3 veya Rutin seçilir */
+const OBI_ONCELIK=["-","1","2","3","Rutin"];
+let IROWS=[];
+async function loadIsler(){
+  const {data,error}=await sb.from("da_isler").select("*").order("arsiv").order("id");
+  if(error){ document.getElementById("iList").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
+  IROWS=data||[]; renderIsler();
+}
+function durumOpts(v){ return OBI_DURUM.map(d=>'<option'+(d===v?' selected':'')+'>'+esc(d)+'</option>').join(""); }
+function oncelikOpts(v){ const c=(v==null||v==="")?"-":String(v); return OBI_ONCELIK.map(d=>'<option'+(d===c?' selected':'')+'>'+esc(d)+'</option>').join(""); }
+function renderIsler(){
+  let h='<table class="itbl"><thead><tr><th>Konu</th><th>Öncelik</th><th>Durum</th><th>DA Notları</th><th></th></tr></thead><tbody>';
+  IROWS.forEach(r=>{
+    h+='<tr data-id="'+r.id+'">'
+      +'<td><input class="ic" data-f="konu" value="'+esc(r.konu)+'" placeholder="Konu"></td>'
+      +'<td><select class="ic ionc" data-f="oncelik">'+oncelikOpts(r.oncelik)+'</select></td>'
+      +'<td><select class="ic" data-f="durum">'+durumOpts(r.durum)+'</select></td>'
+      +'<td><input type="text" class="ic" data-f="da_notlari" value="'+esc(r.da_notlari)+'" placeholder="DA notları..."></td>'
+      +'<td><button class="idel" title="Sil">✕</button></td></tr>';
+  });
+  h+='</tbody></table>';
+  const list=document.getElementById("iList"); list.innerHTML=h;
+  list.querySelectorAll("[data-f]").forEach(el=>{ el.addEventListener("change",()=>saveIsler(+el.closest("tr").dataset.id,el.dataset.f,el.value)); });
+  list.querySelectorAll(".idel").forEach(b=>b.onclick=()=>delIsler(+b.closest("tr").dataset.id));
+}
+async function saveIsler(id,f,v){
+  const rec={}; rec[f]=(v===""?null:v); rec.updated_at=new Date().toISOString();
+  const {error}=await sb.from("da_isler").update(rec).eq("id",id);
+  if(error){ msg("Hata: "+error.message,false); return; }
+  const r=IROWS.find(x=>x.id===id); if(r) r[f]=v; msg("Kaydedildi",true);
+}
+async function addIsler(){
+  const {data,error}=await sb.from("da_isler").insert({konu:"",oncelik:"-",durum:"Henüz çalışılmadı",da_notlari:"",arsiv:false}).select();
+  if(error){ msg(error.message,false); return; }
+  IROWS.push(data[0]); renderIsler();
+  const inps=document.querySelectorAll('#iList input[data-f="konu"]'); if(inps.length) inps[inps.length-1].focus();
+}
+async function delIsler(id){
+  if(!confirm("Bu iş silinsin mi?")) return;
+  const {error}=await sb.from("da_isler").delete().eq("id",id);
+  if(error){ msg(error.message,false); return; }
+  IROWS=IROWS.filter(x=>x.id!==id); renderIsler();
+}
+
+/* HAFTALIK GÜNCELLEME — yalnız Takipteki İşler (ÖB ile aynı):
+   aktif işlerin önceki→son değişim özeti üretilip panoya yazılır, sonra son değer 'önceki'ye kaydırılır;
+   Tamamlandı/İptal oldu işler tamamen silinir. */
+async function haftalikGuncelle(){
+  const sil=IROWS.filter(r=>r.durum==="Tamamlandı"||r.durum==="İptal oldu");
+  if(!confirm("Haftalık Güncelleme (yalnız Takipteki İşler):\n\n• Aktif kalan işlerin önceki→son değişim özeti üretilip panoya yazılacak, sonra son değer 'önceki'ye kaydırılacak (ilk basışta baseline; özet boş).\n• Durumu Tamamlandı/İptal oldu olan "+sil.length+" iş TAMAMEN SİLİNECEK (geri alınamaz).\n\nDevam?")) return;
+  const btn=document.getElementById("iWeek"); btn.disabled=true; msg("Değişim özetleri üretiliyor…",true);
+  const {data,error}=await sb.functions.invoke("da-degisim-ozet",{body:{}});
+  if(error||!(data&&data.ok)){ btn.disabled=false; msg("Özet üretilemedi: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"),false); return; }
+  for(const r of sil){
+    const {error:e2}=await sb.from("da_isler").delete().eq("id",r.id);
+    if(e2){ btn.disabled=false; msg("Hata: "+e2.message,false); return; }
+  }
+  /* Panodaki "Son güncelleme" damgası = bu düğmeye basılma anı */
+  const _now=new Date().toISOString();
+  try{ await sb.from("pano_yayin").upsert({anahtar:"da_rapor",yayin_at:_now,updated_at:_now},{onConflict:"anahtar"}); }catch(e){}
+  btn.disabled=false;
+  msg((data.note||"Özet güncellendi")+(sil.length?` · ${sil.length} iş silindi`:""),true); loadIsler();
+}
+
+/* AYLIK GÜNCELLEME — Aylık Faaliyet bloğu: kapanan ayın tespitleri yeniden üretilir (yorum korunur);
+   DA'nın aylık yorumu (da_yorum) girilmeden çalışmaz. */
+async function aylikGuncelle(){
+  if(!afYorumKapi()) return;
+  if(!confirm("Aylık Güncelleme ("+afDonemAd()+"):\n\n• Kapanan ayın faaliyet tespitleri yeniden üretilecek (yorumunuz korunur).\n\nDevam?")) return;
+  const btn=document.getElementById("iMonth"); btn.disabled=true; msg("Aylık aktarım yapılıyor…",true);
+  let notlar=[];
+  try{ const {data:ad,error:ae}=await sb.functions.invoke("da-degisim-ozet",{body:{mod:"aylik"}});
+    notlar.push((ae||!(ad&&ad.ok))?("Aylık tespit hatası: "+((ae&&ae.message)||(ad&&ad.error)||"bilinmiyor")):(ad.note||"aylık tespitler üretildi"));
+  }catch(e){ notlar.push("Aylık tespit hatası: "+e); }
+  const _now=new Date().toISOString();
+  try{ await sb.from("pano_yayin").upsert({anahtar:"da_rapor",yayin_at:_now,updated_at:_now},{onConflict:"anahtar"}); }catch(e){}
+  const hata=notlar.some(n=>n.toLowerCase().indexOf("hata")>-1);
+  btn.disabled=false; msg(notlar.join(" · "),!hata); loadAF(false);
+}
+document.getElementById("iAdd").onclick=addIsler;
+document.getElementById("iWeek").onclick=haftalikGuncelle;
+document.getElementById("iMonth").onclick=aylikGuncelle;
+
+/* ===== AYLIK FAALİYET bloğu (da_aylik_faaliyet) — kapanan ayın tespitleri Claude tarafından
+   haftalık form kayıtlarından (da_isler_log) üretilir; son bölümü DA doldurur ve bu bölüm
+   anlamlı doldurulmadan AYLIK GÜNCELLEME çalışmaz. ===== */
+const AF_AY=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+function afDonem(){ const d=new Date(); const y=(d.getMonth()===0)?d.getFullYear()-1:d.getFullYear(); const m=(d.getMonth()===0)?12:d.getMonth(); return y+"-"+String(m).padStart(2,"0"); }
+function afDonemAd(){ const p=afDonem().split("-"); return AF_AY[+p[1]-1]+" "+p[0]; }
+let AFROW=null;
+const afEsc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function afListe(s){ const t=String(s||"").split("\n").map(x=>x.trim()).filter(Boolean);
+  return t.length? '<ul style="margin:2px 0 0 16px;padding:0">'+t.map(x=>'<li>'+afEsc(x)+'</li>').join("")+'</ul>' : '<span style="color:#b0bac4">—</span>'; }
+function afRender(){
+  const r=AFROW||{};
+  document.getElementById("afBox").innerHTML=
+     '<div class="afr"><b>Dönem:</b> <span>'+afEsc(afDonemAd())+'</span></div>'
+    +'<div class="afr"><b>Tamamlanan İşler:</b>'+afListe(r.tamamlanan)+'</div>'
+    +'<div class="afr"><b>Gelişme Kaydedilen İşler:</b>'+afListe(r.gelisme)+'</div>'
+    +'<div class="afr"><b>Gerçekleşen Faaliyet:</b> <div style="margin-top:2px">'+(r.faaliyet?afEsc(r.faaliyet):'<span style="color:#b0bac4">—</span>')+'</div></div>'
+    +'<div class="afr"><b>Yerinde Sayan İşler:</b>'+afListe(r.yerinde_sayan)+'</div>'
+    +'<div class="afr"><b>Aylık Faaliyete İlişkin DA Yorumu:</b>'
+    +'<textarea id="afYorum" class="dsel" style="width:100%;min-height:70px;margin-top:3px" placeholder="Bu ayın faaliyetine ilişkin değerlendirmeniz…">'+afEsc(r.da_yorum)+'</textarea>'
+    +'</div>';
+  const ta=document.getElementById("afYorum");
+  ta.onblur=async()=>{
+    const v=ta.value.trim();
+    const {error}=await sb.from("da_aylik_faaliyet").upsert({donem:afDonem(),da_yorum:v||null,updated_at:new Date().toISOString()},{onConflict:"donem"});
+    if(error) msg("Yorum kaydedilemedi: "+error.message,false); else { AFROW=Object.assign(AFROW||{},{da_yorum:v}); msg("Aylık yorum kaydedildi.",true); }
+  };
+}
+async function loadAF(uret){
+  const box=document.getElementById("afBox"); if(!box) return;
+  const donem=afDonem();
+  let {data}=await sb.from("da_aylik_faaliyet").select("*").eq("donem",donem).limit(1);
+  AFROW=(data&&data[0])||null;
+  if(!AFROW && uret!==false){
+    box.innerHTML='<div class="load">'+afDonemAd()+' tespitleri üretiliyor…</div>';
+    try{ await sb.functions.invoke("da-degisim-ozet",{body:{mod:"aylik"}}); }catch(e){}
+    const r2=await sb.from("da_aylik_faaliyet").select("*").eq("donem",donem).limit(1);
+    AFROW=(r2.data&&r2.data[0])||null;
+  }
+  if(!AFROW) AFROW={donem:donem};
+  afRender();
+}
+/* Yorum anlamlı mı? (boş · 10 karakterden kısa · hiç harf içermeyen kabul edilmez) */
+function afYorumKapi(){
+  const ta=document.getElementById("afYorum");
+  const v=(ta?ta.value:(AFROW&&AFROW.da_yorum)||"").trim();
+  if(v.length>=10 && /[A-Za-zÇĞİÖŞÜçğıöşü]/.test(v)) return true;
+  alert("Aylık Güncelleme yapılamadı.\n\nÖnce Aylık Faaliyet bloğundaki \"Aylık Faaliyete İlişkin DA Yorumu\" bölümünü doldurmalısınız.");
+  msg("Aylık yorum girilmeden aylık güncelleme yapılamaz.",false);
+  if(ta){ ta.style.borderColor="#c62828"; ta.scrollIntoView({block:"center"}); ta.focus(); }
+  return false;
+}
+
+loadIsler();
+loadAF();
+</script>
+
+<!-- ARBOR-DRAGSCROLL -->
+<style>
+  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
+  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+<script>
+(function(){
+  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
+  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
+  function scrollable(n){
+    var st=getComputedStyle(n);
+    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
+    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
+    return okx||oky;
+  }
+  function start(n,e){
+    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+    document.body.classList.add("arb-dragging"); e.preventDefault();
+  }
+  document.addEventListener("mousedown",function(e){
+    if(e.button!==0||skip(e.target)) return;
+    var n=e.target, hucre=null;
+    while(n && n.nodeType===1 && n!==document.body){
+      if(scrollable(n)){
+        if(!n.closest("td,th")) return start(n,e);
+        if(!hucre) hucre=n;
+      }
+      n=n.parentElement;
+    }
+    if(hucre) return start(hucre,e);
+  },true);
+  document.addEventListener("mousemove",function(e){
+    if(!el) return;
+    var dx=e.clientX-sx, dy=e.clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    el.scrollLeft=l-dx; el.scrollTop=t-dy;
+  });
+  document.addEventListener("mouseup",function(){
+    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
+  });
+  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
+})();
+</script>
+<!-- /ARBOR-DRAGSCROLL -->
+</body>
+</html>
