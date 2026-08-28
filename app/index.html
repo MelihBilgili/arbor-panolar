@@ -1855,7 +1855,7 @@ async function loadMali(){
   const b=state.maliBolum;
   let metaMap={};
   if(panoAllowed.length){ const m=await sb.from("pano_ozel_meta").select("*").in("bolum",panoAllowed); (m.data||[]).forEach(x=>metaMap[x.bolum]=x); }
-  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="fiyat"?"Fiyatlandırma" : x==="ahsap"?"Ahşap" : x==="mali_maasprim"?"Maaş-Prim" : x==="mali_mkprim"?"MK Faaliyet" : x==="ob_rapor"?"ÖB Faaliyet" : x==="da_rapor"?"DA Faaliyet — Deniz Aslan" : ((metaMap[x]&&metaMap[x].etiket)||x);
+  const label=x=> x==="bilanco"?"Bilanço" : x==="icmal"?"İcmal" : x==="fiyat"?"Fiyatlandırma" : x==="ahsap"?"Ahşap" : x==="mali_maasprim"?"Maaş-Prim" : x==="mali_mkprim"?"MK Faaliyet" : x==="ob_rapor"?"ÖB Faaliyet" : x==="da_rapor"?"DA Faaliyet" : ((metaMap[x]&&metaMap[x].etiket)||x);
   const bar=all.map(x=>`<button class="malitab${x===b?' active':''}" data-b="${esc(x)}">${esc(label(x))}</button>`).join("");
   view.innerHTML=`<div class="malibar">${bar}</div><div id="mali-body"><div class="load">Yükleniyor…</div></div>`;
   view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.maliBolum=btn.dataset.b; loadMali(); });
