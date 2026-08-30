@@ -301,11 +301,14 @@ function fitTitles(){
 /* ---------- ANA GÜNDEM (blok = kod_prefix; İlgili = kişi; kapat = sil) ---------- */
 async function loadGundem(){
   const view=document.getElementById("view");
-  const [g,ar]=await Promise.all([
+  const [g,ar,sc]=await Promise.all([
     sb.from("ana_gundem").select("*"),
-    sb.from("gundem_arge").select("*")
+    sb.from("gundem_arge").select("*"),
+    sb.from("gundem_secenek").select("*")
   ]);
   const err=g.error||ar.error;
+  const secRows=(sc&&!sc.error&&sc.data)?sc.data:[];
+  const secOpts=secRows.filter(r=>r.aktif!==false).slice().sort((a,b)=>(a.sira-b.sira)||String(a.ad).localeCompare(String(b.ad))).map(r=>r.ad);
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
   const manAll=(g.data||[]).map(r=>Object.assign({_ed:true},r));
   const pemRows=manAll.filter(r=>r.kaynak_tip==='pem');
@@ -371,7 +374,8 @@ async function loadGundem(){
       +`<td class="c a100"><span>${esc(aKon(r))}</span></td></tr>`).join("");
     return `<h3 class="sec">ARGE · ${s.length}</h3><div class="scroll gblk"><table class="agt"><thead><tr><th>No</th><th>Önc</th><th>Durum</th><th>Arge Konusu</th></tr></thead><tbody>${body}</tbody></table></div>`;
   };
-  const persons=[...new Set(["MB","EA","OE","CTP","EU"].concat(keys.filter(k=>k!=='ARGE')))];
+  const secBase=(secOpts&&secOpts.length)?secOpts:["MB","EA","OE","CTP","EU"];
+  const persons=[...new Set(secBase.concat(keys.filter(k=>k!=='ARGE')))];
   const ilgSel=persons.map(k=>`<option value="${esc(k)}"${k==='MB'?' selected':''}>${esc(k)}</option>`).join("")+`<option value="PEM">PEM (takip)</option><option value="PRJ">PRJ (takip)</option><option value="__new__">Diğer…</option>`;
   const restKeys=keys.filter(k=>k!=='MB'&&k!=='ARGE');
   view.innerHTML=`
@@ -386,6 +390,15 @@ async function loadGundem(){
       <input id="ag-kod" placeholder="Kod" style="display:none;max-width:120px">
       <input id="ag-konu" placeholder="Yeni konu">
       <button class="btn" id="ag-add">Ekle</button>
+      <button class="btn" id="ag-secmgr" title="İlgili seçeneklerini yönet" style="background:#eef1f5;color:#333">⚙ Seçenekler</button>
+    </div>
+    <div id="ag-secpanel" style="display:none;margin:0 0 12px;padding:8px 10px;border:1px solid #dbe3ec;border-radius:8px;background:#fafcff">
+      <div style="font-weight:600;font-size:12px;margin-bottom:6px">İlgili seçenekleri <span style="color:#888;font-weight:400">— dropdown'da görünen kişi/bölüm kodları</span></div>
+      <div id="ag-seclist"></div>
+      <div style="margin-top:8px;display:flex;gap:6px">
+        <input id="ag-secnew" placeholder="Yeni kod (ör. MK)" maxlength="12" style="max-width:160px;text-transform:uppercase">
+        <button class="btn" id="ag-secadd">+ Ekle</button>
+      </div>
     </div>
     <div class="ag-wrap">
     ${grpTable(['MB'])}
@@ -402,6 +415,23 @@ async function loadGundem(){
   selEl.onchange=syncKod; syncKod();
   document.getElementById("ag-add").onclick=addGundem;
   document.getElementById("ag-konu").onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); addGundem(); } };
+  /* İş1: İlgili seçenek yöneticisi (gundem_secenek: ekle / sil / sırala) */
+  (function(){
+    const panel=document.getElementById("ag-secpanel"), list=document.getElementById("ag-seclist"), mgr=document.getElementById("ag-secmgr");
+    if(!panel||!mgr) return;
+    const sorted=secRows.slice().sort((a,b)=>(a.sira-b.sira)||String(a.ad).localeCompare(String(b.ad)));
+    list.innerHTML = sorted.length ? sorted.map((r,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:2px 0">
+        <span style="min-width:70px;font-weight:600">${esc(r.ad)}</span>
+        <button class="btn secmv" data-id="${r.id}" data-dir="-1" style="padding:1px 7px"${i===0?' disabled':''}>↑</button>
+        <button class="btn secmv" data-id="${r.id}" data-dir="1" style="padding:1px 7px"${i===sorted.length-1?' disabled':''}>↓</button>
+        <button class="btn secdel" data-id="${r.id}" data-ad="${esc(r.ad)}" style="padding:1px 7px;background:#fde8e8;color:#a11">✕</button>
+      </div>`).join("") : '<div style="color:#888">Henüz seçenek yok.</div>';
+    mgr.onclick=()=>{ panel.style.display = panel.style.display==='none'?'':'none'; };
+    list.querySelectorAll(".secdel").forEach(b=>b.onclick=()=>secDelete(b.dataset.id,b.dataset.ad));
+    list.querySelectorAll(".secmv").forEach(b=>b.onclick=()=>secMove(b.dataset.id,+b.dataset.dir,sorted));
+    document.getElementById("ag-secadd").onclick=()=>secAdd(document.getElementById("ag-secnew"));
+    document.getElementById("ag-secnew").onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); secAdd(e.target); } };
+  })();
 }
 async function addGundem(){
   const ei=document.getElementById("ag-ilgili"), ek=document.getElementById("ag-konu"), ekod=document.getElementById("ag-kod");
@@ -420,12 +450,38 @@ async function addGundem(){
   if(ilg==="__new__"){ ilg=(prompt("İlgili kodu (ör. MK, FA):")||"").trim(); }
   ilg=ilg.toUpperCase();
   if(!ilg||!konu){ (ilg?ek:ei).focus(); return; }
+  /* İş1: kullanılan İlgili kodu seçenek listesinde yoksa kalıcı olarak ekle */
+  { const {data:_ex}=await sb.from("gundem_secenek").select("id").eq("ad",ilg).limit(1);
+    if(!_ex||!_ex.length){ const {data:_mx}=await sb.from("gundem_secenek").select("sira").order("sira",{ascending:false}).limit(1);
+      await sb.from("gundem_secenek").insert([{ad:ilg,sira:((_mx&&_mx[0]&&_mx[0].sira)||0)+10}]); } }
   const btn=document.getElementById("ag-add"); btn.disabled=true; btn.textContent="Ekleniyor…";
   const {data}=await sb.from("ana_gundem").select("kod").like("kod","M%");
   let mx=0; (data||[]).forEach(r=>{ const m=String(r.kod||"").match(/^M(\d+)$/); if(m) mx=Math.max(mx,+m[1]); });
   const {error}=await sb.from("ana_gundem").insert([{kod:"M"+(mx+1),kod_prefix:"M",konu,ilgili:ilg,kaynak_tip:"manuel",turetilmis:false}]);
   btn.disabled=false; btn.textContent="Ekle";
   if(error){ alert(error.message); return; }
+  loadGundem();
+}
+async function secAdd(inp){
+  const ad=(inp.value||"").trim().toUpperCase();
+  if(!ad){ inp.focus(); return; }
+  const {data:mx}=await sb.from("gundem_secenek").select("sira").order("sira",{ascending:false}).limit(1);
+  const {error}=await sb.from("gundem_secenek").insert([{ad,sira:((mx&&mx[0]&&mx[0].sira)||0)+10}]);
+  if(error){ alert(error.code==='23505'?(ad+" zaten listede."):error.message); return; }
+  inp.value=""; loadGundem();
+}
+async function secDelete(id,ad){
+  if(!confirm(ad+" seçeneği listeden kaldırılsın mı?\n(Bu seçenekle eklenmiş mevcut gündem kalemleri SİLİNMEZ.)")) return;
+  const {error}=await sb.from("gundem_secenek").delete().eq("id",id);
+  if(error){ alert(error.message); return; }
+  loadGundem();
+}
+async function secMove(id,dir,sorted){
+  const i=sorted.findIndex(r=>String(r.id)===String(id)), j=i+dir;
+  if(i<0||j<0||j>=sorted.length) return;
+  const a=sorted[i], b=sorted[j];
+  await sb.from("gundem_secenek").update({sira:b.sira}).eq("id",a.id);
+  await sb.from("gundem_secenek").update({sira:a.sira}).eq("id",b.id);
   loadGundem();
 }
 async function formMail(fk,btn){
