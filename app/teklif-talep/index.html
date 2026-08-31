@@ -44,8 +44,9 @@
   tr.yesil td{background:#d8f2dd}
   tr.yeni td{background:#eef4fb}
   td.miss input,td.miss select{border-color:#c62828;background:#fff0f0}
-  .revd input{color:#b40000;font-weight:800}
-  .revu{color:#b40000;font-weight:800;font-size:11px;white-space:nowrap}
+  /* Revize tarih kırmızı-kalın. Özgüllük: readonly kuralı (table.tt td input[readonly])
+     bunu eziyordu → aynı zincirle yazılır. */
+  table.tt td.revd input{color:#b40000;font-weight:800;background:#fff4f4;border-color:#e0a0a0}
   .lg{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#5a6b7d;margin:8px 2px 0;align-items:center}
   .lg i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid #c8d2dc;margin-right:4px;vertical-align:-2px}
   .load{padding:24px;text-align:center;color:#8a97a4}
