@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teklif Talepleri</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#c9dcf0;margin-top:3px;line-height:1.5;max-width:960px}
+  .wrap{max-width:100%;margin:0 auto;padding:10px 14px 40px}
+  .msg{font-size:12.5px;min-height:17px;margin:4px 0}
+  .msg.ok{color:#0a6b3f;font-weight:600}.msg.err{color:#b40000;font-weight:600}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 10px}
+  .btns button{border:0;border-radius:8px;padding:7px 13px;font-weight:600;cursor:pointer;font-size:12.5px;color:#fff}
+  .btns button:disabled{opacity:.45;cursor:not-allowed}
+  #bTalep{background:#0b57d0}
+  #bSor{background:#8a6100}
+  #bBildir{background:#5b3fa0}
+  #bGuncelle{background:#0a6b57}
+  #bRevizyon{background:#b1541f}
+  .hint{font-size:11px;color:#8a97a4;margin:0 2px}
+  .warnbox{background:#ffdada;border:1px solid #e79b9b;color:#8e0000;border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:600;line-height:1.45;margin:8px 0}
+  .scroll{overflow-x:auto}
+  table.tt{border-collapse:collapse;font-size:12px;width:max-content}
+  table.tt th,table.tt td{border-bottom:1px solid #e6ebf1;border-right:1px solid #f0f3f7;padding:2px 5px;text-align:left;vertical-align:middle;line-height:16px}
+  table.tt thead th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px;position:sticky;top:0;z-index:2;vertical-align:bottom}
+  table.tt thead th .thw{display:block;max-width:14ch;min-width:min-content;white-space:normal;line-height:12px}
+  table.tt td input,table.tt td select{font:inherit;font-size:12px;padding:2px 4px;border:1px solid #cdd6df;border-radius:5px;background:#fff;width:100%}
+  table.tt td input[readonly],table.tt td select:disabled{background:#f1f3f6;color:#5a6b7d;border-color:#e2e7ee}
+  td.x{width:24px;text-align:center}
+  .del{border:0;background:transparent;color:#c62828;font-weight:800;font-size:15px;cursor:pointer;line-height:1;padding:0 3px}
+  .okb{border:1px solid #0a6b57;background:#e6f5ef;color:#0a6b57;font-weight:800;border-radius:5px;cursor:pointer;padding:1px 6px;line-height:16px}
+  .okb:disabled{opacity:.35;cursor:not-allowed}
+  tr.pembe td{background:#ffe1ee}
+  tr.kirmizi td{background:#ffd6d6}
+  tr.beyaz td{background:#fff}
+  tr.sari td{background:#fff5c2}
+  tr.yesil td{background:#d8f2dd}
+  tr.yeni td{background:#eef4fb}
+  td.miss input,td.miss select{border-color:#c62828;background:#fff0f0}
+  .revd input{color:#b40000;font-weight:800}
+  .revu{color:#b40000;font-weight:800;font-size:11px;white-space:nowrap}
+  .lg{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#5a6b7d;margin:8px 2px 0;align-items:center}
+  .lg i{display:inline-block;width:12px;height:12px;border-radius:3px;border:1px solid #c8d2dc;margin-right:4px;vertical-align:-2px}
+  .load{padding:24px;text-align:center;color:#8a97a4}
+  html,body{max-width:100vw;overflow-x:hidden}
+</style>
+</head>
+<body>
+<header>
+  <h1>Teklif Talepleri</h1>
+  <div class="sub">Gelen teklif talepleri buraya işlenir. Girilen bilgiler anında kaydedilir; güncelleme düğmelerine basılmadıkça ilgili kişiye bildirim gitmez.<br>
+  <b>Company Turnover:</b> grup şirketleri için tüm grubun değil sadece ilgili şirketin cirosunu dikkate alınız.</div>
+</header>
+<div class="wrap">
+  <div id="msg" class="msg"></div>
+  <div id="gecikme"></div>
+
+  <div class="btns">
+    <button id="bTalep">Teslim Tarihi Talep Et</button>
+    <button id="bSor">Öncelik Grubu Sor</button>
+    <button id="bBildir">Öncelik Bildir</button>
+    <button id="bGuncelle">Teslim Tarihlerini Güncelle</button>
+    <button id="bRevizyon">Teslim Tarihi Revizyonu</button>
+    <span class="hint" id="rolLbl"></span>
+  </div>
+
+  <div class="scroll"><table class="tt" id="tbl">
+    <thead><tr id="thr"></tr></thead>
+    <tbody id="tb"><tr><td class="load">Yükleniyor…</td></tr></tbody>
+  </table></div>
+
+  <div class="lg">
+    <span><i style="background:#ffe1ee"></i>Teslim tarihi işlenmedi</span>
+    <span><i style="background:#ffd6d6"></i>Tarihi geçti, teslim edilmedi</span>
+    <span><i style="background:#fff"></i>Tarih işlendi, çalışma başlamadı</span>
+    <span><i style="background:#fff5c2"></i>Çalışma başladı</span>
+    <span><i style="background:#d8f2dd"></i>Teslim edildi</span>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ===== ARBOR FORM KAPISI — iki rol hesabi (AK / MKB) + MB gecisi ===== */
+const ARB_ROLLER = [
+  { email:"ak.form@arbor.com.tr",  ad:"AK — Ali Karadağ (Satış UK)" },
+  { email:"mkb.form@arbor.com.tr", ad:"MKB — Melike Başaran (Teklif)" }
+];
+const ARB_STORE = "arbform_teklif_talep";
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
+const ARB_MB = "int@arbor.com.tr";
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+var ARB_ACTIVE = ARB_GATE_SB;
+var ARB_EMAIL = "";
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  var opts=ARB_ROLLER.map(function(r){ return '<option value="'+r.email+'">'+r.ad+'</option>'; }).join("");
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:330px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:10px">Arbor — Teklif Talepleri</div>'
+    +'<select id="arb-rol" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px;margin-bottom:8px">'+opts+'</select>'
+    +'<input id="arb-pw" type="password" placeholder="Parola" autocomplete="current-password" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giriş</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px"></div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var em=document.getElementById("arb-rol").value, pw=document.getElementById("arb-pw").value;
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giriş yapılıyor…";
+    var r=await ARB_GATE_SB.auth.signInWithPassword({email:em,password:pw});
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent="Parola hatalı"; return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  var izin=ARB_ROLLER.map(function(r){return r.email;});
+  if(izin.indexOf(em)<0){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(izin.indexOf(em)>=0 || em===ARB_MB){ ARB_EMAIL=em; (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script type="text/plain" id="arbmain">
+const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function msg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{ if(m.textContent===t) m.textContent=""; },6000); }
+
+/* rol: AK | MKB | MB */
+const ROL = ARB_EMAIL==="ak.form@arbor.com.tr" ? "AK" : (ARB_EMAIL==="mkb.form@arbor.com.tr" ? "MKB" : "MB");
+const canAK  = (ROL==="AK"  || ROL==="MB");
+const canMKB = (ROL==="MKB" || ROL==="MB");
+const canMB  = (ROL==="MB");
+document.getElementById("rolLbl").textContent = "Oturum: "+ROL;
+
+const CIRO   = ["< 10 m","11 – 100 m","101 – 500 m","> 500 m"];
+const EH     = ["Evet","Hayır"];
+const ONCELIK= ["1","2","3"];
+const CIRO_UYARI = "Grup şirketleri için tüm grubun değil sadece ilgili şirketin cirosunu dikkate alınız.";
+
+/* A..O + akış sütunları */
+const KOL = [
+  {f:"company",           b:"Company",                       t:"text", w:"22ch"},
+  {f:"ciro",              b:"Company Turnover",              t:"sel",  o:CIRO, w:"12ch", ttl:CIRO_UYARI},
+  {f:"gelen_tarih",       b:"Gelen Tarih",                   t:"date", w:"12ch"},
+  {f:"musteri_tarih",     b:"Müşterinin İstediği Tarih",     t:"date", w:"12ch"},
+  {f:"ihale",             b:"İhale Alınmış mı?",             t:"sel",  o:EH, w:"8ch"},
+  {f:"yd_notlari",        b:"Yurt Dışı Birim Notları",       t:"text", w:"26ch"},
+  {f:"urun_adedi",        b:"Ürün Adedi",                    t:"num",  w:"7ch"},
+  {f:"urun_tip",          b:"Ürün Tip/Seri(ler)i",           t:"text", w:"16ch"},
+  {f:"kemer_karolaj",     b:"Kemer/Karolaj Var mı?",         t:"sel",  o:EH, w:"8ch"},
+  {f:"sartname_ahsap",    b:"Şartnamede Doğramalar Ahşap Olarak Belirtilmiş mi?", t:"sel", o:EH, w:"8ch"},
+  {f:"calismaya_baslandi",b:"Çalışmaya Başlandı mı?",        t:"sel",  o:EH, w:"8ch"},
+  {f:"teklif_notlari",    b:"Teklif Birimi Notları",         t:"text", w:"26ch"},
+  {f:"oncelik",           b:"Öncelik Grubu",                 t:"sel",  o:ONCELIK, w:"7ch"},
+  {f:"teslim_tarihi",     b:"Öngörülen Teslim Tarihi",       t:"date", w:"12ch"},
+  {f:"teslim_edildi",     b:"Teslim Edildi mi?",             t:"sel",  o:EH, w:"8ch"}
+];
+const AK_ALAN  = ["company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari"];          /* A–F zorunlu */
+const AK_YENI  = ["company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari","urun_adedi"]; /* A–G giriş */
+const MKB_ALAN = ["urun_tip","kemer_karolaj","sartname_ahsap","calismaya_baslandi"];             /* H–K zorunlu */
+
+let ROWS=[];
+const bugun = new Date(Date.now()+180*60000).toISOString().slice(0,10); /* TR tarihi */
+
+function durum(r){
+  if(r.teslim_edildi==="Evet") return "yesil";
+  if(!r.teslim_tarihi || !r.tarih_kilit) return "pembe";
+  if(r.teslim_tarihi < bugun) return "kirmizi";
+  return r.calismaya_baslandi==="Evet" ? "sari" : "beyaz";
+}
+const SIRA = {pembe:0,kirmizi:1,beyaz:2,sari:3,yesil:4};
+function sirala(a,b){
+  const d=SIRA[durum(a)]-SIRA[durum(b)]; if(d) return d;
+  const ta=a.teslim_tarihi||"9999-12-31", tb=b.teslim_tarihi||"9999-12-31";
+  if(ta!==tb) return ta<tb?-1:1;
+  return b.id-a.id;
+}
+const gecikenler = ()=>ROWS.filter(r=>r.teslim_tarihi && r.tarih_kilit && r.teslim_edildi!=="Evet" && r.teslim_tarihi<bugun);
+
+/* ---------- çizim ---------- */
+function hucre(r,k,d){
+  const yesil = d==="yesil";
+  const tarihK = k.f==="teslim_tarihi";
+  let ro=false;
+  if(yesil) ro = (k.f!=="teslim_edildi");
+  else if(tarihK) ro = !canMKB || !!r.tarih_kilit;
+  const cls = (tarihK && r.revize) ? ' class="revd"' : "";
+  const ttl = k.ttl ? ' title="'+esc(k.ttl)+'"' : "";
+  const v = r[k.f]==null ? "" : String(r[k.f]);
+  if(k.t==="sel"){
+    const opts = ['<option value=""></option>'].concat(k.o.map(o=>'<option'+(o===v?" selected":"")+'>'+esc(o)+'</option>')).join("");
+    return '<td data-f="'+k.f+'"'+cls+'><select data-id="'+r.id+'" data-f="'+k.f+'"'+(ro?" disabled":"")+ttl+'>'+opts+'</select></td>';
+  }
+  const tp = k.t==="date" ? "date" : (k.t==="num" ? "number" : "text");
+  return '<td data-f="'+k.f+'"'+cls+'><input type="'+tp+'" data-id="'+r.id+'" data-f="'+k.f+'" value="'+esc(v)+'"'+(ro?" readonly":"")+ttl+'></td>';
+}
+
+function ciz(){
+  /* başlıklar */
+  const th = KOL.map(k=>'<th style="min-width:'+k.w+'"'+(k.ttl?' title="'+esc(k.ttl)+'"':"")+'><span class="thw">'+esc(k.b)+'</span></th>');
+  th.splice(14,0,'<th style="min-width:3ch"><span class="thw">✓</span></th>');   /* teslim tarihi sağındaki ✓ (N ile O arası) */
+  th.push('<th style="min-width:12ch"><span class="thw">Uyarı</span></th>','<th class="x"></th>');
+  document.getElementById("thr").innerHTML = th.join("");
+
+  const tb=document.getElementById("tb");
+  let h="";
+
+  /* AK'nin en üstteki boş satırı */
+  if(canAK){
+    h+='<tr class="yeni" data-id="0">';
+    KOL.forEach((k,i)=>{
+      const acik = AK_YENI.indexOf(k.f)>=0;
+      const bos = {id:0};
+      if(k.f==="calismaya_baslandi"||k.f==="teslim_edildi") bos[k.f]="Hayır";
+      let td = hucre(bos,k,"yeni");
+      if(!acik) td = td.replace(/<(input|select)\b/, '<$1 disabled');
+      h+=td;
+      if(i===13) h+='<td></td>';
+    });
+    h+='<td class="revu"></td><td class="x"></td></tr>';
+  }
+
+  ROWS.slice().sort(sirala).forEach(r=>{
+    const d=durum(r);
+    h+='<tr class="'+d+'" data-id="'+r.id+'">';
+    KOL.forEach((k,i)=>{
+      h+=hucre(r,k,d);
+      if(i===13){ /* teslim tarihinin hemen sağındaki ✓ */
+        const dis = !canMKB || d==="yesil" || (r.tarih_kilit && !r.revizyon_acik);
+        h+='<td><button class="okb" data-ok="'+r.id+'"'+(dis?" disabled":"")+' title="Teslim tarihini işle (kilitle)">✓</button></td>';
+      }
+    });
+    h+='<td class="revu">'+(r.revize?"Dikkat, Revize Tarih!":"")+'</td>';
+    h+='<td class="x">'+(canAK?'<button class="del" data-del="'+r.id+'" title="Satırı sil">✕</button>':"")+'</td></tr>';
+  });
+
+  tb.innerHTML = h || '<tr><td class="load">Kayıt yok.</td></tr>';
+  bagla();
+  gecikmeUyari();
+}
+
+function gecikmeUyari(){
+  const g=gecikenler();
+  document.getElementById("gecikme").innerHTML = g.length
+    ? '<div class="warnbox">Teklif Talepleri formunda tarihi geçmiş olmasına rağmen teslim edildiği belirtilmeyen satırlar mevcuttur. Lütfen teslim edilenleri işleyiniz ve teslim edilmeyen varsa Teslim Tarihi Revizyonu düğmesine basınız.</div>'
+    : "";
+  const b=document.getElementById("bSor");
+  b.disabled = !canMKB || g.length>0;
+  b.title = g.length ? "Tarihi geçmiş ve teslim edilmemiş satırlar var — önce onları işleyiniz." : "";
+}
+
+/* ---------- kayıt ---------- */
+async function kaydet(id,f,val){
+  const r=ROWS.find(x=>x.id===id); if(!r) return;
+  if(f==="calismaya_baslandi" && val==="Evet" && !r.teslim_tarihi){
+    msg("Öngörülen teslim tarihi boş olan satır “Çalışmaya Başlandı = Evet” olarak işaretlenemez.",false);
+    ciz(); return;
+  }
+  const p={}; p[f] = (val===""? null : (f==="urun_adedi"||f==="oncelik" ? Number(val) : val));
+  const {error}=await sb.from("teklif_talep").update(p).eq("id",id);
+  if(error){ msg("Kaydedilemedi: "+error.message,false); return; }
+  r[f]=p[f];
+  msg("Kaydedildi.",true);
+  ciz();
+}
+
+function bagla(){
+  document.querySelectorAll('#tb [data-f]').forEach(el=>{
+    if(el.tagName==="TD") return;
+    const id=+el.dataset.id;
+    if(!id) return;                       /* yeni satır: butonla eklenir */
+    el.onchange=()=>kaydet(id,el.dataset.f,el.value);
+  });
+  document.querySelectorAll('#tb [data-del]').forEach(b=>{
+    b.onclick=async()=>{
+      if(!confirm("Bu satır silinsin mi?")) return;
+      const id=+b.dataset.del;
+      const {error}=await sb.from("teklif_talep").delete().eq("id",id);
+      if(error){ msg("Silinemedi: "+error.message,false); return; }
+      ROWS=ROWS.filter(x=>x.id!==id); ciz(); msg("Satır silindi.",true);
+    };
+  });
+  document.querySelectorAll('#tb [data-ok]').forEach(b=>{
+    b.onclick=()=>tarihIsle(+b.dataset.ok);
+  });
+}
+
+async function tarihIsle(id, tarih, sessiz){
+  const r=ROWS.find(x=>x.id===id); if(!r) return;
+  let yeni = tarih;
+  if(!yeni){
+    const inp=document.querySelector('#tb input[data-id="'+id+'"][data-f="teslim_tarihi"]');
+    yeni = inp && inp.value ? inp.value : r.teslim_tarihi;
+  }
+  if(!yeni){ msg("Önce öngörülen teslim tarihini giriniz.",false); return; }
+  const p={teslim_tarihi:yeni, tarih_kilit:true};
+  if(r.revizyon_acik){ p.revize = (r.revizyon_onceki && r.revizyon_onceki!==yeni) ? true : r.revize; p.revizyon_acik=false; }
+  const {error}=await sb.from("teklif_talep").update(p).eq("id",id);
+  if(error){ msg("İşlenemedi: "+error.message,false); return; }
+  Object.assign(r,p);
+  if(!sessiz){ ciz(); msg("Teslim tarihi işlendi.",true); }
+}
+
+/* ---------- mail ---------- */
+async function mail(tip){
+  const {data,error}=await sb.functions.invoke("teklif-talep-mail",{body:{tip}});
+  if(error || (data&&data.error)) return String((data&&data.error) || (error&&error.message) || error || "bilinmeyen hata");
+  return null;
+}
+
+/* ---------- düğmeler ---------- */
+function eksikIsaretle(sel){ document.querySelectorAll("td.miss").forEach(t=>t.classList.remove("miss")); sel.forEach(t=>t.classList.add("miss")); if(sel[0]) sel[0].scrollIntoView({block:"center",inline:"center"}); }
+
+document.getElementById("bTalep").onclick = async ()=>{
+  const tr=document.querySelector('#tb tr.yeni'); if(!tr) return;
+  const deger={}, eksik=[];
+  KOL.forEach(k=>{
+    const el=tr.querySelector('input[data-f="'+k.f+'"],select[data-f="'+k.f+'"]'); if(!el) return;
+    const v=String(el.value||"").trim();
+    if(AK_YENI.indexOf(k.f)>=0 && v) deger[k.f] = (k.f==="urun_adedi"? Number(v) : v);
+    if(AK_ALAN.indexOf(k.f)>=0 && !v) eksik.push(el.closest("td"));
+  });
+  if(eksik.length){ eksikIsaretle(eksik); msg("Kırmızı ile işaretlenen hücrelerin (Company … Yurt Dışı Birim Notları) doldurulması gerekmektedir.",false); return; }
+  eksikIsaretle([]);
+  deger.calismaya_baslandi="Hayır"; deger.teslim_edildi="Hayır"; deger.talep_at=new Date().toISOString();
+  const {data,error}=await sb.from("teklif_talep").insert(deger).select().single();
+  if(error){ msg("Eklenemedi: "+error.message,false); return; }
+  ROWS.push(data); ciz();
+  const e=await mail("talep");
+  msg("Ön görülen teslim tarihi Teklif Birimi tarafından 1 iş günü içerisinde işlenecektir."+(e?" (Mail gönderilemedi: "+e+")":""), !e);
+};
+
+document.getElementById("bSor").onclick = async ()=>{
+  if(gecikenler().length){ msg("Tarihi geçmiş ve teslim edilmemiş satırlar var — önce onları işleyiniz.",false); return; }
+  const hedef=ROWS.filter(r=>durum(r)==="pembe");
+  if(!hedef.length){ msg("Teslim tarihi bekleyen satır yok.",false); return; }
+  const eksik=[];
+  hedef.forEach(r=>MKB_ALAN.forEach(f=>{
+    if(r[f]==null || String(r[f]).trim()==="") { const td=document.querySelector('#tb tr[data-id="'+r.id+'"] td[data-f="'+f+'"]'); if(td) eksik.push(td); }
+  }));
+  if(eksik.length){ eksikIsaretle(eksik); msg("Kırmızı ile işaretlenen hücrelerin (Ürün Tip/Seri … Çalışmaya Başlandı mı?) doldurulması gerekmektedir.",false); return; }
+  eksikIsaretle([]);
+  const e=await mail("oncelik_sor");
+  msg("Öncelik grup bilgisi işlenince tarafınıza mail yoluyla haber verilecektir."+(e?" (Mail gönderilemedi: "+e+")":""), !e);
+};
+
+document.getElementById("bBildir").onclick = async ()=>{
+  const hedef=ROWS.filter(r=>durum(r)==="pembe");
+  const eksik=hedef.filter(r=>!r.oncelik).map(r=>document.querySelector('#tb tr[data-id="'+r.id+'"] td[data-f="oncelik"]')).filter(Boolean);
+  if(eksik.length){ eksikIsaretle(eksik); msg("Tüm satırların öncelik grupları seçilmelidir.",false); return; }
+  eksikIsaretle([]);
+  const e=await mail("oncelik_bildir");
+  msg(e ? "Mail gönderilemedi: "+e : "Öncelik grupları bildirildi; Melike Hanım'a mail gönderildi.", !e);
+};
+
+document.getElementById("bGuncelle").onclick = async ()=>{
+  const hedef=ROWS.filter(r=>r.teslim_edildi!=="Evet" && !r.tarih_kilit);
+  if(!hedef.length){ msg("İşlenecek teslim tarihi yok.",false); return; }
+  const isle=[], eksik=[];
+  hedef.forEach(r=>{
+    const i=document.querySelector('#tb input[data-id="'+r.id+'"][data-f="teslim_tarihi"]');
+    const v = i && i.value ? i.value : r.teslim_tarihi;
+    if(v) isle.push({id:r.id, tarih:v});
+    else { const td=document.querySelector('#tb tr[data-id="'+r.id+'"] td[data-f="teslim_tarihi"]'); if(td) eksik.push(td); }
+  });
+  if(eksik.length){ eksikIsaretle(eksik); msg("Öngörülen teslim tarihi girilmemiş satırlar var.",false); return; }
+  eksikIsaretle([]);
+  for(const x of isle) await tarihIsle(x.id, x.tarih, true);
+  ciz();
+  msg(isle.length+" satırın teslim tarihi işlendi.",true);
+};
+
+document.getElementById("bRevizyon").onclick = async ()=>{
+  const hedef=ROWS.filter(r=>r.teslim_edildi!=="Evet" && r.tarih_kilit);
+  if(!hedef.length){ msg("Revize edilecek satır yok.",false); return; }
+  for(const r of hedef){
+    const p={revizyon_acik:true, revizyon_onceki:r.teslim_tarihi, tarih_kilit:false};
+    const {error}=await sb.from("teklif_talep").update(p).eq("id",r.id);
+    if(error){ msg("Revizyon açılamadı: "+error.message,false); return; }
+    Object.assign(r,p);
+  }
+  ciz();
+  msg(hedef.length+" satırın teslim tarihi düzenlenebilir hâle getirildi. Tarihleri güncelleyip ✓ ile işleyiniz.",true);
+};
+
+/* düğme görünürlüğü */
+document.getElementById("bTalep").style.display    = canAK  ? "" : "none";
+document.getElementById("bSor").style.display      = canMKB ? "" : "none";
+document.getElementById("bGuncelle").style.display = canMKB ? "" : "none";
+document.getElementById("bRevizyon").style.display = canMKB ? "" : "none";
+document.getElementById("bBildir").style.display   = canMB  ? "" : "none";
+
+/* ---------- yükle ---------- */
+(async function(){
+  const {data,error}=await sb.from("teklif_talep").select("*");
+  if(error){ document.getElementById("tb").innerHTML='<tr><td class="load">Yüklenemedi: '+esc(error.message)+'</td></tr>'; return; }
+  ROWS=data||[]; ciz();
+})();
+</script>
+
+<!-- ARBOR-DRAGSCROLL -->
+<style>
+  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
+  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+<script>
+(function(){
+  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
+  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
+  function scrollable(n){
+    var st=getComputedStyle(n);
+    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
+    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
+    return okx||oky;
+  }
+  function start(n,e){
+    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+    document.body.classList.add("arb-dragging"); e.preventDefault();
+  }
+  document.addEventListener("mousedown",function(e){
+    if(e.button!==0||skip(e.target)) return;
+    var n=e.target, hucre=null;
+    while(n && n.nodeType===1 && n!==document.body){
+      if(scrollable(n)){
+        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
+        if(!n.closest("td,th")) return start(n,e);
+        if(!hucre) hucre=n;
+      }
+      n=n.parentElement;
+    }
+    if(hucre) return start(hucre,e);
+  },true);
+  document.addEventListener("mousemove",function(e){
+    if(!el) return;
+    var dx=e.clientX-sx, dy=e.clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    el.scrollLeft=l-dx; el.scrollTop=t-dy;
+  });
+  document.addEventListener("mouseup",function(){
+    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
+  });
+  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
+})();
+</script>
+<!-- /ARBOR-DRAGSCROLL -->
+</body>
+</html>
