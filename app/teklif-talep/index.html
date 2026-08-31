@@ -229,7 +229,9 @@ function hucre(r,k,d){
     return '<td data-f="'+k.f+'"'+cls+'><select data-id="'+r.id+'" data-f="'+k.f+'"'+(ro?" disabled":"")+ttl+'>'+opts+'</select></td>';
   }
   const tp = k.t==="date" ? "date" : (k.t==="num" ? "number" : "text");
-  return '<td data-f="'+k.f+'"'+cls+'><input type="'+tp+'" data-id="'+r.id+'" data-f="'+k.f+'" value="'+esc(v)+'"'+(ro?" readonly":"")+ttl+'></td>';
+  /* size="1": input'un DOĞAL genişliği (varsayılan size=20 ≈ 150px) tablo sütununa
+     taban oluşturuyordu; sütun min-width'leri bu yüzden işe yaramıyordu. */
+  return '<td data-f="'+k.f+'"'+cls+'><input type="'+tp+'" size="1" data-id="'+r.id+'" data-f="'+k.f+'" value="'+esc(v)+'"'+(ro?" readonly":"")+ttl+'></td>';
 }
 
 function ciz(){
