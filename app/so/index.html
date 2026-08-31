@@ -113,12 +113,16 @@ const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_pu
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money=n=>{const v=Math.round(Number(n)||0);return v.toLocaleString("tr-TR");};
 const parseNet=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t.indexOf(",")>-1 && t.indexOf(".")>-1){ t=t.replace(/\./g,"").replace(",", "."); } else { t=t.replace(",", "."); } const v=parseFloat(t); return isNaN(v)?null:v; };
-let ROWS=[], OLD_IDS=[], dirty=false;
+let ROWS=[], OLD_IDS=[], dirty=false, AKTIF_CEKIM=null;
 async function load(){
   const {data,error}=await sb.from("satis_yorum").select("*").eq("kaynak","SO").eq("aktif",true);
   if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
   const d=(data||[]).slice().sort((a,b)=> (a.statu||"").localeCompare(b.statu||"") || (Number(b.net_eur)||0)-(Number(a.net_eur)||0));
   OLD_IDS=d.map(r=>r.id);
+  /* SATIS-CEKIM: satir bazli yeni kayit AKTIF CEKIME katilir; bugunun tarihiyle
+     sahte cekim grubu acmaz (yoksa pano diff'i tum satirlari "eklenen" gosterir). */
+  { const c={}; (data||[]).forEach(r=>{ if(r.cekim) c[r.cekim]=(c[r.cekim]||0)+1; });
+    AKTIF_CEKIM = Object.keys(c).sort((a,b)=>(c[b]-c[a])||(a<b?1:-1))[0] || null; }
   ROWS=d.map(r=>({id:r.id,statu:r.statu||"Muhtemel",proje:r.proje||"",musteri:r.musteri||"",net_eur:r.net_eur,durum:r.durum||""}));
   dirty=false; render();
 }
@@ -158,7 +162,7 @@ async function saveRow(i,f){
   if(!r.id){
     if(!(r.proje||"").trim()) return;   /* proje yazılana kadar kayıt açılmaz */
     const rec={grup:"Yurtiçi",kaynak:"SO",statu:stat(r),proje:(r.proje||"").trim(),musteri:(r.musteri||"").trim(),
-               net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),ulke:"TR",cekim:new Date().toISOString().slice(0,10),aktif:true};
+               net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),ulke:"TR",cekim:(AKTIF_CEKIM||new Date().toISOString().slice(0,10)),aktif:true};
     const {data,error}=await sb.from("satis_yorum").insert(rec).select();
     if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
     r.id=data[0].id; OLD_IDS.push(r.id); dirty=false; setMsg("Kaydedildi ✓",true); sums(); return;
@@ -232,6 +236,8 @@ function setupAyIsaret(KAYNAK,SNAP){
 }
 load();
 </script>
+
+
 
 <!-- ARBOR-DRAGSCROLL -->
 <style>
