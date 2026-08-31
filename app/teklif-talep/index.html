@@ -199,7 +199,7 @@ const KOL = [
   {f:"teslim_tarihi",     b:"Teslim Tarihi",       t:"date", w:"10ch", ttl:"Öngörülen Teslim Tarihi"},
   {f:"teslim_edildi",     b:"Teslim?",             t:"sel",  o:TESLIM, w:"7ch",  ttl:"Teslim Edildi mi?"}
 ];
-const AK_ALAN  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari"];          /* Project + A–F zorunlu */
+const AK_ALAN  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale"];  /* zorunlu: Project → İhale (Y. Dışı B. Notları opsiyonel) */
 const AK_YENI  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari","urun_adedi"]; /* Project + A–G giriş */
 const MKB_ALAN = ["urun_tip","kemer_karolaj","sartname_ahsap","calismaya_baslandi"];             /* H–K zorunlu */
 
@@ -395,7 +395,7 @@ document.getElementById("bTalep").onclick = async ()=>{
   dolu.forEach(({t,i})=>AK_ALAN.forEach(f=>{
     if(String(t[f]||"").trim()==="") { const td=trs[i] && trs[i].querySelector('td[data-f="'+f+'"]'); if(td) eksik.push(td); }
   }));
-  if(eksik.length){ eksikIsaretle(eksik); msg("Kırmızı ile işaretlenen hücrelerin (Project … Yurt Dışı Birim Notları) doldurulması gerekmektedir.",false); return; }
+  if(eksik.length){ eksikIsaretle(eksik); msg("Kırmızı ile işaretlenen hücrelerin (Project → İhale? arası) doldurulması gerekmektedir.",false); return; }
   eksikIsaretle([]);
   const simdi=new Date().toISOString();
   const kayitlar = dolu.map(({t})=>{
