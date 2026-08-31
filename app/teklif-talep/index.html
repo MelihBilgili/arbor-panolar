@@ -201,7 +201,7 @@ const KOL = [
 ];
 const AK_ALAN  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale"];  /* zorunlu: Project → İhale (Y. Dışı B. Notları opsiyonel) */
 const AK_YENI  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari","urun_adedi"]; /* Project + A–G giriş */
-const MKB_ALAN = ["urun_tip","kemer_karolaj","sartname_ahsap","calismaya_baslandi"];             /* H–K zorunlu */
+const MKB_ALAN = ["urun_adedi","urun_tip","kemer_karolaj","sartname_ahsap"];  /* zorunlu: Adet → Şartname Ahşap */
 
 let ROWS=[];
 const bugun = new Date(Date.now()+180*60000).toISOString().slice(0,10); /* TR tarihi */
@@ -423,7 +423,7 @@ document.getElementById("bSor").onclick = async ()=>{
   hedef.forEach(r=>MKB_ALAN.forEach(f=>{
     if(r[f]==null || String(r[f]).trim()==="") { const td=document.querySelector('#tb tr[data-id="'+r.id+'"] td[data-f="'+f+'"]'); if(td) eksik.push(td); }
   }));
-  if(eksik.length){ eksikIsaretle(eksik); msg("Kırmızı ile işaretlenen hücrelerin (Ürün Tip/Seri … Çalışmaya Başlandı mı?) doldurulması gerekmektedir.",false); return; }
+  if(eksik.length){ eksikIsaretle(eksik); msg("Kırmızı ile işaretlenen hücrelerin (Adet → Şartnamede Doğramalar Ahşap Olarak Belirtilmiş mi? arası) doldurulması gerekmektedir.",false); return; }
   eksikIsaretle([]);
   const e=await mail("oncelik_sor");
   msg("Öncelik grup bilgisi işlenince tarafınıza mail yoluyla haber verilecektir."+(e?" (Mail gönderilemedi: "+e+")":""), !e);
