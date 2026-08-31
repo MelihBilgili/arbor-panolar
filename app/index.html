@@ -626,11 +626,14 @@ function eurDelta(v){ const r=Math.round(v); const c=r>0?'#0a6b3f':(r<0?'#b23a2e
 /* Üst özet blok: hizalı Muhtemel | Alınan; Toplam + bölge satırları + eklenen(yeşil)/silinen(kırmızı) */
 function satisSummary(regions){
   const cell=(cur,cmp,prev,hasPrev)=>`${money(sSum(cur))} €${hasPrev?eurDelta(sSum(cmp)-sSum(prev)):''}`;
-  /* eklenen → YEŞİL; silinen → muhtemel→alınan (M sütunu) veya alınan→üretim (A sütunu) geçişi ise SİYAH, diğer silinenler KIRMIZI */
-  const det=(cmp,prev,hasPrev,kind,curM,curA)=>{ if(!hasPrev) return '';
+  /* eklenen → YEŞİL, ama Alınan sütununda ÖNCEKİ ÇEKİMDE MUHTEMEL olan proje yeni iş değil,
+     muhtemel→alınan GEÇİŞİdir → SİYAH (SATIS-GECIS).
+     silinen → muhtemel→alınan (M sütunu) veya alınan→üretim (A sütunu) geçişi ise SİYAH, diğer silinenler KIRMIZI */
+  const det=(cmp,prev,hasPrev,kind,curM,curA,prevM)=>{ if(!hasPrev) return '';
     const {ekl,sil}=sDiff(cmp,prev); let s='';
     const line=(col,proje,sgn,val)=>`<div class="sdrow" style="color:${col}"><span class="sdp">${esc(proje)}</span><span class="sdv">${sgn}${money(val)} €</span></div>`;
-    ekl.forEach(r=> s+=line('#0a6b3f',r.proje,'+',r.net_eur));
+    ekl.forEach(r=>{ const gecis = kind==='A' && prevM && prevM.has(sKey(r));
+      s+=line(gecis?'#1c2430':'#0a6b3f',r.proje,'+',r.net_eur); });
     sil.forEach(r=>{ const k=sKey(r); const iyi = kind==='M' ? curA.has(k) : (!curM.has(k) && !curA.has(k));
       s+=line(iyi?'#1c2430':'#b23a2e',r.proje,'−',r.net_eur); });
     return s; };
@@ -638,9 +641,9 @@ function satisSummary(regions){
   regions.forEach(rg=>{ tM.push(...rg.cM); tA.push(...rg.cA); tMc.push(...rg.cMc); tAc.push(...rg.cAc); tpM.push(...rg.pM); tpA.push(...rg.pA); anyPrev=anyPrev||rg.hasPrev; });
   let body=`<tr class="stot"><td>Toplam</td><td class="num">${cell(tM,tMc,tpM,anyPrev)}</td><td class="num">${cell(tA,tAc,tpA,anyPrev)}</td></tr>`;
   regions.forEach(rg=>{
-    const curM=new Set(rg.cM.map(sKey)), curA=new Set(rg.cA.map(sKey));
+    const curM=new Set(rg.cM.map(sKey)), curA=new Set(rg.cA.map(sKey)), prevM=new Set(rg.pM.map(sKey));
     body+=`<tr class="sreg"><td>${esc(rg.ad)}</td><td class="num">${cell(rg.cM,rg.cMc,rg.pM,rg.hasPrev)}</td><td class="num">${cell(rg.cA,rg.cAc,rg.pA,rg.hasPrev)}</td></tr>`;
-    const dm=det(rg.cMc,rg.pM,rg.hasPrev,'M',curM,curA), da=det(rg.cAc,rg.pA,rg.hasPrev,'A',curM,curA);
+    const dm=det(rg.cMc,rg.pM,rg.hasPrev,'M',curM,curA,prevM), da=det(rg.cAc,rg.pA,rg.hasPrev,'A',curM,curA,prevM);
     if(dm||da) body+=`<tr class="sdet"><td></td><td>${dm}</td><td>${da}</td></tr>`;
   });
   return `<div class="scroll" style="max-height:none;overflow-y:visible;overflow-x:auto;-webkit-overflow-scrolling:touch;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num">Alınan</th></tr></thead><tbody>${body}</tbody></table></div>`;
