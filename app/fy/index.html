@@ -151,12 +151,16 @@ function toISO(s){ if(s==null) return null; s=String(s).trim(); if(s==="") retur
 
 const KAYNAK_KEY="FY";
 /* ===== Muhtemel/Alınan (satis_yorum, FY) ===== */
-let ROWS=[], OLD_IDS=[], dirty=false;
+let ROWS=[], OLD_IDS=[], dirty=false, AKTIF_CEKIM=null;
 async function load(){
   const {data,error}=await sb.from("satis_yorum").select("*").eq("kaynak","FY").eq("aktif",true);
   if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
   const d=(data||[]).slice().sort((a,b)=> (a.statu||"").localeCompare(b.statu||"") || (Number(b.net_eur)||0)-(Number(a.net_eur)||0));
   OLD_IDS=d.map(r=>r.id);
+  /* SATIS-CEKIM: satir bazli yeni kayit AKTIF CEKIME katilir; bugunun tarihiyle
+     sahte cekim grubu acmaz (yoksa pano diff'i tum satirlari "eklenen" gosterir). */
+  { const c={}; (data||[]).forEach(r=>{ if(r.cekim) c[r.cekim]=(c[r.cekim]||0)+1; });
+    AKTIF_CEKIM = Object.keys(c).sort((a,b)=>(c[b]-c[a])||(a<b?1:-1))[0] || null; }
   ROWS=d.map(r=>({id:r.id,statu:r.statu||"Muhtemel",proje:r.proje||"",musteri:r.musteri||"",ulke:r.ulke||"FR",iskonto:(r.iskonto==null?"":r.iskonto),net_eur:r.net_eur,durum:r.durum||""}));
   dirty=false; render();
 }
@@ -201,7 +205,7 @@ async function saveRow(i,f){
     if(!(r.proje||"").trim()) return;   /* proje yazilana kadar kayit acilmaz */
     const rec={grup:"Yurtdışı",kaynak:KAYNAK_KEY,statu:stat(r),proje:(r.proje||"").trim(),musteri:(r.musteri||"").trim(),
                iskonto:parseNet(r.iskonto),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),
-               ulke:(r.ulke||"").trim()||"FR",cekim:new Date().toISOString().slice(0,10),aktif:true};
+               ulke:(r.ulke||"").trim()||"FR",cekim:(AKTIF_CEKIM||new Date().toISOString().slice(0,10)),aktif:true};
     const {data,error}=await sb.from("satis_yorum").insert(rec).select();
     if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
     r.id=data[0].id; OLD_IDS.push(r.id); dirty=false; setMsg("Kaydedildi ✓",true); sums(); return;
@@ -366,6 +370,8 @@ function setupAyIsaret(KAYNAK,SNAP){
 }
 load(); loadTakip();
 </script>
+
+
 
 <!-- ARBOR-DRAGSCROLL -->
 <style>
