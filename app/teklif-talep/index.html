@@ -98,7 +98,10 @@ supabase.createClient = function(){ return ARB_ACTIVE; };
 function arbGateUI(){
   var d=document.createElement("div"); d.id="arb-gate";
   d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
-  var opts=ARB_ROLLER.map(function(r){ return '<option value="'+r.email+'">'+r.ad+'</option>'; }).join("");
+  /* Rol ONCEDEN SECILI GELMEZ: iki hesabin parolasi ayni oldugu icin varsayilan secim
+     yanlis rolle sessizce giris yapilmasina yol aciyordu (MKB'nin ekraninda "Oturum: AK"). */
+  var opts='<option value="" disabled selected>— Rolünüzü seçiniz —</option>'
+    + ARB_ROLLER.map(function(r){ return '<option value="'+r.email+'">'+r.ad+'</option>'; }).join("");
   d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:330px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
     +'<div style="font-weight:700;font-size:16px;margin-bottom:10px">Arbor — Teklif Talepleri</div>'
     +'<select id="arb-rol" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px;margin-bottom:8px">'+opts+'</select>'
@@ -108,6 +111,8 @@ function arbGateUI(){
   document.body.appendChild(d);
   var go=async function(){
     var em=document.getElementById("arb-rol").value, pw=document.getElementById("arb-pw").value;
+    if(!em){ document.getElementById("arb-msg").style.color="#b40000";
+             document.getElementById("arb-msg").textContent="Önce rolünüzü seçiniz."; return; }
     document.getElementById("arb-msg").style.color="#5a6b7d";
     document.getElementById("arb-msg").textContent="Giriş yapılıyor…";
     var r=await ARB_GATE_SB.auth.signInWithPassword({email:em,password:pw});
@@ -142,7 +147,21 @@ const ROL = ARB_EMAIL==="ak.form@arbor.com.tr" ? "AK" : (ARB_EMAIL==="mkb.form@a
 const canAK  = (ROL==="AK"  || ROL==="MB");
 const canMKB = (ROL==="MKB" || ROL==="MB");
 const canMB  = (ROL==="MB");
-document.getElementById("rolLbl").textContent = "Oturum: "+ROL;
+/* Rol göstergesi + "Rol değiştir" (yanlış rolle girildiğinde çıkış yolu).
+   signOut YALNIZ formun kendi oturumunu (storageKey arbform_teklif_talep) siler,
+   Melih'in pano oturumuna dokunmaz. */
+const ROL_AD = {AK:"AK — Ali Karadağ", MKB:"MKB — Melike Başaran", MB:"MB — Melih Bilgili"}[ROL];
+(function(){
+  const l=document.getElementById("rolLbl");
+  l.innerHTML='<b style="color:#16324f;font-size:12.5px">Oturum: '+esc(ROL_AD)+'</b>';
+  if(ROL!=="MB"){
+    const b=document.createElement("button");
+    b.textContent="Rol değiştir";
+    b.style.cssText="margin-left:8px;background:#5a6b7d;color:#fff;border:0;border-radius:8px;padding:5px 10px;font-weight:600;cursor:pointer;font-size:11.5px";
+    b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); };
+    l.appendChild(b);
+  }
+})();
 
 const CIRO   = ["< 10 m","11 – 100 m","101 – 500 m","> 500 m"];
 const EH     = ["Evet","Hayır"];
