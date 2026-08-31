@@ -150,17 +150,16 @@ const canMB  = (ROL==="MB");
 /* Rol göstergesi + "Rol değiştir" (yanlış rolle girildiğinde çıkış yolu).
    signOut YALNIZ formun kendi oturumunu (storageKey arbform_teklif_talep) siler,
    Melih'in pano oturumuna dokunmaz. */
-const ROL_AD = {AK:"AK — Ali Karadağ", MKB:"MKB — Melike Başaran", MB:"MB — Melih Bilgili"}[ROL];
+const ROL_AD = {AK:"AK — Ali Karadağ", MKB:"MKB — Melike Başaran"}[ROL];
 (function(){
   const l=document.getElementById("rolLbl");
+  if(ROL==="MB") return;   /* Melih'in ekranında oturum etiketi gösterilmez */
   l.innerHTML='<b style="color:#16324f;font-size:12.5px">Oturum: '+esc(ROL_AD)+'</b>';
-  if(ROL!=="MB"){
-    const b=document.createElement("button");
-    b.textContent="Rol değiştir";
-    b.style.cssText="margin-left:8px;background:#5a6b7d;color:#fff;border:0;border-radius:8px;padding:5px 10px;font-weight:600;cursor:pointer;font-size:11.5px";
-    b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); };
-    l.appendChild(b);
-  }
+  const b=document.createElement("button");
+  b.textContent="Rol değiştir";
+  b.style.cssText="margin-left:8px;background:#5a6b7d;color:#fff;border:0;border-radius:8px;padding:5px 10px;font-weight:600;cursor:pointer;font-size:11.5px";
+  b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); };
+  l.appendChild(b);
 })();
 
 const CIRO   = ["< 10 m","11 – 100 m","101 – 500 m","> 500 m"];
@@ -170,6 +169,7 @@ const CIRO_UYARI = "Grup şirketleri için tüm grubun değil sadece ilgili şir
 
 /* A..O + akış sütunları */
 const KOL = [
+  {f:"proje",             b:"Project",                       t:"text", w:"22ch"},
   {f:"company",           b:"Company",                       t:"text", w:"22ch"},
   {f:"ciro",              b:"Company Turnover",              t:"sel",  o:CIRO, w:"12ch", ttl:CIRO_UYARI},
   {f:"gelen_tarih",       b:"Gelen Tarih",                   t:"date", w:"12ch"},
@@ -186,8 +186,8 @@ const KOL = [
   {f:"teslim_tarihi",     b:"Öngörülen Teslim Tarihi",       t:"date", w:"12ch"},
   {f:"teslim_edildi",     b:"Teslim Edildi mi?",             t:"sel",  o:EH, w:"8ch"}
 ];
-const AK_ALAN  = ["company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari"];          /* A–F zorunlu */
-const AK_YENI  = ["company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari","urun_adedi"]; /* A–G giriş */
+const AK_ALAN  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari"];          /* Project + A–F zorunlu */
+const AK_YENI  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari","urun_adedi"]; /* Project + A–G giriş */
 const MKB_ALAN = ["urun_tip","kemer_karolaj","sartname_ahsap","calismaya_baslandi"];             /* H–K zorunlu */
 
 let ROWS=[];
@@ -340,7 +340,7 @@ document.getElementById("bTalep").onclick = async ()=>{
     if(AK_YENI.indexOf(k.f)>=0 && v) deger[k.f] = (k.f==="urun_adedi"? Number(v) : v);
     if(AK_ALAN.indexOf(k.f)>=0 && !v) eksik.push(el.closest("td"));
   });
-  if(eksik.length){ eksikIsaretle(eksik); msg("Kırmızı ile işaretlenen hücrelerin (Company … Yurt Dışı Birim Notları) doldurulması gerekmektedir.",false); return; }
+  if(eksik.length){ eksikIsaretle(eksik); msg("Kırmızı ile işaretlenen hücrelerin (Project … Yurt Dışı Birim Notları) doldurulması gerekmektedir.",false); return; }
   eksikIsaretle([]);
   deger.calismaya_baslandi="Hayır"; deger.teslim_edildi="Hayır"; deger.talep_at=new Date().toISOString();
   const {data,error}=await sb.from("teklif_talep").insert(deger).select().single();
