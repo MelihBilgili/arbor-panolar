@@ -228,10 +228,13 @@ function hucre(r,k,d){
     const opts = ['<option value=""></option>'].concat(k.o.map(o=>'<option'+(o===v?" selected":"")+'>'+esc(o)+'</option>')).join("");
     return '<td data-f="'+k.f+'"'+cls+'><select data-id="'+r.id+'" data-f="'+k.f+'"'+(ro?" disabled":"")+ttl+'>'+opts+'</select></td>';
   }
-  const tp = k.t==="date" ? "date" : (k.t==="num" ? "number" : "text");
-  /* size="1": input'un DOĞAL genişliği (varsayılan size=20 ≈ 150px) tablo sütununa
-     taban oluşturuyordu; sütun min-width'leri bu yüzden işe yaramıyordu. */
-  return '<td data-f="'+k.f+'"'+cls+'><input type="'+tp+'" size="1" data-id="'+r.id+'" data-f="'+k.f+'" value="'+esc(v)+'"'+(ro?" readonly":"")+ttl+'></td>';
+  /* size="1": input'un DOĞAL genişliği (varsayılan size=20 ≈ 150px) tablo sütununa taban
+     oluşturuyordu; sütun min-width'leri bu yüzden işe yaramıyordu.
+     Sayı alanı type="number" DEĞİL: Chrome number kutusunun doğal genişliği ~150px ve
+     size'ı yok sayıyor → Adet sütunu daralmıyordu. text + inputmode="numeric" kullanılır. */
+  const tp = k.t==="date" ? "date" : "text";
+  const ek = k.t==="num" ? ' inputmode="numeric"' : "";
+  return '<td data-f="'+k.f+'"'+cls+'><input type="'+tp+'" size="1"'+ek+' data-id="'+r.id+'" data-f="'+k.f+'" value="'+esc(v)+'"'+(ro?" readonly":"")+ttl+'></td>';
 }
 
 function ciz(){
@@ -287,7 +290,8 @@ async function kaydet(id,f,val){
     msg("Öngörülen teslim tarihi boş olan satır “Çalışmaya Başlandı = Evet” olarak işaretlenemez.",false);
     ciz(); return;
   }
-  const p={}; p[f] = (val===""? null : (f==="urun_adedi"||f==="oncelik" ? Number(val) : val));
+  const sayi=v=>{ const n=Number(String(v).replace(/[^\d-]/g,"")); return isNaN(n)?null:n; };
+  const p={}; p[f] = (val===""? null : (f==="urun_adedi"||f==="oncelik" ? sayi(val) : val));
   const {error}=await sb.from("teklif_talep").update(p).eq("id",id);
   if(error){ msg("Kaydedilemedi: "+error.message,false); return; }
   r[f]=p[f];
@@ -345,7 +349,10 @@ document.getElementById("bTalep").onclick = async ()=>{
   KOL.forEach(k=>{
     const el=tr.querySelector('input[data-f="'+k.f+'"],select[data-f="'+k.f+'"]'); if(!el) return;
     const v=String(el.value||"").trim();
-    if(AK_YENI.indexOf(k.f)>=0 && v) deger[k.f] = (k.f==="urun_adedi"? Number(v) : v);
+    if(AK_YENI.indexOf(k.f)>=0 && v){
+      if(k.f==="urun_adedi"){ const n=Number(v.replace(/[^\d-]/g,"")); if(!isNaN(n)) deger[k.f]=n; }
+      else deger[k.f]=v;
+    }
     if(AK_ALAN.indexOf(k.f)>=0 && !v) eksik.push(el.closest("td"));
   });
   if(eksik.length){ eksikIsaretle(eksik); msg("Kırmızı ile işaretlenen hücrelerin (Project … Yurt Dışı Birim Notları) doldurulması gerekmektedir.",false); return; }
