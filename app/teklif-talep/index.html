@@ -17,6 +17,7 @@
   .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 10px}
   .btns button{border:0;border-radius:8px;padding:7px 13px;font-weight:600;cursor:pointer;font-size:12.5px;color:#fff}
   .btns button:disabled{opacity:.45;cursor:not-allowed}
+  #bSatir{background:#16324f}
   #bTalep{background:#0b57d0}
   #bSor{background:#8a6100}
   #bBildir{background:#5b3fa0}
@@ -64,6 +65,7 @@
   <div id="gecikme"></div>
 
   <div class="btns">
+    <button id="bSatir">＋ Satır Ekle</button>
     <button id="bTalep">Teslim Tarihi Talep Et</button>
     <button id="bSor">Öncelik Grubu Sor</button>
     <button id="bBildir">Öncelik Bildir</button>
@@ -245,7 +247,25 @@ function hucre(r,k,d){
   return '<td data-f="'+k.f+'"'+cls+'><input type="'+tp+'" size="1"'+ek+' data-id="'+r.id+'" data-f="'+k.f+'" value="'+esc(v)+'"'+(ro?" readonly":"")+ttl+'></td>';
 }
 
-function ciz(){
+/* ---------- AK'nın doldurmakta olduğu (henüz kaydedilmemiş) satırlar ----------
+   "＋ Satır Ekle" bir taslak satır daha açar; "Teslim Tarihi Talep Et" dolu taslakların
+   hepsini birden kaydeder. Yeniden çizimde yazılanların kaybolmaması için taslaklar
+   önce belleğe alınır (TASLAK). */
+let TASLAK=[{}];
+function taslakOku(){
+  const trs=[...document.querySelectorAll('#tb tr.yeni')];
+  if(!trs.length) return;
+  TASLAK = trs.map(tr=>{
+    const o={};
+    KOL.forEach(k=>{ const e=tr.querySelector('input[data-f="'+k.f+'"],select[data-f="'+k.f+'"]'); if(e) o[k.f]=e.value; });
+    return o;
+  });
+}
+const taslakDolu = o => AK_YENI.some(f=>String(o[f]||"").trim()!=="");
+
+/* ciz(true) → TASLAK zaten güncel, DOM'dan yeniden okuma (aksi hâlde silinen taslak geri gelir) */
+function ciz(hazir){
+  if(!hazir) taslakOku();
   /* başlıklar — ✓ sütunu YOK; teslim tarihleri "Teslim Tarihlerini Güncelle" ile işlenir */
   const th = KOL.map(k=>'<th style="min-width:'+k.w+'"'+(k.ttl?' title="'+esc(k.ttl)+'"':"")+'><span class="thw">'+esc(k.b)+'</span></th>');
   /* Uyarı sütunu YOK — revize uyarısı teslim tarihi hücresinin hover kutusunda gösterilir */
@@ -255,19 +275,23 @@ function ciz(){
   const tb=document.getElementById("tb");
   let h="";
 
-  /* AK'nin en üstteki boş satırı */
+  /* AK'nin en üstteki boş satır(lar)ı */
   if(canAK){
-    h+='<tr class="yeni" data-id="0">';
-    KOL.forEach((k,i)=>{
-      const acik = AK_YENI.indexOf(k.f)>=0;
-      const bos = {id:0};
-      if(k.f==="calismaya_baslandi") bos[k.f]="Başlamadı";
-      if(k.f==="teslim_edildi")      bos[k.f]="Edilmedi";
-      let td = hucre(bos,k,"yeni");
-      if(!acik) td = td.replace(/<(input|select)\b/, '<$1 disabled');
-      h+=td;
+    if(!TASLAK.length) TASLAK=[{}];
+    TASLAK.forEach((t,ti)=>{
+      h+='<tr class="yeni" data-ti="'+ti+'" data-id="0">';
+      KOL.forEach(k=>{
+        const acik = AK_YENI.indexOf(k.f)>=0;
+        const bos = {id:0};
+        bos[k.f] = t[k.f]!=null ? t[k.f] : "";
+        if(k.f==="calismaya_baslandi" && !bos[k.f]) bos[k.f]="Başlamadı";
+        if(k.f==="teslim_edildi"      && !bos[k.f]) bos[k.f]="Edilmedi";
+        let td = hucre(bos,k,"yeni");
+        if(!acik) td = td.replace(/<(input|select)\b/, '<$1 disabled');
+        h+=td;
+      });
+      h+='<td class="x">'+(TASLAK.length>1?'<button class="del" data-tdel="'+ti+'" title="Bu taslak satırı kaldır">✕</button>':"")+'</td></tr>';
     });
-    h+='<td class="x"></td></tr>';
   }
 
   ROWS.slice().sort(sirala).forEach(r=>{
@@ -315,6 +339,9 @@ function bagla(){
     if(!id) return;                       /* yeni satır: butonla eklenir */
     el.onchange=()=>kaydet(id,el.dataset.f,el.value);
   });
+  document.querySelectorAll('#tb [data-tdel]').forEach(b=>{
+    b.onclick=()=>{ taslakOku(); TASLAK.splice(+b.dataset.tdel,1); if(!TASLAK.length) TASLAK=[{}]; ciz(true); };
+  });
   document.querySelectorAll('#tb [data-del]').forEach(b=>{
     b.onclick=async()=>{
       if(!confirm("Bu satır silinsin mi?")) return;
@@ -352,24 +379,38 @@ async function mail(tip){
 /* ---------- düğmeler ---------- */
 function eksikIsaretle(sel){ document.querySelectorAll("td.miss").forEach(t=>t.classList.remove("miss")); sel.forEach(t=>t.classList.add("miss")); if(sel[0]) sel[0].scrollIntoView({block:"center",inline:"center"}); }
 
+document.getElementById("bSatir").onclick = ()=>{
+  taslakOku(); TASLAK.push({}); ciz(true);
+  const trs=document.querySelectorAll('#tb tr.yeni');
+  const son=trs[trs.length-1]; if(son){ const i=son.querySelector('input[data-f="proje"]'); if(i) i.focus(); }
+};
+
 document.getElementById("bTalep").onclick = async ()=>{
-  const tr=document.querySelector('#tb tr.yeni'); if(!tr) return;
-  const deger={}, eksik=[];
-  KOL.forEach(k=>{
-    const el=tr.querySelector('input[data-f="'+k.f+'"],select[data-f="'+k.f+'"]'); if(!el) return;
-    const v=String(el.value||"").trim();
-    if(AK_YENI.indexOf(k.f)>=0 && v){
-      if(k.f==="urun_adedi"){ const n=Number(v.replace(/[^\d-]/g,"")); if(!isNaN(n)) deger[k.f]=n; }
-      else deger[k.f]=v;
-    }
-    if(AK_ALAN.indexOf(k.f)>=0 && !v) eksik.push(el.closest("td"));
-  });
+  taslakOku();
+  const trs=[...document.querySelectorAll('#tb tr.yeni')];
+  const dolu = TASLAK.map((t,i)=>({t,i})).filter(x=>taslakDolu(x.t));
+  if(!dolu.length){ msg("Önce yeni satır(lar)ı doldurunuz.",false); return; }
+  /* zorunlu alan denetimi — bütün dolu taslaklar için */
+  const eksik=[];
+  dolu.forEach(({t,i})=>AK_ALAN.forEach(f=>{
+    if(String(t[f]||"").trim()==="") { const td=trs[i] && trs[i].querySelector('td[data-f="'+f+'"]'); if(td) eksik.push(td); }
+  }));
   if(eksik.length){ eksikIsaretle(eksik); msg("Kırmızı ile işaretlenen hücrelerin (Project … Yurt Dışı Birim Notları) doldurulması gerekmektedir.",false); return; }
   eksikIsaretle([]);
-  deger.calismaya_baslandi="Başlamadı"; deger.teslim_edildi="Edilmedi"; deger.talep_at=new Date().toISOString();
-  const {data,error}=await sb.from("teklif_talep").insert(deger).select().single();
+  const simdi=new Date().toISOString();
+  const kayitlar = dolu.map(({t})=>{
+    const d={calismaya_baslandi:"Başlamadı", teslim_edildi:"Edilmedi", talep_at:simdi};
+    AK_YENI.forEach(f=>{
+      const v=String(t[f]||"").trim(); if(!v) return;
+      if(f==="urun_adedi"){ const n=Number(v.replace(/[^\d-]/g,"")); if(!isNaN(n)) d[f]=n; }
+      else d[f]=v;
+    });
+    return d;
+  });
+  const {data,error}=await sb.from("teklif_talep").insert(kayitlar).select();
   if(error){ msg("Eklenemedi: "+error.message,false); return; }
-  ROWS.push(data); ciz();
+  ROWS.push(...(data||[]));
+  TASLAK=[{}]; ciz(true);
   const e=await mail("talep");
   msg("Ön görülen teslim tarihi Teklif Birimi tarafından 1 iş günü içerisinde işlenecektir."+(e?" (Mail gönderilemedi: "+e+")":""), !e);
 };
@@ -430,6 +471,7 @@ document.getElementById("bRevizyon").onclick = async ()=>{
 };
 
 /* düğme görünürlüğü */
+document.getElementById("bSatir").style.display    = canAK  ? "" : "none";
 document.getElementById("bTalep").style.display    = canAK  ? "" : "none";
 document.getElementById("bSor").style.display      = canMKB ? "" : "none";
 document.getElementById("bGuncelle").style.display = canMKB ? "" : "none";
