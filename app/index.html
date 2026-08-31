@@ -1287,6 +1287,7 @@ async function loadFormlar(){
     {ad:"Yurt Dışı 1 Satış",   who:"Mustafa Nas",       url:"fy/",          sik:"Her ayın ilk iş günü"},
     {ad:"Yurt Dışı 2 Satış",   who:"Melike Başaran",    url:"fy2/",         sik:"Her ayın ilk iş günü"},
     {ad:"Ahşap Maliyet",       who:"Umut Aktaş",        url:"ahsap/",       sik:"Her ayın ilk iş günü"},
+    {ad:"Teklif Talepleri",    who:"Ali K. · Melike B.",url:"teklif-talep/",sik:"Süresiz"},
     {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
@@ -2202,6 +2203,8 @@ sb.auth.onAuthStateChange((_ev,s)=>{ if(!s){ state.session=null; renderLogin(); 
 boot();
 setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadView(); }, 300000);
 </script>
+
+
 
 <!-- ARBOR-DRAGSCROLL -->
 <style>
