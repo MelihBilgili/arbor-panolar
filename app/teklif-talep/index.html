@@ -23,7 +23,7 @@
   #bGuncelle{background:#0a6b57}
   #bRevizyon{background:#b1541f}
   .hint{font-size:11px;color:#8a97a4;margin:0 2px}
-  .warnbox{background:#ffdada;border:1px solid #e79b9b;color:#8e0000;border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:600;line-height:1.45;margin:8px 0}
+  .warnbox{background:#ffb3b3;border:1px solid #cf6a6a;color:#7a0000;border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:600;line-height:1.45;margin:8px 0}
   .scroll{overflow-x:auto}
   table.tt{border-collapse:collapse;font-size:12px;width:max-content}
   table.tt th,table.tt td{border-bottom:1px solid #e6ebf1;border-right:1px solid #f0f3f7;padding:2px 5px;text-align:left;vertical-align:middle;line-height:16px}
@@ -33,10 +33,8 @@
   table.tt td input[readonly],table.tt td select:disabled{background:#f1f3f6;color:#5a6b7d;border-color:#e2e7ee}
   td.x{width:24px;text-align:center}
   .del{border:0;background:transparent;color:#c62828;font-weight:800;font-size:15px;cursor:pointer;line-height:1;padding:0 3px}
-  .okb{border:1px solid #0a6b57;background:#e6f5ef;color:#0a6b57;font-weight:800;border-radius:5px;cursor:pointer;padding:1px 6px;line-height:16px}
-  .okb:disabled{opacity:.35;cursor:not-allowed}
   tr.pembe td{background:#ffe1ee}
-  tr.kirmizi td{background:#ffd6d6}
+  tr.kirmizi td{background:#ffb0b0}
   tr.beyaz td{background:#fff}
   tr.sari td{background:#fff5c2}
   tr.yesil td{background:#d8f2dd}
@@ -53,7 +51,7 @@
 <body>
 <header>
   <h1>Teklif Talepleri</h1>
-  <div class="sub">Gelen teklif talepleri buraya işlenir. Girilen bilgiler anında kaydedilir; güncelleme düğmelerine basılmadıkça ilgili kişiye bildirim gitmez.<br>
+  <div class="sub">Gelen teklif talepleri buraya işlenir. Girilen bilgiler anında kaydedilir; düğmelere basılmadıkça ilgili kişiye bildirim gitmez.<br>
   <b>Company Turnover:</b> grup şirketleri için tüm grubun değil sadece ilgili şirketin cirosunu dikkate alınız.</div>
 </header>
 <div class="wrap">
@@ -210,9 +208,8 @@ function hucre(r,k,d){
 }
 
 function ciz(){
-  /* başlıklar */
+  /* başlıklar — ✓ sütunu YOK; teslim tarihleri "Teslim Tarihlerini Güncelle" ile işlenir */
   const th = KOL.map(k=>'<th style="min-width:'+k.w+'"'+(k.ttl?' title="'+esc(k.ttl)+'"':"")+'><span class="thw">'+esc(k.b)+'</span></th>');
-  th.splice(14,0,'<th style="min-width:3ch"><span class="thw">✓</span></th>');   /* teslim tarihi sağındaki ✓ (N ile O arası) */
   th.push('<th style="min-width:12ch"><span class="thw">Uyarı</span></th>','<th class="x"></th>');
   document.getElementById("thr").innerHTML = th.join("");
 
@@ -229,7 +226,6 @@ function ciz(){
       let td = hucre(bos,k,"yeni");
       if(!acik) td = td.replace(/<(input|select)\b/, '<$1 disabled');
       h+=td;
-      if(i===13) h+='<td></td>';
     });
     h+='<td class="revu"></td><td class="x"></td></tr>';
   }
@@ -237,13 +233,7 @@ function ciz(){
   ROWS.slice().sort(sirala).forEach(r=>{
     const d=durum(r);
     h+='<tr class="'+d+'" data-id="'+r.id+'">';
-    KOL.forEach((k,i)=>{
-      h+=hucre(r,k,d);
-      if(i===13){ /* teslim tarihinin hemen sağındaki ✓ */
-        const dis = !canMKB || d==="yesil" || (r.tarih_kilit && !r.revizyon_acik);
-        h+='<td><button class="okb" data-ok="'+r.id+'"'+(dis?" disabled":"")+' title="Teslim tarihini işle (kilitle)">✓</button></td>';
-      }
-    });
+    KOL.forEach(k=>{ h+=hucre(r,k,d); });
     h+='<td class="revu">'+(r.revize?"Dikkat, Revize Tarih!":"")+'</td>';
     h+='<td class="x">'+(canAK?'<button class="del" data-del="'+r.id+'" title="Satırı sil">✕</button>':"")+'</td></tr>';
   });
@@ -293,9 +283,6 @@ function bagla(){
       if(error){ msg("Silinemedi: "+error.message,false); return; }
       ROWS=ROWS.filter(x=>x.id!==id); ciz(); msg("Satır silindi.",true);
     };
-  });
-  document.querySelectorAll('#tb [data-ok]').forEach(b=>{
-    b.onclick=()=>tarihIsle(+b.dataset.ok);
   });
 }
 
@@ -367,21 +354,23 @@ document.getElementById("bBildir").onclick = async ()=>{
   msg(e ? "Mail gönderilemedi: "+e : "Öncelik grupları bildirildi; Melike Hanım'a mail gönderildi.", !e);
 };
 
+/* Teslim tarihi YALNIZ bu düğmeyle işlenir (satır başına ✓ yok):
+   dolu olan öngörülen teslim tarihleri kilitlenir → o satırlar beyaza döner.
+   Tarihi boş bırakılan satırlar pembe kalır, uyarı verilmez. */
 document.getElementById("bGuncelle").onclick = async ()=>{
   const hedef=ROWS.filter(r=>r.teslim_edildi!=="Evet" && !r.tarih_kilit);
-  if(!hedef.length){ msg("İşlenecek teslim tarihi yok.",false); return; }
-  const isle=[], eksik=[];
+  const isle=[];
   hedef.forEach(r=>{
     const i=document.querySelector('#tb input[data-id="'+r.id+'"][data-f="teslim_tarihi"]');
     const v = i && i.value ? i.value : r.teslim_tarihi;
     if(v) isle.push({id:r.id, tarih:v});
-    else { const td=document.querySelector('#tb tr[data-id="'+r.id+'"] td[data-f="teslim_tarihi"]'); if(td) eksik.push(td); }
   });
-  if(eksik.length){ eksikIsaretle(eksik); msg("Öngörülen teslim tarihi girilmemiş satırlar var.",false); return; }
   eksikIsaretle([]);
+  if(!isle.length){ msg("İşlenecek dolu teslim tarihi yok.",false); return; }
   for(const x of isle) await tarihIsle(x.id, x.tarih, true);
   ciz();
-  msg(isle.length+" satırın teslim tarihi işlendi.",true);
+  const kalan = hedef.length - isle.length;
+  msg(isle.length+" satırın teslim tarihi işlendi."+(kalan?" ("+kalan+" satırın tarihi boş bırakıldı.)":""),true);
 };
 
 document.getElementById("bRevizyon").onclick = async ()=>{
@@ -394,7 +383,7 @@ document.getElementById("bRevizyon").onclick = async ()=>{
     Object.assign(r,p);
   }
   ciz();
-  msg(hedef.length+" satırın teslim tarihi düzenlenebilir hâle getirildi. Tarihleri güncelleyip ✓ ile işleyiniz.",true);
+  msg(hedef.length+" satırın teslim tarihi düzenlenebilir hâle getirildi. Tarihleri güncelleyip “Teslim Tarihlerini Güncelle” düğmesine basınız.",true);
 };
 
 /* düğme görünürlüğü */
@@ -411,6 +400,7 @@ document.getElementById("bBildir").style.display   = canMB  ? "" : "none";
   ROWS=data||[]; ciz();
 })();
 </script>
+
 
 <!-- ARBOR-DRAGSCROLL -->
 <style>
