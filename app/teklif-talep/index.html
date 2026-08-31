@@ -11,7 +11,7 @@
   header{background:#16324f;color:#fff;padding:12px 16px}
   header h1{font-size:17px;margin:0;font-weight:700}
   header .sub{font-size:12px;color:#c9dcf0;margin-top:3px;line-height:1.5;max-width:960px}
-  .wrap{max-width:100%;margin:0 auto;padding:10px 14px 40px}
+  .wrap{max-width:100%;margin:0 auto;padding:10px 8px 40px}
   .msg{font-size:12.5px;min-height:17px;margin:4px 0}
   .msg.ok{color:#0a6b3f;font-weight:600}.msg.err{color:#b40000;font-weight:600}
   .btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 10px}
@@ -25,11 +25,15 @@
   .hint{font-size:11px;color:#8a97a4;margin:0 2px}
   .warnbox{background:#ffb3b3;border:1px solid #cf6a6a;color:#7a0000;border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:600;line-height:1.45;margin:8px 0}
   .scroll{overflow-x:auto}
-  table.tt{border-collapse:collapse;font-size:12px;width:max-content}
-  table.tt th,table.tt td{border-bottom:1px solid #e6ebf1;border-right:1px solid #f0f3f7;padding:2px 5px;text-align:left;vertical-align:middle;line-height:16px}
-  table.tt thead th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px;position:sticky;top:0;z-index:2;vertical-align:bottom}
-  table.tt thead th .thw{display:block;max-width:14ch;min-width:min-content;white-space:normal;line-height:12px}
-  table.tt td input,table.tt td select{font:inherit;font-size:12px;padding:2px 4px;border:1px solid #cdd6df;border-radius:5px;background:#fff;width:100%}
+  table.tt{border-collapse:collapse;font-size:11.5px;width:max-content}
+  table.tt th,table.tt td{border-bottom:1px solid #e6ebf1;border-right:1px solid #f0f3f7;padding:2px 3px;text-align:left;vertical-align:middle;line-height:16px}
+  table.tt thead th{background:#16324f;color:#fff;font-weight:600;font-size:10px;position:sticky;top:0;z-index:2;vertical-align:bottom}
+  table.tt thead th .thw{display:block;max-width:11ch;min-width:min-content;white-space:normal;line-height:12px}
+  table.tt td input,table.tt td select{font:inherit;font-size:11.5px;padding:1px 3px;border:1px solid #cdd6df;border-radius:5px;background:#fff;width:100%;min-width:0}
+  /* tarih kutuları: takvim simgesini daralt (3 tarih sütunu ~50px kazandırır) */
+  table.tt td input[type=date]{padding-right:0}
+  table.tt td input[type=date]::-webkit-calendar-picker-indicator{margin:0;padding:0;width:11px;opacity:.55}
+  table.tt td select{padding-right:0}
   table.tt td input[readonly],table.tt td select:disabled{background:#f1f3f6;color:#5a6b7d;border-color:#e2e7ee}
   td.x{width:24px;text-align:center}
   .del{border:0;background:transparent;color:#c62828;font-weight:800;font-size:15px;cursor:pointer;line-height:1;padding:0 3px}
@@ -168,23 +172,25 @@ const ONCELIK= ["1","2","3"];
 const CIRO_UYARI = "Grup şirketleri için tüm grubun değil sadece ilgili şirketin cirosunu dikkate alınız.";
 
 /* A..O + akış sütunları */
+/* Başlıklar kısaltıldı, TAM AD `ttl` ile hover'da görünür (İcmal/AÜP deseni) —
+   17 sütunun masaüstü ekrana yatay kaydırmasız sığması için. */
 const KOL = [
-  {f:"proje",             b:"Project",                       t:"text", w:"22ch"},
-  {f:"company",           b:"Company",                       t:"text", w:"22ch"},
-  {f:"ciro",              b:"Company Turnover",              t:"sel",  o:CIRO, w:"12ch", ttl:CIRO_UYARI},
-  {f:"gelen_tarih",       b:"Gelen Tarih",                   t:"date", w:"12ch"},
-  {f:"musteri_tarih",     b:"Müşterinin İstediği Tarih",     t:"date", w:"12ch"},
-  {f:"ihale",             b:"İhale Alınmış mı?",             t:"sel",  o:EH, w:"8ch"},
-  {f:"yd_notlari",        b:"Yurt Dışı Birim Notları",       t:"text", w:"26ch"},
-  {f:"urun_adedi",        b:"Ürün Adedi",                    t:"num",  w:"7ch"},
-  {f:"urun_tip",          b:"Ürün Tip/Seri(ler)i",           t:"text", w:"16ch"},
-  {f:"kemer_karolaj",     b:"Kemer/Karolaj Var mı?",         t:"sel",  o:EH, w:"8ch"},
-  {f:"sartname_ahsap",    b:"Şartnamede Doğramalar Ahşap Olarak Belirtilmiş mi?", t:"sel", o:EH, w:"8ch"},
-  {f:"calismaya_baslandi",b:"Çalışmaya Başlandı mı?",        t:"sel",  o:EH, w:"8ch"},
-  {f:"teklif_notlari",    b:"Teklif Birimi Notları",         t:"text", w:"26ch"},
-  {f:"oncelik",           b:"Öncelik Grubu",                 t:"sel",  o:ONCELIK, w:"7ch"},
-  {f:"teslim_tarihi",     b:"Öngörülen Teslim Tarihi",       t:"date", w:"12ch"},
-  {f:"teslim_edildi",     b:"Teslim Edildi mi?",             t:"sel",  o:EH, w:"8ch"}
+  {f:"proje",             b:"Project",         t:"text", w:"16ch"},
+  {f:"company",           b:"Company",         t:"text", w:"14ch"},
+  {f:"ciro",              b:"Turnover",        t:"sel",  o:CIRO, w:"10ch", ttl:"Company Turnover — "+CIRO_UYARI},
+  {f:"gelen_tarih",       b:"Gelen Tarih",     t:"date", w:"10ch"},
+  {f:"musteri_tarih",     b:"İstenen Tarih",   t:"date", w:"10ch", ttl:"Müşterinin İstediği Tarih"},
+  {f:"ihale",             b:"İhale?",          t:"sel",  o:EH, w:"6ch",  ttl:"İhale Alınmış mı?"},
+  {f:"yd_notlari",        b:"YD Notları",      t:"text", w:"16ch", ttl:"Yurt Dışı Birim Notları"},
+  {f:"urun_adedi",        b:"Adet",            t:"num",  w:"5ch",  ttl:"Ürün Adedi"},
+  {f:"urun_tip",          b:"Ürün Tipi",       t:"text", w:"10ch", ttl:"Ürün Tip/Seri(ler)i"},
+  {f:"kemer_karolaj",     b:"Kemer?",          t:"sel",  o:EH, w:"6ch",  ttl:"Kemer/Karolaj Var mı?"},
+  {f:"sartname_ahsap",    b:"Ahşap?",          t:"sel",  o:EH, w:"6ch",  ttl:"Şartnamede Doğramalar Ahşap Olarak Belirtilmiş mi?"},
+  {f:"calismaya_baslandi",b:"Başlandı?",       t:"sel",  o:EH, w:"7ch",  ttl:"Çalışmaya Başlandı mı?"},
+  {f:"teklif_notlari",    b:"Teklif Notları",  t:"text", w:"16ch", ttl:"Teklif Birimi Notları"},
+  {f:"oncelik",           b:"Önc.",            t:"sel",  o:ONCELIK, w:"4ch", ttl:"Öncelik Grubu (1-3)"},
+  {f:"teslim_tarihi",     b:"Teslim Tarihi",   t:"date", w:"10ch", ttl:"Öngörülen Teslim Tarihi"},
+  {f:"teslim_edildi",     b:"Teslim?",         t:"sel",  o:EH, w:"6ch",  ttl:"Teslim Edildi mi?"}
 ];
 const AK_ALAN  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari"];          /* Project + A–F zorunlu */
 const AK_YENI  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari","urun_adedi"]; /* Project + A–G giriş */
@@ -229,7 +235,7 @@ function hucre(r,k,d){
 function ciz(){
   /* başlıklar — ✓ sütunu YOK; teslim tarihleri "Teslim Tarihlerini Güncelle" ile işlenir */
   const th = KOL.map(k=>'<th style="min-width:'+k.w+'"'+(k.ttl?' title="'+esc(k.ttl)+'"':"")+'><span class="thw">'+esc(k.b)+'</span></th>');
-  th.push('<th style="min-width:12ch"><span class="thw">Uyarı</span></th>','<th class="x"></th>');
+  th.push('<th style="min-width:9ch"><span class="thw">Uyarı</span></th>','<th class="x"></th>');
   document.getElementById("thr").innerHTML = th.join("");
 
   const tb=document.getElementById("tb");
