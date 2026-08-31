@@ -166,9 +166,13 @@ const ROL_AD = {AK:"AK — Ali Karadağ", MKB:"MKB — Melike Başaran"}[ROL];
   l.appendChild(b);
 })();
 
-const CIRO   = ["< 10 m","11 – 100 m","101 – 500 m","> 500 m"];
-const EH     = ["Evet","Hayır"];
-const ONCELIK= ["1","2","3"];
+const CIRO    = ["< 10 m","11 – 100 m","101 – 500 m","> 500 m"];
+const EH      = ["Evet","Hayır"];
+const IHALE   = ["Alındı","Alınmadı"];
+const KEMER   = ["Yok","Sadece kemer var","Sadece karolaj var","Her ikisi de var"];
+const CALISMA = ["Başladı","Başlamadı"];        /* durum(): "Başladı" → sarı */
+const TESLIM  = ["Edilmedi","Edildi"];          /* durum(): "Edildi"  → yeşil */
+const ONCELIK = ["1","2","3"];
 const CIRO_UYARI = "Grup şirketleri için tüm grubun değil sadece ilgili şirketin cirosunu dikkate alınız.";
 
 /* A..O + akış sütunları */
@@ -180,17 +184,17 @@ const KOL = [
   {f:"ciro",              b:"Turnover",        t:"sel",  o:CIRO, w:"10ch", ttl:"Company Turnover — "+CIRO_UYARI},
   {f:"gelen_tarih",       b:"Gelen Tarih",     t:"date", w:"10ch"},
   {f:"musteri_tarih",     b:"İstenen Tarih",   t:"date", w:"10ch", ttl:"Müşterinin İstediği Tarih"},
-  {f:"ihale",             b:"İhale?",          t:"sel",  o:EH, w:"6ch",  ttl:"İhale Alınmış mı?"},
-  {f:"yd_notlari",        b:"YD Notları",      t:"text", w:"16ch", ttl:"Yurt Dışı Birim Notları"},
-  {f:"urun_adedi",        b:"Adet",            t:"num",  w:"5ch",  ttl:"Ürün Adedi"},
-  {f:"urun_tip",          b:"Ürün Tipi",       t:"text", w:"10ch", ttl:"Ürün Tip/Seri(ler)i"},
-  {f:"kemer_karolaj",     b:"Kemer?",          t:"sel",  o:EH, w:"6ch",  ttl:"Kemer/Karolaj Var mı?"},
-  {f:"sartname_ahsap",    b:"Ahşap?",          t:"sel",  o:EH, w:"6ch",  ttl:"Şartnamede Doğramalar Ahşap Olarak Belirtilmiş mi?"},
-  {f:"calismaya_baslandi",b:"Başlandı?",       t:"sel",  o:EH, w:"7ch",  ttl:"Çalışmaya Başlandı mı?"},
-  {f:"teklif_notlari",    b:"Teklif Notları",  t:"text", w:"16ch", ttl:"Teklif Birimi Notları"},
-  {f:"oncelik",           b:"Önc.",            t:"sel",  o:ONCELIK, w:"4ch", ttl:"Öncelik Grubu (1-3)"},
-  {f:"teslim_tarihi",     b:"Teslim Tarihi",   t:"date", w:"10ch", ttl:"Öngörülen Teslim Tarihi"},
-  {f:"teslim_edildi",     b:"Teslim?",         t:"sel",  o:EH, w:"6ch",  ttl:"Teslim Edildi mi?"}
+  {f:"ihale",             b:"İhale?",              t:"sel",  o:IHALE, w:"7ch",  ttl:"İhale Alınmış mı?"},
+  {f:"yd_notlari",        b:"Y. Dışı B. Notları",  t:"text", w:"16ch", ttl:"Yurt Dışı Birim Notları"},
+  {f:"urun_adedi",        b:"Adet",                t:"num",  w:"5ch",  ttl:"Ürün Adedi"},
+  {f:"urun_tip",          b:"Ürün Tipi / Serisi",  t:"text", w:"11ch", ttl:"Ürün Tip/Seri(ler)i"},
+  {f:"kemer_karolaj",     b:"Kemer/Karolaj",       t:"sel",  o:KEMER, w:"12ch", ttl:"Kemer/Karolaj Var mı?"},
+  {f:"sartname_ahsap",    b:"Şartnamede Doğramalar Ahşap Olarak Belirtilmiş mi?", t:"sel", o:EH, w:"9ch"},
+  {f:"calismaya_baslandi",b:"Teklif Çalışması",    t:"sel",  o:CALISMA, w:"8ch"},
+  {f:"teklif_notlari",    b:"Teklif B. Notları",   t:"text", w:"16ch", ttl:"Teklif Birimi Notları"},
+  {f:"oncelik",           b:"Önc.",                t:"sel",  o:ONCELIK, w:"4ch", ttl:"Öncelik Grubu (1-3)"},
+  {f:"teslim_tarihi",     b:"Teslim Tarihi",       t:"date", w:"10ch", ttl:"Öngörülen Teslim Tarihi"},
+  {f:"teslim_edildi",     b:"Teslim?",             t:"sel",  o:TESLIM, w:"7ch",  ttl:"Teslim Edildi mi?"}
 ];
 const AK_ALAN  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari"];          /* Project + A–F zorunlu */
 const AK_YENI  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari","urun_adedi"]; /* Project + A–G giriş */
@@ -200,10 +204,10 @@ let ROWS=[];
 const bugun = new Date(Date.now()+180*60000).toISOString().slice(0,10); /* TR tarihi */
 
 function durum(r){
-  if(r.teslim_edildi==="Evet") return "yesil";
+  if(r.teslim_edildi==="Edildi") return "yesil";
   if(!r.teslim_tarihi || !r.tarih_kilit) return "pembe";
   if(r.teslim_tarihi < bugun) return "kirmizi";
-  return r.calismaya_baslandi==="Evet" ? "sari" : "beyaz";
+  return r.calismaya_baslandi==="Başladı" ? "sari" : "beyaz";
 }
 const SIRA = {pembe:0,kirmizi:1,beyaz:2,sari:3,yesil:4};
 function sirala(a,b){
@@ -212,7 +216,7 @@ function sirala(a,b){
   if(ta!==tb) return ta<tb?-1:1;
   return b.id-a.id;
 }
-const gecikenler = ()=>ROWS.filter(r=>r.teslim_tarihi && r.tarih_kilit && r.teslim_edildi!=="Evet" && r.teslim_tarihi<bugun);
+const gecikenler = ()=>ROWS.filter(r=>r.teslim_tarihi && r.tarih_kilit && r.teslim_edildi!=="Edildi" && r.teslim_tarihi<bugun);
 
 /* ---------- çizim ---------- */
 function hucre(r,k,d){
@@ -221,8 +225,11 @@ function hucre(r,k,d){
   let ro=false;
   if(yesil) ro = (k.f!=="teslim_edildi");
   else if(tarihK) ro = !canMKB || !!r.tarih_kilit;
-  const cls = (tarihK && r.revize) ? ' class="revd"' : "";
-  const ttl = k.ttl ? ' title="'+esc(k.ttl)+'"' : "";
+  const rev = tarihK && r.revize;
+  const cls = rev ? ' class="revd"' : "";
+  /* Uyarı sütunu yerine hover kutusu: revize edilen tarihte uyarı hücrenin title'ında */
+  const uyari = rev ? ("Dikkat, Revize Tarih!" + (r.revizyon_onceki ? " (önceki: "+r.revizyon_onceki.split("-").reverse().join(".")+")" : "")) : "";
+  const ttl = uyari ? ' title="'+esc(uyari)+'"' : (k.ttl ? ' title="'+esc(k.ttl)+'"' : "");
   const v = r[k.f]==null ? "" : String(r[k.f]);
   if(k.t==="sel"){
     const opts = ['<option value=""></option>'].concat(k.o.map(o=>'<option'+(o===v?" selected":"")+'>'+esc(o)+'</option>')).join("");
@@ -240,7 +247,8 @@ function hucre(r,k,d){
 function ciz(){
   /* başlıklar — ✓ sütunu YOK; teslim tarihleri "Teslim Tarihlerini Güncelle" ile işlenir */
   const th = KOL.map(k=>'<th style="min-width:'+k.w+'"'+(k.ttl?' title="'+esc(k.ttl)+'"':"")+'><span class="thw">'+esc(k.b)+'</span></th>');
-  th.push('<th style="min-width:9ch"><span class="thw">Uyarı</span></th>','<th class="x"></th>');
+  /* Uyarı sütunu YOK — revize uyarısı teslim tarihi hücresinin hover kutusunda gösterilir */
+  th.push('<th class="x"></th>');
   document.getElementById("thr").innerHTML = th.join("");
 
   const tb=document.getElementById("tb");
@@ -252,19 +260,19 @@ function ciz(){
     KOL.forEach((k,i)=>{
       const acik = AK_YENI.indexOf(k.f)>=0;
       const bos = {id:0};
-      if(k.f==="calismaya_baslandi"||k.f==="teslim_edildi") bos[k.f]="Hayır";
+      if(k.f==="calismaya_baslandi") bos[k.f]="Başlamadı";
+      if(k.f==="teslim_edildi")      bos[k.f]="Edilmedi";
       let td = hucre(bos,k,"yeni");
       if(!acik) td = td.replace(/<(input|select)\b/, '<$1 disabled');
       h+=td;
     });
-    h+='<td class="revu"></td><td class="x"></td></tr>';
+    h+='<td class="x"></td></tr>';
   }
 
   ROWS.slice().sort(sirala).forEach(r=>{
     const d=durum(r);
     h+='<tr class="'+d+'" data-id="'+r.id+'">';
     KOL.forEach(k=>{ h+=hucre(r,k,d); });
-    h+='<td class="revu">'+(r.revize?"Dikkat, Revize Tarih!":"")+'</td>';
     h+='<td class="x">'+(canAK?'<button class="del" data-del="'+r.id+'" title="Satırı sil">✕</button>':"")+'</td></tr>';
   });
 
@@ -286,8 +294,8 @@ function gecikmeUyari(){
 /* ---------- kayıt ---------- */
 async function kaydet(id,f,val){
   const r=ROWS.find(x=>x.id===id); if(!r) return;
-  if(f==="calismaya_baslandi" && val==="Evet" && !r.teslim_tarihi){
-    msg("Öngörülen teslim tarihi boş olan satır “Çalışmaya Başlandı = Evet” olarak işaretlenemez.",false);
+  if(f==="calismaya_baslandi" && val==="Başladı" && !r.teslim_tarihi){
+    msg("Öngörülen teslim tarihi boş olan satırda “Teklif Çalışması = Başladı” işaretlenemez.",false);
     ciz(); return;
   }
   const sayi=v=>{ const n=Number(String(v).replace(/[^\d-]/g,"")); return isNaN(n)?null:n; };
@@ -357,7 +365,7 @@ document.getElementById("bTalep").onclick = async ()=>{
   });
   if(eksik.length){ eksikIsaretle(eksik); msg("Kırmızı ile işaretlenen hücrelerin (Project … Yurt Dışı Birim Notları) doldurulması gerekmektedir.",false); return; }
   eksikIsaretle([]);
-  deger.calismaya_baslandi="Hayır"; deger.teslim_edildi="Hayır"; deger.talep_at=new Date().toISOString();
+  deger.calismaya_baslandi="Başlamadı"; deger.teslim_edildi="Edilmedi"; deger.talep_at=new Date().toISOString();
   const {data,error}=await sb.from("teklif_talep").insert(deger).select().single();
   if(error){ msg("Eklenemedi: "+error.message,false); return; }
   ROWS.push(data); ciz();
@@ -392,7 +400,7 @@ document.getElementById("bBildir").onclick = async ()=>{
    dolu olan öngörülen teslim tarihleri kilitlenir → o satırlar beyaza döner.
    Tarihi boş bırakılan satırlar pembe kalır, uyarı verilmez. */
 document.getElementById("bGuncelle").onclick = async ()=>{
-  const hedef=ROWS.filter(r=>r.teslim_edildi!=="Evet" && !r.tarih_kilit);
+  const hedef=ROWS.filter(r=>r.teslim_edildi!=="Edildi" && !r.tarih_kilit);
   const isle=[];
   hedef.forEach(r=>{
     const i=document.querySelector('#tb input[data-id="'+r.id+'"][data-f="teslim_tarihi"]');
@@ -408,7 +416,7 @@ document.getElementById("bGuncelle").onclick = async ()=>{
 };
 
 document.getElementById("bRevizyon").onclick = async ()=>{
-  const hedef=ROWS.filter(r=>r.teslim_edildi!=="Evet" && r.tarih_kilit);
+  const hedef=ROWS.filter(r=>r.teslim_edildi!=="Edildi" && r.tarih_kilit);
   if(!hedef.length){ msg("Revize edilecek satır yok.",false); return; }
   for(const r of hedef){
     const p={revizyon_acik:true, revizyon_onceki:r.teslim_tarihi, tarih_kilit:false};
