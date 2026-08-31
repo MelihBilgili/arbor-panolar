@@ -1469,13 +1469,43 @@ async function loadPanoBolum(bolum, tgt){
   if(err){ body.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
   const meta=(m.data||[])[0]||{};
   const rowsByT={}; (r.data||[]).forEach(x=>{ (rowsByT[x.tablo]=rowsByT[x.tablo]||[]).push(x); });
+  const isGM=bolum==="gmenkul"; /* G.menkul: yalnız sütun görünümü optimize edilir (veri/hesap değişmez) */
   let html="";
   (t.data||[]).forEach(tb=>{
-    const hs=(tb.basliklar||[]).map(h=>`<th>${esc(h)}</th>`).join("");
-    const rs=(rowsByT[tb.tablo]||[]).map(row=>`<tr>${(row.hucreler||[]).map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("");
-    html+=`${tb.baslik?`<h3 class="sec">${esc(tb.baslik)}</h3>`:""}<div class="scroll"><table class="pob"><thead><tr>${hs}</tr></thead><tbody>${rs}</tbody></table></div>`;
+    if(!isGM){
+      const hs=(tb.basliklar||[]).map(h=>`<th>${esc(h)}</th>`).join("");
+      const rs=(rowsByT[tb.tablo]||[]).map(row=>`<tr>${(row.hucreler||[]).map(c=>`<td>${esc(c)}</td>`).join("")}</tr>`).join("");
+      html+=`${tb.baslik?`<h3 class="sec">${esc(tb.baslik)}</h3>`:""}<div class="scroll"><table class="pob"><thead><tr>${hs}</tr></thead><tbody>${rs}</tbody></table></div>`;
+      return;
+    }
+    /* G.menkul sütun analizi: kısa alan = içeriğe göre dar; uzun metin = sabit makul genişlik + hücre-içi yatay kaydırma (içerik kesilmez); sayısal = sağa dayalı. */
+    const heads=tb.basliklar||[], rws=rowsByT[tb.tablo]||[], nc=heads.length;
+    const colW=[], colNum=[];
+    for(let i=0;i<nc;i++){
+      const hl=String(heads[i]||"").length; let maxLen=hl, ne=0, num=0; const lens=[];
+      rws.forEach(rw=>{ const s=String((rw.hucreler||[])[i]||"").trim(); if(s){ lens.push(s.length); if(s.length>maxLen)maxLen=s.length; ne++; if(/^[\d.,]+$/.test(s)&&/\d/.test(s))num++; } });
+      colNum[i]=(ne>0&&num===ne);
+      if(maxLen>=20){ /* geniş boşluğa yol açan / uzun metin sütunu → sabit genişlik + kaydırma */
+        lens.sort((a,b)=>a-b);
+        const p75=lens.length?lens[Math.min(lens.length-1,Math.floor(lens.length*0.75))]:0;
+        const chars=Math.max(p75,Math.min(hl,18),6);
+        colW[i]=Math.max(44,Math.min(240,chars*7+16));
+      } else colW[i]=0;
+    }
+    const mk=(v,i,tag)=>{ const cls=colNum[i]?' class="pob-num"':''; const w=colW[i];
+      const inner=(tag==="td"&&w)?`<div class="pob-sc" style="width:${w}px">${esc(v)}</div>`:esc(v);
+      return `<${tag}${cls}>${inner}</${tag}>`; };
+    const hs=heads.map((h,i)=>mk(h,i,"th")).join("");
+    const rs=rws.map(row=>`<tr>${(row.hucreler||[]).map((c,i)=>mk(c,i,"td")).join("")}</tr>`).join("");
+    html+=`${tb.baslik?`<h3 class="sec">${esc(tb.baslik)}</h3>`:""}<div class="scroll"><table class="pob pobgm"><thead><tr>${hs}</tr></thead><tbody>${rs}</tbody></table></div>`;
   });
-  body.innerHTML=`<style>table.pob{width:auto}table.pob th,table.pob td{white-space:nowrap}</style>`
+  const styleGM=`<style>table.pob{width:auto}table.pob th,table.pob td{white-space:nowrap}`
+    +`table.pob.pobgm td.pob-num,table.pob.pobgm th.pob-num{text-align:right}`
+    +`table.pob.pobgm td{vertical-align:top}`
+    +`table.pob.pobgm .pob-sc{overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch}`
+    +`table.pob.pobgm .pob-sc::-webkit-scrollbar{height:6px}table.pob.pobgm .pob-sc::-webkit-scrollbar-thumb{background:#c4d0dd;border-radius:3px}</style>`;
+  const styleDef=`<style>table.pob{width:auto}table.pob th,table.pob td{white-space:nowrap}</style>`;
+  body.innerHTML=(isGM?styleGM:styleDef)
     +`<div class="stamp">${esc(meta.son_guncelleme||"")}${meta.kaynak?` · <span style="font-weight:400;color:#7a8896">${esc(meta.kaynak)}</span>`:""}</div>`
     +`${html||'<div class="load">Kayıt yok.</div>'}`;
 }
