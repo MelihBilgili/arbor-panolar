@@ -639,14 +639,18 @@ function satisSummary(regions){
     return s; };
   const tM=[],tA=[],tMc=[],tAc=[],tpM=[],tpA=[]; let anyPrev=false;
   regions.forEach(rg=>{ tM.push(...rg.cM); tA.push(...rg.cA); tMc.push(...rg.cMc); tAc.push(...rg.cAc); tpM.push(...rg.pM); tpA.push(...rg.pA); anyPrev=anyPrev||rg.hasPrev; });
-  let body=`<tr class="stot"><td>Toplam</td><td class="num">${cell(tM,tMc,tpM,anyPrev)}</td><td class="num">${cell(tA,tAc,tpA,anyPrev)}</td></tr>`;
+  /* SATIS-GUNC: en sağdaki "Güncelleme" sütunu = o bölgenin formundan yapılan SON aktarım
+     (aktif satırların çekim damgası). Toplam satırında üçünün en yenisi görünür. */
+  const gunc=rg=>(rg.cekim && rg.cekim!=='0')?dOnly(rg.cekim):'—';
+  const enYeni=regions.reduce((m,rg)=>(rg.cekim&&rg.cekim>m?rg.cekim:m),'0');
+  let body=`<tr class="stot"><td>Toplam</td><td class="num">${cell(tM,tMc,tpM,anyPrev)}</td><td class="num">${cell(tA,tAc,tpA,anyPrev)}</td><td class="num">${enYeni!=='0'?dOnly(enYeni):'—'}</td></tr>`;
   regions.forEach(rg=>{
     const curM=new Set(rg.cM.map(sKey)), curA=new Set(rg.cA.map(sKey)), prevM=new Set(rg.pM.map(sKey));
-    body+=`<tr class="sreg"><td>${esc(rg.ad)}</td><td class="num">${cell(rg.cM,rg.cMc,rg.pM,rg.hasPrev)}</td><td class="num">${cell(rg.cA,rg.cAc,rg.pA,rg.hasPrev)}</td></tr>`;
+    body+=`<tr class="sreg"><td>${esc(rg.ad)}</td><td class="num">${cell(rg.cM,rg.cMc,rg.pM,rg.hasPrev)}</td><td class="num">${cell(rg.cA,rg.cAc,rg.pA,rg.hasPrev)}</td><td class="num">${gunc(rg)}</td></tr>`;
     const dm=det(rg.cMc,rg.pM,rg.hasPrev,'M',curM,curA,prevM), da=det(rg.cAc,rg.pA,rg.hasPrev,'A',curM,curA,prevM);
-    if(dm||da) body+=`<tr class="sdet"><td></td><td>${dm}</td><td>${da}</td></tr>`;
+    if(dm||da) body+=`<tr class="sdet"><td></td><td>${dm}</td><td>${da}</td><td></td></tr>`;
   });
-  return `<div class="scroll" style="max-height:none;overflow-y:visible;overflow-x:auto;-webkit-overflow-scrolling:touch;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num">Alınan</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  return `<div class="scroll" style="max-height:none;overflow-y:visible;overflow-x:auto;-webkit-overflow-scrolling:touch;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num">Alınan</th><th class="num">Güncelleme</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 function satisTbl(arr){
   const list=arr.slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0));
@@ -2206,6 +2210,7 @@ sb.auth.onAuthStateChange((_ev,s)=>{ if(!s){ state.session=null; renderLogin(); 
 boot();
 setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadView(); }, 300000);
 </script>
+
 
 
 
