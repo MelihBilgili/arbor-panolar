@@ -192,8 +192,8 @@ const KOL = [
   {f:"proje",             b:"Project",         t:"text", w:"16ch"},
   {f:"company",           b:"Company",         t:"text", w:"14ch"},
   {f:"ciro",              b:"Turnover",        t:"sel",  o:CIRO, w:"10ch", ttl:"Company Turnover — "+CIRO_UYARI},
-  {f:"gelen_tarih",       b:"Gelen Tarih",     t:"date", w:"10ch"},
-  {f:"musteri_tarih",     b:"İstenen Tarih",   t:"date", w:"10ch", ttl:"Müşterinin İstediği Tarih"},
+  {f:"gelen_tarih",       b:"Gelen Tarih",     t:"date", w:"8ch"},
+  {f:"musteri_tarih",     b:"İstenen Tarih",   t:"date", w:"8ch", ttl:"Müşterinin İstediği Tarih"},
   {f:"ihale",             b:"İhale?",              t:"sel",  o:IHALE, w:"7ch",  ttl:"İhale Alınmış mı?"},
   {f:"yd_notlari",        b:"Y. Dışı B. Notları",  t:"text", w:"16ch", ttl:"Yurt Dışı Birim Notları"},
   {f:"urun_adedi",        b:"Adet",                t:"num",  w:"5ch",  ttl:"Ürün Adedi"},
@@ -203,7 +203,7 @@ const KOL = [
   {f:"calismaya_baslandi",b:"Teklif Çalışması",    t:"sel",  o:CALISMA, w:"8ch"},
   {f:"teklif_notlari",    b:"Teklif B. Notları",   t:"text", w:"16ch", ttl:"Teklif Birimi Notları"},
   {f:"oncelik",           b:"Önc.",                t:"sel",  o:ONCELIK, w:"4ch", ttl:"Öncelik Grubu (1-3)"},
-  {f:"teslim_tarihi",     b:"Teslim Tarihi",       t:"date", w:"10ch", ttl:"Öngörülen Teslim Tarihi"},
+  {f:"teslim_tarihi",     b:"Teslim Tarihi",       t:"date", w:"8ch", ttl:"Öngörülen Teslim Tarihi"},
   {f:"teslim_edildi",     b:"Teslim?",             t:"sel",  o:TESLIM, w:"7ch",  ttl:"Teslim Edildi mi?"}
 ];
 const AK_ALAN  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale"];  /* zorunlu: Project → İhale (Y. Dışı B. Notları opsiyonel) */
@@ -212,6 +212,28 @@ const MKB_ALAN = ["urun_adedi","urun_tip","kemer_karolaj","sartname_ahsap"];  /*
 
 let ROWS=[];
 const bugun = new Date(Date.now()+180*60000).toISOString().slice(0,10); /* TR tarihi */
+
+/* Tarih gösterimi dd.mm.yy (2 haneli yıl); DEPO'da her zaman ISO (yyyy-mm-dd) kalır —
+   durum/sıralama/geciken ISO ile çalıştığı için bozulmaz.
+   toDMY: ISO veya dd.mm.yy(yy) → dd.mm.yy · toIso: dd.mm.yy(yy) veya ISO → yyyy-mm-dd (geçersiz→null, boş→""). */
+function toDMY(v){
+  v=String(v==null?"":v).trim(); if(!v) return "";
+  let m=v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(m) return m[3]+"."+m[2]+"."+m[1].slice(2);
+  m=v.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
+  if(m){ const p=n=>String(n).padStart(2,"0"); let y=m[3]; if(y.length>2) y=y.slice(-2); return p(+m[1])+"."+p(+m[2])+"."+y; }
+  return "";
+}
+function toIso(v){
+  v=String(v==null?"":v).trim(); if(!v) return "";
+  if(/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0,10);
+  const m=v.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
+  if(!m) return null;
+  let d=+m[1], mo=+m[2], y=+m[3]; if(y<100) y+=2000;
+  if(mo<1||mo>12||d<1||d>31) return null;
+  const p=n=>String(n).padStart(2,"0");
+  return y+"-"+p(mo)+"-"+p(d);
+}
 
 function durum(r){
   /* İPTAL (yumuşak): X ile iptal edilen satır silinmez; teslim_edildi="İptal" olarak
@@ -267,9 +289,13 @@ function hucre(r,k,d){
      oluşturuyordu; sütun min-width'leri bu yüzden işe yaramıyordu.
      Sayı alanı type="number" DEĞİL: Chrome number kutusunun doğal genişliği ~150px ve
      size'ı yok sayıyor → Adet sütunu daralmıyordu. text + inputmode="numeric" kullanılır. */
-  const tp = k.t==="date" ? "date" : "text";
-  const ek = k.t==="num" ? ' inputmode="numeric"' : "";
-  return '<td data-f="'+k.f+'"'+cls+'><input type="'+tp+'" size="1"'+ek+' data-id="'+r.id+'" data-f="'+k.f+'" value="'+esc(v)+'"'+(ro?" readonly":"")+ttl+'></td>';
+  /* Tarihler artık type="text" (dd.mm.yy) — native type=date takvim ikonu sütunu
+     genişletiyordu; text hâli dar + ikonsuz. Değer görüntülemede toDMY, kayıtta toIso. */
+  const isDate = k.t==="date";
+  const ek = k.t==="num" ? ' inputmode="numeric"'
+           : (isDate ? ' inputmode="numeric" placeholder="gg.aa.yy"' : "");
+  const shown = isDate ? toDMY(r[k.f]) : v;
+  return '<td data-f="'+k.f+'"'+cls+'><input type="text" size="1"'+ek+' data-id="'+r.id+'" data-f="'+k.f+'" value="'+esc(shown)+'"'+(ro?" readonly":"")+ttl+'></td>';
 }
 
 /* ---------- AK'nın doldurmakta olduğu (henüz kaydedilmemiş) satırlar ----------
@@ -368,7 +394,13 @@ async function kaydet(id,f,val){
     ciz(); return;
   }
   const sayi=v=>{ const n=Number(String(v).replace(/[^\d-]/g,"")); return isNaN(n)?null:n; };
-  const p={}; p[f] = (val===""? null : (f==="urun_adedi"||f==="oncelik" ? sayi(val) : val));
+  const TARIH=["gelen_tarih","musteri_tarih","teslim_tarihi"];
+  let sv = val;
+  if(TARIH.indexOf(f)>=0){
+    sv = toIso(val);                       /* "" → "", geçersiz → null */
+    if(sv===null){ msg("Geçersiz tarih (gg.aa.yy).",false); ciz(); return; }
+  }
+  const p={}; p[f] = (sv===""? null : (f==="urun_adedi"||f==="oncelik" ? sayi(sv) : sv));
   const {error}=await sb.from("teklif_talep").update(p).eq("id",id);
   if(error){ msg("Kaydedilemedi: "+error.message,false); return; }
   r[f]=p[f];
@@ -418,6 +450,8 @@ async function tarihIsle(id, tarih, sessiz){
     yeni = inp && inp.value ? inp.value : r.teslim_tarihi;
   }
   if(!yeni){ msg("Önce öngörülen teslim tarihini giriniz.",false); return; }
+  yeni = toIso(yeni);                       /* dd.mm.yy ya da ISO → ISO */
+  if(yeni===null){ msg("Geçersiz teslim tarihi (gg.aa.yy).",false); return; }
   const p={teslim_tarihi:yeni, tarih_kilit:true};
   if(r.revizyon_acik){ p.revize = (r.revizyon_onceki && r.revizyon_onceki!==yeni) ? true : r.revize; p.revizyon_acik=false; }
   const {error}=await sb.from("teklif_talep").update(p).eq("id",id);
@@ -460,6 +494,7 @@ document.getElementById("bTalep").onclick = async ()=>{
     AK_YENI.forEach(f=>{
       const v=String(t[f]||"").trim(); if(!v) return;
       if(f==="urun_adedi"){ const n=Number(v.replace(/[^\d-]/g,"")); if(!isNaN(n)) d[f]=n; }
+      else if(f==="gelen_tarih"||f==="musteri_tarih"){ const iso=toIso(v); if(iso) d[f]=iso; }
       else d[f]=v;
     });
     return d;
@@ -499,7 +534,7 @@ document.getElementById("bBildir").onclick = async ()=>{
    dolu olan öngörülen teslim tarihleri kilitlenir → o satırlar beyaza döner.
    Tarihi boş bırakılan satırlar pembe kalır, uyarı verilmez. */
 document.getElementById("bGuncelle").onclick = async ()=>{
-  const hedef=ROWS.filter(r=>r.teslim_edildi!=="Edildi" && !r.tarih_kilit);
+  const hedef=ROWS.filter(r=>r.teslim_edildi!=="Edildi" && r.teslim_edildi!=="İptal" && !r.tarih_kilit);
   const isle=[];
   hedef.forEach(r=>{
     const i=document.querySelector('#tb input[data-id="'+r.id+'"][data-f="teslim_tarihi"]');
