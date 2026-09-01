@@ -38,11 +38,13 @@
   table.tt td input[readonly],table.tt td select:disabled{background:#f1f3f6;color:#5a6b7d;border-color:#e2e7ee}
   td.x{width:24px;text-align:center}
   .del{border:0;background:transparent;color:#c62828;font-weight:800;font-size:15px;cursor:pointer;line-height:1;padding:0 3px}
+  .res{border:0;background:transparent;color:#1a8a4a;font-weight:800;font-size:15px;cursor:pointer;line-height:1;padding:0 3px}
   tr.pembe td{background:#ffe1ee}
   tr.kirmizi td{background:#ffb0b0}
   tr.beyaz td{background:#fff}
   tr.sari td{background:#fff5c2}
   tr.yesil td{background:#d8f2dd}
+  tr.iptal td{background:#e5e7eb;color:#5a6270}
   tr.yeni td{background:#eef4fb}
   td.miss input,td.miss select{border-color:#c62828;background:#fff0f0}
   /* Revize tarih kırmızı-kalın. Özgüllük: readonly kuralı (table.tt td input[readonly])
@@ -86,6 +88,7 @@
     <span><i style="background:#fff"></i>Tarih işlendi, çalışma başlamadı</span>
     <span><i style="background:#fff5c2"></i>Çalışma başladı</span>
     <span><i style="background:#d8f2dd"></i>Teslim edildi</span>
+    <span><i style="background:#e5e7eb"></i>İptal edildi</span>
   </div>
 </div>
 
@@ -211,6 +214,9 @@ let ROWS=[];
 const bugun = new Date(Date.now()+180*60000).toISOString().slice(0,10); /* TR tarihi */
 
 function durum(r){
+  /* İPTAL (yumuşak): X ile iptal edilen satır silinmez; teslim_edildi="İptal" olarak
+     işaretlenir. En yüksek öncelik → daima gri ve (SIRA ile) en dipte. */
+  if(r.teslim_edildi==="İptal") return "iptal";
   if(r.teslim_edildi==="Edildi") return "yesil";
   /* Tarihi geçmiş (işlenmiş+kilitli) satır önce kırmızı kalır — kırmızı semantiği bozulmaz. */
   if(r.teslim_tarihi && r.tarih_kilit && r.teslim_tarihi < bugun) return "kirmizi";
@@ -220,14 +226,14 @@ function durum(r){
   if(!r.teslim_tarihi || !r.tarih_kilit) return "pembe";
   return "beyaz";
 }
-const SIRA = {pembe:0,kirmizi:1,beyaz:2,sari:3,yesil:4};
+const SIRA = {pembe:0,kirmizi:1,beyaz:2,sari:3,yesil:4,iptal:5};  /* iptal en dipte */
 function sirala(a,b){
   const d=SIRA[durum(a)]-SIRA[durum(b)]; if(d) return d;
   const ta=a.teslim_tarihi||"9999-12-31", tb=b.teslim_tarihi||"9999-12-31";
   if(ta!==tb) return ta<tb?-1:1;
   return b.id-a.id;
 }
-const gecikenler = ()=>ROWS.filter(r=>r.teslim_tarihi && r.tarih_kilit && r.teslim_edildi!=="Edildi" && r.teslim_tarihi<bugun);
+const gecikenler = ()=>ROWS.filter(r=>r.teslim_tarihi && r.tarih_kilit && r.teslim_edildi!=="Edildi" && r.teslim_edildi!=="İptal" && r.teslim_tarihi<bugun);
 
 /* ---------- çizim ---------- */
 function hucre(r,k,d){
@@ -317,7 +323,12 @@ function ciz(hazir){
     const d=durum(r);
     h+='<tr class="'+d+'" data-id="'+r.id+'">';
     KOL.forEach(k=>{ h+=hucre(r,k,d); });
-    h+='<td class="x">'+(canAK?'<button class="del" data-del="'+r.id+'" title="Satırı sil">✕</button>':"")+'</td></tr>';
+    /* Aksiyon hücresi toggle: normal satır → X (iptal et) · iptal satırı → yeşil ✓ (geri al) */
+    const aksiyon = !canAK ? ""
+      : (d==="iptal"
+          ? '<button class="res" data-res="'+r.id+'" title="İptali geri al">✓</button>'
+          : '<button class="del" data-del="'+r.id+'" title="Satırı iptal et">✕</button>');
+    h+='<td class="x">'+aksiyon+'</td></tr>';
   });
 
   tb.innerHTML = h || '<tr><td class="load">Kayıt yok.</td></tr>';
@@ -375,13 +386,26 @@ function bagla(){
   document.querySelectorAll('#tb [data-tdel]').forEach(b=>{
     b.onclick=()=>{ taslakOku(); TASLAK.splice(+b.dataset.tdel,1); if(!TASLAK.length) TASLAK=[{}]; ciz(true); };
   });
+  /* İPTAL (yumuşak sil): satır silinmez; teslim_edildi="İptal" → gri + en altta.
+     Yeni kolon yok; mevcut teslim_edildi durum alanı kullanılır. */
   document.querySelectorAll('#tb [data-del]').forEach(b=>{
     b.onclick=async()=>{
-      if(!confirm("Bu satır silinsin mi?")) return;
+      if(!confirm("Bu satır iptal edilsin mi? (Silinmez; gri olarak en alta taşınır, ✓ ile geri alınır.)")) return;
       const id=+b.dataset.del;
-      const {error}=await sb.from("teklif_talep").delete().eq("id",id);
-      if(error){ msg("Silinemedi: "+error.message,false); return; }
-      ROWS=ROWS.filter(x=>x.id!==id); ciz(); msg("Satır silindi.",true);
+      const {error}=await sb.from("teklif_talep").update({teslim_edildi:"İptal"}).eq("id",id);
+      if(error){ msg("İptal edilemedi: "+error.message,false); return; }
+      const r=ROWS.find(x=>x.id===id); if(r) r.teslim_edildi="İptal";
+      ciz(); msg("Satır iptal edildi (en altta gri).",true);
+    };
+  });
+  /* İptali geri al: teslim_edildi="Edilmedi" → satır normale döner. */
+  document.querySelectorAll('#tb [data-res]').forEach(b=>{
+    b.onclick=async()=>{
+      const id=+b.dataset.res;
+      const {error}=await sb.from("teklif_talep").update({teslim_edildi:"Edilmedi"}).eq("id",id);
+      if(error){ msg("Geri alınamadı: "+error.message,false); return; }
+      const r=ROWS.find(x=>x.id===id); if(r) r.teslim_edildi="Edilmedi";
+      ciz(); msg("İptal geri alındı.",true);
     };
   });
 }
