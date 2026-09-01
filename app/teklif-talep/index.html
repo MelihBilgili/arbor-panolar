@@ -232,11 +232,17 @@ function hucre(r,k,d){
   let ro=false;
   if(yesil) ro = (k.f!=="teslim_edildi");
   else if(tarihK) ro = !canMKB || !!r.tarih_kilit;
+  /* MKB alanlari (Adet, Urun Tipi, Kemer/Karolaj, Sartname) dolmadan oncelik grubu
+     secilemez → o satirda oncelik select'i devre disi kalir, alanlar dolunca aktiflesir. */
+  const oncelikKilit = (k.f==="oncelik" && !yesil
+      && !MKB_ALAN.every(f=> r[f]!=null && String(r[f]).trim()!==""));
+  if(oncelikKilit) ro=true;
   const rev = tarihK && r.revize;
   const cls = rev ? ' class="revd"' : "";
   /* Uyarı sütunu yerine hover kutusu: revize edilen tarihte uyarı hücrenin title'ında */
   const uyari = rev ? ("Dikkat, Revize Tarih!" + (r.revizyon_onceki ? " (önceki: "+r.revizyon_onceki.split("-").reverse().join(".")+")" : "")) : "";
-  const ttl = uyari ? ' title="'+esc(uyari)+'"' : (k.ttl ? ' title="'+esc(k.ttl)+'"' : "");
+  const ttl = oncelikKilit ? ' title="MKB alanları doldurulmadan öncelik grubu seçilemez"'
+            : (uyari ? ' title="'+esc(uyari)+'"' : (k.ttl ? ' title="'+esc(k.ttl)+'"' : ""));
   const v = r[k.f]==null ? "" : String(r[k.f]);
   if(k.t==="sel"){
     const opts = ['<option value=""></option>'].concat(k.o.map(o=>'<option'+(o===v?" selected":"")+'>'+esc(o)+'</option>')).join("");
