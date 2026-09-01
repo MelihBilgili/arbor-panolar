@@ -63,6 +63,7 @@
 <div class="wrap">
   <div id="msg" class="msg"></div>
   <div id="gecikme"></div>
+  <div id="oncelikBekle"></div>
 
   <div class="btns">
     <button id="bSatir">＋ Satır Ekle</button>
@@ -96,9 +97,12 @@ const ARB_ROLLER = [
   { email:"mkb.form@arbor.com.tr", ad:"MKB — Melike Başaran (Teklif)" }
 ];
 const ARB_STORE = "arbform_teklif_talep";
-const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
+/* Cache atlama: AK yeni satir ekleyince owner sekmesinde tarayici onbellegi
+   nedeniyle bayat veri gorunmesin diye tum Supabase fetch'leri no-store. */
+const ARB_NOSTORE = (u,o)=> fetch(u, Object.assign({}, o||{}, {cache:"no-store"}));
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE},global:{fetch:ARB_NOSTORE}});
 const ARB_MB = "int@arbor.com.tr";
-const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{global:{fetch:ARB_NOSTORE}});
 var ARB_ACTIVE = ARB_GATE_SB;
 var ARB_EMAIL = "";
 supabase.createClient = function(){ return ARB_ACTIVE; };
@@ -304,6 +308,20 @@ function ciz(hazir){
   tb.innerHTML = h || '<tr><td class="load">Kayıt yok.</td></tr>';
   bagla();
   gecikmeUyari();
+  oncelikUyari();
+}
+
+/* Tek ortak uyari: MKB kendine ait alanlari doldurup oncelik grubu beklerken
+   (pembe satir + MKB alanlari dolu + oncelik bos) owner/MKB gorunumunde dugmelerin
+   hemen ustunde TEK satir kirmizi uyari gorunur. Owner oncelik grubunu girince kalkar.
+   Kalicilik mevcut kolonlardan turetilir — yeni kolon/DDL yok. */
+function oncelikUyari(){
+  const el=document.getElementById("oncelikBekle"); if(!el) return;
+  const bekliyor = ROWS.some(r=> durum(r)==="pembe" && !r.oncelik
+      && MKB_ALAN.every(f=> r[f]!=null && String(r[f]).trim()!==""));
+  el.innerHTML = (bekliyor && (canMB||canMKB))
+    ? '<div class="warnbox" style="background:#ffb0b0;border-color:#b40000;color:#7a0000;margin:6px 0">Öncelik grubu bekleniyor</div>'
+    : "";
 }
 
 function gecikmeUyari(){
@@ -484,6 +502,17 @@ document.getElementById("bBildir").style.display   = canMB  ? "" : "none";
   if(error){ document.getElementById("tb").innerHTML='<tr><td class="load">Yüklenemedi: '+esc(error.message)+'</td></tr>'; return; }
   ROWS=data||[]; ciz();
 })();
+
+/* Otomatik tazeleme (300s): AK yeni satir ekleyince owner elle yenilemeden gorur.
+   no-store fetch ile daima taze veri gelir. Kullanici bir alanda yazarken ya da
+   AK'nin kaydedilmemis dolu taslagi varken atlanir (yazilan kaybolmasin). */
+setInterval(async ()=>{
+  const ae=document.activeElement;
+  if(ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) return;
+  if(canAK){ taslakOku(); if(TASLAK.some(taslakDolu)) return; }
+  const {data,error}=await sb.from("teklif_talep").select("*");
+  if(!error){ ROWS=data||[]; ciz(); }
+}, 300000);
 </script>
 
 
