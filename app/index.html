@@ -1586,7 +1586,7 @@ async function loadSelArb(tgt){
   const pyS=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","sel_arb").limit(1);
   const pyAtS=(pyS&&!pyS.error&&pyS.data&&pyS.data[0])?pyS.data[0].yayin_at:null;
   body.innerHTML=`${style}<div class="stamp">Son güncelleme: ${pyAtS?dOnly(pyAtS):esc(stamp)}</div>${btn?`<div class="hint">${btn}</div>`:""}<div class="sa-wrap scroll"><table><thead>`
-    +`<tr><th rowspan="2">${esc(basliklar[0]||"Proje")}</th><th rowspan="2">${esc(basliklar[1]||"Firma")}</th><th rowspan="2" class="sa-num sa-dh">${esc(dlt)}</th><th colspan="${nd}" class="sa-num" style="text-align:center">Arbor SAS Alacak €</th></tr>`
+    +`<tr><th rowspan="2">${esc(basliklar[0]||"Proje")}</th><th rowspan="2">${esc(basliklar[1]||"Firma")}</th><th rowspan="2" class="sa-num sa-dh">${esc(dlt)}</th><th colspan="${nd}" class="sa-num" style="text-align:center">Alacak €</th></tr>`
     +`<tr>${dateHdrs}</tr></thead><tbody>${trs}</tbody></table></div>`;
   const tg=document.getElementById("sa-toggle");
   if(tg) tg.onclick=()=>{ const on=tg.dataset.on==="1"; document.querySelectorAll("#"+tgt+" tr.sa-hide").forEach(x=>x.style.display=on?"none":""); tg.dataset.on=on?"0":"1"; tg.textContent=on?`Boş-alacak satırları göster (${hiddenCount})`:`Boş-alacak satırları gizle (${hiddenCount})`; };
