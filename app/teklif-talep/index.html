@@ -212,9 +212,13 @@ const bugun = new Date(Date.now()+180*60000).toISOString().slice(0,10); /* TR ta
 
 function durum(r){
   if(r.teslim_edildi==="Edildi") return "yesil";
+  /* Tarihi geçmiş (işlenmiş+kilitli) satır önce kırmızı kalır — kırmızı semantiği bozulmaz. */
+  if(r.teslim_tarihi && r.tarih_kilit && r.teslim_tarihi < bugun) return "kirmizi";
+  /* Teklif çalışması başlayan satır SARI — teslim tarihi henüz işlenmemiş (kilit yok)
+     olsa bile. (Önceden bu satırlar pembe kalıyordu → Westminster Equans örneği.) */
+  if(r.calismaya_baslandi==="Başladı") return "sari";
   if(!r.teslim_tarihi || !r.tarih_kilit) return "pembe";
-  if(r.teslim_tarihi < bugun) return "kirmizi";
-  return r.calismaya_baslandi==="Başladı" ? "sari" : "beyaz";
+  return "beyaz";
 }
 const SIRA = {pembe:0,kirmizi:1,beyaz:2,sari:3,yesil:4};
 function sirala(a,b){
@@ -232,16 +236,21 @@ function hucre(r,k,d){
   let ro=false;
   if(yesil) ro = (k.f!=="teslim_edildi");
   else if(tarihK) ro = !canMKB || !!r.tarih_kilit;
-  /* MKB alanlari (Adet, Urun Tipi, Kemer/Karolaj, Sartname) dolmadan oncelik grubu
-     secilemez → o satirda oncelik select'i devre disi kalir, alanlar dolunca aktiflesir. */
-  const oncelikKilit = (k.f==="oncelik" && !yesil
+  /* Oncelik grubu su durumlarda secilemez (yesil/teslim edilmis zaten kilitli):
+     (a) teklif calismasi basladiysa — tek basina kilitler, MKB dolu olsa bile; veya
+     (b) MKB alanlari (Adet, Urun Tipi, Kemer/Karolaj, Sartname) dolu degilse. */
+  const oncCalisma = (k.f==="oncelik" && !yesil && r.calismaya_baslandi==="Başladı");
+  const oncMkbBos  = (k.f==="oncelik" && !yesil
       && !MKB_ALAN.every(f=> r[f]!=null && String(r[f]).trim()!==""));
+  const oncelikKilit = oncCalisma || oncMkbBos;
   if(oncelikKilit) ro=true;
   const rev = tarihK && r.revize;
   const cls = rev ? ' class="revd"' : "";
   /* Uyarı sütunu yerine hover kutusu: revize edilen tarihte uyarı hücrenin title'ında */
   const uyari = rev ? ("Dikkat, Revize Tarih!" + (r.revizyon_onceki ? " (önceki: "+r.revizyon_onceki.split("-").reverse().join(".")+")" : "")) : "";
-  const ttl = oncelikKilit ? ' title="MKB alanları doldurulmadan öncelik grubu seçilemez"'
+  const oncTitle = oncCalisma ? "Teklif çalışması başlayan satırda öncelik grubu seçilemez"
+                 : (oncMkbBos ? "MKB alanları doldurulmadan öncelik grubu seçilemez" : "");
+  const ttl = oncTitle ? ' title="'+esc(oncTitle)+'"'
             : (uyari ? ' title="'+esc(uyari)+'"' : (k.ttl ? ' title="'+esc(k.ttl)+'"' : ""));
   const v = r[k.f]==null ? "" : String(r[k.f]);
   if(k.t==="sel"){
