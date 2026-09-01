@@ -1599,6 +1599,13 @@ async function loadObrapor(tgt){
   const isl=await sb.from("ob_isler").select("*").order("arsiv").order("id");
   if(isl.error){ view.innerHTML=`<div class="load">Hata: ${esc(isl.error.message)}</div>`; return; }
   const iRows=isl.data||[];
+  /* Takipteki İşler ÖNCELİK sıralaması: 1<2<3<"-"/boş<Rutin. Bilinmeyen/boş/null → "-" grubu
+     (Rutin'den önce, 3'ten sonra). Stabil: aynı öncelikte mevcut (arsiv,id) ikincil sırası korunur. */
+  const _oncRank=v=>{ const s=String(v==null?"":v).trim();
+    if(s==="1") return 0; if(s==="2") return 1; if(s==="3") return 2;
+    if(s==="Rutin") return 4; return 3; };
+  iRows.sort((a,b)=>{ const aa=(a.arsiv?1:0)-(b.arsiv?1:0); if(aa) return aa;
+    return _oncRank(a.oncelik)-_oncRank(b.oncelik); });
   /* Haftalık geçmiş (ob_isler_log) — her HAFTALIK GÜNCELLEME'de o haftanın notu yazılır */
   const lg=await sb.from("ob_isler_log").select("is_id,hafta,ob_notlari").order("hafta",{ascending:false});
   const lRows=(lg&&!lg.error)?(lg.data||[]):[];
