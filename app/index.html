@@ -212,7 +212,7 @@ async function loadPerms(){
 const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_maasprim","mali_mkprim"];
 const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_maasprim","mali_mkprim"];
 /* ÖB Faaliyet artık Mali grubunun içinde (MK Faaliyet'in yanında) */
-const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
+const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["santiye","Şantiye Onay"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
 const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
 function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b))||a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
 function renderApp(){
@@ -233,6 +233,7 @@ function loadView(){
   if(state.tab==='gundem') loadGundem();
   else if(state.tab==='hazir') loadHazir();
   else if(state.tab==='so') loadSo();
+  else if(state.tab==='santiye') loadSantiyeOnay();
   else if(state.tab==='satis') loadSatis();
   else if(state.tab==='ref') loadRef();
   else if(state.tab==='prosedur') loadProsedur();
@@ -1286,6 +1287,84 @@ function loadProsedur(){
   });
 }
 
+/* ---------- ŞANTİYE ONAY (SANTIYE-ONAY) ----------------------------------------
+   Kaynak: santiye_form (7 form tanımı) + santiye_form_proje (ERP'den doldurulan
+   proje blokları + şantiye sorumlusunun MVT/PST onayları).
+   Doldurma: her ayın 21'inden sonraki ilk ERP çekiminde kod/_santiye_form_fill.py.
+   Damga: pano_yayin['santiye_<kod>'] = o formun "Aylık Güncelle" düğmesine son basılma.
+   Pano SALT-OKUR — cevaplar yalnız formlardan girilir.
+   DİKKAT: adı loadSantiyeOnay — loadSantiye ZATEN VAR (MK Faaliyet altındaki
+   "tıkanmış şantiyeler" tablosu, ~satır 2200). Aynı ada koyulursa sonraki bildirim
+   öncekini ezer ve iki pano birden bozulur. */
+async function loadSantiyeOnay(){
+  const view=document.getElementById("view");
+  const [fr,pr,py]=await Promise.all([
+    sb.from("santiye_form").select("*").order("sira"),
+    sb.from("santiye_form_proje").select("*"),
+    sb.from("pano_yayin").select("anahtar,yayin_at")
+  ]);
+  const err=fr.error||pr.error;
+  if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
+  const formlar=fr.data||[], hepsi=pr.data||[];
+  const pyBy={}; ((py&&!py.error)?(py.data||[]):[]).forEach(r=>pyBy[r.anahtar]=r.yayin_at);
+  /* Yalnız EN YENİ dönem gösterilir (geçmiş dönemler tabloda kalır). */
+  const donem = hepsi.length ? hepsi.map(r=>r.donem).sort().reverse()[0] : null;
+  const rows = hepsi.filter(r=>r.donem===donem);
+  const fdt=s=>{ if(!s) return "—"; const p=String(s).slice(0,10).split("-"); return p[2]+"."+p[1]+"."+p[0].slice(2); };
+  const erpT = rows.length ? rows.map(r=>r.erp_tarih).filter(Boolean).sort().reverse()[0] : null;
+
+  let onay=0, red=0, bos=0;
+  rows.forEach(r=>{ ["mvt_onay","pst_onay"].forEach(a=>{
+    if(r[a]==="Evet") onay++; else if(r[a]==="Hayır") red++; else bos++; }); });
+
+  const cevap=(o,s)=>{
+    if(!o) return '<span class="muted">—</span>';
+    if(o==="Evet") return '<span style="color:#0a6b3f;font-weight:600">Evet</span>';
+    return '<span style="color:#b40000;font-weight:700">Hayır</span>';
+  };
+  const bloklar = formlar.map(f=>{
+    const rs = rows.filter(r=>r.form_kodu===f.kod)
+      .sort((a,b)=>String(a.mvt||"9").localeCompare(String(b.mvt||"9"))||String(a.proje_no).localeCompare(String(b.proje_no)));
+    const dmg = pyBy["santiye_"+f.kod];
+    const kirmizi = rs.filter(r=>r.mvt_onay==="Hayır"||r.pst_onay==="Hayır").length;
+    const eksik   = rs.filter(r=>!r.mvt_onay||!r.pst_onay).length;
+    const head=`<h3 class="sec">${esc(f.ad)} <span class="muted" style="font-weight:400">· ${esc(f.kisi_kod||"")} · ${rs.length} proje`
+      +(kirmizi?` · <b style="color:#b40000">${kirmizi} itiraz</b>`:"")
+      +(eksik?` · <b style="color:#8a6100">${eksik} cevapsız</b>`:"")
+      +` · Aylık Güncelle: ${dmg?dOnly(dmg):"—"}</span></h3>`;
+    if(!rs.length) return head+`<div class="hint">Bu dönemde bu forma düşen proje yok.</div>`;
+    const body=rs.map(r=>`<tr>`
+      +`<td class="sb"><div class="cx">${esc(r.proje_no)}</div></td>`
+      +`<td><div class="cx">${esc(r.proje_adi)}</div></td>`
+      +`<td class="num">${r.adet==null?"—":r.adet}</td>`
+      +`<td class="num">${fdt(r.mvt)}</td><td class="num">${fdt(r.aup)}</td><td class="num">${fdt(r.pst)}</td>`
+      +`<td>${cevap(r.mvt_onay)}</td><td><div class="cx">${esc(r.mvt_sebep||"")}</div></td>`
+      +`<td>${cevap(r.pst_onay)}</td><td><div class="cx">${esc(r.pst_sebep||"")}</div></td>`
+      +`</tr>`).join("");
+    return head+`<div class="scroll"><table class="sty"><colgroup>`
+      +`<col class="s18"><col class="s34"><col class="s6"><col class="s8"><col class="s8"><col class="s8">`
+      +`<col class="s7"><col class="s26"><col class="s7"><col class="s26"></colgroup>`
+      +`<thead><tr><th>Proje Kodu</th><th>Proje Adı</th><th class="num">Adet</th>`
+      +`<th class="num">MVT</th><th class="num">AÜP</th><th class="num">PST</th>`
+      +`<th>MVT Onay</th><th>MVT Sebebi</th><th>PST Onay</th><th>PST Sebebi</th></tr></thead>`
+      +`<tbody>${body}</tbody></table></div>`;
+  }).join("");
+
+  view.innerHTML=`<div class="stamp">Son güncelleme: ${erpT?fdt(erpT):"—"} (ERP çekimi) · Dönem: ${esc(donem||"—")} · ${rows.length} proje · Onay ${onay} · İtiraz ${red} · Cevapsız ${bos}</div>
+    <style>
+      table.sty{border-collapse:collapse;table-layout:fixed;width:1px;font-size:12px;background:#fff}
+      table.sty col.s6{width:6ch}table.sty col.s7{width:9ch}table.sty col.s8{width:9ch}
+      table.sty col.s18{width:18ch}table.sty col.s26{width:26ch}table.sty col.s34{width:34ch}
+      table.sty th,table.sty td{border-bottom:1px solid #eef1f5;padding:2px 6px;text-align:left;vertical-align:middle;height:21px;line-height:17px}
+      table.sty thead th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px;white-space:nowrap;padding:3px 6px}
+      table.sty td.num,table.sty th.num{text-align:right}
+      table.sty td.sb{font-family:ui-monospace,Consolas,monospace;font-size:11.5px}
+      table.sty td .cx{overflow:hidden;text-overflow:clip;white-space:nowrap}
+    </style>
+    <div class="hint">Bu pano <b>salt-okur</b>. Projeler her ayın 21'inden sonraki ilk ERP çekiminde formlara düşer; MVT/PST onayları yalnız şantiye sorumlularının kendi formlarından girilir. "Aylık Güncelle" tarihi, o formun düğmesine son basılma anıdır.</div>
+    ${bloklar || '<div class="hint">Henüz forma düşmüş proje yok.</div>'}`;
+}
+
 async function loadFormlar(){
   const view=document.getElementById("view");
   /* Her form = bir satır. Sütunlar: Form(30) · Kullanıcı(10) · Güncelleme(20) · Geciken(8) · Mail · Formu Aç
@@ -1300,11 +1379,22 @@ async function loadFormlar(){
     {ad:"Yurt Dışı 1 Satış",   who:"Mustafa Nas",       url:"fy/",          sik:"Her ayın ilk iş günü"},
     {ad:"Yurt Dışı 2 Satış",   who:"Melike Başaran",    url:"fy2/",         sik:"Her ayın ilk iş günü"},
     {ad:"Ahşap Maliyet",       who:"Umut Aktaş",        url:"ahsap/",       sik:"Her ayın ilk iş günü"},
+    /* SANTIYE-FORMLAR: 7 şantiye sorumlusu formu (ERP ŞANTİYE SORUMLUSU sütunundan doldurulur) */
+    {ad:"Şantiye · Yurt İçi",      who:"Erdoğan Bakan",   url:"santiye-yi/",    sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 1-1", who:"Mertcan Müngen",  url:"santiye-yd1-1/", sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 1-2", who:"Ricardo Aurelius",url:"santiye-yd1-2/", sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 1-3", who:"Çağlar Kahraman", url:"santiye-yd1-3/", sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 1-4", who:"Zafer Ataş",      url:"santiye-yd1-4/", sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 2-1", who:"Ali Karadağ",     url:"santiye-yd2-1/", sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 2-2", who:"Erkut Bilen",     url:"santiye-yd2-2/", sik:"Her ayın ilk iş günü"},
     {ad:"Teklif Talepleri",    who:"Ali K. · Melike B.",url:"teklif-talep/",sik:"Süresiz"},
     {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
-  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","da-rapor/":"da_faaliyet","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap"};
+  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","da-rapor/":"da_faaliyet","mk-prim/":"mk_prim","so/":"yurtici","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap",
+    "santiye-yi/":"santiye_yi","santiye-yd1-1/":"santiye_yd1_1","santiye-yd1-2/":"santiye_yd1_2",
+    "santiye-yd1-3/":"santiye_yd1_3","santiye-yd1-4/":"santiye_yd1_4",
+    "santiye-yd2-1/":"santiye_yd2_1","santiye-yd2-2/":"santiye_yd2_2"};
   /* Geciken = SON TARİHE göre hesaplanır (eskiden "son güncelleme + 7/30 gün" idi → hep 0 çıkıyordu):
      "Her Salı" → bu haftanın Salı'sı · "Her ayın ilk iş günü" → bu ayın ilk iş günü · "Süresiz" → yok.
      Son güncelleme = form_takip.son_guncelleme (elle ✓) ile formun CANLI izinin (pano_yayin /
@@ -1332,7 +1422,12 @@ async function loadFormlar(){
   const CANLI={ ea_so:one(eaU), onur_sevk:pyBy.oe_sevk, ob_rapor:pyBy.ob_rapor,
                 da_faaliyet:[pyBy.da_rapor,one(daU)].sort().reverse()[0],
                 mk_prim:mkAt, yurtici:sayBy.SO, yd1:sayBy.FY, yd2:sayBy.FY2,
-                ahsap:pyBy.ahsap, yd_alacak:pyBy.sel_arb };
+                ahsap:pyBy.ahsap, yd_alacak:pyBy.sel_arb,
+                /* SANTIYE-FORMLAR canlı izi: her formun kendi pano_yayin anahtarı */
+                santiye_yi:pyBy.santiye_yi, santiye_yd1_1:pyBy.santiye_yd1_1,
+                santiye_yd1_2:pyBy.santiye_yd1_2, santiye_yd1_3:pyBy.santiye_yd1_3,
+                santiye_yd1_4:pyBy.santiye_yd1_4, santiye_yd2_1:pyBy.santiye_yd2_1,
+                santiye_yd2_2:pyBy.santiye_yd2_2 };
   const today=new Date(); today.setHours(0,0,0,0);
   const dParse=s=>{ if(!s) return null; const p=String(s).slice(0,10).split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
   const isIs=d=>{ const w=d.getDay(); return w!==0&&w!==6; };
@@ -2266,6 +2361,7 @@ sb.auth.onAuthStateChange((_ev,s)=>{ if(!s){ state.session=null; renderLogin(); 
 boot();
 setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadView(); }, 300000);
 </script>
+
 
 
 
