@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Şantiye Formu · Yurt Dışı 1-4</title>
+<style>
+  :root{color-scheme:light}*{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#bcd3ea;margin-top:4px;line-height:1.5;max-width:900px}
+  .wrap{max-width:1180px;margin:0 auto;padding:14px 16px 60px}
+  .info{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:11px 14px;margin-bottom:12px;font-size:12.5px;line-height:1.65;color:#42536a}
+  .info .erp{color:#1c2430;font-weight:600;margin-bottom:6px}
+  .info dl{margin:0}
+  .info b{color:#16324f}
+  .topbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:#fff8ea;border:1px solid #e8cf95;border-radius:10px;padding:11px 14px;margin-bottom:14px}
+  .topbar .note{font-size:12px;color:#8a6100;flex:1;min-width:240px;line-height:1.45}
+  .upd{background:#8a6100;color:#fff;border:0;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer;font-size:13px}
+  .upd:disabled{opacity:.55;cursor:default}
+  .msg{font-size:12.5px;min-height:17px}.msg.ok{color:#0a6b3f;font-weight:600}.msg.err{color:#b40000;font-weight:600}
+
+  /* ŞANTİYE-BLOK: bir proje = bir blok. Sol yarı ERP bilgisi (salt-okur), sağ yarı onay soruları. */
+  .blk{background:#fff;border:1px solid #dde3ea;border-radius:10px;margin-bottom:12px;display:flex;flex-wrap:wrap}
+  .blk.done{border-color:#b7d9c4;background:#fbfefc}
+  .blk.miss{border-color:#c62828;background:#fff7f7}
+  .blk .sol{flex:0 0 42%;min-width:290px;padding:11px 14px;border-right:1px solid #eef1f5}
+  .blk .sag{flex:1 1 46%;min-width:320px;padding:11px 14px}
+  @media(max-width:760px){.blk .sol{flex-basis:100%;border-right:0;border-bottom:1px solid #eef1f5}}
+  .kv{display:flex;gap:8px;font-size:12.5px;line-height:1.9}
+  .kv .k{flex:0 0 96px;color:#7a8896}
+  .kv .v{font-weight:600;color:#1c2430;word-break:break-word}
+  .kv .v.no{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  .soru{margin-bottom:10px}
+  .soru:last-child{margin-bottom:0}
+  .soru .q{font-size:12.5px;line-height:1.45;margin-bottom:5px}
+  .opt{display:inline-flex;gap:6px;margin-right:6px}
+  .opt button{font:inherit;font-size:12px;padding:4px 14px;border:1px solid #cdd6df;background:#fff;border-radius:7px;cursor:pointer;font-weight:600;color:#42536a}
+  .opt button.on.evet{background:#0a6b57;border-color:#0a6b57;color:#fff}
+  .opt button.on.hayir{background:#b40000;border-color:#b40000;color:#fff}
+  .seb{width:100%;margin-top:6px;font:inherit;font-size:12.5px;padding:6px 8px;border:1px solid #cdd6df;border-radius:7px;background:#fffdf8;resize:vertical;min-height:44px}
+  .seb.miss{border-color:#c62828;background:#fff2f2}
+  .hidden{display:none}
+  .empty{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:22px;text-align:center;color:#7a8896;font-size:13px}
+  #rolLbl{display:flex;align-items:center}
+html,body{max-width:100vw;overflow-x:hidden}
+</style>
+</head>
+<body>
+<header>
+  <h1>Şantiye Formu · Yurt Dışı 1-4</h1>
+  <div class="sub">Buraya ilgili şantiye sorumlusu tarafından, projelerin sevkiyatlarına ilişkin müşterilerin güncel gereksinim bilgileri işlenir. Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak “Aylık Güncelle” düğmesine basılmadıkça gönderilmez.</div>
+</header>
+<div class="wrap">
+
+  <div class="info">
+    <div class="erp" id="erpStamp">Bu formdaki bilgiler, ERP sisteminden … tarihinde çekilen raporlara dayanmaktadır. Güncel durum farklı olabilir.</div>
+    <div><b>MVT:</b> Müşteriye verilen ya da verilmesi mümkün olan, aynı zamanda üretim için hedef niteliği taşıyan tarih.</div>
+    <div><b>AÜP:</b> Ana üretim planında güncel olarak üretimin tamamlanacağı öngörülen tarih.</div>
+    <div><b>PST:</b> Şantiye taleplerine uygun olarak (MVT’ten daha erken olmamak üzere) planlanan sevk tarihi.</div>
+  </div>
+
+  <div class="topbar">
+    <button class="upd" id="ay_btn">Aylık Güncelle</button>
+    <div class="note">Formdaki bilgiler, ”Aylık Güncelle” düğmesine ne zaman basılırsa o zaman aktarılır.</div>
+    <div id="rolLbl"></div>
+    <div class="msg" id="msg" style="flex-basis:100%"></div>
+  </div>
+
+  <div id="bloklar"><div class="empty">Yükleniyor…</div></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ===== ARBOR FORM KAPISI — tek rol hesabı + MB (int@) geçişi =====
+   Her form kendi storageKey'ini kullanır (bkz. CLAUDE.md "OTURUM AYRIMI"):
+   bir forma giriş yapmak Melih'in pano oturumunu EZMEZ, signOut yalnız bu formu düşürür. */
+const ARB_ROL_EMAIL = "za.form@arbor.com.tr";
+const ARB_ROL_AD    = "ZA — Zafer Ataş";
+const ARB_STORE     = "arbform_santiye_yd1_4";
+const ARB_NOSTORE = (u,o)=> fetch(u, Object.assign({}, o||{}, {cache:"no-store"}));
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE},global:{fetch:ARB_NOSTORE}});
+const ARB_MB = "int@arbor.com.tr";
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{global:{fetch:ARB_NOSTORE}});
+var ARB_ACTIVE = ARB_GATE_SB;
+var ARB_EMAIL = "";
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:330px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:4px">Şantiye Formu · Yurt Dışı 1-4</div>'
+    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:10px">'+ARB_ROL_AD+'</div>'
+    +'<input id="arb-pw" type="password" placeholder="Parola" autocomplete="current-password" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giriş</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px"></div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var pw=document.getElementById("arb-pw").value;
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giriş yapılıyor…";
+    var r=await ARB_GATE_SB.auth.signInWithPassword({email:ARB_ROL_EMAIL,password:pw});
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent="Parola hatalı"; return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  if(em!==ARB_ROL_EMAIL){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(em===ARB_ROL_EMAIL || em===ARB_MB){ ARB_EMAIL=em; (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script type="text/plain" id="arbmain">
+const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const FORM_KODU = "yd1_4";
+const PY_ANAHTAR = "santiye_yd1_4";   /* pano_yayin damgası */
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fd=s=>{ if(!s) return "—"; const p=String(s).slice(0,10).split("-"); return p[2]+"."+p[1]+"."+p[0].slice(2); };
+function msg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t;
+  if(ok) setTimeout(()=>{ if(m.textContent===t) m.textContent=""; },6000); }
+
+/* Oturum etiketi — Melih'in ekranında gösterilmez (bkz. teklif-talep deseni). */
+(function(){
+  if(ARB_EMAIL===ARB_MB) return;
+  const l=document.getElementById("rolLbl");
+  l.innerHTML='<b style="color:#16324f;font-size:12.5px">Oturum: '+esc(ARB_ROL_AD)+'</b>';
+  const b=document.createElement("button");
+  b.textContent="Çıkış";
+  b.style.cssText="margin-left:8px;background:#5a6b7d;color:#fff;border:0;border-radius:8px;padding:5px 10px;font-weight:600;cursor:pointer;font-size:11.5px";
+  b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); };
+  l.appendChild(b);
+})();
+
+var SATIR = [];
+
+async function yukle(){
+  const r = await sb.from("santiye_form_proje")
+    .select("*").eq("form_kodu",FORM_KODU)
+    .order("donem",{ascending:false}).order("mvt",{ascending:true}).order("proje_no",{ascending:true});
+  const box=document.getElementById("bloklar");
+  if(r.error){ box.innerHTML='<div class="empty">Hata: '+esc(r.error.message)+'</div>'; return; }
+  SATIR = r.data||[];
+  if(!SATIR.length){
+    box.innerHTML='<div class="empty">Bu formda henüz proje yok.<br>Projeler, her ayın 21’inden sonraki ilk ERP çekiminde otomatik olarak eklenir.</div>';
+    document.getElementById("ay_btn").disabled=true; return;
+  }
+  /* Yalnız EN YENİ dönem gösterilir (geçmiş dönemler veritabanında kalır). */
+  const donem = SATIR[0].donem;
+  SATIR = SATIR.filter(x=>x.donem===donem);
+  const d0 = SATIR[0].erp_tarih;
+  document.getElementById("erpStamp").textContent =
+    "Bu formdaki bilgiler, ERP sisteminden "+fd(d0)+" tarihinde çekilen raporlara dayanmaktadır. Güncel durum farklı olabilir.";
+  box.innerHTML = SATIR.map(blok).join("");
+  SATIR.forEach(bagla);
+}
+
+function blok(r){
+  const kv=(k,v)=>'<div class="kv"><div class="k">'+k+'</div><div class="v'+(k==="Proje Kodu"?" no":"")+'">'+esc(v==null||v===""?"—":v)+'</div></div>';
+  const soru=(alan,metin)=>{
+    const on=r[alan+"_onay"], seb=r[alan+"_sebep"]||"";
+    return '<div class="soru">'
+      +'<div class="q">'+metin+'</div>'
+      +'<div class="opt">'
+        +'<button data-id="'+r.id+'" data-a="'+alan+'" data-v="Evet"  class="evet'+(on==="Evet"?" on":"")+'">Evet</button>'
+        +'<button data-id="'+r.id+'" data-a="'+alan+'" data-v="Hayır" class="hayir'+(on==="Hayır"?" on":"")+'">Hayır (sebep belirtiniz)</button>'
+      +'</div>'
+      +'<textarea class="seb'+(on==="Hayır"?"":" hidden")+'" id="seb_'+alan+'_'+r.id+'" data-id="'+r.id+'" data-a="'+alan+'" placeholder="Sebep">'+esc(seb)+'</textarea>'
+      +'</div>';
+  };
+  const tam = r.mvt_onay && r.pst_onay && (r.mvt_onay==="Evet" || (r.mvt_sebep||"").trim())
+                                       && (r.pst_onay==="Evet" || (r.pst_sebep||"").trim());
+  return '<div class="blk'+(tam?" done":"")+'" id="blk_'+r.id+'">'
+    +'<div class="sol">'
+      +kv("Proje Kodu",r.proje_no)+kv("Proje Adı",r.proje_adi)+kv("Ürün Adedi",r.adet)
+      +kv("MVT",fd(r.mvt))+kv("AÜP",fd(r.aup))+kv("PST",fd(r.pst))
+    +'</div>'
+    +'<div class="sag">'
+      +soru("mvt","Burada belirtilen <b>MVT</b>’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?")
+      +soru("pst","Burada belirtilen <b>PST</b>’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?")
+    +'</div></div>';
+}
+
+function bagla(r){
+  document.querySelectorAll('#blk_'+r.id+' .opt button').forEach(b=>{
+    b.onclick=async()=>{
+      const alan=b.dataset.a, val=b.dataset.v;
+      const par=b.parentElement;
+      par.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+      b.classList.add("on");
+      const ta=document.getElementById("seb_"+alan+"_"+r.id);
+      if(val==="Hayır"){ ta.classList.remove("hidden"); ta.focus(); }
+      else { ta.classList.add("hidden"); ta.value=""; }
+      r[alan+"_onay"]=val; if(val==="Evet") r[alan+"_sebep"]=null;
+      await kaydet(r.id, val==="Evet" ? {[alan+"_onay"]:val,[alan+"_sebep"]:null} : {[alan+"_onay"]:val});
+      boya(r);
+    };
+  });
+  ["mvt","pst"].forEach(alan=>{
+    const ta=document.getElementById("seb_"+alan+"_"+r.id);
+    ta.onchange=async()=>{ r[alan+"_sebep"]=ta.value.trim()||null;
+      ta.classList.remove("miss");
+      await kaydet(r.id,{[alan+"_sebep"]:r[alan+"_sebep"]}); boya(r); };
+  });
+}
+
+function boya(r){
+  const el=document.getElementById("blk_"+r.id); if(!el) return;
+  const tam = r.mvt_onay && r.pst_onay && (r.mvt_onay==="Evet" || (r.mvt_sebep||"").trim())
+                                       && (r.pst_onay==="Evet" || (r.pst_sebep||"").trim());
+  el.classList.toggle("done",!!tam); if(tam) el.classList.remove("miss");
+}
+
+async function kaydet(id,patch){
+  const {error}=await sb.from("santiye_form_proje").update(patch).eq("id",id);
+  if(error) msg("Kaydedilemedi: "+error.message,false);
+}
+
+/* AYLIK GÜNCELLE — bütün bloklar cevaplanmadan (Hayır ise sebep yazılmadan) çalışmaz. */
+document.getElementById("ay_btn").onclick=async()=>{
+  let ilk=null, eksik=0;
+  SATIR.forEach(r=>{
+    const el=document.getElementById("blk_"+r.id); el.classList.remove("miss");
+    let bos=false;
+    ["mvt","pst"].forEach(a=>{
+      const ta=document.getElementById("seb_"+a+"_"+r.id); ta.classList.remove("miss");
+      if(!r[a+"_onay"]) bos=true;
+      else if(r[a+"_onay"]==="Hayır" && !(r[a+"_sebep"]||"").trim()){ bos=true; ta.classList.add("miss"); }
+    });
+    if(bos){ el.classList.add("miss"); eksik++; if(!ilk) ilk=el; }
+  });
+  if(eksik){ msg(eksik+" projede MVT/PST onayı (ya da 'Hayır' sebebi) eksik.",false);
+             if(ilk) ilk.scrollIntoView({behavior:"smooth",block:"center"}); return; }
+  const b=document.getElementById("ay_btn"); b.disabled=true; msg("Aktarılıyor…",true);
+  const {error}=await sb.from("pano_yayin").upsert({anahtar:PY_ANAHTAR,yayin_at:new Date().toISOString()},{onConflict:"anahtar"});
+  b.disabled=false;
+  if(error){ msg("Aktarılamadı: "+error.message,false); return; }
+  msg("Aktarıldı — bilgiler Şantiye Onay panosuna işlendi.",true);
+};
+
+yukle();
+</script>
+<!-- ARBOR-DRAGSCROLL -->
+<style>
+  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
+  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+<script>
+(function(){
+  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
+  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
+  function scrollable(n){
+    var st=getComputedStyle(n);
+    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
+    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
+    return okx||oky;
+  }
+  function start(n,e){
+    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+    document.body.classList.add("arb-dragging"); e.preventDefault();
+  }
+  document.addEventListener("mousedown",function(e){
+    if(e.button!==0||skip(e.target)) return;
+    var n=e.target, hucre=null;
+    while(n && n.nodeType===1 && n!==document.body){
+      if(scrollable(n)){
+        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
+        if(!n.closest("td,th")) return start(n,e);
+        if(!hucre) hucre=n;
+      }
+      n=n.parentElement;
+    }
+    if(hucre) return start(hucre,e);
+  },true);
+  document.addEventListener("mousemove",function(e){
+    if(!el) return;
+    var dx=e.clientX-sx, dy=e.clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    el.scrollLeft=l-dx; el.scrollTop=t-dy;
+  });
+  document.addEventListener("mouseup",function(){
+    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
+  });
+  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
+})();
+</script>
+<!-- /ARBOR-DRAGSCROLL -->
+</body>
+</html>
