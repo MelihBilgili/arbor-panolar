@@ -1310,13 +1310,15 @@ async function loadFormlar(){
      Son güncelleme = form_takip.son_guncelleme (elle ✓) ile formun CANLI izinin (pano_yayin /
      ilgili tablonun en yeni updated_at'i) büyüğü. Son güncelleme son tarihten önceyse
      geciken = bugün − son tarih (gün), değilse 0. */
-  const [ft,pyF,eaU,onU,obU,daU]=await Promise.all([
+  const [ft,pyF,eaU,onU,obU,daU,sayU,mkaU]=await Promise.all([
     sb.from("form_takip").select("*"),
     sb.from("pano_yayin").select("anahtar,yayin_at"),
     sb.from("so_ea_form").select("updated_at").order("updated_at",{ascending:false}).limit(1),
     sb.from("sevk_durumu_onur").select("updated_at").order("updated_at",{ascending:false}).limit(1),
     sb.from("ob_isler").select("updated_at").order("updated_at",{ascending:false}).limit(1),
-    sb.from("da_isler").select("updated_at").order("updated_at",{ascending:false}).limit(1)
+    sb.from("da_isler").select("updated_at").order("updated_at",{ascending:false}).limit(1),
+    sb.from("satis_ay_islendi").select("kaynak,updated_at"),
+    sb.from("mk_ay_islendi").select("*").order("id",{ascending:false}).limit(1)
   ]);
   const ftBy={}; ((ft&&!ft.error)?(ft.data||[]):[]).forEach(r=>ftBy[r.form_key]=r);
   const pyBy={}; ((pyF&&!pyF.error)?(pyF.data||[]):[]).forEach(r=>pyBy[r.anahtar]=r.yayin_at);
@@ -1324,8 +1326,12 @@ async function loadFormlar(){
   /* FORM-CANLI-IZ: canlı iz = GÜNCELLEME DÜĞMESİNE basılma (pano_yayin), satır-bazlı otomatik
      kayıt DEĞİL. onur_sevk/ob_rapor eskiden ilgili tablonun updated_at'ini okuyordu → çalışan
      yalnız hücreye yazınca da "güncellendi" sayılıyor, geciken 0 görünüyordu. */
+  const sayBy={}; ((sayU&&!sayU.error)?(sayU.data||[]):[]).forEach(r=>sayBy[r.kaynak]=r.updated_at);
+  const mk0=(mkaU&&!mkaU.error&&mkaU.data&&mkaU.data[0])||null;
+  const mkAt=mk0?(mk0.updated_at||mk0.created_at||null):null;
   const CANLI={ ea_so:one(eaU), onur_sevk:pyBy.oe_sevk, ob_rapor:pyBy.ob_rapor,
                 da_faaliyet:[pyBy.da_rapor,one(daU)].sort().reverse()[0],
+                mk_prim:mkAt, yurtici:sayBy.SO, yd1:sayBy.FY, yd2:sayBy.FY2,
                 ahsap:pyBy.ahsap, yd_alacak:pyBy.sel_arb };
   const today=new Date(); today.setHours(0,0,0,0);
   const dParse=s=>{ if(!s) return null; const p=String(s).slice(0,10).split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
