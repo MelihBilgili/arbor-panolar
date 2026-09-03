@@ -22,7 +22,6 @@
   #bSor{background:#8a6100}
   #bBildir{background:#5b3fa0}
   #bGuncelle{background:#0a6b57}
-  #bRevizyon{background:#b1541f}
   .hint{font-size:11px;color:#8a97a4;margin:0 2px}
   .warnbox{background:#ffb3b3;border:1px solid #cf6a6a;color:#7a0000;border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:600;line-height:1.45;margin:8px 0}
   .scroll{overflow-x:auto}
@@ -71,11 +70,10 @@
 
   <div class="btns">
     <button id="bSatir">＋ Satır Ekle</button>
-    <button id="bTalep">Teslim Tarihi Talep Et</button>
-    <button id="bSor">Öncelik Grubu Sor</button>
-    <button id="bBildir">Öncelik Bildir</button>
-    <button id="bGuncelle">Teslim Tarihlerini Güncelle</button>
-    <button id="bRevizyon">Teslim Tarihi Revizyonu</button>
+    <button id="bTalep">Teslim Tarihi İste</button>
+    <button id="bSor">Öncelik İste</button>
+    <button id="bBildir">Öncelik Kaydet</button>
+    <button id="bGuncelle">Teslim Tarihlerini Kaydet</button>
     <span class="hint" id="rolLbl"></span>
   </div>
 
@@ -213,7 +211,7 @@ const AK_ALAN  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale"
 const AK_YENI  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari","urun_adedi"]; /* Project + A–G giriş */
 const MKB_ALAN = ["urun_adedi","urun_tip","kemer_karolaj","sartname_ahsap"];  /* zorunlu: Adet → Şartname Ahşap */
 /* REVİZYON (sarı R): teslim edilmiş satırdan kopyalanan soldan ilk 6 sütun.
-   Diğer bütün hücreler boş gelir; süreç AK'nın "Teslim Tarihi Talep Et"i ile yeniden başlar. */
+   Diğer bütün hücreler boş gelir; süreç AK'nın "Teslim Tarihi İste"i ile yeniden başlar. */
 const REP_ALAN = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale"];
 
 let ROWS=[];
@@ -269,7 +267,9 @@ function hucre(r,k,d){
   const tarihK = k.f==="teslim_tarihi";
   let ro=false;
   if(yesil) ro = (k.f!=="teslim_edildi");
-  else if(tarihK) ro = !canMKB || !!r.tarih_kilit;
+  /* Teslim tarihi MKB için DAİMA düzenlenebilir — ayrı "Revizyon" düğmesi yok:
+     kilitli bir tarih değiştirilirse kaydet() revizyonu kendiliğinden açar. */
+  else if(tarihK) ro = !canMKB;
   /* Oncelik grubu su durumlarda secilemez (yesil/teslim edilmis zaten kilitli):
      (a) teklif calismasi basladiysa — tek basina kilitler, MKB dolu olsa bile; veya
      (b) MKB alanlari (Adet, Urun Tipi, Kemer/Karolaj, Sartname) dolu degilse. */
@@ -305,7 +305,7 @@ function hucre(r,k,d){
 }
 
 /* ---------- AK'nın doldurmakta olduğu (henüz kaydedilmemiş) satırlar ----------
-   "＋ Satır Ekle" bir taslak satır daha açar; "Teslim Tarihi Talep Et" dolu taslakların
+   "＋ Satır Ekle" bir taslak satır daha açar; "Teslim Tarihi İste" dolu taslakların
    hepsini birden kaydeder. Yeniden çizimde yazılanların kaybolmaması için taslaklar
    önce belleğe alınır (TASLAK). */
 let TASLAK=[{}];
@@ -323,7 +323,7 @@ const taslakDolu = o => AK_YENI.some(f=>String(o[f]||"").trim()!=="");
 /* ciz(true) → TASLAK zaten güncel, DOM'dan yeniden okuma (aksi hâlde silinen taslak geri gelir) */
 function ciz(hazir){
   if(!hazir) taslakOku();
-  /* başlıklar — ✓ sütunu YOK; teslim tarihleri "Teslim Tarihlerini Güncelle" ile işlenir */
+  /* başlıklar — ✓ sütunu YOK; teslim tarihleri "Teslim Tarihlerini Kaydet" ile işlenir */
   const th = KOL.map(k=>'<th style="min-width:'+k.w+'"'+(k.ttl?' title="'+esc(k.ttl)+'"':"")+'><span class="thw">'+esc(k.b)+'</span></th>');
   /* Uyarı sütunu YOK — revize uyarısı teslim tarihi hücresinin hover kutusunda gösterilir */
   th.push('<th class="x"></th>');
@@ -388,7 +388,7 @@ function oncelikUyari(){
 function gecikmeUyari(){
   const g=gecikenler();
   document.getElementById("gecikme").innerHTML = g.length
-    ? '<div class="warnbox">Teklif Talepleri formunda tarihi geçmiş olmasına rağmen teslim edildiği belirtilmeyen satırlar mevcuttur. Lütfen teslim edilenleri işleyiniz ve teslim edilmeyen varsa Teslim Tarihi Revizyonu düğmesine basınız.</div>'
+    ? '<div class="warnbox">Teklif Talepleri formunda tarihi geçmiş olmasına rağmen teslim edildiği belirtilmeyen satırlar mevcuttur. Lütfen teslim edilenleri işleyiniz; teslim edilmeyen varsa yeni tarihi yazıp “Teslim Tarihlerini Kaydet” düğmesine basınız.</div>'
     : "";
   const b=document.getElementById("bSor");
   b.disabled = !canMKB || g.length>0;
@@ -410,9 +410,15 @@ async function kaydet(id,f,val){
     if(sv===null){ msg("Geçersiz tarih (gg.aa.yy).",false); ciz(); return; }
   }
   const p={}; p[f] = (sv===""? null : (f==="urun_adedi"||f==="oncelik" ? sayi(sv) : sv));
+  /* REVİZYON otomatik: işlenmiş (kilitli) bir teslim tarihi değiştirilirse kilit açılır ve
+     önceki tarih saklanır. "Teslim Tarihlerini Kaydet"e basılınca revize damgası düşer. */
+  if(f==="teslim_tarihi" && r.tarih_kilit && p[f]!==r.teslim_tarihi){
+    p.tarih_kilit=false; p.revizyon_acik=true;
+    p.revizyon_onceki = (r.revizyon_acik && r.revizyon_onceki) ? r.revizyon_onceki : r.teslim_tarihi;
+  }
   const {error}=await sb.from("teklif_talep").update(p).eq("id",id);
   if(error){ msg("Kaydedilemedi: "+error.message,false); return; }
-  r[f]=p[f];
+  Object.assign(r,p);
   msg("Kaydedildi.",true);
   ciz();
 }
@@ -440,7 +446,7 @@ function bagla(){
     };
   });
   /* REVİZYON (sarı R): teslim edilmiş satırın soldan ilk 6 sütunu yeni bir TASLAK satıra
-     kopyalanır (diğer hücreler boş). Kayıt yapılmaz — AK "Teslim Tarihi Talep Et"e basınca
+     kopyalanır (diğer hücreler boş). Kayıt yapılmaz — AK "Teslim Tarihi İste"e basınca
      normal yeni satır gibi eklenir ve süreç baştan başlar. Kaynak satıra dokunulmaz. */
   document.querySelectorAll('#tb [data-rep]').forEach(b=>{
     b.onclick=()=>{
@@ -456,7 +462,7 @@ function bagla(){
       ciz(true);
       const tr=document.querySelector('#tb tr.yeni');
       if(tr){ tr.scrollIntoView({block:"center"}); const i=tr.querySelector('input[data-f="yd_notlari"]'); if(i) i.focus(); }
-      msg("Revizyon satırı oluşturuldu. Bilgileri tamamlayıp “Teslim Tarihi Talep Et” düğmesine basınız.",true);
+      msg("Revizyon satırı oluşturuldu. Bilgileri tamamlayıp “Teslim Tarihi İste” düğmesine basınız.",true);
     };
   });
   /* İptali geri al: teslim_edildi="Edilmedi" → satır normale döner. */
@@ -483,6 +489,8 @@ async function tarihIsle(id, tarih, sessiz){
   if(yeni===null){ msg("Geçersiz teslim tarihi (gg.aa.yy).",false); return; }
   const p={teslim_tarihi:yeni, tarih_kilit:true};
   if(r.revizyon_acik){ p.revize = (r.revizyon_onceki && r.revizyon_onceki!==yeni) ? true : r.revize; p.revizyon_acik=false; }
+  /* change olayı kaçmışsa (kutuya yazıp doğrudan düğmeye basıldıysa) revizyonu burada yakala */
+  else if(r.tarih_kilit && r.teslim_tarihi && r.teslim_tarihi!==yeni){ p.revize=true; p.revizyon_onceki=r.teslim_tarihi; }
   const {error}=await sb.from("teklif_talep").update(p).eq("id",id);
   if(error){ msg("İşlenemedi: "+error.message,false); return; }
   Object.assign(r,p);
@@ -561,34 +569,28 @@ document.getElementById("bBildir").onclick = async ()=>{
 
 /* Teslim tarihi YALNIZ bu düğmeyle işlenir (satır başına ✓ yok):
    dolu olan öngörülen teslim tarihleri kilitlenir → o satırlar beyaza döner.
-   Tarihi boş bırakılan satırlar pembe kalır, uyarı verilmez. */
+   Tarihi boş bırakılan satırlar pembe kalır, uyarı verilmez.
+   REVİZYON da buradadır: kilitli bir tarih değiştirilmişse yeni tarih kaydedilir ve
+   satır "revize" (kırmızı-kalın + önceki tarih hover'da) olarak damgalanır. */
 document.getElementById("bGuncelle").onclick = async ()=>{
-  const hedef=ROWS.filter(r=>r.teslim_edildi!=="Edildi" && r.teslim_edildi!=="İptal" && !r.tarih_kilit);
-  const isle=[];
+  const hedef=ROWS.filter(r=>r.teslim_edildi!=="Edildi" && r.teslim_edildi!=="İptal");
+  const isle=[]; let rev=0;
   hedef.forEach(r=>{
     const i=document.querySelector('#tb input[data-id="'+r.id+'"][data-f="teslim_tarihi"]');
-    const v = i && i.value ? i.value : r.teslim_tarihi;
-    if(v) isle.push({id:r.id, tarih:v});
+    const v = i && i.value ? i.value : (r.teslim_tarihi||"");
+    if(!v) return;
+    const iso = toIso(v);
+    if(iso===null || iso==="") return;
+    const degisti = !!r.teslim_tarihi && iso!==r.teslim_tarihi;
+    if(r.tarih_kilit && !degisti && !r.revizyon_acik) return;   /* zaten işlenmiş, değişiklik yok */
+    if(degisti && (r.tarih_kilit || r.revizyon_acik)) rev++;
+    isle.push({id:r.id, tarih:v});
   });
   eksikIsaretle([]);
-  if(!isle.length){ msg("İşlenecek dolu teslim tarihi yok.",false); return; }
+  if(!isle.length){ msg("Kaydedilecek yeni ya da değişmiş teslim tarihi yok.",false); return; }
   for(const x of isle) await tarihIsle(x.id, x.tarih, true);
   ciz();
-  const kalan = hedef.length - isle.length;
-  msg(isle.length+" satırın teslim tarihi işlendi."+(kalan?" ("+kalan+" satırın tarihi boş bırakıldı.)":""),true);
-};
-
-document.getElementById("bRevizyon").onclick = async ()=>{
-  const hedef=ROWS.filter(r=>r.teslim_edildi!=="Edildi" && r.tarih_kilit);
-  if(!hedef.length){ msg("Revize edilecek satır yok.",false); return; }
-  for(const r of hedef){
-    const p={revizyon_acik:true, revizyon_onceki:r.teslim_tarihi, tarih_kilit:false};
-    const {error}=await sb.from("teklif_talep").update(p).eq("id",r.id);
-    if(error){ msg("Revizyon açılamadı: "+error.message,false); return; }
-    Object.assign(r,p);
-  }
-  ciz();
-  msg(hedef.length+" satırın teslim tarihi düzenlenebilir hâle getirildi. Tarihleri güncelleyip “Teslim Tarihlerini Güncelle” düğmesine basınız.",true);
+  msg(isle.length+" satırın teslim tarihi kaydedildi."+(rev?" ("+rev+" satır revize olarak işaretlendi.)":""),true);
 };
 
 /* düğme görünürlüğü */
@@ -596,7 +598,6 @@ document.getElementById("bSatir").style.display    = canAK  ? "" : "none";
 document.getElementById("bTalep").style.display    = canAK  ? "" : "none";
 document.getElementById("bSor").style.display      = canMKB ? "" : "none";
 document.getElementById("bGuncelle").style.display = canMKB ? "" : "none";
-document.getElementById("bRevizyon").style.display = canMKB ? "" : "none";
 document.getElementById("bBildir").style.display   = canMB  ? "" : "none";
 
 /* ---------- yükle ---------- */
