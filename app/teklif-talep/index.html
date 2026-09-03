@@ -39,6 +39,8 @@
   td.x{width:24px;text-align:center}
   .del{border:0;background:transparent;color:#c62828;font-weight:800;font-size:15px;cursor:pointer;line-height:1;padding:0 3px}
   .res{border:0;background:transparent;color:#1a8a4a;font-weight:800;font-size:15px;cursor:pointer;line-height:1;padding:0 3px}
+  /* Teslim edilmiş satırda ✕ yerine sarı R — aynı projenin revizyon talebi için kopya satır açar */
+  .rep{border:0;background:#ffd23f;color:#5a4000;font-weight:800;font-size:12px;cursor:pointer;line-height:15px;padding:0 6px;border-radius:4px}
   tr.pembe td{background:#ffe1ee}
   tr.kirmizi td{background:#ffb0b0}
   tr.beyaz td{background:#fff}
@@ -89,6 +91,7 @@
     <span><i style="background:#fff5c2"></i>Çalışma başladı</span>
     <span><i style="background:#d8f2dd"></i>Teslim edildi</span>
     <span><i style="background:#e5e7eb"></i>İptal edildi</span>
+    <span><b style="background:#ffd23f;color:#5a4000;border-radius:4px;padding:0 6px;font-weight:800;margin-right:4px">R</b>Teslim edilmiş teklifin revizyonu için aynı projeden yeni satır açar</span>
   </div>
 </div>
 
@@ -209,6 +212,9 @@ const KOL = [
 const AK_ALAN  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale"];  /* zorunlu: Project → İhale (Y. Dışı B. Notları opsiyonel) */
 const AK_YENI  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale","yd_notlari","urun_adedi"]; /* Project + A–G giriş */
 const MKB_ALAN = ["urun_adedi","urun_tip","kemer_karolaj","sartname_ahsap"];  /* zorunlu: Adet → Şartname Ahşap */
+/* REVİZYON (sarı R): teslim edilmiş satırdan kopyalanan soldan ilk 6 sütun.
+   Diğer bütün hücreler boş gelir; süreç AK'nın "Teslim Tarihi Talep Et"i ile yeniden başlar. */
+const REP_ALAN = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale"];
 
 let ROWS=[];
 const bugun = new Date(Date.now()+180*60000).toISOString().slice(0,10); /* TR tarihi */
@@ -349,11 +355,14 @@ function ciz(hazir){
     const d=durum(r);
     h+='<tr class="'+d+'" data-id="'+r.id+'">';
     KOL.forEach(k=>{ h+=hucre(r,k,d); });
-    /* Aksiyon hücresi toggle: normal satır → X (iptal et) · iptal satırı → yeşil ✓ (geri al) */
+    /* Aksiyon hücresi: iptal satırı → yeşil ✓ (geri al) · teslim edilmiş satır → sarı R
+       (verilmiş teklif silinmez; revizyon için kopya satır açar) · diğer → ✕ (iptal et) */
     const aksiyon = !canAK ? ""
       : (d==="iptal"
           ? '<button class="res" data-res="'+r.id+'" title="İptali geri al">✓</button>'
-          : '<button class="del" data-del="'+r.id+'" title="Satırı iptal et">✕</button>');
+          : (d==="yesil"
+              ? '<button class="rep" data-rep="'+r.id+'" title="Revizyon: bu projenin ilk 6 sütunuyla yeni satır oluştur">R</button>'
+              : '<button class="del" data-del="'+r.id+'" title="Satırı iptal et">✕</button>'));
     h+='<td class="x">'+aksiyon+'</td></tr>';
   });
 
@@ -428,6 +437,26 @@ function bagla(){
       if(error){ msg("İptal edilemedi: "+error.message,false); return; }
       const r=ROWS.find(x=>x.id===id); if(r) r.teslim_edildi="İptal";
       ciz(); msg("Satır iptal edildi (en altta gri).",true);
+    };
+  });
+  /* REVİZYON (sarı R): teslim edilmiş satırın soldan ilk 6 sütunu yeni bir TASLAK satıra
+     kopyalanır (diğer hücreler boş). Kayıt yapılmaz — AK "Teslim Tarihi Talep Et"e basınca
+     normal yeni satır gibi eklenir ve süreç baştan başlar. Kaynak satıra dokunulmaz. */
+  document.querySelectorAll('#tb [data-rep]').forEach(b=>{
+    b.onclick=()=>{
+      const r=ROWS.find(x=>x.id===+b.dataset.rep); if(!r) return;
+      taslakOku();
+      const kopya={};
+      REP_ALAN.forEach(f=>{
+        const v=r[f];
+        kopya[f] = (f==="gelen_tarih"||f==="musteri_tarih") ? toDMY(v) : (v==null?"":String(v));
+      });
+      /* Tek ve boş taslak varsa onu kullan; yoksa en üste ekle */
+      if(TASLAK.length===1 && !taslakDolu(TASLAK[0])) TASLAK[0]=kopya; else TASLAK.unshift(kopya);
+      ciz(true);
+      const tr=document.querySelector('#tb tr.yeni');
+      if(tr){ tr.scrollIntoView({block:"center"}); const i=tr.querySelector('input[data-f="yd_notlari"]'); if(i) i.focus(); }
+      msg("Revizyon satırı oluşturuldu. Bilgileri tamamlayıp “Teslim Tarihi Talep Et” düğmesine basınız.",true);
     };
   });
   /* İptali geri al: teslim_edildi="Edilmedi" → satır normale döner. */
