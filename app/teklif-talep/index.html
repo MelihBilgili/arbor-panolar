@@ -212,7 +212,9 @@ const AK_YENI  = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale"
 const MKB_ALAN = ["urun_adedi","urun_tip","kemer_karolaj","sartname_ahsap"];  /* zorunlu: Adet → Şartname Ahşap */
 /* REVİZYON (sarı R): teslim edilmiş satırdan kopyalanan soldan ilk 6 sütun.
    Diğer bütün hücreler boş gelir; süreç AK'nın "Teslim Tarihi İste"i ile yeniden başlar. */
-const REP_ALAN = ["proje","company","ciro","gelen_tarih","musteri_tarih","ihale"];
+/* İstenen Tarih (musteri_tarih) BİLEREK kopyalanmaz — revizyonda müşteri yeni bir tarih verir,
+   AK'nın elle doldurması gerekir (zaten zorunlu alan). */
+const REP_ALAN = ["proje","company","ciro","gelen_tarih","ihale"];
 
 let ROWS=[];
 const bugun = new Date(Date.now()+180*60000).toISOString().slice(0,10); /* TR tarihi */
@@ -361,7 +363,7 @@ function ciz(hazir){
       : (d==="iptal"
           ? '<button class="res" data-res="'+r.id+'" title="İptali geri al">✓</button>'
           : (d==="yesil"
-              ? '<button class="rep" data-rep="'+r.id+'" title="Revizyon: bu projenin ilk 6 sütunuyla yeni satır oluştur">R</button>'
+              ? '<button class="rep" data-rep="'+r.id+'" title="Revizyon: bu projenin bilgileriyle yeni satır oluştur (İstenen Tarih boş gelir)">R</button>'
               : '<button class="del" data-del="'+r.id+'" title="Satırı iptal et">✕</button>'));
     h+='<td class="x">'+aksiyon+'</td></tr>';
   });
@@ -461,7 +463,7 @@ function bagla(){
       if(TASLAK.length===1 && !taslakDolu(TASLAK[0])) TASLAK[0]=kopya; else TASLAK.unshift(kopya);
       ciz(true);
       const tr=document.querySelector('#tb tr.yeni');
-      if(tr){ tr.scrollIntoView({block:"center"}); const i=tr.querySelector('input[data-f="yd_notlari"]'); if(i) i.focus(); }
+      if(tr){ tr.scrollIntoView({block:"center"}); const i=tr.querySelector('input[data-f="musteri_tarih"]'); if(i) i.focus(); }
       msg("Revizyon satırı oluşturuldu. Bilgileri tamamlayıp “Teslim Tarihi İste” düğmesine basınız.",true);
     };
   });
