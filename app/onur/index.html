@@ -328,6 +328,12 @@ $("ay_btn").onclick=async()=>{
     else notlar.push(data.note||("Sevk özeti: "+data.updated+" kalem"));
   }catch(e){ notlar.push("Sevk özeti hata: "+e); }
   const hata=notlar.some(n=>n.indexOf("hata")>-1);
+  /* OE-YAYIN-DAMGA: düğmeye basılma damgası. Hazır PEM/PRJ panosunun "Sevk durumu (OE)" tarihi ve
+     Formlar sekmesindeki geciken hesabı bunu okur — sevk_durumu_onur.updated_at satır-bazlı
+     otomatik kayıttır, düğmeye basma sayılmaz. */
+  if(!hata){
+    try{ await sb.from("pano_yayin").upsert({anahtar:"oe_sevk",yayin_at:new Date().toISOString()},{onConflict:"anahtar"}); }catch(e){}
+  }
   if(!hata) onaySifirla();
   fmsg("ay_msg",notlar.join(" · "),!hata);
   btn.disabled=false; loadFt(); load();
@@ -335,6 +341,9 @@ $("ay_btn").onclick=async()=>{
 
 loadFt(); load();
 </script>
+
+
+
 
 <!-- ARBOR-DRAGSCROLL -->
 <style>
