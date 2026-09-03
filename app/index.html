@@ -1349,7 +1349,11 @@ async function loadFormlar(){
     const due=sonTarih(r.gunc_sikligi||""); if(!due) return 0;
     const son=sonGuncelleme(r);
     if(son&&son>=due) return 0;
-    return Math.max(0,Math.round((today-due)/86400000));
+    /* GECIKEN-IS-GUNU: takvim günü değil İŞ GÜNÜ sayılır — son tarihten SONRAKİ iş günleri,
+       bugün dahil (hafta sonu sayılmaz). Son tarih zaten iş günüdür (Salı / ayın ilk iş günü). */
+    let n=0; const d=new Date(due);
+    while(d<today){ d.setDate(d.getDate()+1); if(isIs(d)) n++; }
+    return n;
   };
   const body=forms.map(f=>{
     const r=ftBy[FK[f.url]];
@@ -1390,7 +1394,7 @@ async function loadFormlar(){
   </style>
   <div class="scroll"><table class="frm">
   <colgroup><col class="f30"><col class="f10"><col class="f20"><col class="f8"><col class="fm"><col class="fb"></colgroup>
-  <thead><tr><th>Form</th><th>Kullanıcı</th><th>Güncelleme</th><th class="num">Geciken (Gün)</th><th>Mail</th><th></th></tr></thead>
+  <thead><tr><th>Form</th><th>Kullanıcı</th><th>Güncelleme</th><th class="num">Geciken (İş Günü)</th><th>Mail</th><th></th></tr></thead>
   <tbody>${body}</tbody></table></div>`;
   view.querySelectorAll(".fmail").forEach(b=>b.onclick=()=>formMail(b.dataset.fk,b));
   view.querySelectorAll(".freset").forEach(b=>b.onclick=()=>formReset(b.dataset.fk));
