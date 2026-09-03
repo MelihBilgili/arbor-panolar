@@ -754,12 +754,16 @@ function takipSection(title, tkData, ssData, snapRows, showStats){
 /* ---------- HAZIR PEM/PRJ ---------- */
 async function loadHazir(){
   const view=document.getElementById("view");
-  const [{data,error},erpRes,ozRes,dgRes,adRes]=await Promise.all([
+  const [{data,error},erpRes,ozRes,dgRes,adRes,oeRes]=await Promise.all([
     sb.from("hazir_pem_prj").select("*"),
     sb.from("hazir_erp").select("tur,kalem_key,erp"),
     sb.from("sevk_durumu_onur").select("tur,kalem_key,degisim_ozet"),
     sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1),
-    sb.from("pano_adet_ozet").select("damga,pem_adet,prj_adet").limit(2)
+    sb.from("pano_adet_ozet").select("damga,pem_adet,prj_adet").limit(2),
+    /* HAZIR-IKI-DAMGA: sevk durumu damgası = OE formundaki AYLIK GÜNCELLE düğmesine son basılma
+       (pano_yayin.oe_sevk). sevk_durumu_onur.updated_at KULLANILMAZ — o satır-bazlı otomatik
+       kayıttır (hücreye yazma), düğmeye basma değil. */
+    sb.from("pano_yayin").select("yayin_at").eq("anahtar","oe_sevk").limit(1)
   ]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const erpMap={}; (erpRes.data||[]).forEach(r=>{ erpMap[String(r.tur).toUpperCase()+"|"+r.kalem_key]=r.erp||{}; });
@@ -814,7 +818,8 @@ async function loadHazir(){
   };
   const st=await erpStamp();
   const a0=(adRes&&adRes.data&&adRes.data[0])||{}, a1=(adRes&&adRes.data&&adRes.data[1])||{};
-  const hStamp='<div class="stamp">Son güncelleme: '+(st||"—")
+  const oeAt=(oeRes&&oeRes.data&&oeRes.data[0])?oeRes.data[0].yayin_at:null;
+  const hStamp='<div class="stamp">ERP: '+(st||"—")+' · Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")
     +' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)
     +' · PRJ Adet: '+Math.round(Number(a0.prj_adet)||0)+pctSpan(a0.prj_adet,a1.prj_adet)+'</div>';
   view.innerHTML=`${hStamp}
@@ -1316,7 +1321,10 @@ async function loadFormlar(){
   const ftBy={}; ((ft&&!ft.error)?(ft.data||[]):[]).forEach(r=>ftBy[r.form_key]=r);
   const pyBy={}; ((pyF&&!pyF.error)?(pyF.data||[]):[]).forEach(r=>pyBy[r.anahtar]=r.yayin_at);
   const one=r=>(r&&!r.error&&r.data&&r.data[0])?r.data[0].updated_at:null;
-  const CANLI={ ea_so:one(eaU), onur_sevk:one(onU), ob_rapor:[pyBy.ob_rapor,one(obU)].sort().reverse()[0],
+  /* FORM-CANLI-IZ: canlı iz = GÜNCELLEME DÜĞMESİNE basılma (pano_yayin), satır-bazlı otomatik
+     kayıt DEĞİL. onur_sevk/ob_rapor eskiden ilgili tablonun updated_at'ini okuyordu → çalışan
+     yalnız hücreye yazınca da "güncellendi" sayılıyor, geciken 0 görünüyordu. */
+  const CANLI={ ea_so:one(eaU), onur_sevk:pyBy.oe_sevk, ob_rapor:pyBy.ob_rapor,
                 da_faaliyet:[pyBy.da_rapor,one(daU)].sort().reverse()[0],
                 ahsap:pyBy.ahsap, yd_alacak:pyBy.sel_arb };
   const today=new Date(); today.setHours(0,0,0,0);
