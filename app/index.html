@@ -1697,11 +1697,14 @@ async function loadGmenkul(tgt){
   }
   const govde=(rw,i)=>{ const v=(rw.hucreler||[])[i]||"";
     return colW[i]?`<div class="pob-sc" style="width:${colW[i]}px">${esc(v)}</div>`:esc(v); };
+  /* GM-SEBEP: Çıkarılanlar bloğunda en sağa fazladan "Çıkarma Sebebi" sütunu (hucreler[10]).
+     Ana tabloda gösterilmez — orada anlamı yok. */
   const tabloHtml=(list,silinmis)=>{
     if(!list.length) return '<div class="hint">Kayıt yok.</div>';
-    const hs=heads.map((h,i)=>`<th${colNum[i]?' class="pob-num"':''}>${esc(h)}</th>`).join("")+"<th></th>";
+    const hh=silinmis?heads.concat(["Çıkarma Sebebi"]):heads;
+    const hs=hh.map((h,i)=>`<th${colNum[i]?' class="pob-num"':''}>${esc(h)}</th>`).join("")+"<th></th>";
     const rs=list.map(rw=>`<tr>`
-      +heads.map((h,i)=>`<td class="gmc${colNum[i]?" pob-num":""}" data-id="${rw.id}" data-i="${i}" title="Düzenlemek için tıkla">${govde(rw,i)}</td>`).join("")
+      +hh.map((h,i)=>`<td class="gmc${colNum[i]?" pob-num":""}" data-id="${rw.id}" data-i="${i}" title="Düzenlemek için tıkla">${govde(rw,i)}</td>`).join("")
       +`<td><button class="${silinmis?"gmback":"gmdel"}" data-id="${rw.id}" title="${silinmis?"Geri al":"Çıkar"}">${silinmis?"↩":"✕"}</button></td></tr>`).join("");
     return `<div class="scroll"><table class="pob pobgm"><thead><tr>${hs}</tr></thead><tbody>${rs}</tbody></table></div>`;
   };
@@ -1733,7 +1736,7 @@ async function loadGmenkul(tgt){
       if(bitti) return; bitti=true;
       const yeni=inp.value;
       if(kaydet && yeni!==eski){
-        const h=(row.hucreler||[]).slice(); while(h.length<heads.length) h.push("");
+        const h=(row.hucreler||[]).slice(); while(h.length<=i) h.push("");   /* 11. hücre = Çıkarma Sebebi */
         h[i]=yeni;
         const {error}=await sb.from("pano_ozel").update({hucreler:h}).eq("id",id);
         if(error) alert("Kaydedilemedi: "+error.message); else row.hucreler=h;
@@ -1758,10 +1761,11 @@ async function loadGmenkul(tgt){
   const xb=document.getElementById("gm-xls");
   if(xb) xb.onclick=()=>{
     const q=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    const tt=(bas,list)=>`<h3>${q(bas)}</h3><table border="1"><tr>${heads.map(h=>`<th>${q(h)}</th>`).join("")}</tr>`
-      +list.map(rw=>`<tr>${heads.map((h,i)=>`<td>${q((rw.hucreler||[])[i]||"")}</td>`).join("")}</tr>`).join("")+`</table>`;
+    const tt=(bas,list,ek)=>{ const hh=ek?heads.concat(["Çıkarma Sebebi"]):heads;
+      return `<h3>${q(bas)}</h3><table border="1"><tr>${hh.map(h=>`<th>${q(h)}</th>`).join("")}</tr>`
+      +list.map(rw=>`<tr>${hh.map((h,i)=>`<td>${q((rw.hucreler||[])[i]||"")}</td>`).join("")}</tr>`).join("")+`</table>`; };
     const html=`<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body>`
-      +tt("G.menkul",aktif)+(cik.length?"<br>"+tt("Çıkarılanlar",cik):"")+`</body></html>`;
+      +tt("G.menkul",aktif,false)+(cik.length?"<br>"+tt("Çıkarılanlar",cik,true):"")+`</body></html>`;
     const d=new Date(), p=n=>String(n).padStart(2,"0");
     const a=document.createElement("a");
     a.href=URL.createObjectURL(new Blob(["﻿"+html],{type:"application/vnd.ms-excel;charset=utf-8"}));
