@@ -1664,6 +1664,112 @@ async function loadPanoBolum(bolum, tgt){
     +`<div class="stamp">${esc(meta.son_guncelleme||"")}${meta.kaynak?` · <span style="font-weight:400;color:#7a8896">${esc(meta.kaynak)}</span>`:""}</div>`
     +`${html||'<div class="load">Kayıt yok.</div>'}`;
 }
+/* ---------- G.MENKUL — GMENKUL-DUZENLE (07.09.2026, Melih)
+   Kaynak yine `pano_ozel` 'gmenkul' satırları; fark: (1) üstte **Excel'e Aktar** düğmesi
+   (görünen tabloyu .xls olarak indirir), (2) HER HÜCRE tıklanarak düzenlenir (PATCH hucreler),
+   (3) satır sonundaki ✕ satırı SİLMEZ — `pano_ozel.cikarildi=true` yapar ve satır aşağıdaki
+   **Çıkarılanlar** bloğuna taşınır; oradaki ↩ ile geri alınır. Sütun genişliği mantığı
+   loadPanoBolum'un G.menkul dalıyla aynı (kısa alan içeriğe göre, uzun metin sabit + hücre içi
+   kaydırma). DDL: kod/gmenkul_cikarildi_260907.sql ---------- */
+async function loadGmenkul(tgt){
+  const body=document.getElementById(tgt||"view");
+  body.innerHTML='<div class="load">Yükleniyor…</div>';
+  const [m,t,r]=await Promise.all([
+    sb.from("pano_ozel_meta").select("*").eq("bolum","gmenkul"),
+    sb.from("pano_ozel_tablo").select("*").eq("bolum","gmenkul").order("sira"),
+    sb.from("pano_ozel").select("*").eq("bolum","gmenkul").order("tablo").order("sira")
+  ]);
+  const err=m.error||t.error||r.error;
+  if(err){ body.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
+  const meta=(m.data||[])[0]||{}, tb=(t.data||[])[0]||{};
+  const heads=tb.basliklar||[], all=r.data||[];
+  const aktif=all.filter(x=>!x.cikarildi), cik=all.filter(x=>x.cikarildi);
+  const nc=heads.length, colW=[], colNum=[];
+  for(let i=0;i<nc;i++){
+    const hl=String(heads[i]||"").length; let maxLen=hl, ne=0, num=0; const lens=[];
+    aktif.forEach(rw=>{ const s=String((rw.hucreler||[])[i]||"").trim(); if(s){ lens.push(s.length); if(s.length>maxLen)maxLen=s.length; ne++; if(/^[\d.,]+$/.test(s)&&/\d/.test(s))num++; } });
+    colNum[i]=(ne>0&&num===ne);
+    if(maxLen>=26){ lens.sort((a,b)=>a-b);
+      const p90=lens.length?lens[Math.min(lens.length-1,Math.floor(lens.length*0.9))]:0;
+      const chars=Math.max(p90,Math.min(hl,18),6);
+      colW[i]=Math.max(44,Math.min(240,chars*7+16));
+    } else colW[i]=0;
+  }
+  const govde=(rw,i)=>{ const v=(rw.hucreler||[])[i]||"";
+    return colW[i]?`<div class="pob-sc" style="width:${colW[i]}px">${esc(v)}</div>`:esc(v); };
+  const tabloHtml=(list,silinmis)=>{
+    if(!list.length) return '<div class="hint">Kayıt yok.</div>';
+    const hs=heads.map((h,i)=>`<th${colNum[i]?' class="pob-num"':''}>${esc(h)}</th>`).join("")+"<th></th>";
+    const rs=list.map(rw=>`<tr>`
+      +heads.map((h,i)=>`<td class="gmc${colNum[i]?" pob-num":""}" data-id="${rw.id}" data-i="${i}" title="Düzenlemek için tıkla">${govde(rw,i)}</td>`).join("")
+      +`<td><button class="${silinmis?"gmback":"gmdel"}" data-id="${rw.id}" title="${silinmis?"Geri al":"Çıkar"}">${silinmis?"↩":"✕"}</button></td></tr>`).join("");
+    return `<div class="scroll"><table class="pob pobgm"><thead><tr>${hs}</tr></thead><tbody>${rs}</tbody></table></div>`;
+  };
+  body.innerHTML=`<style>table.pob{width:auto}table.pob th,table.pob td{white-space:nowrap}
+    table.pob.pobgm td.pob-num,table.pob.pobgm th.pob-num{text-align:right}
+    table.pob.pobgm td{vertical-align:top}
+    table.pob.pobgm .pob-sc{overflow-x:auto;overflow-y:hidden;white-space:nowrap;-webkit-overflow-scrolling:touch}
+    table.pob.pobgm .pob-sc::-webkit-scrollbar{height:6px}table.pob.pobgm .pob-sc::-webkit-scrollbar-thumb{background:#c4d0dd;border-radius:3px}
+    td.gmc{cursor:text}td.gmc:hover{background:#fffef2;outline:1px dashed #b7c6d6}
+    .gmbar{display:flex;gap:8px;align-items:center;margin:2px 2px 6px}
+    .gmdel,.gmback{border:0;background:transparent;cursor:pointer;font-size:12px;padding:0 4px}
+    .gmdel{color:#b40000}.gmback{color:#0a6b3f}
+    </style>
+    <div class="gmbar"><button class="btn" id="gm-xls">⬇ Excel'e Aktar</button>
+      <span class="hint" style="margin:0">${aktif.length} kayıt${cik.length?` · ${cik.length} çıkarılmış`:""} · hücreye tıklayarak düzenleyebilir, ✕ ile çıkarabilirsiniz</span></div>
+    <div class="stamp">${esc(meta.son_guncelleme||"")}</div>
+    ${tabloHtml(aktif,false)}
+    ${cik.length?`<h2 class="secH">Çıkarılanlar (${cik.length})</h2>${tabloHtml(cik,true)}`:""}`;
+  /* hücre düzenleme */
+  body.querySelectorAll("td.gmc").forEach(td=>td.onclick=()=>{
+    if(td.querySelector("input")) return;
+    const id=Number(td.dataset.id), i=Number(td.dataset.i);
+    const row=all.find(x=>x.id===id); if(!row) return;
+    const eski=(row.hucreler||[])[i]||"";
+    td.innerHTML=`<input class="cell" value="${esc(eski)}"${colW[i]?` style="width:${colW[i]}px"`:""}>`;
+    const inp=td.querySelector("input"); inp.focus(); inp.select();
+    let bitti=false;
+    const kapat=async(kaydet)=>{
+      if(bitti) return; bitti=true;
+      const yeni=inp.value;
+      if(kaydet && yeni!==eski){
+        const h=(row.hucreler||[]).slice(); while(h.length<heads.length) h.push("");
+        h[i]=yeni;
+        const {error}=await sb.from("pano_ozel").update({hucreler:h}).eq("id",id);
+        if(error) alert("Kaydedilemedi: "+error.message); else row.hucreler=h;
+      }
+      td.innerHTML=govde(row,i);
+    };
+    inp.onblur=()=>kapat(true);
+    inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); kapat(true); }
+                       if(e.key==="Escape"){ e.preventDefault(); kapat(false); } };
+  });
+  /* ✕ çıkar · ↩ geri al */
+  body.querySelectorAll(".gmdel").forEach(b=>b.onclick=async()=>{
+    if(!confirm("Bu satır Çıkarılanlar bloğuna taşınsın mı? (silinmez)")) return;
+    const {error}=await sb.from("pano_ozel").update({cikarildi:true}).eq("id",Number(b.dataset.id));
+    if(error){ alert("Olmadı: "+error.message); return; } loadGmenkul(tgt);
+  });
+  body.querySelectorAll(".gmback").forEach(b=>b.onclick=async()=>{
+    const {error}=await sb.from("pano_ozel").update({cikarildi:false}).eq("id",Number(b.dataset.id));
+    if(error){ alert("Olmadı: "+error.message); return; } loadGmenkul(tgt);
+  });
+  /* Excel'e Aktar — Excel'in açtığı HTML tablo (.xls), Türkçe için BOM'lu UTF-8 */
+  const xb=document.getElementById("gm-xls");
+  if(xb) xb.onclick=()=>{
+    const q=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const tt=(bas,list)=>`<h3>${q(bas)}</h3><table border="1"><tr>${heads.map(h=>`<th>${q(h)}</th>`).join("")}</tr>`
+      +list.map(rw=>`<tr>${heads.map((h,i)=>`<td>${q((rw.hucreler||[])[i]||"")}</td>`).join("")}</tr>`).join("")+`</table>`;
+    const html=`<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body>`
+      +tt("G.menkul",aktif)+(cik.length?"<br>"+tt("Çıkarılanlar",cik):"")+`</body></html>`;
+    const d=new Date(), p=n=>String(n).padStart(2,"0");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob(["﻿"+html],{type:"application/vnd.ms-excel;charset=utf-8"}));
+    a.download="G_menkul_"+p(d.getDate())+p(d.getMonth()+1)+String(d.getFullYear()).slice(2)+".xls";
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+  };
+}
 /* ---------- SEL-ARB — özel render: Firma 15ch / Proje 20ch (nowrap+ellipsis, tam metin title/scroll), tarih sütunları üstünde "Arbor SAS Alacak €" spanning başlık, "Δ ilk→son €", son tarih dolu-alacak satırları görünür + boşlar gizli/toggle, footer daima görünür. Bölüm-RLS aynı (pano_ozel_*). ---------- */
 const SA_FOOT=new Set(["Selectron'a Gönderilen Toplam (€)","Selectron'a Borç (€)","Güncel Alacak Toplam (€)","Selectron'a Ft Edilen Toplam (€)","Arbor SAS Faaliyet Kaybı Toplam (€)","TOPLAM GÜNCEL ALACAK"]);
 const SA_NOTE="Tarih sütunlarındaki tutarlar o tarihteki güncel ALACAK (receivable) tutarlarıdır · Selectron–Arbor SAS mutabakat · form-beslemeli (Yurt Dışı Alacak + OE Faaliyet); aylık güncelleme ile ay başına tek sütun.";
@@ -2324,7 +2430,7 @@ function loadOzel(){
   const bar=tabs.map(t=>`<button class="malitab${t[0]===state.ozelSub?' active':''}" data-o="${esc(t[0])}">${esc(t[1])}</button>`).join("");
   view.innerHTML=`<div class="malibar">${bar}</div><div id="ozel-body"><div class="load">Yükleniyor…</div></div>`;
   view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.ozelSub=btn.dataset.o; loadOzel(); });
-  if(state.ozelSub==="gmenkul"){ loadPanoBolum("gmenkul","ozel-body"); return; }
+  if(state.ozelSub==="gmenkul"){ loadGmenkul("ozel-body"); return; }   /* GMENKUL-DUZENLE */
   if(state.ozelSub==="ozel_sozluk"){ loadSozluk("ozel-body"); return; }
   loadOzelHtml(state.ozelSub,"ozel-body");
 }
