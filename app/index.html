@@ -461,7 +461,6 @@ async function agOzelGun(){
     const items=[]; let m;
     while((m=re.exec(raw))){
       const mo=+m[1], da=+m[2], txt=m[3];
-      if(txt.indexOf("✈")>-1) continue;                 /* seyahat (✈) hariç */
       let dt=new Date(today.getFullYear(),mo-1,da); dt.setHours(0,0,0,0);
       if(dt<today){ dt=new Date(today.getFullYear()+1,mo-1,da); dt.setHours(0,0,0,0); }  /* yıllık-tekrar: sonraki oluşum */
       if(dt.getMonth()!==mo-1) continue;                 /* geçersiz tarih (ör. 29 Şub) elenir */
