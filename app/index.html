@@ -2303,14 +2303,20 @@ async function loadSantiye(tgt){
 }
 
 /* ---------- ÖZEL — grup: 5 hassas pano (pano_ozel_html, iframe srcdoc) + G.menkul (pano_ozel). Bölüm-RLS; anon 401. Parola/ozel4 YOK. ---------- */
-const OZEL_HTML=[["ozel_kitaplar","📚 Kitaplar"],["ozel_felsefe","🧠 Felsefe"],["ozel_phd","🎓 PhD Notes"],["ozel_takvim","🎂 Takvim"],["ozel_vapur","🚢 Vapur"]];
+/* OZEL-SIRA (07.09.2026, Melih): sekmeler soldan sağa Sözlük · G.Menkul · Takvim · Vapur · PhD · Kitap.
+   FELSEFE SEKMESİ YOK — içeriği PhD panosunun ALTINDA ikinci iframe olarak açılır (loadOzelHtml).
+   pano_ozel_html'deki 'ozel_felsefe' satırı DURUYOR, yalnız görünme yeri değişti. */
+const OZEL_HTML=[["ozel_kitaplar","📚 Kitap"],["ozel_phd","🎓 PhD"],["ozel_takvim","🎂 Takvim"],["ozel_vapur","🚢 Vapur"]];
+const OZEL_SIRA=["ozel_sozluk","gmenkul","ozel_takvim","ozel_vapur","ozel_phd","ozel_kitaplar"];
 function loadOzel(){
   const view=document.getElementById("view");
   const isAdmin=state.allowed===null;
   const htmlTabs=OZEL_HTML.filter(t=> isAdmin || state.allowed.includes(t[0]));
   const showG = isAdmin || state.allowed.includes('gmenkul');
   const showS = isAdmin || state.allowed.includes('ozel_sozluk');
-  const tabs=htmlTabs.concat(showG?[["gmenkul","🏢 G.menkul"]]:[]).concat(showS?[["ozel_sozluk","📖 Sözlük"]]:[]);
+  const tabs=htmlTabs.concat(showG?[["gmenkul","🏢 G.Menkul"]]:[]).concat(showS?[["ozel_sozluk","📖 Sözlük"]]:[])
+    .sort((a,b)=>{ const ia=OZEL_SIRA.indexOf(a[0]), ib=OZEL_SIRA.indexOf(b[0]);
+                   return (ia<0?99:ia)-(ib<0?99:ib); });
   if(!tabs.length){ view.innerHTML=`<div class="load">Bu hesapta özel bölüm yetkisi yok.</div>`; return; }
   if(!state.ozelSub || !tabs.some(t=>t[0]===state.ozelSub)) state.ozelSub=tabs[0][0];
   const cur=document.getElementById("ozf");
@@ -2338,6 +2344,18 @@ async function loadOzelHtml(bolum,tgt){
   const _inj="<scr"+"ipt>(function(){var T="+JSON.stringify(_tok)+";if(!T)return;var of=window.fetch;"
     +"window.fetch=function(u,o){o=o||{};try{if(String((u&&u.url)||u).indexOf('supabase.co')>-1){var h=new Headers(o.headers||{});h.set('Authorization','Bearer '+T);o.headers=h;}}catch(e){}return of(u,o);};})();</scr"+"ipt>";
   ifr.srcdoc=_inj+data.html_raw;
+  /* FELSEFE-ALT: Felsefe'nin kendi sekmesi kaldırıldı; içeriği PhD panosunun altında açılır. */
+  if(bolum==="ozel_phd"){
+    const f=await sb.from("pano_ozel_html").select("html_raw").eq("bolum","ozel_felsefe").single();
+    if(!f.error && f.data){
+      const h2=document.createElement("h2"); h2.className="secH"; h2.textContent="Felsefe";
+      const ifr2=document.createElement("iframe");
+      ifr2.id="ozf2"; ifr2.setAttribute("data-b","ozel_felsefe");
+      ifr2.style.cssText=ifr.style.cssText;
+      body.appendChild(h2); body.appendChild(ifr2);
+      ifr2.srcdoc=_inj+f.data.html_raw;
+    }
+  }
 }
 /* PhD Notes: Supabase'ten notları parent'a yükle + kaydetme köprüsü (iframe içindeki script parent.__PHD_NOTES / parent.__phdSave kullanır). Kaynak Supabase, düzenlenebilir. */
 async function phdPrepare(){
