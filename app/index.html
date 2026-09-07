@@ -390,7 +390,9 @@ async function loadGundem(){
     .ag-wrap .scroll{max-height:none;overflow-y:visible;overflow-x:auto;border:0;background:transparent;border-radius:0;margin:0 0 12px}
     .gblk button.fmail{display:none}
     .ged{cursor:text}.ged:hover{background:#eef5ff;box-shadow:inset 0 0 0 1px #cfe0f1}.saveflash{background:#e6f6ea!important;transition:background .3s}
-    .gnb td .cell,.gblk td .cell{width:100%;box-sizing:border-box;font:inherit;padding:2px 5px;border:1px solid #2e6da4;border-radius:5px}</style>
+    .gnb td .cell,.gblk td .cell{width:100%;box-sizing:border-box;font:inherit;padding:2px 5px;border:1px solid #2e6da4;border-radius:5px}
+    .agog-wrap{margin:0 0 12px}.agog-h{font-size:13px;font-weight:700;color:#1b5e20;margin:0 0 6px}.agog-sub{font-weight:400;color:#8a978c;font-size:11px}.agog-t{border-collapse:collapse;width:100%;font-size:12.5px;background:#f1f8f2;border:1px solid #cfe6d2;border-radius:8px;overflow:hidden}.agog-t td{padding:5px 9px;border-bottom:1px solid #e0efe2;vertical-align:top}.agog-t tr:last-child td{border-bottom:0}.agog-d{white-space:nowrap;font-weight:600;color:#123;width:1%}.agog-x{color:#15241a}.agog-k{white-space:nowrap;text-align:right;color:#2e7d32;font-variant-numeric:tabular-nums;width:1%}.agog-none{font-size:12px;color:#8a978c;padding:6px 2px}</style>
+    <div id="ag-ozelgun" class="agog-wrap"></div>
     <div class="addbar">
       <select id="ag-ilgili" title="İlgili">${ilgSel}</select>
       <input id="ag-kod" placeholder="Kod" style="display:none;max-width:120px">
@@ -414,6 +416,7 @@ async function loadGundem(){
     ${argeBlock(groups['ARGE'])}
     </div>`;
   view.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
+  agOzelGun();
   /* Elle girilen sütunlar (Kod, Konu) inline düzenlenebilir; ERP-türevi sütunlar salt-okur. */
   view.querySelectorAll(".ged").forEach(el=>el.onclick=()=>startEdit(el));
   const selEl=document.getElementById("ag-ilgili"), kodInp=document.getElementById("ag-kod");
@@ -438,6 +441,40 @@ async function loadGundem(){
     document.getElementById("ag-secadd").onclick=()=>secAdd(document.getElementById("ag-secnew"));
     document.getElementById("ag-secnew").onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); secAdd(e.target); } };
   })();
+}
+/* AG-OZELGUN: Ana Gündem'in EN ÜSTÜNDE, Takvim (pano_ozel_html/ozel_takvim) özel günlerinden
+   bugünden itibaren <=30 gün içindekileri tarihe göre (yakın→uzak) listeler. Kaynak SALT-OKUNUR;
+   Takvim panosuna dokunulmaz. Seyahat (✈) kayıtları HARİÇ (özel gün ≠ seyahat). Yıllık-tekrarlı
+   günler (doğum günü/yıldönümü/sene-i devriye) bugünden sonraki İLK oluşuma göre alınır. Pencere
+   her render'da (300sn tazeleme dahil) bugüne göre yeniden hesaplanır. Yetki yok/okunamazsa gizlenir. */
+async function agOzelGun(){
+  const box=document.getElementById("ag-ozelgun"); if(!box) return;
+  try{
+    const {data,error}=await sb.from("pano_ozel_html").select("html_raw").eq("bolum","ozel_takvim").single();
+    if(error||!data||!data.html_raw){ box.remove(); return; }
+    const raw=data.html_raw;
+    const MN=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+    const WD=["Paz","Pzt","Sal","Çar","Per","Cum","Cts"];
+    const today=new Date(); today.setHours(0,0,0,0);
+    const end=new Date(today); end.setDate(end.getDate()+30);
+    const re=/add\(\s*(\d{1,2})\s*,\s*(\d{1,2})\s*,\s*"([^"]*)"\s*\)/g;
+    const items=[]; let m;
+    while((m=re.exec(raw))){
+      const mo=+m[1], da=+m[2], txt=m[3];
+      if(txt.indexOf("✈")>-1) continue;                 /* seyahat (✈) hariç */
+      let dt=new Date(today.getFullYear(),mo-1,da); dt.setHours(0,0,0,0);
+      if(dt<today){ dt=new Date(today.getFullYear()+1,mo-1,da); dt.setHours(0,0,0,0); }  /* yıllık-tekrar: sonraki oluşum */
+      if(dt.getMonth()!==mo-1) continue;                 /* geçersiz tarih (ör. 29 Şub) elenir */
+      if(dt>=today && dt<=end) items.push({dt:dt,txt:txt});
+    }
+    if(!items.length){ box.className=""; box.innerHTML='<div class="agog-none">🎂 Önümüzdeki 30 günde özel gün yok.</div>'; return; }
+    items.sort((a,b)=>a.dt-b.dt);
+    const kalan=dt=>{ const g=Math.round((dt-today)/86400000); return g===0?"bugün":(g===1?"yarın":g+" gün"); };
+    const rows=items.map(it=>{ const d=it.dt, ds=d.getDate()+" "+MN[d.getMonth()]+" "+WD[d.getDay()];
+      return '<tr><td class="agog-d">'+esc(ds)+'</td><td class="agog-x">'+esc(it.txt)+'</td><td class="agog-k">'+esc(kalan(d))+'</td></tr>'; }).join("");
+    box.innerHTML='<div class="agog-h">🎂 Yaklaşan Özel Günler <span class="agog-sub">· 30 gün · Takvim</span></div>'
+      +'<table class="agog-t"><tbody>'+rows+'</tbody></table>';
+  }catch(e){ box.remove(); }
 }
 async function addGundem(){
   const ei=document.getElementById("ag-ilgili"), ek=document.getElementById("ag-konu"), ekod=document.getElementById("ag-kod");
