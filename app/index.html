@@ -378,7 +378,12 @@ async function loadGundem(){
   const secBase=(secOpts&&secOpts.length)?secOpts:["MB","EA","OE","CTP","EU"];
   const persons=[...new Set(secBase.concat(keys.filter(k=>k!=='ARGE')))];
   const ilgSel=persons.map(k=>`<option value="${esc(k)}"${k==='MB'?' selected':''}>${esc(k)}</option>`).join("")+`<option value="PEM">PEM (takip)</option><option value="PRJ">PRJ (takip)</option><option value="__new__">Diğer…</option>`;
-  const restKeys=keys.filter(k=>k!=='MB'&&k!=='ARGE');
+  /* AG-UST-BLOK: MB'nin hemen altında BAHÇE bloğu (07.09.2026, Melih). Anahtar veriden gelir,
+     yazım/karakter farkı olmasın diye normalize edilerek aranır; yoksa sıra eskisi gibi kalır. */
+  const agNorm=s=>String(s||"").toLocaleUpperCase("tr").replace(/Ç/g,"C").trim();
+  const bahKey=keys.find(k=>agNorm(k)==="BAHCE");
+  const ustKeys=['MB'].concat(bahKey?[bahKey]:[]);
+  const restKeys=keys.filter(k=>k!=='MB'&&k!=='ARGE'&&k!==bahKey);
   view.innerHTML=`
     <style>.gblk table{font-size:11.5px}.gblk th,.gblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.gblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.gblk .c>span::-webkit-scrollbar{display:none}.c3>span{max-width:3ch}.c5>span{max-width:5ch}.c8>span{max-width:8ch}.c10>span{max-width:10ch}.c12>span{max-width:12ch}.c15>span{max-width:15ch}.c20>span{max-width:20ch}.c25>span{max-width:25ch}.cdur>span{max-width:13ch}.ckon>span{max-width:32.5ch}
     .a3>span{max-width:3ch}.a5>span{max-width:5ch}.a10>span{max-width:10ch}.a100>span{max-width:100ch}
@@ -402,7 +407,7 @@ async function loadGundem(){
       </div>
     </div>
     <div class="ag-wrap">
-    ${grpTable(['MB'])}
+    ${grpTable(ustKeys)}
     ${pemPrjBlock(pemRows,'pem')}
     ${pemPrjBlock(prjRows,'prj')}
     ${grpTable(restKeys)}
