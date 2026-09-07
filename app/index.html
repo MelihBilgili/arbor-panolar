@@ -904,6 +904,8 @@ async function loadAup(){
     #view table.aupmain td.c>span{width:100%}
     /* MVT · AÜP · PST sütunları ortalanır (07.09.2026, Melih). */
     #view table.aupmain td.ctr,#view table.aupmain thead th.ctr{text-align:center}
+    /* PST-AÜP başlığı iki satıra sarılır (fixed düzende nowrap olsaydı kırpılırdı). */
+    #view table.aupmain thead th.pstd{white-space:normal;line-height:11px}
     </style>
     <div class="scroll aupwrap"><table class="aup aupmain">
     <colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
@@ -2395,6 +2397,7 @@ sb.auth.onAuthStateChange((_ev,s)=>{ if(!s){ state.session=null; renderLogin(); 
 boot();
 setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadView(); }, 300000);
 </script>
+
 
 
 
