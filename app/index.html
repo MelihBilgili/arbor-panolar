@@ -758,7 +758,11 @@ async function loadHazir(){
   const [{data,error},erpRes,ozRes,dgRes,adRes,oeRes]=await Promise.all([
     sb.from("hazir_pem_prj").select("*"),
     sb.from("hazir_erp").select("tur,kalem_key,erp"),
-    sb.from("sevk_durumu_onur").select("tur,kalem_key,degisim_ozet"),
+    /* SEVK-CANLI-OZET (07.09.2026): "Sevk Durum Değişimi" artık AYLIK GÜNCELLE düğmesine
+       basılmasını beklemez. onceki<>guncel olan satırda CANLI özet (canli_ozet) gösterilir;
+       satır düğmeden bu yana değişmemişse son düğme özeti (degisim_ozet). Bayat satır varsa
+       aşağıda sevk-degisim-ozet fonksiyonu mod:"canli" ile bir kez çağrılıp pano tazelenir. */
+    sb.from("sevk_durumu_onur").select("tur,kalem_key,degisim_ozet,canli_ozet,canli_kaynak,onceki,guncel"),
     sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1),
     sb.from("pano_adet_ozet").select("damga,pem_adet,prj_adet").limit(2),
     /* HAZIR-IKI-DAMGA: sevk durumu damgası = OE formundaki AYLIK GÜNCELLE düğmesine son basılma
@@ -768,7 +772,15 @@ async function loadHazir(){
   ]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const erpMap={}; (erpRes.data||[]).forEach(r=>{ erpMap[String(r.tur).toUpperCase()+"|"+r.kalem_key]=r.erp||{}; });
-  const ozMap={}; (ozRes.data||[]).forEach(r=>{ ozMap[String(r.tur).toUpperCase()+"|"+r.kalem_key]=r.degisim_ozet||""; });
+  const trm=v=>String(v==null?"":v).trim();
+  const sevkSig=r=>trm(r.onceki)+" >>> "+trm(r.guncel);   /* edge fn ile birebir aynı imza */
+  const ozMap={}; let sevkBayat=0;
+  (ozRes.data||[]).forEach(r=>{
+    const k=String(r.tur).toUpperCase()+"|"+r.kalem_key;
+    const degisti = trm(r.onceki) && trm(r.onceki)!==trm(r.guncel);
+    ozMap[k] = !trm(r.onceki) ? "" : (degisti ? (r.canli_ozet||"") : (r.degisim_ozet||r.canli_ozet||""));
+    if(trm(r.guncel) && trm(r.onceki) && trm(r.canli_kaynak)!==sevkSig(r) && !(!degisti && trm(r.degisim_ozet))) sevkBayat++;
+  });
   /* Filtre (her ingest sonrası otomatik geçerli):
      1) Termin tarihi (PEM) / AÜP tarihi (PRJ) BOŞ olan kalemler gösterilmez.
      2) Bu tarih, panonun güncelleme tarihinden (son ERP damgası) geriye doğru 10 gün içindeyse gösterilmez. */
@@ -827,6 +839,20 @@ async function loadHazir(){
     <style>.hblk table{font-size:11.5px}.hblk th,.hblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.hblk thead th{vertical-align:bottom}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{width:3ch}.h5>span{width:5ch}.h8>span{width:8ch}.h15>span{width:15ch}.h20>span{width:68ch}.h25>span{width:25ch}.hdt>span{width:12.45ch}</style>
     ${block("pem")}
     ${block("prj")}`;
+  /* Bayat satır varsa canlı özetleri bir kez üret, sonra panoyu tazele (idempotent: fonksiyon
+     yalnız imzası değişmiş satırlar için LLM çağırır, hepsi güncelse hiç çağırmaz). */
+  if(sevkBayat && !window.__sevkCanliCalisti){
+    window.__sevkCanliCalisti=true;
+    const s=document.createElement("span");
+    s.style.cssText="color:#8a6100;font-weight:600;margin-left:8px";
+    s.textContent="· sevk değişim özetleri üretiliyor…";
+    const stEl=view.querySelector(".stamp"); if(stEl) stEl.appendChild(s);
+    try{
+      const {data,error}=await sb.functions.invoke("sevk-degisim-ozet",{body:{mod:"canli"}});
+      if(error||(data&&data.ok===false)) s.textContent="· özet üretilemedi";
+      else { if(document.querySelector('.tabs button[data-t="hazir"].active')) return loadHazir(); }
+    }catch(e){ s.textContent="· özet üretilemedi"; }
+  }
 }
 
 /* ---------- AÜP (salt-okur) ---------- */
@@ -848,9 +874,9 @@ async function loadAup(){
       <td class="c a30"><span title="${esc(pad)}">${esc(pad)}</span></td>
       <td class="c a10"><span title="${esc(dur)}">${esc(dk(r.proje_durumu))}</span></td>
       <td class="num">${esc(r.adet)}</td>
-      <td class="num">${fdate(r.mvt)}</td>
-      <td class="num">${fdate(r.aup)}</td>
-      <td class="num">${fdate(r.gyt)}</td>
+      <td class="num ctr">${fdate(r.mvt)}</td>
+      <td class="num ctr">${fdate(r.aup)}</td>
+      <td class="num ctr">${fdate(r.gyt)}</td>
       <td class="num pstd ${ga<0?'red':''}">${ga==null?'':ga}</td>
       <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
       <td class="num">${money(r.anlasma_fiyati)}</td>
@@ -869,24 +895,32 @@ async function loadAup(){
     #view table.aupmain td.c>span{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
     #view table.aupmain td.c>span::-webkit-scrollbar{display:none}
     #view table.aupmain td.ss,#view table.aupmain td.ur{white-space:nowrap;vertical-align:middle}
-    /* Sütun genişliği span'ın ch genişliğiyle belirlenir (tablonun içeriğe göre şişmemesi için),
-       ama span hücre daha genişse hücrenin TAMAMINI kullanır (min-width:100%) — aksi halde
-       son iki sütunda sağda kullanılmayan boşluk kalıyordu. */
-    #view table.aupmain td.c>span{min-width:100%}
-    #view table.aupmain td.a6>span{width:6ch}
-    #view table.aupmain td.a30>span{width:30ch}
-    #view table.aupmain td.a10>span{width:10ch}
-    #view table.aupmain td.ss>span{width:40ch}
-    #view table.aupmain td.ur>span{width:67.5ch}
-    /* Tablo ekranın tamamını kullanır; artan genişlik iki not sütununa dağılır
-       (sabit ch genişlikleri artık ALT sınır). */
-    #view .aupwrap{width:100%}
-    #view table.aupmain{width:100%}
+    /* AUP-COLFIX (07.09.2026): sütun genişlikleri artık span'ın ch genişliğinden DEĞİL, colgroup'tan
+       gelir. Sebep: span'a ch genişliği verilse bile Chrome hücrenin max-content'ini metnin tam
+       genişliğinden hesaplıyor ve tablo, kapsayıcı genişliğine kadar orantılı yayılıyordu — bu
+       yüzden DURUM ile Ad arasında kullanılmayan boşluk kalıyordu. table-layout:fixed + width:1px
+       (bkz. CLAUDE.md "Sabit sütunlu tablolarda kural") ile tablo tam colgroup toplamı kadar olur. */
+    #view table.aupmain{table-layout:fixed;width:1px}
+    #view table.aupmain td.c>span{width:100%}
+    /* MVT · AÜP · PST sütunları ortalanır (07.09.2026, Melih). */
+    #view table.aupmain td.ctr,#view table.aupmain thead th.ctr{text-align:center}
     </style>
     <div class="scroll aupwrap"><table class="aup aupmain">
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th>MVT</th><th>AÜP</th><th>PST</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">PST</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
+  aupFit();
 }
+/* AUP-COLW: NO · PROJE ADI · DURUM · Ad · MVT · AÜP · PST · PST-AÜP · Kayma · TUTAR € · Satış-Şantiye · Üretim
+   (12px gövde yazısında 1ch ≈ 6,47px + 12px hücre dolgusu). PROJE ADI / Satış-Şantiye / Üretim
+   07.09.2026'da %12 daraltıldı (30→26,4ch · 40→35,2ch · 67,5→59,4ch), DURUM 10→7,5ch. */
+const AUP_COLW=[51,183,61,34,64,64,64,32,44,57,240,396];
+/* AUP-FIT: tablo kutusu pencerenin altına kadar uzar — sabit 82vh sınırı altta boş bant bırakıyordu. */
+function aupFit(){
+  const w=document.querySelector("#view .aupwrap"); if(!w) return;
+  w.style.maxHeight=Math.max(240,Math.round(window.innerHeight-w.getBoundingClientRect().top-10))+"px";
+}
+window.addEventListener("resize",()=>{ if(document.querySelector("#view .aupwrap")) aupFit(); });
 
 
 /* ---------- BILANÇO (bilanco_ozet view + gider detay) ---------- */
