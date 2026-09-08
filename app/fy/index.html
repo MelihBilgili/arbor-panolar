@@ -277,7 +277,10 @@ async function loadTakip(){
 function tkSum(){ const net=TROWS.reduce((a,r)=>a+(Number(r.net_ht_eur)||0),0); document.getElementById("tkSum").innerHTML="<b>"+TROWS.length+"</b> teklif · Net HT "+money(net)+" €"; }
 function cls(c){ return (c.grp?" "+c.grp:"")+(c.gs?" gs":""); }
 function dispVal(r,c){ const v=r[c.f]; if(v==null) return ""; if(c.t==='datetext') return fmtDate(v); if(c.t==='num') return money(v); return v; }
+/* Takipteki liste sıralaması: Teklif Tarihi (ISO) EN YENİ ÜSTTE; boş tarih en altta. */
+function sortTROWS(){ TROWS.sort((a,b)=>{ const da=a.teklif_tarihi||"", db=b.teklif_tarihi||""; if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1; return String(db).localeCompare(String(da)); }); }
 function renderTakip(){
+  sortTROWS();
   let h='<table style="min-width:1560px"><thead><tr>'+TCOLS.map(c=>'<th class="'+cls(c).trim()+'">'+c.h+'</th>').join('')+'<th></th><th></th></tr></thead><tbody>';
   TROWS.forEach((r,i)=>{
     h+='<tr data-i="'+i+'">'+TCOLS.map(c=>{
@@ -347,6 +350,7 @@ async function saveTk(i,f,val,el){
   r[f]=v;
   if(el){ const c=TCOLS.find(x=>x.f===f); if(c){ if(c.t==='num') el.value=(v==null?"":money(v)); else if(c.t==='datetext') el.value=fmtDate(v); } if(c&&c.req) el.classList.toggle("bad",!String(el.value||"").trim()); }
   m.className="msg ok"; m.textContent="Kaydedildi"; setTimeout(()=>{m.textContent="";},1200); if(f==='net_ht_eur') tkSum();
+  if(f==='teklif_tarihi') renderTakip();
 }
 async function addTk(){
   const {data,error}=await sb.from("satis_takip").insert([{proje:"Yeni teklif",ulke:"Fransa",durum:"Belirsiz",aktif:true}]).select();
