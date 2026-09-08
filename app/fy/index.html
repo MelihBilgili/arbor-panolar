@@ -35,6 +35,8 @@
   textarea.cell{min-height:34px;resize:vertical}
   .cell.bad{border-color:#d9534f;background:#fff4f4}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
+  .toM{background:#e3edf7;color:#16324f;border:1px solid #b9cde2;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .toM:hover{background:#d3e2f2}
   .colp{width:1%;white-space:nowrap}
   /* iliskili sutun ciftleri (Son Takip T. + Notlari) ortak zemin + sol sinir ile gruplanir */
   td.pairA{background:#eaf5ee}
@@ -276,23 +278,47 @@ function tkSum(){ const net=TROWS.reduce((a,r)=>a+(Number(r.net_ht_eur)||0),0); 
 function cls(c){ return (c.grp?" "+c.grp:"")+(c.gs?" gs":""); }
 function dispVal(r,c){ const v=r[c.f]; if(v==null) return ""; if(c.t==='datetext') return fmtDate(v); if(c.t==='num') return money(v); return v; }
 function renderTakip(){
-  let h='<table style="min-width:1560px"><thead><tr>'+TCOLS.map(c=>'<th class="'+cls(c).trim()+'">'+c.h+'</th>').join('')+'<th></th></tr></thead><tbody>';
+  let h='<table style="min-width:1560px"><thead><tr>'+TCOLS.map(c=>'<th class="'+cls(c).trim()+'">'+c.h+'</th>').join('')+'<th></th><th></th></tr></thead><tbody>';
   TROWS.forEach((r,i)=>{
     h+='<tr data-i="'+i+'">'+TCOLS.map(c=>{
       const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
       if(c.t==='area') return '<td class="'+cls(c).trim()+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
       if(c.t==='sel'){ const opts=c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); return '<td class="'+cls(c).trim()+'"><select class="cell'+req+empty+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
       return '<td class="'+(cls(c)+(c.t==='num'?' net':'')).trim()+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
-    }).join('')+'<td class="colp"><button class="del" title="Satırı sil">✕</button></td></tr>';
+    }).join('')+'<td class="colp"><button class="toM" title="Muhtemel bloğuna taşı">→ Muhtemel</button></td><td class="colp"><button class="del" title="Satırı sil">✕</button></td></tr>';
   });
   h+='</tbody></table>';
   const list=document.getElementById("tkList"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{ const i=+el.closest("tr").dataset.i, f=el.dataset.f;
     el.addEventListener("change",()=>saveTk(i,f,el.value,el)); });
   list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delTk(+b.closest("tr").dataset.i));
+  list.querySelectorAll(".toM").forEach(b=>b.onclick=()=>toMuhtemel(+b.closest("tr").dataset.i));
   tkSum();
 }
 const parseIsk=s=>{ if(s==null) return null; const m=String(s).match(/\d+(?:[.,]\d+)?/); return m? parseFloat(m[0].replace(",",".")): null; };
+/* Takipteki teklif satırını Muhtemel/Alınan bloğuna (satis_yorum*) "Muhtemel" olarak taşır.
+   transferRow deseniyle aynı: diğer tabloya insert + takipten sil. Yeni kolon/DDL yok. */
+async function toMuhtemel(i){
+  const r=TROWS[i], m=document.getElementById("tkMsg");
+  const MUHT_TBL  = KAYNAK_KEY==="FY2" ? "satis_yorum_2" : "satis_yorum";
+  const MUHT_GRUP = KAYNAK_KEY==="FY2" ? "Yurt Dışı 2"   : "Yurtdışı";
+  const TAKIP_TBL = KAYNAK_KEY==="FY2" ? "satis_takip_2" : "satis_takip";
+  if(!confirm("Bu teklif Takipteki Teklifler'den çıkıp Muhtemel bloğuna taşınacak.\n\nOnaylıyor musunuz?")){ return; }
+  const notlar=[r.durum,r.takip_sekli,r.yurtdisi_notlari].map(x=>String(x==null?"":x).trim()).filter(Boolean).join(" · ");
+  const rec={ grup:MUHT_GRUP, kaynak:KAYNAK_KEY, statu:"Muhtemel",
+    proje:(r.proje||"").trim()||"(isimsiz)", musteri:(r.musteri||"").trim(),
+    iskonto:parseIsk(r.isk), net_eur:(r.net_ht_eur==null||r.net_ht_eur===""?null:Number(r.net_ht_eur)),
+    durum:notlar||"Takipten taşındı", ulke:(r.ulke||"").trim()||"FR",
+    cekim:(AKTIF_CEKIM||new Date().toISOString().slice(0,10)), aktif:true };
+  m.className="msg"; m.textContent="Taşınıyor…";
+  const {error:e1}=await sb.from(MUHT_TBL).insert([rec]);
+  if(e1){ m.className="msg err"; m.textContent="Muhtemel'e eklenemedi: "+e1.message; return; }
+  const {error:e2}=await sb.from(TAKIP_TBL).delete().eq("id",r.id);
+  if(e2){ m.className="msg err"; m.textContent="Muhtemel'e eklendi ama takipten silinemedi: "+e2.message; return; }
+  TROWS.splice(i,1); renderTakip();
+  try{ if(typeof load==="function") await load(); }catch(e){}
+  m.className="msg ok"; m.textContent="→ Muhtemel bloğuna taşındı ✓"; setTimeout(()=>{m.textContent="";},2500);
+}
 async function transferRow(i,durum){
   const r=TROWS[i], m=document.getElementById("tkMsg");
   if(!confirm("'"+durum+"' seçtiniz.\nBu teklif Takipteki Teklifler listesinden çıkıp yıllık sonuç kayıtlarına taşınacak (geri almak için sonuç kaydını silmeniz gerekir).\n\nOnaylıyor musunuz?")){ renderTakip(); return; }
@@ -370,6 +396,9 @@ function setupAyIsaret(KAYNAK,SNAP){
 }
 load(); loadTakip();
 </script>
+
+
+
 
 
 
