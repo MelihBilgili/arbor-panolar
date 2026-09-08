@@ -2525,10 +2525,7 @@ async function phdPrepare(){
 async function loadSozluk(tgt){
   const body=document.getElementById(tgt);
   const {data,error}=await sb.from("sozluk").select("*").order("kelime",{ascending:true});
-  if(error){ body.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
-  const rows=data||[];
-  if(!rows.length){ body.innerHTML=`<div class="load">Henüz sözlük girişi yok — <b>vocabulary</b> projesi ekledikçe otomatik dolacak.</div>`; return; }
-  const st=await tblStamp("sozluk");
+  const rows=(!error&&data)?data:[];
   let h=`<style>
     .szt{border-collapse:collapse;width:100%;font-size:13px}
     .szt th{background:#16324f;color:#fff;font-weight:600;padding:5px 8px;text-align:left}
@@ -2538,13 +2535,45 @@ async function loadSozluk(tgt){
     .szdel{border:0;background:none;cursor:pointer;color:#b9c2cc;font-size:14px;line-height:1;padding:2px 4px;border-radius:4px}
     .szdel:hover{color:#c0392b;background:#fdecea}
     .szdel[disabled]{opacity:.4;cursor:default}
+    .szadd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 10px}
+    .szadd input{flex:0 0 260px;max-width:60%;padding:6px 9px;border:1px solid #cfd8e3;border-radius:6px;font-size:13px}
+    .szadd button{padding:6px 14px;border:0;border-radius:6px;background:#16324f;color:#fff;font-size:13px;cursor:pointer}
+    .szadd button[disabled]{opacity:.5;cursor:default}
+    .szmsg{font-size:12px;color:#6b7683}
+    .szmsg.err{color:#c0392b}
+    .szmsg.ok{color:#1a7a3d}
   </style>`;
-  h+=stampHTML(st);
-  h+=`<div class="hint">Otomatik büyüyen sözlük — kaynak Supabase <code>sozluk</code>; <b>vocabulary</b> projesi girişleri ekledikçe büyür. ${rows.length} kelime.</div>`;
-  h+='<div class="scroll"><table class="szt"><thead><tr><th>Kelime</th><th>Anlam</th><th class="szxh"></th></tr></thead><tbody>';
-  rows.forEach(r=>{ h+='<tr><td class="szk">'+esc(r.kelime)+'</td><td>'+esc(r.anlam||"")+'</td><td class="szx"><button class="szdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(r.kelime)+'">✕</button></td></tr>'; });
-  h+='</tbody></table></div>';
+  /* SOZLUK-EKLE: en üstte kalıcı giriş kutusu. Türkçe-dışı bir kelime yazılınca kendi dilinde
+     tanımıyla anında eklenir (sozluk-ekle edge function; ANTHROPIC anahtarı sunucuda kalır,
+     client'a konmaz). Anon yazma (RLS 401) yolu değişmez; bu yalnız ek bir giriş yolu. */
+  h+='<div class="szadd"><input id="sz-inp" type="text" placeholder="Kelime ekle (İngilizce, Fransızca…)" maxlength="80" autocomplete="off"><button id="sz-add" type="button">Ekle</button><span id="sz-msg" class="szmsg"></span></div>';
+  if(error){ h+=`<div class="load">Hata: ${esc(error.message)}</div>`; }
+  else if(!rows.length){ h+=`<div class="load">Henüz sözlük girişi yok.</div>`; }
+  else {
+    h+='<div class="scroll"><table class="szt"><thead><tr><th>Kelime</th><th>Anlam</th><th class="szxh"></th></tr></thead><tbody>';
+    rows.forEach(r=>{ h+='<tr><td class="szk">'+esc(r.kelime)+'</td><td>'+esc(r.anlam||"")+'</td><td class="szx"><button class="szdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(r.kelime)+'">✕</button></td></tr>'; });
+    h+='</tbody></table></div>';
+  }
   body.innerHTML=h;
+  /* Kelime ekleme: edge function kelimenin dilini tespit eder, o dilde kısa tanım üretir ve
+     id="v-"+slug ile idempotent ekler; başarıda liste tazelenir (zaten varsa çakışmaz). */
+  const inp=document.getElementById("sz-inp"), addb=document.getElementById("sz-add"), msg=document.getElementById("sz-msg");
+  async function szEkle(){
+    const kelime=(inp.value||"").trim();
+    if(!kelime){ msg.className="szmsg err"; msg.textContent="Önce bir kelime yazın."; inp.focus(); return; }
+    addb.disabled=true; inp.disabled=true; msg.className="szmsg"; msg.textContent="Ekleniyor…";
+    try{
+      const {data:d,error:e}=await sb.functions.invoke("sozluk-ekle",{body:{kelime}});
+      if(e||!(d&&d.ok)){ msg.className="szmsg err"; msg.textContent="Hata: "+((e&&e.message)||(d&&d.error)||"bilinmiyor"); addb.disabled=false; inp.disabled=false; return; }
+      inp.value="";
+      await loadSozluk(tgt);
+      const m2=document.getElementById("sz-msg");
+      if(m2){ m2.className="szmsg ok"; m2.textContent=(d.existed?"Zaten vardı: ":"Eklendi: ")+d.kelime+(d.dil?" ("+d.dil+")":""); }
+      const i2=document.getElementById("sz-inp"); if(i2) i2.focus();
+    }catch(ex){ msg.className="szmsg err"; msg.textContent="Hata: "+ex; addb.disabled=false; inp.disabled=false; }
+  }
+  if(addb) addb.onclick=szEkle;
+  if(inp) inp.onkeydown=ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); szEkle(); } };
   /* Satır silme: tablodan kalıcı siler. Delta dosyaları sync sonrası arşive taşındığı için geri gelmez. */
   body.querySelectorAll(".szdel").forEach(b=>{
     b.onclick=async()=>{
