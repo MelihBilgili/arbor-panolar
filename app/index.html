@@ -969,9 +969,10 @@ window.addEventListener("resize",()=>{ if(document.querySelector("#view .aupwrap
 /* ---------- BILANÇO (bilanco_ozet view + gider detay) ---------- */
 async function loadBilanco(tgt){
   const view=document.getElementById(tgt||"view");
-  const [{data,error},g7]=await Promise.all([
+  const [{data,error},g7,gd]=await Promise.all([
     sb.from("bilanco_ozet").select("*"),
-    sb.from("gider_710_kalem").select("*").order("sira_no",{ascending:true})
+    sb.from("gider_710_kalem").select("*").order("sira_no",{ascending:true}),
+    sb.from("bilanco_gider_detay").select("yil,ust,ad,tutar_tl").eq("ust","girdi")
   ]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const rowsD=(data||[]).slice().sort((a,b)=>b.yil-a.yil);
@@ -988,12 +989,18 @@ async function loadBilanco(tgt){
   /* 710 CAM AYRI SÜTUN (09.09.2026, Melih): "710 Cam" = listedeki CAM (2.1) + CAM TAKOZU (2.2)
      kalem satırlarının toplamı; "710 Diğer Mlz" artık k710_tl − Ahşap − Cam. Eşleşme cinsi'nin
      TAM adıyla yapılır — "CAM ÇITASI" (2.12) BİLEREK DIŞARIDA, o Diğer'de kalır.
-     2025 ve sonrası canlı listeden; 2024 ve öncesi liste olmadığı için Cam "—", o yılların
-     Diğer'i eskisi gibi (k710_tl − Ahşap) kalır. */
+     2025 ve sonrası canlı listeden gelir.
+     2022–2024'te 710 kalem listesi YOK; o yılların kaynağı `bilanco_gider_detay` tablosundaki
+     `ust='girdi'` kırılımıdır (Ahşap · Cam · Alu · Aksesuar · Diğer Girdi — beşinin toplamı
+     `k710_tl` ile BİREBİR tutar, doğrulandı) → Cam = "Cam Girdi" satırı (`GIRDI-CAM`).
+     2021 ve öncesinde gider verisi hiç olmadığı için Cam "—" kalır. */
   const CAM_AD=["CAM","CAM TAKOZU"];
   const camYil={};
   g7all.forEach(r=>{ if(!r.grup && CAM_AD.includes(String(r.cinsi||"").trim().toLocaleUpperCase("tr-TR"))){ const y=parseInt(String(r.donem).slice(0,4),10); if(y) camYil[y]=(camYil[y]||0)+(Number(r.alinan_tutar)||0); } });
-  const camOf=r=>(r.k710_cam_tl!=null?Number(r.k710_cam_tl):(camYil[r.yil]!=null?camYil[r.yil]:null));
+  /* GIRDI-CAM: 2022–2024 cam kaynağı. */
+  const camGirdi={};
+  ((gd&&!gd.error)?(gd.data||[]):[]).forEach(r=>{ if(String(r.ad||"").trim().toLocaleLowerCase("tr-TR")==="cam girdi" && r.yil!=null) camGirdi[r.yil]=(camGirdi[r.yil]||0)+(Number(r.tutar_tl)||0); });
+  const camOf=r=>(r.k710_cam_tl!=null?Number(r.k710_cam_tl):(camYil[r.yil]!=null?camYil[r.yil]:(camGirdi[r.yil]!=null?camGirdi[r.yil]:null)));
   let rows="";
   rowsD.forEach(r=>{
     const k=r.kar_tl, hasK=k!=null;
