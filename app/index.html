@@ -985,6 +985,15 @@ async function loadBilanco(tgt){
   const ahsapYil={};
   g7all.forEach(r=>{ if(r.grup && String(r.sira||"").trim()==="1"){ const y=parseInt(String(r.donem).slice(0,4),10); if(y) ahsapYil[y]=Number(r.alinan_tutar)||0; } });
   const ahsapOf=r=>(r.k710_ahsap_tl!=null?Number(r.k710_ahsap_tl):(ahsapYil[r.yil]!=null?ahsapYil[r.yil]:null));
+  /* 710 CAM AYRI SÜTUN (09.09.2026, Melih): "710 Cam" = listedeki CAM (2.1) + CAM TAKOZU (2.2)
+     kalem satırlarının toplamı; "710 Diğer Mlz" artık k710_tl − Ahşap − Cam. Eşleşme cinsi'nin
+     TAM adıyla yapılır — "CAM ÇITASI" (2.12) BİLEREK DIŞARIDA, o Diğer'de kalır.
+     2025 ve sonrası canlı listeden; 2024 ve öncesi liste olmadığı için Cam "—", o yılların
+     Diğer'i eskisi gibi (k710_tl − Ahşap) kalır. */
+  const CAM_AD=["CAM","CAM TAKOZU"];
+  const camYil={};
+  g7all.forEach(r=>{ if(!r.grup && CAM_AD.includes(String(r.cinsi||"").trim().toLocaleUpperCase("tr-TR"))){ const y=parseInt(String(r.donem).slice(0,4),10); if(y) camYil[y]=(camYil[y]||0)+(Number(r.alinan_tutar)||0); } });
+  const camOf=r=>(r.k710_cam_tl!=null?Number(r.k710_cam_tl):(camYil[r.yil]!=null?camYil[r.yil]:null));
   let rows="";
   rowsD.forEach(r=>{
     const k=r.kar_tl, hasK=k!=null;
@@ -994,8 +1003,9 @@ async function loadBilanco(tgt){
     /* Pay sütunları NET SATIŞ'a orandır (toplam gidere değil — 27.08.2026, Melih). */
     const tg=r.net_tl;
     const p=v=>(v==null||tg==null||Number(tg)===0)?'<td class="num" style="color:#c2ccd6">—</td>':`<td class="num" style="color:#6a7888">%${Math.round(v/tg*100)}</td>`;
-    const ah=ahsapOf(r), dg=(ah==null||r.k710_tl==null)?null:(Number(r.k710_tl)-ah);
-    rows+=`<tr><td class="kod">${esc(r.yil)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${money(r.net_eur)}</td>${g(ah)}${p(ah)}${g(dg)}${p(dg)}${g(r.k720_tl)}${p(r.k720_tl)}${g(r.k730_tl)}${p(r.k730_tl)}${g(r.toplam_gider_tl)}${kc}${mc}</tr>`;
+    const ah=ahsapOf(r), cm=camOf(r);
+    const dg=(ah==null||r.k710_tl==null)?null:(Number(r.k710_tl)-ah-(cm||0));
+    rows+=`<tr><td class="kod">${esc(r.yil)}</td><td class="num">${money(r.net_tl)}</td><td class="num">${money(r.net_eur)}</td>${g(ah)}${p(ah)}${g(cm)}${p(cm)}${g(dg)}${p(dg)}${g(r.k720_tl)}${p(r.k720_tl)}${g(r.k730_tl)}${p(r.k730_tl)}${g(r.toplam_gider_tl)}${kc}${mc}</tr>`;
   });
   /* 710 kalem listesi — TEK liste, dönemler YAN YANA (yeni → eski).
      Sabit sütunlar: Sıra · Cinsi · Birim. Her dönem için: Dönem İçi Alınan (€) · Birim Fiyat (€) · Pay (%).
@@ -1052,7 +1062,7 @@ async function loadBilanco(tgt){
     table.g7t thead tr:first-child th{top:0;z-index:3}
     table.g7t thead tr:nth-child(2) th{top:22px;z-index:2}</style>
     <div class="scroll"><table>
-    <thead><tr><th>Yıl</th><th class="num">Net Satış (TL)</th><th class="num">Net (€)</th><th class="num">710 Ahşap Mlz</th><th class="num">Ahşap %</th><th class="num">710 Diğer Mlz</th><th class="num">Diğer %</th><th class="num">720 İşçilik</th><th class="num">720 %</th><th class="num">730 GÜG</th><th class="num">730 %</th><th class="num">Toplam Gider</th><th class="num">Kâr/Zarar</th><th class="num">Marj</th></tr></thead>
+    <thead><tr><th>Yıl</th><th class="num">Net Satış (TL)</th><th class="num">Net (€)</th><th class="num">710 Ahşap Mlz</th><th class="num">Ahşap %</th><th class="num">710 Cam</th><th class="num">Cam %</th><th class="num">710 Diğer Mlz</th><th class="num">Diğer %</th><th class="num">720 İşçilik</th><th class="num">720 %</th><th class="num">730 GÜG</th><th class="num">730 %</th><th class="num">Toplam Gider</th><th class="num">Kâr/Zarar</th><th class="num">Marj</th></tr></thead>
     <tbody>${rows}</tbody></table></div>
     ${g710Box()}`;
 }
