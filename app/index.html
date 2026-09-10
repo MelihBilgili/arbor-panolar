@@ -2249,13 +2249,66 @@ async function fiyDel(t,id){
   const {error}=await sb.from(t).delete().eq("id",id);
   if(error){ alert(error.message); return; } loadFiyat();
 }
+/* FIYAT-DEGISIM-METNI (2026-09-10): GÜNCELLE artık ÖNCEKİ yayının anlık görüntüsüyle
+   kıyaslar; bildirim metni değişen maddelerin ESKİ → YENİ değerlerini madde madde yazar.
+   snapshot yeni biçim {parametre,termin,ahsap,sinif}; ESKİ biçim (düz parametre dizisi)
+   okunurken desteklenir (ilk kıyasta yalnız parametreler kıyaslanır). */
+const FIY_SINIF_AD={1:"1. Sınıf Fransa",2:"2. Sınıf Fransa",3:"1. Sınıf İngiltere",4:"2. Sınıf İngiltere",5:"1. Sınıf Almanya",6:"2. Sınıf Almanya"};
+const FIY_KAPANIS="Bu değişiklikler sizde görünmüyorsa, lütfen tarama verilerini silerek formu yenileyiniz.";
+const fiyV=v=>(v==null||String(v).trim()==="")?"—":String(v).trim();
+function fiySnapNorm(s){
+  if(Array.isArray(s)) return {parametre:s,termin:null,ahsap:null,sinif:null};
+  if(s&&typeof s==="object") return {parametre:s.parametre||null,termin:s.termin||null,ahsap:s.ahsap||null,sinif:s.sinif||null};
+  return {parametre:null,termin:null,ahsap:null,sinif:null};
+}
+function fiyDiffListe(onc,yeni,cfg){
+  if(!Array.isArray(onc)) return [];   // önceki yayında bu liste yok → kıyas yapılmaz
+  const out=[], E=new Map(onc.map(r=>[String(r.id),r])), Y=new Map((yeni||[]).map(r=>[String(r.id),r]));
+  Y.forEach((r,id)=>{
+    const e=E.get(id);
+    if(!e){ out.push(`${cfg.on}${fiyV(cfg.ad(r))} — YENİ${cfg.alan.length?" ("+cfg.alan.map(a=>a[1]+": "+fiyV(r[a[0]])).join(" · ")+")":""}`); return; }
+    const d=[];
+    if(fiyV(cfg.ad(e))!==fiyV(cfg.ad(r))) d.push(`Tanım değişti (önceki: ${fiyV(cfg.ad(e))})`);
+    cfg.alan.forEach(a=>{ if(fiyV(e[a[0]])!==fiyV(r[a[0]])) d.push(`${a[1]}: ${fiyV(e[a[0]])} → ${fiyV(r[a[0]])}`); });
+    if(d.length) out.push(`${cfg.on}${fiyV(cfg.ad(r))} — ${d.join(" · ")}`);
+  });
+  E.forEach((e,id)=>{ if(!Y.has(id)) out.push(`${cfg.on}${fiyV(cfg.ad(e))} — ÇIKARILDI`); });
+  return out;
+}
+function fiyBildirimMetni(onceki,simdi){
+  const o=fiySnapNorm(onceki);
+  const d=[]
+    .concat(fiyDiffListe(o.parametre,simdi.parametre,{on:"",ad:r=>r.baslik,alan:[["fransa_deger","Fransa"],["diger_deger","Diğer"]]}))
+    .concat(fiyDiffListe(o.termin,simdi.termin,{on:"Termin (MVT) · ",ad:r=>r.aralik,alan:[["ic_68","68p/78t/78a içeren"],["numune","Numune"],["std_disi","Std. dışı cam"]]}))
+    .concat(fiyDiffListe(o.ahsap,simdi.ahsap,{on:"Ahşap · ",ad:r=>r.ad,alan:[["durum","Durum"],["aciklama","Açıklama"]]}))
+    .concat(fiyDiffListe(o.sinif,simdi.sinif,{on:"Müşteri sınıfı · ",ad:r=>`${FIY_SINIF_AD[r.sinif]||("Sınıf "+r.sinif)} · ${r.ad}`,alan:[]}));
+  const kiyas=Array.isArray(o.parametre)||Array.isArray(o.termin)||Array.isArray(o.ahsap)||Array.isArray(o.sinif);
+  if(!kiyas) return {metin:"Fiyatlandırma kurallarında değişiklik yapılmıştır.\n\n"+FIY_KAPANIS,adet:-1};
+  if(!d.length) return {metin:"Fiyatlandırma kuralları yeniden yayınlanmıştır; önceki yayına göre değişen madde yoktur.\n\n"+FIY_KAPANIS,adet:0};
+  return {metin:"Fiyatlandırma kurallarında aşağıdaki değişiklikler yapılmıştır:\n\n"+d.map(x=>"• "+x).join("\n")+"\n\n"+FIY_KAPANIS,adet:d.length};
+}
 async function fiyGuncelle(){
-  if(!confirm("Fiyatlandırma değerleri yayınlanacak ve ilgili kişilere bilgi maili beklemeye alınacak (int@arbor.com.tr Outlook üzerinden gönderilir). Onaylıyor musunuz?")) return;
-  const btn=document.getElementById("fiyat-guncelle"); btn.disabled=true; btn.textContent="Yayınlanıyor…";
-  const {data:params}=await sb.from("fiyat_parametre").select("*").order("sira");
-  const metin="fiyatlandırma kurallarında değişiklik yapılmıştır, lütfen tarama verilerini silerek formu yenileyiniz.";
+  const btn=document.getElementById("fiyat-guncelle"); btn.disabled=true; btn.textContent="Hazırlanıyor…";
+  const [pp,tt,aa,mm,yy]=await Promise.all([
+    sb.from("fiyat_parametre").select("*").order("sira"),
+    sb.from("fiyat_termin").select("*").order("sira").order("id"),
+    sb.from("fiyat_ahsap").select("*").order("sira").order("id"),
+    sb.from("fiyat_musteri_sinif").select("*").order("sira").order("id"),
+    sb.from("fiyat_yayin").select("snapshot").eq("id",1).limit(1)
+  ]);
+  btn.disabled=false; btn.textContent="GÜNCELLE";
+  const hata=pp.error||yy.error;
+  if(hata){ alert("Hata: "+hata.message); return; }
+  const simdi={parametre:pp.data||[],
+               termin:(tt&&!tt.error)?(tt.data||[]):[],
+               ahsap:(aa&&!aa.error)?(aa.data||[]):[],
+               sinif:(mm&&!mm.error)?(mm.data||[]):[]};
+  const onceki=((yy.data&&yy.data[0])||{}).snapshot;
+  const {metin}=fiyBildirimMetni(onceki,simdi);
+  if(!confirm("Fiyatlandırma değerleri yayınlanacak ve aşağıdaki bilgi maili beklemeye alınacak (int@arbor.com.tr Outlook üzerinden gönderilir):\n\n"+metin+"\n\nOnaylıyor musunuz?")) return;
+  btn.disabled=true; btn.textContent="Yayınlanıyor…";
   // Yayınla + bildirim beklemeye al (asıl gönderim Outlook üzerinden yapılır — Resend dış gönderim yapmıyor)
-  const {error}=await sb.from("fiyat_yayin").update({ yayin_at:new Date().toISOString(), snapshot:params||[], bildirim_beklemede:true, bildirim_metni:metin }).eq("id",1);
+  const {error}=await sb.from("fiyat_yayin").update({ yayin_at:new Date().toISOString(), snapshot:simdi, bildirim_beklemede:true, bildirim_metni:metin }).eq("id",1);
   btn.disabled=false; btn.textContent="GÜNCELLE";
   if(error){ alert("Hata: "+error.message); return; }
   alert("Yayınlandı. Değişiklik bildirimi BEKLEMEYE ALINDI — int@arbor.com.tr Outlook hesabından ilgili kişilere gönderilecek.");
