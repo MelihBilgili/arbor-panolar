@@ -140,7 +140,7 @@ function tkParseLog(raw,dcol){
 function tkLatest(log){ return log[0]||{t:"",n:""}; }
 function tkHist(log){ return log.length? log.map(e=>(e.t?fmtDate(e.t)+" — ":"")+(e.n||"")).join("\n") : ""; }
 
-const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Öncelik Belirlendi","Teklif Teslim Edildi","Müş.Bilgi Bekleniyor","Muhtemel","Alındı","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
+const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Öncelik Belirlendi","Teklif Teslim Edildi","Revizyon İstendi","Müş.Bilgi Bekleniyor","Muhtemel","Alındı","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
 const COLS=[
  {f:'proje',h:'Proje',w:150,t:'text',req:1},
