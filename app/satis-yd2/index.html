@@ -140,7 +140,7 @@ function tkParseLog(raw,dcol){
 function tkLatest(log){ return log[0]||{t:"",n:""}; }
 function tkHist(log){ return log.length? log.map(e=>(e.t?fmtDate(e.t)+" — ":"")+(e.n||"")).join("\n") : ""; }
 
-const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Öncelik Belirlendi","Teklif Teslim Edildi","Müş.Bilgi Bekleniyor","Muhtemel","Alındı","Üretimde","Kaybettik","Müşteri İşi Alamadı","İptal"];
+const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Öncelik Belirlendi","Teklif Teslim Edildi","Müş.Bilgi Bekleniyor","Muhtemel","Alındı","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
 const COLS=[
  {f:'proje',h:'Proje',w:150,t:'text',req:1},
@@ -148,7 +148,7 @@ const COLS=[
  {f:'musteri_onem_sinifi',h:'Müşteri Önem Sınıfı',w:150,t:'sel',opts:['1. Sınıf ya da Ciro: >500 m€','2. Sınıf ya da Ciro: 101-500 m€','Ciro: 11-100 m€','Ciro: <10 m€']},
  {f:'gelen_tarih',h:'Gelen Tarih',w:80,t:'date'},
  {f:'istenen_tarih',h:'İstenen Tarih',w:80,t:'date'},
- {f:'ihale',h:'İhale?',w:90,t:'sel',opts:['Alındı','Alınmadı','Bekleniyor','Belirsiz']},
+ {f:'ihale',h:'İhale?',w:90,t:'sel',opts:['Alındı','Alınmadı']},
  {f:'talebe_iliskin_notlar',h:'Talebe İlişkin Notlar',w:190,t:'area'},
  {f:'adet',h:'Adet',w:56,t:'int'},
  {f:'urun_tipi_serisi',h:'Ürün Tipi / Serisi',w:130,t:'text'},
@@ -157,7 +157,7 @@ const COLS=[
  {f:'teklif_birimi_notlari',h:'Teklif Birimi Notları',w:190,t:'area'},
  {f:'oncelik',h:'Öncelik',w:70,t:'sel',opts:['1','2','3']},
  {f:'teklif_teslim_tarihi',h:'Teklif Teslim Tarihi',w:80,t:'date'},
- {f:'teklif_teslim_edildi',h:'Teklif Teslim Edildi',w:90,t:'sel',opts:['Evet','Hayır','İptal']},
+ {f:'teklif_teslim_edildi',h:'Teklif Teslim Edildi',w:90,t:'sel',opts:['Evet','Hayır']},
  {f:'agac',h:'Ağaç',w:80,t:'text'},
  {f:'iskonto_yuzde',h:'İskonto %',w:70,t:'text'},
  {f:'net_tutar',h:'Net Tutar',w:100,t:'num'},
