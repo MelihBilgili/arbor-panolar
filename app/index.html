@@ -170,6 +170,23 @@ function fdate(s){ if(!s) return ""; s=String(s).trim();
   const d=new Date(s); if(isNaN(d)) return esc(s); return String(d.getDate()).padStart(2,'0')+"."+String(d.getMonth()+1).padStart(2,'0')+"."+String(d.getFullYear()).slice(2); }
 function money(n){ if(n==null||n==="") return ""; const v=Math.round(Number(n)); return isNaN(v)?"":v.toLocaleString("tr-TR"); }
 
+/* TAKIP-LOG (2026-09-14): takip_sekli/yurtdisi_notlari artık JSON geçmiş dizisi olabilir
+   ({t,n} yeni-en-üstte). Eski düz metin değerler geriye dönük olarak tek kayıt sayılır. */
+function tkParseLog(raw,dval){
+  if(raw==null||raw==="") return [];
+  try{ const v=JSON.parse(raw); if(Array.isArray(v)) return v.map(x=>({t:(x&&x.t)||"",n:(x&&x.n)||""})); }catch(e){}
+  return [{t:dval||"",n:String(raw)}];
+}
+function tkLatest(log){ return log[0]||{t:"",n:""}; }
+function tkHist(log){ return log.length? log.map(e=>(e.t?fdate(e.t)+" — ":"")+(e.n||"")).join("\n") : ""; }
+function tkPairCells(r,dCol,nCol){
+  const log=tkParseLog(r[nCol],r[dCol]);
+  const last=tkLatest(log), hist=tkHist(log);
+  const histDates = log.length? log.map(e=>e.t?fdate(e.t):"—").join("\n") : "";
+  return `<td class="num" title="${esc(histDates)}">${esc(last.t?fdate(last.t):"")}</td>`
+       + `<td class="t-not"><div class="cx" title="${esc(hist)}">${esc(last.n||"")}</div></td>`;
+}
+
 /* ---------- AUTH ---------- */
 function renderLogin(){
   /* son giriş yapılan e-postayı hatırla → yalnız parola yazılır */
@@ -778,14 +795,12 @@ function takipSection(title, tkData, ssData, snapRows, showStats){
      <td class="t-agac"><div class="cx" title="${esc(r.agac)}">${esc(r.agac)}</div></td>
      <td class="t-ihale"><div class="cx" title="${esc(r.ihale)}">${esc(r.ihale)}</div></td>
      <td class="t-durum"><div class="cx" title="${esc(r.durum)}">${esc(r.durum)}</div></td>
-     <td class="num">${fdate(r.son_takip_teklif)}</td>
-     <td class="t-not"><div class="cx" title="${esc(r.takip_sekli)}">${esc(r.takip_sekli)}</div></td>
-     <td class="num">${fdate(r.son_takip_yurtdisi)}</td>
-     <td class="t-not"><div class="cx" title="${esc(r.yurtdisi_notlari)}">${esc(r.yurtdisi_notlari)}</div></td></tr>`).join("");
+     ${tkPairCells(r,'son_takip_teklif','takip_sekli')}
+     ${tkPairCells(r,'son_takip_yurtdisi','yurtdisi_notlari')}</tr>`).join("");
   const takipHTML = takip.length? `
     <div class="scroll"><table class="aup">
     <thead><tr><th rowspan="2">PROJE</th><th rowspan="2">MÜŞTERİ</th><th rowspan="2" class="num">NET HT (€)</th><th rowspan="2" class="num">TEKLİF</th><th rowspan="2">AĞAÇ</th><th rowspan="2">İHALE</th><th rowspan="2">DURUM</th><th colspan="2" class="grph">Teklif Birimi</th><th colspan="2" class="grph">Yurtdışı Birimi</th></tr>
-    <tr><th class="num grpc">Son Takip T.</th><th>Notları</th><th class="num grpc">Son Takip T.</th><th>Notları</th></tr></thead>
+    <tr><th class="num grpc">Takip Tarihi</th><th>Takip Notları</th><th class="num grpc">Takip Tarihi</th><th>Takip Notları</th></tr></thead>
     <tbody>${tkRows}</tbody></table></div>`:'<div class="hint">Takipte teklif yok.</div>';
   return `<h3 class="sec" style="margin-top:26px">${esc(title)} <span class="muted">(${takip.length} teklif · Net HT ${money(tkNet)} €)</span></h3>
     ${takipDiff(snapRows)}
