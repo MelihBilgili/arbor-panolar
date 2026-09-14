@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Yurt Dışı 1 Satış Formu</title>
+<title>Yurt Dışı Satış Formu</title>
 <style>
   :root{color-scheme:light}
   *{box-sizing:border-box}
@@ -11,8 +11,13 @@
   header{background:#16324f;color:#fff;padding:12px 16px}
   header h1{font-size:17px;margin:0;font-weight:700}
   header .hsub{font-size:12px;color:#d7e6f5;margin-top:3px}
-  .wrap{max-width:1320px;margin:0 auto;padding:14px 16px 60px}
-  .sechead{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin:22px 2px 8px}
+  .wrap{max-width:1360px;margin:0 auto;padding:14px 16px 60px}
+  .oturum{margin:2px 2px 6px}
+  .hint{font-size:12px;color:#8a97a4}
+  .blok{margin:0 0 34px;padding-top:6px;border-top:3px solid #16324f}
+  .blok:first-child{border-top:0;padding-top:0}
+  .bhead{font-size:16.5px;font-weight:700;color:#16324f;margin:10px 2px 4px}
+  .sechead{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;margin:16px 2px 8px}
   h2.sec{color:#16324f;font-size:15px;margin:0}
   .desc{font-size:11.5px;color:#8a97a4;max-width:660px;line-height:1.45;flex:1;min-width:260px}
   .desc b{color:#5a6b7d}
@@ -38,7 +43,6 @@
   .toM{background:#e3edf7;color:#16324f;border:1px solid #b9cde2;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
   .toM:hover{background:#d3e2f2}
   .colp{width:1%;white-space:nowrap}
-  /* iliskili sutun ciftleri (Son Takip T. + Notlari) ortak zemin + sol sinir ile gruplanir */
   td.pairA{background:#eaf5ee}
   td.pairB{background:#f0eefb}
   thead th.pairA{background:#1f6b45}
@@ -47,78 +51,68 @@
   tbody tr:nth-child(even) td.pairB{background:#eae7f7}
   th.gs,td.gs{border-left:2px solid #9db8a6}
   th.pairB.gs,td.pairB.gs{border-left:2px solid #b0a6d6}
-  .hint{font-size:12px;color:#8a97a4;margin:10px 2px}
-  .addrow{margin:10px 0}
+  .hint2{font-size:12px;color:#8a97a4;margin:10px 2px}
   .dirty{color:#b8863a;font-weight:600}
   .load{padding:30px;text-align:center;color:#8a97a4}
-
+  /* TAKIP-LOG: son bilgi tek satır + hover'da tüm geçmiş (en yeni üstte) */
+  .tklatest{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;cursor:default;padding:1px 0}
+  td.pairA .tklatest,td.pairB .tklatest{max-width:190px}
+  .tkadd{display:flex;gap:4px;margin-top:4px;align-items:flex-start}
+  .tkadd input.cell{width:64px;flex:0 0 64px;font-size:11.5px;padding:4px 5px}
+  .tkadd textarea.cell{min-height:28px;font-size:11.5px;padding:4px 5px;flex:1}
+  .tkAddBtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:0 8px;font-size:11.5px;font-weight:700;cursor:pointer;flex:0 0 auto;align-self:stretch}
+  .tkAddBtn:hover{background:#204a75}
 html,body{max-width:100vw;overflow-x:hidden}
-/* tek scroller = .card (tablonun kendi kaydirma cubugu kaldirildi) */
 </style>
 </head>
 <body>
 <header>
-  <h1>Yurt Dışı 1 Satış Formu</h1>
+  <h1>Yurt Dışı Satış Formu</h1>
   <div class="hsub"><b>Bu tabloda her hücre anında kaydedilir.</b></div>
 </header>
 <div class="wrap">
-  <div class="aybar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:6px 0 2px">
-    <button class="btn" id="ayBtn">Aylık Güncelle</button>
-    <span style="color:#b25a00;font-size:12px;flex:1;min-width:220px">Bu düğmeye yalnız aylık güncelleme için basınız, düzeltme ve revizyon durumunda lütfen basmayınız.</span>
-    <span class="msg" id="ayMsg"></span>
-  </div>
-  <div class="sechead" style="margin-top:4px">
-    <h2 class="sec">Muhtemel / Alınan Projeler</h2>
-    <div class="desc">Her ayın son günü Muhtemel ve Alınan projelerin güncel durumları işlenip “Aylık Güncelle” düğmesine basılır. <b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler.</div>
-  </div>
-  <div class="bar">
-    <button class="btn sec" id="addM">+ Muhtemel satır</button>
-    <button class="btn sec" id="addA">+ Alınan satır</button>
-    <span class="sum" id="sum"></span>
-    <span class="msg" id="msg"></span>
-  </div>
-  <div id="list" class="card"><div class="load">Yükleniyor…</div></div>
-
-  <div class="sechead">
-    <h2 class="sec">Takipteki Teklifler <span class="sum">(yurtdışı — anlık kaydedilir)</span></h2>
-    <div class="desc">Türkiye dışındaki müşterilere her yeni teklif iletildiğinde, teklif bilgileri aynı gün bu tabloya eklenir. Bu tabloda her hücre anında kaydedilir. <b>Durum</b> zorunludur: <b>Kazandık / Kaybettik / Müşteri işi alamadı</b> seçilirse teklif bu listeden çıkıp yıllık sonuç kayıtlarına taşınır (Satış panosundaki istatistiğe girer); <b>Belirsiz</b> takipte kalır.</div>
-  </div>
-  <div class="bar">
-    <button class="btn sec" id="tkAdd">+ Teklif satırı</button>
-    <span class="sum" id="tkSum"></span>
-    <span class="msg" id="tkMsg"></span>
-  </div>
-  <div id="tkList" class="card"><div class="load">Yükleniyor…</div></div>
+  <div class="oturum"><span class="hint" id="rolLbl"></span></div>
+  <div id="blok_YD1" class="blok"></div>
+  <div id="blok_YD2" class="blok"></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* ===== ARBOR FORM KAPISI (2026-08-20) — anon erisim kapali, rol hesabiyla giris ===== */
-const ARB_ROLE_EMAIL = "fy.form@arbor.com.tr";
-const ARB_STORE = "arbform_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
+/* ===== ARBOR FORM KAPISI — iki rol hesabi (fy.form@/fy2.form@) + MB gecisi =====
+   Teklif Talepleri'ndeki (2026-09-09) iki-blok deseninin aynısı: FY (Yurt Dışı 1)
+   ve FY2 (Yurt Dışı 2) satış formları tek sayfada birleşti; roller aynı hesaplar,
+   yeni hesap açılmadı. Her hesap yalnız kendi bloğunu görür; int@ (MB) ikisini de. */
+const ARB_ROLLER = [
+  { email:"fy.form@arbor.com.tr",  ad:"Yurt Dışı Satış 1" },
+  { email:"fy2.form@arbor.com.tr", ad:"Yurt Dışı Satış 2" }
+];
+const ARB_STORE = "arbform_satis_yd";
 const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
 const ARB_MB = "int@arbor.com.tr";
-/* panolarin varsayilan oturumu (ayni origin, varsayilan storageKey) */
 const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 var ARB_ACTIVE = ARB_GATE_SB;
-/* form kodu kendi createClient cagirsa bile aktif oturumlu istemci doner */
+var ARB_EMAIL = "";
 supabase.createClient = function(){ return ARB_ACTIVE; };
-function arbGateUI(msg){
+function arbGateUI(){
   var d=document.createElement("div"); d.id="arb-gate";
   d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
-  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:310px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
-    +'<div style="font-weight:700;font-size:16px;margin-bottom:3px">Arbor — Form Girisi</div>'
-    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:12px">'+ARB_ROLE_EMAIL+'</div>'
+  var opts='<option value="" disabled selected>— Formunuzu seçiniz —</option>'
+    + ARB_ROLLER.map(function(r){ return '<option value="'+r.email+'">'+r.ad+'</option>'; }).join("");
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:320px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:10px">Arbor — Yurt Dışı Satış</div>'
+    +'<select id="arb-rol" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px;margin-bottom:8px">'+opts+'</select>'
     +'<input id="arb-pw" type="password" placeholder="Parola" autocomplete="current-password" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
-    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giris</button>'
-    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px">'+(msg||"")+'</div></div>';
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giriş</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px"></div></div>';
   document.body.appendChild(d);
   var go=async function(){
-    var pw=document.getElementById("arb-pw").value;
+    var em=document.getElementById("arb-rol").value, pw=document.getElementById("arb-pw").value;
+    if(!em){ document.getElementById("arb-msg").style.color="#b40000";
+             document.getElementById("arb-msg").textContent="Önce formunuzu seçiniz."; return; }
     document.getElementById("arb-msg").style.color="#5a6b7d";
-    document.getElementById("arb-msg").textContent="Giris yapiliyor...";
-    var r=await ARB_GATE_SB.auth.signInWithPassword({email:ARB_ROLE_EMAIL,password:pw});
-    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent="Parola hatali"; return; }
+    document.getElementById("arb-msg").textContent="Giriş yapılıyor…";
+    var r=await ARB_GATE_SB.auth.signInWithPassword({email:em,password:pw});
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent="Parola hatalı"; return; }
     location.reload();
   };
   document.getElementById("arb-go").onclick=go;
@@ -128,12 +122,13 @@ function arbGateUI(msg){
 function ARB_BOOT(){ (async function(){
   var s=await ARB_GATE_SB.auth.getSession();
   var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
-  if(em!==ARB_ROLE_EMAIL){
+  var izin=ARB_ROLLER.map(function(r){return r.email;});
+  if(izin.indexOf(em)<0){
     var m=await ARB_MB_SB.auth.getSession();
     var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
     if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
   }
-  if(em===ARB_ROLE_EMAIL || em===ARB_MB){ (0,eval)(document.getElementById("arbmain").textContent); }
+  if(izin.indexOf(em)>=0 || em===ARB_MB){ ARB_EMAIL=em; (0,eval)(document.getElementById("arbmain").textContent); }
   else { arbGateUI(); }
 })(); }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
@@ -150,258 +145,363 @@ function toISO(s){ if(s==null) return null; s=String(s).trim(); if(s==="") retur
   if(m){ let y=m[3]; if(y.length===2) y="20"+y; return y+"-"+pad(m[2])+"-"+pad(m[1]); }
   if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
   return undefined; /* gecersiz */ }
+const todayISO=()=>new Date().toISOString().slice(0,10);
 
-const KAYNAK_KEY="FY";
-/* ===== Muhtemel/Alınan (satis_yorum, FY) ===== */
-let ROWS=[], OLD_IDS=[], dirty=false, AKTIF_CEKIM=null;
-async function load(){
-  const {data,error}=await sb.from("satis_yorum").select("*").eq("kaynak","FY").eq("aktif",true);
-  if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
-  const d=(data||[]).slice().sort((a,b)=> (a.statu||"").localeCompare(b.statu||"") || (Number(b.net_eur)||0)-(Number(a.net_eur)||0));
-  OLD_IDS=d.map(r=>r.id);
-  /* SATIS-CEKIM: satir bazli yeni kayit AKTIF CEKIME katilir; bugunun tarihiyle
-     sahte cekim grubu acmaz (yoksa pano diff'i tum satirlari "eklenen" gosterir). */
-  { const c={}; (data||[]).forEach(r=>{ if(r.cekim) c[r.cekim]=(c[r.cekim]||0)+1; });
-    AKTIF_CEKIM = Object.keys(c).sort((a,b)=>(c[b]-c[a])||(a<b?1:-1))[0] || null; }
-  ROWS=d.map(r=>({id:r.id,statu:r.statu||"Muhtemel",proje:r.proje||"",musteri:r.musteri||"",ulke:r.ulke||"FR",iskonto:(r.iskonto==null?"":r.iskonto),net_eur:r.net_eur,durum:r.durum||""}));
-  dirty=false; render();
+/* ===== TAKIP-LOG ===================================================================
+   "Son Takip Tarihi/Notları" artık tek bir düz değer değil, JSON dizi (en yeni ÖNDE)
+   olarak aynı sütunda tutulur — yeni sütun/DDL yok. Eski (düz metin) satırlar hiç
+   dokunulmadan çalışmaya devam eder: JSON değilse mevcut tarih sütunuyla birlikte
+   TEK eski kayıt gibi sarılır (veri kaybı yok). Görünürde yalnız EN SON kayıt,
+   üzerine gelince (title) tüm geçmiş en yeniden eskiye sırayla görünür. */
+function tkParseLog(raw,dcol){
+  if(raw==null||raw==="") return [];
+  try{ const v=JSON.parse(raw); if(Array.isArray(v)) return v.map(x=>({t:(x&&x.t)||"",n:(x&&x.n)||""})); }catch(e){}
+  return [{t:dcol||"",n:String(raw)}];
 }
-function setMsg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; }
-function markDirty(){ dirty=true; sums(); }
-function sums(){
-  const m=ROWS.filter(r=>/^muht/i.test(r.statu)), a=ROWS.filter(r=>/^al/i.test(r.statu));
-  const s=arr=>arr.reduce((x,r)=>x+(parseNet(r.net_eur)||0),0);
-  document.getElementById("sum").innerHTML="Muhtemel <b>"+m.length+"</b> / "+money(s(m))+" € &nbsp;·&nbsp; Alınan <b>"+a.length+"</b> / "+money(s(a))+" €"+(dirty?' &nbsp;<span class="dirty">(kaydedilmedi)</span>':'');
-}
-function render(){
-  let h='<table style="min-width:820px"><thead><tr>'
-    +'<th style="width:110px">Statü</th><th style="width:150px">Proje</th><th style="width:120px">Müşteri</th>'
-    +'<th class="colp">İskonto %</th><th class="colp">Net (€)</th><th>Durum</th><th class="colp"></th></tr></thead><tbody>';
-  ROWS.forEach((r,i)=>{
-    h+='<tr data-i="'+i+'">'
-      +'<td><select class="cell req" data-f="statu" style="width:100px"><option'+(/^muht/i.test(r.statu)?" selected":"")+'>Muhtemel</option><option'+(/^al/i.test(r.statu)?" selected":"")+'>Alınan</option></select></td>'
-      +'<td><input class="cell req" data-f="proje" value="'+esc(r.proje)+'"></td>'
-      +'<td><input class="cell req" data-f="musteri" value="'+esc(r.musteri)+'"></td>'
-      +'<td class="colp"><input class="cell req" data-f="iskonto" style="width:70px;text-align:right" value="'+esc(r.iskonto)+'"></td>'
-      +'<td class="colp net"><input class="cell req" data-f="net_eur" style="width:100px" value="'+(r.net_eur==null||r.net_eur===""?"":esc(money(r.net_eur)))+'"></td>'
-      +'<td><textarea class="cell req" data-f="durum" style="min-width:200px">'+esc(r.durum)+'</textarea></td>'
-      +'<td class="colp"><button class="del" title="Satırı sil">✕</button></td>'
-      +'</tr>';
-  });
-  h+='</tbody></table>';
-  const list=document.getElementById("list"); list.innerHTML=h;
-  /* Her hucre degisikligi ANINDA kaydedilir (Aylik Guncelle beklenmez). */
-  list.querySelectorAll("[data-f]").forEach(el=>{
-    const i=+el.closest("tr").dataset.i, f=el.dataset.f;
-    el.addEventListener("input",()=>{ ROWS[i][f]=el.value; el.classList.toggle("bad", !String(el.value||"").trim()); sums(); });
-    el.addEventListener("change",()=>{ ROWS[i][f]=el.value; saveRow(i,f); });
-    if(f==="net_eur") el.addEventListener("blur",()=>{ const v=parseNet(el.value); el.value=(v==null?"":money(v)); });
-  });
-  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delRow(+b.closest("tr").dataset.i));
-  sums();
-}
-const stat=r=>/^al/i.test(r.statu)?"Alınan":"Muhtemel";
-async function saveRow(i,f){
-  const r=ROWS[i]; if(!r) return;
-  if(!r.id){
-    if(!(r.proje||"").trim()) return;   /* proje yazilana kadar kayit acilmaz */
-    const rec={grup:"Yurtdışı",kaynak:KAYNAK_KEY,statu:stat(r),proje:(r.proje||"").trim(),musteri:(r.musteri||"").trim(),
-               iskonto:parseNet(r.iskonto),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),
-               ulke:(r.ulke||"").trim()||"FR",cekim:(AKTIF_CEKIM||new Date().toISOString().slice(0,10)),aktif:true};
-    const {data,error}=await sb.from("satis_yorum").insert(rec).select();
-    if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
-    r.id=data[0].id; OLD_IDS.push(r.id); dirty=false; setMsg("Kaydedildi ✓",true); sums(); return;
-  }
-  const rec={};
-  rec[f]= (f==="net_eur"||f==="iskonto") ? parseNet(r[f]) : (f==="statu" ? stat(r) : String(r[f]||"").trim());
-  const {error}=await sb.from("satis_yorum").update(rec).eq("id",r.id);
-  if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
-  dirty=false; setMsg("Kaydedildi ✓",true); sums();
-}
-async function delRow(i){
-  const r=ROWS[i]; if(!r) return;
-  if(r.id){
-    if(!confirm("Bu satır silinsin mi? (geri alınamaz)")) return;
-    const {error}=await sb.from("satis_yorum").delete().eq("id",r.id);
-    if(error){ setMsg("Silinemedi: "+error.message,false); return; }
-    OLD_IDS=OLD_IDS.filter(x=>x!==r.id);
-  }
-  ROWS.splice(i,1); render(); setMsg("Silindi",true);
-}
-function addRow(statu){ ROWS.push({statu,proje:"",musteri:"",ulke:"FR",iskonto:"",net_eur:null,durum:""}); render(); const inps=document.querySelectorAll('#list input[data-f="proje"]'); if(inps.length) inps[inps.length-1].focus(); }
-function validateList(){
-  let bad=false;
-  document.querySelectorAll('#list .req').forEach(el=>{ const empty=!String(el.value||"").trim(); el.classList.toggle("bad",empty); if(empty) bad=true; });
-  return !bad;
-}
-async function publish(){
-  if(!ROWS.length){ setMsg("En az bir satır ekleyin.",false); return false; }
-  if(!validateList()){ setMsg("Tüm hücreleri doldurun — hiçbir hücre boş/belirsiz bırakılamaz.",false); return false; }
-  const clean=ROWS.map(r=>({grup:"Yurtdışı",kaynak:"FY",statu:(/^al/i.test(r.statu)?"Alınan":"Muhtemel"),proje:(r.proje||"").trim(),musteri:(r.musteri||"").trim(),iskonto:parseNet(r.iskonto),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),ulke:(r.ulke||"").trim()||"FR",cekim:new Date().toISOString().slice(0,10),aktif:true}));
-  setMsg("Kaydediliyor…",true);
-  const {error:eIns}=await sb.from("satis_yorum").insert(clean);
-  if(eIns){ setMsg("Ekleme hatası: "+eIns.message,false); return false; }
-  if(OLD_IDS.length){ const {error:eA}=await sb.from("satis_yorum").update({aktif:false}).in("id",OLD_IDS);
-    if(eA){ setMsg("Eklendi ama önceki arşivlenemedi: "+eA.message,false); return false; } }
-  setMsg("Yayınlandı ✓ ("+clean.length+" proje). Satış panosu güncel.",true);
-  try{ await sb.rpc("satis_takip_snapshot_al"); }catch(e){}
-  await load();
-  return true;
-}
+function tkLatest(log){ return log[0]||{t:"",n:""}; }
+function tkHist(log){ return log.length? log.map(e=>(e.t?fmtDate(e.t)+" — ":"")+(e.n||"")).join("\n") : ""; }
 
-/* ===== Takipteki teklifler (satis_takip) — anlık kayıt ===== */
-const TCOLS=[
- {f:'proje',h:'Proje',w:126,t:'text',req:1},
- {f:'musteri',h:'Müşteri',w:75,t:'text',req:1},
- {f:'ulke',h:'Ülke',w:64,t:'text',req:1},
- {f:'teklif_tarihi',h:'Teklif Tarihi',w:78,t:'datetext',req:1},
- {f:'agac',h:'Ağaç',w:54,t:'text',req:1},
- {f:'seri',h:'Seri',w:80,t:'text',req:1},
- {f:'isk',h:'İskonto %',w:64,t:'text',req:1},
- {f:'net_ht_eur',h:'Net HT €',w:82,t:'num',req:1},
- {f:'adet',h:'Adet',w:48,t:'int',req:1},
- {f:'ihale',h:'İhale',w:90,t:'text'},
- {f:'durum',h:'Durum',w:150,t:'sel',req:1,opts:['Belirsiz','Kazandık','Kaybettik','Müşteri işi alamadı']},
- {f:'son_takip_teklif',h:'Son Takip T.',w:78,t:'datetext',grp:'pairA',gs:1},
- {f:'takip_sekli',h:'Teklif B. Notları',w:210,t:'area',grp:'pairA'},
- {f:'son_takip_yurtdisi',h:'Son Takip T.',w:78,t:'datetext',grp:'pairB',gs:1},
- {f:'yurtdisi_notlari',h:'Yurtdışı B. Notları',w:210,t:'area',grp:'pairB'}
+/* ============================================================================
+   BLOK FABRİKASI — Teklif Talepleri'ndeki (2026-09-09) desenin aynısı: sayfada
+   iki blok var (YD1 üstte, YD2 altta), her bloğun kendi DOM'u (id'ler `<kod>_…`
+   ön ekli) ve kendi tabloları var. Veri ayrımı TEK tablo + kolon değil — YD1/YD2
+   zaten baştan beri AYRI tablolarda (satis_yorum/_2, satis_takip/_2): birleşen
+   yalnızca arayüz, hiçbir satır taşınmıyor/silinmiyor. */
+const BLOKLAR = [
+  { kod:"YD1", ad:"Yurt Dışı Satış 1", email:"fy.form@arbor.com.tr",  suf:"",  kaynak:"FY",  grup:"Yurtdışı" },
+  { kod:"YD2", ad:"Yurt Dışı Satış 2", email:"fy2.form@arbor.com.tr", suf:"_2",kaynak:"FY2", grup:"Yurt Dışı 2" }
 ];
-const REQ_TK=TCOLS.filter(c=>c.req).map(c=>c.f);
-let TROWS=[];
-async function loadTakip(){
-  const {data,error}=await sb.from("satis_takip").select("*").eq("aktif",true).order("net_ht_eur",{ascending:false});
-  if(error){ document.getElementById("tkList").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
-  TROWS=data||[]; renderTakip();
-}
-function tkSum(){ const net=TROWS.reduce((a,r)=>a+(Number(r.net_ht_eur)||0),0); document.getElementById("tkSum").innerHTML="<b>"+TROWS.length+"</b> teklif · Net HT "+money(net)+" €"; }
-function cls(c){ return (c.grp?" "+c.grp:"")+(c.gs?" gs":""); }
-function dispVal(r,c){ const v=r[c.f]; if(v==null) return ""; if(c.t==='datetext') return fmtDate(v); if(c.t==='num') return money(v); return v; }
-/* Takipteki liste sıralaması: Teklif Tarihi (ISO) EN YENİ ÜSTTE; boş tarih en altta. */
-function sortTROWS(){ TROWS.sort((a,b)=>{ const da=a.teklif_tarihi||"", db=b.teklif_tarihi||""; if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1; return String(db).localeCompare(String(da)); }); }
-function renderTakip(){
-  sortTROWS();
-  let h='<table style="min-width:1560px"><thead><tr>'+TCOLS.map(c=>'<th class="'+cls(c).trim()+'">'+c.h+'</th>').join('')+'<th></th><th></th></tr></thead><tbody>';
-  TROWS.forEach((r,i)=>{
-    h+='<tr data-i="'+i+'">'+TCOLS.map(c=>{
-      const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
-      if(c.t==='area') return '<td class="'+cls(c).trim()+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
-      if(c.t==='sel'){ const opts=c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); return '<td class="'+cls(c).trim()+'"><select class="cell'+req+empty+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
-      return '<td class="'+(cls(c)+(c.t==='num'?' net':'')).trim()+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
-    }).join('')+'<td class="colp"><button class="toM" title="Muhtemel bloğuna taşı">→ Muhtemel</button></td><td class="colp"><button class="del" title="Satırı sil">✕</button></td></tr>';
-  });
-  h+='</tbody></table>';
-  const list=document.getElementById("tkList"); list.innerHTML=h;
-  list.querySelectorAll("[data-f]").forEach(el=>{ const i=+el.closest("tr").dataset.i, f=el.dataset.f;
-    el.addEventListener("change",()=>saveTk(i,f,el.value,el)); });
-  list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delTk(+b.closest("tr").dataset.i));
-  list.querySelectorAll(".toM").forEach(b=>b.onclick=()=>toMuhtemel(+b.closest("tr").dataset.i));
-  tkSum();
-}
-const parseIsk=s=>{ if(s==null) return null; const m=String(s).match(/\d+(?:[.,]\d+)?/); return m? parseFloat(m[0].replace(",",".")): null; };
-/* Takipteki teklif satırını Muhtemel/Alınan bloğuna (satis_yorum*) "Muhtemel" olarak taşır.
-   transferRow deseniyle aynı: diğer tabloya insert + takipten sil. Yeni kolon/DDL yok. */
-async function toMuhtemel(i){
-  const r=TROWS[i], m=document.getElementById("tkMsg");
-  const MUHT_TBL  = KAYNAK_KEY==="FY2" ? "satis_yorum_2" : "satis_yorum";
-  const MUHT_GRUP = KAYNAK_KEY==="FY2" ? "Yurt Dışı 2"   : "Yurtdışı";
-  const TAKIP_TBL = KAYNAK_KEY==="FY2" ? "satis_takip_2" : "satis_takip";
-  if(!confirm("Bu teklif Takipteki Teklifler'den çıkıp Muhtemel bloğuna taşınacak.\n\nOnaylıyor musunuz?")){ return; }
-  const notlar=[r.durum,r.takip_sekli,r.yurtdisi_notlari].map(x=>String(x==null?"":x).trim()).filter(Boolean).join(" · ");
-  const rec={ grup:MUHT_GRUP, kaynak:KAYNAK_KEY, statu:"Muhtemel",
-    proje:(r.proje||"").trim()||"(isimsiz)", musteri:(r.musteri||"").trim(),
-    iskonto:parseIsk(r.isk), net_eur:(r.net_ht_eur==null||r.net_ht_eur===""?null:Number(r.net_ht_eur)),
-    durum:notlar||"Takipten taşındı", ulke:(r.ulke||"").trim()||"FR",
-    cekim:(AKTIF_CEKIM||new Date().toISOString().slice(0,10)), aktif:true };
-  m.className="msg"; m.textContent="Taşınıyor…";
-  const {error:e1}=await sb.from(MUHT_TBL).insert([rec]);
-  if(e1){ m.className="msg err"; m.textContent="Muhtemel'e eklenemedi: "+e1.message; return; }
-  const {error:e2}=await sb.from(TAKIP_TBL).delete().eq("id",r.id);
-  if(e2){ m.className="msg err"; m.textContent="Muhtemel'e eklendi ama takipten silinemedi: "+e2.message; return; }
-  TROWS.splice(i,1); renderTakip();
-  try{ if(typeof load==="function") await load(); }catch(e){}
-  m.className="msg ok"; m.textContent="→ Muhtemel bloğuna taşındı ✓"; setTimeout(()=>{m.textContent="";},2500);
-}
-async function transferRow(i,durum){
-  const r=TROWS[i], m=document.getElementById("tkMsg");
-  if(!confirm("'"+durum+"' seçtiniz.\nBu teklif Takipteki Teklifler listesinden çıkıp yıllık sonuç kayıtlarına taşınacak (geri almak için sonuç kaydını silmeniz gerekir).\n\nOnaylıyor musunuz?")){ renderTakip(); return; }
-  const rec={ kaynak_takip_id:r.id, yil:new Date().getFullYear(), durum:durum, ulke:(r.ulke||"Fransa"),
-    proje:r.proje||null, musteri:r.musteri||null, agac:r.agac||null,
-    brut_eur:(r.brut_eur==null||r.brut_eur===""?null:Number(r.brut_eur)),
-    net_ht_eur:(r.net_ht_eur==null||r.net_ht_eur===""?null:Number(r.net_ht_eur)),
-    iskonto:parseIsk(r.isk), adet:(r.adet==null||r.adet===""?null:parseInt(r.adet,10)),
-    teklif_tarihi:r.teklif_tarihi||null, sonuc_tarihi:new Date().toISOString() };
-  const {error:e1}=await sb.from("satis_takip_sonuc").insert([rec]);
-  if(e1){ m.className="msg err"; m.textContent="Sonuç kaydı hatası: "+e1.message; renderTakip(); return; }
-  const {error:e2}=await sb.from("satis_takip").delete().eq("id",r.id);
-  if(e2){ m.className="msg err"; m.textContent="Sonuç yazıldı ama takipten silinemedi: "+e2.message; return; }
-  TROWS.splice(i,1); renderTakip();
-  m.className="msg ok"; m.textContent="'"+durum+"' → yıllık sonuç kayıtlarına taşındı ✓ ("+new Date().getFullYear()+")";
-}
-async function saveTk(i,f,val,el){
-  const r=TROWS[i]; let v=val; const m=document.getElementById("tkMsg");
-  if(f==='durum' && ['Kazandık','Kaybettik','Müşteri işi alamadı'].includes(val)){ return transferRow(i,val); }
-  if(f==='net_ht_eur') v=parseNet(val);
-  else if(f==='adet'){ v=parseInt(String(val).replace(/[^\d]/g,''),10); if(isNaN(v)) v=null; }
-  else if(f==='teklif_tarihi'){ v=toISO(val); if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YYYY biçiminde olmalı."; return; } }
-  else { v=(val===''?null:val); }
-  const {error}=await sb.from("satis_takip").update({[f]:v, updated_at:new Date().toISOString()}).eq("id",r.id);
-  if(error){ m.className="msg err"; m.textContent=error.message; return; }
-  r[f]=v;
-  if(el){ const c=TCOLS.find(x=>x.f===f); if(c){ if(c.t==='num') el.value=(v==null?"":money(v)); else if(c.t==='datetext') el.value=fmtDate(v); } if(c&&c.req) el.classList.toggle("bad",!String(el.value||"").trim()); }
-  m.className="msg ok"; m.textContent="Kaydedildi"; setTimeout(()=>{m.textContent="";},1200); if(f==='net_ht_eur') tkSum();
-  if(f==='teklif_tarihi') renderTakip();
-}
-async function addTk(){
-  const {data,error}=await sb.from("satis_takip").insert([{proje:"Yeni teklif",ulke:"Fransa",durum:"Belirsiz",aktif:true}]).select();
-  if(error){ alert(error.message); return; }
-  TROWS.unshift(data[0]); renderTakip();
-  const inp=document.querySelector('#tkList input[data-f="proje"]'); if(inp){ inp.focus(); inp.select(); }
-}
-async function delTk(i){
-  const r=TROWS[i]; if(!confirm("Bu takip teklifi silinsin mi?")) return;
-  const {error}=await sb.from("satis_takip").delete().eq("id",r.id);
-  if(error){ alert(error.message); return; }
-  TROWS.splice(i,1); renderTakip();
+const ROL = (BLOKLAR.find(b=>b.email===ARB_EMAIL) || {kod:"MB"}).kod;
+
+(function(){
+  const l=document.getElementById("rolLbl");
+  if(ROL==="MB") return;
+  const ad=(BLOKLAR.find(b=>b.kod===ROL)||{}).ad||"";
+  l.innerHTML='<b style="color:#16324f;font-size:12.5px">Oturum: '+esc(ad)+'</b>';
+  const b=document.createElement("button");
+  b.textContent="Rol değiştir";
+  b.style.cssText="margin-left:8px;background:#5a6b7d;color:#fff;border:0;border-radius:8px;padding:5px 10px;font-weight:600;cursor:pointer;font-size:11.5px";
+  b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); };
+  l.appendChild(b);
+})();
+
+function iskelet(K){ return ''
+  +'<div class="aybar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:6px 0 2px">'
+  +  '<button class="btn" id="'+K+'_ayBtn">Aylık Güncelle</button>'
+  +  '<span style="color:#b25a00;font-size:12px;flex:1;min-width:220px">Bu düğmeye yalnız aylık güncelleme için basınız, düzeltme ve revizyon durumunda lütfen basmayınız.</span>'
+  +  '<span class="msg" id="'+K+'_ayMsg"></span>'
+  +'</div>'
+  +'<div class="sechead" style="margin-top:4px">'
+  +  '<h2 class="sec">Muhtemel / Alınan Projeler</h2>'
+  +  '<div class="desc">Her ayın son günü Muhtemel ve Alınan projelerin güncel durumları işlenip “Aylık Güncelle” düğmesine basılır. <b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler.</div>'
+  +'</div>'
+  +'<div class="bar">'
+  +  '<button class="btn sec" id="'+K+'_addM">+ Muhtemel satır</button>'
+  +  '<button class="btn sec" id="'+K+'_addA">+ Alınan satır</button>'
+  +  '<span class="sum" id="'+K+'_sum"></span>'
+  +  '<span class="msg" id="'+K+'_msg"></span>'
+  +'</div>'
+  +'<div id="'+K+'_list" class="card"><div class="load">Yükleniyor…</div></div>'
+  +'<div class="sechead">'
+  +  '<h2 class="sec">Takipteki Teklifler <span class="sum">(yurtdışı — anlık kaydedilir)</span></h2>'
+  +  '<div class="desc">Türkiye dışındaki müşterilere her yeni teklif iletildiğinde, teklif bilgileri aynı gün bu tabloya eklenir. Bu tabloda her hücre anında kaydedilir. <b>Durum</b> zorunludur: <b>Kazandık / Kaybettik / Müşteri işi alamadı</b> seçilirse teklif bu listeden çıkıp yıllık sonuç kayıtlarına taşınır (Satış panosundaki istatistiğe girer); <b>Belirsiz</b> takipte kalır. <b>Takip Tarihi/Notları:</b> her yeni giriş geçmişe eklenir; hücrede yalnız en son bilgi görünür, üzerine gelince tüm geçmiş en yeniden eskiye sıralanır.</div>'
+  +'</div>'
+  +'<div class="bar">'
+  +  '<button class="btn sec" id="'+K+'_tkAdd">+ Teklif satırı</button>'
+  +  '<span class="sum" id="'+K+'_tkSum"></span>'
+  +  '<span class="msg" id="'+K+'_tkMsg"></span>'
+  +'</div>'
+  +'<div id="'+K+'_tkList" class="card"><div class="load">Yükleniyor…</div></div>';
 }
 
-document.getElementById("addM").onclick=()=>addRow("Muhtemel");
-document.getElementById("addA").onclick=()=>addRow("Alınan");
-document.getElementById("tkAdd").onclick=addTk;
-/* ===== Aylık güncelleme işareti (satis_ay_islendi + snapshot + mail) ===== */
-setupAyIsaret("FY","satis_takip_snapshot_al");
-function setupAyIsaret(KAYNAK,SNAP){
+function Blok(cfg){
+  const K=cfg.kod, SUF=cfg.suf, KAYNAK_KEY=cfg.kaynak, GRUP=cfg.grup;
+  const YORUM_TBL="satis_yorum"+SUF, TAKIP_TBL="satis_takip"+SUF, SONUC_TBL="satis_takip_sonuc"+SUF;
+  const SNAP_RPC="satis_takip_snapshot_al"+SUF;
+  const $=s=>document.getElementById(K+"_"+s);
+  const kap=document.getElementById("blok_"+K);
+  kap.innerHTML='<div class="bhead">'+esc(cfg.ad)+'</div>'+iskelet(K);
+
+  /* ===== Muhtemel/Alınan ===== */
+  let ROWS=[], OLD_IDS=[], AKTIF_CEKIM=null;
+  async function load(){
+    const {data,error}=await sb.from(YORUM_TBL).select("*").eq("kaynak",KAYNAK_KEY).eq("aktif",true);
+    if(error){ $("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
+    const d=(data||[]).slice().sort((a,b)=> (a.statu||"").localeCompare(b.statu||"") || (Number(b.net_eur)||0)-(Number(a.net_eur)||0));
+    OLD_IDS=d.map(r=>r.id);
+    { const c={}; (data||[]).forEach(r=>{ if(r.cekim) c[r.cekim]=(c[r.cekim]||0)+1; });
+      AKTIF_CEKIM = Object.keys(c).sort((a,b)=>(c[b]-c[a])||(a<b?1:-1))[0] || null; }
+    ROWS=d.map(r=>({id:r.id,statu:r.statu||"Muhtemel",proje:r.proje||"",musteri:r.musteri||"",ulke:r.ulke||"FR",iskonto:(r.iskonto==null?"":r.iskonto),net_eur:r.net_eur,durum:r.durum||""}));
+    render();
+  }
+  function setMsg(t,ok){ const m=$("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; }
+  function sums(){
+    const m=ROWS.filter(r=>/^muht/i.test(r.statu)), a=ROWS.filter(r=>/^al/i.test(r.statu));
+    const s=arr=>arr.reduce((x,r)=>x+(parseNet(r.net_eur)||0),0);
+    $("sum").innerHTML="Muhtemel <b>"+m.length+"</b> / "+money(s(m))+" € &nbsp;·&nbsp; Alınan <b>"+a.length+"</b> / "+money(s(a))+" €";
+  }
+  function render(){
+    let h='<table style="min-width:820px"><thead><tr>'
+      +'<th style="width:110px">Statü</th><th style="width:150px">Proje</th><th style="width:120px">Müşteri</th>'
+      +'<th class="colp">İskonto %</th><th class="colp">Net (€)</th><th>Durum</th><th class="colp"></th></tr></thead><tbody>';
+    ROWS.forEach((r,i)=>{
+      h+='<tr data-i="'+i+'">'
+        +'<td><select class="cell req" data-f="statu" style="width:100px"><option'+(/^muht/i.test(r.statu)?" selected":"")+'>Muhtemel</option><option'+(/^al/i.test(r.statu)?" selected":"")+'>Alınan</option></select></td>'
+        +'<td><input class="cell req" data-f="proje" value="'+esc(r.proje)+'"></td>'
+        +'<td><input class="cell req" data-f="musteri" value="'+esc(r.musteri)+'"></td>'
+        +'<td class="colp"><input class="cell req" data-f="iskonto" style="width:70px;text-align:right" value="'+esc(r.iskonto)+'"></td>'
+        +'<td class="colp net"><input class="cell req" data-f="net_eur" style="width:100px" value="'+(r.net_eur==null||r.net_eur===""?"":esc(money(r.net_eur)))+'"></td>'
+        +'<td><textarea class="cell req" data-f="durum" style="min-width:200px">'+esc(r.durum)+'</textarea></td>'
+        +'<td class="colp"><button class="del" title="Satırı sil">✕</button></td>'
+        +'</tr>';
+    });
+    h+='</tbody></table>';
+    const list=$("list"); list.innerHTML=h;
+    list.querySelectorAll("[data-f]").forEach(el=>{
+      const i=+el.closest("tr").dataset.i, f=el.dataset.f;
+      el.addEventListener("input",()=>{ ROWS[i][f]=el.value; el.classList.toggle("bad", !String(el.value||"").trim()); sums(); });
+      el.addEventListener("change",()=>{ ROWS[i][f]=el.value; saveRow(i,f); });
+      if(f==="net_eur") el.addEventListener("blur",()=>{ const v=parseNet(el.value); el.value=(v==null?"":money(v)); });
+    });
+    list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delRow(+b.closest("tr").dataset.i));
+    sums();
+  }
+  const stat=r=>/^al/i.test(r.statu)?"Alınan":"Muhtemel";
+  async function saveRow(i,f){
+    const r=ROWS[i]; if(!r) return;
+    if(!r.id){
+      if(!(r.proje||"").trim()) return;
+      const rec={grup:GRUP,kaynak:KAYNAK_KEY,statu:stat(r),proje:(r.proje||"").trim(),musteri:(r.musteri||"").trim(),
+                 iskonto:parseNet(r.iskonto),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),
+                 ulke:(r.ulke||"").trim()||"FR",cekim:(AKTIF_CEKIM||todayISO()),aktif:true};
+      const {data,error}=await sb.from(YORUM_TBL).insert(rec).select();
+      if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
+      r.id=data[0].id; OLD_IDS.push(r.id); setMsg("Kaydedildi ✓",true); sums(); return;
+    }
+    const rec={};
+    rec[f]= (f==="net_eur"||f==="iskonto") ? parseNet(r[f]) : (f==="statu" ? stat(r) : String(r[f]||"").trim());
+    const {error}=await sb.from(YORUM_TBL).update(rec).eq("id",r.id);
+    if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
+    setMsg("Kaydedildi ✓",true); sums();
+  }
+  async function delRow(i){
+    const r=ROWS[i]; if(!r) return;
+    if(r.id){
+      if(!confirm("Bu satır silinsin mi? (geri alınamaz)")) return;
+      const {error}=await sb.from(YORUM_TBL).delete().eq("id",r.id);
+      if(error){ setMsg("Silinemedi: "+error.message,false); return; }
+      OLD_IDS=OLD_IDS.filter(x=>x!==r.id);
+    }
+    ROWS.splice(i,1); render(); setMsg("Silindi",true);
+  }
+  function addRow(statu){ ROWS.push({statu,proje:"",musteri:"",ulke:"FR",iskonto:"",net_eur:null,durum:""}); render(); const inps=$("list").querySelectorAll('input[data-f="proje"]'); if(inps.length) inps[inps.length-1].focus(); }
+  function validateList(){
+    let bad=false;
+    $("list").querySelectorAll('.req').forEach(el=>{ const empty=!String(el.value||"").trim(); el.classList.toggle("bad",empty); if(empty) bad=true; });
+    return !bad;
+  }
+  async function publish(){
+    if(!ROWS.length){ setMsg("En az bir satır ekleyin.",false); return false; }
+    if(!validateList()){ setMsg("Tüm hücreleri doldurun — hiçbir hücre boş/belirsiz bırakılamaz.",false); return false; }
+    const clean=ROWS.map(r=>({grup:GRUP,kaynak:KAYNAK_KEY,statu:(/^al/i.test(r.statu)?"Alınan":"Muhtemel"),proje:(r.proje||"").trim(),musteri:(r.musteri||"").trim(),iskonto:parseNet(r.iskonto),net_eur:parseNet(r.net_eur),durum:(r.durum||"").trim(),ulke:(r.ulke||"").trim()||"FR",cekim:todayISO(),aktif:true}));
+    setMsg("Kaydediliyor…",true);
+    const {error:eIns}=await sb.from(YORUM_TBL).insert(clean);
+    if(eIns){ setMsg("Ekleme hatası: "+eIns.message,false); return false; }
+    if(OLD_IDS.length){ const {error:eA}=await sb.from(YORUM_TBL).update({aktif:false}).in("id",OLD_IDS);
+      if(eA){ setMsg("Eklendi ama önceki arşivlenemedi: "+eA.message,false); return false; } }
+    setMsg("Yayınlandı ✓ ("+clean.length+" proje). Satış panosu güncel.",true);
+    try{ await sb.rpc(SNAP_RPC); }catch(e){}
+    await load();
+    return true;
+  }
+
+  /* ===== Takipteki teklifler — anlık kayıt + Takip Tarihi/Notları geçmiş logu ===== */
+  const TCOLS=[
+   {f:'proje',h:'Proje',w:126,t:'text',req:1},
+   {f:'musteri',h:'Müşteri',w:75,t:'text',req:1},
+   {f:'ulke',h:'Ülke',w:64,t:'text',req:1},
+   {f:'teklif_tarihi',h:'Teklif Tarihi',w:78,t:'datetext',req:1},
+   {f:'agac',h:'Ağaç',w:54,t:'text',req:1},
+   {f:'seri',h:'Seri',w:80,t:'text',req:1},
+   {f:'isk',h:'İskonto %',w:64,t:'text',req:1},
+   {f:'net_ht_eur',h:'Net HT €',w:82,t:'num',req:1},
+   {f:'adet',h:'Adet',w:48,t:'int',req:1},
+   {f:'ihale',h:'İhale',w:90,t:'text'},
+   {f:'durum',h:'Durum',w:150,t:'sel',req:1,opts:['Belirsiz','Kazandık','Kaybettik','Müşteri işi alamadı']}
+  ];
+  let TROWS=[];
+  async function loadTakip(){
+    const {data,error}=await sb.from(TAKIP_TBL).select("*").eq("aktif",true).order("net_ht_eur",{ascending:false});
+    if(error){ $("tkList").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
+    TROWS=data||[]; renderTakip();
+  }
+  function tkSum(){ const net=TROWS.reduce((a,r)=>a+(Number(r.net_ht_eur)||0),0); $("tkSum").innerHTML="<b>"+TROWS.length+"</b> teklif · Net HT "+money(net)+" €"; }
+  function dispVal(r,c){ const v=r[c.f]; if(v==null) return ""; if(c.t==='datetext') return fmtDate(v); if(c.t==='num') return money(v); return v; }
+  function sortTROWS(){ TROWS.sort((a,b)=>{ const da=a.teklif_tarihi||"", db=b.teklif_tarihi||""; if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1; return String(db).localeCompare(String(da)); }); }
+  function pairTD(r,i,pair,dCol,nCol){
+    /* İki ayrı sütun: Takip Tarihi (salt-okur, yalnız en son tarih + hover'da tüm tarihler)
+       ve Takip Notları (yalnız en son not + hover'da tüm geçmiş + yeni giriş mini-formu). */
+    const log=tkParseLog(r[nCol],r[dCol]), last=tkLatest(log), hist=tkHist(log);
+    const histDates = log.length ? log.map(e=>e.t?fmtDate(e.t):"—").join("\n") : "";
+    const todayDMY=fmtDate(todayISO());
+    const gs = pair==='A' ? ' gs' : '';
+    const tdDate='<td class="pair'+pair+gs+'"><div class="tklatest" title="'+esc(histDates)+'">'+esc(last.t?fmtDate(last.t):"—")+'</div></td>';
+    const tdNote='<td class="pair'+pair+'">'
+      +'<div class="tklatest" title="'+esc(hist)+'">'+esc(last.n||"—")+'</div>'
+      +'<div class="tkadd">'
+      +  '<input type="text" class="cell" data-row="'+i+'" data-pair="'+pair+'" data-role="d" placeholder="gg.aa.yy" value="'+todayDMY+'">'
+      +  '<textarea class="cell" data-row="'+i+'" data-pair="'+pair+'" data-role="n" placeholder="Yeni not ekle…"></textarea>'
+      +  '<button class="tkAddBtn" data-row="'+i+'" data-pair="'+pair+'">Ekle</button>'
+      +'</div></td>';
+    return tdDate+tdNote;
+  }
+  function renderTakip(){
+    sortTROWS();
+    let h='<table style="min-width:1420px"><thead><tr>'+TCOLS.map(c=>'<th>'+c.h+'</th>').join('')
+      +'<th class="pairA gs">Takip Tarihi</th><th class="pairA">Takip Notları</th>'
+      +'<th class="pairB gs">Takip Tarihi</th><th class="pairB">Takip Notları</th>'
+      +'<th></th><th></th></tr></thead><tbody>';
+    TROWS.forEach((r,i)=>{
+      h+='<tr data-i="'+i+'">'+TCOLS.map(c=>{
+        const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
+        if(c.t==='sel'){ const opts=c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); return '<td><select class="cell'+req+empty+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
+        return '<td class="'+(c.t==='num'?'net':'')+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
+      }).join('')
+      +pairTD(r,i,'A','son_takip_teklif','takip_sekli')
+      +pairTD(r,i,'B','son_takip_yurtdisi','yurtdisi_notlari')
+      +'<td class="colp"><button class="toM" title="Muhtemel bloğuna taşı">→ Muhtemel</button></td><td class="colp"><button class="del" title="Satırı sil">✕</button></td></tr>';
+    });
+    h+='</tbody></table>';
+    const list=$("tkList"); list.innerHTML=h;
+    list.querySelectorAll("[data-f]").forEach(el=>{ const i=+el.closest("tr").dataset.i, f=el.dataset.f;
+      el.addEventListener("change",()=>saveTk(i,f,el.value,el)); });
+    list.querySelectorAll(".tkAddBtn").forEach(b=>b.onclick=()=>tkAddEntry(+b.dataset.row,b.dataset.pair));
+    list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delTk(+b.closest("tr").dataset.i));
+    list.querySelectorAll(".toM").forEach(b=>b.onclick=()=>toMuhtemel(+b.closest("tr").dataset.i));
+    tkSum();
+  }
+  async function tkAddEntry(i,pair){
+    const r=TROWS[i]; if(!r) return;
+    const dCol = pair==='A' ? 'son_takip_teklif' : 'son_takip_yurtdisi';
+    const nCol = pair==='A' ? 'takip_sekli' : 'yurtdisi_notlari';
+    const tr=$("tkList").querySelector('tr[data-i="'+i+'"]');
+    const dEl=tr.querySelector('input[data-row="'+i+'"][data-pair="'+pair+'"][data-role="d"]');
+    const nEl=tr.querySelector('textarea[data-row="'+i+'"][data-pair="'+pair+'"][data-role="n"]');
+    const noteTxt=(nEl.value||"").trim(); const m=$("tkMsg");
+    if(!noteTxt){ return; }
+    const isoRaw = toISO(dEl.value);
+    if(isoRaw===undefined){ m.className="msg err"; m.textContent="Geçersiz tarih (gg.aa.yy)."; return; }
+    const iso = isoRaw || todayISO();
+    const log=tkParseLog(r[nCol],r[dCol]); log.unshift({t:iso,n:noteTxt});
+    const payload={}; payload[nCol]=JSON.stringify(log); payload[dCol]=iso; payload.updated_at=new Date().toISOString();
+    const {error}=await sb.from(TAKIP_TBL).update(payload).eq("id",r.id);
+    if(error){ m.className="msg err"; m.textContent=error.message; return; }
+    r[nCol]=payload[nCol]; r[dCol]=iso; renderTakip();
+    m.className="msg ok"; m.textContent="Kaydedildi"; setTimeout(()=>{m.textContent="";},1200);
+  }
+  const parseIsk=s=>{ if(s==null) return null; const m=String(s).match(/\d+(?:[.,]\d+)?/); return m? parseFloat(m[0].replace(",",".")): null; };
+  async function toMuhtemel(i){
+    const r=TROWS[i], m=$("tkMsg");
+    if(!confirm("Bu teklif Takipteki Teklifler'den çıkıp Muhtemel bloğuna taşınacak.\n\nOnaylıyor musunuz?")){ return; }
+    const lastA=tkLatest(tkParseLog(r.takip_sekli,r.son_takip_teklif)), lastB=tkLatest(tkParseLog(r.yurtdisi_notlari,r.son_takip_yurtdisi));
+    const notlar=[r.durum,lastA.n,lastB.n].map(x=>String(x==null?"":x).trim()).filter(Boolean).join(" · ");
+    const rec={ grup:GRUP, kaynak:KAYNAK_KEY, statu:"Muhtemel",
+      proje:(r.proje||"").trim()||"(isimsiz)", musteri:(r.musteri||"").trim(),
+      iskonto:parseIsk(r.isk), net_eur:(r.net_ht_eur==null||r.net_ht_eur===""?null:Number(r.net_ht_eur)),
+      durum:notlar||"Takipten taşındı", ulke:(r.ulke||"").trim()||"FR",
+      cekim:(AKTIF_CEKIM||todayISO()), aktif:true };
+    m.className="msg"; m.textContent="Taşınıyor…";
+    const {error:e1}=await sb.from(YORUM_TBL).insert([rec]);
+    if(e1){ m.className="msg err"; m.textContent="Muhtemel'e eklenemedi: "+e1.message; return; }
+    const {error:e2}=await sb.from(TAKIP_TBL).delete().eq("id",r.id);
+    if(e2){ m.className="msg err"; m.textContent="Muhtemel'e eklendi ama takipten silinemedi: "+e2.message; return; }
+    TROWS.splice(i,1); renderTakip();
+    try{ await load(); }catch(e){}
+    m.className="msg ok"; m.textContent="→ Muhtemel bloğuna taşındı ✓"; setTimeout(()=>{m.textContent="";},2500);
+  }
+  async function transferRow(i,durum){
+    const r=TROWS[i], m=$("tkMsg");
+    if(!confirm("'"+durum+"' seçtiniz.\nBu teklif Takipteki Teklifler listesinden çıkıp yıllık sonuç kayıtlarına taşınacak (geri almak için sonuç kaydını silmeniz gerekir).\n\nOnaylıyor musunuz?")){ renderTakip(); return; }
+    const rec={ kaynak_takip_id:r.id, yil:new Date().getFullYear(), durum:durum, ulke:(r.ulke||"Fransa"),
+      proje:r.proje||null, musteri:r.musteri||null, agac:r.agac||null,
+      brut_eur:(r.brut_eur==null||r.brut_eur===""?null:Number(r.brut_eur)),
+      net_ht_eur:(r.net_ht_eur==null||r.net_ht_eur===""?null:Number(r.net_ht_eur)),
+      iskonto:parseIsk(r.isk), adet:(r.adet==null||r.adet===""?null:parseInt(r.adet,10)),
+      teklif_tarihi:r.teklif_tarihi||null, sonuc_tarihi:new Date().toISOString() };
+    const {error:e1}=await sb.from(SONUC_TBL).insert([rec]);
+    if(e1){ m.className="msg err"; m.textContent="Sonuç kaydı hatası: "+e1.message; renderTakip(); return; }
+    const {error:e2}=await sb.from(TAKIP_TBL).delete().eq("id",r.id);
+    if(e2){ m.className="msg err"; m.textContent="Sonuç yazıldı ama takipten silinemedi: "+e2.message; return; }
+    TROWS.splice(i,1); renderTakip();
+    m.className="msg ok"; m.textContent="'"+durum+"' → yıllık sonuç kayıtlarına taşındı ✓ ("+new Date().getFullYear()+")";
+  }
+  async function saveTk(i,f,val,el){
+    const r=TROWS[i]; let v=val; const m=$("tkMsg");
+    if(f==='durum' && ['Kazandık','Kaybettik','Müşteri işi alamadı'].includes(val)){ return transferRow(i,val); }
+    if(f==='net_ht_eur') v=parseNet(val);
+    else if(f==='adet'){ v=parseInt(String(val).replace(/[^\d]/g,''),10); if(isNaN(v)) v=null; }
+    else if(f==='teklif_tarihi'){ v=toISO(val); if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YYYY biçiminde olmalı."; return; } }
+    else { v=(val===''?null:val); }
+    const {error}=await sb.from(TAKIP_TBL).update({[f]:v, updated_at:new Date().toISOString()}).eq("id",r.id);
+    if(error){ m.className="msg err"; m.textContent=error.message; return; }
+    r[f]=v;
+    if(el){ const c=TCOLS.find(x=>x.f===f); if(c){ if(c.t==='num') el.value=(v==null?"":money(v)); else if(c.t==='datetext') el.value=fmtDate(v); } if(c&&c.req) el.classList.toggle("bad",!String(el.value||"").trim()); }
+    m.className="msg ok"; m.textContent="Kaydedildi"; setTimeout(()=>{m.textContent="";},1200); if(f==='net_ht_eur') tkSum();
+    if(f==='teklif_tarihi') renderTakip();
+  }
+  async function addTk(){
+    const {data,error}=await sb.from(TAKIP_TBL).insert([{proje:"Yeni teklif",ulke:"Fransa",durum:"Belirsiz",aktif:true}]).select();
+    if(error){ alert(error.message); return; }
+    TROWS.unshift(data[0]); renderTakip();
+    const inp=$("tkList").querySelector('input[data-f="proje"]'); if(inp){ inp.focus(); inp.select(); }
+  }
+  async function delTk(i){
+    const r=TROWS[i]; if(!confirm("Bu takip teklifi silinsin mi?")) return;
+    const {error}=await sb.from(TAKIP_TBL).delete().eq("id",r.id);
+    if(error){ alert(error.message); return; }
+    TROWS.splice(i,1); renderTakip();
+  }
+
+  $("addM").onclick=()=>addRow("Muhtemel");
+  $("addA").onclick=()=>addRow("Alınan");
+  $("tkAdd").onclick=addTk;
+
+  /* ===== Aylık güncelleme işareti (satis_ay_islendi + snapshot + mail) ===== */
   const AYLAR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
-  const btn0=document.getElementById("ayBtn"); if(!btn0) return;
   const now=new Date();
-  /* ICMAL-AY-GERI: aylik guncelleme BIR ONCEKI ayi kapatir (form ayin ilk is gunu doldurulur) */
   const kapAy=new Date(now.getFullYear(),now.getMonth()-1,1);
   const ay=AYLAR[kapAy.getMonth()]+" "+kapAy.getFullYear();
   const donem=String(kapAy.getMonth()+1).padStart(2,"0")+"."+String(kapAy.getFullYear()).slice(-2);
-  btn0.onclick=async()=>{
-    const m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
+  $("ayBtn").onclick=async()=>{
+    const m=$("ayMsg"), btn=$("ayBtn");
     if(!confirm('"'+ay+'" ayı için aylık güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN (girişler zaten anında kaydediliyor).\n\nOnaylıyor musunuz?')) return;
     btn.disabled=true; m.className="msg"; m.textContent="Yayınlanıyor…";
     const ok=await publish();
     if(!ok){ btn.disabled=false; m.className="msg err"; m.textContent="Yayınlanamadı — mesajı kontrol et."; return; }
     m.className="msg"; m.textContent="İşaretleniyor…";
-    const {error}=await sb.from("satis_ay_islendi").upsert({kaynak:KAYNAK,ay,mail_gonderildi:false,updated_at:new Date().toISOString()},{onConflict:"kaynak"});
+    const {error}=await sb.from("satis_ay_islendi").upsert({kaynak:KAYNAK_KEY,ay,mail_gonderildi:false,updated_at:new Date().toISOString()},{onConflict:"kaynak"});
     if(error){ btn.disabled=false; m.className="msg err"; m.textContent="Hata: "+error.message; return; }
-    if(SNAP){ try{ await sb.rpc(SNAP); }catch(e){} }
-    /* ICMAL-YAZ: Icmal panosunun satis sutunlari (Yurt Disi = YD1+YD2, Toplam = Yurt Ici+YD) */
-    try{ await sb.rpc("icmal_satis_yaz",{p_kaynak:KAYNAK,p_donem:donem}); }catch(e){}
+    try{ await sb.rpc(SNAP_RPC); }catch(e){}
+    try{ await sb.rpc("icmal_satis_yaz",{p_kaynak:KAYNAK_KEY,p_donem:donem}); }catch(e){}
     let note="";
-    try{ const r=await sb.functions.invoke("satis-ay-mail",{body:{kaynak:KAYNAK,ay}});
+    try{ const r=await sb.functions.invoke("satis-ay-mail",{body:{kaynak:KAYNAK_KEY,ay}});
       if(r.error){ note=" (mail gönderilemedi: "+(r.error.message||r.error)+")"; }
-      else { await sb.from("satis_ay_islendi").update({mail_gonderildi:true}).eq("kaynak",KAYNAK); }
+      else { await sb.from("satis_ay_islendi").update({mail_gonderildi:true}).eq("kaynak",KAYNAK_KEY); }
     }catch(e){ note=" (mail gönderilemedi)"; }
     btn.disabled=false; m.className="msg ok"; m.textContent="✓ "+ay+" ayı işaretlendi — panoda görünecek."+note;
   };
+
+  load(); loadTakip();
 }
-load(); loadTakip();
+
+/* Blokları kur — sahibi olmadığın blok DOM'a hiç basılmaz (boş kutu kalmasın). */
+BLOKLAR.forEach(cfg=>{
+  const kap=document.getElementById("blok_"+cfg.kod);
+  const gorunur = (ROL===cfg.kod || ROL==="MB");
+  if(!gorunur){ kap.remove(); return; }
+  Blok(cfg);
+});
 </script>
-
-
 
 
 
@@ -432,7 +532,6 @@ load(); loadTakip();
     var n=e.target, hucre=null;
     while(n && n.nodeType===1 && n!==document.body){
       if(scrollable(n)){
-        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
         if(!n.closest("td,th")) return start(n,e);
         if(!hucre) hucre=n;
       }
