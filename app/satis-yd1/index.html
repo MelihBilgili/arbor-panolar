@@ -238,7 +238,7 @@ function rowHTML(r,key){
       return '<td class="'+(c.t==='num'?'net':'')+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
     +pairCells(r,key)
-    +'<td><select class="cell" data-f="durum" style="width:135px">'+DURUM_OPTS.map(o=>'<option'+(r.durum===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
+    +'<td><select class="cell" data-f="durum" style="width:135px"><option value=""></option>'+DURUM_OPTS.map(o=>'<option'+(r.durum===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
     +(key==="draft" ? '<td class="colp"></td>' : '<td class="colp"><button class="del" title="Satırı sil">✕</button></td>')
     +'</tr>';
 }
