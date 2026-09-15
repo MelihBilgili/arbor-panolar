@@ -26,8 +26,8 @@
   .btn:disabled{opacity:.5;cursor:default}
   .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;overflow:auto}
   table{border-collapse:collapse;width:100%;font-size:13px}
-  thead th{background:#16324f;color:#fff;font-weight:600;font-size:7.5px;padding:8px 3px;text-align:left;white-space:nowrap;position:sticky;top:0}
-  td{border-bottom:1px solid #eef1f5;padding:2.5px 2.33px;vertical-align:top}
+  thead th{background:#16324f;color:#fff;font-weight:600;font-size:7.5px;padding:6px 2px;text-align:left;white-space:normal;line-height:1.15;position:sticky;top:0}
+  td{border-bottom:1px solid #eef1f5;padding:1.5px 1px;vertical-align:top}
   tbody tr:nth-child(even){background:#fbfcfe}
   input.cell,select.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:5px 7px;width:100%;background:#fff}
   input.cell:focus,select.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
@@ -195,7 +195,7 @@ function pairCells(r,i){
 }
 function render(){
   sortROWS();
-  let h='<table style="min-width:2300px"><thead><tr>'
+  let h='<table><thead><tr>'
     +COLS.map(c=>'<th>'+c.h+'</th>').join('')
     +'<th class="pairA gs">Takip Tarihi</th><th class="pairA">Ekleyen</th><th class="pairA">Takip Notları</th>'
     +'<th>Durum</th><th></th></tr></thead><tbody>';
