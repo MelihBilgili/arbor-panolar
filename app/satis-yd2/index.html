@@ -30,6 +30,7 @@
   td{border-bottom:1px solid #eef1f5;padding:0.5px 1px;vertical-align:top}
   tbody tr:nth-child(even){background:#fbfcfe}
   input.cell,select.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:4.25px 7px;width:100%;background:#fff}
+  select.cell{padding-bottom:6px}
   input.cell:focus,select.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
   td.net input{text-align:right}
   textarea.cell{min-height:22px;resize:none}
@@ -152,7 +153,7 @@ const COLS=[
  {f:'adet',h:'Adet',w:43,t:'int'},
  {f:'urun_tipi_serisi',h:'Ürün Tipi / Serisi',w:52,t:'text'},
  {f:'kemer_karolaj',h:'Kemer/Karolaj',w:52,t:'sel',opts:['Yalnız kemer','Yalnız karolaj','Hiçbiri','Hepsi']},
- {f:'sartname_ahsap',h:'Şartname Ahşap?',w:52,t:'sel',opts:['Belirtilmiş','Belirtilmemiş']},
+ {f:'sartname_ahsap',h:'Şartname Ahşap?',w:52,t:'sel',opts:['Evet','Hayır']},
  {f:'teklif_birimi_notlari',h:'Teklif Birimi Notları',w:90,t:'area'},
  {f:'oncelik',h:'Öncelik',w:32,t:'sel',opts:['1','2','3']},
  {f:'teklif_teslim_tarihi',h:'Teklif Teslim Tarihi',w:65,t:'date'},
