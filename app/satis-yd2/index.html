@@ -141,6 +141,7 @@ function tkHist(log){ return log.length? log.map(x=>(x.t?fmtDate(x.t)+" — ":""
 
 const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Öncelik Belirlendi","Teklif Teslim Edildi","Revizyon İstendi","Müş.Bilgi Bekleniyor","Muhtemel","Alındı","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
+const DURUM_BG={"Teklif İncelendi":"#eafbfa","Öncelik Belirlendi":"#e0f5e0","Teklif Teslim Edildi":"#f7e8f2","Muhtemel":"#7ed957","Alındı":"#4caf50","Kaybettik":"#c9c9c9","Müşteri İşi Alamadı":"#e8dfb8"};
 const COLS=[
  {f:'proje',h:'Proje',w:115,t:'text',req:1},
  {f:'musteri',h:'Müşteri',w:86,t:'text',req:1},
@@ -200,7 +201,7 @@ function render(){
     +'<th class="pairA gs">Takip Tarihi</th><th class="pairA">Ekleyen</th><th class="pairA">Takip Notları</th>'
     +'<th>Durum</th><th></th></tr></thead><tbody>';
   ROWS.forEach((r,i)=>{
-    h+='<tr data-i="'+i+'">'+COLS.map(c=>{
+    h+='<tr data-i="'+i+'" style="background:'+(DURUM_BG[r.durum]||"")+'">'+COLS.map(c=>{
       const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
       if(c.t==='area') return '<td><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
       if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); return '<td><select class="cell'+req+empty+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
