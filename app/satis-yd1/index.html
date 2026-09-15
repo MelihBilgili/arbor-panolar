@@ -49,7 +49,7 @@
   .tknotes{display:flex;flex-direction:column;align-items:flex-end;gap:1.5px}
   .tknotes .tklatest,.tknote-input{align-self:stretch;text-align:left;max-width:190px}
   .tknote-input{min-height:22px}
-  .tkAddBtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:4px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
+  .tkAddBtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:1px 8px;font-size:9px;font-weight:700;cursor:pointer}
   .tkAddBtn:hover{background:#204a75}
 html,body{max-width:100vw;overflow-x:hidden}
 </style>
@@ -170,7 +170,7 @@ async function load(){
 }
 function sortROWS(){
   ROWS.sort((a,b)=>{
-    const sa=DURUM_SIRA[a.durum]||99, sb2=DURUM_SIRA[b.durum]||99;
+    const sa=DURUM_SIRA[a.durum]||1, sb2=DURUM_SIRA[b.durum]||1;
     if(sa!==sb2) return sa-sb2;
     const da=a.gelen_tarih||"", db=b.gelen_tarih||"";
     if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
