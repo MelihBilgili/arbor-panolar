@@ -27,9 +27,9 @@
   .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;overflow:auto}
   table{border-collapse:collapse;width:100%;font-size:13px}
   thead th{background:#16324f;color:#fff;font-weight:600;font-size:7.5px;padding:6px 2px;text-align:left;white-space:normal;line-height:1.15;position:sticky;top:0}
-  td{border-bottom:1px solid #eef1f5;padding:1.5px 1px;vertical-align:top}
+  td{border-bottom:1px solid #eef1f5;padding:0.75px 1px;vertical-align:top}
   tbody tr:nth-child(even){background:#fbfcfe}
-  input.cell,select.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:5px 7px;width:100%;background:#fff}
+  input.cell,select.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:4.25px 7px;width:100%;background:#fff}
   input.cell:focus,select.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
   td.net input{text-align:right}
   textarea.cell{min-height:22px;resize:none}
@@ -46,7 +46,7 @@
   .tklatest{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;cursor:default;padding:1px 0}
   td.pairA .tklatest{max-width:190px}
   td.pairA.gs .tklatest{max-width:143px}
-  .tknotes{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+  .tknotes{display:flex;flex-direction:column;align-items:flex-end;gap:1.5px}
   .tknotes .tklatest,.tknote-input{align-self:stretch;text-align:left;max-width:190px}
   .tknote-input{min-height:22px}
   .tkAddBtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:4px 10px;font-size:11.5px;font-weight:700;cursor:pointer}
@@ -187,7 +187,7 @@ function pairCells(r,i){
   const histDates = log.length ? log.map(x=>x.t?fmtDate(x.t):"—").join("\n") : "";
   const histEkleyen = log.length ? log.map(x=>x.e||"—").join("\n") : "";
   const noteCell = (log.length && last.n==="")
-    ? '<textarea class="cell tknote-input" data-row="'+i+'" placeholder="Not yazın…"></textarea>'
+    ? '<textarea class="cell tknote-input" data-row="'+i+'" rows="1" placeholder="Not yazın…"></textarea>'
     : '<div class="tklatest" title="'+esc(hist)+'">'+esc(last.n||"—")+'</div>';
   return '<td class="pairA gs"><div class="tklatest" title="'+esc(histDates)+'">'+esc(last.t?fmtDate(last.t):"—")+'</div></td>'
     +'<td class="pairA"><div class="tklatest" title="'+esc(histEkleyen)+'">'+esc(last.e||"—")+'</div></td>'
@@ -202,7 +202,7 @@ function render(){
   ROWS.forEach((r,i)=>{
     h+='<tr data-i="'+i+'">'+COLS.map(c=>{
       const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
-      if(c.t==='area') return '<td><textarea class="cell'+req+empty+'" data-f="'+c.f+'" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
+      if(c.t==='area') return '<td><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
       if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); return '<td><select class="cell'+req+empty+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
       return '<td class="'+(c.t==='num'?'net':'')+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
