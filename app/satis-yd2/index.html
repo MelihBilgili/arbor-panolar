@@ -27,7 +27,7 @@
   .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;overflow:auto}
   table{border-collapse:collapse;width:100%;font-size:13px}
   thead th{background:#16324f;color:#fff;font-weight:600;font-size:7.5px;padding:6px 2px;text-align:left;white-space:normal;line-height:1.15;position:sticky;top:0}
-  td{border-bottom:1px solid #eef1f5;padding:0.75px 1px;vertical-align:top}
+  td{border-bottom:1px solid #eef1f5;padding:0.5px 1px;vertical-align:top}
   tbody tr:nth-child(even){background:#fbfcfe}
   input.cell,select.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:4.25px 7px;width:100%;background:#fff}
   input.cell:focus,select.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
@@ -45,7 +45,7 @@
   .load{padding:30px;text-align:center;color:#8a97a4}
   .tklatest{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;cursor:default;padding:1px 0}
   td.pairA .tklatest{max-width:190px}
-  td.pairA.gs .tklatest{max-width:143px}
+  td.pairA.gs .tklatest{max-width:193px}
   .tknotes{display:flex;flex-direction:column;align-items:flex-end;gap:1.5px}
   .tknotes .tklatest,.tknote-input{align-self:stretch;text-align:left;max-width:190px}
   .tknote-input{min-height:22px}
@@ -142,20 +142,20 @@ function tkHist(log){ return log.length? log.map(x=>(x.t?fmtDate(x.t)+" — ":""
 const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Öncelik Belirlendi","Teklif Teslim Edildi","Revizyon İstendi","Müş.Bilgi Bekleniyor","Muhtemel","Alındı","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
 const COLS=[
- {f:'proje',h:'Proje',w:128,t:'text',req:1},
- {f:'musteri',h:'Müşteri',w:96,t:'text',req:1},
- {f:'musteri_onem_sinifi',h:'Müşteri Önem Sınıfı',w:38,t:'sel',opts:['1. Sınıf ya da Ciro: >500 m€','2. Sınıf ya da Ciro: 101-500 m€','Ciro: 11-100 m€','Ciro: <10 m€']},
- {f:'gelen_tarih',h:'Gelen Tarih',w:68,t:'date'},
- {f:'istenen_tarih',h:'İstenen Tarih',w:68,t:'date'},
- {f:'ihale',h:'İhale?',w:72,t:'sel',opts:['Alındı','Alınmadı']},
- {f:'talebe_iliskin_notlar',h:'Talebe İlişkin Notlar',w:95,t:'area'},
- {f:'adet',h:'Adet',w:50,t:'int'},
- {f:'urun_tipi_serisi',h:'Ürün Tipi / Serisi',w:65,t:'text'},
- {f:'kemer_karolaj',h:'Kemer/Karolaj',w:55,t:'sel',opts:['Yalnız kemer','Yalnız karolaj','Hiçbiri','Hepsi']},
- {f:'sartname_ahsap',h:'Şartname Ahşap?',w:55,t:'sel',opts:['Belirtilmiş','Belirtilmemiş']},
- {f:'teklif_birimi_notlari',h:'Teklif Birimi Notları',w:95,t:'area'},
- {f:'oncelik',h:'Öncelik',w:35,t:'sel',opts:['1','2','3']},
- {f:'teklif_teslim_tarihi',h:'Teklif Teslim Tarihi',w:72,t:'date'},
+ {f:'proje',h:'Proje',w:115,t:'text',req:1},
+ {f:'musteri',h:'Müşteri',w:86,t:'text',req:1},
+ {f:'musteri_onem_sinifi',h:'Müşteri Önem Sınıfı',w:36,t:'sel',opts:['1. Sınıf ya da Ciro: >500 m€','2. Sınıf ya da Ciro: 101-500 m€','Ciro: 11-100 m€','Ciro: <10 m€']},
+ {f:'gelen_tarih',h:'Gelen Tarih',w:61,t:'date'},
+ {f:'istenen_tarih',h:'İstenen Tarih',w:61,t:'date'},
+ {f:'ihale',h:'İhale?',w:58,t:'sel',opts:['Alındı','Alınmadı']},
+ {f:'talebe_iliskin_notlar',h:'Talebe İlişkin Notlar',w:90,t:'area'},
+ {f:'adet',h:'Adet',w:43,t:'int'},
+ {f:'urun_tipi_serisi',h:'Ürün Tipi / Serisi',w:52,t:'text'},
+ {f:'kemer_karolaj',h:'Kemer/Karolaj',w:52,t:'sel',opts:['Yalnız kemer','Yalnız karolaj','Hiçbiri','Hepsi']},
+ {f:'sartname_ahsap',h:'Şartname Ahşap?',w:52,t:'sel',opts:['Belirtilmiş','Belirtilmemiş']},
+ {f:'teklif_birimi_notlari',h:'Teklif Birimi Notları',w:90,t:'area'},
+ {f:'oncelik',h:'Öncelik',w:32,t:'sel',opts:['1','2','3']},
+ {f:'teklif_teslim_tarihi',h:'Teklif Teslim Tarihi',w:65,t:'date'},
  {f:'agac',h:'Ağaç',w:56,t:'sel',opts:['ÇAM DKD','ÇAM KKK-20cm','ÇAM KKK-70cm','İROKO DKD','LAREKS DKD','MERANTİ DKD','MEŞE DKD','ACCOYA','OKALİPTUS DKD','OKALİPTUS KKK','SAPELLİ DKD']},
  {f:'iskonto_yuzde',h:'İskonto %',w:21,t:'text'},
  {f:'net_tutar',h:'Net Tutar',w:75,t:'num'},
