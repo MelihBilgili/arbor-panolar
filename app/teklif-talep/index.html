@@ -196,7 +196,7 @@ const BLOKLAR = [
 
 const CIRO    = ["< 10 m","11 – 100 m","101 – 500 m","> 500 m"];
 const EH      = ["Evet","Hayır"];
-const IHALE   = ["Alındı","Alınmadı"];
+const IHALE   = ["Evet","Hayır"];
 const KEMER   = ["Yok","Sadece kemer var","Sadece karolaj var","Her ikisi de var"];
 const CALISMA = ["Başladı","Başlamadı"];        /* durum(): "Başladı" → sarı */
 const TESLIM  = ["Edilmedi","Edildi"];          /* durum(): "Edildi"  → yeşil */
@@ -212,7 +212,7 @@ const KOL = [
   {f:"ciro",              b:"Turnover",        t:"sel",  o:CIRO, w:"10ch", ttl:"Company Turnover — "+CIRO_UYARI},
   {f:"gelen_tarih",       b:"Gelen Tarih",     t:"date", w:"8ch"},
   {f:"musteri_tarih",     b:"İstenen Tarih",   t:"date", w:"8ch", ttl:"Müşterinin İstediği Tarih"},
-  {f:"ihale",             b:"İhale?",              t:"sel",  o:IHALE, w:"7ch",  ttl:"İhale Alınmış mı?"},
+  {f:"ihale",             b:"İhale Alındı mı?",              t:"sel",  o:IHALE, w:"7ch",  ttl:"İhale Alınmış mı?"},
   {f:"yd_notlari",        b:"Y. Dışı B. Notları",  t:"text", w:"16ch", ttl:"Yurt Dışı Birim Notları"},
   {f:"urun_adedi",        b:"Adet",                t:"num",  w:"5ch",  ttl:"Ürün Adedi"},
   {f:"urun_tip",          b:"Ürün Tipi / Serisi",  t:"text", w:"11ch", ttl:"Ürün Tip/Seri(ler)i"},
