@@ -85,6 +85,24 @@
   /* Muhtemel/Alınan blokları: dört sütun da sabit genişlik → bütün bloklar (boş olanlar dahil)
      yatayda birebir hizalı, sağ dikey sınırlar da aynı hizada. Başlıkta da aynı genişlik (span.cw). */
   table.sat .sc1{width:21.25ch}table.sat .sc2{width:20ch}table.sat .sc3{width:10ch;text-align:right}table.sat .sc4{width:50.7ch}
+  /* Takiptekiler bloğu (tk1..tk15): daraltılmış sütun genişlikleri + başlıkların 2-3 satıra sarması */
+  table.sat td.tk1>.cx,table.sat th.tk1>.cw{width:12ch}
+  table.sat td.tk2>.cx,table.sat th.tk2>.cw{width:8.5ch}
+  table.sat td.tk3>.cx,table.sat th.tk3>.cw{width:7.5ch}
+  table.sat td.tk4>.cx,table.sat th.tk4>.cw{width:5ch}
+  table.sat td.tk5>.cx,table.sat th.tk5>.cw{width:8ch}
+  table.sat td.tk6>.cx,table.sat th.tk6>.cw{width:9.5ch}
+  table.sat td.tk7>.cx,table.sat th.tk7>.cw{width:5ch}
+  table.sat td.tk8>.cx,table.sat th.tk8>.cw{width:7ch}
+  table.sat td.tk9>.cx,table.sat th.tk9>.cw{width:6.5ch}
+  table.sat td.tk10>.cx,table.sat th.tk10>.cw{width:4.5ch}
+  table.sat td.tk11>.cx,table.sat th.tk11>.cw{width:13ch}
+  table.sat td.tk12>.cx,table.sat th.tk12>.cw{width:8.5ch}
+  table.sat td.tk13>.cx,table.sat th.tk13>.cw{width:7ch}
+  table.sat td.tk14>.cx,table.sat th.tk14>.cw{width:34ch}
+  table.sat td.tk15>.cx,table.sat th.tk15>.cw{width:4ch}
+  table.sat th[class^="tk"]>.cw{white-space:normal;overflow-x:visible;overflow-wrap:break-word;word-break:normal;line-height:1.2;display:block;vertical-align:bottom}
+  table.sat td.tk11,table.sat th.tk11,table.sat td.tk11>.cx{text-align:right}
   table.aup thead th{vertical-align:bottom}
   table.aup td.t-proje>.cx,table.aup td.t-mus>.cx,table.aup td.t-agac>.cx,table.aup td.t-ihale>.cx,table.aup td.t-durum>.cx,table.aup td.t-not>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
   table.aup td.t-proje>.cx::-webkit-scrollbar,table.aup td.t-mus>.cx::-webkit-scrollbar,table.aup td.t-agac>.cx::-webkit-scrollbar,table.aup td.t-ihale>.cx::-webkit-scrollbar,table.aup td.t-durum>.cx::-webkit-scrollbar,table.aup td.t-not>.cx::-webkit-scrollbar{display:none}
@@ -694,10 +712,10 @@ function iskOrt(rows){
 function pipeGenTbl(title, rows, cols){
   const body=rows.map(r=>'<tr>'+cols.map(c=>{
     const v=c.get?c.get(r):(r[c.f]==null?'':r[c.f]);
-    const cls=c.cls?c.cls(r):'';
+    const cls=[c.wcls,c.cls?c.cls(r):''].filter(Boolean).join(' ');
     return `<td class="${cls}"><div class="cx" title="${esc(String(v))}">${esc(String(v))}</div></td>`;
   }).join('')+'</tr>').join('');
-  const head=cols.map(c=>`<th><span class="cw">${esc(c.h)}</span></th>`).join('');
+  const head=cols.map(c=>`<th class="${c.wcls||''}"><span class="cw">${esc(c.h)}</span></th>`).join('');
   return `<h3 class="sec" style="margin-top:26px">${esc(title)} <span class="muted">(${rows.length} satır)</span></h3>
     ${rows.length?`<div class="scroll"><table class="sat"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`:'<div class="hint">Satır yok.</div>'}`;
 }
@@ -724,14 +742,17 @@ function pipelineTables(ydRows, today){
     {h:'İhale?',f:'ihale'},{h:'Talebe İlişkin Notlar',f:'talebe_iliskin_notlar'},{h:'Adet',f:'adet'},{h:'Teklif Birimi Notları',f:'teklif_birimi_notlari'},
     {h:'Geciken Gün',get:r=>{const g=hazGecGun(r); return g==null?'':g;},cls:r=>hazGecGun(r)!=null?'gecgun':''}
   ];
+  /* Sütun genişlikleri (tk1..tk15): kullanıcının verdiği daraltma yüzdeleri, mevcut auto-genişliğe
+     yakın bir taban (başlık uzunluğu + tipik içerik uzunluğu, satis_yd_akis'teki gerçek verinin
+     max/ortalama karakter sayısına göre) üzerinden hesaplandı. Net Tutar (tk11) daraltılmadı, sağa hizalı. */
   const C4=[
-    {h:'Proje',f:'proje'},{h:'Müşteri',f:'musteri'},{h:'İhale?',f:'ihale'},{h:'Adet',f:'adet'},{h:'Ürün Tipi / Serisi',f:'urun_tipi_serisi'},
-    {h:'Kemer/Karolaj',f:'kemer_karolaj'},{h:'Şartname Ahşap?',f:'sartname_ahsap'},{h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi)},
-    {h:'Ağaç',f:'agac'},{h:'İskonto %',f:'iskonto_yuzde'},{h:'Net Tutar',get:r=>(r.net_tutar==null?'':money(r.net_tutar)+' '+(r.para_birimi||'EUR'))},
-    {h:'Takip Tarihi',get:r=>{const l=ydTkLatest(r); return l.t?fdate(l.t):'';}},
-    {h:'Ekleyen',get:r=>ydTkLatest(r).e||''},
-    {h:'Takip Notları',get:r=>ydTkLatest(r).n||''},
-    {h:'Geciken Gün',get:r=>{
+    {h:'Proje',f:'proje',wcls:'tk1'},{h:'Müşteri',f:'musteri',wcls:'tk2'},{h:'İhale?',f:'ihale',wcls:'tk3'},{h:'Adet',f:'adet',wcls:'tk4'},{h:'Ürün Tipi / Serisi',f:'urun_tipi_serisi',wcls:'tk5'},
+    {h:'Kemer/Karolaj',f:'kemer_karolaj',wcls:'tk6'},{h:'Şartname Ahşap?',f:'sartname_ahsap',wcls:'tk7'},{h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi),wcls:'tk8'},
+    {h:'Ağaç',f:'agac',wcls:'tk9'},{h:'İskonto %',f:'iskonto_yuzde',wcls:'tk10'},{h:'Net Tutar',get:r=>(r.net_tutar==null?'':money(r.net_tutar)+' '+(r.para_birimi||'EUR')),wcls:'tk11'},
+    {h:'Takip Tarihi',get:r=>{const l=ydTkLatest(r); return l.t?fdate(l.t):'';},wcls:'tk12'},
+    {h:'Ekleyen',get:r=>ydTkLatest(r).e||'',wcls:'tk13'},
+    {h:'Takip Notları',get:r=>ydTkLatest(r).n||'',wcls:'tk14'},
+    {h:'Geciken Gün',wcls:'tk15',get:r=>{
       const tt=r.teklif_teslim_tarihi, tk=ydTkLatest(r).t||r.son_takip_tarihi;
       const ref = tk ? ((tt&&tt>tk)?tt:tk) : tt;
       if(!ref) return '';
