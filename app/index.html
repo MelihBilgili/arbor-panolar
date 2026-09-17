@@ -676,10 +676,12 @@ async function loadSatis(){
     .satis-wrap table.aup thead th.grph,.satis-wrap table.aup thead th.grpc{border-left:2px solid #6f8cab}
     .satis-wrap table.aup tbody td:nth-child(8),.satis-wrap table.aup tbody td:nth-child(10){border-left:2px solid #dbe5ef}
     .satis-wrap table.aup td.t-durum>.cx{width:9.1ch}
-    .satis-wrap td.gecgun{color:#b23a2e;font-weight:700}</style>
+    .satis-wrap td.gecgun{color:#b23a2e;font-weight:700}
+    .sdt{width:100%;border-collapse:collapse}.sdt td{padding:3px 6px;border-bottom:1px solid #eef1f4;font-size:12.5px}.sdt td.num{text-align:right;white-space:nowrap;color:#516072}</style>
     <div class="satis-wrap">
     <div class="stamp">Sayfa açılışı: ${dOnly(nowIst.toISOString())}${hasBase?'':' · bu ay için ayın ilk iş günü tabanı henüz oluşmadı, farklar bir sonraki ayın ilk iş gününden itibaren görünür'}</div>
     ${satisSummary(regions,hasBase)}
+    ${satisDetayListesi(regions)}
     ${pipelineTables(ydRows,nowIst)}
     ${yillikTeklifIstatistigi(ydRows)}
     </div>`;
@@ -687,6 +689,15 @@ async function loadSatis(){
 const sSum=arr=>arr.reduce((a,r)=>a+(r.pb==='EUR'?(Number(r.net_eur)||0):0),0);
 function eurDelta(v){ const r=Math.round(v); const c=r>0?'#0a6b3f':(r<0?'#b23a2e':'#6a7888'); return ` <span style="color:${c}">(${r>0?'+':(r<0?'−':'')}${money(Math.abs(r))} €)</span>`; }
 /* Üst özet blok: Toplam + bölge satırları; delta = canlı durum − ayın ilk iş günü tabanı (yalnız EUR) */
+function satisDetayListesi(regions){
+  const rowsHtml=arr=>arr.slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0))
+    .map(r=>`<tr><td>${esc(r.proje||"")}</td><td class="num">${money(r.net_eur)} ${esc(r.pb||"EUR")}</td></tr>`).join("");
+  const blok=(ad,arr)=>`<div style="flex:1 1 260px;min-width:220px"><h4 style="margin:10px 0 4px;font-size:12.5px;color:#516072">${esc(ad)} <span class="muted">(${arr.length})</span></h4>
+    ${arr.length?`<table class="sdt"><tbody>${rowsHtml(arr)}</tbody></table>`:'<div class="hint" style="padding:4px 0">Satır yok.</div>'}</div>`;
+  return regions.map(rg=>`
+    <h3 class="sec" style="margin-top:22px">${esc(rg.ad)}</h3>
+    <div style="display:flex;gap:24px;flex-wrap:wrap">${blok('Muhtemel',rg.cM)}${blok('Alınan',rg.cA)}</div>`).join('');
+}
 function satisSummary(regions,hasBase){
   const cell=(cur,base)=>`${money(cur)} €${hasBase?eurDelta(cur-base):''}`;
   const tM=regions.reduce((a,rg)=>a+sSum(rg.cM),0), tA=regions.reduce((a,rg)=>a+sSum(rg.cA),0);
