@@ -734,11 +734,11 @@ function pipelineTables(ydRows, today){
     {h:'Ürün Tipi / Serisi',f:'urun_tipi_serisi'},{h:'Kemer/Karolaj',f:'kemer_karolaj'},{h:'Şartname Ahşap?',f:'sartname_ahsap'},
     {h:'Teklif Birimi Notları',f:'teklif_birimi_notlari'}
   ];
-  /* Revizyon İstendi satırlarında geciken-gün referansı = durumun revizyona devrolduğu tarih (updated_at) */
-  const hazGecRef=r=>r.durum==='Revizyon İstendi' ? (r.updated_at?String(r.updated_at).slice(0,10):null) : r.istenen_tarih;
-  const hazGecGun=r=>{ const ref=hazGecRef(r); if(!ref) return null; const g=gunFark(today,ref); return g>0?g:null; };
+  /* Geciken Gün = sayfa açılış tarihi − Teklif Teslim Tarihi (yalnız pozitifse kırmızı gösterilir) */
+  const hazGecGun=r=>{ if(!r.teklif_teslim_tarihi) return null; const g=gunFark(today,r.teklif_teslim_tarihi); return g>0?g:null; };
   const C2=[
     {h:'Proje',f:'proje'},{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
+    {h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi)},
     {h:'İhale?',f:'ihale'},{h:'Talebe İlişkin Notlar',f:'talebe_iliskin_notlar'},{h:'Adet',f:'adet'},{h:'Teklif Birimi Notları',f:'teklif_birimi_notlari'},
     {h:'Geciken Gün',get:r=>{const g=hazGecGun(r); return g==null?'':g;},cls:r=>hazGecGun(r)!=null?'gecgun':''}
   ];
@@ -747,7 +747,7 @@ function pipelineTables(ydRows, today){
      max/ortalama karakter sayısına göre) üzerinden hesaplandı. Net Tutar (tk11) daraltılmadı, sağa hizalı. */
   const C4=[
     {h:'Proje',f:'proje',wcls:'tk1'},{h:'Müşteri',f:'musteri',wcls:'tk2'},{h:'İhale?',f:'ihale',wcls:'tk3'},{h:'Adet',f:'adet',wcls:'tk4'},{h:'Ürün Tipi / Serisi',f:'urun_tipi_serisi',wcls:'tk5'},
-    {h:'Kemer/​Karolaj',f:'kemer_karolaj',wcls:'tk6'},{h:'Şartname Ahşap?',f:'sartname_ahsap',wcls:'tk7'},{h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi),wcls:'tk8'},
+    {h:'Kemer / Karolaj',f:'kemer_karolaj',wcls:'tk6'},{h:'Şartname Ahşap?',f:'sartname_ahsap',wcls:'tk7'},{h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi),wcls:'tk8'},
     {h:'Ağaç',f:'agac',wcls:'tk9'},{h:'İskonto %',f:'iskonto_yuzde',wcls:'tk10'},{h:'Net Tutar',get:r=>(r.net_tutar==null?'':money(r.net_tutar)+' '+(r.para_birimi||'EUR')),wcls:'tk11'},
     {h:'Takip Tarihi',get:r=>{const l=ydTkLatest(r); return l.t?fdate(l.t):'';},wcls:'tk12'},
     {h:'Ekleyen',get:r=>ydTkLatest(r).e||'',wcls:'tk13'},
