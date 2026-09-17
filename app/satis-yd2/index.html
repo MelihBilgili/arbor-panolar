@@ -212,8 +212,9 @@ async function load(){
   ROWS=data||[]; DRAFT=newDraftRow(); render();
 }
 function sortROWS(){
+  const tierOf=d=> d==="Revizyon İstendi" ? 999 : (DURUM_SIRA[d]||1);
   ROWS.sort((a,b)=>{
-    const sa=DURUM_SIRA[a.durum]||1, sb2=DURUM_SIRA[b.durum]||1;
+    const sa=tierOf(a.durum), sb2=tierOf(b.durum);
     if(sa!==sb2) return sa-sb2;
     const da=a.gelen_tarih||"", db=b.gelen_tarih||"";
     if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
@@ -258,7 +259,7 @@ function render(){
   h+=rowHTML(DRAFT,"draft");
   ROWS.forEach((r,i)=>{ h+=rowHTML(r,i); });
   h+='</tbody></table>';
-  h+='<div class="legend">'+DURUM_OPTS.filter(d=>DURUM_BG[d]).map(d=>'<span class="lg-item"><span class="lg-sw" style="background:'+DURUM_BG[d]+'"></span>'+esc(d)+'</span>').join('')+'</div>';
+  h+='<div class="legend">'+DURUM_OPTS.filter(d=>DURUM_BG[d]&&d!=="Revizyon İstendi").concat(["Revizyon İstendi"]).map(d=>'<span class="lg-item"><span class="lg-sw" style="background:'+DURUM_BG[d]+'"></span>'+esc(d)+'</span>').join('')+'</div>';
   const list=document.getElementById("list"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{
     const key=el.closest("tr").dataset.i, f=el.dataset.f;
