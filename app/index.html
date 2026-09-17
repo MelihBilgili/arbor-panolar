@@ -679,7 +679,6 @@ async function loadSatis(){
     .satis-wrap td.gecgun{color:#b23a2e;font-weight:700}
     .sdt{width:100%;border-collapse:collapse}.sdt td{padding:3px 6px;border-bottom:1px solid #eef1f4;font-size:12.5px}.sdt td.num{text-align:right;white-space:nowrap;color:#516072}</style>
     <div class="satis-wrap">
-    <div class="stamp">Sayfa açılışı: ${dOnly(nowIst.toISOString())}${hasBase?'':' · bu ay için ayın ilk iş günü tabanı henüz oluşmadı, farklar bir sonraki ayın ilk iş gününden itibaren görünür'}</div>
     ${satisSummary(regions,hasBase)}
     ${satisDetayListesi(regions)}
     ${pipelineTables(ydRows,nowIst)}
