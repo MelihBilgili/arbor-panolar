@@ -323,7 +323,7 @@ async function saveRow(key,f,val,el){
   if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YYYY biçiminde olmalı."; return; }
   if(f==='durum' && v){
     const tier=DURUM_SIRA[v];
-    if((tier===1||tier===2) && !rangeFilled(r,1,6)){ el.value=r.durum||""; setMsg("Bu durum için ilk 6 sütun (Proje, Müşteri, Müşteri Önem Sınıfı, Gelen Tarih, İstenen Tarih, İhale?) dolu olmalı.",false); return; }
+    if(tier>=1 && tier<=4 && !rangeFilled(r,1,6)){ el.value=r.durum||""; setMsg("Bu durum için ilk 6 sütun (Proje, Müşteri, Müşteri Önem Sınıfı, Gelen Tarih, İstenen Tarih, İhale?) dolu olmalı.",false); return; }
     if(tier===5 && !state5Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için 1-6, 8-11, 13 ve 14-18 sütunlarının hepsi dolu olmalı.",false); return; }
     if(tier>=6 && !state6to11Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için Takip Tarihi/Ekleyen/Takip Notları alanları dolu olmalı.",false); return; }
   }
