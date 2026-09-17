@@ -53,6 +53,9 @@
   .tknote-input{min-height:22px}
   .tkAddBtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:4px 10px;font-size:11.5px;font-weight:700;cursor:pointer;flex:none}
   .tkAddBtn:hover{background:#204a75}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;padding:10px 6px 4px;font-size:12px;color:#5a6b7d}
+  .lg-item{display:inline-flex;align-items:center;gap:6px}
+  .lg-sw{width:14px;height:14px;border-radius:3px;border:1px solid #cdd6df;display:inline-block}
 html,body{max-width:100vw;overflow-x:hidden}
 </style>
 </head>
@@ -142,7 +145,7 @@ function tkHist(log){ return log.length? log.map(x=>(x.t?fmtDate(x.t)+" — ":""
 
 const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Öncelik Belirlendi","Teklif Teslim Edildi","Revizyon İstendi","Müş.Bilgi Bekleniyor","Muhtemel","Alındı","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
-const DURUM_BG={"Teklif İncelendi":"#eafbfa","Öncelik Belirlendi":"#e0f5e0","Teklif Teslim Edildi":"#f7e8f2","Muhtemel":"#7ed957","Alındı":"#4caf50","Kaybettik":"#c9c9c9","Müşteri İşi Alamadı":"#e8dfb8"};
+const DURUM_BG={"Teklif İncelendi":"#eafbfa","Öncelik Belirlendi":"#e0f5e0","Teklif Teslim Edildi":"#f7e8f2","Revizyon İstendi":"#e8dfb8","Muhtemel":"#7ed957","Alındı":"#4caf50","Kaybettik":"#c9c9c9","Müşteri İşi Alamadı":"#e8dfb8"};
 const COLS=[
  {f:'proje',h:'Proje',w:115,t:'text',req:1},
  {f:'musteri',h:'Müşteri',w:69,t:'text',req:1},
@@ -253,6 +256,7 @@ function render(){
   h+=rowHTML(DRAFT,"draft");
   ROWS.forEach((r,i)=>{ h+=rowHTML(r,i); });
   h+='</tbody></table>';
+  h+='<div class="legend">'+DURUM_OPTS.filter(d=>DURUM_BG[d]).map(d=>'<span class="lg-item"><span class="lg-sw" style="background:'+DURUM_BG[d]+'"></span>'+esc(d)+'</span>').join('')+'</div>';
   const list=document.getElementById("list"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{
     const key=el.closest("tr").dataset.i, f=el.dataset.f;
