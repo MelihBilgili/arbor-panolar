@@ -745,6 +745,13 @@ function pipelineTables(ydRows, today){
   /* Sütun genişlikleri (tk1..tk15): kullanıcının verdiği daraltma yüzdeleri, mevcut auto-genişliğe
      yakın bir taban (başlık uzunluğu + tipik içerik uzunluğu, satis_yd_akis'teki gerçek verinin
      max/ortalama karakter sayısına göre) üzerinden hesaplandı. Net Tutar (tk11) daraltılmadı, sağa hizalı. */
+  const tkGecGun=r=>{
+    const tt=r.teklif_teslim_tarihi, tk=ydTkLatest(r).t||r.son_takip_tarihi;
+    const ref = tk ? ((tt&&tt>tk)?tt:tk) : tt;
+    if(!ref) return null;
+    const g=gunFark(today,ref)-15;
+    return g>0?g:null;
+  };
   const C4=[
     {h:'Proje',f:'proje',wcls:'tk1'},{h:'Müşteri',f:'musteri',wcls:'tk2'},{h:'İhale?',f:'ihale',wcls:'tk3'},{h:'Adet',f:'adet',wcls:'tk4'},{h:'Ürün Tipi / Serisi',f:'urun_tipi_serisi',wcls:'tk5'},
     {h:'Kemer / Karolaj',f:'kemer_karolaj',wcls:'tk6'},{h:'Şartname Ahşap?',f:'sartname_ahsap',wcls:'tk7'},{h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi),wcls:'tk8'},
@@ -752,13 +759,7 @@ function pipelineTables(ydRows, today){
     {h:'Takip Tarihi',get:r=>{const l=ydTkLatest(r); return l.t?fdate(l.t):'';},wcls:'tk12'},
     {h:'Ekleyen',get:r=>ydTkLatest(r).e||'',wcls:'tk13'},
     {h:'Takip Notları',get:r=>ydTkLatest(r).n||'',wcls:'tk14'},
-    {h:'Geciken Gün',wcls:'tk15',get:r=>{
-      const tt=r.teklif_teslim_tarihi, tk=ydTkLatest(r).t||r.son_takip_tarihi;
-      const ref = tk ? ((tt&&tt>tk)?tt:tk) : tt;
-      if(!ref) return '';
-      const g=gunFark(today,ref)-15;
-      return g>0?g:'';
-    }}
+    {h:'Geciken Gün',wcls:'tk15',get:r=>{const g=tkGecGun(r); return g==null?'':g;},cls:r=>tkGecGun(r)!=null?'gecgun':''}
   ];
   /* Her aşama tablosu Yurt Dışı 1 / Yurt Dışı 2 olarak ikiye ayrılır (blok alanına göre) */
   const two=(title,rows,cols)=>
