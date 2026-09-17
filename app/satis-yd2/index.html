@@ -47,9 +47,9 @@
   .load{padding:30px;text-align:center;color:#8a97a4}
   .tklatest{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;cursor:default;padding:1px 0}
   td.pairA .tklatest{max-width:190px}
-  td.pairA.gs .tklatest{max-width:179px}
-  .tknotes{display:flex;flex-direction:row;align-items:center;gap:4px;min-width:128px}
-  .tknotes .tklatest,.tknote-input{flex:1;min-width:0;max-width:102px;text-align:left}
+  td.pairA.gs .tklatest{max-width:158px}
+  .tknotes{display:flex;flex-direction:row;align-items:center;gap:4px;min-width:109px}
+  .tknotes .tklatest,.tknote-input{flex:1;min-width:0;max-width:87px;text-align:left}
   .tknote-input{min-height:22px}
   .tkAddBtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:4px 10px;font-size:11.5px;font-weight:700;cursor:pointer;flex:none}
   .tkAddBtn:hover{background:#204a75}
@@ -158,15 +158,15 @@ const COLS=[
  {f:'talebe_iliskin_notlar',h:'Talebe İlişkin Notlar',w:90,t:'area'},
  {f:'adet',h:'Adet',w:43,t:'int'},
  {f:'urun_tipi_serisi',h:'Ürün Tipi / Serisi',w:48,t:'text'},
- {f:'kemer_karolaj',h:'Kemer/Karolaj',w:52,t:'sel',opts:['Yalnız kemer','Yalnız karolaj','Hiçbiri','Hepsi']},
- {f:'sartname_ahsap',h:'Şartname Ahşap?',w:52,t:'sel',opts:['Evet','Hayır']},
+ {f:'kemer_karolaj',h:'Kemer/Karolaj',w:47,t:'sel',opts:['Yalnız kemer','Yalnız karolaj','Hiçbiri','Hepsi']},
+ {f:'sartname_ahsap',h:'Şartname Ahşap?',w:49,t:'sel',opts:['Evet','Hayır']},
  {f:'teklif_birimi_notlari',h:'Teklif Birimi Notları',w:90,t:'area'},
- {f:'oncelik',h:'Öncelik',w:32,t:'sel',opts:['1','2','3']},
+ {f:'oncelik',h:'Öncelik',w:30,t:'sel',opts:['1','2','3']},
  {f:'teklif_teslim_tarihi',h:'Teklif Teslim Tarihi',w:56,t:'date'},
  {f:'agac',h:'Ağaç',w:55,t:'sel',opts:['ÇAM DKD','ÇAM KKK-20cm','ÇAM KKK-70cm','İROKO DKD','LAREKS DKD','MERANTİ DKD','MEŞE DKD','ACCOYA','OKALİPTUS DKD','OKALİPTUS KKK','SAPELLİ DKD']},
- {f:'iskonto_yuzde',h:'İskonto %',w:25,t:'text'},
+ {f:'iskonto_yuzde',h:'İskonto %',w:29,t:'text'},
  {f:'net_tutar',h:'Net Tutar',w:68,t:'num'},
- {f:'para_birimi',h:'Para Birimi',w:47,t:'sel',opts:['EUR','GBP','USD']}
+ {f:'para_birimi',h:'Para Birimi',w:45,t:'sel',opts:['EUR','GBP','USD']}
 ];
 const REQ_F=COLS.filter(c=>c.req).map(c=>c.f);
 let ROWS=[];
