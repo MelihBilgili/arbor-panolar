@@ -677,32 +677,31 @@ async function loadSatis(){
     .satis-wrap table.aup tbody td:nth-child(8),.satis-wrap table.aup tbody td:nth-child(10){border-left:2px solid #dbe5ef}
     .satis-wrap table.aup td.t-durum>.cx{width:9.1ch}
     .satis-wrap td.gecgun{color:#b23a2e;font-weight:700}
-    .sdt{width:100%;border-collapse:collapse}.sdt td{padding:3px 6px;border-bottom:1px solid #eef1f4;font-size:12.5px}.sdt td.num{text-align:right;white-space:nowrap;color:#516072}</style>
+    table.ssum td.sdlist{vertical-align:top;padding:2px 6px 6px}
+    .sdi{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0;border-bottom:1px solid #eef1f4}
+    .sdi-p{color:#2c3542}
+    .sdi-t{color:#516072;white-space:nowrap;text-align:right}</style>
     <div class="satis-wrap">
     ${satisSummary(regions,hasBase)}
-    ${satisDetayListesi(regions)}
     ${pipelineTables(ydRows,nowIst)}
     ${yillikTeklifIstatistigi(ydRows)}
     </div>`;
 }
 const sSum=arr=>arr.reduce((a,r)=>a+(r.pb==='EUR'?(Number(r.net_eur)||0):0),0);
 function eurDelta(v){ const r=Math.round(v); const c=r>0?'#0a6b3f':(r<0?'#b23a2e':'#6a7888'); return ` <span style="color:${c}">(${r>0?'+':(r<0?'−':'')}${money(Math.abs(r))} €)</span>`; }
-/* Üst özet blok: Toplam + bölge satırları; delta = canlı durum − ayın ilk iş günü tabanı (yalnız EUR) */
-function satisDetayListesi(regions){
-  const rowsHtml=arr=>arr.slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0))
-    .map(r=>`<tr><td>${esc(r.proje||"")}</td><td class="num">${money(r.net_eur)} ${esc(r.pb||"EUR")}</td></tr>`).join("");
-  const blok=(ad,arr)=>`<div style="flex:1 1 260px;min-width:220px"><h4 style="margin:10px 0 4px;font-size:12.5px;color:#516072">${esc(ad)} <span class="muted">(${arr.length})</span></h4>
-    ${arr.length?`<table class="sdt"><tbody>${rowsHtml(arr)}</tbody></table>`:'<div class="hint" style="padding:4px 0">Satır yok.</div>'}</div>`;
-  return regions.map(rg=>`
-    <h3 class="sec" style="margin-top:22px">${esc(rg.ad)}</h3>
-    <div style="display:flex;gap:24px;flex-wrap:wrap">${blok('Muhtemel',rg.cM)}${blok('Alınan',rg.cA)}</div>`).join('');
-}
+/* Üst özet blok: Toplam + bölge satırları (delta = canlı durum − ayın ilk iş günü tabanı, yalnız EUR);
+   her bölge satırının hemen altına, aynı Muhtemel/Alınan sütunlarının içine gömülü proje listesi (proje adı + tutar, tutara göre azalan). Toplam satırının altına liste eklenmez. */
 function satisSummary(regions,hasBase){
   const cell=(cur,base)=>`${money(cur)} €${hasBase?eurDelta(cur-base):''}`;
   const tM=regions.reduce((a,rg)=>a+sSum(rg.cM),0), tA=regions.reduce((a,rg)=>a+sSum(rg.cA),0);
   const tbM=regions.reduce((a,rg)=>a+rg.baseM,0), tbA=regions.reduce((a,rg)=>a+rg.baseA,0);
+  const itemList=arr=>arr.length?arr.slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0))
+    .map(r=>`<div class="sdi"><span class="sdi-p">${esc(r.proje||"")}</span><span class="sdi-t">${money(r.net_eur)} ${esc(r.pb||"EUR")}</span></div>`).join(''):'';
   let body=`<tr class="stot"><td>Toplam</td><td class="num">${cell(tM,tbM)}</td><td class="num">${cell(tA,tbA)}</td></tr>`;
-  regions.forEach(rg=>{ body+=`<tr class="sreg"><td>${esc(rg.ad)}</td><td class="num">${cell(sSum(rg.cM),rg.baseM)}</td><td class="num">${cell(sSum(rg.cA),rg.baseA)}</td></tr>`; });
+  regions.forEach(rg=>{
+    body+=`<tr class="sreg"><td>${esc(rg.ad)}</td><td class="num">${cell(sSum(rg.cM),rg.baseM)}</td><td class="num">${cell(sSum(rg.cA),rg.baseA)}</td></tr>`;
+    body+=`<tr class="sitm"><td></td><td class="sdlist">${itemList(rg.cM)}</td><td class="sdlist">${itemList(rg.cA)}</td></tr>`;
+  });
   return `<div class="scroll" style="max-height:none;overflow-y:visible;overflow-x:auto;-webkit-overflow-scrolling:touch;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num">Alınan</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 /* satis_yd_akis'in son_takip_notlari JSON geçmiş-logu ([{t,e,n}], yeni-en-üstte) — yalnız okuma */
