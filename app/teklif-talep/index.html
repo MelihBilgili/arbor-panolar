@@ -196,7 +196,7 @@ const BLOKLAR = [
 
 const CIRO    = ["< 10 m","11 – 100 m","101 – 500 m","> 500 m"];
 const EH      = ["Evet","Hayır"];
-const IHALE   = ["Evet","Hayır"];
+const IHALE   = ["Alındı","Alınmadı"];
 const KEMER   = ["Yok","Sadece kemer var","Sadece karolaj var","Her ikisi de var"];
 const CALISMA = ["Başladı","Başlamadı"];        /* durum(): "Başladı" → sarı */
 const TESLIM  = ["Edilmedi","Edildi"];          /* durum(): "Edildi"  → yeşil */
@@ -212,7 +212,7 @@ const KOL = [
   {f:"ciro",              b:"Turnover",        t:"sel",  o:CIRO, w:"10ch", ttl:"Company Turnover — "+CIRO_UYARI},
   {f:"gelen_tarih",       b:"Gelen Tarih",     t:"date", w:"8ch"},
   {f:"musteri_tarih",     b:"İstenen Tarih",   t:"date", w:"8ch", ttl:"Müşterinin İstediği Tarih"},
-  {f:"ihale",             b:"İhale Alındı mı?",              t:"sel",  o:IHALE, w:"7ch",  ttl:"İhale Alınmış mı?"},
+  {f:"ihale",             b:"İhale?",              t:"sel",  o:IHALE, w:"7ch",  ttl:"İhale Alınmış mı?"},
   {f:"yd_notlari",        b:"Y. Dışı B. Notları",  t:"text", w:"16ch", ttl:"Yurt Dışı Birim Notları"},
   {f:"urun_adedi",        b:"Adet",                t:"num",  w:"5ch",  ttl:"Ürün Adedi"},
   {f:"urun_tip",          b:"Ürün Tipi / Serisi",  t:"text", w:"11ch", ttl:"Ürün Tip/Seri(ler)i"},
@@ -736,5 +736,26 @@ BLOKLAR.forEach(cfg=>{
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
+<script>
+/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
+(function(){
+  function fx(el){
+    if(!el||el.nodeType!==1) return;
+    var tag=el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
+    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
+    if(el.children.length) return;
+    var t=(el.textContent||'').trim();
+    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
+  }
+  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
+  document.addEventListener('input',function(e){ fx(e.target); },true);
+  document.addEventListener('change',function(e){ fx(e.target); },true);
+  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<!-- /ARB-HOVERTITLE -->
 </body>
 </html>
