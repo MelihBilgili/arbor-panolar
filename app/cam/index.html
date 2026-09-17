@@ -59,6 +59,11 @@ function calc(){const f=feats();$('ortaWrap').style.display=f.triple?'block':'no
   $('formula').innerHTML='<b>Çarpımsal model:</b> €/m² = e^( '+M.intercept.toFixed(2)+' + '+M.totglass.toFixed(3)+'·kalınlık(mm) + Σ katsayı·parametre ) − 1. Seçili toplam cam kalınlığı <b>'+f.totglass+' mm</b>. Etkiler (×): Low-e ×'+Math.exp(M.lowe).toFixed(2)+' · Akustik ×'+Math.exp(M.acoustic).toFixed(2)+' · Temperli ×'+Math.exp(M.temper).toFixed(2)+' · Cool Lite ×'+Math.exp(M.coollite).toFixed(2)+' · AGC Energy ×'+Math.exp(M.energy).toFixed(2)+' · Fire Proof ×'+Math.exp(M.fireproof).toFixed(1)+' · Eğrisel ×'+Math.exp(M.egrisel).toFixed(2)+' · Kemerli ×'+Math.exp(M.kemerli).toFixed(2)+'.';}
 document.querySelectorAll('select,input').forEach(e=>e.addEventListener('input',calc));calc();
 </script>
+
+
+
+
+
 <!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
@@ -106,4 +111,25 @@ document.querySelectorAll('select,input').forEach(e=>e.addEventListener('input',
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
+<script>
+/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
+(function(){
+  function fx(el){
+    if(!el||el.nodeType!==1) return;
+    var tag=el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
+    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
+    if(el.children.length) return;
+    var t=(el.textContent||'').trim();
+    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
+  }
+  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
+  document.addEventListener('input',function(e){ fx(e.target); },true);
+  document.addEventListener('change',function(e){ fx(e.target); },true);
+  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<!-- /ARB-HOVERTITLE -->
 </body></html>
