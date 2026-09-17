@@ -193,10 +193,9 @@ function render(){
   /* Her hucre degisikligi ANINDA kaydedilir (Aylik Guncelle beklenmez). */
   list.querySelectorAll("[data-f]").forEach(el=>{
     const i=+el.closest("tr").dataset.i, f=el.dataset.f;
-    el.title=el.value||"";
-    el.addEventListener("input",()=>{ ROWS[i][f]=el.value; el.classList.toggle("bad", !String(el.value||"").trim()); el.title=el.value||""; sums(); });
+    el.addEventListener("input",()=>{ ROWS[i][f]=el.value; el.classList.toggle("bad", !String(el.value||"").trim()); sums(); });
     el.addEventListener("change",()=>{ ROWS[i][f]=el.value; saveRow(i,f); });
-    if(f==="net_eur") el.addEventListener("blur",()=>{ const v=parseNet(el.value); el.value=(v==null?"":money(v)); el.title=el.value||""; });
+    if(f==="net_eur") el.addEventListener("blur",()=>{ const v=parseNet(el.value); el.value=(v==null?"":money(v)); });
   });
   list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delRow(+b.closest("tr").dataset.i));
   sums();
@@ -294,8 +293,6 @@ function renderTakip(){
   h+='</tbody></table>';
   const list=document.getElementById("tkList"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{ const i=+el.closest("tr").dataset.i, f=el.dataset.f;
-    el.title=el.value||"";
-    el.addEventListener("input",()=>{ el.title=el.value||""; });
     el.addEventListener("change",()=>saveTk(i,f,el.value,el)); });
   list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delTk(+b.closest("tr").dataset.i));
   list.querySelectorAll(".toM").forEach(b=>b.onclick=()=>toMuhtemel(+b.closest("tr").dataset.i));
@@ -351,7 +348,7 @@ async function saveTk(i,f,val,el){
   const {error}=await sb.from("satis_takip_2").update({[f]:v, updated_at:new Date().toISOString()}).eq("id",r.id);
   if(error){ m.className="msg err"; m.textContent=error.message; return; }
   r[f]=v;
-  if(el){ const c=TCOLS.find(x=>x.f===f); if(c){ if(c.t==='num') el.value=(v==null?"":money(v)); else if(c.t==='datetext') el.value=fmtDate(v); } el.title=el.value||""; if(c&&c.req) el.classList.toggle("bad",!String(el.value||"").trim()); }
+  if(el){ const c=TCOLS.find(x=>x.f===f); if(c){ if(c.t==='num') el.value=(v==null?"":money(v)); else if(c.t==='datetext') el.value=fmtDate(v); } if(c&&c.req) el.classList.toggle("bad",!String(el.value||"").trim()); }
   m.className="msg ok"; m.textContent="Kaydedildi"; setTimeout(()=>{m.textContent="";},1200); if(f==='net_ht_eur') tkSum();
   if(f==='teklif_tarihi') renderTakip();
 }
@@ -456,5 +453,26 @@ load(); loadTakip();
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
+<script>
+/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
+(function(){
+  function fx(el){
+    if(!el||el.nodeType!==1) return;
+    var tag=el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
+    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
+    if(el.children.length) return;
+    var t=(el.textContent||'').trim();
+    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
+  }
+  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
+  document.addEventListener('input',function(e){ fx(e.target); },true);
+  document.addEventListener('change',function(e){ fx(e.target); },true);
+  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<!-- /ARB-HOVERTITLE -->
 </body>
 </html>
