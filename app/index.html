@@ -724,9 +724,7 @@ function pipelineTables(ydRows, today){
   const sorted=ydRows.slice().sort((a,b)=>String(b.gelen_tarih||'').localeCompare(String(a.gelen_tarih||'')));
   const eksik=sorted.filter(r=>!r.durum||r.durum==='Teklif Talebi Geldi');
   const oncelik=sorted.filter(r=>r.durum==='Teklif İncelendi');
-  /* Revizyon İstendi de burada: teklif yeniden hazırlığa döner; geciken gün istenen_tarih yerine
-     revizyona devrolan tarihi (updated_at — otomatik durum-geçiş kaydı yok, en yakın vekil budur) baz alır */
-  const hazirlik=sorted.filter(r=>r.durum==='Teklif Bekleniyor'||r.durum==='Revizyon İstendi');
+  const hazirlik=sorted.filter(r=>r.durum==='Teklif Bekleniyor');
   const takiptekiler=sorted.filter(r=>r.durum==='Teklif Teslim Edildi'||r.durum==='Takip Bekleniyor');
   const C1=[
     {h:'Proje',f:'proje'},{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
