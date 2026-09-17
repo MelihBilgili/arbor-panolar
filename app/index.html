@@ -701,12 +701,14 @@ function pipeGenTbl(title, rows, cols){
   return `<h3 class="sec" style="margin-top:26px">${esc(title)} <span class="muted">(${rows.length} satır)</span></h3>
     ${rows.length?`<div class="scroll"><table class="sat"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`:'<div class="hint">Satır yok.</div>'}`;
 }
-/* Yurt Dışı Satış 1+2 (satis_yd_akis) — durum bazlı 4 aşama; Takipteki Teklifler bloklarının yerini alır */
+/* Yurt Dışı Satış 1+2 (satis_yd_akis) — durum bazlı 4 aşama, her biri YD1/YD2 alt-bloklarına ayrılır; Takipteki Teklifler bloklarının yerini alır */
 function pipelineTables(ydRows, today){
   const sorted=ydRows.slice().sort((a,b)=>String(b.gelen_tarih||'').localeCompare(String(a.gelen_tarih||'')));
   const eksik=sorted.filter(r=>!r.durum||r.durum==='Teklif Talebi Geldi');
   const oncelik=sorted.filter(r=>r.durum==='Teklif İncelendi');
-  const hazirlik=sorted.filter(r=>r.durum==='Teklif Bekleniyor');
+  /* Revizyon İstendi de burada: teklif yeniden hazırlığa döner; geciken gün istenen_tarih yerine
+     revizyona devrolan tarihi (updated_at — otomatik durum-geçiş kaydı yok, en yakın vekil budur) baz alır */
+  const hazirlik=sorted.filter(r=>r.durum==='Teklif Bekleniyor'||r.durum==='Revizyon İstendi');
   const takiptekiler=sorted.filter(r=>r.durum==='Teklif Teslim Edildi'||r.durum==='Takip Bekleniyor');
   const C1=[
     {h:'Proje',f:'proje'},{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
@@ -714,10 +716,13 @@ function pipelineTables(ydRows, today){
     {h:'Ürün Tipi / Serisi',f:'urun_tipi_serisi'},{h:'Kemer/Karolaj',f:'kemer_karolaj'},{h:'Şartname Ahşap?',f:'sartname_ahsap'},
     {h:'Teklif Birimi Notları',f:'teklif_birimi_notlari'}
   ];
+  /* Revizyon İstendi satırlarında geciken-gün referansı = durumun revizyona devrolduğu tarih (updated_at) */
+  const hazGecRef=r=>r.durum==='Revizyon İstendi' ? (r.updated_at?String(r.updated_at).slice(0,10):null) : r.istenen_tarih;
+  const hazGecGun=r=>{ const ref=hazGecRef(r); if(!ref) return null; const g=gunFark(today,ref); return g>0?g:null; };
   const C2=[
     {h:'Proje',f:'proje'},{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
     {h:'İhale?',f:'ihale'},{h:'Talebe İlişkin Notlar',f:'talebe_iliskin_notlar'},{h:'Adet',f:'adet'},{h:'Teklif Birimi Notları',f:'teklif_birimi_notlari'},
-    {h:'Geciken Gün',get:r=>r.istenen_tarih?gunFark(today,r.istenen_tarih):'',cls:r=>(r.istenen_tarih&&gunFark(today,r.istenen_tarih)>0)?'gecgun':''}
+    {h:'Geciken Gün',get:r=>{const g=hazGecGun(r); return g==null?'':g;},cls:r=>hazGecGun(r)!=null?'gecgun':''}
   ];
   const C4=[
     {h:'Proje',f:'proje'},{h:'Müşteri',f:'musteri'},{h:'İhale?',f:'ihale'},{h:'Adet',f:'adet'},{h:'Ürün Tipi / Serisi',f:'urun_tipi_serisi'},
@@ -729,13 +734,19 @@ function pipelineTables(ydRows, today){
     {h:'Geciken Gün',get:r=>{
       const tt=r.teklif_teslim_tarihi, tk=ydTkLatest(r).t||r.son_takip_tarihi;
       const ref = tk ? ((tt&&tt>tk)?tt:tk) : tt;
-      return ref?(gunFark(today,ref)-15):'';
+      if(!ref) return '';
+      const g=gunFark(today,ref)-15;
+      return g>0?g:'';
     }}
   ];
-  return pipeGenTbl('Eksik Kaydedilmiş Teklif Talepleri',eksik,C1)
-    +pipeGenTbl('Öncelik Belirlenmesi Gerekenler',oncelik,C1)
-    +pipeGenTbl('Teklif Hazırlığında',hazirlik,C2)
-    +pipeGenTbl('Takiptekiler',takiptekiler,C4);
+  /* Her aşama tablosu Yurt Dışı 1 / Yurt Dışı 2 olarak ikiye ayrılır (blok alanına göre) */
+  const two=(title,rows,cols)=>
+    pipeGenTbl(title+' - Yurt Dışı 1',rows.filter(r=>r.blok==='YD1'),cols)
+    +pipeGenTbl(title+' - Yurt Dışı 2',rows.filter(r=>r.blok==='YD2'),cols);
+  return two('Eksik Kaydedilmiş Teklif Talepleri',eksik,C1)
+    +two('Öncelik Belirlenmesi Gerekenler',oncelik,C1)
+    +two('Teklif Hazırlığında',hazirlik,C2)
+    +two('Takiptekiler',takiptekiler,C4);
 }
 /* Yıllık Teklif İstatistiği — Yurt Dışı 1 / Yurt Dışı 2, yıl = teklif_teslim_tarihi'nin yılı (EUR) */
 function yillikTeklifIstatistigi(ydRows){
