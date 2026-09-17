@@ -220,28 +220,28 @@ function sums(){
   const net=ROWS.reduce((a,r)=>a+(Number(r.net_tutar)||0),0);
   document.getElementById("sum").innerHTML="<b>"+ROWS.length+"</b> proje · Net "+money(net)+" (karışık p.b.)";
 }
-function pairCells(r,i){
+function pairCells(r,i,bg){
   const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi), last=tkLatest(log), hist=tkHist(log);
   const histDates = log.length ? log.map(x=>x.t?fmtDate(x.t):"—").join("\n") : "";
   const histEkleyen = log.length ? log.map(x=>x.e||"—").join("\n") : "";
   const noteCell = (log.length && last.n==="")
     ? '<textarea class="cell tknote-input" data-row="'+i+'" rows="1" placeholder="Not yazın…"></textarea>'
     : '<div class="tklatest" title="'+esc(hist)+'">'+esc(last.n||"—")+'</div>';
-  return '<td class="pairA gs"><div class="tklatest" title="'+esc(histDates)+'">'+esc(last.t?fmtDate(last.t):"—")+'</div></td>'
-    +'<td class="pairA"><div class="tklatest" title="'+esc(histEkleyen)+'">'+esc(last.e||"—")+'</div></td>'
-    +'<td class="pairA tknotes"><button class="tkAddBtn" data-row="'+i+'">Ekle</button>'+noteCell+'</td>';
+  return '<td class="pairA gs" style="background:'+bg+'"><div class="tklatest" title="'+esc(histDates)+'">'+esc(last.t?fmtDate(last.t):"—")+'</div></td>'
+    +'<td class="pairA" style="background:'+bg+'"><div class="tklatest" title="'+esc(histEkleyen)+'">'+esc(last.e||"—")+'</div></td>'
+    +'<td class="pairA tknotes" style="background:'+bg+'"><button class="tkAddBtn" data-row="'+i+'">Ekle</button>'+noteCell+'</td>';
 }
 function rowHTML(r,key){
   const bg = key==="draft" ? "" : (DURUM_BG[r.durum]||"");
   return '<tr data-i="'+key+'" style="background:'+bg+'">'+COLS.map(c=>{
       const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
-      if(c.t==='area') return '<td><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
-      if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); return '<td><select class="cell'+req+empty+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
-      return '<td class="'+(c.t==='num'?'net':'')+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
+      if(c.t==='area') return '<td style="background:'+bg+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
+      if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); return '<td style="background:'+bg+'"><select class="cell'+req+empty+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
+      return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bg+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
-    +pairCells(r,key)
-    +'<td><select class="cell" data-f="durum" style="width:135px"><option value=""></option>'+DURUM_OPTS.map(o=>'<option'+(r.durum===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
-    +(key==="draft" ? '<td class="colp"></td>' : '<td class="colp"><button class="del" title="Satırı sil">✕</button></td>')
+    +pairCells(r,key,bg)
+    +'<td style="background:'+bg+'"><select class="cell" data-f="durum" style="width:135px"><option value=""></option>'+DURUM_OPTS.map(o=>'<option'+(r.durum===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
+    +(key==="draft" ? '<td class="colp" style="background:'+bg+'"></td>' : '<td class="colp" style="background:'+bg+'"><button class="del" title="Satırı sil">✕</button></td>')
     +'</tr>';
 }
 function render(){
