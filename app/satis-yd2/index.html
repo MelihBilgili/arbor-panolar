@@ -25,7 +25,7 @@
   .btn.sec{background:#e3edf7;color:#16324f;font-weight:600}
   .btn:disabled{opacity:.5;cursor:default}
   .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;overflow:auto}
-  table{border-collapse:collapse;width:100%;font-size:13px}
+  table{border-collapse:collapse;font-size:13px;table-layout:fixed}
   thead th{background:#16324f;color:#fff;font-weight:600;font-size:7.5px;padding:6px 2px;text-align:left;white-space:normal;line-height:1.15;position:sticky;top:0}
   td{border-bottom:1px solid rgba(0,0,0,.09);padding:0.5px 1px;vertical-align:top}
   tbody tr:nth-child(even){background:#fbfcfe}
@@ -169,7 +169,7 @@ const COLS=[
  {f:'teklif_teslim_tarihi',h:'Teklif Teslim Tarihi',w:56,t:'date'},
  {f:'agac',h:'Ağaç',w:55,t:'sel',opts:['ÇAM DKD','ÇAM KKK-20cm','ÇAM KKK-70cm','İROKO DKD','LAREKS DKD','MERANTİ DKD','MEŞE DKD','ACCOYA','OKALİPTUS DKD','OKALİPTUS KKK','SAPELLİ DKD']},
  {f:'iskonto_yuzde',h:'İskonto %',w:29,t:'text'},
- {f:'net_tutar',h:'Net Tutar',w:68,t:'num'},
+ {f:'net_tutar',h:'Montaj Hariç Net Tutar',w:68,t:'num'},
  {f:'para_birimi',h:'Para Birimi',w:45,t:'sel',opts:['EUR','GBP','USD']}
 ];
 const REQ_F=COLS.filter(c=>c.req).map(c=>c.f);
@@ -277,7 +277,7 @@ function rowHTML(r,key){
   const durumWarn=(r.durum==="Teklif Bekleniyor" && ttAge!==null && ttAge>15) ? " durum-warn" : "";
   return '<tr data-i="'+key+'" style="background:'+bgv+'">'+COLS.map(c=>{
       const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
-      if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
+      if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="width:'+c.w+'px" title="'+esc(v)+'">'+esc(v)+'</textarea></td>';
       if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
       return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
@@ -288,8 +288,8 @@ function rowHTML(r,key){
 }
 function render(){
   sortROWS();
-  let h='<table><thead><tr>'
-    +COLS.map(c=>'<th>'+c.h+'</th>').join('')
+  let h='<table><colgroup>'+COLS.map(c=>'<col style="width:'+c.w+'px">').join('')+'<col style="width:72px"><col style="width:60px"><col style="width:150px"><col style="width:130px"><col style="width:28px"></colgroup><thead><tr>'
+    +COLS.map(c=>'<th title="'+esc(c.h)+'">'+c.h+'</th>').join('')
     +'<th class="pairA gs">Takip Tarihi</th><th class="pairA">Ekleyen</th><th class="pairA">Takip Notları</th>'
     +'<th>Durum</th><th></th></tr></thead><tbody>';
   h+=rowHTML(DRAFT,"draft");
@@ -442,5 +442,26 @@ load();
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
+<script>
+/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
+(function(){
+  function fx(el){
+    if(!el||el.nodeType!==1) return;
+    var tag=el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
+    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
+    if(el.children.length) return;
+    var t=(el.textContent||'').trim();
+    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
+  }
+  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
+  document.addEventListener('input',function(e){ fx(e.target); },true);
+  document.addEventListener('change',function(e){ fx(e.target); },true);
+  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<!-- /ARB-HOVERTITLE -->
 </body>
 </html>
