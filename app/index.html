@@ -1222,7 +1222,7 @@ async function loadRef(){
     <div class="flow"><b>Güncel işleyiş:</b> <span class="step">Melih ERP'yi manuel çeker</span><span class="arr">→</span><span class="step">Arbor\\ERP\\&lt;YYMMDD&gt;\\ (geçici giriş kutusu)</span><span class="arr">→</span><span class="step">worker · upsert</span><span class="arr">→</span><span class="step">Postgres snapshot</span><span class="arr">→</span><span class="step">bu app</span></div>
     <style>
      .kitbl{border-collapse:collapse;width:auto;font-size:12px}
-     .kitbl th,.kitbl td{border-bottom:1px solid #eef1f5;padding:1.4px 7px;text-align:left;white-space:nowrap;vertical-align:middle}
+     .kitbl th,.kitbl td{border-bottom:1px solid #eef1f5;padding:2px 7px;text-align:left;white-space:nowrap;vertical-align:middle}
      .kitbl thead th{background:#16324f;color:#fff;font-weight:600}
      .kitbl .kaddrow td{background:#f6f9fc}
      .kitbl .kbtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:3px 10px;font-weight:600;cursor:pointer;font-size:11.5px}
@@ -1232,6 +1232,7 @@ async function loadRef(){
      .kitbl .ed{display:inline-block;min-width:40px}
     </style>
     <h3 class="sec">Kişiler (${(k.data||[]).length})</h3>
+    <div class="hint">Hücreye tıklayıp düzenleyin (Enter kaydeder). <b>Kod</b> mevcut satırlarda değiştirilemez (yalnız yeni kişide girilir). Alt satırdan yeni kişi ekleyin; ✕ ile silin. Yazma yetkisi yalnız yetkili (int@arbor.com.tr) oturumundadır.</div>
     <div class="scroll"><table class="kitbl"><thead><tr><th>Kod</th><th>Ad Soyad</th><th>Bölüm</th><th>E-posta</th><th>Rol</th><th></th></tr></thead><tbody>${kr}<tr class="kaddrow"><td><input id="ki-kod" class="cell" placeholder="Kod"></td><td><input id="ki-ad" class="cell" placeholder="Ad Soyad"></td><td><input id="ki-bolum" class="cell" placeholder="Bölüm"></td><td><input id="ki-email" class="cell" placeholder="E-posta"></td><td><input id="ki-rol" class="cell" placeholder="Rol"></td><td><button class="kbtn" id="ki-add">Ekle</button></td></tr></tbody></table></div>
     <div class="hint">Ödemeler (referans — süreç yok) bloğu <b>Mali → Maaş-Prim</b> panosuna taşındı.</div>
     <h3 class="sec">Parametreler</h3>
@@ -1480,10 +1481,8 @@ async function loadFormlar(){
   /* Her form = bir satır. Sütunlar: Form(30) · Kullanıcı(10) · Güncelleme(20) · Geciken(8) · Mail · Formu Aç
      Geciken/Mail sütunları eski Ana Gündem "Formlar" bloğundan buraya taşındı (form_takip). */
   const forms=[
-    {ad:"SÖ Gündem",           who:"Enes Artan",        url:"ea/",          sik:"Her Salı"},
     {ad:"OE Faaliyet",         who:"Onur Ekinci",       url:"onur/",        sik:"Her ayın ilk iş günü"},
     {ad:"ÖB Faaliyet",         who:"Özgül Bedestenci",  url:"ob-rapor/",    sik:"Her ayın ilk iş günü"},
-    {ad:"DA Faaliyet",         who:"Deniz Aslan",       url:"da-rapor/",    sik:"Her Salı"},
     {ad:"MK Faaliyet",         who:"Mehmet Konak",      url:"mk-prim/",     sik:"Her ayın ilk iş günü"},
     {ad:"Yurtiçi Satış",       who:"Sinan Oran",        url:"so/",          sik:"Her ayın ilk iş günü"},
     {ad:"Yurt Dışı 1 Satış",   who:"Mustafa Nas",       url:"fy/",          sik:"Her ayın ilk iş günü"},
@@ -1969,10 +1968,10 @@ async function loadObrapor(tgt){
   const kar=obWeeksOpen?"▾":"▸";
   let cg=`<col class="k35"><col class="k20"><col class="k20"><col class="k100">`
     + (obWeeksOpen?haftaKeys.map(()=>`<col class="k40">`).join(""):"")
-    + `<col class="k60">`;
+    + `<col class="k60"><col class="k60">`;
   let hd=`<th>Konu</th><th>Durum</th><th>Öncelik</th><th class="obwh" id="ob-wk" title="Geçmiş hafta notlarını aç/kapa">Son ÖB Notları <span class="ahcar">${kar}</span></th>`
     + (obWeeksOpen?haftaKeys.map(k=>`<th class="thsm" title="${dgun(weekMap[k].maxDate)}"><span class="thw">${isoWk(weekMap[k].maxDate)}. Hafta ÖB Notu</span></th>`).join(""):"")
-    + `<th>Aylık Değişim Özeti</th>`;
+    + `<th>Son Değişim Özeti</th><th>Aylık Değişim Özeti</th>`;
   let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3>`
     +`<div class="scroll"><table class="obt">`
     +`<colgroup>${cg}</colgroup>`
@@ -1980,9 +1979,9 @@ async function loadObrapor(tgt){
   iRows.forEach(r=>{
     ib+=`<tr>${cx(r.konu,"sb")}${cx(r.durum)}${cx(r.oncelik)}${cx(r.ob_notlari)}`
       + (obWeeksOpen?haftaKeys.map(k=>cx((weekMap[k].notes||{})[String(r.id)])).join(""):"")
-      + `${cx(r.aylik_ozet)}</tr>`;
+      + `${cx(r.degisim_ozet)}${cx(r.aylik_ozet)}</tr>`;
   });
-  if(!iRows.length) ib+=`<tr><td colspan="5" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
+  if(!iRows.length) ib+=`<tr><td colspan="6" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
   ib+=`</tbody></table></div>`;
   /* AYLIK FAALİYET — Takipteki İşler'in hemen altı (27.08.2026): ÖB'nin kapanan aya ilişkin
      yorumu (ob_aylik_faaliyet.ob_yorum, ÖB formundan girilir) + o ayda Selectron'a yapılan
