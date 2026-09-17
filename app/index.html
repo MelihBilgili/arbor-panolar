@@ -662,7 +662,6 @@ async function loadSatis(){
     <div class="satis-wrap">
     <div class="stamp">Sayfa açılışı: ${dOnly(nowIst.toISOString())}${hasBase?'':' · bu ay için ayın ilk iş günü tabanı henüz oluşmadı, farklar bir sonraki ayın ilk iş gününden itibaren görünür'}</div>
     ${satisSummary(regions,hasBase)}
-    ${regions.map(rg=>regionDetail(rg)).join("")}
     ${pipelineTables(ydRows,nowIst)}
     ${yillikTeklifIstatistigi(ydRows)}
     </div>`;
@@ -677,23 +676,6 @@ function satisSummary(regions,hasBase){
   let body=`<tr class="stot"><td>Toplam</td><td class="num">${cell(tM,tbM)}</td><td class="num">${cell(tA,tbA)}</td></tr>`;
   regions.forEach(rg=>{ body+=`<tr class="sreg"><td>${esc(rg.ad)}</td><td class="num">${cell(sSum(rg.cM),rg.baseM)}</td><td class="num">${cell(sSum(rg.cA),rg.baseA)}</td></tr>`; });
   return `<div class="scroll" style="max-height:none;overflow-y:visible;overflow-x:auto;-webkit-overflow-scrolling:touch;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num">Alınan</th></tr></thead><tbody>${body}</tbody></table></div>`;
-}
-function satisTbl(arr){
-  const list=arr.slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0));
-  const rows=list.map(r=>`<tr>`
-    +`<td class="kod"><div class="cx sc1" title="${esc(r.proje)}">${esc(r.proje)}</div></td>`
-    +`<td><div class="cx sc2" title="${esc(r.musteri)}">${esc(r.musteri)}</div></td>`
-    +`<td class="num"><div class="cx sc3">${money(r.net_eur)}${r.pb&&r.pb!=='EUR'?' '+esc(r.pb):''}</div></td>`
-    +`<td><div class="cx sc4" title="${esc(r.durum||'')}">${esc(r.durum||'')}</div></td></tr>`).join("");
-  return `<div class="scroll"><table class="sat"><thead><tr><th><span class="cw sc1">PROJE</span></th><th><span class="cw sc2">MÜŞTERİ</span></th><th class="num"><span class="cw sc3">NET</span></th><th><span class="cw sc4">DURUM</span></th></tr></thead><tbody>${rows}</tbody></table></div>`;
-}
-/* Bölge bloğu: güncel Muhtemel/Alınan proje isimleri ve tutarları (delta yok — delta yalnız üst özet) */
-function regionDetail(rg){
-  return `<h2 class="secH" style="margin-top:22px">${esc(rg.ad)}</h2>
-    <h3 class="sec">Muhtemel <span class="muted">(${rg.cM.length} proje · Net ${money(sSum(rg.cM))} €)</span></h3>
-    ${satisTbl(rg.cM)}
-    <h3 class="sec">Alınan <span class="muted">(${rg.cA.length} proje · Net ${money(sSum(rg.cA))} €)</span></h3>
-    ${satisTbl(rg.cA)}`;
 }
 /* satis_yd_akis'in son_takip_notlari JSON geçmiş-logu ([{t,e,n}], yeni-en-üstte) — yalnız okuma */
 function ydTkParse(raw){ if(raw==null||raw==="") return [];
