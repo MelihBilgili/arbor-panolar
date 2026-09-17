@@ -214,7 +214,9 @@ async function maybeFlagTakipBekleniyor(r){
   if(r.durum!=="Teklif Teslim Edildi") return false;
   const tteAge=daysAgo(r.teklif_teslim_tarihi);
   if(tteAge===null || tteAge<=15) return false;
-  const takipAge=daysAgo(r.son_takip_tarihi);
+  const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi), last=tkLatest(log);
+  const noteOk=!!(last.n && String(last.n).trim());
+  const takipAge=noteOk?daysAgo(r.son_takip_tarihi):null;
   const eski = takipAge===null || takipAge>15;
   if(!eski) return false;
   if(r.id){
