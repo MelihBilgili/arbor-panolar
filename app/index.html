@@ -725,7 +725,9 @@ function pipelineTables(ydRows, today){
   const eksik=sorted.filter(r=>!r.durum||r.durum==='Teklif Talebi Geldi');
   const oncelik=sorted.filter(r=>r.durum==='Teklif İncelendi');
   const hazirlik=sorted.filter(r=>r.durum==='Teklif Bekleniyor');
-  const takiptekiler=sorted.filter(r=>r.durum==='Teklif Teslim Edildi'||r.durum==='Takip Bekleniyor');
+  /* Takiptekiler: Teklif Teslim Tarihi'ne göre eskiden yeniye sıralanır (tarihi olmayanlar en sona) */
+  const takiptekiler=sorted.filter(r=>r.durum==='Teklif Teslim Edildi'||r.durum==='Takip Bekleniyor')
+    .slice().sort((a,b)=>String(a.teklif_teslim_tarihi||'9999-99-99').localeCompare(String(b.teklif_teslim_tarihi||'9999-99-99')));
   const C1=[
     {h:'Proje',f:'proje'},{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
     {h:'İhale?',f:'ihale'},{h:'Talebe İlişkin Notlar',f:'talebe_iliskin_notlar'},{h:'Adet',f:'adet'},
