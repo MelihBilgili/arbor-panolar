@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Yurtiçi Satış Formu</title>
+<title>Yurt İçi Satış Formu</title>
 <style>
   :root{color-scheme:light}
   *{box-sizing:border-box}
@@ -42,16 +42,11 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </head>
 <body>
 <header>
-  <h1>Yurtiçi Satış Formu</h1>
+  <h1>Yurt İçi Satış Formu</h1>
   <div class="sub"><b>Bu tabloda her hücre anında kaydedilir.</b></div>
-  <div class="sub">Her ayın son günü Muhtemel ve Alınan projelerin güncel durumları işlenip “Aylık Güncelle” düğmesine basılır. <b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler.</div>
+  <div class="sub"><b>Muhtemel:</b> müşterinin teklifle ilgilendiği, revizyon/soru gelen projeler. <b>Alınan:</b> sözlü dahi işi aldığımız ama henüz üretime gönderilmemiş projeler.</div>
 </header>
 <div class="wrap">
-  <div class="aybar" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:6px 0 12px">
-    <button class="btn" id="ayBtn">Aylık Güncelle</button>
-    <span style="color:#b25a00;font-size:12px;flex:1;min-width:220px">Bu düğmeye yalnız aylık güncelleme için basınız, düzeltme ve revizyon durumunda lütfen basmayınız.</span>
-    <span class="msg" id="ayMsg"></span>
-  </div>
   <div class="bar">
     <button class="btn sec" id="addM">+ Muhtemel satır</button>
     <button class="btn sec" id="addA">+ Alınan satır</button>
@@ -239,6 +234,9 @@ load();
 
 
 
+
+
+
 <!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
@@ -286,5 +284,26 @@ load();
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
+<script>
+/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
+(function(){
+  function fx(el){
+    if(!el||el.nodeType!==1) return;
+    var tag=el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
+    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
+    if(el.children.length) return;
+    var t=(el.textContent||'').trim();
+    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
+  }
+  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
+  document.addEventListener('input',function(e){ fx(e.target); },true);
+  document.addEventListener('change',function(e){ fx(e.target); },true);
+  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<!-- /ARB-HOVERTITLE -->
 </body>
 </html>
