@@ -150,6 +150,8 @@ function tkHist(log){ return log.length? log.map(x=>(x.t?fmtDate(x.t)+" — ":""
 const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Teklif Teslim Edildi","Revizyon İstendi","Takip Bekleniyor","Muhtemel","Alındı","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
 const DURUM_BG={"Teklif İncelendi":"#eafbfa","Teklif Bekleniyor":"#e0f5e0","Revizyon İstendi":"#e8dfb8","Muhtemel":"#7ed957","Alındı":"#4caf50","Kaybettik":"#c9c9c9","Müşteri İşi Alamadı":"#e8dfb8","Takip Bekleniyor":"#f7e8f2"};
+const DISPLAY_ORDER=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Takip Bekleniyor","Teklif Teslim Edildi","Muhtemel","Alındı","Üretimde","Kaybettik","Müşteri İşi Alamadı","Revizyon İstendi"];
+const DISPLAY_SIRA={}; DISPLAY_ORDER.forEach((d,i)=>DISPLAY_SIRA[d]=i+1);
 const COLS=[
  {f:'proje',h:'Proje',w:112,t:'text',req:1},
  {f:'musteri',h:'Müşteri',w:66,t:'text',req:1},
@@ -234,7 +236,7 @@ async function load(){
   render();
 }
 function sortROWS(){
-  const tierOf=d=> d==="Revizyon İstendi" ? 999 : (DURUM_SIRA[d]||1);
+  const tierOf=d=> DISPLAY_SIRA[d]||1;
   ROWS.sort((a,b)=>{
     const sa=tierOf(a.durum), sb2=tierOf(b.durum);
     if(sa!==sb2) return sa-sb2;
@@ -293,7 +295,7 @@ function render(){
   h+=rowHTML(DRAFT,"draft");
   ROWS.forEach((r,i)=>{ h+=rowHTML(r,i); });
   h+='</tbody></table>';
-  h+='<div class="legend">'+DURUM_OPTS.filter(d=>DURUM_BG[d]&&d!=="Revizyon İstendi").concat(["Revizyon İstendi"]).map(d=>'<span class="lg-item"><span class="lg-sw" style="background:'+DURUM_BG[d]+'"></span>'+esc(d)+'</span>').join('')+'</div>';
+  h+='<div class="legend">'+DISPLAY_ORDER.filter(d=>DURUM_BG[d]).map(d=>'<span class="lg-item"><span class="lg-sw" style="background:'+DURUM_BG[d]+'"></span>'+esc(d)+'</span>').join('')+'</div>';
   const list=document.getElementById("list"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{
     const key=el.closest("tr").dataset.i, f=el.dataset.f;
