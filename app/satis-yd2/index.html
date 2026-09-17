@@ -56,6 +56,8 @@
   .legend{display:flex;flex-wrap:wrap;gap:14px;padding:10px 6px 4px;font-size:12px;color:#5a6b7d}
   .lg-item{display:inline-flex;align-items:center;gap:6px}
   .lg-sw{width:14px;height:14px;border-radius:3px;border:1px solid #cdd6df;display:inline-block}
+  select.cell.filled{-webkit-appearance:none;-moz-appearance:none;appearance:none}
+  select.cell.filled::-ms-expand{display:none}
 html,body{max-width:100vw;overflow-x:hidden}
 </style>
 </head>
@@ -239,11 +241,11 @@ function rowHTML(r,key){
   return '<tr data-i="'+key+'" style="background:'+bg+'">'+COLS.map(c=>{
       const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
       if(c.t==='area') return '<td style="background:'+bg+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="min-width:'+c.w+'px">'+esc(v)+'</textarea></td>';
-      if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); return '<td style="background:'+bg+'"><select class="cell'+req+empty+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
+      if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; return '<td style="background:'+bg+'"><select class="cell'+req+empty+filled+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
       return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bg+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
     +pairCells(r,key,bg)
-    +'<td style="background:'+bg+'"><select class="cell" data-f="durum" style="width:135px"><option value=""></option>'+DURUM_OPTS.map(o=>'<option'+(r.durum===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
+    +'<td style="background:'+bg+'"><select class="cell'+(r.durum?" filled":"")+'" data-f="durum" style="width:135px"><option value=""></option>'+DURUM_OPTS.map(o=>'<option'+(r.durum===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
     +(key==="draft" ? '<td class="colp" style="background:'+bg+'"></td>' : '<td class="colp" style="background:'+bg+'"><button class="del" title="Satırı sil">✕</button></td>')
     +'</tr>';
 }
@@ -260,7 +262,10 @@ function render(){
   const list=document.getElementById("list"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{
     const key=el.closest("tr").dataset.i, f=el.dataset.f;
-    el.addEventListener("change",()=>saveRow(key,f,el.value,el));
+    el.addEventListener("change",async()=>{
+      await saveRow(key,f,el.value,el);
+      if(el.tagName==='SELECT') el.classList.toggle('filled', !!el.value);
+    });
   });
   list.querySelectorAll(".tkAddBtn").forEach(b=>b.onclick=()=>tkStartEntry(b.dataset.row));
   list.querySelectorAll(".tknote-input").forEach(ta=>ta.addEventListener("change",()=>tkSaveNote(ta.dataset.row,ta.value)));
@@ -284,6 +289,7 @@ async function saveRow(key,f,val,el){
   if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YYYY biçiminde olmalı."; return; }
   if(f==='durum' && v){
     const tier=DURUM_SIRA[v];
+    if((tier===1||tier===2) && !rangeFilled(r,1,6)){ el.value=r.durum||""; setMsg("Bu durum için ilk 6 sütun (Proje, Müşteri, Müşteri Önem Sınıfı, Gelen Tarih, İstenen Tarih, İhale?) dolu olmalı.",false); return; }
     if(tier===5 && !state5Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için 1-6, 8-11, 13 ve 14-18 sütunlarının hepsi dolu olmalı.",false); return; }
     if(tier>=6 && !state6to11Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için Takip Tarihi/Ekleyen/Takip Notları alanları dolu olmalı.",false); return; }
   }
