@@ -147,10 +147,10 @@ function tkParseLog(raw,dcol){
 function tkLatest(log){ return log[0]||{t:"",e:"",n:""}; }
 function tkHist(log){ return log.length? log.map(x=>(x.t?fmtDate(x.t)+" — ":"")+(x.e?x.e+": ":"")+(x.n||"")).join("\n") : ""; }
 
-const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Teklif Teslim Edildi","Revizyon İstendi","Takip Bekleniyor","Muhtemel","Alındı","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
+const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Teklif Teslim Edildi","Revizyon İstendi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
-const DURUM_BG={"Teklif İncelendi":"#eafbfa","Teklif Bekleniyor":"#e0f5e0","Revizyon İstendi":"#e8dfb8","Muhtemel":"#7ed957","Alındı":"#4caf50","Kaybettik":"#c9c9c9","Müşteri İşi Alamadı":"#e8dfb8","Takip Bekleniyor":"#f7e8f2"};
-const DISPLAY_ORDER=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Takip Bekleniyor","Teklif Teslim Edildi","Muhtemel","Alındı","Üretimde","Kaybettik","Müşteri İşi Alamadı","Revizyon İstendi"];
+const DURUM_BG={"Teklif İncelendi":"#eafbfa","Teklif Bekleniyor":"#e0f5e0","Revizyon İstendi":"#e8dfb8","Muhtemel":"#7ed957","Kazandık":"#4caf50","Kaybettik":"#c9c9c9","Müşteri İşi Alamadı":"#e8dfb8","Takip Bekleniyor":"#f7e8f2"};
+const DISPLAY_ORDER=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Takip Bekleniyor","Teklif Teslim Edildi","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı","Revizyon İstendi"];
 const DISPLAY_SIRA={}; DISPLAY_ORDER.forEach((d,i)=>DISPLAY_SIRA[d]=i+1);
 const COLS=[
  {f:'proje',h:'Proje',w:112,t:'text',req:1},
