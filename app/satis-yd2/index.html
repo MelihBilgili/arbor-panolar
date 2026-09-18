@@ -262,14 +262,27 @@ async function load(){
   for(const r of ROWS){ await maybeFlagTakipBekleniyor(r); }
   render();
 }
+/* SIRALAMA (2026-09-18, Melih): Satırlar önce Durum grubuna (DISPLAY_ORDER) ayrılır —
+   durumu BOŞ olanlar kendi grubu olarak en üstte. Grup içinde sıralama duruma göre FARKLI
+   bir tarih alanına bakar ve EN ESKİDEN EN YENİYE gider:
+     · boş durum                         → Gelen Tarih
+     · Teklif Talebi Geldi / Teklif İncelendi → İstenen Tarih
+     · diğer tüm durumlar                → Teklif Teslim Tarihi
+   O alanı boş olan satırlar kendi grubunun SONUNA düşer. */
+const SIRA_TARIH={"":"gelen_tarih","Teklif Talebi Geldi":"istenen_tarih","Teklif İncelendi":"istenen_tarih"};
+function siraTarihi(r){
+  const f=SIRA_TARIH[r.durum||""]||"teklif_teslim_tarihi";
+  const v=r[f];
+  return v?String(v).slice(0,10):"";
+}
 function sortROWS(){
-  const tierOf=d=> DISPLAY_SIRA[d]||1;
+  const tierOf=d=> d?(DISPLAY_SIRA[d]||99):0;
   ROWS.sort((a,b)=>{
     const sa=tierOf(a.durum), sb2=tierOf(b.durum);
     if(sa!==sb2) return sa-sb2;
-    const da=a.gelen_tarih||"", db=b.gelen_tarih||"";
+    const da=siraTarihi(a), db=siraTarihi(b);
     if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
-    return String(db).localeCompare(String(da));
+    return da.localeCompare(db);
   });
 }
 function dispVal(r,c){ const v=r[c.f]; if(v==null) return ""; if(c.t==='date') return fmtDate(v); if(c.t==='num') return money(v); return v; }
