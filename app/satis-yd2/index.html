@@ -321,6 +321,29 @@ function convVal(f,val){
   if(c.t==='date') return toISO(val);
   return (val===''?null:String(val).trim());
 }
+/* ===== KUR-DONDURMA (2026-09-18) — ahsap_form.html deseninin aynısı =====
+   Net Tutar € dışında bir para biriminde girilirse KAYIT ANINDA alınan kurla €'ya çevrilir;
+   kullanılan kur ve kur tarihi satıra yazılır (eur_kur · net_tutar_eur · kur_tarihi).
+   Kaynak sırası: arb-kur (EUR/TL/USD/GBP) → eksik kalırsa ahsap-kur (TL/USD) → kur_son önbelleği.
+   1 EUR = rates[X] birim X  →  tutar_eur = tutar / rates[X] */
+let _KUR=null;
+async function kurAl(){ if(_KUR) return _KUR;
+  let r={EUR:1}, tarih=null;
+  try{ const {data}=await sb.functions.invoke("arb-kur",{body:{}});
+    if(data&&data.ok&&data.rates){ r=Object.assign(r,data.rates); tarih=data.tarih||null; } }catch(e){}
+  if(!(r.TL>0)||!(r.USD>0)){ try{ const {data}=await sb.functions.invoke("ahsap-kur",{body:{}});
+    if(data&&data.ok&&data.rates){ ["TL","USD"].forEach(p=>{ if(!(r[p]>0)&&data.rates[p]>0) r[p]=data.rates[p]; }); if(!tarih) tarih=data.tarih||null; } }catch(e){} }
+  try{ const {data}=await sb.from("kur_son").select("para_birimi,oran,kur_tarihi");
+    (data||[]).forEach(k=>{ const v=Number(k.oran); if(v>0&&!(r[k.para_birimi]>0)){ r[k.para_birimi]=v; if(!tarih) tarih=k.kur_tarihi||null; } }); }catch(e){}
+  _KUR={rates:r,tarih:tarih}; return _KUR; }
+async function eurAlanlari(r,upd){
+  const tutar=('net_tutar' in upd)? upd.net_tutar : (r.net_tutar==null?null:Number(r.net_tutar));
+  const pb=(('para_birimi' in upd)? upd.para_birimi : r.para_birimi)||'EUR';
+  if(tutar==null){ upd.eur_kur=null; upd.net_tutar_eur=null; upd.kur_tarihi=null; return true; }
+  if(pb==='EUR'){ upd.eur_kur=1; upd.net_tutar_eur=tutar; upd.kur_tarihi=null; return true; }
+  const k=await kurAl();
+  if(!(k.rates[pb]>0)){ upd.eur_kur=null; upd.net_tutar_eur=null; upd.kur_tarihi=null; return false; }
+  upd.eur_kur=k.rates[pb]; upd.net_tutar_eur=tutar/k.rates[pb]; upd.kur_tarihi=k.tarih||null; return true; }
 async function saveRow(key,f,val,el){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
   let v=convVal(f,val);
@@ -337,6 +360,7 @@ async function saveRow(key,f,val,el){
     const rec={blok:BLOK};
     COLS.forEach(c=>{ rec[c.f]=convVal(c.f, r[c.f]==null?"":String(r[c.f])); });
     rec.durum=r.durum||null;
+    await eurAlanlari(rec,rec);
     const {data,error}=await sb.from("satis_yd_akis").insert(rec).select();
     if(error){ m.className="msg err"; m.textContent="Kayıt hatası: "+error.message; return; }
     r.id=data[0].id;
@@ -348,10 +372,14 @@ async function saveRow(key,f,val,el){
     return;
   }
   const upd={}; upd[f]=v;
+  let kurOk=true;
+  if(f==='net_tutar'||f==='para_birimi'){ setMsg("Güncel kur alınıyor…",true); kurOk=await eurAlanlari(r,upd); }
   const {error}=await sb.from("satis_yd_akis").update(upd).eq("id",r.id);
   if(error){ m.className="msg err"; m.textContent="Kayıt hatası: "+error.message; return; }
+  Object.assign(r,upd);
   r[f]=v; if(el){ const c=COLS.find(x=>x.f===f); if(c){ if(c.t==='num') el.value=(v==null?"":money(v)); else if(c.t==='date') el.value=fmtDate(v); } }
   m.className="msg ok"; m.textContent="Kaydedildi ✓"; if(f==='net_tutar') sums();
+  if(!kurOk) setMsg("Kaydedildi ama kur alınamadı — € karşılığı boş bırakıldı, tutarı tekrar kaydedin.",false);
   if(f==='durum'){ render(); return; }
   const advanced=await maybeAutoAdvance(r);
   if(advanced) render();
