@@ -24,6 +24,19 @@
   .btn{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer}
   .btn.sec{background:#e3edf7;color:#16324f;font-weight:600}
   .btn:disabled{opacity:.5;cursor:default}
+  /* MUSTERI-SINIFLARI (2026-09-18): özet satırının sağındaki düğme + salt-okur pencere */
+  .btn.msb{background:#e3edf7;color:#16324f;font-weight:700;padding:5px 12px;font-size:12.5px;border-radius:7px}
+  .msov{position:fixed;inset:0;background:rgba(16,32,48,.45);display:none;align-items:flex-start;justify-content:center;z-index:70;padding:34px 14px;overflow:auto}
+  .msov.on{display:flex}
+  .msbox{background:#f6f8fb;border-radius:12px;max-width:940px;width:100%;padding:14px 16px 18px;box-shadow:0 12px 40px rgba(0,0,0,.28)}
+  .mshd{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .mshd h2{margin:0;font-size:16px;color:#16324f}
+  .mshd button{margin-left:auto;background:#16324f;color:#fff;border:0;border-radius:7px;padding:5px 13px;font-size:12.5px;font-weight:700;cursor:pointer}
+  .msgrid{display:flex;flex-wrap:wrap;gap:12px}
+  .msblk{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:8px 12px 10px;min-width:240px;flex:1 1 260px}
+  .msblk h3{margin:0 0 5px;font-size:12.5px;color:#16324f}
+  .msblk ol{margin:0;padding-left:20px;font-size:12.5px;line-height:1.5;color:#2c3542}
+  .msblk .bos{font-size:12.5px;color:#7b8794}
   .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;overflow:auto}
   table{border-collapse:collapse;font-size:13px;table-layout:fixed}
   thead th{background:#16324f;color:#fff;font-weight:600;font-size:7.5px;padding:6px 2px;text-align:left;white-space:normal;line-height:1.15;position:sticky;top:0}
@@ -70,9 +83,16 @@ html,body{max-width:100vw;overflow-x:hidden}
 <div class="wrap">
   <div class="bar">
     <span class="sum" id="sum"></span>
+    <button class="btn msb" id="ms-btn" type="button">Müşteri Sınıfları</button>
     <span class="msg" id="msg"></span>
   </div>
   <div id="list" class="card"><div class="load">Yükleniyor…</div></div>
+</div>
+<div class="msov" id="ms-ov">
+  <div class="msbox">
+    <div class="mshd"><h2>Müşteri Sınıfları</h2><button type="button" id="ms-kapat">Kapat</button></div>
+    <div class="msgrid" id="ms-grid"><div class="bos">Yükleniyor…</div></div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -123,6 +143,10 @@ if (document.readyState === "loading") document.addEventListener("DOMContentLoad
 <script type="text/plain" id="arbmain">
 const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 const BLOK="YD1";
+/* MUSTERI-SINIFLARI (2026-09-18): bu formda gösterilecek sınıf blokları — Fiyatlandırma panosundaki
+   `fiyat_musteri_sinif` tablosunun aynısı, salt-okur. sinif kodu: 1=Fransa 1. · 2=Fransa 2. ·
+   3=İngiltere 1. · 4=İngiltere 2. · 5=Almanya 1. · 6=Almanya 2. */
+const MS_SINIFLAR=[[1,"1. Sınıf Fransa Şirketleri"],[2,"2. Sınıf Fransa Şirketleri"]];
 const ARB_EKLEYEN_MAP={"int@arbor.com.tr":"MB","fy.form@arbor.com.tr":"MN","fy2.form@arbor.com.tr":"MKB"};
 const ARB_EKLEYEN=ARB_EKLEYEN_MAP[(window.ARB_EM||"")]||"";
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -250,6 +274,35 @@ function sums(){
   const net=ROWS.reduce((a,r)=>a+(Number(r.net_tutar)||0),0);
   document.getElementById("sum").innerHTML="<b>"+ROWS.length+"</b> proje · Net "+money(net)+" (karışık p.b.)";
 }
+/* MUSTERI-SINIFLARI penceresi — Fiyatlandırma panosundaki `fiyat_musteri_sinif` listesinin
+   SALT-OKUR kopyası (tek kaynak orası; burada ekleme/silme YOK). Şirketler panodaki gibi
+   alfabetik (tr) sıralanır. Veri ilk açılışta bir kez çekilip önbelleğe alınır. */
+let _MSCACHE=null;
+async function msAc(){
+  const ov=document.getElementById("ms-ov"), gr=document.getElementById("ms-grid");
+  ov.classList.add("on");
+  if(!_MSCACHE){
+    gr.innerHTML='<div class="bos">Yükleniyor…</div>';
+    const {data,error}=await sb.from("fiyat_musteri_sinif").select("sinif,ad");
+    if(error){ gr.innerHTML='<div class="bos">Liste okunamadı: '+esc(error.message)+'</div>'; return; }
+    _MSCACHE=data||[];
+  }
+  gr.innerHTML=MS_SINIFLAR.map(s=>{
+    const kod=s[0], baslik=s[1];
+    const ad=_MSCACHE.filter(r=>Number(r.sinif)===kod).map(r=>String(r.ad||"").trim()).filter(Boolean)
+      .sort((a,b)=>a.localeCompare(b,"tr"));
+    const govde=ad.length? "<ol>"+ad.map(x=>"<li>"+esc(x)+"</li>").join("")+"</ol>"
+                         : '<div class="bos">Kayıtlı şirket yok.</div>';
+    return '<div class="msblk"><h3>'+esc(baslik)+' <span class="bos">('+ad.length+')</span></h3>'+govde+'</div>';
+  }).join("");
+}
+function msKapat(){ document.getElementById("ms-ov").classList.remove("on"); }
+(function(){
+  const b=document.getElementById("ms-btn"); if(b) b.onclick=msAc;
+  const k=document.getElementById("ms-kapat"); if(k) k.onclick=msKapat;
+  const ov=document.getElementById("ms-ov"); if(ov) ov.onclick=e=>{ if(e.target===ov) msKapat(); };
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") msKapat(); });
+})();
 function pairCells(r,i,bg){
   const bgv=bg||'transparent';
   if(PENDING_TK[i]){
