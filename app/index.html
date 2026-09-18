@@ -786,12 +786,20 @@ function pipelineTables(ydRows, today){
    Verilen (Ad.) = teklif_teslim_tarihi dolu satırlar · Kazandık (Ad./€) = durum 'Kazandık'
    Kaybettik (€) = durum 'Kaybettik' · Müşteri İşi Alamadı (Ad.) = durum 'Müşteri İşi Alamadı'
    Ortalama İsk. (%) = Kazandık satırlarının net tutarıyla (EUR) AĞIRLIKLANDIRILMIŞ iskonto ortalaması.
-   Tutarlar: GBP/USD satırlar arb-kur ile EUR'ye çevrilir. İskonto "42/25" gibi bileşikse BÜYÜK olan alınır. */
-/* Kur: 1 EUR = rates[X] birim X → tutar_eur = tutar / rates[X] (arb-kur edge fonksiyonu) */
+   Tutarlar: GBP/USD satırlar EUR'ye çevrilir (arb-kur, yedek: kur_son önbelleği).
+   İskonto "42/25" gibi bileşikse BÜYÜK olan alınır. */
+/* KUR-ONBELLEK: 1 EUR = rates[X] birim X → tutar_eur = tutar / rates[X].
+   Birincil kaynak arb-kur edge fonksiyonu; başarılı olursa sonuç public.kur_son'a
+   write-through yazılır (arb_kur_yaz RPC). arb-kur'a ulaşılamazsa son bilinen kur
+   kur_son'dan okunur — böylece EUR dışı satırlar toplamdan düşmez. */
 let _SATIS_KUR=null;
 async function satisKur(){ if(_SATIS_KUR) return _SATIS_KUR;
-  let r={EUR:1};
-  try{ const {data}=await sb.functions.invoke("arb-kur",{body:{}}); if(data&&data.ok&&data.rates) r=Object.assign(r,data.rates); }catch(e){}
+  let r={EUR:1}, canli=false;
+  try{ const {data}=await sb.functions.invoke("arb-kur",{body:{}});
+    if(data&&data.ok&&data.rates){ r=Object.assign(r,data.rates); canli=true;
+      try{ Promise.resolve(sb.rpc("arb_kur_yaz",{p_rates:data.rates,p_tarih:data.tarih||null})).catch(()=>{}); }catch(e){} } }catch(e){}
+  if(!canli){ try{ const {data}=await sb.from("kur_son").select("para_birimi,oran");
+    (data||[]).forEach(k=>{ const v=Number(k.oran); if(v>0) r[k.para_birimi]=v; }); }catch(e){} }
   _SATIS_KUR=r; return _SATIS_KUR; }
 function netEur(r,kur){ const v=Number(r.net_tutar); if(!isFinite(v)) return null;
   const pb=r.para_birimi||'EUR'; if(pb==='EUR') return v;
