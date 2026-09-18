@@ -52,6 +52,8 @@
   .cell.bad{border-color:#d9534f;background:#fff4f4}
   /* TERMIN-UYARI (2026-09-18): İstenen Tarih, Teklif Teslim Tarihi'nden erkense teslim tarihi kırmızı-kalın */
   input.cell.terminuyari{color:#b40000;font-weight:700}
+  /* TERMIN-BOS (2026-09-18): "Teklif Bekleniyor" satırında Teklif Teslim Tarihi boşsa hücre kırmızı dolu */
+  input.cell.terminbos{background:#ffd9d9;border-color:#d9534f}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
   .colp{width:1%;white-space:nowrap}
   td.pairA{background:#eaf5ee}
@@ -344,6 +346,11 @@ function pairCells(r,i,bg){
    YALNIZ durumu "Teklif Bekleniyor" olan satırlarda uygulanır (Melih, 2026-09-18);
    diğer durumlarda hücre normal yazılır. Değerler ISO (YYYY-AA-GG) olduğu için düz metin
    karşılaştırması doğru sonuç verir. */
+/* TERMIN-BOS (2026-09-18): Durumu "Teklif Bekleniyor" olup Teklif Teslim Tarihi girilmemiş
+   satırlarda o hücre kırmızı doldurulur. */
+function terminBos(r){
+  return !!r && r.durum==="Teklif Bekleniyor" && !String(r.teklif_teslim_tarihi||"").trim();
+}
 function terminGec(r){
   if(!r || r.durum!=="Teklif Bekleniyor") return false;
   const ist=r&&r.istenen_tarih?String(r.istenen_tarih).slice(0,10):"";
@@ -360,8 +367,12 @@ function rowHTML(r,key){
       const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
       if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="width:'+c.w+'px" title="'+esc(v)+'">'+esc(v)+'</textarea></td>';
       if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
-      const uyari=(c.f==='teklif_teslim_tarihi' && terminGec(r))?" terminuyari":"";
-      return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+'" data-f="'+c.f+'" type="text"'+(uyari?' title="İstenen Tarih, Teklif Teslim Tarihi\'nden erken — termin aşıldı"':'')+' style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
+      let uyari="",ipucu="";
+      if(c.f==='teklif_teslim_tarihi'){
+        if(terminBos(r)){ uyari=" terminbos"; ipucu=' title="Teklif Bekleniyor — Teklif Teslim Tarihi girilmemiş"'; }
+        else if(terminGec(r)){ uyari=" terminuyari"; ipucu=' title="İstenen Tarih, Teklif Teslim Tarihi\'nden erken — termin aşıldı"'; }
+      }
+      return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+'" data-f="'+c.f+'" type="text"'+ipucu+' style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
     +pairCells(r,key,bg)
     +'<td style="background:'+bgv+'"><select class="cell'+(r.durum?" filled":"")+durumWarn+'" data-f="durum" style="width:122px"><option value=""></option>'+DURUM_OPTS.map(o=>'<option'+(r.durum===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
