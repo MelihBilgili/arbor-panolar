@@ -50,6 +50,8 @@
   td.net input{text-align:right}
   textarea.cell{min-height:26px;padding-top:3px;resize:none}
   .cell.bad{border-color:#d9534f;background:#fff4f4}
+  /* TERMIN-UYARI (2026-09-18): İstenen Tarih, Teklif Teslim Tarihi'nden erkense teslim tarihi kırmızı-kalın */
+  input.cell.terminuyari{color:#b40000;font-weight:700}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
   .colp{width:1%;white-space:nowrap}
   td.pairA{background:#eaf5ee}
@@ -324,6 +326,15 @@ function pairCells(r,i,bg){
     +'<td class="pairA" style="background:'+bgv+'"><div class="tklatest" title="'+esc(histEkleyen)+'">'+esc(ekleyenDisp)+'</div></td>'
     +'<td class="pairA tknotes" style="background:'+bgv+'"><button class="tkAddBtn" data-row="'+i+'">Ekle</button>'+noteCell+'</td>';
 }
+/* TERMIN-UYARI (2026-09-18): müşterinin İstenen Tarih'i, teklifin Teklif Teslim Tarihi'nden
+   önceyse termin kaçmış demektir — Teklif Teslim Tarihi hücresi kırmızı-kalın yazılır.
+   Değerler ISO (YYYY-AA-GG) olduğu için düz metin karşılaştırması doğru sonuç verir. */
+function terminGec(r){
+  const ist=r&&r.istenen_tarih?String(r.istenen_tarih).slice(0,10):"";
+  const tes=r&&r.teklif_teslim_tarihi?String(r.teklif_teslim_tarihi).slice(0,10):"";
+  if(!ist||!tes) return false;
+  return ist<tes;
+}
 function rowHTML(r,key){
   const bg = key==="draft" ? "" : (DURUM_BG[r.durum]||"");
   const bgv=bg||'transparent';
@@ -333,7 +344,8 @@ function rowHTML(r,key){
       const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
       if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="width:'+c.w+'px" title="'+esc(v)+'">'+esc(v)+'</textarea></td>';
       if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
-      return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input class="cell'+req+empty+'" data-f="'+c.f+'" type="text" style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
+      const uyari=(c.f==='teklif_teslim_tarihi' && terminGec(r))?" terminuyari":"";
+      return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+'" data-f="'+c.f+'" type="text"'+(uyari?' title="İstenen Tarih, Teklif Teslim Tarihi\'nden erken — termin aşıldı"':'')+' style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
     +pairCells(r,key,bg)
     +'<td style="background:'+bgv+'"><select class="cell'+(r.durum?" filled":"")+durumWarn+'" data-f="durum" style="width:122px"><option value=""></option>'+DURUM_OPTS.map(o=>'<option'+(r.durum===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
@@ -436,7 +448,8 @@ async function saveRow(key,f,val,el){
   if(!kurOk) setMsg("Kaydedildi ama kur alınamadı — € karşılığı boş bırakıldı, tutarı tekrar kaydedin.",false);
   if(f==='durum'){ if(v==="Revizyon İstendi") await revizyonKopyasi(r); render(); return; }
   const advanced=await maybeAutoAdvance(r);
-  if(advanced) render();
+  /* TERMIN-UYARI: iki tarihten biri değişince kırmızı-kalın işareti yeniden hesaplansın */
+  if(advanced || f==='istenen_tarih' || f==='teklif_teslim_tarihi') render();
 }
 /* REVIZYON-KOPYA (2026-09-18): Durum "Revizyon İstendi" yapıldığı anda satırın bir kopyası
    açılır — tutar alanları (Montaj Hariç Net Tutar + donmuş € karşılıkları) BOŞ, Teklif Birimi
@@ -449,6 +462,7 @@ async function revizyonKopyasi(r){
   COLS.forEach(c=>{ rec[c.f]=(r[c.f]==null?null:r[c.f]); });
   rec.net_tutar=null; rec.net_tutar_eur=null; rec.eur_kur=null; rec.kur_tarihi=null;
   rec.teklif_teslim_tarihi=null; /* revize teklif henüz teslim edilmedi — pano "Verilen (Ad.)" sayımı şişmesin */
+  rec.oncelik=1; /* revizyon her zaman en yüksek öncelik (Melih, 2026-09-18) — kolon smallint */
   const eskiNot=String(r.teklif_birimi_notlari||"").trim();
   rec.teklif_birimi_notlari = eskiNot ? ("Revizyon — "+eskiNot) : "Revizyon";
   rec.durum="Teklif İncelendi";
@@ -456,7 +470,7 @@ async function revizyonKopyasi(r){
   const {data,error}=await sb.from("satis_yd_akis").insert(rec).select();
   if(error){ m.className="msg err"; m.textContent="Revizyon kopyası oluşturulamadı: "+error.message; return false; }
   ROWS.push(data[0]);
-  m.className="msg ok"; m.textContent="Revizyon kopyası oluşturuldu ✓ (tutar boş · Teklif İncelendi)";
+  m.className="msg ok"; m.textContent="Revizyon kopyası oluşturuldu ✓ (tutar boş · Öncelik 1 · Teklif İncelendi)";
   sums();
   return true;
 }
