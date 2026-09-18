@@ -328,8 +328,11 @@ function pairCells(r,i,bg){
 }
 /* TERMIN-UYARI (2026-09-18): müşterinin İstenen Tarih'i, teklifin Teklif Teslim Tarihi'nden
    önceyse termin kaçmış demektir — Teklif Teslim Tarihi hücresi kırmızı-kalın yazılır.
-   Değerler ISO (YYYY-AA-GG) olduğu için düz metin karşılaştırması doğru sonuç verir. */
+   YALNIZ durumu "Teklif Bekleniyor" olan satırlarda uygulanır (Melih, 2026-09-18);
+   diğer durumlarda hücre normal yazılır. Değerler ISO (YYYY-AA-GG) olduğu için düz metin
+   karşılaştırması doğru sonuç verir. */
 function terminGec(r){
+  if(!r || r.durum!=="Teklif Bekleniyor") return false;
   const ist=r&&r.istenen_tarih?String(r.istenen_tarih).slice(0,10):"";
   const tes=r&&r.teklif_teslim_tarihi?String(r.teklif_teslim_tarihi).slice(0,10):"";
   if(!ist||!tes) return false;
