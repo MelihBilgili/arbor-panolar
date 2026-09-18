@@ -448,6 +448,7 @@ async function revizyonKopyasi(r){
   const rec={blok:BLOK};
   COLS.forEach(c=>{ rec[c.f]=(r[c.f]==null?null:r[c.f]); });
   rec.net_tutar=null; rec.net_tutar_eur=null; rec.eur_kur=null; rec.kur_tarihi=null;
+  rec.teklif_teslim_tarihi=null; /* revize teklif henüz teslim edilmedi — pano "Verilen (Ad.)" sayımı şişmesin */
   const eskiNot=String(r.teklif_birimi_notlari||"").trim();
   rec.teklif_birimi_notlari = eskiNot ? ("Revizyon — "+eskiNot) : "Revizyon";
   rec.durum="Teklif İncelendi";
