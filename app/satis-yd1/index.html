@@ -434,9 +434,30 @@ async function saveRow(key,f,val,el){
   r[f]=v; if(el){ const c=COLS.find(x=>x.f===f); if(c){ if(c.t==='num') el.value=(v==null?"":money(v)); else if(c.t==='date') el.value=fmtDate(v); } }
   m.className="msg ok"; m.textContent="Kaydedildi ✓"; if(f==='net_tutar') sums();
   if(!kurOk) setMsg("Kaydedildi ama kur alınamadı — € karşılığı boş bırakıldı, tutarı tekrar kaydedin.",false);
-  if(f==='durum'){ render(); return; }
+  if(f==='durum'){ if(v==="Revizyon İstendi") await revizyonKopyasi(r); render(); return; }
   const advanced=await maybeAutoAdvance(r);
   if(advanced) render();
+}
+/* REVIZYON-KOPYA (2026-09-18): Durum "Revizyon İstendi" yapıldığı anda satırın bir kopyası
+   açılır — tutar alanları (Montaj Hariç Net Tutar + donmuş € karşılıkları) BOŞ, Teklif Birimi
+   Notları'nın başına "Revizyon" yazılır, kopyanın durumu "Teklif İncelendi" olur ve takip
+   günlüğü sıfırlanır. Özgün satır "Revizyon İstendi" olarak olduğu gibi kalır. Kopya, satır
+   her "Revizyon İstendi" yapıldığında yeniden üretilir (2. revizyon = 2. kopya). */
+async function revizyonKopyasi(r){
+  const m=document.getElementById("msg");
+  const rec={blok:BLOK};
+  COLS.forEach(c=>{ rec[c.f]=(r[c.f]==null?null:r[c.f]); });
+  rec.net_tutar=null; rec.net_tutar_eur=null; rec.eur_kur=null; rec.kur_tarihi=null;
+  const eskiNot=String(r.teklif_birimi_notlari||"").trim();
+  rec.teklif_birimi_notlari = eskiNot ? ("Revizyon — "+eskiNot) : "Revizyon";
+  rec.durum="Teklif İncelendi";
+  rec.son_takip_notlari=null; rec.son_takip_tarihi=null;
+  const {data,error}=await sb.from("satis_yd_akis").insert(rec).select();
+  if(error){ m.className="msg err"; m.textContent="Revizyon kopyası oluşturulamadı: "+error.message; return false; }
+  ROWS.push(data[0]);
+  m.className="msg ok"; m.textContent="Revizyon kopyası oluşturuldu ✓ (tutar boş · Teklif İncelendi)";
+  sums();
+  return true;
 }
 let ARB_FOCUS_ROW=null;
 function tkStartEntry(key){
