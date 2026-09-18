@@ -651,7 +651,11 @@ async function loadSatis(){
   const kur=await satisKur();
   const nowIst=new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Istanbul'}));
   const yilAy=nowIst.getFullYear()+'-'+String(nowIst.getMonth()+1).padStart(2,'0');
-  const ydAdapt=r=>({proje:r.proje,musteri:r.musteri,net_eur:Number(r.net_tutar)||0,pb:r.para_birimi||'EUR',durum:r.durum});
+  /* Üst özet de KUR-DONDURMA'yı kullanır: YD satırları donmuş net_tutar_eur ile (yoksa canlı kur/kur_son
+     ile) €'ya çevrilip toplama girer — GBP/USD projeler artık Muhtemel/Alınan toplamlarından düşmüyor.
+     ham/hampb = orijinal tutar ve para birimi (yalnız liste satırındaki hover-title için). */
+  const ydAdapt=r=>({proje:r.proje,musteri:r.musteri,net_eur:netEur(r,kur)||0,pb:'EUR',
+    ham:(r.net_tutar==null?null:Number(r.net_tutar)),hampb:r.para_birimi||'EUR',durum:r.durum});
   const soAdapt=r=>({proje:r.proje,musteri:r.musteri,net_eur:Number(r.net_eur)||0,pb:'EUR',durum:r.durum});
   const regions=[
     {ad:"Yurt İçi", kaynak:"SO",
@@ -697,7 +701,8 @@ function satisSummary(regions,hasBase){
   const tM=regions.reduce((a,rg)=>a+sSum(rg.cM),0), tA=regions.reduce((a,rg)=>a+sSum(rg.cA),0);
   const tbM=regions.reduce((a,rg)=>a+rg.baseM,0), tbA=regions.reduce((a,rg)=>a+rg.baseA,0);
   const itemList=arr=>arr.length?arr.slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0))
-    .map(r=>`<div class="sdi"><span class="sdi-p">${esc(r.proje||"")}</span><span class="sdi-t">${money(r.net_eur)} ${esc(r.pb||"EUR")}</span></div>`).join(''):'';
+    .map(r=>{ const ham=(r.hampb&&r.hampb!=='EUR'&&r.ham!=null)?` (${money(r.ham)} ${esc(r.hampb)})`:'';
+      return `<div class="sdi"><span class="sdi-p">${esc(r.proje||"")}</span><span class="sdi-t" title="${money(r.net_eur)} EUR${ham}">${money(r.net_eur)} ${esc(r.pb||"EUR")}${ham}</span></div>`; }).join(''):'';
   let body=`<tr class="stot"><td>Toplam</td><td class="num">${cell(tM,tbM)}</td><td class="num">${cell(tA,tbA)}</td></tr>`;
   regions.forEach(rg=>{
     body+=`<tr class="sreg"><td>${esc(rg.ad)}</td><td class="num">${cell(sSum(rg.cM),rg.baseM)}</td><td class="num">${cell(sSum(rg.cA),rg.baseA)}</td></tr>`;
