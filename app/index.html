@@ -1998,12 +1998,14 @@ async function loadObrapor(tgt){
   const pyAt=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
   const cx=(v,cls)=>`<td class="${cls||""}"><div class="cx">${esc(v==null?"":v)}</div></td>`;
   const kar=obWeeksOpen?"▾":"▸";
-  let cg=`<col class="k35"><col class="k20"><col class="k20"><col class="k100">`
+  /* OB-SUTUN (2026-09-18): Durum 20ch→12ch (-%40), Öncelik 20ch→6ch (-%70);
+     "Son Değişim Özeti" sütunu tamamen kaldırıldı (veri alanı `degisim_ozet` duruyor). */
+  let cg=`<col class="k35"><col class="kdur"><col class="konc"><col class="k100">`
     + (obWeeksOpen?haftaKeys.map(()=>`<col class="k40">`).join(""):"")
-    + `<col class="k60"><col class="k60">`;
+    + `<col class="k60">`;
   let hd=`<th>Konu</th><th>Durum</th><th>Öncelik</th><th class="obwh" id="ob-wk" title="Geçmiş hafta notlarını aç/kapa">Son ÖB Notları <span class="ahcar">${kar}</span></th>`
     + (obWeeksOpen?haftaKeys.map(k=>`<th class="thsm" title="${dgun(weekMap[k].maxDate)}"><span class="thw">${isoWk(weekMap[k].maxDate)}. Hafta ÖB Notu</span></th>`).join(""):"")
-    + `<th>Son Değişim Özeti</th><th>Aylık Değişim Özeti</th>`;
+    + `<th>Aylık Değişim Özeti</th>`;
   let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3>`
     +`<div class="scroll"><table class="obt">`
     +`<colgroup>${cg}</colgroup>`
@@ -2011,9 +2013,9 @@ async function loadObrapor(tgt){
   iRows.forEach(r=>{
     ib+=`<tr>${cx(r.konu,"sb")}${cx(r.durum)}${cx(r.oncelik)}${cx(r.ob_notlari)}`
       + (obWeeksOpen?haftaKeys.map(k=>cx((weekMap[k].notes||{})[String(r.id)])).join(""):"")
-      + `${cx(r.degisim_ozet)}${cx(r.aylik_ozet)}</tr>`;
+      + `${cx(r.aylik_ozet)}</tr>`;
   });
-  if(!iRows.length) ib+=`<tr><td colspan="6" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
+  if(!iRows.length) ib+=`<tr><td colspan="5" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
   ib+=`</tbody></table></div>`;
   /* AYLIK FAALİYET — Takipteki İşler'in hemen altı (27.08.2026): ÖB'nin kapanan aya ilişkin
      yorumu (ob_aylik_faaliyet.ob_yorum, ÖB formundan girilir) + o ayda Selectron'a yapılan
@@ -2037,13 +2039,13 @@ async function loadObrapor(tgt){
       + `<tr class="itot"><td colspan="3">TOPLAM</td><td class="num">${Object.keys(topl).map(k=>nf(topl[k])+" "+k).join(" · ")}</td><td></td></tr>`
       + `</tbody></table></div>`;
   } else odTbl=`<div class="muted" style="font-size:12px;margin:2px">${esc(afAd)} ayında kayıtlı ödeme yok.</div>`;
-  ib+=`<h3 class="sec">Aylık Faaliyet <span class="muted">(${esc(afAd)})</span></h3>
-    <div class="obaf">
-      <div class="obafh">Aylık Faaliyete İlişkin Özgül Bedestenci Yorumu</div>
-      <div class="obafy">${afR&&afR.ob_yorum?esc(afR.ob_yorum):'<span class="muted">— (ÖB formundaki Aylık Faaliyet bloğundan girilir)</span>'}</div>
-      <div class="obafh" style="margin-top:9px">Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler</div>
-      ${odTbl}
-    </div>`;
+  /* OB-BLOK (2026-09-18): "Aylık Faaliyet" bloğunda artık yalnız ÖB'nin yorum METNİ var
+     (başlık satırı ve "— (ÖB formundan girilir)" yer tutucusu kaldırıldı; yorum yoksa blok hiç
+     basılmaz). Selectron ödemeleri buradan ÇIKARILIP kendi bağımsız bloğu yapıldı. */
+  if(afR&&afR.ob_yorum) ib+=`<h3 class="sec">Aylık Faaliyet <span class="muted">(${esc(afAd)})</span></h3>
+    <div class="obaf"><div class="obafy">${esc(afR.ob_yorum)}</div></div>`;
+  ib+=`<h3 class="sec">Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler <span class="muted">(${esc(afAd)})</span></h3>
+    <div class="obaf">${odTbl}</div>`;
   /* Panonun altında serbest metin kutusu → ÖB'ye anında mail (pano-mesaj-mail, alıcı form_takip'ten) */
   ib+=`<div class="obmail">
     <div class="obmh">ÖB'ye Mail Gönder</div>
@@ -2053,6 +2055,7 @@ async function loadObrapor(tgt){
   view.innerHTML=`<style>
     table.obt{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
     table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k40{width:40ch}table.obt col.k60{width:48ch}table.obt col.k100{width:59.5ch}
+    table.obt col.kdur{width:12ch}table.obt col.konc{width:6ch}
     table.obt th.obwh{cursor:pointer;background:#22456b}
     table.obt th.obwh:hover{background:#2d5a8a}
     table.obt .ahcar{font-size:9px;opacity:.85}
@@ -2076,7 +2079,7 @@ async function loadObrapor(tgt){
     .obmail button:disabled{opacity:.55;cursor:default}
     .obmail .msg{font-size:12px}.obmail .msg.ok{color:#0a6b3f;font-weight:600}.obmail .msg.err{color:#b40000;font-weight:600}
   </style>
-  <div class="stamp">Son güncelleme: ${pyAt?dOnly(pyAt):"—"}</div>${ib}`;
+  ${ib}`;
   const wh=document.getElementById("ob-wk");
   if(wh) wh.onclick=()=>{ obWeeksOpen=!obWeeksOpen; loadObrapor(tgt); };
   const mb=document.getElementById("ob-mail-btn");
