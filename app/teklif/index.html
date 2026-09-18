@@ -53,6 +53,14 @@ td.note{color:#52617a;font-size:12.5px;}
 .gs b{color:#1c3d5a;}
 .gs .co{color:#33465c;}
 .ahsap-wrap{max-width:360px;margin-top:6px;}
+/* AHSAP-DURUM (2026-09-18): ağaç türü seçilince Fiyatlandırma panosundaki durum + açıklama */
+.ahbilgi{margin-top:7px;font-size:12.5px;color:#33465c;line-height:1.45;display:none;
+  align-items:flex-start;gap:8px;text-align:left;}
+.ahbilgi.on{display:flex;}
+.ahbilgi .dz{flex:none;border-radius:7px;padding:2px 9px;font-weight:700;font-size:12px;border:1px solid;}
+.ahbilgi .dz.ok{background:#e7f5ec;border-color:#b9dcc6;color:#1f6b45;}
+.ahbilgi .dz.uy{background:#fff6e0;border-color:#f0d9a5;color:#8a6100;}
+.ahbilgi .dz.nt{background:#eef2f7;border-color:#d6dee8;color:#4a5b6e;}
 /* Yönetim onayı uyarısı + ihracat/min adet satırı */
 .warn{margin-top:9px;background:#fff6e0;border:1px solid #f0d9a5;color:#8a6100;
   border-radius:9px;padding:6px 11px;font-size:12.5px;font-weight:700;}
@@ -121,6 +129,8 @@ td.note{color:#52617a;font-size:12.5px;}
       <label>Ahşap Türü Seçin</label>
       <select id="ahsap"></select>
     </div>
+    <!-- AHSAP-DURUM: seçilen türün Fiyatlandırma panosundaki durum + açıklaması (salt-okur) -->
+    <div class="ahbilgi" id="ahsapBilgi"></div>
   </div>
 </section>
 
@@ -206,6 +216,7 @@ let REGION='fr';           // varsayılan açılış = Fransa
 let P={};                  // fiyat_parametre (anahtar -> satır)
 let MS=[];                 // müşteri sınıf listesi (sinif: 1 FR1 · 2 FR2 · 3 UK1 · 4 UK2 · 5 DE1 · 6 DE2)
 let TT=[];                 // fiyat_termin — MVT hafta tablosu (panodan)
+let AHSAP={};              // fiyat_ahsap (ad -> {durum, aciklama}) — AHSAP-DURUM
 
 // seçili bölgeye göre parametre metin değeri
 const val=k=> P[k] ? (REGION==='fr'?P[k].fransa_deger:P[k].diger_deger) : "";
@@ -347,15 +358,34 @@ async function loadCanli(){
   const [pp,ms,ah,tt]=await Promise.all([
     sb.from("fiyat_parametre").select("*").order("sira"),
     sb.from("fiyat_musteri_sinif").select("*"),
-    sb.from("fiyat_ahsap").select("ad,sira").order("sira").order("id"),
+    sb.from("fiyat_ahsap").select("ad,sira,durum,aciklama").order("sira").order("id"),
     sb.from("fiyat_termin").select("*").order("sira").order("id")
   ]);
   P={}; (pp.data||[]).forEach(r=>P[r.anahtar]=r); MS=ms.data||[]; TT=(tt&&!tt.error)?(tt.data||[]):[];
   const ups=(pp.data||[]).map(r=>r.updated_at).filter(Boolean).sort();
   $('stamp').textContent="Son Güncelleme: "+(ups.length?dk(ups[ups.length-1]):"—");
+  AHSAP={}; (ah.data||[]).forEach(r=>{ AHSAP[String(r.ad)]=r; });
   $('ahsap').innerHTML=(ah.data||[]).map(r=>`<option>${esc(r.ad)}</option>`).join("");
+  ahsapBilgiYaz();
   applyRegion();
 }
+/* AHSAP-DURUM (2026-09-18): Seçilen ağaç türünün Fiyatlandırma panosundaki "Ahşap Türü ve
+   Durumu" bloğundaki Durum + Açıklama bilgisi, seçimin hemen altında gösterilir.
+   TEK KAYNAK public.fiyat_ahsap — bu formda düzenleme YOK, yalnız okuma. Rozet rengi:
+   "Mevcut" → yeşil, başka her metin → sarı uyarı, durum boşsa gri. */
+function ahsapBilgiYaz(){
+  const el=$('ahsapBilgi'); if(!el) return;
+  const r=AHSAP[String(($('ahsap')||{}).value||"")];
+  if(!r || (!String(r.durum||"").trim() && !String(r.aciklama||"").trim())){
+    el.className="ahbilgi"; el.innerHTML=""; return;
+  }
+  const d=String(r.durum||"").trim();
+  const k = !d ? "nt" : (/mevcut/i.test(d) ? "ok" : "uy");
+  el.className="ahbilgi on";
+  el.innerHTML=`<span class="dz ${k}">${esc(d||"—")}</span><span>${esc(String(r.aciklama||"").trim()||"—")}</span>`;
+}
+/* AHSAP-DURUM: tür değişince bilgi satırı tazelenir (ağaç türü fiyatı etkilemez, recalc yok) */
+(function(){ const s=$('ahsap'); if(s) s.addEventListener("change", ahsapBilgiYaz); })();
 renderKonum();
 recalc();
 loadCanli();
