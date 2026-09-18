@@ -53,14 +53,14 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <body>
 <header>
   <h1>Faaliyet Formu</h1>
-  <div class="sub">Haftalık faaliyetler kaydedilir. Buraya takipteki işler, tedarikçi giderleri ve tıkanmış şantiyeler işlenir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak güncelleme düğmelerine basılmadıkça gönderilmez.</div>
+  <div class="sub">Haftalık faaliyetler kaydedilir. Buraya takipteki işler, tedarikçi giderleri ve tıkanmış şantiyeler işlenir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak Aylık Güncelleme düğmesine basılmadıkça aktarılmaz.</div>
 </header>
 <div class="wrap">
   <div id="msg" class="msg"></div>
 
+  <!-- HAFTALIK-DUGME-KALDIRILDI (2026-09-18, Melih): "Haftalık Güncelleme" düğmesi formdan çıkarıldı.
+       haftalikGuncelle() fonksiyonu kodda duruyor ama artık hiçbir yerden çağrılmıyor (bkz. CLAUDE.md). -->
   <div class="ibtns" style="margin:2px 0 10px;align-items:center">
-    <button class="wkbtn" id="iWeek">Haftalık Güncelleme</button>
-    <span class="hint" style="margin:0;align-self:center">Sadece Takipteki İşlere ilişkin bilgiler aktarılır</span>
     <button class="mnbtn" id="iMonth">Aylık Güncelleme</button>
     <span class="hint" style="margin:0;align-self:center">Formdaki tüm bilgiler aktarılır</span>
   </div>
@@ -295,7 +295,7 @@ onayKur("a3","fatura","Kesilen Faturalara İlişkin Aşağıdaki Bilgilerin Gün
 async function haftalikGuncelle(){
   const sil=IROWS.filter(r=>r.durum==="Tamamlandı"||r.durum==="İptal oldu");
   if(!confirm("Haftalık Güncelleme (yalnız Takipteki İşler):\n\n• Aktif kalan işlerin önceki→son değişim özeti üretilip panoya yazılacak, sonra son değer 'önceki'ye kaydırılacak (ilk basışta baseline; özet boş).\n• Durumu Tamamlandı/İptal oldu olan "+sil.length+" iş TAMAMEN SİLİNECEK (geri alınamaz).\n\nDevam?")) return;
-  const btn=document.getElementById("iWeek"); btn.disabled=true; msg("Değişim özetleri üretiliyor…",true);
+  const btn=document.getElementById("iWeek")||{}; btn.disabled=true; msg("Değişim özetleri üretiliyor…",true);
   const {data,error}=await sb.functions.invoke("ob-degisim-ozet",{body:{}});
   if(error||!(data&&data.ok)){ btn.disabled=false; msg("Özet üretilemedi: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"),false); return; }
   for(const r of sil){
@@ -339,7 +339,8 @@ async function aylikGuncelle(){
   btn.disabled=false; msg(notlar.join(" · "),!hata); loadDep(); loadAF(false);
 }
 document.getElementById("iAdd").onclick=addIsler;
-document.getElementById("iWeek").onclick=haftalikGuncelle;
+/* HAFTALIK-DUGME-KALDIRILDI: "iWeek" artık DOM'da yok; bağlama koruma altında (hatasız no-op). */
+(function(){ const w=document.getElementById("iWeek"); if(w) w.onclick=haftalikGuncelle; })();
 document.getElementById("iMonth").onclick=aylikGuncelle;
 
 /* ===== AYLIK FAALİYET bloğu (ob_aylik_faaliyet) — kapanan ayın tespitleri Claude tarafından
