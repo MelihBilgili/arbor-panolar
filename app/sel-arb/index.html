@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sel-Arb</title>
+<!-- SELARB-FORM (2026-09-21): Güncel Alacak (€) düzenlenir (ÖB, MK); ay sonunda pg_cron arb_sel_arb_dondur ile Önceki Alacak (€) grubuna (sel_arb_snapshot) eklenir -->
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#c9dcf0;margin-top:3px;line-height:1.5;max-width:960px}
+  .wrap{max-width:100%;margin:0 auto;padding:10px 8px 40px}
+  .btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 10px}
+  .btns button{border:0;border-radius:8px;padding:7px 13px;font-weight:600;cursor:pointer;font-size:12.5px;color:#fff;background:#0a6b57}
+  .btn2{border:1px solid #cdd8e4;background:#fff;color:#16324f;border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer}
+  .msg{font-size:12.5px;min-height:17px}
+  .msg.ok{color:#0a6b3f;font-weight:600}.msg.err{color:#b40000;font-weight:600}
+  .hint{font-size:11.5px;color:#6b7a89;margin:2px 2px 8px}
+  .sa-wrap{overflow-x:auto}
+  .sa-wrap table{border-collapse:collapse;width:auto;font-size:11.5px;background:#fff}
+  .sa-wrap th,.sa-wrap td{border-bottom:1px solid #eef1f5;padding:2px 6px;white-space:nowrap;line-height:17px}
+  .sa-wrap thead th{background:#16324f;color:#fff;font-weight:600}
+  .sa-proje>.c{width:23.33ch}.sa-firma>.c{max-width:20ch;min-width:12ch}
+  .sa-firma>.c,.sa-proje>.c{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sa-proje>.c{font-weight:600;color:#16324f}
+  .sa-num{text-align:right}
+  td.sa-delta,th.sa-dh{border-right:2px solid #cdd8e4}
+  th.sa-g,td.sa-g{background:#fffbe8;border-right:2px solid #cdd8e4}
+  thead th.sa-g{background:#8a6100}
+  td.sa-g input{width:12ch;text-align:right;font:inherit;border:1px solid #d9c98f;border-radius:4px;padding:1px 4px;background:#fff}
+  td.sa-g input:focus{outline:2px solid #0a6b57;border-color:#0a6b57}
+  tr.sa-new td{background:#f2f7fc}
+  tr.sa-new input{font:inherit;border:1px dashed #9fb3c8;border-radius:4px;padding:1px 4px;background:#fff;width:100%}
+  tr.sa-new td.sa-g input{width:12ch;text-align:right}
+  tr.sa-foot td{font-weight:700;background:#eef3f8}
+  tr.sa-foot td.sa-g{background:#f5eed2}
+  .carry{color:#8a97a4;font-weight:600}
+  th.sa-tg{cursor:pointer;user-select:none;text-align:center}
+  th.sa-tg:hover{background:#244a70}
+  .sa-old{display:none}
+  table.open .sa-old{display:table-cell}
+  td.saved{animation:ok 1.2s}
+  @keyframes ok{from{background:#c8f0d4}to{background:#fffbe8}}
+  td.bad input{border-color:#b40000;background:#ffecec}
+</style>
+</head>
+<body>
+<header>
+  <h1>Sel-Arb</h1>
+  <div class="sub">Arbor SAS'ın firma/proje bazlı güncel alacakları. <b>Güncel Alacak (€)</b> sütunu ay boyunca düzenlenir; ay sona erince kendiliğinden sabitlenip <b>Önceki Alacak (€)</b> grubuna eklenir ve SEL-ARB panosunda yeni ay sütunu olur. Yeni firma/proje için en üstteki boş satırı doldurunuz.</div>
+</header>
+<div class="wrap">
+  <div class="btns"><button id="bGuncelle">Aylık Güncelle</button><span id="rolLbl"></span><span class="msg" id="msg"></span></div>
+  <div class="hint" id="stamp"></div>
+  <div id="tbl"><div class="hint">Yükleniyor…</div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ===== ARBOR FORM KAPISI — iki rol hesabı (ÖB / MK) + MB geçişi ===== */
+const ARB_ROLLER = [
+  { email:"ob.form@arbor.com.tr", ad:"ÖB — Özgül Bedestenci" },
+  { email:"mk.form@arbor.com.tr", ad:"MK — Mehmet Konak" }
+];
+const ARB_STORE = "arbform_selarb";
+const ARB_NOSTORE = (u,o)=> fetch(u, Object.assign({}, o||{}, {cache:"no-store"}));
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE},global:{fetch:ARB_NOSTORE}});
+const ARB_MB = "int@arbor.com.tr";
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{global:{fetch:ARB_NOSTORE}});
+var ARB_ACTIVE = ARB_GATE_SB;
+var ARB_EMAIL = "";
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  var opts='<option value="" disabled selected>— Rolünüzü seçiniz —</option>'
+    + ARB_ROLLER.map(function(r){ return '<option value="'+r.email+'">'+r.ad+'</option>'; }).join("");
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:330px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:10px">Arbor — Sel-Arb</div>'
+    +'<select id="arb-rol" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px;margin-bottom:8px">'+opts+'</select>'
+    +'<input id="arb-pw" type="password" placeholder="Parola" autocomplete="current-password" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giriş</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px"></div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var em=document.getElementById("arb-rol").value, pw=document.getElementById("arb-pw").value;
+    if(!em){ document.getElementById("arb-msg").textContent="Önce rolünüzü seçiniz."; return; }
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giriş yapılıyor…";
+    var r=await ARB_GATE_SB.auth.signInWithPassword({email:em,password:pw});
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent="Parola hatalı"; return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  var izin=ARB_ROLLER.map(function(r){return r.email;});
+  if(izin.indexOf(em)<0){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(izin.indexOf(em)>=0 || em===ARB_MB){ ARB_EMAIL=em; (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script type="text/plain" id="arbmain">
+const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ROL = ARB_EMAIL==="ob.form@arbor.com.tr"?"ÖB":ARB_EMAIL==="mk.form@arbor.com.tr"?"MK":"MB";
+(function(){
+  if(ROL==="MB") return;
+  const l=document.getElementById("rolLbl");
+  l.innerHTML='<b style="color:#16324f;font-size:12.5px">Oturum: '+esc(ROL)+'</b>';
+  const b=document.createElement("button"); b.textContent="Rol değiştir"; b.className="btn2"; b.style.marginLeft="8px";
+  b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); };
+  l.appendChild(b);
+})();
+const msg=(t,c)=>{ const m=document.getElementById("msg"); m.textContent=t||""; m.className="msg"+(c?" "+c:""); };
+const fmt=v=>(v==null||v==="")?"":Math.round(Number(v)).toLocaleString("tr-TR");
+const dLbl=t=>t.slice(8,10)+"."+t.slice(5,7)+"."+t.slice(2,4);
+/* "1.234.567" / "1234567,5" / "1234567.5" → sayı; boş → null; geçersiz → NaN */
+const parseTr=s=>{ s=String(s==null?"":s).trim().replace(/\s|€/g,""); if(s==="") return null;
+  if(s.indexOf(",")>=0) s=s.replace(/\./g,"").replace(",",".");
+  else if(/^\-?\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,"");
+  const n=Number(s); return isFinite(n)?n:NaN; };
+const delta=(cur,prev)=>{ if(cur==null||prev==null) return ""; const dl=Math.round(cur-prev); if(dl===0) return ""; return (dl>0?"+":"−")+Math.abs(dl).toLocaleString("tr-TR"); };
+
+let ST={snap:[],oz:[],g:[],open:false,showEmpty:false};
+async function load(){
+  const [s,o,g,py]=await Promise.all([
+    sb.from("sel_arb_snapshot").select("tarih,sira,firma,proje,alacak").order("tarih").order("sira"),
+    sb.from("sel_arb_ozet").select("*").order("tarih"),
+    sb.from("sel_arb_guncel").select("*").order("sira"),
+    sb.from("pano_yayin").select("yayin_at").eq("anahtar","sel_arb_form").limit(1)
+  ]);
+  const e=s.error||o.error||g.error; if(e){ document.getElementById("tbl").innerHTML='<div class="msg err">Hata: '+esc(e.message)+'</div>'; return; }
+  ST.snap=s.data||[]; ST.oz=o.data||[]; ST.g=g.data||[];
+  const pa=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
+  document.getElementById("stamp").textContent="Son güncelleme: "+(pa?new Date(pa).toLocaleDateString("tr-TR"):"—");
+  render();
+}
+function render(){
+  const dates=[...new Set([...ST.snap.map(x=>x.tarih),...ST.oz.map(x=>x.tarih)])].sort().reverse();
+  const nd=dates.length, last=dates[0];
+  const ozBy={}; ST.oz.forEach(x=>ozBy[x.tarih]=x);
+  const vals={}; ST.snap.forEach(x=>{ (vals[x.sira]=vals[x.sira]||{})[x.tarih]=x.alacak; });
+  const rows=ST.g.map(r=>({id:r.id,sira:r.sira,firma:r.firma||"",proje:r.proje||"—",g:r.alacak==null?null:Number(r.alacak),v:vals[r.sira]||{}}));
+  /* Önceki sütunlar: en yeni (dates[0]) açık, diğerleri ▸ ile açılır */
+  const oc=(i)=>i===0?"":" sa-old";
+  let hidden=0;
+  const tr=rows.map(r=>{
+    const lv=r.v[last]==null?null:Number(r.v[last]);
+    const bos=!(r.g) && !(lv);
+    if(bos) hidden++;
+    const hide=bos&&!ST.showEmpty;
+    return `<tr data-id="${r.id}"${hide?' style="display:none"':''}>`
+      +`<td class="sa-proje"><span class="c" title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
+      +`<td class="sa-firma"><span class="c" title="${esc(r.firma)}">${esc(r.firma)}</span></td>`
+      +`<td class="sa-num sa-delta">${esc(delta(r.g,lv))}</td>`
+      +`<td class="sa-num sa-g"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" value="${esc(fmt(r.g))}"></td>`
+      +dates.map((d,i)=>`<td class="sa-num${oc(i)}">${esc(fmt(r.v[d]))}</td>`).join("")+`</tr>`;
+  }).join("");
+  /* En üstte daima boş satır (SELARB-BOS-SATIR) */
+  const nw=`<tr class="sa-new"><td class="sa-proje"><input id="nProje" placeholder="Yeni proje"></td>`
+    +`<td class="sa-firma"><input id="nFirma" placeholder="Firma"></td><td class="sa-delta"></td>`
+    +`<td class="sa-num sa-g"><input id="nAlacak" type="text" inputmode="decimal" size="1" placeholder="€"></td>`
+    +dates.map((d,i)=>`<td class="${oc(i).trim()}"></td>`).join("")+`</tr>`;
+  /* Alt satırlar — SEL-ARB panosu ile aynı hesap; Güncel sütununda Gönderilen/Borç/Ft Edilen son dönem değeridir (gri) */
+  const gSum=rows.reduce((a,r)=>a+(r.g||0),0);
+  const top=d=>{ let s=0,any=false; rows.forEach(r=>{ if(r.v[d]!=null){ s+=Number(r.v[d]); any=true; } }); return any?s:null; };
+  const oL=last?ozBy[last]:null;
+  const F=[
+    ["Güncel Alacak Toplam (€)", d=>top(d), gSum, false],
+    ["Selectron'a Gönderilen Toplam (€)", d=>ozBy[d]?ozBy[d].gonderilen:null, oL?oL.gonderilen:null, true],
+    ["Selectron'a Borç (€)", d=>ozBy[d]?ozBy[d].borc:null, oL?oL.borc:null, true],
+    ["Selectron'a Ft Edilen Toplam (€)", d=>{const v=ozBy[d]?ozBy[d].fatura_edilen:null; return (v==null||Math.round(v)===0)?null:v;}, oL&&Math.round(oL.fatura_edilen||0)?oL.fatura_edilen:null, true],
+  ];
+  const kay=(b,g1,t,f)=>b==null?null:b-((g1||0)+(t||0)+(f||0));
+  F.push(["Arbor SAS Faaliyet Kaybı Toplam (€)", d=>{ const o=ozBy[d]; return o?kay(o.borc,o.gonderilen,top(d),o.fatura_edilen):null; },
+    oL?kay(oL.borc,oL.gonderilen,gSum,oL.fatura_edilen):null, false]);
+  const ft=F.map(([ad,fn,gv,carry])=>{
+    const lv=last?fn(last):null;
+    return `<tr class="sa-foot"><td colspan="2">${esc(ad)}</td><td class="sa-num sa-delta">${carry?"":esc(delta(gv,lv))}</td>`
+      +`<td class="sa-num sa-g"${carry?' title="Son dönem değeri (Önceki Alacak son sütunu)"':''}>${carry?`<span class="carry">${esc(fmt(gv))}</span>`:esc(fmt(gv))}</td>`
+      +dates.map((d,i)=>`<td class="sa-num${oc(i)}">${esc(fmt(fn(d)))}</td>`).join("")+`</tr>`;
+  }).join("");
+  const tgTxt=ST.open?"◂":"▸";
+  const head=`<thead><tr><th rowspan="2">Proje</th><th rowspan="2">Firma</th><th rowspan="2" class="sa-num sa-dh">Δ güncel→son €</th>`
+    +`<th rowspan="2" class="sa-num sa-g">Güncel Alacak (€)</th>`
+    +`<th class="sa-tg" id="saTg" colspan="${ST.open?Math.max(nd,1):1}" title="Diğer ayları aç/kapat">Önceki Alacak (€) ${tgTxt}</th></tr>`
+    +`<tr>${dates.map((d,i)=>`<th class="sa-num${oc(i)}">${esc(dLbl(d))}</th>`).join("")}</tr></thead>`;
+  const btn=hidden?`<div class="hint"><button class="btn2" id="saEmpty">${ST.showEmpty?"Boş-alacak satırları gizle":"Boş-alacak satırları göster"} (${hidden})</button></div>`:"";
+  document.getElementById("tbl").innerHTML=btn+`<div class="sa-wrap"><table class="${ST.open?"open":""}">${head}<tbody>${nw}${tr}${ft}</tbody></table></div>`;
+  bind();
+}
+function bind(){
+  const tg=document.getElementById("saTg"); if(tg) tg.onclick=()=>{ ST.open=!ST.open; render(); };
+  const be=document.getElementById("saEmpty"); if(be) be.onclick=()=>{ ST.showEmpty=!ST.showEmpty; render(); };
+  document.querySelectorAll("td.sa-g input[data-id]").forEach(inp=>{
+    inp.onchange=async()=>{
+      const td=inp.parentElement, id=+inp.dataset.id, n=parseTr(inp.value);
+      if(Number.isNaN(n)){ td.classList.add("bad"); msg("Geçersiz tutar: "+inp.value,"err"); return; }
+      td.classList.remove("bad");
+      const {error}=await sb.from("sel_arb_guncel").update({alacak:n,updated_at:new Date().toISOString(),updated_by:ROL}).eq("id",id);
+      if(error){ msg("Kaydedilemedi: "+error.message,"err"); return; }
+      const r=ST.g.find(x=>x.id===id); if(r) r.alacak=n;
+      msg("Kaydedildi","ok"); render();
+      const nx=document.querySelector(`td.sa-g input[data-id="${id}"]`); if(nx){ nx.parentElement.classList.add("saved"); }
+    };
+    inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } };
+  });
+  const nP=document.getElementById("nProje"), nF=document.getElementById("nFirma"), nA=document.getElementById("nAlacak");
+  const ekle=async()=>{
+    const p=nP.value.trim(), f=nF.value.trim();
+    if(!p||!f) return;                       /* Proje + Firma dolunca kaydedilir */
+    const n=parseTr(nA.value);
+    if(Number.isNaN(n)){ nA.parentElement.classList.add("bad"); msg("Geçersiz tutar","err"); return; }
+    const mx=Math.max(0,...ST.g.map(x=>x.sira||0),...ST.snap.map(x=>x.sira||0));
+    const {data,error}=await sb.from("sel_arb_guncel").insert({sira:mx+1,proje:p,firma:f,alacak:n,updated_by:ROL}).select();
+    if(error){ msg("Eklenemedi: "+error.message,"err"); return; }
+    ST.g.push(data[0]); msg("Eklendi","ok"); render();
+    const q=document.getElementById("nProje"); if(q) q.focus();
+  };
+  [nP,nF,nA].forEach(i=>{ i.onchange=ekle; i.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); ekle(); } }; });
+}
+document.getElementById("bGuncelle").onclick=async()=>{
+  const ts=new Date().toISOString();
+  const {error}=await sb.from("pano_yayin").upsert({anahtar:"sel_arb_form",yayin_at:ts,updated_at:ts},{onConflict:"anahtar"});
+  if(error){ msg("Güncellenemedi: "+error.message,"err"); return; }
+  document.getElementById("stamp").textContent="Son güncelleme: "+new Date(ts).toLocaleDateString("tr-TR");
+  msg("Aylık güncelleme kaydedildi. Güncel Alacak sütunu ay sonunda Önceki Alacak grubuna eklenecek.","ok");
+};
+load();
+</script>
+
+<!-- ARBOR-DRAGSCROLL -->
+<style>
+  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
+  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+<script>
+(function(){
+  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
+  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
+  function scrollable(n){
+    var st=getComputedStyle(n);
+    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
+    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
+    return okx||oky;
+  }
+  function start(n,e){
+    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+    document.body.classList.add("arb-dragging"); e.preventDefault();
+  }
+  document.addEventListener("mousedown",function(e){
+    if(e.button!==0||skip(e.target)) return;
+    var n=e.target, hucre=null;
+    while(n && n.nodeType===1 && n!==document.body){
+      if(scrollable(n)){
+        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
+        if(!n.closest("td,th")) return start(n,e);
+        if(!hucre) hucre=n;
+      }
+      n=n.parentElement;
+    }
+    if(hucre) return start(hucre,e);
+  },true);
+  document.addEventListener("mousemove",function(e){
+    if(!el) return;
+    var dx=e.clientX-sx, dy=e.clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    el.scrollLeft=l-dx; el.scrollTop=t-dy;
+  });
+  document.addEventListener("mouseup",function(){
+    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
+  });
+  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
+})();
+</script>
+<!-- /ARBOR-DRAGSCROLL -->
+<script>
+/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
+(function(){
+  function fx(el){
+    if(!el||el.nodeType!==1) return;
+    var tag=el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
+    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
+    if(el.children.length) return;
+    var t=(el.textContent||'').trim();
+    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
+  }
+  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
+  document.addEventListener('input',function(e){ fx(e.target); },true);
+  document.addEventListener('change',function(e){ fx(e.target); },true);
+  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<!-- /ARB-HOVERTITLE -->
+</body>
+</html>
