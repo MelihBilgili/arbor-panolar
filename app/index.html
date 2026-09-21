@@ -1518,6 +1518,8 @@ async function loadFormlar(){
     {ad:"OE Faaliyet",         who:"OE",tam:"Onur Ekinci",       url:"onur/",        sik:"Her ayın ilk iş günü"},
     {ad:"ÖB Faaliyet",         who:"ÖB",tam:"Özgül Bedestenci",  url:"ob-rapor/",    sik:"Her ayın ilk iş günü"},
     {ad:"MK Faaliyet",         who:"MK",tam:"Mehmet Konak",      url:"mk-prim/",     sik:"Her ayın ilk iş günü"},
+    /* SELARB-FORM: Güncel Alacak (€) — ÖB + MK düzenler, ay sonu pg_cron ile SEL-ARB'a sütun olur */
+    {ad:"Sel-Arb",             who:"ÖB · MK",tam:"Özgül Bedestenci · Mehmet Konak",url:"sel-arb/",sik:"Her ayın ilk iş günü"},
     {ad:"Yurt İçi Satış",      who:"SO",tam:"Sinan Oran",        url:"so/",          sik:"Süresiz"},
     {ad:"Yurt Dışı Satış 1", who:"MN",tam:"Mustafa Nas",      url:"satis-yd1/",   sik:"Süresiz"},
     {ad:"Yurt Dışı Satış 2", who:"MKB",tam:"Melike Başaran",   url:"satis-yd2/",   sik:"Süresiz"},
@@ -1534,7 +1536,7 @@ async function loadFormlar(){
     {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
-  const FK={"onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap",
+  const FK={"sel-arb/":"sel_arb_form","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap",
     "santiye-yi/":"santiye_yi","santiye-yd1-1/":"santiye_yd1_1","santiye-yd1-2/":"santiye_yd1_2",
     "santiye-yd1-3/":"santiye_yd1_3","santiye-yd1-4/":"santiye_yd1_4",
     "santiye-yd2-1/":"santiye_yd2_1","santiye-yd2-2/":"santiye_yd2_2"};
@@ -1563,7 +1565,7 @@ async function loadFormlar(){
   const mkAt=mk0?(mk0.updated_at||mk0.created_at||null):null;
   const CANLI={ onur_sevk:pyBy.oe_sevk, ob_rapor:pyBy.ob_rapor,
                 mk_prim:mkAt, yurtici:sayBy.SO, yd1:sayBy.FY, yd2:sayBy.FY2,
-                ahsap:pyBy.ahsap, yd_alacak:pyBy.sel_arb,
+                ahsap:pyBy.ahsap, yd_alacak:pyBy.sel_arb, sel_arb_form:pyBy.sel_arb_form,
                 /* SANTIYE-FORMLAR canlı izi: her formun kendi pano_yayin anahtarı */
                 santiye_yi:pyBy.santiye_yi, santiye_yd1_1:pyBy.santiye_yd1_1,
                 santiye_yd1_2:pyBy.santiye_yd1_2, santiye_yd1_3:pyBy.santiye_yd1_3,
