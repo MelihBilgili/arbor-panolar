@@ -104,6 +104,9 @@ html,body{max-width:100vw;overflow-x:hidden}
 <script>
 /* ===== ARBOR FORM KAPISI (2026-08-20) — anon erisim kapali, rol hesabiyla giris ===== */
 const ARB_ROLE_EMAIL = "fy2.form@arbor.com.tr";
+/* YD-COK-ROL (21.09.2026): birincil rol + OBL (Orhan Bulut) + MK (Mehmet Konak) */
+const ARB_ROLLER = [ARB_ROLE_EMAIL, "obl.form@arbor.com.tr", "mk.form@arbor.com.tr"];
+const ARB_ROL_AD = {"fy.form@arbor.com.tr":"MN — Mustafa Nas","fy2.form@arbor.com.tr":"MKB — Melike Başaran","obl.form@arbor.com.tr":"OBL — Orhan Bulut","mk.form@arbor.com.tr":"MK — Mehmet Konak"};
 const ARB_STORE = "arbform_yd_akis_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
 const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
 const ARB_MB = "int@arbor.com.tr";
@@ -115,16 +118,17 @@ function arbGateUI(msg){
   d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
   d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:310px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
     +'<div style="font-weight:700;font-size:16px;margin-bottom:3px">Arbor — Form Girisi</div>'
-    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:12px">'+ARB_ROLE_EMAIL+'</div>'
+    +'<select id="arb-rol" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px;margin-bottom:8px"><option value="" disabled selected>— Rolünüzü seçiniz —</option>'+ARB_ROLLER.map(function(e){return '<option value="'+e+'">'+(ARB_ROL_AD[e]||e)+'</option>';}).join("")+'</select>'
     +'<input id="arb-pw" type="password" placeholder="Parola" autocomplete="current-password" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
     +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giris</button>'
     +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px">'+(msg||"")+'</div></div>';
   document.body.appendChild(d);
   var go=async function(){
-    var pw=document.getElementById("arb-pw").value;
+    var pw=document.getElementById("arb-pw").value, rol=document.getElementById("arb-rol").value;
+    if(!rol){ document.getElementById("arb-msg").textContent="Önce rolünüzü seçiniz."; return; }
     document.getElementById("arb-msg").style.color="#5a6b7d";
     document.getElementById("arb-msg").textContent="Giris yapiliyor...";
-    var r=await ARB_GATE_SB.auth.signInWithPassword({email:ARB_ROLE_EMAIL,password:pw});
+    var r=await ARB_GATE_SB.auth.signInWithPassword({email:rol,password:pw});
     if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent="Parola hatali"; return; }
     location.reload();
   };
@@ -135,12 +139,12 @@ function arbGateUI(msg){
 function ARB_BOOT(){ (async function(){
   var s=await ARB_GATE_SB.auth.getSession();
   var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
-  if(em!==ARB_ROLE_EMAIL){
+  if(ARB_ROLLER.indexOf(em)<0){
     var m=await ARB_MB_SB.auth.getSession();
     var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
     if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
   }
-  if(em===ARB_ROLE_EMAIL || em===ARB_MB){ window.ARB_EM=em; (0,eval)(document.getElementById("arbmain").textContent); }
+  if(ARB_ROLLER.indexOf(em)>=0 || em===ARB_MB){ window.ARB_EM=em; (0,eval)(document.getElementById("arbmain").textContent); }
   else { arbGateUI(); }
 })(); }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
@@ -152,7 +156,7 @@ const BLOK="YD2";
    `fiyat_musteri_sinif` tablosunun aynısı, salt-okur. sinif kodu: 1=Fransa 1. · 2=Fransa 2. ·
    3=İngiltere 1. · 4=İngiltere 2. · 5=Almanya 1. · 6=Almanya 2. */
 const MS_SINIFLAR=[[3,"1. Sınıf İngiltere Şirketleri"],[4,"2. Sınıf İngiltere Şirketleri"],[5,"1. Sınıf Almanya Şirketleri"],[6,"2. Sınıf Almanya Şirketleri"]];
-const ARB_EKLEYEN_MAP={"int@arbor.com.tr":"MB","fy.form@arbor.com.tr":"MN","fy2.form@arbor.com.tr":"MKB"};
+const ARB_EKLEYEN_MAP={"int@arbor.com.tr":"MB","fy.form@arbor.com.tr":"MN","fy2.form@arbor.com.tr":"MKB","obl.form@arbor.com.tr":"OBL","mk.form@arbor.com.tr":"MK"};
 const ARB_EKLEYEN=ARB_EKLEYEN_MAP[(window.ARB_EM||"")]||"";
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money=n=>{const v=Math.round(Number(n)||0);return v.toLocaleString("tr-TR");};
