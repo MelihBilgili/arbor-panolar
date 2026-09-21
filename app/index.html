@@ -2575,14 +2575,15 @@ async function loadSantiye(tgt){
    FELSEFE SEKMESİ YOK — içeriği PhD panosunun ALTINDA ikinci iframe olarak açılır (loadOzelHtml).
    pano_ozel_html'deki 'ozel_felsefe' satırı DURUYOR, yalnız görünme yeri değişti. */
 const OZEL_HTML=[["ozel_kitaplar","📚 Kitap"],["ozel_phd","🎓 PhD"],["ozel_takvim","🎂 Takvim"],["ozel_vapur","🚢 Vapur"]];
-const OZEL_SIRA=["ozel_sozluk","gmenkul","ozel_takvim","ozel_vapur","ozel_phd","ozel_kitaplar"];
+const OZEL_SIRA=["ozel_sozluk","gmenkul","ozel_takvim","ozel_vapur","ozel_phd","ozel_kitaplar","ozel_bahce"]; /* BAHCE-SEKME 21.09.2026 */
 function loadOzel(){
   const view=document.getElementById("view");
   const isAdmin=state.allowed===null;
   const htmlTabs=OZEL_HTML.filter(t=> isAdmin || state.allowed.includes(t[0]));
   const showG = isAdmin || state.allowed.includes('gmenkul');
   const showS = isAdmin || state.allowed.includes('ozel_sozluk');
-  const tabs=htmlTabs.concat(showG?[["gmenkul","🏢 G.Menkul"]]:[]).concat(showS?[["ozel_sozluk","📖 Sözlük"]]:[])
+  const showB = isAdmin || state.allowed.includes('ozel_bahce');   /* BAHCE-SEKME */
+  const tabs=htmlTabs.concat(showG?[["gmenkul","🏢 G.Menkul"]]:[]).concat(showS?[["ozel_sozluk","📖 Sözlük"]]:[]).concat(showB?[["ozel_bahce","🌿 Bahçe"]]:[])
     .sort((a,b)=>{ const ia=OZEL_SIRA.indexOf(a[0]), ib=OZEL_SIRA.indexOf(b[0]);
                    return (ia<0?99:ia)-(ib<0?99:ib); });
   if(!tabs.length){ view.innerHTML=`<div class="load">Bu hesapta özel bölüm yetkisi yok.</div>`; return; }
@@ -2594,6 +2595,7 @@ function loadOzel(){
   view.querySelectorAll(".malitab").forEach(btn=>btn.onclick=()=>{ state.ozelSub=btn.dataset.o; loadOzel(); });
   if(state.ozelSub==="gmenkul"){ loadGmenkul("ozel-body"); return; }   /* GMENKUL-DUZENLE */
   if(state.ozelSub==="ozel_sozluk"){ loadSozluk("ozel-body"); return; }
+  if(state.ozelSub==="ozel_bahce"){ loadBahce("ozel-body"); return; }   /* BAHCE-SEKME */
   loadOzelHtml(state.ozelSub,"ozel-body");
 }
 /* pano_ozel_html satırını iframe srcdoc olarak tam sadakatle render et (CSS+script izole çalışır) */
@@ -2701,6 +2703,44 @@ async function loadSozluk(tgt){
       if(!confirm('"'+b.dataset.k+'" sözlükten silinsin mi?')) return;
       b.disabled=true;
       const {error:de}=await sb.from("sozluk").delete().eq("id",b.dataset.id);
+      if(de){ b.disabled=false; alert("Silme hatası: "+(de.message||de)); return; }
+      const tr=b.closest("tr"); if(tr) tr.remove();
+    };
+  });
+}
+
+/* ---------- BAHÇE (Özel grubu) — BAHCE-SEKME (21.09.2026, Melih). Kaynak Supabase 'bahce_bitki'
+   (ad · latince · isik · soguk · toprak · sulama · cok_yillik · notlar). Satırları Claude ekler
+   (bahce-bitki skill'i: Melih yalnız bitki adı yazınca). Panoda yalnız okuma + ✕ silme. RLS int@. ---------- */
+async function loadBahce(tgt){
+  const body=document.getElementById(tgt);
+  const {data,error}=await sb.from("bahce_bitki").select("*").order("ad",{ascending:true});
+  const rows=(!error&&data)?data:[];
+  let h=`<style>
+    .bht{border-collapse:collapse;width:100%;font-size:13px}
+    .bht th{background:#2f5d3a;color:#fff;font-weight:600;padding:5px 8px;text-align:left}
+    .bht td{border-bottom:1px solid #eef1f5;padding:4px 8px;vertical-align:top;line-height:1.45}
+    .bht td.bhk{font-weight:700;color:#2f5d3a;white-space:nowrap}
+    .bht td.bhl{font-style:italic;color:#6b7683;white-space:nowrap}
+    .bht th.bhxh,.bht td.bhx{width:28px;padding:4px 6px;text-align:center}
+    .bhdel{border:0;background:none;cursor:pointer;color:#b9c2cc;font-size:14px;line-height:1;padding:2px 4px;border-radius:4px}
+    .bhdel:hover{color:#c0392b;background:#fdecea}
+    .bhnot{font-size:12px;color:#6b7683;margin:0 0 8px}
+  </style>`;
+  h+='<div class="bhnot">'+rows.length+' bitki · yeni bitki: Claude\'a yalnız bitki adını yazın.</div>';
+  if(error){ h+=`<div class="load">Hata: ${esc(error.message)}</div>`; }
+  else if(!rows.length){ h+=`<div class="load">Henüz bitki yok.</div>`; }
+  else {
+    h+='<div class="scroll"><table class="bht"><thead><tr><th>Bitki</th><th>Latince</th><th>Işık</th><th>Soğuk</th><th>Toprak</th><th>Sulama</th><th>Çok yıllık</th><th>Not</th><th class="bhxh"></th></tr></thead><tbody>';
+    rows.forEach(r=>{ h+='<tr><td class="bhk">'+esc(r.ad)+'</td><td class="bhl">'+esc(r.latince||"")+'</td><td>'+esc(r.isik||"")+'</td><td>'+esc(r.soguk||"")+'</td><td>'+esc(r.toprak||"")+'</td><td>'+esc(r.sulama||"")+'</td><td>'+esc(r.cok_yillik||"")+'</td><td>'+esc(r.notlar||"")+'</td><td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(r.ad)+'">✕</button></td></tr>'; });
+    h+='</tbody></table></div>';
+  }
+  body.innerHTML=h;
+  body.querySelectorAll(".bhdel").forEach(b=>{
+    b.onclick=async()=>{
+      if(!confirm('"'+b.dataset.k+'" Bahçe panosundan silinsin mi?')) return;
+      b.disabled=true;
+      const {error:de}=await sb.from("bahce_bitki").delete().eq("id",b.dataset.id);
       if(de){ b.disabled=false; alert("Silme hatası: "+(de.message||de)); return; }
       const tr=b.closest("tr"); if(tr) tr.remove();
     };
