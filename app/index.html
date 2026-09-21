@@ -247,7 +247,7 @@ async function loadPerms(){
 const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_maasprim","mali_mkprim"];
 const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_maasprim","mali_mkprim"];
 /* ÖB Faaliyet artık Mali grubunun içinde (MK Faaliyet'in yanında) */
-const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["so","SÖ"],["santiye","Şantiye Onay"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
+const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["santiye","Şantiye Onay"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
 const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
 function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b))||a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
 function renderApp(){
@@ -267,7 +267,6 @@ function renderApp(){
 function loadView(){
   if(state.tab==='gundem') loadGundem();
   else if(state.tab==='hazir') loadHazir();
-  else if(state.tab==='so') loadSo();
   else if(state.tab==='santiye') loadSantiyeOnay();
   else if(state.tab==='satis') loadSatis();
   else if(state.tab==='ref') loadRef();
@@ -337,10 +336,11 @@ function fitTitles(){
 /* ---------- ANA GÜNDEM (blok = kod_prefix; İlgili = kişi; kapat = sil) ---------- */
 async function loadGundem(){
   const view=document.getElementById("view");
-  const [g,ar,sc]=await Promise.all([
+  const [g,ar,sc,soHtml]=await Promise.all([
     sb.from("ana_gundem").select("*"),
     sb.from("gundem_arge").select("*"),
-    sb.from("gundem_secenek").select("*")
+    sb.from("gundem_secenek").select("*"),
+    soBlockHtml()  /* AG-SO-BLOK */
   ]);
   const err=g.error||ar.error;
   const secRows=(sc&&!sc.error&&sc.data)?sc.data:[];
@@ -448,6 +448,7 @@ async function loadGundem(){
     ${pemPrjBlock(pemRows,'pem')}
     ${pemPrjBlock(prjRows,'prj')}
     ${grpTable(restKeys)}
+    ${soHtml}
     ${argeBlock(groups['ARGE'])}
     </div>`;
   view.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
@@ -602,19 +603,18 @@ function startEdit(el){
   inp.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault();inp.blur();} if(e.key==='Escape'){loadGundem();} };
 }
 
-/* ---------- SÖ (so_panosu, bölüm bloklu) ---------- */
-async function loadSo(){
-  const view=document.getElementById("view");
-  const [so,ea,adRes]=await Promise.all([ sb.from("so_panosu").select("*"), sb.from("so_ea_form").select("nr,statu,gundem_tarihi"), sb.from("pano_adet_ozet").select("damga,so_adet").limit(2) ]);
-  const data=so.data, error=so.error;
-  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
-  const eaMap={}; (ea&&!ea.error?(ea.data||[]):[]).forEach(x=>eaMap[x.nr]=x);
-  const gundemHuc=nr=>{ const g=eaMap[nr]; return (g&&g.statu==="gundeme_alindi"&&g.gundem_tarihi)?fdate(g.gundem_tarihi):"—"; };
+/* ---------- AG-SO-BLOK: SÖ (so_panosu, bölüm bloklu) — 21.09.2026 Melih: ayrı SÖ sekmesi ve EA formu
+   kaldırıldı; içerik Ana Gündem'de ARGE bloğunun hemen üstünde. Gündem sütunu (so_ea_form) düştü. ---------- */
+async function soBlockHtml(){
+  try{
+  const [so,adRes]=await Promise.all([ sb.from("so_panosu").select("*"), sb.from("pano_adet_ozet").select("damga,so_adet").limit(2) ]);
+  if(so.error) return `<h3 class="sec">SÖ</h3><div class="load">Hata: ${esc(so.error.message)}</div>`;
+  const data=so.data||[];
   const groups={};
-  (data||[]).forEach(r=>{ const k=r.bolum||"—"; (groups[k]=groups[k]||[]).push(r); });
+  data.forEach(r=>{ const k=r.bolum||"—"; (groups[k]=groups[k]||[]).push(r); });
   let rows="";
   Object.keys(groups).sort().forEach(k=>{
-    rows+=`<tr class="grp"><td colspan="7">${esc(k)} · ${groups[k].length}</td></tr>`;
+    rows+=`<tr class="grp"><td colspan="6">${esc(k)} · ${groups[k].length}</td></tr>`;
     groups[k].forEach(r=>{
       rows+=`<tr>
         <td class="kod">${esc(r.nr)}</td>
@@ -623,17 +623,17 @@ async function loadSo(){
         <td class="c15"><div class="cx">${esc(r.proje_adi||r.proje_numarasi)}</div></td>
         <td class="c20"><div class="cx">${esc(r.problem)}</div></td>
         <td class="c7"><div class="cx">${esc(r.bildiren)}</div></td>
-        <td class="num">${gundemHuc(r.nr)}</td>
       </tr>`;
     });
   });
-  const st=await erpStamp();
+  if(!rows) return "";
   const s0=(adRes&&adRes.data&&adRes.data[0])||{}, s1=(adRes&&adRes.data&&adRes.data[1])||{};
   const soAdet=' · SÖ Adet: '+Math.round(Number(s0.so_adet)||0)+pctSpan(s0.so_adet,s1.so_adet);
-  view.innerHTML=`<div class="stamp">Son güncelleme: ${st||"—"}${soAdet}</div>
+  return `<h3 class="sec">SÖ · ${data.length}</h3><div class="stamp">ERP: ${fmtDamga(s0.damga)}${soAdet}</div>
     <div class="scroll"><table class="so">
-    <thead><tr><th>NR</th><th class="num">Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th><th class="num">Gündem</th></tr></thead>
+    <thead><tr><th>NR</th><th class="num">Açılış</th><th>Durum</th><th>Proje</th><th>Problem</th><th>Bildiren</th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
+  }catch(e){ return ""; }
 }
 
 /* ---------- SATIŞ (Yurt İçi=satis_yorum/SO · Yurt Dışı 1/2=satis_yd_akis) — birleşik ---------- */
@@ -1275,10 +1275,10 @@ async function loadRef(){
     <div class="hint">Bu bölüm <b>fiilen işleyen</b> hattı anlatır — kodda/veritabanında karşılığı olmayan adım yazılmaz. Otomatik olmayan işler <span class="tag" style="margin:0">elle</span> etiketiyle işaretlidir. Firma içi <b>kurallar</b> (yasalar) ayrı Prosedürler sekmesindedir.</div>
     <div class="flow"><b>1. ERP İngest Hattı</b><span class="tag">çekim sonrası tek komut</span>
       <p>Melih ERP'yi manuel çeker → Excel'leri <code>Arbor\\ERP\\&lt;YYMMDD&gt;\\</code> içine bırakır → <code>python kod/erp_cekim_gorevi.py</code> çalıştırılır. Bu rutin sırayla: (1) <b>worker</b> ingest (snapshot tabloları + icmal_satir), (2) <code>_pem_prj_erp_match.py</code> → Ana Gündem PEM/PRJ orta sütunları (<code>ana_gundem.erp</code>), (3) <code>_hazir_erp_fill.py</code> → <code>hazir_erp</code>, (4) Duyuru diff'i. Hepsi idempotent; <b>otomatik zamanlama yok</b>, elle tetiklenir. Panolar canlı view okuduğu için <b>app deploy gerekmez</b>.</p>
-      <p class="muted">Ingest edilen beş rapor: <b>Prj→proje_snapshot, Pem→pem_snapshot, Arge→arge_snapshot, SÖ→so_snapshot, Üs→icmal_satir</b> (aya göre PATCH). <b>Cam.xlsx ingest edilmez</b> (ayrı fiyat aracı app/cam/); <b>Duyuru.xlsx snapshot'a yazılmaz</b> ama önceki çekimle diff'lenir → §12. Panolar: Prj→AÜP + Hazır PRJ (durum 8/8.1, satış/şantiye notu dahil); Pem→Hazır PEM (durum 3); Arge→Ana Gündem ARGE bloğu; SÖ→<b>SÖ panosu + EA formu</b> (SÖ Ana Gündem'de görünmez); Üs→İcmal. Ana Gündem'deki PEM/PRJ takip blokları <b>elle</b> açılır, ERP yalnız orta sütunları doldurur.</p>
+      <p class="muted">Ingest edilen beş rapor: <b>Prj→proje_snapshot, Pem→pem_snapshot, Arge→arge_snapshot, SÖ→so_snapshot, Üs→icmal_satir</b> (aya göre PATCH). <b>Cam.xlsx ingest edilmez</b> (ayrı fiyat aracı app/cam/); <b>Duyuru.xlsx snapshot'a yazılmaz</b> ama önceki çekimle diff'lenir → §12. Panolar: Prj→AÜP + Hazır PRJ (durum 8/8.1, satış/şantiye notu dahil); Pem→Hazır PEM (durum 3); Arge→Ana Gündem ARGE bloğu; SÖ→<b>Ana Gündem SÖ bloğu</b> (ARGE'nin üstünde); Üs→İcmal. Ana Gündem'deki PEM/PRJ takip blokları <b>elle</b> açılır, ERP yalnız orta sütunları doldurur.</p>
     </div>
-    <div class="flow"><b>2. SÖ Bölüm Gündem Süreci</b><span class="tag ok">SÖ sorumlusu = EA (Enes Artan)</span>
-      <p>Her ERP çekiminde açık SÖ'ler <b>SÖ panosuna</b> düşer (bölüm bazında gruplu). EA kendi formundan (<a href="ea/" target="_blank">app/ea/</a>) o hafta gündeme alacağı bölümü seçer ve ilgili SÖ'leri <b>"gündeme alındı"</b>ya çevirir; sonuç panonun <b>Gündem</b> sütununa salt-okur yansır. Çalışanlar Melih'in panolarına doğrudan yazmaz.</p>
+    <div class="flow"><b>2. SÖ Takibi</b><span class="tag ok">Ana Gündem · salt-okur</span>
+      <p>Her ERP çekiminde açık SÖ'ler Ana Gündem'de <b>ARGE bloğunun hemen üstündeki SÖ bloğuna</b> düşer (bölüm bazında gruplu, salt-okur). Ayrı SÖ sekmesi ve EA formu 21.09.2026'da kaldırıldı.</p>
       <p class="muted">Takip <b>Formlar</b> sekmesinden yürür: gecikme gün sayısı orada hesaplanır, hatırlatma maili <b>elle</b> (mail düğmesiyle) gönderilir. <span class="tag">elle</span> <b>Zamanlanmış otomatik mail/kontrol yoktur</b> — Pazartesi/Salı/Çarşamba döngüsü kurulmadı.</p>
       <p class="muted">Fabrika bölümü SÖ.xlsx KUSURLU BİRİM sütunundan gelir; boşsa "Atanmamış". Açık SÖ kümesi: DURUM ≤ 7.2 &amp; NİTELİK PEM/Şantiye. Damgadaki <b>SÖ Adet</b> bu kümenin satır sayısıdır (<code>pano_adet_ozet</code>), yüzde bir önceki çekime göredir.</p>
     </div>
@@ -1534,7 +1534,7 @@ async function loadFormlar(){
     {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
-  const FK={"ea/":"ea_so","onur/":"onur_sevk","ob-rapor/":"ob_rapor","da-rapor/":"da_faaliyet","mk-prim/":"mk_prim","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap",
+  const FK={"onur/":"onur_sevk","ob-rapor/":"ob_rapor","da-rapor/":"da_faaliyet","mk-prim/":"mk_prim","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap",
     "santiye-yi/":"santiye_yi","santiye-yd1-1/":"santiye_yd1_1","santiye-yd1-2/":"santiye_yd1_2",
     "santiye-yd1-3/":"santiye_yd1_3","santiye-yd1-4/":"santiye_yd1_4",
     "santiye-yd2-1/":"santiye_yd2_1","santiye-yd2-2/":"santiye_yd2_2"};
@@ -1543,10 +1543,9 @@ async function loadFormlar(){
      Son güncelleme = form_takip.son_guncelleme (elle ✓) ile formun CANLI izinin (pano_yayin /
      ilgili tablonun en yeni updated_at'i) büyüğü. Son güncelleme son tarihten önceyse
      geciken = bugün − son tarih (gün), değilse 0. */
-  const [ft,pyF,eaU,onU,obU,daU,sayU,mkaU]=await Promise.all([
+  const [ft,pyF,onU,obU,daU,sayU,mkaU]=await Promise.all([
     sb.from("form_takip").select("*"),
     sb.from("pano_yayin").select("anahtar,yayin_at"),
-    sb.from("so_ea_form").select("updated_at").order("updated_at",{ascending:false}).limit(1),
     sb.from("sevk_durumu_onur").select("updated_at").order("updated_at",{ascending:false}).limit(1),
     sb.from("ob_isler").select("updated_at").order("updated_at",{ascending:false}).limit(1),
     sb.from("da_isler").select("updated_at").order("updated_at",{ascending:false}).limit(1),
@@ -1562,7 +1561,7 @@ async function loadFormlar(){
   const sayBy={}; ((sayU&&!sayU.error)?(sayU.data||[]):[]).forEach(r=>sayBy[r.kaynak]=r.updated_at);
   const mk0=(mkaU&&!mkaU.error&&mkaU.data&&mkaU.data[0])||null;
   const mkAt=mk0?(mk0.updated_at||mk0.created_at||null):null;
-  const CANLI={ ea_so:one(eaU), onur_sevk:pyBy.oe_sevk, ob_rapor:pyBy.ob_rapor,
+  const CANLI={ onur_sevk:pyBy.oe_sevk, ob_rapor:pyBy.ob_rapor,
                 da_faaliyet:[pyBy.da_rapor,one(daU)].sort().reverse()[0],
                 mk_prim:mkAt, yurtici:sayBy.SO, yd1:sayBy.FY, yd2:sayBy.FY2,
                 ahsap:pyBy.ahsap, yd_alacak:pyBy.sel_arb,
