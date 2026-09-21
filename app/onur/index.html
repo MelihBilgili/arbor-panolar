@@ -23,6 +23,7 @@
   .chd{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
   .chd h2{font-size:14px;margin:0;color:#16324f}
   .cnt{font-weight:400;color:#7a8896;font-size:12px}
+  #tf tr.bos td{background:#f4faf7} /* OE-BOS-SATIR */
   .add{background:#0a6b57;color:#fff;border:0;border-radius:8px;padding:7px 13px;font-weight:700;cursor:pointer;font-size:12.5px}
   table{border-collapse:collapse;width:100%;font-size:13px}
   thead th{background:#16324f;color:#fff;font-weight:600;font-size:11.5px;padding:8px 9px;text-align:left;white-space:nowrap;position:sticky;top:0}
@@ -64,7 +65,7 @@ html,body{max-width:100vw;overflow-x:hidden}
 
   <div class="card pad">
     <div class="chd"><h2>Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar <span class="cnt" id="cf"></span></h2>
-      <button class="add" id="af">＋ Yeni Fatura Ekle</button></div>
+      <span id="af"></span></div>
     <div class="scroll"><table id="ftt"><thead><tr>
       <th style="width:16%">Yurt Dışı Birim</th><th style="width:13%">Fatura No</th><th style="width:13%">Tarih</th><th style="width:24%">Proje(ler)</th><th style="width:14%">Tutar</th><th style="width:12%">Para Birimi</th><th class="x"></th>
     </tr></thead><tbody id="tf"><tr><td colspan="7">Yükleniyor…</td></tr></tbody></table></div>
@@ -164,15 +165,25 @@ async function loadFt(){
   const {data,error}=await sb.from("ihracat_fatura").select("*").order("id",{ascending:false});
   if(error){ $("tf").innerHTML='<tr><td colspan="7">Hata: '+esc(error.message)+'</td></tr>'; return; }
   FT=data||[]; $("cf").textContent="("+FT.length+")";
-  $("tf").innerHTML=FT.length?FT.map(r=>'<tr data-id="'+r.id+'">'
+  /* OE-BOS-SATIR (21.09.2026, Melih): "Yeni Fatura Ekle" düğmesi kalktı; en üstte daima boş taslak satır
+     durur (DB'de yok). İlk hücre (Yurt Dışı Birim) seçilince satır DB'ye yazılır ve üstte yeni boş satır açılır. */
+  const bosSatir='<tr class="bos">'
+    +'<td><select data-f="yd_birim">'+opts(YDB,"")+'</select></td>'
+    +'<td><input data-f="ft_no"></td>'
+    +'<td><input type="date" data-f="tarih"></td>'
+    +'<td><input data-f="projeler"></td>'
+    +'<td><input class="num" data-f="tutar"></td>'
+    +'<td><select data-f="para_birimi">'+opts(PB,"EUR")+'</select></td>'
+    +'<td class="x"></td></tr>';
+  $("tf").innerHTML=bosSatir+FT.map(r=>'<tr data-id="'+r.id+'">'
     +'<td><select data-f="yd_birim">'+opts(YDB,r.yd_birim)+'</select></td>'
     +'<td><input data-f="ft_no" value="'+esc(r.ft_no||"")+'"></td>'
     +'<td><input type="date" data-f="tarih" value="'+esc(r.tarih||"")+'"></td>'
     +'<td><input data-f="projeler" value="'+esc(r.projeler||"")+'"></td>'
     +'<td><input class="num" data-f="tutar" value="'+esc(r.tutar==null?"":r.tutar)+'"></td>'
     +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
-    +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
-    :'<tr><td colspan="7">Fatura yok.</td></tr>';
+    +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("");
+  bosBagla();
   document.querySelectorAll("#tf tr[data-id]").forEach(tr=>{
     const id=tr.getAttribute("data-id");
     tr.querySelectorAll("[data-f]").forEach(el=>{
@@ -194,10 +205,24 @@ async function loadFt(){
       if(error) fmsg("mf","Hata: "+error.message,false); else loadFt(); };
   });
 }
-$("af").onclick=async()=>{
-  const {error}=await sb.from("ihracat_fatura").insert({para_birimi:"EUR",yd_birim:"Arbor SAS"});
-  if(error) fmsg("mf","Hata: "+error.message,false); else loadFt();
-};
+/* OE-BOS-SATIR: boş satırdaki diğer hücreler taslakta tutulur; ilk hücre dolunca hepsiyle birlikte insert. */
+function bosBagla(){
+  const tr=document.querySelector("#tf tr.bos"); if(!tr) return;
+  const yd=tr.querySelector('[data-f="yd_birim"]');
+  let busy=false;
+  yd.onchange=async()=>{
+    if(!yd.value||busy) return; busy=true;
+    const rec={}; tr.querySelectorAll("[data-f]").forEach(el=>{ const f=el.getAttribute("data-f"); const v=String(el.value).trim(); if(v!=="") rec[f]=v; });
+    rec.para_birimi=rec.para_birimi||"EUR";
+    if(rec.tutar!=null){ const t=num(rec.tutar); rec.tutar=t;
+      try{ Object.assign(rec,await eurOf(t,rec.para_birimi)); }catch(e){ fmsg("mf","Kur alınamadı.",false); } }
+    const {data,error}=await sb.from("ihracat_fatura").insert(rec).select("id").single();
+    if(error){ busy=false; fmsg("mf","Hata: "+error.message,false); return; }
+    fmsg("mf","Kaydedildi.",true);
+    await loadFt();
+    const nt=document.querySelector('#tf tr[data-id="'+data.id+'"] [data-f="ft_no"]'); if(nt) nt.focus();
+  };
+}
 const REQF=["yd_birim","ft_no","tarih","projeler","tutar","para_birimi"];
 function bosVar(){
   let eksik=false;
