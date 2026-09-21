@@ -249,7 +249,7 @@ async function delIsler(id){
 }
 /* SEL-ARB boş-alan guard (arbolacak formundan taşındı) — üç tablo doğrudan sorgulanır; Blok 1 MK'da olsa da tablo aynı */
 const SELARB_REQ=[
-  ["arbor_alacak_kalem",["yd_birim","firma","proje","tutar","para_birimi"],"Güncel Alacaklar (MK Blok 1)"],
+  /* SELARB-TEK-KAYNAK (21.09.2026): Güncel Alacaklar artık Sel-Arb formunda (app/sel-arb/) — MK Blok 1 denetimden çıktı */
   ["sel_odeme",["yd_birim","odeme_tarihi","gonderen_banka","tutar","para_birimi"],"Selectron'a Ödemeler (ÖB Blok 2)"],
   ["arbor_kesilen_fatura",["yd_birim","ft_no","tarih","projeler","tutar","para_birimi"],"Kesilen Faturalar (ÖB Blok 3)"]
 ];
@@ -316,7 +316,7 @@ async function aylikGuncelle(){
   const eksik=await selArbBosVar();
   const selArbOk=eksik.length===0;
   const selLine = selArbOk
-    ? "\n• SEL-ARB aylık kapatma: güncel alacaklar SEL-ARB panosuna yazılacak; bu dönem ödemeler + kesilen faturalar toplama eklenecek."
+    ? "\n• SEL-ARB aylık kapatma: bu dönem ödemeler + kesilen faturalar toplama eklenecek (güncel alacaklar Sel-Arb formundan gelir)."
     : "\n• SEL-ARB kapatma ATLANACAK — eksik alan var: "+eksik.join(", ")+" (ilgili blokları tamamlayın).";
   if(!confirm("Aylık Güncelleme ("+afDonemAd()+"):\n\n• Kapanan ayın faaliyet tespitleri yeniden üretilecek (yorumunuz korunur).\n• Dépenses giderleri panoya aktarılacak."+selLine+"\n\nDevam?")) return;
   const btn=document.getElementById("iMonth"); btn.disabled=true; msg("Aylık aktarım yapılıyor…",true);
