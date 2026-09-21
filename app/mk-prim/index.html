@@ -74,8 +74,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div id="blocks"></div>
   <span class="msg" id="msg"></span>
 
-  <!-- === Yurt Dışı Alacak — Blok 1 (arbor_alacak_kalem) — SEL-ARB'a "Aylık Güncelle" (Yurt Dışı Alacak formu) ile aktarılır === -->
-  <div id="sa1wrap" style="display:none"><!-- SELARB-TEK-KAYNAK: Blok 1 gizlendi (21.09.2026) — güncel alacaklar Sel-Arb formunda (app/sel-arb/); veri arbor_alacak_kalem'de duruyor -->
+    <div id="sa1wrap"><!-- SELARB-TEK-KAYNAK: alacaklar bloğu KALDIRILDI (21.09.2026) — güncel alacaklar Sel-Arb formunda (app/sel-arb/); veri arbor_alacak_kalem'de duruyor -->
    <style>
     #sa1wrap .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:12px 14px;margin-top:16px}
     #sa1wrap .chd{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -99,14 +98,6 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <div id="s_akis"></div>
    </div>
 
-   <div class="card">
-    <div class="chd"><h2>Yurt Dışı Birimlerin Firma/Proje Bazlı Güncel Alacakları <span class="cnt" id="c1"></span></h2>
-      <button class="add" id="a1">＋ Yeni Proje Ekle</button></div>
-    <div class="scroll"><table><thead><tr>
-      <th style="width:16%">Yurt Dışı Birim</th><th style="width:26%">Firma</th><th style="width:26%">Proje</th><th style="width:16%">Alacak</th><th style="width:14%">Para Birimi</th><th class="x"></th>
-    </tr></thead><tbody id="t1"><tr><td colspan="6">Yükleniyor…</td></tr></tbody></table></div>
-    <div class="msg" id="m1"></div>
-   </div>
   </div>
 </div>
 
@@ -385,69 +376,7 @@ function sEdit(el){
 sLoadAkis();
 
 
-/* ===== Yurt Dışı Alacak — Blok 1 (arbor_alacak_kalem) — Yurt Dışı Alacak formundan taşındı; veri aynı tabloda, SEL-ARB'a Aylık Güncelle ile aktarılır ===== */
-(function(){
-  const $=id=>document.getElementById(id);
-  const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-  const num=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null; if(t.indexOf(",")>-1&&t.indexOf(".")>-1){t=t.replace(/\./g,"").replace(",",".");}else{t=t.replace(",",".");} const v=parseFloat(t); return isNaN(v)?null:v; };
-  function bmsg(el,t,ok){ const m=$(el); if(!m) return; m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
-  const PB=["EUR","TL","GBP","USD"];
-  const YDB=["Arbor SAS","Arbor Windows Ltd."];
-  const opts=(list,cur)=>['<option value=""></option>'].concat(list.map(o=>'<option'+(String(cur||"")===o?" selected":"")+'>'+esc(o)+'</option>')).join("");
-  const optsYDB=cur=>YDB.map(o=>'<option'+((String(cur||"")||YDB[0])===o?" selected":"")+'>'+esc(o)+'</option>').join("");
-  let _R=null;
-  async function rates(){ if(_R) return _R; let r={EUR:1},tarih=null;
-    try{ const {data}=await sb.functions.invoke("arb-kur",{body:{}}); if(data&&data.ok&&data.rates){ r=Object.assign(r,data.rates); tarih=data.tarih||null; } }catch(e){}
-    if(PB.some(p=>p!=="EUR"&&!(r[p]>0))){ try{ const {data}=await sb.functions.invoke("ahsap-kur",{body:{}}); if(data&&data.ok&&data.rates){ PB.forEach(p=>{ if(!(r[p]>0)&&data.rates[p]>0) r[p]=data.rates[p]; }); if(!tarih) tarih=data.tarih||null; } }catch(e){} }
-    _R={rates:r,tarih:tarih}; return _R; }
-  async function eurOf(tutar,pb){ if(tutar==null) return {tutar_eur:null,eur_kur:null,kur_tarihi:null};
-    if(!pb||pb==="EUR") return {tutar_eur:tutar,eur_kur:1,kur_tarihi:null};
-    const k=await rates(); if(!(k.rates[pb]>0)) throw new Error("kur yok: "+pb);
-    return {tutar_eur:tutar/k.rates[pb],eur_kur:k.rates[pb],kur_tarihi:k.tarih}; }
-  let R1=[];
-  async function load1(){
-    const {data,error}=await sb.from("arbor_alacak_kalem").select("*").order("sira",{nullsFirst:true}).order("id");
-    if(error){ $("t1").innerHTML='<tr><td colspan="6">Hata: '+esc(error.message)+'</td></tr>'; return; }
-    R1=data||[]; $("c1").textContent="("+R1.length+")";
-    $("t1").innerHTML=R1.length?R1.map(r=>'<tr data-id="'+r.id+'">'
-      +'<td><select data-f="yd_birim">'+optsYDB(r.yd_birim)+'</select></td>'
-      +'<td><input data-f="firma" value="'+esc(r.firma||"")+'"></td>'
-      +'<td><input data-f="proje" value="'+esc(r.proje||"")+'"></td>'
-      +'<td><input class="num" data-f="tutar" value="'+esc(r.tutar==null?"":r.tutar)+'"></td>'
-      +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
-      +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
-      :'<tr><td colspan="6">Kalem yok.</td></tr>';
-    bind1();
-  }
-  $("a1").onclick=async()=>{
-    const mn=R1.reduce((a,r)=>Math.min(a,r.sira==null?1e9:r.sira),1e9);
-    const {error}=await sb.from("arbor_alacak_kalem").insert({sira:(mn===1e9?1:mn-1),para_birimi:"EUR",yd_birim:YDB[0]});
-    if(error) bmsg("m1","Hata: "+error.message,false); else load1();
-  };
-  function bind1(){
-    document.querySelectorAll("#t1 tr[data-id]").forEach(tr=>{
-      const id=tr.getAttribute("data-id");
-      tr.querySelectorAll("[data-f]").forEach(el=>{
-        el.onchange=async()=>{
-          const f=el.getAttribute("data-f"); let body={};
-          if(f==="tutar"){ const t=num(el.value); const pbEl=tr.querySelector('[data-f="para_birimi"]');
-            try{ body=Object.assign({tutar:t},await eurOf(t,pbEl?pbEl.value:"EUR")); }catch(e){ bmsg("m1","Kur alınamadı — tutar €'ya çevrilemedi.",false); body={tutar:t}; }
-          }else if(f==="para_birimi"){ const tEl=tr.querySelector('[data-f="tutar"]'); const t=tEl?num(tEl.value):null;
-            try{ body=Object.assign({para_birimi:el.value},await eurOf(t,el.value)); }catch(e){ bmsg("m1","Kur alınamadı.",false); body={para_birimi:el.value}; }
-          }else{ body[f]=(el.value===""?null:el.value); }
-          body.updated_at=new Date().toISOString();
-          const {error}=await sb.from("arbor_alacak_kalem").update(body).eq("id",id);
-          if(error) bmsg("m1","Hata: "+error.message,false); else bmsg("m1","Kaydedildi.",true);
-        };
-      });
-      const b=tr.querySelector(".del");
-      if(b) b.onclick=async()=>{ if(!confirm("Bu satır silinsin mi?")) return;
-        const {error}=await sb.from("arbor_alacak_kalem").delete().eq("id",id);
-        if(error) bmsg("m1","Hata: "+error.message,false); else load1(); };
-    });
-  }
-  load1();
-})();
+/* SELARB-TEK-KAYNAK: Yurt Dışı Alacak Blok 1 (arbor_alacak_kalem) kaldırıldı 21.09.2026 — Sel-Arb formu */
 
 /* Kayıtlı satırları yükle; her blokta en az bir boş satır dursun. */
 loadMK().then(()=>{ BLOCKS.forEach(b=>{ if(!DATA[b.tur].length) DATA[b.tur].push(blankRow(b)); }); render(); });
