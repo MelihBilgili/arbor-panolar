@@ -1515,22 +1515,22 @@ async function loadFormlar(){
   /* Her form = bir satır. Sütunlar: Form(30) · Kullanıcı(10) · Güncelleme(20) · Geciken(8) · Mail · Formu Aç
      Geciken/Mail sütunları eski Ana Gündem "Formlar" bloğundan buraya taşındı (form_takip). */
   const forms=[
-    {ad:"OE Faaliyet",         who:"Onur Ekinci",       url:"onur/",        sik:"Her ayın ilk iş günü"},
-    {ad:"ÖB Faaliyet",         who:"Özgül Bedestenci",  url:"ob-rapor/",    sik:"Her ayın ilk iş günü"},
-    {ad:"MK Faaliyet",         who:"Mehmet Konak",      url:"mk-prim/",     sik:"Her ayın ilk iş günü"},
-    {ad:"Yurt İçi Satış",      who:"Sinan Oran",        url:"so/",          sik:"Süresiz"},
-    {ad:"Yurt Dışı Satış 1", who:"Mustafa Nas",      url:"satis-yd1/",   sik:"Süresiz"},
-    {ad:"Yurt Dışı Satış 2", who:"Melike Başaran",   url:"satis-yd2/",   sik:"Süresiz"},
-    {ad:"Ahşap Maliyet",       who:"Umut Aktaş",        url:"ahsap/",       sik:"Her ayın ilk iş günü"},
+    {ad:"OE Faaliyet",         who:"OE",tam:"Onur Ekinci",       url:"onur/",        sik:"Her ayın ilk iş günü"},
+    {ad:"ÖB Faaliyet",         who:"ÖB",tam:"Özgül Bedestenci",  url:"ob-rapor/",    sik:"Her ayın ilk iş günü"},
+    {ad:"MK Faaliyet",         who:"MK",tam:"Mehmet Konak",      url:"mk-prim/",     sik:"Her ayın ilk iş günü"},
+    {ad:"Yurt İçi Satış",      who:"SO",tam:"Sinan Oran",        url:"so/",          sik:"Süresiz"},
+    {ad:"Yurt Dışı Satış 1", who:"MN",tam:"Mustafa Nas",      url:"satis-yd1/",   sik:"Süresiz"},
+    {ad:"Yurt Dışı Satış 2", who:"MKB",tam:"Melike Başaran",   url:"satis-yd2/",   sik:"Süresiz"},
+    {ad:"Ahşap Maliyet",       who:"UA",tam:"Umut Aktaş",        url:"ahsap/",       sik:"Her ayın ilk iş günü"},
     /* SANTIYE-FORMLAR: 7 şantiye sorumlusu formu (ERP ŞANTİYE SORUMLUSU sütunundan doldurulur) */
-    {ad:"Şantiye · Yurt İçi",      who:"Erdoğan Bakan",   url:"santiye-yi/",    sik:"Her ayın ilk iş günü"},
-    {ad:"Şantiye · Yurt Dışı 1-1", who:"Mertcan Müngen",  url:"santiye-yd1-1/", sik:"Her ayın ilk iş günü"},
-    {ad:"Şantiye · Yurt Dışı 1-2", who:"Ricardo Aurelius",url:"santiye-yd1-2/", sik:"Her ayın ilk iş günü"},
-    {ad:"Şantiye · Yurt Dışı 1-3", who:"Çağlar Kahraman", url:"santiye-yd1-3/", sik:"Her ayın ilk iş günü"},
-    {ad:"Şantiye · Yurt Dışı 1-4", who:"Zafer Ataş",      url:"santiye-yd1-4/", sik:"Her ayın ilk iş günü"},
-    {ad:"Şantiye · Yurt Dışı 2-1", who:"Ali Karadağ",     url:"santiye-yd2-1/", sik:"Her ayın ilk iş günü"},
-    {ad:"Şantiye · Yurt Dışı 2-2", who:"Erkut Bilen",     url:"santiye-yd2-2/", sik:"Her ayın ilk iş günü"},
-    {ad:"Teklif Talepleri",    who:"Ali K. · Melike B.",url:"teklif-talep/",sik:"Süresiz"},
+    {ad:"Şantiye · Yurt İçi",      who:"EB",tam:"Erdoğan Bakan",   url:"santiye-yi/",    sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 1-1", who:"MM",tam:"Mertcan Müngen",  url:"santiye-yd1-1/", sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 1-2", who:"RO",tam:"Ricardo Aurelius",url:"santiye-yd1-2/", sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 1-3", who:"ÇK",tam:"Çağlar Kahraman", url:"santiye-yd1-3/", sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 1-4", who:"ZA",tam:"Zafer Ataş",      url:"santiye-yd1-4/", sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 2-1", who:"AK",tam:"Ali Karadağ",     url:"santiye-yd2-1/", sik:"Her ayın ilk iş günü"},
+    {ad:"Şantiye · Yurt Dışı 2-2", who:"EKB",tam:"Erkut Bilen",     url:"santiye-yd2-2/", sik:"Her ayın ilk iş günü"},
+    {ad:"Teklif Talepleri",    who:"AK · MKB",tam:"Ali Karadağ · Melike Başaran",url:"teklif-talep/",sik:"Süresiz"},
     {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
@@ -1543,13 +1543,14 @@ async function loadFormlar(){
      Son güncelleme = form_takip.son_guncelleme (elle ✓) ile formun CANLI izinin (pano_yayin /
      ilgili tablonun en yeni updated_at'i) büyüğü. Son güncelleme son tarihten önceyse
      geciken = bugün − son tarih (gün), değilse 0. */
-  const [ft,pyF,onU,obU,sayU,mkaU]=await Promise.all([
+  const [ft,pyF,onU,obU,sayU,mkaU,fyY]=await Promise.all([
     sb.from("form_takip").select("*"),
     sb.from("pano_yayin").select("anahtar,yayin_at"),
     sb.from("sevk_durumu_onur").select("updated_at").order("updated_at",{ascending:false}).limit(1),
     sb.from("ob_isler").select("updated_at").order("updated_at",{ascending:false}).limit(1),
     sb.from("satis_ay_islendi").select("kaynak,updated_at"),
-    sb.from("mk_ay_islendi").select("*").order("id",{ascending:false}).limit(1)
+    sb.from("mk_ay_islendi").select("*").order("id",{ascending:false}).limit(1),
+    sb.from("fiyat_yayin").select("yayin_at").eq("id",1).limit(1)
   ]);
   const ftBy={}; ((ft&&!ft.error)?(ft.data||[]):[]).forEach(r=>ftBy[r.form_key]=r);
   const pyBy={}; ((pyF&&!pyF.error)?(pyF.data||[]):[]).forEach(r=>pyBy[r.anahtar]=r.yayin_at);
@@ -1568,6 +1569,10 @@ async function loadFormlar(){
                 santiye_yd1_2:pyBy.santiye_yd1_2, santiye_yd1_3:pyBy.santiye_yd1_3,
                 santiye_yd1_4:pyBy.santiye_yd1_4, santiye_yd2_1:pyBy.santiye_yd2_1,
                 santiye_yd2_2:pyBy.santiye_yd2_2 };
+  /* FORM-SON-GUNC: "Son Güncelleme" sütunu = formun GÜNCELLEME DÜĞMESİNE son basıldığı tarih
+     (form_takip elle ✓ dahil değil). Düğmesi olmayan formlar (YD Akış, Teklif Talepleri, Cam) "—". */
+  const fyAt=(fyY&&!fyY.error&&fyY.data&&fyY.data[0])?fyY.data[0].yayin_at:null;
+  const BTN_AT=Object.assign({},...Object.keys(FK).map(u=>({[u]:CANLI[FK[u]]})),{"so/":sayBy.SO,"teklif/":fyAt});
   const today=new Date(); today.setHours(0,0,0,0);
   const dParse=s=>{ if(!s) return null; const p=String(s).slice(0,10).split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
   const isIs=d=>{ const w=d.getDay(); return w!==0&&w!==6; };
@@ -1603,8 +1608,9 @@ async function loadFormlar(){
                :'<span class="muted">—</span>';
     return `<tr>`
       +`<td class="sb"><div class="cx">${esc(f.ad)}</div></td>`
-      +`<td><div class="cx">${esc(f.who)}</div></td>`
+      +`<td title="${esc(f.tam||f.who)}"><div class="cx">${esc(f.who)}</div></td>`  /* FORM-KISALTMA: yalnız kişi kısaltması, tam ad hover */
       +`<td><div class="cx">${esc(sik)}</div></td>`
+      +`<td class="num"><div class="cx">${BTN_AT[f.url]?fdate(BTN_AT[f.url]):'<span class="muted">—</span>'}</div></td>`
       +`<td class="num"><div class="cx">${gc}</div></td>`
       +`<td class="fmailc">${mail}</td>`
       +`<td class="fopen"><a class="btn" href="${esc(f.url)}" target="_blank">Formu aç</a></td></tr>`;
@@ -1612,7 +1618,7 @@ async function loadFormlar(){
   view.innerHTML=`<style>
     /* table-layout:fixed + width:1px → tablo genişliği = colgroup toplamı (width:auto olursa tarayıcı yayar) */
     table.frm{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
-    table.frm col.f30{width:30ch}table.frm col.f10{width:10ch}table.frm col.f20{width:20ch}table.frm col.f8{width:8ch}table.frm col.fm{width:19ch}table.frm col.fb{width:12ch}
+    table.frm col.f30{width:30ch}table.frm col.f10{width:10ch}table.frm col.f20{width:20ch}table.frm col.f8{width:8ch}table.frm col.f12{width:12ch}table.frm col.fm{width:19ch}table.frm col.fb{width:12ch}
     table.frm td.num,table.frm th.num{text-align:right}
     table.frm td.fmailc{white-space:nowrap;padding:2px 8px}
     table.frm button.fmail{font-size:11px;padding:1px 7px;border:1px solid #8a6100;background:#fff7e6;color:#7a5400;border-radius:5px;cursor:pointer}
@@ -1628,8 +1634,8 @@ async function loadFormlar(){
     table.frm td.fopen .btn{display:inline-block;text-decoration:none;padding:3px 10px;font-size:11.5px;border-radius:6px}
   </style>
   <div class="scroll"><table class="frm">
-  <colgroup><col class="f30"><col class="f10"><col class="f20"><col class="f8"><col class="fm"><col class="fb"></colgroup>
-  <thead><tr><th>Form</th><th>Kullanıcı</th><th>Güncelleme</th><th class="num">Geciken (İş Günü)</th><th>Mail</th><th></th></tr></thead>
+  <colgroup><col class="f30"><col class="f10"><col class="f20"><col class="f12"><col class="f8"><col class="fm"><col class="fb"></colgroup>
+  <thead><tr><th>Form</th><th>Kullanıcı</th><th>Güncelleme</th><th class="num">Son Güncelleme</th><th class="num">Geciken (İş Günü)</th><th>Mail</th><th></th></tr></thead>
   <tbody>${body}</tbody></table></div>`;
   view.querySelectorAll(".fmail").forEach(b=>b.onclick=()=>formMail(b.dataset.fk,b));
   view.querySelectorAll(".freset").forEach(b=>b.onclick=()=>formReset(b.dataset.fk));
