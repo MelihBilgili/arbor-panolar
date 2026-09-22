@@ -7,7 +7,7 @@ header{background:#16324f;color:#fff;padding:12px 16px}header h1{font-size:17px;
 .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:14px}
 label{display:block;font-size:12px;font-weight:600;color:#16324f;margin:8px 0 3px}
 select,input{width:100%;padding:8px 10px;border:1px solid #cdd6df;border-radius:8px;font:inherit;background:#fff}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row2.aa{margin-top:14px;gap:8px}.row2.aa label{white-space:nowrap}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row2.aa{margin-top:14px;gap:8px}.row2.aa label{white-space:nowrap}/* CAM-V18 */.grid{grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr)}@media(max-width:680px){.grid{grid-template-columns:1fr}}.perfgrid{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)!important}.chk2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.chk2 .chk{margin:6px 0;font-size:12.5px;white-space:nowrap}.aarow{display:grid;grid-template-columns:78px 86px 1fr;gap:8px;align-items:end;margin-top:12px}.aarow label{white-space:nowrap}.aarow input{padding:6px 8px}.aarow .hint{margin:0 0 8px 2px;white-space:nowrap}.hgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}.hgrid label{white-space:nowrap;font-size:11.5px}.refrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 14px;margin-top:10px}.refrow label{margin:0;font-size:13px;white-space:nowrap}.refrow input{width:130px}.refdl{margin-left:auto;font-size:12px;color:#5a6b7d}.refdif{font-size:20px;font-weight:800;padding:2px 12px;border-radius:8px;color:#8a97a4;min-width:70px;text-align:center}.refdif.rok{color:#1f6b45;background:#e7f5ec}.refdif.rbad{color:#fff;background:#c0392b}
 .chk{display:flex;align-items:center;gap:8px;margin:7px 0;font-weight:600;color:#16324f;font-size:13px}.chk input{width:auto}
 .out{background:#16324f;color:#fff;border-radius:12px;padding:16px;margin-top:12px}.out .big{font-size:30px;font-weight:800}.out .lbl{font-size:11.5px;color:#cfe0f0;text-transform:uppercase;letter-spacing:.5px}
 .out .line{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid rgba(255,255,255,.15);font-size:13px}
@@ -28,11 +28,12 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div class="row2"><div><label>Yapı</label><select id="yapi"><option value="cift">Çift cam</option><option value="uclu">Üçlü cam</option></select></div><div><label>Ara boşluk (mm)</label><select id="cav"><option>10</option><option>12</option><option>14</option><option selected>16</option><option>20</option></select></div></div>
   <div class="row2"><div><label>Dış cam kodu</label><select id="dis"><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option><option>44.1</option><option>44.2</option><option>44.4</option><option>44.6</option><option>46.2</option><option>46.4</option><option>46.6</option><option>55.1</option><option>64.6</option><option>66.1</option><option>66.2</option><option>66.6</option><option>66.8</option><option>86.6</option><option>88.6</option></select></div><div><label>İç cam kodu</label><select id="ic"><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option><option>44.2</option><option>44.6</option><option>55.1</option><option>64.2</option><option>66.2</option><option>66.3</option><option>68.4</option><option>88.2</option><option value="24">24 (yangın camı)</option></select></div></div>
   <div id="ortaWrap" style="display:none"><label>Orta cam kodu (üçlü)</label><select id="orta"><option>4</option><option>6</option></select></div>
-  <label>Kaplama</label><select id="kap"><option value="yok">Kaplamasız</option><option value="lowe" selected>Low-E</option><option value="solar">Solar Low-E</option></select>
-  <label>Form / şekil</label><select id="form"><option value="duz">Düz</option><option value="karolaj">Karolaj</option><option value="egrisel">Eğrisel (kemerli, dairesel dahil)</option><option value="ke">Karolaj+Eğrisel</option></select>
+  <!-- CAM-V18 DUZEN -->
+  <div class="row2"><div><label>Kaplama</label><select id="kap"><option value="yok">Kaplamasız</option><option value="lowe" selected>Low-E</option><option value="solar">Solar Low-E</option></select></div><div><label>Form / şekil</label><select id="form"><option value="duz">Düz</option><option value="karolaj">Karolaj</option><option value="egrisel">Eğrisel (kemerli, dairesel dahil)</option><option value="ke">Karolaj+Eğrisel</option></select></div></div>
 </div>
 <div class="card">
 <div class="perfgrid"><div>
+  <div class="chk2">
   <div class="chk"><input type="checkbox" id="acoustic"><label style="margin:0">Akustik lamine</label></div>
   <div class="chk"><input type="checkbox" id="satin"><label style="margin:0">Satin / Satine</label></div>
   <div class="chk"><input type="checkbox" id="temper"><label style="margin:0">Temperli</label></div>
@@ -40,18 +41,16 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div class="chk"><input type="checkbox" id="extraclear"><label style="margin:0">Extra / Ultra Clear cam</label></div>
   <div class="chk"><input type="checkbox" id="argon" checked><label style="margin:0">Argon gazı</label></div>
   <div class="chk"><input type="checkbox" id="we" checked><label style="margin:0">WE (sıcak kenar)</label></div>
-  <!-- CAM-V14 ADET-ALAN-SOL: adet/alan WE altinda -->
-  <div class="row2 aa"><div><label>Toplam adet</label><input id="adet" type="number" value="10" step="1" min="0"></div><div><label>Toplam alan (m²)</label><input id="m2" type="number" value="10.0" step="0.1" min="0"></div></div>
-  <div class="hint" id="avgnote"></div>
+  </div>
+  <div class="aarow"><div><label>Toplam adet</label><input id="adet" type="number" value="10" step="1" min="0"></div><div><label>Toplam alan (m²)</label><input id="m2" type="number" value="10.0" step="0.1" min="0"></div><div class="hint" id="avgnote"></div></div>
   </div>
 <div class="hedef"><div class="htit">Hedef değerler <span>(boş = serbest)</span></div>
-  <label>Ug ≤ (W/m²K)</label><input id="h_ug" type="number" step="0.1" min="0">
-  <label>TL ≥ (0–1)</label><input id="h_tl" type="number" step="0.01" min="0" max="1">
-  <label>Rw+Ctr ≥ (dB)</label><input id="h_rw" type="number" step="1" min="0">
-  <label>Solar faktör ≤ (0–1)</label><input id="h_sf" type="number" step="0.01" min="0" max="1">
+  <div class="hgrid"><div><label>Ug ≤ (W/m²K)</label><input id="h_ug" type="number" step="0.1" min="0"></div><div><label>Rw+Ctr ≥ (dB)</label><input id="h_rw" type="number" step="1" min="0"></div><div><label>TL ≥ (0–1)</label><input id="h_tl" type="number" step="0.01" min="0" max="1"></div><div><label>Solar faktör ≤ (0–1)</label><input id="h_sf" type="number" step="0.01" min="0" max="1"></div></div>
 </div></div>
 </div></div>
 <div class="out" id="out"></div>
+<!-- CAM-V18 REF-FIYAT -->
+<div class="refrow"><label for="ref">Referans Fiyat (€/m²)</label><input id="ref" type="number" step="0.01" min="0"><span class="refdl">Birim fiyata göre fark</span><span id="refdif" class="refdif">–</span></div>
 
 </div>
 <script>
@@ -218,6 +217,10 @@ function price(q,v,u){const tp=cl(q.tp||$('temper').checked),we=q.we;
   const g=G.find(r=>r.k===key);return{est,unit:g?est*Math.exp(g.adj):est,g,key,tp};}
 function hedef(){const r=id=>{const x=$(id).value.trim();return x===''?null:+x.replace(',','.');};return{ug:r('h_ug'),tl:r('h_tl'),rw:r('h_rw'),sf:r('h_sf')};}
 function meets(v,h){return(h.ug==null||v.ug<=h.ug+1e-9)&&(h.tl==null||v.tl>=h.tl-1e-9)&&(h.rw==null||v.rw>=h.rw-1e-9)&&(h.sf==null||v.sf<=h.sf+1e-9);}
+/* CAM-V18 REF-FIYAT: referans fiyatin birim fiyata gore farki (tam sayi %), |fark|>15 kirmizi */
+function refUpd(){const e=$('ref'),d=$('refdif');if(!e||!d)return;const r=parseFloat(String(e.value).replace(',','.')),b=window._BF;
+  if(!(r>0)||!(b>0)){d.textContent='–';d.className='refdif';return;}
+  const p=Math.round((r/b-1)*100);d.textContent=(p>0?'+':p<0?'−':'±')+'%'+Math.abs(p);d.className='refdif '+(Math.abs(p)>15?'rbad':'rok');}
 function ownName(q){const k=$('kap').value,t=q.tp?' Temperli':'',a=q.ac?' Akustik':'',sa=q.sat?' Satin':'',x=q.xc?' Extra Clear':'';
   const p=q.c.map((c,j)=>c+(j===0?a+x+(k==='solar'?' Solar Low-E':'')+sa:'')+t+(j===q.c.length-1?(k==='lowe'?' Low-E':'')+(q.fp?' Fire Proof':''):''));
   const cav=q.cav+(q.ar?' Ar':'')+(q.we?' WE':'');return q.tr?p[0]+' / '+cav+' / '+p[1]+' / '+cav+' / '+p[2]:p[0]+' / '+cav+' / '+p[1];}
@@ -240,6 +243,7 @@ function calc(){const q=own(),u=ctxUI(),h=hedef();$('ortaWrap').style.display=q.
   $('out').innerHTML='<div class="unitrow"><div><div class="lbl">Birim fiyat '+badge+'</div><div class="big">'+f2(unit*KAT,2)/* CAM-V16 BIRIM-2HANE */+' €/m²</div></div>'+
    '<div class="komb"><div class="lbl">Fiyatlanan kombinasyon</div><b>'+/* CAM-V17 KOMB-FORMDAN: ad ve kalinlik formdaki secimlerden; fiyat hedeflerle secilen kombinasyondan */ownName(q)+' · '+f2(kalin(q),2)+' mm</b></div></div>'+
    yakinlar(q,po,h,hasH,u);
+  window._BF=unit*KAT;refUpd();
   const tgs=sel.q.tg,fk=P.key.split('|').slice(2,4).join('|');
   const sim=G.filter(r=>r!==g&&r.k.split('|').slice(2,4).join('|')===fk&&Math.abs(r.tg-tgs)<=2);
   let mh='';const row=r=>'<tr><td>'+r.komb+'</td><td class="num">'+r.n+'</td><td class="num">'+r.p+'</td><td class="num">'+fmt(r.bf)+'</td><td class="num">'+fmt(r.lo)+'–'+fmt(r.hi)+'</td></tr>';
@@ -252,7 +256,7 @@ function calc(){const q=own(),u=ctxUI(),h=hedef();$('ortaWrap').style.display=q.
   if($('formula'))$('formula').innerHTML='<b>Çarpımsal model:</b> €/m² = e^( '+DB.ic.toFixed(2)+' + Σ katsayı·parametre ) × e^(geçmiş düzeltme). Geçmiş düzeltme = aynı kombinasyonun tekliflerinin modelden ortalama sapması, n/(n+'+DB.keb+') ağırlıkla. Performans etkileri: TL 0,10 düşünce ×'+Math.exp(-0.1*M.tl).toFixed(2)+' · Solar faktör 0,10 düşünce ×'+Math.exp(-0.1*M.sf).toFixed(2)+' · Rw+Ctr +1 dB ×'+Math.exp(M.rwctr).toFixed(3)+' (+5 dB ×'+Math.exp(5*M.rwctr).toFixed(2)+'). Diğer: Akustik '+x('acoustic')+' · Kalın PVB (.4/.6) '+x('pvb4')+' · Temperli '+x('temper')+' · Extra clear '+x('extraclear')+' · Sıcak kenar (WE) '+x('we')+' · Eğrisel '+x('egrisel')+' · m² iki katına çıkınca ×'+Math.exp(M.l_m2*Math.LN2).toFixed(2)+'. Ug fiyatı ayrıca açıklamıyor (Low-E seçimiyle zaten geliyor); yalnız hedef süzgecinde kullanılır. Argon ve sıcak kenar (WE) ayrı parametre: WE işaretsizse çıta Standart / Siyah çıtalı / Black Edge (aynı şey) sayılır; WE fiyata girer; Argon’un ayrı fiyat etkisi veride ölçülemedi (WE’siz argonlu yalnız 7 teklif), Ug ve geçmiş eşleşmede kullanılır. Kemerli ve dairesel = eğrisel. Hedef değer girildiğinde seçim bunları karşılamıyorsa, aynı yapı / akustik / satin / yangın özelliğini koruyan katalog kombinasyonları arasından hedefleri karşılayan en düşük fiyatlı olan fiyatlanır.';}
 document.querySelectorAll('select,input').forEach(e=>e.addEventListener('input',calc));
 /* CAM-V11 FORMAT-1HANE (CAM-V12: TL ve SF 2 hane): Ug ve toplam alan 1 hane, TL ve SF 2 hane */
-['h_ug','h_tl','h_sf','m2'].forEach(i=>$(i).addEventListener('change',()=>{const e=$(i),x=e.value.trim();if(x!==''&&isFinite(+x.replace(',','.'))){e.value=(+x.replace(',','.')).toFixed(i==='h_tl'||i==='h_sf'?2:1);calc();}}));
+['h_ug','h_tl','h_sf','m2','ref'].forEach(i=>$(i).addEventListener('change',()=>{const e=$(i),x=e.value.trim();if(x!==''&&isFinite(+x.replace(',','.'))){e.value=(+x.replace(',','.')).toFixed(i==='h_tl'||i==='h_sf'||i==='ref'?2:1);calc();}}));
 /* SINIR-KILIT (2026-09-22): sayi kutularina min/max disi deger girilemez (yazarken sinira cekilir; e,+ ve min>=0 ise - tusu engellenir) */
 document.addEventListener('keydown',ev=>{const e=ev.target;if(!e||e.type!=='number')return;if(['e','E','+'].includes(ev.key)||(ev.key==='-'&&e.min!==''&&+e.min>=0))ev.preventDefault();},true);
 document.addEventListener('input',ev=>{const e=ev.target;if(!e||e.type!=='number'||e.value==='')return;const v=+e.value;if(e.max!==''&&v>+e.max)e.value=e.max;else if(e.min!==''&&v<+e.min)e.value=e.min;},true);
