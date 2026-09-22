@@ -237,7 +237,7 @@ function calc(){const q=own(),u=ctxUI(),h=hedef();$('ortaWrap').style.display=q.
   const note=sel.src==='cat'?'<div class="pv">Seçim hedefleri karşılamadığı için katalogdan hedefleri karşılayan en uygun kombinasyon fiyatlandı'+(sel.yapi?' (yapı '+(sel.q.tr?'üçlü':'çift')+' cama çevrildi — seçilen yapıda karşılayan yok)':'')+'.</div>':sel.src==='none'?'<div class="pv"><span class="no">Hedefleri karşılayan kombinasyon katalogda yok — seçimin fiyatı gösteriliyor.</span></div>':'';
   const _fk=P.key.split('|').slice(2,4).join('|'),_fl=P.key.split('|')[3];let bz=g||G.filter(r=>r.k.split('|').slice(2,4).join('|')===_fk&&Math.abs(r.tg-sel.q.tg)<=2).sort((a,b)=>b.n-a.n)[0];
   if(!bz){const cz=G.filter(r=>r.k.split('|')[3]===_fl).sort((a,b)=>Math.abs(a.tg-sel.q.tg)-Math.abs(b.tg-sel.q.tg)||b.n-a.n);bz=cz[0];}
-  $('out').innerHTML='<div class="unitrow"><div><div class="lbl">Birim fiyat '+badge+'</div><div class="big">'+fmt(unit*KAT)+' €/m²</div></div>'+
+  $('out').innerHTML='<div class="unitrow"><div><div class="lbl">Birim fiyat '+badge+'</div><div class="big">'+f2(unit*KAT,2)/* CAM-V16 BIRIM-2HANE */+' €/m²</div></div>'+
    '<div class="komb"><div class="lbl">Fiyatlanan kombinasyon</div><b>'+sel.name+(P.tp&&!/temper/i.test(sel.name)?' · Temperli':'')+' · '+f2(kalin(sel.q),2)+' mm</b></div></div>'+
    yakinlar(q,po,h,hasH,u);
   const tgs=sel.q.tg,fk=P.key.split('|').slice(2,4).join('|');
