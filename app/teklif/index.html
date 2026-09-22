@@ -386,14 +386,53 @@ function ahsapBilgiYaz(){
 }
 /* AHSAP-DURUM: tür değişince bilgi satırı tazelenir (ağaç türü fiyatı etkilemez, recalc yok) */
 (function(){ const s=$('ahsap'); if(s) s.addEventListener("change", ahsapBilgiYaz); })();
+/* FORM-KALICI (2026-09-22): hesaplayici girdileri + bolge tarayicida saklanir; sayfa yenilense de geri yuklenir */
+const FK_KEY='arb_teklif_form_v1', FK_ID=['brut','m2','adet','sinif','mtip','eski','dism'];
+let FK0=null; try{ FK0=JSON.parse(localStorage.getItem(FK_KEY)||'null'); }catch(e){}
+function fkSave(){ try{ const a=$('ahsap');
+  localStorage.setItem(FK_KEY,JSON.stringify({r:REGION, v:Object.fromEntries(FK_ID.map(i=>[i,$(i).value])),
+    k:$('konum').selectedIndex, a:(a&&a.options.length)?a.value:((FK0&&FK0.a)||'')})); }catch(e){} }
+if(FK0){
+  if(FK0.r==='fr'||FK0.r==='du'){ REGION=FK0.r; document.querySelectorAll('.region button').forEach(x=>x.classList.toggle('active',x.dataset.r===REGION)); }
+  FK_ID.forEach(i=>{ const e=$(i), v=FK0.v&&FK0.v[i]; if(!e||v==null) return;
+    if(e.tagName==='SELECT'){ if([...e.options].some(o=>o.value===String(v))) e.value=v; } else e.value=v; });
+}
 renderKonum();
+if(FK0&&FK0.k>=0){ const k=$('konum'); k.selectedIndex=Math.min(FK0.k,k.options.length-1); }
 recalc();
-loadCanli();
+loadCanli().then(()=>{ if(FK0&&FK0.a){ const s=$('ahsap'); if([...s.options].some(o=>o.value===FK0.a)){ s.value=FK0.a; ahsapBilgiYaz(); } } });
+document.addEventListener('input',fkSave,true); document.addEventListener('change',fkSave,true);
+document.querySelectorAll('.region button').forEach(b=>b.addEventListener('click',fkSave));
+window.addEventListener('pagehide',fkSave);
 </script>
 
 
 
 
+
+
+
+<script>
+/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
+(function(){
+  function fx(el){
+    if(!el||el.nodeType!==1) return;
+    var tag=el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
+    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
+    if(el.children.length) return;
+    var t=(el.textContent||'').trim();
+    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
+  }
+  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
+  document.addEventListener('input',function(e){ fx(e.target); },true);
+  document.addEventListener('change',function(e){ fx(e.target); },true);
+  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<!-- /ARB-HOVERTITLE -->
 
 
 <!-- ARBOR-DRAGSCROLL -->
@@ -443,26 +482,5 @@ loadCanli();
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
-<script>
-/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
-(function(){
-  function fx(el){
-    if(!el||el.nodeType!==1) return;
-    var tag=el.tagName;
-    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
-    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
-    if(el.children.length) return;
-    var t=(el.textContent||'').trim();
-    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
-  }
-  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
-  document.addEventListener('input',function(e){ fx(e.target); },true);
-  document.addEventListener('change',function(e){ fx(e.target); },true);
-  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
-  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
-})();
-</script>
-<!-- /ARB-HOVERTITLE -->
 </body>
 </html>
