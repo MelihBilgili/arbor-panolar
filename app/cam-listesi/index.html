@@ -27,6 +27,7 @@
   .cl-wrap td input:hover{border-color:#dde3ea}
   .cl-wrap td input:focus{outline:2px solid #0a6b57;border-color:#0a6b57;background:#fff}
   td.n input{text-align:right}
+  .cl-wrap thead th.h2{white-space:normal;line-height:13px;padding:3px 3px;text-align:right} /* CAM-LISTE-V2 iki satirli baslik */
   td.komb input{font-weight:600;color:#16324f}
   tr.cl-new td{background:#f2f7fc}
   tr.cl-new td input{border:1px dashed #9fb3c8;background:#fff}
@@ -112,19 +113,25 @@ const ROL = ARB_EMAIL==="eu.form@arbor.com.tr"?"EU":"MB";
   l.appendChild(b);
 })();
 const msg=(t,c)=>{ const m=document.getElementById("msg"); m.textContent=t||""; m.className="msg"+(c?" "+c:""); };
-/* sütunlar: anahtar, başlık, tür (t metin · n sayı · d tarih), genişlik (ch) */
-const COLS=[["isaret","+","t",2],["sira","Sıra","r",4],["stok_kodu","Stok Kodu","t",8],["kombinasyon","Cam Kombinasyonu","t",46],
-  ["ug","Ug","n",4],["tl","TL","n",4],["rw","Rw","n",4],["ctr","Ctr","n",4],["sf","Solar Faktör","n",5],["kalinlik","Kalınlık (mm)","n",6],
-  ["uretici","Üretici","t",14],["tedarik_puani","Tedarik Puanı","n",4],["aciklama","Açıklama","t",30],["alis_eur","Alış Fiyatı (€)","n",7],
-  ["fiyat_tarihi","Fiyat Belirlenme Tarihi","d",11],["satis_eur","Satış Fiyatı (€)","n",7],["risk_puani","Risk Puanı","n",4],
-  ["test1","Test (1)","t",22],["test2","Test (2)","t",14],["test3","Test (3)","t",10]];
-const fmtN=v=>(v==null||v==="")?"":Number(v).toLocaleString("tr-TR",{maximumFractionDigits:3});
+/* CAM-LISTE-V2: sütunlar: anahtar, başlık ("|" = satır sonu), tür (t metin · n sayı · d tarih), genişlik (ch), [ondalık hane] */
+const COLS=[["stok_kodu","Stok Kodu","t",8],["kombinasyon","Cam Kombinasyonu","t",46],
+  ["ug","Ug","n",4,1],["tl","TL","n",4],["rw_ctr","Rw+Ctr","n",4],["sf","Solar Faktör","n",5],["kalinlik","Kalınlık (mm)","n",6,1],
+  ["uretici","Üretici","t",10],["tedarik_puani","Tedarik|Puanı","n",2],["aciklama","Açıklama","t",10],["alis_eur","Alış Fiyatı (€)","n",7,0],
+  ["fiyat_tarihi","Fiyat Belirlenme|Tarihi","d",8],["satis_eur","Satış Fiyatı (€)","n",7,0],["risk_puani","Risk|Puanı","n",2]];
+const fmtN=(v,d)=>(v==null||v==="")?"":Number(v).toLocaleString("tr-TR",d==null?{maximumFractionDigits:3}:{minimumFractionDigits:d,maximumFractionDigits:d});
+/* tarih: gösterim gg/aa/yy, giriş gg/aa/yy · gg.aa.yyyy · gg-aa-yy → ISO; boş → null; geçersiz → NaN */
+const fmtD=v=>{ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||""); return m?m[3]+"/"+m[2]+"/"+m[1].slice(2):(v||""); };
+const parseD=s=>{ s=String(s==null?"":s).trim(); if(s==="") return null;
+  const m=/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/.exec(s); if(!m) return NaN;
+  const y=m[3].length===2?2000+(+m[3]):+m[3], a=+m[2], g=+m[1], t=new Date(Date.UTC(y,a-1,g));
+  if(t.getUTCMonth()!==a-1||t.getUTCDate()!==g) return NaN;
+  return y+"-"+String(a).padStart(2,"0")+"-"+String(g).padStart(2,"0"); };
 /* "0,71" / "1.234,5" / "1234.5" → sayı; boş → null; geçersiz → NaN */
 const parseTr=s=>{ s=String(s==null?"":s).trim().replace(/\s|€/g,""); if(s==="") return null;
   if(s.indexOf(",")>=0) s=s.replace(/\./g,"").replace(",",".");
   else if(/^\-?\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,"");
   const n=Number(s); return isFinite(n)?n:NaN; };
-const val=(c,v)=>c[2]==="n"?parseTr(v):(String(v||"").trim()||null);
+const val=(c,v)=>c[2]==="n"?parseTr(v):c[2]==="d"?parseD(v):(String(v||"").trim()||null);
 let ST={rows:[],q:""};
 async function load(){
   const {data,error}=await sb.from("cam_listesi").select("*").order("sira",{ascending:false});
@@ -133,12 +140,12 @@ async function load(){
 }
 const cell=(c,v,id)=>{ const w=`style="width:${c[3]+1}ch"`;
   if(c[2]==="r") return `<td class="n">${esc(v)}</td>`;
-  const t=c[2]==="d"?"date":"text", shown=c[2]==="n"?fmtN(v):(v==null?"":v);
-  return `<td class="${c[2]==="n"?"n":""}${c[0]==="kombinasyon"?" komb":""}"><input ${w} type="${t}"${c[2]==="n"?' inputmode="decimal"':''} data-k="${c[0]}"${id!=null?` data-id="${id}"`:""} value="${esc(shown)}" title="${esc(shown)}"></td>`; };
+  const shown=c[2]==="n"?fmtN(v,c[4]):c[2]==="d"?fmtD(v):(v==null?"":v);
+  return `<td class="${c[2]==="n"?"n":""}${c[0]==="kombinasyon"?" komb":""}"><input ${w} type="text"${c[2]==="n"?' inputmode="decimal"':''}${c[2]==="d"?' placeholder="gg/aa/yy"':''} data-k="${c[0]}"${id!=null?` data-id="${id}"`:""} value="${esc(shown)}" title="${esc(shown)}"></td>`; };
 function render(){
   const q=ST.q.toLocaleLowerCase("tr");
-  const R=q?ST.rows.filter(r=>[r.kombinasyon,r.stok_kodu,r.uretici,r.aciklama,r.test1,r.sira].some(x=>String(x==null?"":x).toLocaleLowerCase("tr").includes(q))):ST.rows;
-  const head='<thead><tr>'+COLS.map(c=>`<th${c[2]==="n"||c[2]==="r"?' class="n"':''}>${esc(c[1])}</th>`).join("")+'</tr></thead>';
+  const R=q?ST.rows.filter(r=>[r.kombinasyon,r.stok_kodu,r.uretici,r.aciklama,r.sira].some(x=>String(x==null?"":x).toLocaleLowerCase("tr").includes(q))):ST.rows;
+  const head='<thead><tr>'+COLS.map(c=>`<th class="${c[2]==="n"||c[2]==="d"?"n":""}${c[1].indexOf("|")>=0?" h2":""}">${esc(c[1]).replace("|","<br>")}</th>`).join("")+'</tr></thead>';
   /* En üstte daima boş satır (CAM-LISTESI-BOS-SATIR) */
   const nw='<tr class="cl-new">'+COLS.map(c=>c[2]==="r"?'<td class="n">yeni</td>':cell(c,null,null).replace('data-k=','data-new="1" data-k=')).join("")+'</tr>';
   const body=R.map(r=>'<tr>'+COLS.map(c=>cell(c,r[c[0]],r.id)).join("")+'</tr>').join("");
@@ -148,7 +155,7 @@ function render(){
 }
 async function kaydet(inp){
   const c=COLS.find(x=>x[0]===inp.dataset.k), td=inp.parentElement, v=val(c,inp.value);
-  if(Number.isNaN(v)){ td.classList.add("bad"); msg("Geçersiz sayı: "+inp.value,"err"); return; }
+  if(Number.isNaN(v)){ td.classList.add("bad"); msg((c[2]==="d"?"Geçersiz tarih (gg/aa/yy): ":"Geçersiz sayı: ")+inp.value,"err"); return; }
   td.classList.remove("bad");
   if(inp.dataset.new){
     const tr=inp.closest("tr"), rec={};
@@ -167,7 +174,7 @@ async function kaydet(inp){
   if(r && (r[c[0]]==null?null:(c[2]==="n"?Number(r[c[0]]):r[c[0]]))===v) return;
   const {error}=await sb.from("cam_listesi").update({[c[0]]:v,updated_at:new Date().toISOString(),updated_by:ROL}).eq("id",id);
   if(error){ msg("Kaydedilemedi: "+error.message,"err"); return; }
-  if(r) r[c[0]]=v; if(c[2]==="n") inp.value=fmtN(v); inp.title=inp.value;
+  if(r) r[c[0]]=v; if(c[2]==="n") inp.value=fmtN(v,c[4]); if(c[2]==="d") inp.value=fmtD(v); inp.title=inp.value;
   td.classList.remove("saved"); void td.offsetWidth; td.classList.add("saved"); msg("Kaydedildi","ok");
 }
 document.getElementById("tbl").addEventListener("change",e=>{ if(e.target.matches("input[data-k]")) kaydet(e.target); });
