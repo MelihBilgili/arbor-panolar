@@ -58,6 +58,60 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+/* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
+   kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
+   proje · proje_adi · musteri · firma alanlarına (fiyat_musteri_sinif'te ad) uygulanır — tek kaynak: kod/_arb_ad_yazim.js */
+(function(){
+  if(window.ARB_AD) return;
+  var AKR=("SCI SAS SARL SA SASU EURL SNC SEM SPL SPLA ZAC PEM PST MVT AÜP OE ÖB MK MB EU UK USA TR FR AŞ LTD LLC PLC GMBH AG BV NV SPA SRL "+
+    "HLM OPH OPAC EHPAD CHU CROUS RATP SNCF IDF ICF HQE BBC CA ILM FCAI CLC CBC LCB BAT BTP TRT KDV SGDB SVM LMP RBKC MTC GTM NHS PVC "+
+    "ARGE ARB YD SÖ TOKİ İBB İTÜ ODTÜ ENSA ESSEC ENS HEC IUT CFA RTE EDF GDF CCI CMA SEMIIC SAEM SPIE CPAM CAF UGC ARS").split(" ");
+  var AK={}; AKR.forEach(function(w){ AK[w]=1; });
+  var KUCUK={ST:1,MR:1,DR:1,SR:1,JR:1,MRS:1,MS:1};           /* sesli harfsiz ama kısaltma sayılmayanlar → St, Mr … */
+  var TRH=/[ğĞşŞıİçÇöÖüÜ]/, SESLI=/[aeiouyàâäéèêëîïôöùûüÿıAEIOUYÀÂÄÉÈÊËÎÏÔÖÙÛÜŸİ]/, ROMA=/^(I{1,3}|IV|VI{0,3}|IX|XI{0,3}|XIV|XV)$/;
+  function up(w,tr){ return tr?w.toLocaleUpperCase("tr"):w.toUpperCase(); }
+  function lo(w,tr){ return tr?w.toLocaleLowerCase("tr"):w.toLowerCase(); }
+  var OLAGAN={};  /* karışık metinde büyük yazılsa da kısaltma sayılmayan sık kelimeler */
+  ("LE LA LES DE DU DES SUR SOUS AUX AU ET EN UN UNE THE OF AND FOR ON IN AT TO VON DER DIE DAS UND IM AM ZUM ZUR VE İLE EVİ BEY HAN KAT LOT VIA DEL DI DA LOS EL SAN SUD NORD EST OUEST").split(" ").forEach(function(w){ OLAGAN[w]=1; });
+  function kelime(w,karisik,tr){
+    if(/\d/.test(w)) return w;                                   /* rakamlı (P19, I3F, 68s) aynen */
+    var U=up(w,tr);
+    if(AK[U]) return U;
+    if(w.length===1) return U;                                   /* tek harf (Lot F, Y Blok) */
+    if(ROMA.test(U)) return U;                                   /* III. Faz */
+    if(!SESLI.test(w) && !KUCUK[U]) return U;                    /* sesli harfsiz: SVM, LMP, RBKC */
+    if(karisik && w===U && w.length<=3 && !OLAGAN[U]) return U;                /* karışık yazılmış metinde büyük yazılmış kısa kelime = kısaltma */
+    var l=lo(w,tr); return up(l.charAt(0),tr)+l.slice(1);
+  }
+  window.ARB_AD=function(s){
+    if(s==null||typeof s!=="string") return s;
+    var t=s.replace(/\s+/g," ").trim(); if(!t) return t;
+    var harf=t.replace(/[^\p{L}]/gu,""), karisik=harf!==harf.toUpperCase()&&harf!==harf.toLowerCase(), tr=TRH.test(t);  /* Türkçe harf içeren metin → tr yerel ayarı (YAPI → Yapı) */
+    return t.replace(/[\p{L}\p{M}\p{N}]+/gu,function(w){ return kelime(w,karisik,tr); });
+  };
+  var ALAN={proje:1,proje_adi:1,musteri:1,firma:1};
+  function donus(o,tablo){
+    if(Array.isArray(o)){ for(var i=0;i<o.length;i++) donus(o[i],tablo); return o; }
+    if(o&&typeof o==="object"){ for(var k in o){ if(typeof o[k]==="string"&&(ALAN[k]||(k==="ad"&&tablo==="fiyat_musteri_sinif"))) o[k]=window.ARB_AD(o[k]); } }
+    return o;
+  }
+  window.ARB_AD_DONUS=donus;
+  var of=window.fetch.bind(window);
+  window.fetch=function(u,o){
+    var url=String((u&&u.url)||u||""), m=url.match(/\/rest\/v1\/([A-Za-z0-9_]+)/), tablo=m?m[1]:null;
+    if(!tablo) return of(u,o);
+    try{ var me=((o&&o.method)||"GET").toUpperCase();
+      if(o&&typeof o.body==="string"&&/^(POST|PATCH|PUT)$/.test(me)&&tablo!=="rpc"){ o=Object.assign({},o,{body:JSON.stringify(donus(JSON.parse(o.body),tablo))}); } }catch(e){}
+    return of(u,o).then(function(r){
+      var ct=r.headers.get("content-type")||"";
+      if(!r.ok||ct.indexOf("json")<0) return r;
+      return r.clone().text().then(function(t){ if(!t) return r;
+        try{ return new Response(JSON.stringify(donus(JSON.parse(t),tablo)),{status:r.status,statusText:r.statusText,headers:r.headers}); }catch(e){ return r; } });
+    });
+  };
+})();
+</script>
+<script>
 /* ===== ARBOR FORM KAPISI (2026-08-20) — anon erisim kapali, rol hesabiyla giris ===== */
 const ARB_ROLE_EMAIL = "so.form@arbor.com.tr";
 const ARB_STORE = "arbform_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
@@ -237,6 +291,29 @@ load();
 
 
 
+
+<script>
+/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
+(function(){
+  function fx(el){
+    if(!el||el.nodeType!==1) return;
+    var tag=el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
+    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
+    if(el.children.length) return;
+    var t=(el.textContent||'').trim();
+    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
+  }
+  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
+  document.addEventListener('input',function(e){ fx(e.target); },true);
+  document.addEventListener('change',function(e){ fx(e.target); },true);
+  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<!-- /ARB-HOVERTITLE -->
+
 <!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
@@ -284,26 +361,5 @@ load();
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
-<script>
-/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
-(function(){
-  function fx(el){
-    if(!el||el.nodeType!==1) return;
-    var tag=el.tagName;
-    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
-    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
-    if(el.children.length) return;
-    var t=(el.textContent||'').trim();
-    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
-  }
-  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
-  document.addEventListener('input',function(e){ fx(e.target); },true);
-  document.addEventListener('change',function(e){ fx(e.target); },true);
-  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
-  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
-})();
-</script>
-<!-- /ARB-HOVERTITLE -->
 </body>
 </html>
