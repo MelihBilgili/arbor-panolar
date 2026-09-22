@@ -251,6 +251,15 @@ function ARB_BOOT(){ (async function(){
 })(); }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
 </script>
+<script>
+/* FORM-ENGEL-IZ (2026-09-22): güncelleme düğmesi bir kontrol yüzünden durdurulursa (uyarı penceresi) form_engel'e kayıt → Formlar panosunda uyarı */
+(function(){ var FK="ob_rapor", oa=window.alert.bind(window);
+  window.alert=function(m){ try{ var t=String(m==null?"":m);
+    if(/G[üu]ncelle(me)?\s+yap[ıi]la/i.test(t) && typeof ARB_ACTIVE!=="undefined" && ARB_ACTIVE)
+      ARB_ACTIVE.from("form_engel").insert({form_key:FK, mesaj:t.slice(0,600)}).then(function(){},function(){});
+  }catch(e){} return oa(m); };
+})();
+</script>
 <script type="text/plain" id="arbmain">
 const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
