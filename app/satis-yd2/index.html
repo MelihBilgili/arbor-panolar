@@ -90,6 +90,8 @@ html,body{max-width:100vw;overflow-x:hidden}
     <span class="sum" id="sum"></span>
     <button class="btn msb" id="ms-btn" type="button">Müşteri Sınıfları</button>
     <span class="msg" id="msg"></span>
+    <span class="arbkim" id="arb-kim" style="margin-left:auto;font-size:12.5px;color:#16324f;font-weight:600"></span>
+    <button class="btn msb" id="arb-cikis" type="button" title="Oturumu kapatır; giriş ekranında başka rol seçilebilir">Çıkış / Rol Değiştir</button><!-- YD-CIKIS -->
   </div>
   <div id="list" class="card"><div class="load">Yükleniyor…</div></div>
 </div>
@@ -159,8 +161,8 @@ html,body{max-width:100vw;overflow-x:hidden}
 /* ===== ARBOR FORM KAPISI (2026-08-20) — anon erisim kapali, rol hesabiyla giris ===== */
 const ARB_ROLE_EMAIL = "fy2.form@arbor.com.tr";
 /* YD-COK-ROL (21.09.2026): birincil rol + OBL (Orhan Bulut) + MK (Mehmet Konak) */
-const ARB_ROLLER = [ARB_ROLE_EMAIL, "obl.form@arbor.com.tr", "mk.form@arbor.com.tr"];
-const ARB_ROL_AD = {"fy.form@arbor.com.tr":"MN — Mustafa Nas","fy2.form@arbor.com.tr":"MKB — Melike Başaran","obl.form@arbor.com.tr":"OBL — Orhan Bulut","mk.form@arbor.com.tr":"MK — Mehmet Konak"};
+const ARB_ROLLER = [ARB_ROLE_EMAIL, "obl.form@arbor.com.tr", "mk.form@arbor.com.tr"].concat(ARB_ROLE_EMAIL==="fy.form@arbor.com.tr"?["ks.form@arbor.com.tr"]:[]); /* YD-KS-ROL (22.09.2026): KS yalniz YD1 */
+const ARB_ROL_AD = {"fy.form@arbor.com.tr":"MN — Mustafa Nas","fy2.form@arbor.com.tr":"MKB — Melike Başaran","obl.form@arbor.com.tr":"OBL — Orhan Bulut","mk.form@arbor.com.tr":"MK - Mehmet Konak","ks.form@arbor.com.tr":"KS - Kamil Şen"};
 const ARB_STORE = "arbform_yd_akis_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
 const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
 const ARB_MB = "int@arbor.com.tr";
@@ -210,7 +212,7 @@ const BLOK="YD2";
    `fiyat_musteri_sinif` tablosunun aynısı, salt-okur. sinif kodu: 1=Fransa 1. · 2=Fransa 2. ·
    3=İngiltere 1. · 4=İngiltere 2. · 5=Almanya 1. · 6=Almanya 2. */
 const MS_SINIFLAR=[[3,"1. Sınıf İngiltere Şirketleri"],[4,"2. Sınıf İngiltere Şirketleri"],[5,"1. Sınıf Almanya Şirketleri"],[6,"2. Sınıf Almanya Şirketleri"]];
-const ARB_EKLEYEN_MAP={"int@arbor.com.tr":"MB","fy.form@arbor.com.tr":"MN","fy2.form@arbor.com.tr":"MKB","obl.form@arbor.com.tr":"OBL","mk.form@arbor.com.tr":"MK"};
+const ARB_EKLEYEN_MAP={"int@arbor.com.tr":"MB","fy.form@arbor.com.tr":"MN","fy2.form@arbor.com.tr":"MKB","obl.form@arbor.com.tr":"OBL","mk.form@arbor.com.tr":"MK","ks.form@arbor.com.tr":"KS"};
 const ARB_EKLEYEN=ARB_EKLEYEN_MAP[(window.ARB_EM||"")]||"";
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const money=n=>{const v=Math.round(Number(n)||0);return v.toLocaleString("tr-TR");};
@@ -609,6 +611,10 @@ async function delRow(i){
   }
   ROWS.splice(i,1); render(); setMsg("Silindi",true);
 }
+/* YD-CIKIS (22.09.2026): giris yapan rol gorunur + oturumu yalniz bu tarayicida kapat, giris ekranina don */
+(function(){ const k=document.getElementById("arb-kim"); if(k) k.textContent="Giriş: "+(ARB_ROL_AD[window.ARB_EM]||window.ARB_EM||"");
+  const b=document.getElementById("arb-cikis"); if(!b) return;
+  b.onclick=async function(){ try{ await sb.auth.signOut({scope:"local"}); }catch(e){} location.reload(); }; })();
 load();
 </script>
 
