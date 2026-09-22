@@ -180,7 +180,7 @@ function yakinlar(q,po,h,hasH,u){let out='';
   /* 3) forma islenen kombinasyona en yakin gecmis teklif grubu */
   let bg=G.find(r=>r.k===po.key)||null;
   if(!bg){let bd=1e9;for(const r of G){const Q=gq(r),d=Dq(q,Q)+(Q.frm!==u.frm?0.5:0);if(d<bd-1e-9||(Math.abs(d-bd)<=1e-9&&bg&&r.n>bg.n)){bd=d;bg=r;}}}
-  if(bg){const Q=gq(bg);out+=lineY('Fiyat tekliflerindeki en yakın kombinasyon:',bodyY(nmT(bg.komb),kalin(Q),perf(Q),f2(bg.bf*KAT,2)+' €/m² (ort. teklif · '+bg.n+' teklif)'));}
+  if(bg){const Q=gq(bg);out+=lineY('Fiyat tekliflerindeki en yakın kombinasyon:',bodyY(nmT(bg.komb),kalin(Q),perf(Q),f2(bg.bf*KAT,2)+' €/m² (ort. teklif × 2,5 · '+bg.n+' teklif)'/* CAM-V15 */));}
   else out+=lineY('Fiyat tekliflerindeki en yakın kombinasyon:','—');
   return out;}
 
