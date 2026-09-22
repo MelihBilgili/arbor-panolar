@@ -7,7 +7,7 @@ header{background:#16324f;color:#fff;padding:12px 16px}header h1{font-size:17px;
 .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:14px}
 label{display:block;font-size:12px;font-weight:600;color:#16324f;margin:8px 0 3px}
 select,input{width:100%;padding:8px 10px;border:1px solid #cdd6df;border-radius:8px;font:inherit;background:#fff}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row2.aa{margin-top:14px;gap:8px}.row2.aa label{white-space:nowrap}/* CAM-V18 */.grid{grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr)}@media(max-width:680px){.grid{grid-template-columns:1fr}}.perfgrid{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)!important}.chk2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.chk2 .chk{margin:6px 0;font-size:12.5px;white-space:nowrap}.aarow{display:grid;grid-template-columns:78px 86px 1fr;gap:8px;align-items:end;margin-top:12px}.aarow label{white-space:nowrap}.aarow input{padding:6px 8px}.aarow .hint{margin:0 0 8px 2px;white-space:nowrap}.hgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}.hgrid label{white-space:nowrap;font-size:11.5px}.refrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 14px;margin-top:10px}.refrow label{margin:0;font-size:13px;white-space:nowrap}.refrow input{width:130px}.refdl{margin-left:auto;font-size:12px;color:#5a6b7d}.refdif{font-size:20px;font-weight:800;padding:2px 12px;border-radius:8px;color:#8a97a4;min-width:70px;text-align:center}.refdif.rok{color:#1f6b45;background:#e7f5ec}.refdif.rbad{color:#fff;background:#c0392b}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row2.aa{margin-top:14px;gap:8px}.row2.aa label{white-space:nowrap}/* CAM-V18 */.grid{grid-template-columns:minmax(0,.72fr) minmax(0,1.28fr)}@media(max-width:680px){.grid{grid-template-columns:1fr}}.perfgrid{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)!important}.chk2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.chk2 .chk{margin:6px 0;font-size:12.5px;white-space:nowrap}.aarow{display:grid;grid-template-columns:78px 86px 1fr;gap:8px;align-items:end;margin-top:12px}.aarow label{white-space:nowrap}.aarow input{padding:6px 8px}.aarow .hint{margin:0 0 8px 2px;white-space:nowrap}.hgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}.hgrid label{white-space:nowrap;font-size:11.5px}.refrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 14px;margin-top:10px}.refrow label{margin:0;font-size:13px;white-space:nowrap}.refrow input{width:130px}.refdl{margin-left:auto;font-size:12px;color:#5a6b7d}.refdif{font-size:20px;font-weight:800;padding:2px 12px;border-radius:8px;color:#8a97a4;min-width:70px;text-align:center}.refdif.rok{color:#1f6b45;background:#e7f5ec}.refdif.rbad{color:#fff;background:#c0392b}/* CAM-V19 */.refrow{align-items:flex-end}.refrow .rf label{display:block;margin:0 0 3px;font-size:12px;white-space:nowrap}.refrow #pencad{width:120px}.refrow .refdl{align-self:center}.refrow .refdif{align-self:center}.refrow input:disabled{background:#eef1f5;color:#9aa6b2}.out .big.faded{opacity:.14}.out .bfwarn{display:inline-block;margin-top:4px;background:#c0392b;color:#fff;font-weight:800;font-size:13px;border-radius:6px;padding:3px 10px}.out .bfhint{font-size:12px;color:#cfe0f0;margin-top:2px}
 .chk{display:flex;align-items:center;gap:8px;margin:7px 0;font-weight:600;color:#16324f;font-size:13px}.chk input{width:auto}
 .out{background:#16324f;color:#fff;border-radius:12px;padding:16px;margin-top:12px}.out .big{font-size:30px;font-weight:800}.out .lbl{font-size:11.5px;color:#cfe0f0;text-transform:uppercase;letter-spacing:.5px}
 .out .line{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid rgba(255,255,255,.15);font-size:13px}
@@ -50,7 +50,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </div></div>
 <div class="out" id="out"></div>
 <!-- CAM-V18 REF-FIYAT -->
-<div class="refrow"><label for="ref">Referans Fiyat (€/m²)</label><input id="ref" type="number" step="0.01" min="0"><span class="refdl">Birim fiyata göre fark</span><span id="refdif" class="refdif">–</span></div>
+<div class="refrow"><!-- CAM-V19 PENCAD --><div class="rf"><label for="pencad">Pencad'de Fiyat Var mı?</label><select id="pencad"><option value=""></option><option value="evet">Evet</option><option value="hayir">Hayır</option></select></div><div class="rf"><label for="ref">Referans Fiyat (€/m²)</label><input id="ref" type="number" step="0.01" min="0"></div><span class="refdl">Birim fiyata göre fark</span><span id="refdif" class="refdif">–</span></div>
 
 </div>
 <script>
@@ -218,9 +218,17 @@ function price(q,v,u){const tp=cl(q.tp||$('temper').checked),we=q.we;
 function hedef(){const r=id=>{const x=$(id).value.trim();return x===''?null:+x.replace(',','.');};return{ug:r('h_ug'),tl:r('h_tl'),rw:r('h_rw'),sf:r('h_sf')};}
 function meets(v,h){return(h.ug==null||v.ug<=h.ug+1e-9)&&(h.tl==null||v.tl>=h.tl-1e-9)&&(h.rw==null||v.rw>=h.rw-1e-9)&&(h.sf==null||v.sf<=h.sf+1e-9);}
 /* CAM-V18 REF-FIYAT: referans fiyatin birim fiyata gore farki (tam sayi %), |fark|>15 kirmizi */
-function refUpd(){const e=$('ref'),d=$('refdif');if(!e||!d)return;const r=parseFloat(String(e.value).replace(',','.')),b=window._BF;
-  if(!(r>0)||!(b>0)){d.textContent='–';d.className='refdif';return;}
-  const p=Math.round((r/b-1)*100);d.textContent=(p>0?'+':p<0?'−':'±')+'%'+Math.abs(p);d.className='refdif '+(Math.abs(p)>15?'rbad':'rok');}
+function refUpd(){const e=$('ref'),d=$('refdif'),pc=($('pencad')||{}).value||'',big=$('out').querySelector('.big'),b=window._BF;if(!e||!d)return;
+  /* CAM-V19 PENCAD: bos/Evet+ref yok -> birim fiyat bos; ref yalniz Evet'te girilir; |fark|>15 -> soluk birim + Onaysiz Kullanmayiniz */
+  e.disabled=pc!=='evet';if(pc!=='evet'&&e.value!=='')e.value='';
+  const r=parseFloat(String(e.value).replace(',','.'));let p=null;
+  if(r>0&&b>0){p=Math.round((r/b-1)*100);d.textContent=(p>0?'+':p<0?'\u2212':'\u00b1')+'%'+Math.abs(p);d.className='refdif '+(Math.abs(p)>15?'rbad':'rok');}
+  else{d.textContent='\u2013';d.className='refdif';}
+  if(!big)return;const host=big.parentNode;host.querySelectorAll('.bfwarn,.bfhint').forEach(x=>x.remove());
+  const show=pc==='hayir'||(pc==='evet'&&r>0),bad=p!=null&&Math.abs(p)>15;
+  big.classList.toggle('faded',show&&bad);
+  if(!show){big.textContent='\u2014';host.insertAdjacentHTML('beforeend','<div class="bfhint">'+(pc===''?'Pencad\'de fiyat var m\u0131? se\u00e7in':'Referans fiyat\u0131 girin')+'</div>');}
+  else{big.textContent=f2(b,2)+' \u20ac/m\u00b2';if(bad)host.insertAdjacentHTML('beforeend','<div class="bfwarn">Onays\u0131z Kullanmay\u0131n\u0131z</div>');}}
 function ownName(q){const k=$('kap').value,t=q.tp?' Temperli':'',a=q.ac?' Akustik':'',sa=q.sat?' Satin':'',x=q.xc?' Extra Clear':'';
   const p=q.c.map((c,j)=>c+(j===0?a+x+(k==='solar'?' Solar Low-E':'')+sa:'')+t+(j===q.c.length-1?(k==='lowe'?' Low-E':'')+(q.fp?' Fire Proof':''):''));
   const cav=q.cav+(q.ar?' Ar':'')+(q.we?' WE':'');return q.tr?p[0]+' / '+cav+' / '+p[1]+' / '+cav+' / '+p[2]:p[0]+' / '+cav+' / '+p[1];}
@@ -260,6 +268,8 @@ document.querySelectorAll('select,input').forEach(e=>e.addEventListener('input',
 /* SINIR-KILIT (2026-09-22): sayi kutularina min/max disi deger girilemez (yazarken sinira cekilir; e,+ ve min>=0 ise - tusu engellenir) */
 document.addEventListener('keydown',ev=>{const e=ev.target;if(!e||e.type!=='number')return;if(['e','E','+'].includes(ev.key)||(ev.key==='-'&&e.min!==''&&+e.min>=0))ev.preventDefault();},true);
 document.addEventListener('input',ev=>{const e=ev.target;if(!e||e.type!=='number'||e.value==='')return;const v=+e.value;if(e.max!==''&&v>+e.max)e.value=e.max;else if(e.min!==''&&v<+e.min)e.value=e.min;},true);
+/* CAM-V19 TABLO-DEGISINCE-BOSALT: ust tablodaki (.grid) her degisiklikte referans fiyat ve Pencad secimi bosalir */
+['input','change'].forEach(tp=>document.addEventListener(tp,ev=>{const e=ev.target;if(!e||!e.closest||!e.closest('.grid'))return;const r=$('ref'),pc=$('pencad');if(r)r.value='';if(pc)pc.value='';},true));
 /* FORM-KALICI (2026-09-22): girilen degerler tarayicida saklanir; sayfa kendiliginden/elle yenilense de geri yuklenir */
 (function(){const KEY='arb_cam_form_v1',els=[...document.querySelectorAll('.wrap select[id],.wrap input[id]')];
   const save=()=>{try{const o={};els.forEach(e=>{o[e.id]=e.type==='checkbox'?e.checked:e.value;});localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}};
