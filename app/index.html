@@ -1990,11 +1990,16 @@ async function loadSelArb(tgt){
   let canliToplam=null; { let sm=0,any=false; firmalar.forEach(f=>{ const v=canliBy[f.sira]; if(v!=null){sm+=v;any=true;} }); canliToplam=any?sm:null; }
   const foot=(label,series,canli)=>[label,"",...series.map(fmt),delta(series),canli==null?"":fmt(canli)];
   /* Güncel Alacak Toplam, "Selectron'a Gönderilen"in ÜSTÜNE alındı (2026-08-24) */
+  /* SELARB-CANLI-ALT (22.09.2026, Melih): açık ay alt satırları = en son sel_arb_ozet kaydı (gönderilen/borç/ft edilen) + canlı alacak toplamı; kayıp aynı formül */
+  const ozSon=oz.length?oz[oz.length-1]:null, nz=v=>(v==null||v==="")?null:Number(v);
+  const cGon=ozSon?nz(ozSon.gonderilen):null, cBorc=ozSon?nz(ozSon.borc):null, cFat=ozSon?nz(ozSon.fatura_edilen):null;
+  const cKayip=(cBorc==null)?null:cBorc-((cGon||0)+(Number(canliToplam)||0)+(cFat||0));
+  const cFatDisp=(cFat==null||Math.round(cFat)===0)?null:cFat;
   rows.push(foot("Güncel Alacak Toplam (€)",topAlac,canliToplam));
-  rows.push(foot("Selectron'a Gönderilen Toplam (€)",gon,null));
-  rows.push(foot("Selectron'a Borç (€)",borc,null));
-  rows.push(foot("Selectron'a Ft Edilen Toplam (€)",fatDisp,null));
-  rows.push(foot("Arbor SAS Faaliyet Kaybı Toplam (€)",kayip,null));
+  rows.push(foot("Selectron'a Gönderilen Toplam (€)",gon,cGon));
+  rows.push(foot("Selectron'a Borç (€)",borc,cBorc));
+  rows.push(foot("Selectron'a Ft Edilen Toplam (€)",fatDisp,cFatDisp));
+  rows.push(foot("Arbor SAS Faaliyet Kaybı Toplam (€)",kayip,cKayip));
   const stamp=nd?dLbl(dates[0]):"";
   const lastIdx=2;   /* en yeni tarih artık en soldaki tarih sütunu */
   const canliIdx=2+nd+1;
@@ -2030,6 +2035,7 @@ async function loadSelArb(tgt){
   .sa-wrap td.sa-delta{border-right:2px solid #cdd8e4}
   .sa-wrap th.sa-dh{border-right:2px solid #cdd8e4}
   .sa-wrap td.sa-canli,.sa-wrap th.sa-canli-h{background:#fffbe8;border-right:2px solid #cdd8e4}
+  .sa-wrap thead th.sa-canli-h{background:#fff3c4;color:#16324f;font-weight:700} /* SELARB-CANLI-ALT: başlık okunur (koyu yazı, sarımsı zemin) */
   </style>`;
   const btn=hiddenCount?`<button class="btn" id="sa-toggle" data-on="0">Boş-alacak satırları göster (${hiddenCount})</button>`:"";
   const pyS=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","sel_arb").limit(1);
