@@ -1949,12 +1949,13 @@ const SA_FOOT=new Set(["Selectron'a Gönderilen Toplam (€)","Selectron'a Borç
 const SA_NOTE="Tarih sütunlarındaki tutarlar o tarihteki güncel ALACAK (receivable) tutarlarıdır · Selectron–Arbor SAS mutabakat · form-beslemeli (Yurt Dışı Alacak + OE Faaliyet); aylık güncelleme ile ay başına tek sütun.";
 async function loadSelArb(tgt){
   const body=document.getElementById(tgt);
-  const [s,o]=await Promise.all([
+  const [s,o,g]=await Promise.all([
     sb.from("sel_arb_snapshot").select("*").order("tarih").order("sira"),
-    sb.from("sel_arb_ozet").select("*").order("tarih")
+    sb.from("sel_arb_ozet").select("*").order("tarih"),
+    sb.from("sel_arb_guncel").select("sira,firma,proje,alacak").order("sira")
   ]);
-  if(s.error||o.error){ body.innerHTML=`<div class="load">Hata: ${esc((s.error||o.error).message)}</div>`; return; }
-  const snap=s.data||[], oz=o.data||[];
+  if(s.error||o.error||g.error){ body.innerHTML=`<div class="load">Hata: ${esc((s.error||o.error||g.error).message)}</div>`; return; }
+  const snap=s.data||[], oz=o.data||[], guncel=g.data||[];
   /* Sütun tarihleri = snapshot ∪ özet (OE Faaliyet yalnız özet satırı yazabilir) */
   const datesAsc=[...new Set([...snap.map(x=>x.tarih),...oz.map(x=>x.tarih)])].sort();
   const dates=[...datesAsc].reverse();   /* Yeni→Eski: en yeni solda, sağa doğru azalır */
@@ -1962,7 +1963,14 @@ async function loadSelArb(tgt){
   const ozBy={}; oz.forEach(x=>ozBy[x.tarih]=x);
   const fmap=new Map();
   snap.forEach(x=>{ const key=x.sira+"|"+(x.firma||"")+"|"+(x.proje||""); if(!fmap.has(key)) fmap.set(key,{sira:x.sira,firma:x.firma||"",proje:x.proje||"—",vals:{}}); fmap.get(key).vals[x.tarih]=x.alacak; });
-  const firmalar=[...fmap.values()].sort((a,b)=>((a.sira==null?1e9:a.sira)-(b.sira==null?1e9:b.sira)));
+  const firmalar=[...fmap.values()];
+  const canliBy={}; guncel.forEach(x=>{ canliBy[x.sira]=x.alacak; });
+  guncel.forEach(x=>{
+    const mevcut=firmalar.find(f=>f.sira===x.sira);
+    if(mevcut){ mevcut.firma=mevcut.firma||x.firma||""; mevcut.proje=(mevcut.proje&&mevcut.proje!=="—")?mevcut.proje:(x.proje||"—"); }
+    else firmalar.push({sira:x.sira,firma:x.firma||"",proje:x.proje||"—",vals:{}});
+  });
+  firmalar.sort((a,b)=>((a.sira==null?1e9:a.sira)-(b.sira==null?1e9:b.sira)));
   const dLbl=t=>t.slice(8,10)+"."+t.slice(5,7)+"."+t.slice(2,4);
   const fmt=v=>(v==null||v==="")?"":Math.round(v).toLocaleString("tr-TR");
   /* Δ = SON AY − BİR ÖNCEKİ AY (en yeni iki tarih sütunu). series yeni→eski sıralı: [0]=son ay, [1]=önceki ay. İkisinden biri boşsa fark boş. */
@@ -1970,7 +1978,7 @@ async function loadSelArb(tgt){
   /* Sütun sırası: Proje · Firma · Δ önceki→son ay € · tarih sütunları (yeni→eski) */
   const basliklar=["Proje","Firma",...dates.map(dLbl),"Δ önceki→son ay"];
   const rows=[];
-  firmalar.forEach(f=>{ const series=dates.map(d=>f.vals[d]==null?null:f.vals[d]); rows.push([f.proje,f.firma,...series.map(fmt),delta(series)]); });
+  firmalar.forEach(f=>{ const series=dates.map(d=>f.vals[d]==null?null:f.vals[d]); const canli=canliBy[f.sira]; rows.push([f.proje,f.firma,...series.map(fmt),delta(series),canli==null?"":fmt(canli)]); });
   const gon=dates.map(d=>ozBy[d]?ozBy[d].gonderilen:null);
   const borc=dates.map(d=>ozBy[d]?ozBy[d].borc:null);
   const topAlac=dates.map(d=>{ let sm=0,any=false; firmalar.forEach(f=>{ if(f.vals[d]!=null){sm+=f.vals[d];any=true;} }); return any?sm:null; });
