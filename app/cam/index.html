@@ -17,7 +17,7 @@ table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}th{backg
 .perfgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hedef{background:#f4f8fc;border:1px solid #dde6f0;border-radius:8px;padding:6px 10px 10px}.hedef label{margin:6px 0 2px}.hedef input{padding:6px 8px}.htit{font-size:12px;font-weight:700;color:#16324f}.htit span{font-weight:400;color:#8a97a4}
 .out .unitrow{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}.out .komb{text-align:right;font-size:13px;max-width:60%}.out .komb b{font-size:14px}.out .komb .pv{color:#cfe0f0;font-size:12px;margin-top:3px}.ok{color:#8fe3a8}.no{color:#ffb3a7}
 .formula{background:#f2f8f4;border-left:4px solid #2e7d54;border-radius:8px;padding:10px 12px;font-size:12px;color:#2a4a38;margin-top:10px}code{background:#eef2f6;border-radius:4px;padding:1px 5px}
-.out .line.yk{align-items:flex-start;gap:14px}.out .line.yk .ll{color:#cfe0f0;white-space:nowrap}.out .line.yk .lr{text-align:right}.out .line.yk .lv{color:#cfe0f0;font-size:12px}
+.out .line.yk{align-items:flex-start;gap:14px}.out .line.yk .yl{text-align:left}.out .line.yk .yr{text-align:right}.out .line.yk .ll{color:#cfe0f0}.out .line.yk .yp{color:#cfe0f0;font-size:12.5px;margin-bottom:6px}.out .line.yk .lv{color:#cfe0f0;font-size:12.5px}.out .line.yk .yr b{color:#fff}
 
 html,body{max-width:100vw;overflow-x:hidden}
 table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
@@ -156,11 +156,13 @@ function Dq(q,C){const m=k=>(C[k]||0)!==(q[k]||0)?1:0;
     +1.5*(C.c[0]!==q.c[0]?1:0)+1.5*(C.c[C.c.length-1]!==q.c[q.c.length-1]?1:0)+Math.abs(C.tg-q.tg)/2+0.7*Math.abs((C.nlam||0)-(q.nlam||0))+Math.abs(C.cav-q.cav)/6;}
 const vplain=v=>'Ug '+f2(v.ug,1)+' · TL '+f2(v.tl,2)+' · Rw+Ctr '+(v.rw==null?'—':Math.round(v.rw)+' dB')+' · SF '+f2(v.sf,2);
 const kalL=C=>C.lkal!=null?C.lkal:kalin(C);
-function catFiyat(C,u){if(C.satis>0)return 'Satış '+f2(C.satis,2)+' €/m²';
+/* CAM-V10 BANT-DUZEN */function catFiyat(C,u){if(C.satis>0)return f2(C.satis,2)+' €/m²';
   const pf=perf(C),v={ug:C.ug!=null?C.ug:pf.ug,tl:C.tl!=null?C.tl:pf.tl,rw:C.rw!=null?C.rw:pf.rw,sf:C.sf!=null?C.sf:pf.sf};
-  return 'listede fiyat yok · model '+fmt(price(C,v,u).unit*KAT)+' €/m²';}
-function lineY(lbl,body){return '<div class="line yk"><span class="ll">'+lbl+'</span><span class="lr">'+body+'</span></div>';}
-const bodyY=(name,kal,v,pr)=>'<b>'+name+'</b> · '+f2(kal,2)+' mm<br><span class="lv">'+vplain(v)+' · '+pr+'</span>';
+  return f2(price(C,v,u).unit*KAT,2)+' €/m² (listede fiyat yok · model)';}
+function lineY(lbl,b){lbl=String(lbl).replace(/:\s*$/,'');let L,R='<div class="ll">'+lbl+'</div>';
+  if(b&&typeof b==='object'){L='<div class="yp">'+b.pr+'</div><div class="lv">'+vplain(b.v)+'</div>';R+='<div><b>'+b.n+'</b> · '+f2(b.k,2)+' mm</div>';}else L='<div class="lv">'+b+'</div>';
+  return '<div class="line yk"><div class="yl">'+L+'</div><div class="yr">'+R+'</div></div>';}
+const bodyY=(n,k,v,pr)=>({n,k,v,pr});
 function gq(g){const p=g.k.split('|'),c=p[0].split('/'),f=p[3].split('').map(Number),P=c.map(pane);
   return{c,cav:+p[1],cu:+p[1],tg:g.tg,nlam:P.reduce((a,x)=>a+x.lam,0),pvb4:P.filter(x=>x.lam&&x.pvb>=4).length,tr:f[0],lowe:f[1],solar:f[2],fp:f[3],ac:f[4],sat:f[5],tp:f[6],xc:f[7],ar:f[8],we:f[9],cool:0,plan:0,en:0,coat:'',own:1,frm:p[2]};}
 function yakinlar(q,po,h,hasH,u){let out='';
@@ -178,7 +180,7 @@ function yakinlar(q,po,h,hasH,u){let out='';
   /* 3) forma islenen kombinasyona en yakin gecmis teklif grubu */
   let bg=G.find(r=>r.k===po.key)||null;
   if(!bg){let bd=1e9;for(const r of G){const Q=gq(r),d=Dq(q,Q)+(Q.frm!==u.frm?0.5:0);if(d<bd-1e-9||(Math.abs(d-bd)<=1e-9&&bg&&r.n>bg.n)){bd=d;bg=r;}}}
-  if(bg){const Q=gq(bg);out+=lineY('Fiyat tekliflerindeki en yakın kombinasyon:',bodyY(nmT(bg.komb),kalin(Q),perf(Q),'ort. teklif '+f2(bg.bf,2)+' €/m² ('+bg.n+' teklif)'));}
+  if(bg){const Q=gq(bg);out+=lineY('Fiyat tekliflerindeki en yakın kombinasyon:',bodyY(nmT(bg.komb),kalin(Q),perf(Q),f2(bg.bf*KAT,2)+' €/m² (ort. teklif · '+bg.n+' teklif)'));}
   else out+=lineY('Fiyat tekliflerindeki en yakın kombinasyon:','—');
   return out;}
 
@@ -237,9 +239,7 @@ function calc(){const q=own(),u=ctxUI(),h=hedef();$('ortaWrap').style.display=q.
   if(!bz){const cz=G.filter(r=>r.k.split('|')[3]===_fl).sort((a,b)=>Math.abs(a.tg-sel.q.tg)-Math.abs(b.tg-sel.q.tg)||b.n-a.n);bz=cz[0];}
   $('out').innerHTML='<div class="unitrow"><div><div class="lbl">Birim fiyat '+badge+'</div><div class="big">'+fmt(unit*KAT)+' €/m²</div></div>'+
    '<div class="komb"><div class="lbl">Fiyatlanan kombinasyon</div><b>'+sel.name+(P.tp&&!/temper/i.test(sel.name)?' · Temperli':'')+' · '+f2(kalin(sel.q),2)+' mm</b></div></div>'+
-   yakinlar(q,po,h,hasH,u)+
-   (g?'<div class="line"><span>Geçmiş ortalama · aralık (2026 · € · onaylı)</span><span>'+fmt(g.bf)+' · '+fmt(g.lo)+' – '+fmt(g.hi)+' €/m²</span></div>':'')+
-   (sel.src==='cat'?'<div class="line"><span>Seçilen kombinasyonun fiyatı (hedefleri karşılamıyor)</span><span>'+fmt(po.unit*KAT)+' €/m² · '+vtxt(vo,h)+'</span></div>':'');
+   yakinlar(q,po,h,hasH,u);
   const tgs=sel.q.tg,fk=P.key.split('|').slice(2,4).join('|');
   const sim=G.filter(r=>r!==g&&r.k.split('|').slice(2,4).join('|')===fk&&Math.abs(r.tg-tgs)<=2);
   let mh='';const row=r=>'<tr><td>'+r.komb+'</td><td class="num">'+r.n+'</td><td class="num">'+r.p+'</td><td class="num">'+fmt(r.bf)+'</td><td class="num">'+fmt(r.lo)+'–'+fmt(r.hi)+'</td></tr>';
@@ -280,6 +280,7 @@ document.querySelectorAll('select,input').forEach(e=>e.addEventListener('input',
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
 
 <!-- ARBOR-DRAGSCROLL -->
 <style>
