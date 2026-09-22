@@ -1995,7 +1995,15 @@ async function loadSelArb(tgt){
   /* SELODEME-CARI (22.09.2026, Melih): açık ay Gönderilen = son sel_arb_ozet + henüz işlenmemiş (islendi_tarih boş) sel_odeme toplamı */
   const odAc=await sb.from("sel_odeme").select("tutar_eur").is("islendi_tarih",null);
   const odAcT=(odAc&&!odAc.error)?(odAc.data||[]).reduce((a,r)=>a+(Number(r.tutar_eur)||0),0):0;
-  const cGon=ozSon?(nz(ozSon.gonderilen)==null?(odAcT||null):nz(ozSon.gonderilen)+odAcT):(odAcT||null), cBorc=ozSon?nz(ozSon.borc):null, cFat=ozSon?nz(ozSon.fatura_edilen):null;
+  const cGon=ozSon?(nz(ozSon.gonderilen)==null?(odAcT||null):nz(ozSon.gonderilen)+odAcT):(odAcT||null), cBorc0=ozSon?nz(ozSon.borc):null, cFat0=ozSon?nz(ozSon.fatura_edilen):null;
+  /* SELODEME-CARI2 (22.09.2026, Melih): açık ay Borç = son özet + işlenmemiş ihracat_fatura (OE); Ft Edilen = son özet + işlenmemiş arbor_kesilen_fatura (ÖB) */
+  const [ihAc,akAc]=await Promise.all([
+    sb.from("ihracat_fatura").select("tutar_eur").is("islendi_tarih",null),
+    sb.from("arbor_kesilen_fatura").select("tutar_eur").is("islendi_tarih",null)
+  ]);
+  const acT=q=>(q&&!q.error)?(q.data||[]).reduce((a,r)=>a+(Number(r.tutar_eur)||0),0):0;
+  const ihT=acT(ihAc), akT=acT(akAc);
+  const cBorc=cBorc0==null?(ihT||null):cBorc0+ihT, cFat=cFat0==null?(akT||null):cFat0+akT;
   const cKayip=(cBorc==null)?null:cBorc-((cGon||0)+(Number(canliToplam)||0)+(cFat||0));
   const cFatDisp=(cFat==null||Math.round(cFat)===0)?null:cFat;
   rows.push(foot("Güncel Alacak Toplam (€)",topAlac,canliToplam));
