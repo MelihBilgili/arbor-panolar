@@ -1601,15 +1601,18 @@ async function loadFormlar(){
      Son güncelleme = form_takip.son_guncelleme (elle ✓) ile formun CANLI izinin (pano_yayin /
      ilgili tablonun en yeni updated_at'i) büyüğü. Son güncelleme son tarihten önceyse
      geciken = bugün − son tarih (gün), değilse 0. */
-  const [ft,pyF,onU,obU,sayU,mkaU,fyY]=await Promise.all([
+  const [ft,pyF,onU,obU,sayU,mkaU,fyY,engF]=await Promise.all([
     sb.from("form_takip").select("*"),
     sb.from("pano_yayin").select("anahtar,yayin_at"),
     sb.from("sevk_durumu_onur").select("updated_at").order("updated_at",{ascending:false}).limit(1),
     sb.from("ob_isler").select("updated_at").order("updated_at",{ascending:false}).limit(1),
     sb.from("satis_ay_islendi").select("kaynak,updated_at"),
     sb.from("mk_ay_islendi").select("*").order("id",{ascending:false}).limit(1),
-    sb.from("fiyat_yayin").select("yayin_at").eq("id",1).limit(1)
+    sb.from("fiyat_yayin").select("yayin_at").eq("id",1).limit(1),
+    sb.from("form_engel").select("form_key,mesaj,at").order("at",{ascending:false}).limit(100)
   ]);
+  /* FORM-ENGEL-IZ: formun güncelleme düğmesi bir kontrol yüzünden durduysa en yeni kayıt (form_key → {at,mesaj}) */
+  const engBy={}; ((engF&&!engF.error)?(engF.data||[]):[]).forEach(r=>{ if(!engBy[r.form_key]) engBy[r.form_key]=r; });
   const ftBy={}; ((ft&&!ft.error)?(ft.data||[]):[]).forEach(r=>ftBy[r.form_key]=r);
   const pyBy={}; ((pyF&&!pyF.error)?(pyF.data||[]):[]).forEach(r=>pyBy[r.anahtar]=r.yayin_at);
   const one=r=>(r&&!r.error&&r.data&&r.data[0])?r.data[0].updated_at:null;
@@ -1665,7 +1668,10 @@ async function loadFormlar(){
                  +` <button class="freset" data-fk="${esc(r.form_key)}" title="Güncellendi olarak işaretle (geciken + mail sayacı sıfırlanır)">✓</button>`
                :'<span class="muted">—</span>';
     return `<tr>`
-      +`<td class="sb"><div class="cx">${esc(f.ad)}</div></td>`
+      +`<td class="sb"><div class="cx">${esc(f.ad)}${(()=>{ const e=engBy[FK[f.url]], b=BTN_AT[f.url];
+          if(!e||(b&&new Date(b)>=new Date(e.at))) return "";
+          const d=new Date(e.at), tt="Güncelleme DURDURULDU: "+d.toLocaleString("tr-TR")+"\n\n"+e.mesaj;
+          return ` <b style="color:#b40000" title="${esc(tt)}">⚠ durduruldu ${fdate(e.at)}</b>`; })()}</div></td>`
       +`<td title="${esc(f.tam||f.who)}"><div class="cx">${esc(f.who)}</div></td>`  /* FORM-KISALTMA: yalnız kişi kısaltması, tam ad hover */
       +`<td><div class="cx">${esc(sik)}</div></td>`
       +`<td class="num"><div class="cx">${BTN_AT[f.url]?fdate(BTN_AT[f.url]):'<span class="muted">—</span>'}</div></td>`
