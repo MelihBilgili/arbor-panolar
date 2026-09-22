@@ -386,6 +386,9 @@ function ahsapBilgiYaz(){
 }
 /* AHSAP-DURUM: tür değişince bilgi satırı tazelenir (ağaç türü fiyatı etkilemez, recalc yok) */
 (function(){ const s=$('ahsap'); if(s) s.addEventListener("change", ahsapBilgiYaz); })();
+/* SINIR-KILIT (2026-09-22): sayi kutularina min/max disi deger girilemez (yazarken sinira cekilir; e,+ ve min>=0 ise - tusu engellenir) */
+document.addEventListener('keydown',ev=>{const e=ev.target;if(!e||e.type!=='number')return;if(['e','E','+'].includes(ev.key)||(ev.key==='-'&&e.min!==''&&+e.min>=0))ev.preventDefault();},true);
+document.addEventListener('input',ev=>{const e=ev.target;if(!e||e.type!=='number'||e.value==='')return;const v=+e.value;if(e.max!==''&&v>+e.max)e.value=e.max;else if(e.min!==''&&v<+e.min)e.value=e.min;},true);
 /* FORM-KALICI (2026-09-22): hesaplayici girdileri + bolge tarayicida saklanir; sayfa yenilense de geri yuklenir */
 const FK_KEY='arb_teklif_form_v1', FK_ID=['brut','m2','adet','sinif','mtip','eski','dism'];
 let FK0=null; try{ FK0=JSON.parse(localStorage.getItem(FK_KEY)||'null'); }catch(e){}
