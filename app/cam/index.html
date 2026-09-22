@@ -43,11 +43,11 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   </div>
 <div class="hedef"><div class="htit">Hedef değerler <span>(boş = serbest)</span></div>
   <label>Ug ≤ (W/m²K)</label><input id="h_ug" type="number" step="0.1" min="0">
-  <label>TL ≥ (0–1)</label><input id="h_tl" type="number" step="0.01" min="0" max="1">
+  <label>TL ≥ (0–1)</label><input id="h_tl" type="number" step="0.1" min="0" max="1">
   <label>Rw+Ctr ≥ (dB)</label><input id="h_rw" type="number" step="1">
-  <label>Solar faktör ≤ (0–1)</label><input id="h_sf" type="number" step="0.01" min="0" max="1">
+  <label>Solar faktör ≤ (0–1)</label><input id="h_sf" type="number" step="0.1" min="0" max="1">
 </div></div>
-  <div class="row2"><div><label>Toplam adet</label><input id="adet" type="number" value="10" step="1"></div><div><label>Toplam alan (m²)</label><input id="m2" type="number" value="10" step="0.01"></div></div>
+  <div class="row2"><div><label>Toplam adet</label><input id="adet" type="number" value="10" step="1"></div><div><label>Toplam alan (m²)</label><input id="m2" type="number" value="10.0" step="0.1"></div></div>
   <div class="hint" id="avgnote"></div>
 </div></div>
 <div class="out" id="out"></div>
@@ -170,8 +170,9 @@ function yakinlar(q,po,h,hasH,u){let out='';
   const L1='Cam listesindeki en yakın hedef değerler:';
   if(!hasH)out+=lineY(L1,'<span class="lv">— hedef değer girilmedi</span>');
   else{const SC={ug:0.1,tl:0.01,rw:1,sf:0.01};let best=null;
+    /* CAM-V11 YAKIN-X2: Ug/SF hedefin ustu x2, TL/Rw+Ctr hedefin alti x2 ceza; iki yonde de aday olur */
     for(const C of CAT){let s=0,ok=true;for(const t of ['ug','tl','rw','sf']){if(h[t]==null)continue;const v=C[t];if(v==null){ok=false;break;}
-        const gap=(t==='ug'||t==='sf')?h[t]-v:v-h[t];if(gap<-1e-9){ok=false;break;}s+=gap/SC[t];}
+        const kotu=(t==='ug'||t==='sf')?v-h[t]:h[t]-v;s+=(kotu>0?2*kotu:-kotu)/SC[t];}
       if(!ok)continue;const d=Dq(q,C);if(!best||s<best.s-1e-9||(Math.abs(s-best.s)<=1e-9&&d<best.d))best={C,s,d};}
     out+=lineY(L1,best?bodyY(nmT(best.C.komb),kalL(best.C),best.C,catFiyat(best.C,u)):'<span class="no">Hedefleri karşılayan kombinasyon cam listesinde yok</span>');}
   /* 2) forma islenen kombinasyona en yakin cam listesi kaydi */
@@ -250,7 +251,10 @@ function calc(){const q=own(),u=ctxUI(),h=hedef();$('ortaWrap').style.display=q.
   if($('matches'))$('matches').innerHTML=mh;
   const x=k=>'×'+Math.exp(M[k]).toFixed(2);
   if($('formula'))$('formula').innerHTML='<b>Çarpımsal model:</b> €/m² = e^( '+DB.ic.toFixed(2)+' + Σ katsayı·parametre ) × e^(geçmiş düzeltme). Geçmiş düzeltme = aynı kombinasyonun tekliflerinin modelden ortalama sapması, n/(n+'+DB.keb+') ağırlıkla. Performans etkileri: TL 0,10 düşünce ×'+Math.exp(-0.1*M.tl).toFixed(2)+' · Solar faktör 0,10 düşünce ×'+Math.exp(-0.1*M.sf).toFixed(2)+' · Rw+Ctr +1 dB ×'+Math.exp(M.rwctr).toFixed(3)+' (+5 dB ×'+Math.exp(5*M.rwctr).toFixed(2)+'). Diğer: Akustik '+x('acoustic')+' · Kalın PVB (.4/.6) '+x('pvb4')+' · Temperli '+x('temper')+' · Extra clear '+x('extraclear')+' · Sıcak kenar (WE) '+x('we')+' · Eğrisel '+x('egrisel')+' · m² iki katına çıkınca ×'+Math.exp(M.l_m2*Math.LN2).toFixed(2)+'. Ug fiyatı ayrıca açıklamıyor (Low-E seçimiyle zaten geliyor); yalnız hedef süzgecinde kullanılır. Argon ve sıcak kenar (WE) ayrı parametre: WE işaretsizse çıta Standart / Siyah çıtalı / Black Edge (aynı şey) sayılır; WE fiyata girer; Argon’un ayrı fiyat etkisi veride ölçülemedi (WE’siz argonlu yalnız 7 teklif), Ug ve geçmiş eşleşmede kullanılır. Kemerli ve dairesel = eğrisel. Hedef değer girildiğinde seçim bunları karşılamıyorsa, aynı yapı / akustik / satin / yangın özelliğini koruyan katalog kombinasyonları arasından hedefleri karşılayan en düşük fiyatlı olan fiyatlanır.';}
-document.querySelectorAll('select,input').forEach(e=>e.addEventListener('input',calc));calc();
+document.querySelectorAll('select,input').forEach(e=>e.addEventListener('input',calc));
+/* CAM-V11 FORMAT-1HANE: Ug, TL, SF hedefi ve toplam alan virgulden sonra 1 hane */
+['h_ug','h_tl','h_sf','m2'].forEach(i=>$(i).addEventListener('change',()=>{const e=$(i),x=e.value.trim();if(x!==''&&isFinite(+x.replace(',','.'))){e.value=(+x.replace(',','.')).toFixed(1);calc();}}));
+calc();
 
 </script>
 
