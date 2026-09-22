@@ -125,7 +125,7 @@ const r=(v,d)=>v==null||!isFinite(v)?null:Math.round(v*10**d)/10**d;
 /* liste satiri {kombinasyon,ug,tl,rw,ctr,sf,kalinlik,satis_eur,...} -> CAT kaydi (export2 ile ayni) ; katalog disi -> null */
 function catRow(L){let F;try{F=feats(L.kombinasyon||'');}catch(e){return null;}if(F.npane<2)return null;
   const nz=v=>v==null||v===''?null:+v,pc=v=>{v=nz(v);if(v==null)return null;if(v>1)v=v<100?v/100:null;return v;};
-  const ug=nz(L.ug),tl=pc(L.tl),sf=pc(L.sf),rw0=nz(L.rw),ctr=nz(L.ctr),rw=(rw0==null||rw0<=0||ctr==null)?null:rw0+ctr;
+  const ug=nz(L.ug),tl=pc(L.tl),sf=pc(L.sf),rw0=nz(L.rw),ctr=nz(L.ctr),rw=nz(L.rw_ctr)!=null?nz(L.rw_ctr):(rw0==null||rw0<=0||ctr==null)?null:rw0+ctr;/* CAM-LISTE-V2 rw_ctr */
   if(ug==null&&tl==null&&rw==null&&sf==null)return null;
   return{komb:String(L.kombinasyon).split(/\s+/).filter(x=>x).join(' ').slice(0,120),c:F.codes,cav:F.cav,cu:cavui(F.cav),tg:F.tg,nlam:F.nlam,pvb4:F.pvb4,tr:F.triple,
     lowe:F.lowe,solar:(F.solar||F.sisecam)?1:0,cool:F.coollite,plan:F.planitherm,en:F.energy,sat:F.satin,xc:F.extraclear,ac:F.acoustic,kal:F.kalinlik,
@@ -146,7 +146,7 @@ let CAT=buildCat(LISTE_SNAP);
   for(const sk of ["arbform_camlistesi","sb-zehysygpqxqmrzangvuc-auth-token"]){
     let t=null;try{t=JSON.parse(localStorage.getItem(sk)||"null");}catch(e){}
     if(!t||!t.access_token||!(t.expires_at*1000>Date.now()+30000))continue;
-    const r=await fetch(U+"/rest/v1/cam_listesi?select=sira,kombinasyon,ug,tl,rw,ctr,sf,kalinlik,satis_eur&order=sira",{headers:{apikey:PK,Authorization:"Bearer "+t.access_token},cache:"no-store"});
+    const r=await fetch(U+"/rest/v1/cam_listesi?select=sira,kombinasyon,ug,tl,rw,ctr,rw_ctr,sf,kalinlik,satis_eur&order=sira",{headers:{apikey:PK,Authorization:"Bearer "+t.access_token},cache:"no-store"});
     if(!r.ok)continue;const d=await r.json();if(Array.isArray(d)&&d.length){CAT=buildCat(d);calc();return;}
   }}catch(e){}})();
 /* CAM-V8 YAKIN-SATIRLAR: cam listesi / fiyat teklifleri en yakin kombinasyonlar */
