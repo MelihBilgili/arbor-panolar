@@ -1346,7 +1346,7 @@ async function loadRef(){
       <p class="muted"><b>Yurt Dışı</b> sütunu = Yurt Dışı 1 + Yurt Dışı 2 (<code>fa_*</code> + <code>fy2_*</code>); FY2 girilmemiş aylarda yalnız YD1 görünür. <b>Yıl toplam satırında</b> personel sayıları ve Ciro/Personel toplanmaz, o yılın dolu aylarının ortalaması gösterilir.</p>
     </div>
     <div class="flow"><b>5. Satış Raporları Süreci</b><span class="tag">Yurt İçi · Yurt Dışı 1 · Yurt Dışı 2</span>
-      <p>Üç bölge, üç ayrı form: <b>Yurt İçi</b> (Sinan Oran · <a href="so/" target="_blank">app/so/</a>), <b>Yurt Dışı 1</b> (MN · OBL · MK · <a href="satis-yd1/" target="_blank">app/satis-yd1/</a>), <b>Yurt Dışı 2</b> (MKB · OBL · MK · <a href="satis-yd2/" target="_blank">app/satis-yd2/</a>). Satış panosu formlardan canlı okur; her ayın 1'inde kapanan ayın Muhtemel/Alınan toplamları İcmal'e otomatik yazılır (pg_cron <code>arb_icmal_satis_ay</code>).</p>
+      <p>Üç bölge, üç ayrı form: <b>Yurt İçi</b> (Sinan Oran · <a href="so/" target="_blank">app/so/</a>), <b>Yurt Dışı 1</b> (MN · OBL · MK · KS · <a href="satis-yd1/" target="_blank">app/satis-yd1/</a>), <b>Yurt Dışı 2</b> (MKB · OBL · MK · <a href="satis-yd2/" target="_blank">app/satis-yd2/</a>). Satış panosu formlardan canlı okur; her ayın 1'inde kapanan ayın Muhtemel/Alınan toplamları İcmal'e otomatik yazılır (pg_cron <code>arb_icmal_satis_ay</code>).</p>
       <p class="muted">Gecikme takibi <b>Formlar</b> sekmesinde; hatırlatma <b>elle</b> gönderilir. <span class="tag">elle</span> Zamanlanmış eskalasyon (ayın 5./20. günü) <b>kurulmadı</b>.</p>
     </div>
     <div class="flow"><b>6. Prim / Ödeme Süreci</b>
@@ -1575,7 +1575,7 @@ async function loadFormlar(){
     /* SELARB-FORM: Güncel Alacak (€) — ÖB + MK düzenler, ay sonu pg_cron ile SEL-ARB'a sütun olur */
     {ad:"Sel-Arb",             who:"ÖB · MK",tam:"Özgül Bedestenci · Mehmet Konak",url:"sel-arb/",sik:"Her ayın ilk iş günü"},
     {ad:"Yurt İçi Satış",      who:"SO",tam:"Sinan Oran",        url:"so/",          sik:"Süresiz"},
-    {ad:"Yurt Dışı Satış 1", who:"MN · OBL · MK",tam:"Mustafa Nas · Orhan Bulut · Mehmet Konak",      url:"satis-yd1/",   sik:"Süresiz"},
+    {ad:"Yurt Dışı Satış 1", who:"MN · OBL · MK · KS",tam:"Mustafa Nas · Orhan Bulut · Mehmet Konak · Kamil Şen", /* YD-KS-ROL */      url:"satis-yd1/",   sik:"Süresiz"},
     {ad:"Yurt Dışı Satış 2", who:"MKB · OBL · MK",tam:"Melike Başaran · Orhan Bulut · Mehmet Konak",   url:"satis-yd2/",   sik:"Süresiz"},
     {ad:"Ahşap Maliyet",       who:"UA",tam:"Umut Aktaş",        url:"ahsap/",       sik:"Her ayın ilk iş günü"},
     /* SANTIYE-FORMLAR: 7 şantiye sorumlusu formu (ERP ŞANTİYE SORUMLUSU sütunundan doldurulur) */
