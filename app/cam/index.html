@@ -222,7 +222,7 @@ function ownName(q){const k=$('kap').value,t=q.tp?' Temperli':'',a=q.ac?' Akusti
 function vtxt(v,h){const c=(ok,h)=>h==null?'':(ok?' <span class="ok">✓</span>':' <span class="no">✗</span>');
   return 'Ug '+f2(v.ug,1)+c(h.ug==null||v.ug<=h.ug,h.ug)+' · TL '+f2(v.tl,2)+c(h.tl==null||v.tl>=h.tl,h.tl)+' · Rw+Ctr '+Math.round(v.rw)+' dB'+c(h.rw==null||v.rw>=h.rw,h.rw)+' · SF '+f2(v.sf,2)+c(h.sf==null||v.sf<=h.sf,h.sf);}
 function calc(){const q=own(),u=ctxUI(),h=hedef();$('ortaWrap').style.display=q.tr?'block':'none';$('avgnote').textContent=u.adet>0?('Ortalama: '+fmt(u.ort)+' m²/adet'):'';
-  const vo=perf(q);$('h_ug').placeholder=f2(vo.ug,1);$('h_tl').placeholder=f2(vo.tl,2);$('h_rw').placeholder=String(Math.round(vo.rw));$('h_sf').placeholder=f2(vo.sf,2);
+  const vo=perf(q);/* CAM-V9 HEDEF-BOS: gri ipucu kaldirildi, bos kutu bos gorunur */['h_ug','h_tl','h_rw','h_sf'].forEach(i=>{$(i).placeholder='';});
   const po=price(q,vo,u);let sel={q,v:vo,p:po,name:ownName(q),src:'own'};const hasH=Object.values(h).some(x=>x!=null);
   if(hasH&&!meets(vo,h)){let best=null;
     for(const gevsek of [0,1]){for(const C of CAT){if(C.ug==null||C.tl==null||C.rw==null||C.sf==null)continue;
