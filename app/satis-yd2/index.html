@@ -283,12 +283,12 @@ function computeAutoTier(r){
   if(rangeFilled(r,8,11)) return 2;
   return 1;
 }
-/* YD-DURUM-KURAL: açılışta her satır için — ilk 6 sütun eksikse 1-4 arası (otomatik) durum boşaltılır;
+/* YD-DURUM-KURAL: açılışta her satır için — ilk 6 sütun eksikse 1-3 arası (Talebi Geldi/İncelendi/Bekleniyor) durum boşaltılır;
    listede olmayan eski durum (ör. "Öncelik Belirlendi") yeniden hesaplanır; ardından otomatik ilerleme */
 async function durumDuzelt(r){
   if(!r.id) return;
   const cur=DURUM_SIRA[r.durum]||0, gecersiz=!!r.durum&&!cur;
-  if(gecersiz || (cur>=1 && cur<=4 && !rangeFilled(r,1,6))){
+  if(gecersiz || (cur>=1 && cur<=3 && !rangeFilled(r,1,6))){  /* Teklif Teslim Edildi ve sonrasi (gecmis kayitlar) bosaltilmaz */
     const {error}=await sb.from("satis_yd_akis").update({durum:null}).eq("id",r.id);
     if(error) return; r.durum=null;
   }
