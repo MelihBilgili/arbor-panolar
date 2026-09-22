@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cam Listesi</title>
+<!-- CAM-LISTESI-FORM (2026-09-22): cam listesi (cam_listesi tablosu) — EU (Enes Uzun) yeni cam ekler / düzenler; Cam Fiyatlandırma panosu buradan canlı okur (CAM-V8) -->
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#c9dcf0;margin-top:3px;line-height:1.5;max-width:960px}
+  .wrap{max-width:100%;margin:0 auto;padding:10px 8px 40px}
+  .btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 10px}
+  .btn2{border:1px solid #cdd8e4;background:#fff;color:#16324f;border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer}
+  #ara{font:inherit;padding:5px 9px;border:1px solid #cdd6df;border-radius:7px;width:260px;max-width:100%}
+  .msg{font-size:12.5px;min-height:17px}
+  .msg.ok{color:#0a6b3f;font-weight:600}.msg.err{color:#b40000;font-weight:600}
+  .hint{font-size:11.5px;color:#6b7a89;margin:2px 2px 8px}
+  .cl-wrap{overflow-x:auto}
+  .cl-wrap table{border-collapse:collapse;width:auto;font-size:11.5px;background:#fff}
+  .cl-wrap th,.cl-wrap td{border-bottom:1px solid #eef1f5;padding:1px 3px;white-space:nowrap;line-height:17px}
+  .cl-wrap thead th{background:#16324f;color:#fff;font-weight:600;padding:4px 5px;position:sticky;top:0;z-index:1}
+  .cl-wrap td input{font:inherit;border:1px solid transparent;border-radius:4px;padding:1px 4px;background:transparent;width:100%}
+  .cl-wrap td input:hover{border-color:#dde3ea}
+  .cl-wrap td input:focus{outline:2px solid #0a6b57;border-color:#0a6b57;background:#fff}
+  td.n input{text-align:right}
+  td.komb input{font-weight:600;color:#16324f}
+  tr.cl-new td{background:#f2f7fc}
+  tr.cl-new td input{border:1px dashed #9fb3c8;background:#fff}
+  td.saved{animation:ok 1.2s}
+  @keyframes ok{from{background:#c8f0d4}to{background:transparent}}
+  td.bad input{border-color:#b40000;background:#ffecec}
+</style>
+</head>
+<body>
+<header>
+  <h1>Cam Listesi</h1>
+  <div class="sub">Cam kombinasyonları ve performans değerleri. Yeni cam için en üstteki boş satırı doldurunuz (Cam Kombinasyonu girilince kaydedilir); mevcut satırlardaki hücreler değiştirilince kaydedilir. Cam Fiyatlandırma panosu bu listeyi kullanır.</div>
+</header>
+<div class="wrap">
+  <div class="btns"><input id="ara" placeholder="Ara (kombinasyon, stok kodu, üretici…)"><span id="rolLbl"></span><span class="msg" id="msg"></span></div>
+  <div class="hint" id="say"></div>
+  <div id="tbl"><div class="hint">Yükleniyor…</div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ===== ARBOR FORM KAPISI — EU rol hesabı + MB geçişi ===== */
+const ARB_ROLLER = [
+  { email:"eu.form@arbor.com.tr", ad:"EU — Enes Uzun" }
+];
+const ARB_STORE = "arbform_camlistesi";
+const ARB_NOSTORE = (u,o)=> fetch(u, Object.assign({}, o||{}, {cache:"no-store"}));
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE},global:{fetch:ARB_NOSTORE}});
+const ARB_MB = "int@arbor.com.tr";
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{global:{fetch:ARB_NOSTORE}});
+var ARB_ACTIVE = ARB_GATE_SB;
+var ARB_EMAIL = "";
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  var opts='<option value="" disabled selected>— Rolünüzü seçiniz —</option>'
+    + ARB_ROLLER.map(function(r){ return '<option value="'+r.email+'">'+r.ad+'</option>'; }).join("");
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:330px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:10px">Arbor — Cam Listesi</div>'
+    +'<select id="arb-rol" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px;margin-bottom:8px">'+opts+'</select>'
+    +'<input id="arb-pw" type="password" placeholder="Parola" autocomplete="current-password" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giriş</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px"></div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var em=document.getElementById("arb-rol").value, pw=document.getElementById("arb-pw").value;
+    if(!em){ document.getElementById("arb-msg").textContent="Önce rolünüzü seçiniz."; return; }
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giriş yapılıyor…";
+    var r=await ARB_GATE_SB.auth.signInWithPassword({email:em,password:pw});
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent="Parola hatalı"; return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  var izin=ARB_ROLLER.map(function(r){return r.email;});
+  if(izin.indexOf(em)<0){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(izin.indexOf(em)>=0 || em===ARB_MB){ ARB_EMAIL=em; (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script type="text/plain" id="arbmain">
+const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ROL = ARB_EMAIL==="eu.form@arbor.com.tr"?"EU":"MB";
+(function(){
+  if(ROL==="MB") return;
+  const l=document.getElementById("rolLbl");
+  l.innerHTML='<b style="color:#16324f;font-size:12.5px">Oturum: '+esc(ROL)+'</b>';
+  const b=document.createElement("button"); b.textContent="Çıkış"; b.className="btn2"; b.style.marginLeft="8px";
+  b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); };
+  l.appendChild(b);
+})();
+const msg=(t,c)=>{ const m=document.getElementById("msg"); m.textContent=t||""; m.className="msg"+(c?" "+c:""); };
+/* sütunlar: anahtar, başlık, tür (t metin · n sayı · d tarih), genişlik (ch) */
+const COLS=[["isaret","+","t",2],["sira","Sıra","r",4],["stok_kodu","Stok Kodu","t",8],["kombinasyon","Cam Kombinasyonu","t",46],
+  ["ug","Ug","n",4],["tl","TL","n",4],["rw","Rw","n",4],["ctr","Ctr","n",4],["sf","Solar Faktör","n",5],["kalinlik","Kalınlık (mm)","n",6],
+  ["uretici","Üretici","t",14],["tedarik_puani","Tedarik Puanı","n",4],["aciklama","Açıklama","t",30],["alis_eur","Alış Fiyatı (€)","n",7],
+  ["fiyat_tarihi","Fiyat Belirlenme Tarihi","d",11],["satis_eur","Satış Fiyatı (€)","n",7],["risk_puani","Risk Puanı","n",4],
+  ["test1","Test (1)","t",22],["test2","Test (2)","t",14],["test3","Test (3)","t",10]];
+const fmtN=v=>(v==null||v==="")?"":Number(v).toLocaleString("tr-TR",{maximumFractionDigits:3});
+/* "0,71" / "1.234,5" / "1234.5" → sayı; boş → null; geçersiz → NaN */
+const parseTr=s=>{ s=String(s==null?"":s).trim().replace(/\s|€/g,""); if(s==="") return null;
+  if(s.indexOf(",")>=0) s=s.replace(/\./g,"").replace(",",".");
+  else if(/^\-?\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,"");
+  const n=Number(s); return isFinite(n)?n:NaN; };
+const val=(c,v)=>c[2]==="n"?parseTr(v):(String(v||"").trim()||null);
+let ST={rows:[],q:""};
+async function load(){
+  const {data,error}=await sb.from("cam_listesi").select("*").order("sira",{ascending:false});
+  if(error){ document.getElementById("tbl").innerHTML='<div class="msg err">Hata: '+esc(error.message)+'</div>'; return; }
+  ST.rows=data||[]; render();
+}
+const cell=(c,v,id)=>{ const w=`style="width:${c[3]+1}ch"`;
+  if(c[2]==="r") return `<td class="n">${esc(v)}</td>`;
+  const t=c[2]==="d"?"date":"text", shown=c[2]==="n"?fmtN(v):(v==null?"":v);
+  return `<td class="${c[2]==="n"?"n":""}${c[0]==="kombinasyon"?" komb":""}"><input ${w} type="${t}"${c[2]==="n"?' inputmode="decimal"':''} data-k="${c[0]}"${id!=null?` data-id="${id}"`:""} value="${esc(shown)}" title="${esc(shown)}"></td>`; };
+function render(){
+  const q=ST.q.toLocaleLowerCase("tr");
+  const R=q?ST.rows.filter(r=>[r.kombinasyon,r.stok_kodu,r.uretici,r.aciklama,r.test1,r.sira].some(x=>String(x==null?"":x).toLocaleLowerCase("tr").includes(q))):ST.rows;
+  const head='<thead><tr>'+COLS.map(c=>`<th${c[2]==="n"||c[2]==="r"?' class="n"':''}>${esc(c[1])}</th>`).join("")+'</tr></thead>';
+  /* En üstte daima boş satır (CAM-LISTESI-BOS-SATIR) */
+  const nw='<tr class="cl-new">'+COLS.map(c=>c[2]==="r"?'<td class="n">yeni</td>':cell(c,null,null).replace('data-k=','data-new="1" data-k=')).join("")+'</tr>';
+  const body=R.map(r=>'<tr>'+COLS.map(c=>cell(c,r[c[0]],r.id)).join("")+'</tr>').join("");
+  document.getElementById("tbl").innerHTML=`<div class="cl-wrap"><table>${head}<tbody>${nw}${body}</tbody></table></div>`;
+  document.getElementById("say").textContent=(q?R.length+" / ":"")+ST.rows.length+" kayıt";
+  const k=document.querySelector('tr.cl-new input[data-k="kombinasyon"]'); if(k) k.placeholder="Yeni cam kombinasyonu";
+}
+async function kaydet(inp){
+  const c=COLS.find(x=>x[0]===inp.dataset.k), td=inp.parentElement, v=val(c,inp.value);
+  if(Number.isNaN(v)){ td.classList.add("bad"); msg("Geçersiz sayı: "+inp.value,"err"); return; }
+  td.classList.remove("bad");
+  if(inp.dataset.new){
+    const tr=inp.closest("tr"), rec={};
+    for(const i of tr.querySelectorAll("input[data-k]")){ const cc=COLS.find(x=>x[0]===i.dataset.k), vv=val(cc,i.value);
+      if(Number.isNaN(vv)){ i.parentElement.classList.add("bad"); msg("Geçersiz sayı: "+i.value,"err"); return; } rec[cc[0]]=vv; }
+    if(!rec.kombinasyon) return;              /* Cam Kombinasyonu dolunca kaydedilir */
+    rec.sira=Math.max(0,...ST.rows.map(x=>x.sira||0))+1; rec.updated_by=ROL;
+    const {data,error}=await sb.from("cam_listesi").insert(rec).select();
+    if(error){ msg("Eklenemedi: "+error.message,"err"); return; }
+    ST.rows.unshift(data[0]); msg("Eklendi (sıra "+data[0].sira+")","ok"); render();
+    const n=document.querySelector('tr.cl-new input[data-k="kombinasyon"]'); if(n) n.focus();
+    return;
+  }
+  const id=+inp.dataset.id, r=ST.rows.find(x=>x.id===id);
+  if(c[0]==="kombinasyon"&&!v){ inp.value=r.kombinasyon; msg("Cam Kombinasyonu boş bırakılamaz","err"); return; }
+  if(r && (r[c[0]]==null?null:(c[2]==="n"?Number(r[c[0]]):r[c[0]]))===v) return;
+  const {error}=await sb.from("cam_listesi").update({[c[0]]:v,updated_at:new Date().toISOString(),updated_by:ROL}).eq("id",id);
+  if(error){ msg("Kaydedilemedi: "+error.message,"err"); return; }
+  if(r) r[c[0]]=v; if(c[2]==="n") inp.value=fmtN(v); inp.title=inp.value;
+  td.classList.remove("saved"); void td.offsetWidth; td.classList.add("saved"); msg("Kaydedildi","ok");
+}
+document.getElementById("tbl").addEventListener("change",e=>{ if(e.target.matches("input[data-k]")) kaydet(e.target); });
+document.getElementById("tbl").addEventListener("keydown",e=>{ if(e.key==="Enter"&&e.target.matches("input[data-k]")){ e.preventDefault(); e.target.blur(); } });
+let _t; document.getElementById("ara").addEventListener("input",e=>{ clearTimeout(_t); _t=setTimeout(()=>{ ST.q=e.target.value.trim(); render(); },200); });
+load();
+</script>
+
+<!-- ARBOR-DRAGSCROLL -->
+<style>
+  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
+  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+<script>
+(function(){
+  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
+  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
+  function scrollable(n){
+    var st=getComputedStyle(n);
+    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
+    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
+    return okx||oky;
+  }
+  function start(n,e){
+    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+    document.body.classList.add("arb-dragging"); e.preventDefault();
+  }
+  document.addEventListener("mousedown",function(e){
+    if(e.button!==0||skip(e.target)) return;
+    var n=e.target, hucre=null;
+    while(n && n.nodeType===1 && n!==document.body){
+      if(scrollable(n)){
+        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
+        if(!n.closest("td,th")) return start(n,e);
+        if(!hucre) hucre=n;
+      }
+      n=n.parentElement;
+    }
+    if(hucre) return start(hucre,e);
+  },true);
+  document.addEventListener("mousemove",function(e){
+    if(!el) return;
+    var dx=e.clientX-sx, dy=e.clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    el.scrollLeft=l-dx; el.scrollTop=t-dy;
+  });
+  document.addEventListener("mouseup",function(){
+    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
+  });
+  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
+})();
+</script>
+<!-- /ARBOR-DRAGSCROLL -->
+<script>
+/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
+(function(){
+  function fx(el){
+    if(!el||el.nodeType!==1) return;
+    var tag=el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
+    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
+    if(el.children.length) return;
+    var t=(el.textContent||'').trim();
+    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
+  }
+  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
+  document.addEventListener('input',function(e){ fx(e.target); },true);
+  document.addEventListener('change',function(e){ fx(e.target); },true);
+  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<!-- /ARB-HOVERTITLE -->
+</body>
+</html>
