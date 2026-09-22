@@ -1992,7 +1992,10 @@ async function loadSelArb(tgt){
   /* Güncel Alacak Toplam, "Selectron'a Gönderilen"in ÜSTÜNE alındı (2026-08-24) */
   /* SELARB-CANLI-ALT (22.09.2026, Melih): açık ay alt satırları = en son sel_arb_ozet kaydı (gönderilen/borç/ft edilen) + canlı alacak toplamı; kayıp aynı formül */
   const ozSon=oz.length?oz[oz.length-1]:null, nz=v=>(v==null||v==="")?null:Number(v);
-  const cGon=ozSon?nz(ozSon.gonderilen):null, cBorc=ozSon?nz(ozSon.borc):null, cFat=ozSon?nz(ozSon.fatura_edilen):null;
+  /* SELODEME-CARI (22.09.2026, Melih): açık ay Gönderilen = son sel_arb_ozet + henüz işlenmemiş (islendi_tarih boş) sel_odeme toplamı */
+  const odAc=await sb.from("sel_odeme").select("tutar_eur").is("islendi_tarih",null);
+  const odAcT=(odAc&&!odAc.error)?(odAc.data||[]).reduce((a,r)=>a+(Number(r.tutar_eur)||0),0):0;
+  const cGon=ozSon?(nz(ozSon.gonderilen)==null?(odAcT||null):nz(ozSon.gonderilen)+odAcT):(odAcT||null), cBorc=ozSon?nz(ozSon.borc):null, cFat=ozSon?nz(ozSon.fatura_edilen):null;
   const cKayip=(cBorc==null)?null:cBorc-((cGon||0)+(Number(canliToplam)||0)+(cFat||0));
   const cFatDisp=(cFat==null||Math.round(cFat)===0)?null:cFat;
   rows.push(foot("Güncel Alacak Toplam (€)",topAlac,canliToplam));
