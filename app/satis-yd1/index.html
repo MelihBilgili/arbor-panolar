@@ -275,12 +275,24 @@ function colFilled(r,idx){
   return false;
 }
 function rangeFilled(r,a,b){ for(let k=a;k<=b;k++){ if(!colFilled(r,k)) return false; } return true; }
+/* YD-DURUM-KURAL (2026-09-22): kademeli — ilk 6 sütun (Proje…İhale?) dolmadan hiçbir durum yok */
 function computeAutoTier(r){
+  if(!rangeFilled(r,1,6)) return 0;
   if(rangeFilled(r,14,18)) return 4;
   if(colFilled(r,13)) return 3;
   if(rangeFilled(r,8,11)) return 2;
-  if(rangeFilled(r,1,6)) return 1;
-  return 0;
+  return 1;
+}
+/* YD-DURUM-KURAL: açılışta her satır için — ilk 6 sütun eksikse 1-4 arası (otomatik) durum boşaltılır;
+   listede olmayan eski durum (ör. "Öncelik Belirlendi") yeniden hesaplanır; ardından otomatik ilerleme */
+async function durumDuzelt(r){
+  if(!r.id) return;
+  const cur=DURUM_SIRA[r.durum]||0, gecersiz=!!r.durum&&!cur;
+  if(gecersiz || (cur>=1 && cur<=4 && !rangeFilled(r,1,6))){
+    const {error}=await sb.from("satis_yd_akis").update({durum:null}).eq("id",r.id);
+    if(error) return; r.durum=null;
+  }
+  await maybeAutoAdvance(r);
 }
 function state5Ready(r){ return rangeFilled(r,1,6)&&rangeFilled(r,8,11)&&colFilled(r,13)&&rangeFilled(r,14,18); }
 function state6to11Ready(r){ return rangeFilled(r,19,21); }
@@ -319,7 +331,7 @@ async function load(){
   const {data,error}=await sb.from("satis_yd_akis").select("*").eq("blok",BLOK);
   if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
   ROWS=data||[]; DRAFT=newDraftRow();
-  for(const r of ROWS){ await maybeFlagTakipBekleniyor(r); }
+  for(const r of ROWS){ await durumDuzelt(r); await maybeFlagTakipBekleniyor(r); }
   render();
 }
 /* SIRALAMA (2026-09-18, Melih): Satırlar önce Durum grubuna (DISPLAY_ORDER) ayrılır —
@@ -550,12 +562,12 @@ async function revizyonKopyasi(r){
   rec.oncelik=1; /* revizyon her zaman en yüksek öncelik (Melih, 2026-09-18) — kolon smallint */
   const eskiNot=String(r.teklif_birimi_notlari||"").trim();
   rec.teklif_birimi_notlari = eskiNot ? ("Revizyon — "+eskiNot) : "Revizyon";
-  rec.durum="Teklif İncelendi";
+  rec.durum=rangeFilled(rec,1,6)?"Teklif Bekleniyor":null; /* YD-DURUM-KURAL: öncelik 1 belli → Teklif Bekleniyor */
   rec.son_takip_notlari=null; rec.son_takip_tarihi=null;
   const {data,error}=await sb.from("satis_yd_akis").insert(rec).select();
   if(error){ m.className="msg err"; m.textContent="Revizyon kopyası oluşturulamadı: "+error.message; return false; }
   ROWS.push(data[0]);
-  m.className="msg ok"; m.textContent="Revizyon kopyası oluşturuldu ✓ (tutar boş · Öncelik 1 · Teklif İncelendi)";
+  m.className="msg ok"; m.textContent="Revizyon kopyası oluşturuldu ✓ (tutar boş · Öncelik 1 · Teklif Bekleniyor)";
   sums();
   return true;
 }
