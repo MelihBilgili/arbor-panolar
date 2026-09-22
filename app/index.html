@@ -1948,6 +1948,7 @@ async function loadGmenkul(tgt){
 /* ---------- SEL-ARB — özel render: Firma 15ch / Proje 20ch (nowrap+ellipsis, tam metin title/scroll), tarih sütunları üstünde "Arbor SAS Alacak €" spanning başlık, "Δ ilk→son €", son tarih dolu-alacak satırları görünür + boşlar gizli/toggle, footer daima görünür. Bölüm-RLS aynı (pano_ozel_*). ---------- */
 const SA_FOOT=new Set(["Selectron'a Gönderilen Toplam (€)","Selectron'a Borç (€)","Güncel Alacak Toplam (€)","Selectron'a Ft Edilen Toplam (€)","Arbor SAS Faaliyet Kaybı Toplam (€)","TOPLAM GÜNCEL ALACAK"]);
 const SA_NOTE="Tarih sütunlarındaki tutarlar o tarihteki güncel ALACAK (receivable) tutarlarıdır · Selectron–Arbor SAS mutabakat · form-beslemeli (Yurt Dışı Alacak + OE Faaliyet); aylık güncelleme ile ay başına tek sütun.";
+/* SELARB-CANLI-SUTUN (22.09.2026, Melih): donmuş aylık sütunlar (sel_arb_snapshot/sel_arb_ozet) + canlı "Bu Ay (Açık) €" sütunu (sel_arb_guncel, sel-arb formu ÖB/MK). */
 async function loadSelArb(tgt){
   const body=document.getElementById(tgt);
   const [s,o,g]=await Promise.all([
