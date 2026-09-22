@@ -1681,8 +1681,9 @@ async function loadFormlar(){
   }).join("");
   view.innerHTML=`<style>
     /* table-layout:fixed + width:1px → tablo genişliği = colgroup toplamı (width:auto olursa tarayıcı yayar) */
+    /* FORMLAR-KOLON-260922 (Melih): Form sutunu 30->22ch (~%27 dar), Kullanici sutunu 10->13ch (~%33 genis) */
     table.frm{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
-    table.frm col.f30{width:30ch}table.frm col.f10{width:10ch}table.frm col.f20{width:20ch}table.frm col.f8{width:8ch}table.frm col.f12{width:12ch}table.frm col.fm{width:19ch}table.frm col.fb{width:12ch}
+    table.frm col.f30{width:22ch}table.frm col.f10{width:13ch}table.frm col.f20{width:20ch}table.frm col.f8{width:8ch}table.frm col.f12{width:12ch}table.frm col.fm{width:19ch}table.frm col.fb{width:12ch}
     table.frm td.num,table.frm th.num{text-align:right}
     table.frm td.fmailc{white-space:nowrap;padding:2px 8px}
     table.frm button.fmail{font-size:11px;padding:1px 7px;border:1px solid #8a6100;background:#fff7e6;color:#7a5400;border-radius:5px;cursor:pointer}
