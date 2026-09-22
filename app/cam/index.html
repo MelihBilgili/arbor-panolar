@@ -156,9 +156,7 @@ function Dq(q,C){const m=k=>(C[k]||0)!==(q[k]||0)?1:0;
     +1.5*(C.c[0]!==q.c[0]?1:0)+1.5*(C.c[C.c.length-1]!==q.c[q.c.length-1]?1:0)+Math.abs(C.tg-q.tg)/2+0.7*Math.abs((C.nlam||0)-(q.nlam||0))+Math.abs(C.cav-q.cav)/6;}
 const vplain=v=>'Ug '+f2(v.ug,1)+' · TL '+f2(v.tl,2)+' · Rw+Ctr '+(v.rw==null?'—':Math.round(v.rw)+' dB')+' · SF '+f2(v.sf,2);
 const kalL=C=>C.lkal!=null?C.lkal:kalin(C);
-/* CAM-V10 BANT-DUZEN */function catFiyat(C,u){if(C.satis>0)return f2(C.satis,2)+' €/m²';
-  const pf=perf(C),v={ug:C.ug!=null?C.ug:pf.ug,tl:C.tl!=null?C.tl:pf.tl,rw:C.rw!=null?C.rw:pf.rw,sf:C.sf!=null?C.sf:pf.sf};
-  return f2(price(C,v,u).unit*KAT,2)+' €/m² (listede fiyat yok · model)';}
+/* CAM-V10 BANT-DUZEN */ /* CAM-V13 LISTE-FIYATSIZ: listede satis yoksa model fiyati gosterilmez */function catFiyat(C,u){return C.satis>0?f2(C.satis,2)+' €/m²':'<span class="no">listede fiyat yok</span>';}
 function lineY(lbl,b){lbl=String(lbl).replace(/:\s*$/,'');let L,R='<div class="ll">'+lbl+'</div>';
   if(b&&typeof b==='object'){L='<div class="yp">'+b.pr+'</div><div class="lv">'+vplain(b.v)+'</div>';R+='<div><b>'+b.n+'</b> · '+f2(b.k,2)+' mm</div>';}else L='<div class="lv">'+b+'</div>';
   return '<div class="line yk"><div class="yl">'+L+'</div><div class="yr">'+R+'</div></div>';}
