@@ -1471,21 +1471,27 @@ async function loadEgitim(){
   ]);
   const D=dok||[], P=plan||[];
   function periyotAy(p){ const m=/^(\d+)\s*Ay$/i.exec(String(p||"").trim()); return m?+m[1]:null; }
+  /* EGITIM-GERCEKLESEN (23.09.2026): Ep.xlsx aylık <ay>_gerceklesen kolonları satır (bölüm+konu) bazında okunur */
+  const AYLAR=["ocak","subat","mart","nisan","mayis","haziran","temmuz","agustos","eylul","ekim","kasim","aralik"];
+  function gercList(row){ return AYLAR.map(a=>row[a+"_gerceklesen"]).filter(Boolean).sort(); }
+  function sonGerc(row){ const g=gercList(row); return g.length?g[g.length-1]:null; }
   function siradaki(row){
-    const per=periyotAy(row.periyot); if(!per||!row.yayim_tarihi) return null;
-    const d=new Date(row.yayim_tarihi+"T00:00:00"); d.setMonth(d.getMonth()+per); return d;
+    const per=periyotAy(row.periyot); const baz=sonGerc(row)||row.yayim_tarihi; if(!per||!baz) return null;
+    const d=new Date(baz+"T00:00:00"); d.setMonth(d.getMonth()+per); return d;
   }
   function fmt(d){ return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+d.getFullYear(); }
   function grupla(arr,key){ const m={}; arr.forEach(r=>{ const k=r[key]||"—"; (m[k]=m[k]||[]).push(r); }); return m; }
   const today=new Date();
+  const YIL=String(today.getFullYear()), AY=YIL+"-"+String(today.getMonth()+1).padStart(2,"0");
   const pG=grupla(P,"bolum");
   let planHtml="";
   Object.keys(pG).sort((a,b)=>a.localeCompare(b,"tr")).forEach(bol=>{
     const rows=pG[bol].slice().sort((a,b)=>(a.kod||"").localeCompare(b.kod||"","tr"));
-    planHtml+=`<div class="secH">${esc(bol)} (${rows.length})</div><div class="scroll"><table class="egt"><colgroup><col class="ek"><col class="ekonu"><col class="e3"><col class="e4"><col class="e5"></colgroup><thead><tr><th>Kod</th><th>Konu</th><th>Periyot</th><th>Yayım Tarihi</th><th>Sıradaki Eğitim</th></tr></thead><tbody>`;
+    const bG=rows.filter(r=>gercList(r).some(x=>x.slice(0,4)==YIL)).length;
+    planHtml+=`<div class="secH">${esc(bol)} (${rows.length}) <span class="muted" style="font-weight:400">· bu yıl gerçekleşen konu: ${bG}/${rows.length}</span></div><div class="scroll"><table class="egt"><colgroup><col class="ek"><col class="ekonu"><col class="e3"><col class="e4"><col class="e4"><col class="e3"><col class="e5"></colgroup><thead><tr><th>Kod</th><th>Konu</th><th>Periyot</th><th>Yayım Tarihi</th><th>Son Gerçekleşen</th><th>Bu Yıl (adet)</th><th>Sıradaki Eğitim</th></tr></thead><tbody>`;
     rows.forEach(r=>{
       const sd=siradaki(r), gec = sd && sd<today;
-      planHtml+=`<tr><td>${esc(r.kod||"—")}</td><td title="${esc(r.konu||"")}">${esc(r.konu||"—")}</td><td>${esc(r.periyot||"—")}</td><td>${dOnly(r.yayim_tarihi)}</td><td${gec?' style="color:#b23a2e;font-weight:600"':''}>${sd?fmt(sd):"—"}${gec?" (gecikmiş)":""}</td></tr>`;
+      planHtml+=`<tr><td>${esc(r.kod||"—")}</td><td title="${esc(r.konu||"")}">${esc(r.konu||"—")}</td><td>${esc(r.periyot||"—")}</td><td>${dOnly(r.yayim_tarihi)}</td><td>${sonGerc(r)?dOnly(sonGerc(r)):"—"}</td><td class="num">${gercList(r).filter(x=>x.slice(0,4)==YIL).length||"—"}</td><td${gec?' style="color:#b23a2e;font-weight:600"':''}>${sd?fmt(sd):"—"}${gec?" (gecikmiş)":""}</td></tr>`;
     });
     planHtml+="</tbody></table></div>";
   });
@@ -1500,12 +1506,29 @@ async function loadEgitim(){
     dokHtml+="</tbody></table></div>";
   });
   const gecSay=P.filter(r=>{ const sd=siradaki(r); return sd&&sd<today; }).length;
+  /* EGITIM-OZET (23.09.2026): bu yıl / bu ay — gerçekleşen eğitim, yayınlanan ve revize edilen doküman */
+  const gE=[]; P.forEach(r=>gercList(r).forEach(t=>{ if(t.slice(0,4)==YIL) gE.push({t,bolum:r.bolum,kod:r.kod,konu:r.konu}); }));
+  const yE=D.filter(r=>r.yayim_tarihi&&r.yayim_tarihi.slice(0,4)==YIL).map(r=>({t:r.yayim_tarihi,bolum:r.bolum,kod:r.kod,konu:r.konu}));
+  const rE=D.filter(r=>r.revizyon_tarihi&&r.revizyon_tarihi.slice(0,4)==YIL).map(r=>({t:r.revizyon_tarihi,bolum:r.bolum,kod:r.kod,konu:r.konu}));
+  const ozKart=(bas,arr)=>{
+    arr.sort((a,b)=>b.t.localeCompare(a.t));
+    const ay=arr.filter(x=>x.t.slice(0,7)==AY).length;
+    const li=arr.length?arr.map(x=>`<tr${x.t.slice(0,7)==AY?' style="font-weight:600"':''}><td>${dOnly(x.t)}</td><td>${esc(x.bolum||"—")}</td><td>${esc(x.kod||"—")}</td><td title="${esc(x.konu||"")}">${esc(x.konu||"—")}</td></tr>`).join(""):`<tr><td colspan="4" class="muted">Bu yıl kayıt yok</td></tr>`;
+    return `<div class="egoz"><div class="egozh">${bas}</div><div class="egozn"><span><b>${ay}</b> bu ay</span><span><b>${arr.length}</b> bu yıl</span></div><div class="egozl"><table class="egt egoztb"><colgroup><col style="width:10ch"><col style="width:14ch"><col style="width:12ch"><col style="width:34ch"></colgroup><thead><tr><th>Tarih</th><th>Bölüm</th><th>Kod</th><th>Konu</th></tr></thead><tbody>${li}</tbody></table></div></div>`;
+  };
+  const ozetHtml=`<div class="egozw">${ozKart("Gerçekleşen Eğitim",gE)}${ozKart("Yayınlanan Doküman",yE)}${ozKart("Revize Edilen Doküman",rE)}</div>`;
   view.innerHTML=`<div class="stamp">Son güncelleme: ${esc(erpT)} (ERP çekimi) · ${P.length} plan satırı · ${gecSay} gecikmiş</div>
     <style>/* EGITIM-HIZA (23.09.2026): tüm bölüm blokları aynı sütun genişliği */
      table.egt{border-collapse:collapse;table-layout:fixed;width:1px;font-size:12px}
      table.egt th,table.egt td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+     .egozw{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0 16px}
+     .egoz{border:1px solid #dfe5ec;border-radius:8px;background:#fff;padding:8px 10px}
+     .egozh{font-weight:700;color:#16324f;margin-bottom:4px}
+     .egozn{display:flex;gap:16px;font-size:12px;margin-bottom:6px}.egozn b{font-size:18px;color:#16324f;margin-right:3px}
+     .egozl{max-height:220px;overflow:auto}
      table.egt col.ek{width:14ch}table.egt col.ekonu{width:60ch}table.egt col.e3{width:14ch}table.egt col.e4{width:13ch}table.egt col.e5{width:20ch}
     </style>
+    ${ozetHtml}
     ${planHtml}
     <h3 class="sec">Eğitim Dokümanları — Bölüm bazında (${D.length})</h3>
     ${dokHtml}`;
