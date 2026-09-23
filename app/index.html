@@ -1333,7 +1333,7 @@ async function loadRef(){
   let pr=""; (p.data||[]).forEach(r=>{ pr+=`<tr><td class="kod">${esc(r.anahtar)}</td><td>${esc(typeof r.deger==='string'?r.deger:JSON.stringify(r.deger))}</td><td>${esc(r.aciklama)}</td></tr>`; });
   const st=await tblStamp("kisiler");
   view.innerHTML=`${stampHTML(st)}
-    <div class="flow"><b>Güncel işleyiş:</b> <span class="step">Melih ERP'yi manuel çeker</span><span class="arr">→</span><span class="step">Arbor\\ERP\\&lt;YYMMDD&gt;\\ (geçici giriş kutusu)</span><span class="arr">→</span><span class="step">worker · upsert</span><span class="arr">→</span><span class="step">Postgres snapshot</span><span class="arr">→</span><span class="step">bu app</span></div>
+    <!-- REF-SADE (23.09.2026): akış satırı, Kişiler başlığı/açıklaması ve tablodan sonraki tüm içerik kaldırıldı -->
     <style>
      .kitbl{border-collapse:collapse;width:auto;font-size:12px}
      .kitbl th,.kitbl td{border-bottom:1px solid #eef1f5;padding:2px 7px;text-align:left;white-space:nowrap;vertical-align:middle}
@@ -1345,70 +1345,7 @@ async function loadRef(){
      .kitbl .kdel:hover{background:#b40000;color:#fff}
      .kitbl .ed{display:inline-block;min-width:40px}
     </style>
-    <h3 class="sec">Kişiler (${(k.data||[]).length})</h3>
-    <div class="hint">Hücreye tıklayıp düzenleyin (Enter kaydeder). <b>Kod</b> mevcut satırlarda değiştirilemez (yalnız yeni kişide girilir). Alt satırdan yeni kişi ekleyin; ✕ ile silin. Yazma yetkisi yalnız yetkili (int@arbor.com.tr) oturumundadır. <b>Şifre</b> = kişinin tüm formlara giriş kodu (6 hane, benzersiz; yeni kişiye otomatik atanır). Hangi forma girebileceği ve rolü Formlar sekmesindeki Kullanıcı sütunundan belirlenir; "Herkes" = bu listedeki herkes.</div>
     <div class="scroll"><table class="kitbl"><thead><tr><th>Kod</th><th>Ad Soyad</th><th>Bölüm</th><th>E-posta</th><th>Rol</th><th></th><th title="Form giriş kodu — 6 hane, benzersiz">Şifre</th></tr></thead><tbody>${kr}<tr class="kaddrow"><td><input id="ki-kod" class="cell" placeholder="Kod"></td><td><input id="ki-ad" class="cell" placeholder="Ad Soyad"></td><td><input id="ki-bolum" class="cell" placeholder="Bölüm"></td><td><input id="ki-email" class="cell" placeholder="E-posta"></td><td><input id="ki-rol" class="cell" placeholder="Rol"></td><td><button class="kbtn" id="ki-add">Ekle</button></td><td class="muted" title="Yeni kişiye otomatik atanır">oto</td></tr></tbody></table></div>
-    <div class="hint">Ödemeler (referans — süreç yok) bloğu <b>Mali → Maaş-Prim</b> panosuna taşındı.</div>
-    <h3 class="sec">Parametreler</h3>
-    <div class="scroll"><table><thead><tr><th>Anahtar</th><th>Değer</th><th>Açıklama</th></tr></thead><tbody>${pr}</tbody></table></div>
-    <h3 class="sec">İşleyiş — Süreçler</h3>
-    <div class="hint">Bu bölüm <b>fiilen işleyen</b> hattı anlatır — kodda/veritabanında karşılığı olmayan adım yazılmaz. Otomatik olmayan işler <span class="tag" style="margin:0">elle</span> etiketiyle işaretlidir. Firma içi <b>kurallar</b> (yasalar) ayrı Prosedürler sekmesindedir.</div>
-    <div class="flow"><b>1. ERP İngest Hattı</b><span class="tag">çekim sonrası tek komut</span>
-      <p>Melih ERP'yi manuel çeker → Excel'leri <code>Arbor\\ERP\\&lt;YYMMDD&gt;\\</code> içine bırakır → <code>python kod/erp_cekim_gorevi.py</code> çalıştırılır. Bu rutin sırayla: (1) <b>worker</b> ingest (snapshot tabloları + icmal_satir), (2) <code>_pem_prj_erp_match.py</code> → Ana Gündem PEM/PRJ orta sütunları (<code>ana_gundem.erp</code>), (3) <code>_hazir_erp_fill.py</code> → <code>hazir_erp</code>, (4) Duyuru diff'i. Hepsi idempotent; <b>otomatik zamanlama yok</b>, elle tetiklenir. Panolar canlı view okuduğu için <b>app deploy gerekmez</b>.</p>
-      <p class="muted">Ingest edilen beş rapor: <b>Prj→proje_snapshot, Pem→pem_snapshot, Arge→arge_snapshot, SÖ→so_snapshot, Üs→icmal_satir</b> (aya göre PATCH). <b>Cam.xlsx ingest edilmez</b> (ayrı fiyat aracı app/cam/); <b>Duyuru.xlsx snapshot'a yazılmaz</b> ama önceki çekimle diff'lenir → §12. Panolar: Prj→AÜP + Hazır PRJ (durum 8/8.1, satış/şantiye notu dahil); Pem→Hazır PEM (durum 3); Arge→Ana Gündem ARGE bloğu; SÖ→<b>Ana Gündem SÖ bloğu</b> (ARGE'nin üstünde); Üs→İcmal. Ana Gündem'deki PEM/PRJ takip blokları <b>elle</b> açılır, ERP yalnız orta sütunları doldurur.</p>
-    </div>
-    <div class="flow"><b>2. SÖ Takibi</b><span class="tag ok">Ana Gündem · salt-okur</span>
-      <p>Her ERP çekiminde açık SÖ'ler Ana Gündem'de <b>ARGE bloğunun hemen üstündeki SÖ bloğuna</b> düşer (bölüm bazında gruplu, salt-okur). Ayrı SÖ sekmesi ve EA formu 21.09.2026'da kaldırıldı.</p>
-      <p class="muted">Takip <b>Formlar</b> sekmesinden yürür: gecikme gün sayısı orada hesaplanır, hatırlatma maili <b>elle</b> (mail düğmesiyle) gönderilir. <span class="tag">elle</span> <b>Zamanlanmış otomatik mail/kontrol yoktur</b> — Pazartesi/Salı/Çarşamba döngüsü kurulmadı.</p>
-      <p class="muted">Fabrika bölümü SÖ.xlsx KUSURLU BİRİM sütunundan gelir; boşsa "Atanmamış". Açık SÖ kümesi: DURUM ≤ 7.2 &amp; NİTELİK PEM/Şantiye. Damgadaki <b>SÖ Adet</b> bu kümenin satır sayısıdır (<code>pano_adet_ozet</code>), yüzde bir önceki çekime göredir.</p>
-    </div>
-    <div class="flow"><b>3. Bilanço Süreci</b><span class="tag">Türkiye · gider=SB · gelir=İcmal</span>
-      <p>SB (Muhasebe) gider tablosu → yeni dönem gideri gelince Melih iletir → Claude bilanço panosunu günceller. <span class="tag">elle</span> Kapsam yalnız Arbor Türkiye. Bilanço = Net Satış (İcmal) − Toplam Maliyet (710+720+730, SB).</p>
-      <p class="muted"><b>710 kalem listesi</b> panoda açılır kutuda durur (<code>gider_710_kalem</code>; kaynak <code>Analizler\\Arbor Bilanço 2025.xlsx</code>, yükleyici <code>kod/_gider710_load.py</code> — dosya yenilenince betik tekrar çalıştırılır). Liste toplamı <b>alım</b> tutarıdır; tablodaki 710 sütunu net/FKTF düzeltilmiş tutardır, ikisi birebir aynı olmayabilir.</p>
-    </div>
-    <div class="flow"><b>4. Yıllık İcmal Süreci</b><span class="tag">tek gelir kaynağı</span>
-      <p>Yıllık İcmal, aylık/yıllık Net Satış'ın tek kaynağıdır ve bilançonun gelir tarafını besler. Aylık üretim-satış kolonları (adet, m², net €/TL, kur, net fiyat, personel, ciro/personel, iskonto) ERP <b>Üs.xlsx</b>'ten gelir (worker aya göre <code>icmal_satir</code>'a yazar); onaysız/üretim adedi Prj rollup'ından; <b>Yurt İçi / Yurt Dışı alınan-muhtemel</b> satırları satış raporlarından elle işlenir. <span class="tag">elle</span></p>
-      <p class="muted"><b>Yurt Dışı</b> sütunu = Yurt Dışı 1 + Yurt Dışı 2 (<code>fa_*</code> + <code>fy2_*</code>); FY2 girilmemiş aylarda yalnız YD1 görünür. <b>Yıl toplam satırında</b> personel sayıları ve Ciro/Personel toplanmaz, o yılın dolu aylarının ortalaması gösterilir.</p>
-    </div>
-    <div class="flow"><b>5. Satış Raporları Süreci</b><span class="tag">Yurt İçi · Yurt Dışı 1 · Yurt Dışı 2</span>
-      <p>Üç bölge, üç ayrı form: <b>Yurt İçi</b> (Sinan Oran · <a href="so/" target="_blank">app/so/</a>), <b>Yurt Dışı 1</b> (MN · OBL · MK · KS · <a href="satis-yd1/" target="_blank">app/satis-yd1/</a>), <b>Yurt Dışı 2</b> (MKB · OBL · MK · <a href="satis-yd2/" target="_blank">app/satis-yd2/</a>). Satış panosu formlardan canlı okur; her ayın 1'inde kapanan ayın Muhtemel/Alınan toplamları İcmal'e otomatik yazılır (pg_cron <code>arb_icmal_satis_ay</code>).</p>
-      <p class="muted">Gecikme takibi <b>Formlar</b> sekmesinde; hatırlatma <b>elle</b> gönderilir. <span class="tag">elle</span> Zamanlanmış eskalasyon (ayın 5./20. günü) <b>kurulmadı</b>.</p>
-    </div>
-    <div class="flow"><b>6. Prim / Ödeme Süreci</b>
-      <p>Sabit: Onur 200 €/ay, Özlem Y. 7.000 TL/ay, Orhan 20.000 TL/ay. Oransal: Özgül %0,01 tahsilat. Değişken: Fatma proje primi.</p>
-      <p class="muted">Ödeme onayı: Melih "Uygundur" (52.1) onaya sunulur; Osman onaylı iç/fabrika (52.25) sorulmadan işlenir.</p>
-    </div>
-    <div class="flow"><b>7. Sevke-Hazır / PEM Takip</b><span class="tag">Onur (Sevkiyat)</span>
-      <p>Onur Ekinci sevke-hazır PEM/PRJ durumunu kendi formundan (<a href="onur/" target="_blank">app/onur/</a>) günceller; <b>AYLIK GÜNCELLEME</b> düğmesi edge function <code>sevk-degisim-ozet</code>'i tetikler → önceki↔güncel farkın tek cümlelik LLM özeti "Sevk Durum Değişimi" sütununa yazılır, güncel→önceki kaydırılır. PEM İlgili DURUM bazlı: 1.2 → Berat (dış sipariş), 1.3/2 → Semih (üretim).</p>
-      <p class="muted">Pano kümesi (<code>hazir_pem_prj</code>): PEM durum 3 · PRJ durum 8/8.1; tarihi boş olan ve damgadan 10 günden yeni kalemler gösterilmez. PRJ "Satış/Şantiye Notları" doğrudan Prj.xlsx'ten gelir. Damgadaki <b>PEM/PRJ Adet</b> gösterilen satır sayısıdır (<code>pano_adet_ozet</code>), yüzde bir önceki çekime göredir.</p>
-    </div>
-    <div class="flow"><b>8. ARGE Süreci</b><span class="tag ok">İlgili = EU</span>
-      <p>ERP Arge.xlsx İLGİLİ sütunu (Ömer/Tarık) yok sayılır; tüm ARGE'nin İlgili'si Enes Uzun'da toplanır (K73). Ana Gündem'de ARGE, kişi gruplarından sonra <b>kendi tablosu</b> olarak durur: No · Öncelik · Durum · Arge Konusu; sıra öncelik → açılış tarihi.</p>
-      <p class="muted"><code>gundem_arge</code> filtresi: öncelik 1–3 &amp; durum 1–4. (SÖ İlgili = EA, ARGE İlgili = EU — farklı kişiler.)</p>
-    </div>
-    <div class="flow"><b>9. Cam Fiyatlandırma Aracı</b><span class="tag">talep üzerine · MB</span>
-      <p>Cam parametrelerinden (dış/iç cam, kaplama, akustik, temper, form, ara boşluk, Fire Proof…) çarpımsal model + geçmiş teklif eşleşmesiyle €/m² fiyat üretir. Bağlantı çalışanla paylaşılabilir: <a href="cam/" target="_blank">app/cam/</a>. Cam.xlsx ERP'ye ingest edilmez; bu araç ayrıdır.</p>
-    </div>
-    <div class="flow"><b>10. AÜP Kayma Takibi</b><span class="tag">her ERP çekimi</span>
-      <p>AÜP panosu ERP snapshot üstünde canlı görüntüdür. <b>PST-AÜP&gt;0</b> ve <b>Kayma≥3</b> kırmızı işaretlenir; global kayma tutar-ağırlıklı (<code>aup_ozet</code>) hesaplanır ve önceki çekimle karşılaştırılır.</p>
-    </div>
-    <div class="flow"><b>11. Sistem / Bakım Süreci</b><span class="tag ok">yapısal garanti</span>
-      <p><b>App cerrahi düzenlenir</b>, asla sıfırdan üretilmez: <code>arbor_app.html</code> düzenlenir → <code>_deploy_app.py</code> invariants kapısını çalıştırır (require eksik / forbid varsa deploy durur) → GitHub <code>app/index.html</code>. Bilerek davranış değişince önce <code>arbor_invariants.json</code> güncellenir.</p>
-      <p class="muted"><b>SQL/DDL</b> service key ile REST'ten çalışmaz → Claude bunu Supabase SQL Editor'ü tarayıcıda sürerek kendisi uygular (edge function deploy'u da aynı yoldan). Anon yazımlarda <code>audit_log</code> grant + policy unutulmaz.</p>
-    </div>
-    <div class="flow"><b>12. Prosedür Güncelleme</b><span class="tag ok">standart uygulama · sorulmaz</span>
-      <p>Her ERP çekiminde <code>erp_cekim_gorevi.py</code> <b>Duyuru.xlsx</b>'i bir önceki çekimle diff'ler. Yeni/değişen duyuru varsa Claude bunları kural olarak damıtıp <b>Prosedürler</b> panosuna kendiliğinden ekler (yeni no, bölüm harfi, tarih + ekleyen), damgayı çekim tarihine çeker ve sohbette tek satırla bildirir. Kural içermeyen saf bilgilendirme eklenmez; karşılığı olan madde varsa yeni no açılmaz, o madde revize edilir.</p>
-    </div>
-    <div class="flow"><b>13. Şantiye / ÖB · MK Faaliyet Süreci</b><span class="tag ok">ÖB + MK · aylık</span>
-      <p>Tıkanmış şantiyeyi <b>ÖB</b> kendi formundan (<a href="ob-rapor/" target="_blank">app/ob-rapor/</a>) SEL-ARB listesinden seçerek açar; durum notunu ÖB ve <b>MK</b> (<a href="mk-prim/" target="_blank">app/mk-prim/</a>) girer. Kayıt sonrası edge function <code>santiye-degisim-ozet</code> önceki→son değişimin tek cümlelik özetini üretir. Şantiye tablosu <b>MK Faaliyet</b> panosunun altındadır; Arbor SAS alacağı SEL-ARB snapshot'ından bağlanır.</p>
-      <p class="muted">ÖB'nin "Takipteki İşler" bloğu ayrıca ÖB Faaliyet panosuna yansır; Haftalık Güncelleme düğmesi <code>ob-degisim-ozet</code>'i çağırır, Tamamlandı/İptal olanlar silinir.</p>
-    </div>
-    <div class="flow"><b>14. Mali Panolar ve Yayın Damgası</b><span class="tag">form → pano</span>
-      <p>Mali sekmesindeki panolar ilgili formdan beslenir: <b>Ahşap</b> (Umut Aktaş), <b>SEL-ARB</b> (alacaklar Sel-Arb formunda — ÖB · MK, ay sonunda sütun olur; Selectron ödeme/kesilen faturalar ÖB formunda girilir; ÖB "Haftalık Güncelle" düğmesi SEL-ARB panosuna kapatır + OE Faaliyet · Onur Ekinci) ve altındaki <b>Dépenses</b> (ÖB formundaki tedarikçi gider satırları), <b>MK Faaliyet</b> (+Şantiye), <b>Maaş-Prim</b>, <b>Fiyatlandırma</b>. Her panonun "Son güncelleme" damgası, formdaki güncelleme düğmesine <b>son basılma</b> anıdır (<code>pano_yayin</code> / <code>depenses_yayin</code> / <code>fiyat_yayin</code>) — ERP damgası değildir.</p>
-    </div>
-    <div class="flow"><b>15. Form Takibi</b><span class="tag">Formlar sekmesi</span><span class="tag">elle</span>
-      <p>12 formun tamamı tek listede: sorumlu, güncelleme sıklığı, son güncelleme ve <b>geciken gün</b>. Gecikme sıklığa göre hesaplanır; hatırlatma maili sıradaki numarasıyla <b>elle</b> gönderilir, ✓ ile sayaç sıfırlanır. Otomatik gönderim/zamanlama yoktur.</p>
-    </div>
 `;
   view.querySelectorAll(".kicell").forEach(el=>el.onclick=()=>startKisiEdit(el));
   view.querySelectorAll(".kdel").forEach(b=>b.onclick=()=>kisiDel(b.dataset.kod));
@@ -1545,10 +1482,10 @@ async function loadEgitim(){
   let planHtml="";
   Object.keys(pG).sort((a,b)=>a.localeCompare(b,"tr")).forEach(bol=>{
     const rows=pG[bol].slice().sort((a,b)=>(a.kod||"").localeCompare(b.kod||"","tr"));
-    planHtml+=`<div class="secH">${esc(bol)} (${rows.length})</div><div class="scroll"><table><thead><tr><th>Kod</th><th>Konu</th><th>Periyot</th><th>Yayım Tarihi</th><th>Sıradaki Eğitim</th></tr></thead><tbody>`;
+    planHtml+=`<div class="secH">${esc(bol)} (${rows.length})</div><div class="scroll"><table class="egt"><colgroup><col class="ek"><col class="ekonu"><col class="e3"><col class="e4"><col class="e5"></colgroup><thead><tr><th>Kod</th><th>Konu</th><th>Periyot</th><th>Yayım Tarihi</th><th>Sıradaki Eğitim</th></tr></thead><tbody>`;
     rows.forEach(r=>{
       const sd=siradaki(r), gec = sd && sd<today;
-      planHtml+=`<tr><td>${esc(r.kod||"—")}</td><td>${esc(r.konu||"—")}</td><td>${esc(r.periyot||"—")}</td><td>${dOnly(r.yayim_tarihi)}</td><td${gec?' style="color:#b23a2e;font-weight:600"':''}>${sd?fmt(sd):"—"}${gec?" (gecikmiş)":""}</td></tr>`;
+      planHtml+=`<tr><td>${esc(r.kod||"—")}</td><td title="${esc(r.konu||"")}">${esc(r.konu||"—")}</td><td>${esc(r.periyot||"—")}</td><td>${dOnly(r.yayim_tarihi)}</td><td${gec?' style="color:#b23a2e;font-weight:600"':''}>${sd?fmt(sd):"—"}${gec?" (gecikmiş)":""}</td></tr>`;
     });
     planHtml+="</tbody></table></div>";
   });
@@ -1556,16 +1493,19 @@ async function loadEgitim(){
   let dokHtml="";
   Object.keys(dG).sort((a,b)=>a.localeCompare(b,"tr")).forEach(bol=>{
     const rows=dG[bol].slice().sort((a,b)=>(a.kod||"").localeCompare(b.kod||"","tr"));
-    dokHtml+=`<div class="secH">${esc(bol)} (${rows.length})</div><div class="scroll"><table><thead><tr><th>Kod</th><th>Konu</th><th>Grup</th><th>Yayım Tarihi</th><th>Revizyon Tarihi</th></tr></thead><tbody>`;
+    dokHtml+=`<div class="secH">${esc(bol)} (${rows.length})</div><div class="scroll"><table class="egt"><colgroup><col class="ek"><col class="ekonu"><col class="e3"><col class="e4"><col class="e5"></colgroup><thead><tr><th>Kod</th><th>Konu</th><th>Grup</th><th>Yayım Tarihi</th><th>Revizyon Tarihi</th></tr></thead><tbody>`;
     rows.forEach(r=>{
-      dokHtml+=`<tr><td>${esc(r.kod||"—")}</td><td>${esc(r.konu||"—")}</td><td>${esc(r.grup||"—")}</td><td>${dOnly(r.yayim_tarihi)}</td><td>${dOnly(r.revizyon_tarihi)}</td></tr>`;
+      dokHtml+=`<tr><td>${esc(r.kod||"—")}</td><td title="${esc(r.konu||"")}">${esc(r.konu||"—")}</td><td>${esc(r.grup||"—")}</td><td>${dOnly(r.yayim_tarihi)}</td><td>${dOnly(r.revizyon_tarihi)}</td></tr>`;
     });
     dokHtml+="</tbody></table></div>";
   });
   const gecSay=P.filter(r=>{ const sd=siradaki(r); return sd&&sd<today; }).length;
   view.innerHTML=`<div class="stamp">Son güncelleme: ${esc(erpT)} (ERP çekimi) · ${P.length} plan satırı · ${gecSay} gecikmiş</div>
-    <h3 class="sec">Eğitim Planı — Bölüm bazında</h3>
-    <div class="hint">Gerçekleşen eğitim tarihi henüz ERP'de tutulmuyor (Planlanan/Gerçekleşen kolonları boş geliyor) — <b>Sıradaki Eğitim</b> yayım tarihi + periyoda göre hesaplanır; ERP gerçek tamamlanma tarihi girmeye başlayınca buradan otomatik yenilenecektir.</div>
+    <style>/* EGITIM-HIZA (23.09.2026): tüm bölüm blokları aynı sütun genişliği */
+     table.egt{border-collapse:collapse;table-layout:fixed;width:1px;font-size:12px}
+     table.egt th,table.egt td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+     table.egt col.ek{width:14ch}table.egt col.ekonu{width:60ch}table.egt col.e3{width:14ch}table.egt col.e4{width:13ch}table.egt col.e5{width:20ch}
+    </style>
     ${planHtml}
     <h3 class="sec">Eğitim Dokümanları — Bölüm bazında (${D.length})</h3>
     ${dokHtml}`;
