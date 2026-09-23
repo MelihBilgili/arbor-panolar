@@ -839,8 +839,9 @@ function pipelineTables(ydRows, today){
     +pipeGenTbl(title+' - Yurt Dışı 2',rows.filter(r=>r.blok==='YD2'),cols);
   /* YD-EKSIK-BOS (2026-09-23, Melih): formdaki kuralın aynısı — durumu boş satırda form sütunu 1-6 ve 8-11
      (Proje, Müşteri, Gelen/İstenen Tarih, İhale?, Adet, Ürün Tipi, Kemer/Karolaj, Şartname Ahşap?) boşsa hücre kırmızı */
-  const EKSIK_F=['proje','musteri','gelen_tarih','istenen_tarih','ihale','adet','urun_tipi_serisi','kemer_karolaj','sartname_ahsap'];
-  const C1E=C1.map(c=>{ const f=c.f||({'Gelen Tarih':'gelen_tarih','İstenen Tarih':'istenen_tarih'})[c.h];
+  const EKSIK_F=['proje','musteri','musteri_onem_sinifi','gelen_tarih','istenen_tarih','ihale','adet','urun_tipi_serisi','kemer_karolaj','sartname_ahsap'];
+  /* YD-EKSIK-ONEM: Eksik bloklarına Müşteri Önem Sınıfı sütunu (Müşteri'den sonra) */
+  const C1E=[].concat(C1.slice(0,2),[{h:'Müşteri Önem Sınıfı',f:'musteri_onem_sinifi'}],C1.slice(2)).map(c=>{ const f=c.f||({'Gelen Tarih':'gelen_tarih','İstenen Tarih':'istenen_tarih'})[c.h];
     return EKSIK_F.includes(f)?Object.assign({},c,{cls:r=>(!r.durum&&(r[f]==null||String(r[f]).trim()===''))?'eksikbos':''}):c; });
   return two('Eksik Kaydedilmiş Teklif Talepleri',eksik,C1E)
     +two('Öncelik Belirlenmesi Gerekenler',oncelik,C1)
