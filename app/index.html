@@ -824,7 +824,7 @@ function pipelineTables(ydRows, today){
   const hazGecGun=r=>{ if(!r.teklif_teslim_tarihi) return null; const g=gunFark(today,r.teklif_teslim_tarihi); return g>0?g:null; };
   const C2=[
     {h:'Proje',f:'proje'},{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
-    {h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi)},
+    {h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi),cls:r=>!r.teklif_teslim_tarihi?'eksikbos':''},  /* TERMIN-BOS-PANO: formdaki TERMIN-BOS kuralı — Teklif Bekleniyor + tarih boş → kırmızı */
     {h:'İhale?',f:'ihale'},{h:'Talebe İlişkin Notlar',f:'talebe_iliskin_notlar'},{h:'Adet',f:'adet'},{h:'Teklif Birimi Notları',f:'teklif_birimi_notlari'},
     {h:'Geciken Gün',get:r=>{const g=hazGecGun(r); return g==null?'':g;},cls:r=>hazGecGun(r)!=null?'gecgun':''}
   ];
