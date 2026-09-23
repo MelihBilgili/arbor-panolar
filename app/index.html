@@ -1398,8 +1398,9 @@ async function loadRef(){
   /* ---- sütunlar (MAASPRIM-BASLIK3: başlık en çok 3 satır) ---- */
   const aylbl=(y,m)=>[AYAD[m-1]+" "+y,"Yol-Yemek Dahil","Prim (TL)"];
   const C=[
-    {t:"kod", l:["Kod"]}, {t:"ki", f:"tam_ad", l:["Ad Soyad"]}, {t:"ki", f:"bolum", l:["Bölüm"]}, {t:"ki", f:"email", l:["E-posta"]},
-    {t:"ki", f:"rol", l:["Rol"]}, {t:"ki", f:"sifre", l:["Şifre"], tt:"Form giriş kodu — 6 hane, benzersiz"},
+    /* PERSONEL-ED (23.09.2026): Bölüm ve Rol sütunları çıkarıldı; Ad Soyad/E-posta/Prim Notları %33 dar */
+    {t:"kod", l:["Kod"]}, {t:"ki", f:"tam_ad", l:["Ad Soyad"], cls:"pad"}, {t:"ki", f:"email", l:["E-posta"], cls:"pem"},
+    {t:"ki", f:"sifre", l:["Şifre"], tt:"Form giriş kodu — 6 hane, benzersiz"},
     {t:"m", f:"ise_giris", l:["İşe","Giriş"], ty:"d"}, {t:"m", f:"tahsil", l:["Tahsil","(yıl)"], ty:"t"}, {t:"kidem", l:["Kıdem","(yıl)"]},
     {t:"m", f:"yol_yemek", l:["Yol-Yemek","(TL)"], ty:"n"}, {t:"m", f:"son_artis", l:["Son Artış","(%)"], ty:"t"},
     {t:"m", f:"cari_yil_maas", l:["Cari Yıl","Maaş (TL)"], ty:"n"}, {t:"m", f:"gecen_yil_maas", l:["Geçen Yıl","Maaş (TL)"], ty:"n"},
@@ -1416,12 +1417,12 @@ async function loadRef(){
   const HIDE=c=>(c.hid&&!PRS_OPEN)?' style="display:none"':"";
   const NUMC=c=>(c.t==="m"&&(c.ty==="n"||c.ty==="d"))||c.t==="ay"||c.t==="avg"||c.t==="kidem";
   const th=C.map(c=>`<th class="${NUMC(c)?"num ":""}${c.t==="avg"?"pavg ":""}${c.hid?"phid ":""}${c.t==="frm"?"pfrm ":""}"${c.tt?` title="${esc(c.tt)}"`:""}${HIDE(c)}>${c.l.length?c.l.map(esc).join("<br>"):"&nbsp;"}</th>`).join("");
-  const kc=(kod,f,v)=>`<td><span class="ed kicell" data-kod="${esc(kod)}" data-f="${f}">${v?esc(v):'—'}</span></td>`;
+  const kc=(kod,f,v,cls)=>`<td${cls?` class="${cls}" title="${esc(v||"")}"`:""}><span class="ed kicell" data-kod="${esc(kod)}" data-f="${f}">${v?esc(v):'—'}</span></td>`;
   const cell=(R,c)=>{
     const m=R.m, mid=m?m.id:"", hide=HIDE(c), dk=`data-mid="${esc(mid)}" data-kod="${esc(R.kod||"")}"`;
-    if(c.t==="kod") return R.kod?`<td class="kod" title="Kod değiştirilemez">${esc(R.kod)}</td>`:`<td class="kod muted" title="Kişiler listesinde yok (kodsuz maaş-prim kaydı)">—</td>`;
-    if(c.t==="ki"){ if(R.kod) return kc(R.kod,c.f,c.f==="sifre"?SIF[R.kod]:R.k[c.f]);
-      if(c.f==="tam_ad") return `<td class="ped" data-k="kisi" ${dk}>${txt(m.kisi)}</td>`; return `<td>${dash}</td>`; }
+    if(c.t==="kod") return R.kod?`<td class="kod" title="Kod — değişince şifre, maaş-prim ve form yetkileri yeni koda taşınır"><span class="ed kicell" data-kod="${esc(R.kod)}" data-f="kod">${esc(R.kod)}</span></td>`:`<td class="kod muted" title="Kişiler listesinde yok (kodsuz maaş-prim kaydı)">—</td>`;
+    if(c.t==="ki"){ if(R.kod) return kc(R.kod,c.f,c.f==="sifre"?SIF[R.kod]:R.k[c.f],c.cls);
+      if(c.f==="tam_ad") return `<td class="ped pad" data-k="kisi" ${dk} title="${esc(m.kisi||"")}">${txt(m.kisi)}</td>`; return `<td>${dash}</td>`; }
     if(c.t==="kidem") return `<td class="num">${m?txt(kidemOf(m)):dash}</td>`;
     if(c.t==="avg") return `<td class="num pavg">${m?fmtN(avgOf(m.id)):dash}</td>`;
     if(c.t==="frm"){ const L=R.kod?KF[R.kod]:null; return `<td class="pfrm">${(L&&L.length)?L.map(f=>'<span class="frm'+(f.ok?" ok":" yok")+'" title="'+esc(f.title)+'">'+esc(f.ad)+'</span>').join(" · "):dash}</td>`; }
@@ -1437,7 +1438,7 @@ async function loadRef(){
   const addRow=`<tr class="kaddrow">`+C.map(c=>{
     if(c.t==="kod") return `<td><input id="ki-kod" class="cell" placeholder="Kod"></td>`;
     if(c.t==="ki"){ if(c.f==="sifre") return `<td><button class="kbtn" id="ki-add" title="Şifre yeni kişiye otomatik atanır">Ekle</button></td>`;
-      const id={tam_ad:"ki-ad",bolum:"ki-bolum",email:"ki-email",rol:"ki-rol"}[c.f], ph={tam_ad:"Ad Soyad",bolum:"Bölüm",email:"E-posta",rol:"Rol"}[c.f];
+      const id={tam_ad:"ki-ad",email:"ki-email"}[c.f], ph={tam_ad:"Ad Soyad",email:"E-posta"}[c.f];
       return `<td><input id="${id}" class="cell" placeholder="${ph}"></td>`; }
     return `<td${HIDE(c)}></td>`; }).join("")+`</tr>`;
   const body=addRow+ROWS.map(R=>`<tr data-kod="${esc(R.kod||"")}">`+C.map(c=>cell(R,c)).join("")+`</tr>`).join("");
@@ -1453,7 +1454,9 @@ async function loadRef(){
      .kitbl th.phid{background:#245b85} .kitbl td.phid{background:#f7fafd}
      .kitbl th.pfrm{background:#334e68} .kitbl td.pfrm{white-space:normal;font-size:10.5px;line-height:14px;max-width:14ch}
      .kitbl .frm.ok{color:#1c2733;font-weight:600} .kitbl .frm.yok{color:#b40000;font-weight:600}
-     .kitbl td.pnot{white-space:normal;font-size:10.5px;line-height:13px;min-width:44ch;max-width:56ch} /* MAASPRIM-SATIR-NOT */
+     .kitbl td.pnot{white-space:normal;font-size:10.5px;line-height:13px;min-width:29.5ch;max-width:37.5ch} /* MAASPRIM-SATIR-NOT · PERSONEL-ED %33 dar */
+     .kitbl td.pad{max-width:19ch;overflow:hidden;text-overflow:ellipsis} .kitbl td.pem{max-width:22ch;overflow:hidden;text-overflow:ellipsis} /* PERSONEL-ED */
+     .kitbl td.pad .ed,.kitbl td.pem .ed{display:inline;min-width:0}
      .kitbl td.pav{white-space:normal;font-size:10.5px;max-width:10.4ch}
      .kitbl td.ped{cursor:text} .kitbl td.ped:hover{outline:1px solid #b9cfe6;outline-offset:-1px}
      .kitbl td.ped input{width:100%;min-width:6ch;font:inherit;font-size:11px;padding:1px 3px;border:1px solid #2e7d54;border-radius:4px;background:#fffdf0}
@@ -1545,6 +1548,13 @@ function startKisiEdit(el){
     const patch={}; patch[f]=(f==="kod"||f==="tam_ad")?val:(val||null); patch.updated_at=new Date().toISOString();
     const {error}=await sb.from("kisiler").update(patch).eq("kod",kod);
     if(error){ el.textContent="hata"; alert(error.message); return; }
+    if(f==="kod"){ /* PERSONEL-ED: form_erisim.kisiler ve rol_map yeni koda taşınır (kisi_sifre, maas_prim FK cascade) */
+      try{ const {data:fe}=await sb.from("form_erisim").select("yol,kisiler,rol_map");
+        for(const r of (fe||[])){ const ki=(r.kisiler||[]), rm=r.rol_map||{}; if(!ki.includes(cur)&&!(cur in rm)) continue;
+          const nrm={}; Object.keys(rm).forEach(x=>nrm[x===cur?val:x]=rm[x]);
+          await sb.from("form_erisim").update({kisiler:ki.map(x=>x===cur?val:x),rol_map:nrm,updated_at:new Date().toISOString()}).eq("yol",r.yol); }
+      }catch(e){ alert("Form yetkileri taşınamadı: "+e.message); }
+      loadRef(); return; }
     if(f==="kod"){ const tr=el.closest("tr"); if(tr){ tr.dataset.kod=val; tr.querySelectorAll(".kicell").forEach(x=>x.dataset.kod=val); const db=tr.querySelector(".kdel"); if(db) db.dataset.kod=val; } }
     el.textContent=val||"—"; el.classList.add("saveflash"); setTimeout(()=>el.classList.remove("saveflash"),400);
   };
@@ -1552,7 +1562,7 @@ function startKisiEdit(el){
   inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();inp.blur();} if(e.key==="Escape"){el.textContent=cur||"—";} };
 }
 async function kisiAdd(){
-  const g=id=>document.getElementById(id).value.trim();
+  const g=id=>{ const e=document.getElementById(id); return e?e.value.trim():""; }; /* PERSONEL-ED */
   const kod=g("ki-kod"), tam_ad=g("ki-ad");
   if(!kod){ alert("Kod gir."); return; }
   if(!tam_ad){ alert("Ad Soyad gir."); return; }
