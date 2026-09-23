@@ -225,8 +225,12 @@ async function load(){
   render();
 }
 function render(){
-  const dates=[...new Set([...ST.snap.map(x=>x.tarih),...ST.oz.map(x=>x.tarih)])].sort().reverse();
+  /* SELARB-FORM-DOLU-SON (23.09.2026, Melih): alacak değeri olmayan (yalnız özet) tarih sütunu gösterilmez
+     (31.08 boştu); açık sütun = donmuş sütunlardan DOLU olan en yeni. Alt satır taşıma değerleri yine en son özetten. */
+  const _snapT=new Set(ST.snap.filter(x=>x.alacak!=null).map(x=>x.tarih));
+  const dates=[...new Set([...ST.snap.map(x=>x.tarih),...ST.oz.map(x=>x.tarih)])].filter(t=>_snapT.has(t)).sort().reverse();
   const nd=dates.length, last=dates[0];
+  const ozSon=[...ST.oz].sort((x,y)=>x.tarih<y.tarih?1:-1)[0]||null;
   const ozBy={}; ST.oz.forEach(x=>ozBy[x.tarih]=x);
   const vals={}; ST.snap.forEach(x=>{ (vals[x.sira]=vals[x.sira]||{})[x.tarih]=x.alacak; });
   const rows=ST.g.map(r=>({id:r.id,sira:r.sira,firma:r.firma||"",proje:r.proje||"—",g:r.alacak==null?null:Number(r.alacak),v:vals[r.sira]||{}}));
@@ -253,7 +257,7 @@ function render(){
   /* Alt satırlar — SEL-ARB panosu ile aynı hesap; Güncel sütununda Gönderilen/Borç/Ft Edilen son dönem değeridir (gri) */
   const gSum=rows.reduce((a,r)=>a+(r.g||0),0);
   const top=d=>{ let s=0,any=false; rows.forEach(r=>{ if(r.v[d]!=null){ s+=Number(r.v[d]); any=true; } }); return any?s:null; };
-  const oL=last?ozBy[last]:null;
+  const oL=ozSon;   /* SELARB-FORM-DOLU-SON: taşıma = en son özet */
   /* SELARB-KAYNAK: alt satırların kaynağı Firma sütununda gri yazılır */
   const F=[
     ["Güncel Alacak Toplam (€)", d=>top(d), gSum, false, "Bu formdaki satırların toplamı"],
