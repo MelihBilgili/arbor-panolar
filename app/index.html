@@ -301,7 +301,7 @@ async function loadPerms(){
 const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_maasprim","mali_mkprim"];
 const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_maasprim","mali_mkprim"];
 /* ÖB Faaliyet artık Mali grubunun içinde (MK Faaliyet'in yanında) */
-const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["santiye","Şantiye Onay"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
+const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["santiye","Şantiye Onay"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
 const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
 function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b))||a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
 function renderApp(){
@@ -325,6 +325,7 @@ function loadView(){
   else if(state.tab==='satis') loadSatis();
   else if(state.tab==='ref') loadRef();
   else if(state.tab==='prosedur') loadProsedur();
+  else if(state.tab==='egitim') loadEgitim();
   else if(state.tab==='mali') loadMali();
   else if(state.tab==='formlar') loadFormlar();
   else if(state.tab==='ozel') loadOzel();
@@ -1486,6 +1487,58 @@ function loadProsedur(){
     head.onclick=tog; no.onclick=tog; no.style.cursor="pointer";
     law.querySelector(".lx").onclick=e=>{ e.stopPropagation(); const h=getHidden(); if(!h.includes(law.dataset.no)) h.push(law.dataset.no); localStorage.setItem(HIDE_KEY,JSON.stringify(h)); law.remove(); };
   });
+}
+
+/* ---------- EĞİTİM (EGITIM-PANO, 2026-09-23) — En.xlsx (egitim_dokuman_snapshot) +
+   Ep.xlsx (egitim_plan_snapshot). Salt-okur, ERP kaynaklı. Gerçekleşen eğitim tarihi henüz
+   ERP'de tutulmuyor (Planlanan/Gerçekleşen kolonları boş) — "Sıradaki Eğitim" yayım tarihi +
+   periyot(ay) ile hesaplanır; geçmişse "gecikmiş" olarak kırmızı işaretlenir. En yeni çekim
+   egitim_dokuman_current / egitim_plan_current view'lerinden okunur. ---------- */
+async function loadEgitim(){
+  const view=document.getElementById("view");
+  view.innerHTML=`<div class="load">Yükleniyor…</div>`;
+  const [{data:dok},{data:plan},erpT]=await Promise.all([
+    sb.from("egitim_dokuman_current").select("*"),
+    sb.from("egitim_plan_current").select("*"),
+    erpStamp()
+  ]);
+  const D=dok||[], P=plan||[];
+  function periyotAy(p){ const m=/^(\d+)\s*Ay$/i.exec(String(p||"").trim()); return m?+m[1]:null; }
+  function siradaki(row){
+    const per=periyotAy(row.periyot); if(!per||!row.yayim_tarihi) return null;
+    const d=new Date(row.yayim_tarihi+"T00:00:00"); d.setMonth(d.getMonth()+per); return d;
+  }
+  function fmt(d){ return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+d.getFullYear(); }
+  function grupla(arr,key){ const m={}; arr.forEach(r=>{ const k=r[key]||"—"; (m[k]=m[k]||[]).push(r); }); return m; }
+  const today=new Date();
+  const pG=grupla(P,"bolum");
+  let planHtml="";
+  Object.keys(pG).sort((a,b)=>a.localeCompare(b,"tr")).forEach(bol=>{
+    const rows=pG[bol].slice().sort((a,b)=>(a.kod||"").localeCompare(b.kod||"","tr"));
+    planHtml+=`<div class="secH">${esc(bol)} (${rows.length})</div><div class="scroll"><table><thead><tr><th>Kod</th><th>Konu</th><th>Periyot</th><th>Yayım Tarihi</th><th>Sıradaki Eğitim</th></tr></thead><tbody>`;
+    rows.forEach(r=>{
+      const sd=siradaki(r), gec = sd && sd<today;
+      planHtml+=`<tr><td>${esc(r.kod||"—")}</td><td>${esc(r.konu||"—")}</td><td>${esc(r.periyot||"—")}</td><td>${dOnly(r.yayim_tarihi)}</td><td${gec?' style="color:#b23a2e;font-weight:600"':''}>${sd?fmt(sd):"—"}${gec?" (gecikmiş)":""}</td></tr>`;
+    });
+    planHtml+="</tbody></table></div>";
+  });
+  const dG=grupla(D,"bolum");
+  let dokHtml="";
+  Object.keys(dG).sort((a,b)=>a.localeCompare(b,"tr")).forEach(bol=>{
+    const rows=dG[bol].slice().sort((a,b)=>(a.kod||"").localeCompare(b.kod||"","tr"));
+    dokHtml+=`<div class="secH">${esc(bol)} (${rows.length})</div><div class="scroll"><table><thead><tr><th>Kod</th><th>Konu</th><th>Grup</th><th>Yayım Tarihi</th><th>Revizyon Tarihi</th></tr></thead><tbody>`;
+    rows.forEach(r=>{
+      dokHtml+=`<tr><td>${esc(r.kod||"—")}</td><td>${esc(r.konu||"—")}</td><td>${esc(r.grup||"—")}</td><td>${dOnly(r.yayim_tarihi)}</td><td>${dOnly(r.revizyon_tarihi)}</td></tr>`;
+    });
+    dokHtml+="</tbody></table></div>";
+  });
+  const gecSay=P.filter(r=>{ const sd=siradaki(r); return sd&&sd<today; }).length;
+  view.innerHTML=`<div class="stamp">Son güncelleme: ${esc(erpT)} (ERP çekimi) · ${P.length} plan satırı · ${gecSay} gecikmiş</div>
+    <h3 class="sec">Eğitim Planı — Bölüm bazında</h3>
+    <div class="hint">Gerçekleşen eğitim tarihi henüz ERP'de tutulmuyor (Planlanan/Gerçekleşen kolonları boş geliyor) — <b>Sıradaki Eğitim</b> yayım tarihi + periyoda göre hesaplanır; ERP gerçek tamamlanma tarihi girmeye başlayınca buradan otomatik yenilenecektir.</div>
+    ${planHtml}
+    <h3 class="sec">Eğitim Dokümanları — Bölüm bazında (${D.length})</h3>
+    ${dokHtml}`;
 }
 
 /* ---------- ŞANTİYE ONAY (SANTIYE-ONAY) ----------------------------------------
