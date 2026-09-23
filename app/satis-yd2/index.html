@@ -470,7 +470,7 @@ function rowHTML(r,key){
   return '<tr data-i="'+key+'" style="background:'+bgv+'">'+COLS.map(c=>{
       const v=dispVal(r,c), req=c.req?" req":"", empty=(c.req&&!String(v).trim()?" bad":"")+(eksikBos(r,c.f,key)?" eksikbos":"");
       if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="width:'+c.w+'px" title="'+esc(v)+'">'+esc(v)+'</textarea></td>';
-      if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
+      if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; const kilit=c.f==='oncelik'?' disabled title="Öncelik Arbor panosundan (Satış › Öncelik Belirlenmesi Gerekenler) belirlenir"':'';  /* YD-ONCELIK-PANO */ return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+'" data-f="'+c.f+'"'+kilit+' style="width:'+c.w+'px">'+opts+'</select></td>'; }
       let uyari="",ipucu="";
       if(c.f==='teklif_teslim_tarihi'){
         if(terminBos(r)){ uyari=" terminbos"; ipucu=' title="Teklif Bekleniyor — Teklif Teslim Tarihi girilmemiş"'; }
