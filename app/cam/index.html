@@ -22,6 +22,64 @@ table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}th{backg
 html,body{max-width:100vw;overflow-x:hidden}
 table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
 </style></head><body>
+<style>html.arbkilit body>*:not(#arb-gate){display:none!important}</style>
+<script>
+/* ARB-KOD-GIRIS · CAM-KAPI (23.09.2026): Cam Fiyatlandirma yalniz Referans > Kisiler'deki kisilerce (kisisel 6 haneli kod)
+   acilir; oturum cam.form@ (yalniz cam_listesi okur). MB pano oturumu (int@) kapidan gecer. */
+(function(){
+  var U="https://zehysygpqxqmrzangvuc.supabase.co",PK="sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",SK="arbform_cam",MBK="sb-zehysygpqxqmrzangvuc-auth-token",ROL="cam.form@arbor.com.tr";
+  document.documentElement.classList.add("arbkilit");
+  function oku(k){ try{ return JSON.parse(localStorage.getItem(k)||"null"); }catch(e){ return null; } }
+  function yaz(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+  function ac(){ document.documentElement.classList.remove("arbkilit"); var g=document.getElementById("arb-gate"); if(g) g.remove(); }
+  function son(n){ if(n&&!n.expires_at) n.expires_at=Math.floor(Date.now()/1000)+(n.expires_in||3600); return n; }
+  async function tazele(t){
+    if(!t||!t.refresh_token) return null;
+    if(t.access_token&&t.expires_at*1000>Date.now()+60000) return t;
+    try{ var r=await fetch(U+"/auth/v1/token?grant_type=refresh_token",{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",apikey:PK},body:JSON.stringify({refresh_token:t.refresh_token})});
+      if(!r.ok) return null; var n=await r.json(); return n.access_token?son(n):null; }catch(e){ return null; }
+  }
+  async function basla(){
+    var mb=oku(MBK);
+    if(mb&&mb.user&&String(mb.user.email||"").toLowerCase()==="int@arbor.com.tr"&&mb.refresh_token){ ac(); return; }
+    var t0=oku(SK), t=await tazele(t0);
+    if(t&&t.user&&String(t.user.email||"").toLowerCase()===ROL){ if(t!==t0){ yaz(SK,t); if(window.ARB_CAM_CANLI) window.ARB_CAM_CANLI(); } ac(); return; }
+    ui();
+  }
+  function ui(){
+    var d=document.createElement("div"); d.id="arb-gate";
+    d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+    d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:310px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+      +'<div style="font-weight:700;font-size:16px;margin-bottom:3px">Arbor \u2014 Cam Fiyatland\u0131rma</div>'
+      +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:10px">Ki\u015fisel giri\u015f kodunuzu giriniz.</div>'
+      +'<input id="arb-pw" type="password" placeholder="6 haneli giri\u015f kodu" autocomplete="off" inputmode="numeric" maxlength="6" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+      +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giri\u015f</button>'
+      +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px"></div></div>';
+    document.body.appendChild(d);
+    var m=document.getElementById("arb-msg");
+    var go=async function(){
+      var kod=String(document.getElementById("arb-pw").value||"").replace(/\D/g,"");
+      if(kod.length!==6){ m.style.color="#b40000"; m.textContent="Kod 6 haneli olmal\u0131d\u0131r."; return; }
+      m.style.color="#5a6b7d"; m.textContent="Giri\u015f yap\u0131l\u0131yor\u2026";
+      try{
+        var r=await fetch(U+"/functions/v1/form-giris",{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",apikey:PK},body:JSON.stringify({form:"cam/",kod:kod})});
+        var j={}; try{ j=await r.json(); }catch(e){}
+        if(!r.ok||!j.ok||!j.token_hash){ m.style.color="#b40000"; m.textContent=j.hata||"Kod hatal\u0131."; return; }
+        var v=await fetch(U+"/auth/v1/verify",{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",apikey:PK},body:JSON.stringify({type:"magiclink",token_hash:j.token_hash})});
+        var s=await v.json();
+        if(!v.ok||!s.access_token){ m.style.color="#b40000"; m.textContent="Giri\u015f a\u00e7\u0131lamad\u0131."; return; }
+        yaz(SK,son(s)); try{ localStorage.setItem("arb_kisi_cam/",JSON.stringify({kod:j.kisi,ad:j.ad,rol:j.rol})); }catch(e){}
+        location.reload();
+      }catch(e){ m.style.color="#b40000"; m.textContent="Ba\u011flant\u0131 hatas\u0131."; }
+    };
+    document.getElementById("arb-go").onclick=go;
+    document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+    setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",basla); else basla();
+})();
+</script>
+
 <header><h1>Cam Fiyatlandırma</h1></header>
 <div class="wrap"><div class="grid">
 <div class="card">
@@ -141,9 +199,9 @@ const KAT=2.5; /* CAM-V8 KAT: birim fiyat = model x 2,5 */
 const M=DB.coef,G=DB.groups;
 const buildCat=rows=>rows.map(CAMF.catRow).filter(x=>x);
 let CAT=buildCat(LISTE_SNAP);
-(async function(){try{
+(window.ARB_CAM_CANLI=async function(){try{
   const U="https://zehysygpqxqmrzangvuc.supabase.co",PK="sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc";
-  for(const sk of ["arbform_camlistesi","sb-zehysygpqxqmrzangvuc-auth-token"]){
+  for(const sk of ["arbform_cam","arbform_camlistesi","sb-zehysygpqxqmrzangvuc-auth-token"]){
     let t=null;try{t=JSON.parse(localStorage.getItem(sk)||"null");}catch(e){}
     if(!t||!t.access_token||!(t.expires_at*1000>Date.now()+30000))continue;
     const r=await fetch(U+"/rest/v1/cam_listesi?select=sira,kombinasyon,ug,tl,rw,ctr,rw_ctr,sf,kalinlik,satis_eur&order=sira",{headers:{apikey:PK,Authorization:"Bearer "+t.access_token},cache:"no-store"});
@@ -308,6 +366,7 @@ calc();
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
 
 
 <!-- ARBOR-DRAGSCROLL -->
