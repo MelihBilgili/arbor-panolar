@@ -1336,9 +1336,10 @@ async function loadRef(){
     sb.from("pano_yayin").select("anahtar,yayin_at"),
     sb.from("form_takip").select("form_key,gunc_sikligi,son_guncelleme"),
     sb.from("mk_ay_islendi").select("*").order("id",{ascending:false}).limit(1),
-    sb.from("form_erisim").select("yol,ad,sira,kisiler,herkes")
+    sb.from("form_erisim").select("yol,ad,sira,kisiler,herkes"),
+    sb.from("fiyat_mail_alici").select("ad,email,aktif").eq("aktif",true)   /* MAIL-BILDIRIM-KONU */
   ]);
-  const [k,ks,mp,ayR,ntR,pyR,ftR,mkaR,feR]=_refR;
+  const [k,ks,mp,ayR,ntR,pyR,ftR,mkaR,feR,fmaR]=_refR;
   const err=k.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
   const D=r=>(r&&!r.error)?(r.data||[]):[];
@@ -1379,6 +1380,13 @@ async function loadRef(){
       const ad=r.ad||key, title=ad+" — Son tarih: "+fdt(due)+" · Son güncelleme: "+fdt(son)+" · Geciken: "+g+" iş günü";
       (r.kisiler||[]).forEach(kd=>{ (KF[kd]=KF[kd]||[]).push({ad,ok:g===0,title}); });
     }); }catch(e){}
+  /* ---- MAIL-BILDIRIM-KONU (23.09.2026, Melih): bilgilendirme maili alıcıları → kod → [konu].
+     Kaynak = her bildirimin alıcı tablosu (canlı); eşleşme e-posta ya da ad ile. Yeni bildirim türü → BLD_KAYNAK'a ekle. ---- */
+  const BLD={};
+  try{ const nrm=x=>String(x||"").trim().toLocaleLowerCase("tr");
+    const BLD_KAYNAK=[{konu:"Ürün Fiyatlandırma", rows:D(fmaR)}];
+    BLD_KAYNAK.forEach(b=>b.rows.forEach(a=>{ const e=nrm(a.email), n=nrm(a.ad);
+      D(k).forEach(r=>{ if((e&&nrm(r.email)===e)||(n&&nrm(r.tam_ad)===n)){ const L=(BLD[r.kod]=BLD[r.kod]||[]); if(!L.includes(b.konu)) L.push(b.konu); } }); })); }catch(e){}
   /* ---- satırlar: kisiler (kod sırası) + bağsız maas_prim ---- */
   const byKod={}; MP.forEach(m=>{ if(m.kisi_kod) byKod[m.kisi_kod]=m; });
   const KOD_SET=new Set(D(k).map(r=>r.kod));
@@ -1413,10 +1421,10 @@ async function loadRef(){
     Object.keys(AVMAP).forEach(id=>Object.keys(AVMAP[id]||{}).forEach(x=>avset.add(x))); avset.delete(CM);
     [...avset].sort((a,b)=>{ const A=a.split("-"),B=b.split("-"); return (+B[0]-+A[0])||(+B[1]-+A[1]); })
       .forEach(x=>{ const p=x.split("-"); C.push({t:"av", f:"avn:"+x, l:["Avans",AYAD[(+p[1])-1]+" "+p[0],"(geçmiş ay)"], hid:1}); }); }
-  C.push({t:"frm", l:["Aylık","Güncellenecek","Formlar"]}, {t:"m", f:"prim_notu", l:["Prim","Notları"], ty:"t", cls:"pnot"}, {t:"del", l:[]});
+  C.push({t:"frm", l:["Aylık","Güncellenecek","Formlar"]}, {t:"bld", l:["Mail","Bildirim","Konusu"], tt:"Değişiklik bildirim maili alıcısı olduğu konular (canlı: alıcı tabloları)"}, {t:"m", f:"prim_notu", l:["Prim","Notları"], ty:"t", cls:"pnot"}, {t:"del", l:[]});
   const HIDE=c=>(c.hid&&!PRS_OPEN)?' style="display:none"':"";
   const NUMC=c=>(c.t==="m"&&(c.ty==="n"||c.ty==="d"))||c.t==="ay"||c.t==="avg"||c.t==="kidem";
-  const th=C.map(c=>`<th class="${c.cls&&c.cls!=="pnot"?c.cls+" ":""}${NUMC(c)?"num ":""}${c.t==="avg"?"pavg ":""}${c.hid?"phid ":""}${c.t==="frm"?"pfrm ":""}"${c.tt?` title="${esc(c.tt)}"`:""}${HIDE(c)}>${c.l.length?c.l.map(esc).join("<br>"):"&nbsp;"}</th>`).join("");
+  const th=C.map(c=>`<th class="${c.cls&&c.cls!=="pnot"?c.cls+" ":""}${NUMC(c)?"num ":""}${c.t==="avg"?"pavg ":""}${c.hid?"phid ":""}${c.t==="frm"?"pfrm ":""}${c.t==="bld"?"pbld ":""}"${c.tt?` title="${esc(c.tt)}"`:""}${HIDE(c)}>${c.l.length?c.l.map(esc).join("<br>"):"&nbsp;"}</th>`).join("");
   const kc=(kod,f,v,cls)=>`<td${cls?` class="${cls}" title="${esc(v||"")}"`:""}><span class="ed kicell" data-kod="${esc(kod)}" data-f="${f}">${v?esc(v):'—'}</span></td>`;
   const cell=(R,c)=>{
     const m=R.m, mid=m?m.id:"", hide=HIDE(c), dk=`data-mid="${esc(mid)}" data-kod="${esc(R.kod||"")}"`;
@@ -1426,6 +1434,7 @@ async function loadRef(){
     if(c.t==="kidem") return `<td class="num">${m?txt(kidemOf(m)):dash}</td>`;
     if(c.t==="avg") return `<td class="num pavg">${m?fmtN(avgOf(m.id)):dash}</td>`;
     if(c.t==="frm"){ const L=R.kod?KF[R.kod]:null; return `<td class="pfrm">${(L&&L.length)?L.map(f=>'<span class="frm'+(f.ok?" ok":" yok")+'" title="'+esc(f.title)+'">'+esc(f.ad)+'</span>').join(" · "):dash}</td>`; }
+    if(c.t==="bld"){ const L=R.kod?BLD[R.kod]:null; return `<td class="pbld">${(L&&L.length)?L.map(esc).join(" · "):dash}</td>`; }   /* MAIL-BILDIRIM-KONU */
     if(c.t==="del") return `<td><button class="kdel pdel" ${dk} title="Sil">✕</button></td>`;
     if(c.t==="ay"){ const v=m?AY[m.id+"|"+c.f.slice(3)]:null; return `<td class="num ped${c.hid?" phid":""}" data-k="${c.f}" ${dk}${hide}>${fmtN(v)}</td>`; }
     if(c.t==="av"){ const note=m?((AVMAP[m.id]||{})[c.f.slice(4)]||""):""; return `<td class="ped pav" data-k="${c.f}" ${dk}${hide}>${note?esc(note):dash}</td>`; }
@@ -1453,6 +1462,7 @@ async function loadRef(){
      .kitbl th.pavg{background:#0f4a74;cursor:pointer;user-select:none} .kitbl td.pavg{background:#f3f7fb;font-weight:600;color:#16324f}
      .kitbl th.phid{background:#245b85} .kitbl td.phid{background:#f7fafd}
      .kitbl th.pfrm{background:#334e68} .kitbl td.pfrm{white-space:normal;font-size:10.5px;line-height:14px;max-width:14ch}
+     .kitbl th.pbld{background:#334e68} .kitbl td.pbld{white-space:normal;font-size:10.5px;line-height:14px;max-width:14ch} /* MAIL-BILDIRIM-KONU */
      .kitbl .frm.ok{color:#1c2733;font-weight:600} .kitbl .frm.yok{color:#b40000;font-weight:600}
      .kitbl td.pnot{white-space:normal;font-size:10.5px;line-height:13px;min-width:29.5ch;max-width:37.5ch} /* MAASPRIM-SATIR-NOT · PERSONEL-ED %33 dar */
      /* PERSONEL-ED · PERSONEL-GEN2 (23.09.2026): Kod %80, Ad %20, E-posta %50 daha dar; ekleme satırı input'ları sütunu genişletmez */
