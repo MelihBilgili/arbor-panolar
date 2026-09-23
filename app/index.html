@@ -692,6 +692,18 @@ async function soBlockHtml(){
 }
 
 /* ---------- SATIŞ (Yurt İçi=satis_yorum/SO · Yurt Dışı 1/2=satis_yd_akis) — birleşik ---------- */
+/* YD-ONCELIK-PANO (2026-09-23, Melih): öncelik artık panodan seçilir — "Öncelik Belirlenmesi Gerekenler"
+   bloklarında seçim kutusu; satis_yd_akis.oncelik yazılır ve durum "Teklif Bekleniyor" olur (formdaki
+   computeAutoTier ile aynı: 1-6 + 8-11 + Öncelik dolu → Teklif Bekleniyor). YD1/YD2 formlarında Öncelik salt-okur. */
+if(!window.__ydOncBound){ window.__ydOncBound=true;
+  document.addEventListener('change',async e=>{
+    const el=e.target; if(!el||!el.classList||!el.classList.contains('ydonc')) return;
+    const v=el.value; if(!v) return; el.disabled=true;
+    const {error}=await sb.from("satis_yd_akis").update({oncelik:Number(v),durum:"Teklif Bekleniyor"}).eq("id",Number(el.dataset.id)).eq("durum","Teklif İncelendi");
+    if(error){ el.disabled=false; alert("Öncelik kaydedilemedi: "+error.message); return; }
+    const y=window.scrollY; await loadSatis(); window.scrollTo(0,y);
+  });
+}
 async function loadSatis(){
   const view=document.getElementById("view");
   const [sy,yd,base]=await Promise.all([
@@ -737,6 +749,7 @@ async function loadSatis(){
     .satis-wrap table.aup tbody td:nth-child(8),.satis-wrap table.aup tbody td:nth-child(10){border-left:2px solid #dbe5ef}
     .satis-wrap table.aup td.t-durum>.cx{width:9.1ch}
     .satis-wrap td.gecgun{color:#b23a2e;font-weight:700}
+    .satis-wrap td.oncsec{padding:1px 6px;background:#ffd9d9}.satis-wrap select.ydonc{font-size:12px;padding:1px 4px;border:1px solid #d9534f;border-radius:4px;background:#fff;cursor:pointer}
     .satis-wrap td.eksikbos{background:#ffd9d9 !important;box-shadow:inset 0 0 0 1px #d9534f}
     table.ssum td.sdlist{vertical-align:top;padding:2px 6px 6px}
     .sdi{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0;border-bottom:1px solid #eef1f4}
@@ -785,6 +798,7 @@ function pipeGenTbl(title, rows, cols){
   const body=rows.map(r=>'<tr>'+cols.map(c=>{
     const v=c.get?c.get(r):(r[c.f]==null?'':r[c.f]);
     const cls=[c.wcls,c.cls?c.cls(r):''].filter(Boolean).join(' ');
+    if(c.html) return `<td class="${cls}">${c.html(r)}</td>`;  /* YD-ONCELIK-PANO: ham HTML hücre */
     return `<td class="${cls}"><div class="cx" title="${esc(String(v))}">${esc(String(v))}</div></td>`;
   }).join('')+'</tr>').join('');
   const head=cols.map(c=>`<th class="${c.wcls||''}"><span class="cw">${esc(c.h)}</span></th>`).join('');
@@ -844,7 +858,7 @@ function pipelineTables(ydRows, today){
   const C1E=[].concat(C1.slice(0,2),[{h:'Müşteri Önem Sınıfı',f:'musteri_onem_sinifi'}],C1.slice(2)).map(c=>{ const f=c.f||({'Gelen Tarih':'gelen_tarih','İstenen Tarih':'istenen_tarih'})[c.h];
     return EKSIK_F.includes(f)?Object.assign({},c,{cls:r=>(!r.durum&&(r[f]==null||String(r[f]).trim()===''))?'eksikbos':''}):c; });
   return two('Eksik Kaydedilmiş Teklif Talepleri',eksik,C1E)
-    +two('Öncelik Belirlenmesi Gerekenler',oncelik,C1)
+    +two('Öncelik Belirlenmesi Gerekenler',oncelik,C1.concat([{h:'Öncelik',wcls:'oncsec',html:r=>`<select class="ydonc" data-id="${r.id}" title="Öncelik seç — forma yazılır, satır Teklif Hazırlığında'ya geçer"><option value=""></option>${['1','2','3'].map(o=>`<option${String(r.oncelik||'')===o?' selected':''}>${o}</option>`).join('')}</select>`}]))
     +two('Teklif Hazırlığında',hazirlik,C2)
     +two('Takiptekiler',takiptekiler,C4);
 }
