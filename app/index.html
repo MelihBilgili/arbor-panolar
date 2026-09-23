@@ -1680,7 +1680,7 @@ async function loadFormlar(){
   try{ const [fe,kk]=await Promise.all([sb.from("form_erisim").select("yol,kisiler,herkes"),sb.from("kisiler").select("kod,tam_ad")]);
     if(!fe.error&&fe.data&&fe.data.length){ const KAD={}; ((kk&&!kk.error)?(kk.data||[]):[]).forEach(r=>KAD[r.kod]=r.tam_ad);
       const FE={}; fe.data.forEach(r=>FE[r.yol]=r);
-      forms.forEach(f=>{ const r=FE[f.url]; if(!r) return;
+      forms.forEach(f=>{ const r=FE[f.url]; if(!r) return; f._fe=1;
         if(r.herkes){ f.who="Herkes"; f.tam="Referans'taki tüm kişiler (kişisel kodla)"; }
         else { f.who=(r.kisiler||[]).join(" · "); f.tam=(r.kisiler||[]).map(x=>KAD[x]||x).join(" · "); } }); } }catch(e){}
   /* FORMLAR-260921: Teklif Talepleri + eski fy/fy2 formları yayından kaldırıldı */
@@ -1764,7 +1764,7 @@ async function loadFormlar(){
           if(!e||(b&&new Date(b)>=new Date(e.at))) return "";
           const d=new Date(e.at), tt="Güncelleme DURDURULDU: "+d.toLocaleString("tr-TR")+"\n\n"+e.mesaj;
           return ` <b style="color:#b40000" title="${esc(tt)}">⚠ durduruldu ${fdate(e.at)}</b>`; })()}</div></td>`
-      +`<td title="${esc(f.tam||f.who)}"><div class="cx">${esc(f.who)}</div></td>`  /* FORM-KISALTMA: yalnız kişi kısaltması, tam ad hover */
+      +`<td title="${esc(f.tam||f.who)}${f._fe?" — düzenlemek için tıklayınız":""}"${f._fe?` class="feed" data-yol="${esc(f.url)}"`:""}><div class="cx">${esc(f.who)}</div></td>`  /* FORM-KISALTMA: yalnız kişi kısaltması, tam ad hover */
       +`<td><div class="cx">${esc(sik)}</div></td>`
       +`<td class="num"><div class="cx">${BTN_AT[f.url]?fdate(BTN_AT[f.url]):'<span class="muted">—</span>'}</div></td>`
       +`<td class="num"><div class="cx">${gc}</div></td>`
@@ -1778,6 +1778,7 @@ async function loadFormlar(){
     table.frm col.f30{width:22ch}table.frm col.f10{width:16ch}table.frm col.f20{width:12ch}table.frm col.f8{width:8ch}table.frm col.f12{width:12ch}table.frm col.fm{width:19ch}table.frm col.fb{width:12ch}
     table.frm td.num,table.frm th.num{text-align:right}
     table.frm td.fmailc{white-space:nowrap;padding:2px 8px}
+    table.frm td.feed{cursor:pointer}table.frm td.feed:hover{background:#f4f8fc}table.frm td.feed input{font-size:12px;padding:1px 4px} /* FORM-ERISIM-ED */
     table.frm button.fmail{font-size:11px;padding:1px 7px;border:1px solid #8a6100;background:#fff7e6;color:#7a5400;border-radius:5px;cursor:pointer}
     table.frm button.fmail:hover{background:#8a6100;color:#fff}
     table.frm button.freset{font-size:11px;padding:1px 6px;border:1px solid #cdd6df;background:#fff;color:#2e7d54;border-radius:5px;cursor:pointer}
@@ -1796,6 +1797,40 @@ async function loadFormlar(){
   <tbody>${body}</tbody></table></div>`;
   view.querySelectorAll(".fmail").forEach(b=>b.onclick=()=>formMail(b.dataset.fk,b));
   view.querySelectorAll(".freset").forEach(b=>b.onclick=()=>formReset(b.dataset.fk));
+  view.querySelectorAll("td.feed").forEach(td=>td.onclick=()=>formErisimEdit(td)); /* FORM-ERISIM-ED */
+}
+/* FORM-ERISIM-ED (23.09.2026, Melih): Formlar > Kullanıcı hücresi düzenlenebilir → form_erisim.kisiler / herkes
+   (form-giris yetkisinin tek kaynağı). Giriş: kişi kodları (boşluk, virgül veya · ile) ya da "Herkes".
+   Kodlar Referans > Kişiler'de olmalı. Listeye eklenen yeni kişi formun varsayılan rolüyle girer (rol_map'te yoksa). */
+async function formErisimEdit(td){
+  if(td.querySelector("input")) return;
+  const yol=td.dataset.yol, cx=td.querySelector(".cx"), cur=cx.textContent.trim();
+  const inp=document.createElement("input"); inp.className="cell"; inp.value=cur; inp.style.width="100%";
+  cx.textContent=""; cx.appendChild(inp); inp.focus(); inp.select();
+  let bitti=false;
+  const geri=()=>{ cx.textContent=cur; };
+  const kaydet=async()=>{
+    if(bitti) return; bitti=true;
+    const val=inp.value.trim();
+    if(val===cur){ geri(); return; }
+    let rec;
+    if(/^herkes$/i.test(val)) rec={herkes:true,kisiler:[]};
+    else {
+      const kodlar=[...new Set(val.split(/[\s,;·]+/).map(x=>x.trim().toLocaleUpperCase("tr-TR")).filter(Boolean))];
+      if(!kodlar.length){ alert("En az bir kişi kodu ya da Herkes yazınız."); geri(); return; }
+      const {data,error}=await sb.from("kisiler").select("kod").in("kod",kodlar);
+      if(error){ alert(error.message); geri(); return; }
+      const vr=new Set((data||[]).map(r=>r.kod)), yok=kodlar.filter(k=>!vr.has(k));
+      if(yok.length){ alert("Referans > Kişiler'de olmayan kod: "+yok.join(", ")); geri(); return; }
+      rec={herkes:false,kisiler:kodlar};
+    }
+    rec.updated_at=new Date().toISOString();
+    const {error}=await sb.from("form_erisim").update(rec).eq("yol",yol);
+    if(error){ alert(error.message); geri(); return; }
+    loadFormlar();
+  };
+  inp.onblur=kaydet;
+  inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } if(e.key==="Escape"){ bitti=true; geri(); } };
 }
 /* ---------- Ortak: tek pano_ozel bölümünü hedef elemana render et (bölüm-RLS; anon 401) ---------- */
 /* ---------- AHŞAP — Timber 72x86: ahsap_alim'den derlenir (ürün bazında CBM-ağırlıklı € ortalama).
