@@ -298,10 +298,10 @@ async function loadPerms(){
 }
 
 /* ---------- APP SHELL ---------- */
-const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_maasprim","mali_mkprim"];
-const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_maasprim","mali_mkprim"];
+const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_mkprim"]; /* MAASPRIM-PERSONEL: mali_maasprim kaldırıldı (→ Personel) */
+const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_mkprim"];
 /* ÖB Faaliyet artık Mali grubunun içinde (MK Faaliyet'in yanında) */
-const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["santiye","Şantiye Onay"],["satis","Satış"],["ref","Referans"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
+const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["santiye","Şantiye Onay"],["satis","Satış"],["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
 const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
 function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b))||a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
 function renderApp(){
@@ -1317,27 +1317,147 @@ async function loadIcmal(tgt){
 }
 
 /* ---------- REFERANS (kisiler / parametreler + işleyiş; ödemeler Maaş-Prim'e taşındı) ---------- */
+/* MAASPRIM-PERSONEL (23.09.2026, Melih): "Referans" sekmesi → "Personel". Eski Maaş-Prim panosunun (pano_ozel_html
+   mali_maasprim, kaldırıldı) TÜM bilgileri burada, kişi başına tek satır: kisiler (Kod·Ad·Bölüm·E-posta·Rol·Şifre) +
+   maas_prim (bağ: maas_prim.kisi_kod → kisiler.kod) + maas_prim_ay (aylık prim) + maas_prim_not (yalnız AVANS_JSON) +
+   Aylık Güncellenecek Formlar (MAASPRIM-FORMLAR-CANLI: form_erisim/form_takip, Formlar panosu Geciken ölçütü) +
+   Prim Notları (maas_prim.prim_notu). Kodsuz maas_prim satırları (kisiler'de olmayan) listenin sonunda "—" kodla.
+   Ekleme satırı en üstte (REF-SADE sonrası). Maaş verisi yalnız int@ (RLS arb_rw). */
+let PRS_OPEN=false;
 async function loadRef(){
   const view=document.getElementById("view");
+  const AYAD=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
   const _refR=await Promise.all([
     sb.from("kisiler").select("*").order("kod"),
-    sb.from("parametreler").select("*").order("anahtar"),
-    sb.from("kisi_sifre").select("kod,sifre")   /* KISI-SIFRE (KOD-GIRIS 23.09.2026) */
+    sb.from("kisi_sifre").select("kod,sifre"),   /* KISI-SIFRE (KOD-GIRIS 23.09.2026) */
+    sb.from("maas_prim").select("*"),
+    sb.from("maas_prim_ay").select("kisi_id,yil,ay,tutar"),
+    sb.from("maas_prim_not").select("metin").eq("id",1),
+    sb.from("pano_yayin").select("anahtar,yayin_at"),
+    sb.from("form_takip").select("form_key,gunc_sikligi,son_guncelleme"),
+    sb.from("mk_ay_islendi").select("*").order("id",{ascending:false}).limit(1),
+    sb.from("form_erisim").select("yol,ad,sira,kisiler,herkes")
   ]);
-  const [k,p,ks]=_refR;
-  const err=k.error||p.error;
+  const [k,ks,mp,ayR,ntR,pyR,ftR,mkaR,feR]=_refR;
+  const err=k.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
+  const D=r=>(r&&!r.error)?(r.data||[]):[];
+  const SIF={}; D(ks).forEach(r=>SIF[r.kod]=r.sifre);
+  const MP=D(mp), AY={}; D(ayR).forEach(x=>{ AY[x.kisi_id+"|"+x.yil+"-"+x.ay]=x.tutar; });
+  /* avans notları maas_prim_not.metin içindeki AVANS_JSON'da (kisi_id → {"YYYY-M": not}) */
+  const AV_MARK="\n<!--AVANS_JSON:", AV_END="-->";
+  let NOTE_H="", AVMAP={};
+  { const metin=String((D(ntR)[0]||{}).metin||""); const i=metin.indexOf(AV_MARK);
+    if(i<0) NOTE_H=metin; else { NOTE_H=metin.slice(0,i); let js=metin.slice(i+AV_MARK.length); const j=js.lastIndexOf(AV_END); if(j>=0) js=js.slice(0,j); try{ AVMAP=JSON.parse(js)||{}; }catch(e){ AVMAP={}; } } }
+  /* ---- aylar: ana prim sütunu = bir önceki ay; cari ay avans daima görünür ---- */
+  const _n=new Date(); let PM=_n.getMonth(), PY=_n.getFullYear(); if(PM===0){PM=12;PY--;}
+  const CMm=_n.getMonth()+1, CMy=_n.getFullYear();
+  const back=(y,m,n)=>{ let mm=m-n, yy=y; while(mm<=0){mm+=12;yy--;} return {y:yy,m:mm}; };
+  const PREV12=[]; for(let i=1;i<=12;i++) PREV12.push(back(PY,PM,i));
+  const mkey=(y,m)=>y+"-"+m, CM=mkey(CMy,CMm);
+  /* ---- MAASPRIM-FORMLAR-CANLI: kod → [{ad,ok,title}] (FRM_FK = loadFormlar FK ile aynı) ---- */
+  const FRM_FK={"sel-arb/":"sel_arb_form","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","ahsap/":"ahsap",
+    "santiye-yi/":"santiye_yi","santiye-yd1-1/":"santiye_yd1_1","santiye-yd1-2/":"santiye_yd1_2","santiye-yd1-3/":"santiye_yd1_3",
+    "santiye-yd1-4/":"santiye_yd1_4","santiye-yd2-1/":"santiye_yd2_1","santiye-yd2-2/":"santiye_yd2_2"};
+  const p2=n=>(n<10?"0":"")+n;
+  const t0=new Date(); t0.setHours(0,0,0,0);
+  const frmD=s=>{ if(!s) return null; const p=String(s).slice(0,10).split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
+  const isIsG=d=>{ const w=d.getDay(); return w!==0&&w!==6; };
+  const frmSon=sik=>{ if(/sal[ıi]/i.test(sik)){ const d=new Date(t0); d.setDate(d.getDate()-((d.getDay()-2+7)%7)); return d; }
+    if(/ay/i.test(sik)){ const d=new Date(t0.getFullYear(),t0.getMonth(),1); while(!isIsG(d)) d.setDate(d.getDate()+1); return d; } return null; };
+  const fdt=d=>d?p2(d.getDate())+"."+p2(d.getMonth()+1)+"."+String(d.getFullYear()).slice(2):"—";
+  const KF={};
+  try{ const ftBy={}; D(ftR).forEach(r=>ftBy[r.form_key]=r); const pyBy={}; D(pyR).forEach(r=>pyBy[r.anahtar]=r.yayin_at);
+    const mk0=D(mkaR)[0]; const mkAt=mk0?(mk0.updated_at||mk0.created_at||null):null;
+    D(feR).slice().sort((a,b)=>(a.sira||0)-(b.sira||0)).forEach(r=>{
+      const key=FRM_FK[r.yol]; if(!key||r.herkes) return;
+      const t=ftBy[key]; const sik=t?(t.gunc_sikligi||""):""; if(!/ay/i.test(sik)) return;
+      const canli= key==="mk_prim"?mkAt : key==="onur_sevk"?pyBy.oe_sevk : pyBy[key];
+      const a=frmD(t.son_guncelleme), b=frmD(canli), son=(a&&b)?(a>b?a:b):(a||b);
+      const due=frmSon(sik); let g=0;
+      if(due&&!(son&&son>=due)){ const d=new Date(due); while(d<t0){ d.setDate(d.getDate()+1); if(isIsG(d)) g++; } }
+      const ad=r.ad||key, title=ad+" — Son tarih: "+fdt(due)+" · Son güncelleme: "+fdt(son)+" · Geciken: "+g+" iş günü";
+      (r.kisiler||[]).forEach(kd=>{ (KF[kd]=KF[kd]||[]).push({ad,ok:g===0,title}); });
+    }); }catch(e){}
+  /* ---- satırlar: kisiler (kod sırası) + bağsız maas_prim ---- */
+  const byKod={}; MP.forEach(m=>{ if(m.kisi_kod) byKod[m.kisi_kod]=m; });
+  const KOD_SET=new Set(D(k).map(r=>r.kod));
+  const ROWS=D(k).map(r=>({kod:r.kod,k:r,m:byKod[r.kod]||null}))
+    .concat(MP.filter(m=>!m.kisi_kod||!KOD_SET.has(m.kisi_kod)).sort((a,b)=>String(a.kisi||"").localeCompare(String(b.kisi||""),"tr")).map(m=>({kod:null,k:null,m})));
+  /* ---- biçim yardımcıları ---- */
+  const dash='<span class="muted">—</span>';
+  const fmtN=v=>(v===null||v===undefined||v==="")?dash:Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const txt=v=>(v===null||v===undefined||v==="")?dash:esc(v);
+  const dparse=s=>{ if(!s) return null; const p=String(s).trim().split(/[.\/\-]/); if(p.length<3) return null;
+    let d=+p[0], m=+p[1], y=+p[2]; if(isNaN(d)||isNaN(m)||isNaN(y)) return null; if(y<100) y+=(y>70?1900:2000);
+    const dt=new Date(y,m-1,d); return isNaN(dt)?null:dt; };
+  const dshow=s=>{ const dt=dparse(s); return dt?p2(dt.getDate())+"."+p2(dt.getMonth()+1)+"."+String(dt.getFullYear()).slice(2):null; };
+  const kidemOf=m=>{ const dt=dparse(m.ise_giris); if(!dt) return (m.kidem==null||m.kidem==="")?null:String(m.kidem);
+    const y=(Date.now()-dt.getTime())/(365.25*24*3600*1000); return (y<0?0:y).toLocaleString('tr-TR',{minimumFractionDigits:1,maximumFractionDigits:1}); };
+  const avgOf=id=>{ let s=0,n=0; PREV12.forEach(p=>{ const v=AY[id+"|"+mkey(p.y,p.m)]; if(v!=null&&v!==""){ s+=Number(v); n++; } }); return n?Math.round(s/n):null; };
+  /* ---- sütunlar (MAASPRIM-BASLIK3: başlık en çok 3 satır) ---- */
+  const aylbl=(y,m)=>[AYAD[m-1]+" "+y,"Yol-Yemek Dahil","Prim (TL)"];
+  const C=[
+    {t:"kod", l:["Kod"]}, {t:"ki", f:"tam_ad", l:["Ad Soyad"]}, {t:"ki", f:"bolum", l:["Bölüm"]}, {t:"ki", f:"email", l:["E-posta"]},
+    {t:"ki", f:"rol", l:["Rol"]}, {t:"ki", f:"sifre", l:["Şifre"], tt:"Form giriş kodu — 6 hane, benzersiz"},
+    {t:"m", f:"ise_giris", l:["İşe","Giriş"], ty:"d"}, {t:"m", f:"tahsil", l:["Tahsil","(yıl)"], ty:"t"}, {t:"kidem", l:["Kıdem","(yıl)"]},
+    {t:"m", f:"yol_yemek", l:["Yol-Yemek","(TL)"], ty:"n"}, {t:"m", f:"son_artis", l:["Son Artış","(%)"], ty:"t"},
+    {t:"m", f:"cari_yil_maas", l:["Cari Yıl","Maaş (TL)"], ty:"n"}, {t:"m", f:"gecen_yil_maas", l:["Geçen Yıl","Maaş (TL)"], ty:"n"},
+    {t:"ay", f:"ay:"+mkey(PY,PM), l:aylbl(PY,PM)},
+    {t:"avg", l:["Son 12 Ay Ort.","Yol-Yemek Dahil","Prim (TL) "+(PRS_OPEN?"◂":"▸")]},
+    {t:"av", f:"avn:"+CM, l:["Avans",AYAD[CMm-1]+" "+CMy]}
+  ];
+  PREV12.forEach(p=>C.push({t:"ay", f:"ay:"+mkey(p.y,p.m), l:aylbl(p.y,p.m), hid:1}));
+  { const avset=new Set(); avset.add(mkey(PY,PM)); PREV12.forEach(p=>avset.add(mkey(p.y,p.m)));
+    Object.keys(AVMAP).forEach(id=>Object.keys(AVMAP[id]||{}).forEach(x=>avset.add(x))); avset.delete(CM);
+    [...avset].sort((a,b)=>{ const A=a.split("-"),B=b.split("-"); return (+B[0]-+A[0])||(+B[1]-+A[1]); })
+      .forEach(x=>{ const p=x.split("-"); C.push({t:"av", f:"avn:"+x, l:["Avans",AYAD[(+p[1])-1]+" "+p[0],"(geçmiş ay)"], hid:1}); }); }
+  C.push({t:"frm", l:["Aylık","Güncellenecek","Formlar"]}, {t:"m", f:"prim_notu", l:["Prim","Notları"], ty:"t", cls:"pnot"}, {t:"del", l:[]});
+  const HIDE=c=>(c.hid&&!PRS_OPEN)?' style="display:none"':"";
+  const NUMC=c=>(c.t==="m"&&(c.ty==="n"||c.ty==="d"))||c.t==="ay"||c.t==="avg"||c.t==="kidem";
+  const th=C.map(c=>`<th class="${NUMC(c)?"num ":""}${c.t==="avg"?"pavg ":""}${c.hid?"phid ":""}${c.t==="frm"?"pfrm ":""}"${c.tt?` title="${esc(c.tt)}"`:""}${HIDE(c)}>${c.l.length?c.l.map(esc).join("<br>"):"&nbsp;"}</th>`).join("");
   const kc=(kod,f,v)=>`<td><span class="ed kicell" data-kod="${esc(kod)}" data-f="${f}">${v?esc(v):'—'}</span></td>`;
-  const SIF={}; ((ks&&!ks.error)?(ks.data||[]):[]).forEach(r=>SIF[r.kod]=r.sifre);
-  let kr=""; (k.data||[]).forEach(r=>{ kr+=`<tr data-kod="${esc(r.kod)}"><td class="kod" title="Kod değiştirilemez">${esc(r.kod)}</td>`+kc(r.kod,"tam_ad",r.tam_ad)+kc(r.kod,"bolum",r.bolum)+kc(r.kod,"email",r.email)+kc(r.kod,"rol",r.rol)+`<td><button class="kdel" data-kod="${esc(r.kod)}" title="Sil">✕</button></td>`+kc(r.kod,"sifre",SIF[r.kod])+`</tr>`; });
-  let pr=""; (p.data||[]).forEach(r=>{ pr+=`<tr><td class="kod">${esc(r.anahtar)}</td><td>${esc(typeof r.deger==='string'?r.deger:JSON.stringify(r.deger))}</td><td>${esc(r.aciklama)}</td></tr>`; });
+  const cell=(R,c)=>{
+    const m=R.m, mid=m?m.id:"", hide=HIDE(c), dk=`data-mid="${esc(mid)}" data-kod="${esc(R.kod||"")}"`;
+    if(c.t==="kod") return R.kod?`<td class="kod" title="Kod değiştirilemez">${esc(R.kod)}</td>`:`<td class="kod muted" title="Kişiler listesinde yok (kodsuz maaş-prim kaydı)">—</td>`;
+    if(c.t==="ki"){ if(R.kod) return kc(R.kod,c.f,c.f==="sifre"?SIF[R.kod]:R.k[c.f]);
+      if(c.f==="tam_ad") return `<td class="ped" data-k="kisi" ${dk}>${txt(m.kisi)}</td>`; return `<td>${dash}</td>`; }
+    if(c.t==="kidem") return `<td class="num">${m?txt(kidemOf(m)):dash}</td>`;
+    if(c.t==="avg") return `<td class="num pavg">${m?fmtN(avgOf(m.id)):dash}</td>`;
+    if(c.t==="frm"){ const L=R.kod?KF[R.kod]:null; return `<td class="pfrm">${(L&&L.length)?L.map(f=>'<span class="frm'+(f.ok?" ok":" yok")+'" title="'+esc(f.title)+'">'+esc(f.ad)+'</span>').join(" · "):dash}</td>`; }
+    if(c.t==="del") return `<td><button class="kdel pdel" ${dk} title="Sil">✕</button></td>`;
+    if(c.t==="ay"){ const v=m?AY[m.id+"|"+c.f.slice(3)]:null; return `<td class="num ped${c.hid?" phid":""}" data-k="${c.f}" ${dk}${hide}>${fmtN(v)}</td>`; }
+    if(c.t==="av"){ const note=m?((AVMAP[m.id]||{})[c.f.slice(4)]||""):""; return `<td class="ped pav" data-k="${c.f}" ${dk}${hide}>${note?esc(note):dash}</td>`; }
+    /* t==="m" */
+    const v=m?m[c.f]:null;
+    if(c.ty==="d") return `<td class="num ped" data-k="${c.f}" ${dk}>${txt(dshow(v))}</td>`;
+    if(c.ty==="n") return `<td class="num ped" data-k="${c.f}" ${dk}>${fmtN(v)}</td>`;
+    return `<td class="ped${c.cls?" "+c.cls:""}" data-k="${c.f}" ${dk}>${txt(v)}</td>`;
+  };
+  const addRow=`<tr class="kaddrow">`+C.map(c=>{
+    if(c.t==="kod") return `<td><input id="ki-kod" class="cell" placeholder="Kod"></td>`;
+    if(c.t==="ki"){ if(c.f==="sifre") return `<td><button class="kbtn" id="ki-add" title="Şifre yeni kişiye otomatik atanır">Ekle</button></td>`;
+      const id={tam_ad:"ki-ad",bolum:"ki-bolum",email:"ki-email",rol:"ki-rol"}[c.f], ph={tam_ad:"Ad Soyad",bolum:"Bölüm",email:"E-posta",rol:"Rol"}[c.f];
+      return `<td><input id="${id}" class="cell" placeholder="${ph}"></td>`; }
+    return `<td${HIDE(c)}></td>`; }).join("")+`</tr>`;
+  const body=addRow+ROWS.map(R=>`<tr data-kod="${esc(R.kod||"")}">`+C.map(c=>cell(R,c)).join("")+`</tr>`).join("");
   const st=await tblStamp("kisiler");
   view.innerHTML=`${stampHTML(st)}
     <!-- REF-SADE (23.09.2026): akış satırı, Kişiler başlığı/açıklaması ve tablodan sonraki tüm içerik kaldırıldı -->
     <style>
-     .kitbl{border-collapse:collapse;width:auto;font-size:12px}
-     .kitbl th,.kitbl td{border-bottom:1px solid #eef1f5;padding:2px 7px;text-align:left;white-space:nowrap;vertical-align:middle}
-     .kitbl thead th{background:#16324f;color:#fff;font-weight:600}
+     .kitbl{border-collapse:collapse;width:auto;font-size:11.5px}
+     .kitbl th,.kitbl td{border-bottom:1px solid #eef1f5;border-right:1px solid #f1f4f8;padding:2px 6px;text-align:left;white-space:nowrap;vertical-align:middle;line-height:15px}
+     .kitbl thead th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px;line-height:11px;padding:2px 5px;vertical-align:bottom;position:sticky;top:0;z-index:1}
+     .kitbl th.num,.kitbl td.num{text-align:right}
+     .kitbl th.pavg{background:#0f4a74;cursor:pointer;user-select:none} .kitbl td.pavg{background:#f3f7fb;font-weight:600;color:#16324f}
+     .kitbl th.phid{background:#245b85} .kitbl td.phid{background:#f7fafd}
+     .kitbl th.pfrm{background:#334e68} .kitbl td.pfrm{white-space:normal;font-size:10.5px;line-height:14px;max-width:14ch}
+     .kitbl .frm.ok{color:#1c2733;font-weight:600} .kitbl .frm.yok{color:#b40000;font-weight:600}
+     .kitbl td.pnot{white-space:normal;font-size:10.5px;line-height:13px;min-width:44ch;max-width:56ch} /* MAASPRIM-SATIR-NOT */
+     .kitbl td.pav{white-space:normal;font-size:10.5px;max-width:10.4ch}
+     .kitbl td.ped{cursor:text} .kitbl td.ped:hover{outline:1px solid #b9cfe6;outline-offset:-1px}
+     .kitbl td.ped input{width:100%;min-width:6ch;font:inherit;font-size:11px;padding:1px 3px;border:1px solid #2e7d54;border-radius:4px;background:#fffdf0}
+     .kitbl tbody tr:hover td{background:#eef6ff}
      .kitbl .kaddrow td{background:#f6f9fc}
      .kitbl .kbtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:3px 10px;font-weight:600;cursor:pointer;font-size:11.5px}
      .kitbl .kbtn:hover{background:#22456b}
@@ -1345,14 +1465,67 @@ async function loadRef(){
      .kitbl .kdel:hover{background:#b40000;color:#fff}
      .kitbl .ed{display:inline-block;min-width:40px}
     </style>
-    <div class="scroll"><table class="kitbl"><thead><tr><th>Kod</th><th>Ad Soyad</th><th>Bölüm</th><th>E-posta</th><th>Rol</th><th></th><th title="Form giriş kodu — 6 hane, benzersiz">Şifre</th></tr></thead><tbody>${kr}<tr class="kaddrow"><td><input id="ki-kod" class="cell" placeholder="Kod"></td><td><input id="ki-ad" class="cell" placeholder="Ad Soyad"></td><td><input id="ki-bolum" class="cell" placeholder="Bölüm"></td><td><input id="ki-email" class="cell" placeholder="E-posta"></td><td><input id="ki-rol" class="cell" placeholder="Rol"></td><td><button class="kbtn" id="ki-add">Ekle</button></td><td class="muted" title="Yeni kişiye otomatik atanır">oto</td></tr></tbody></table></div>
+    <div class="scroll"><table class="kitbl"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
 `;
   view.querySelectorAll(".kicell").forEach(el=>el.onclick=()=>startKisiEdit(el));
-  view.querySelectorAll(".kdel").forEach(b=>b.onclick=()=>kisiDel(b.dataset.kod));
   const _ka=document.getElementById("ki-add"); if(_ka) _ka.onclick=kisiAdd;
+  const thA=view.querySelector("th.pavg"); if(thA) thA.onclick=()=>{ PRS_OPEN=!PRS_OPEN; loadRef(); };
+  /* ---- maaş-prim hücre düzenleme ---- */
+  const numOf=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null;
+    t=t.replace(/\./g,"").replace(",","."); const v=parseFloat(t); return isNaN(v)?null:v; };
+  const dstore=s=>{ const dt=dparse(s); return dt?p2(dt.getDate())+"."+p2(dt.getMonth()+1)+"."+dt.getFullYear():null; };
+  const now=()=>new Date().toISOString();
+  async function ensureMid(td){
+    if(td.dataset.mid) return td.dataset.mid;
+    const kod=td.dataset.kod; const kr=D(k).find(r=>r.kod===kod); if(!kr) throw new Error("kişi bulunamadı");
+    const mx=MP.reduce((a,r)=>Math.max(a,r.sira||0),0);
+    const {data,error}=await sb.from("maas_prim").insert({kisi:kr.tam_ad,kisi_kod:kod,sira:mx+1}).select("id").single();
+    if(error) throw new Error(error.message); return data.id;
+  }
+  async function save(td,key,val){
+    const id=await ensureMid(td);
+    if(key.slice(0,4)==="avn:"){ const mk=key.slice(4); if(!AVMAP[id]) AVMAP[id]={}; if(val==="") delete AVMAP[id][mk]; else AVMAP[id][mk]=val;
+      if(!Object.keys(AVMAP[id]).length) delete AVMAP[id];
+      const has=Object.keys(AVMAP).some(x=>AVMAP[x]&&Object.keys(AVMAP[x]).length);
+      const {error}=await sb.from("maas_prim_not").update({metin:has?(NOTE_H+AV_MARK+JSON.stringify(AVMAP)+AV_END):NOTE_H,updated_at:now()}).eq("id",1);
+      if(error) throw new Error(error.message); return; }
+    if(key.slice(0,3)==="ay:"){ const p=key.slice(3).split("-");
+      const {error}=await sb.from("maas_prim_ay").upsert({kisi_id:id,yil:+p[0],ay:+p[1],tutar:(val===""?null:numOf(val)),updated_at:now()},{onConflict:"kisi_id,yil,ay"});
+      if(error) throw new Error(error.message); return; }
+    const body={updated_at:now()};
+    if(key==="ise_giris") body[key]=(val===""?null:dstore(val));
+    else if(key==="yol_yemek"||key==="cari_yil_maas"||key==="gecen_yil_maas") body[key]=(val===""?null:numOf(val));
+    else body[key]=(val===""?(key==="kisi"?"":null):val);
+    const {error}=await sb.from("maas_prim").update(body).eq("id",id); if(error) throw new Error(error.message);
+  }
+  view.querySelectorAll("td.ped").forEach(td=>td.onclick=()=>{
+    if(td.querySelector("input")) return;
+    const key=td.dataset.k, mid=td.dataset.mid, m=MP.find(x=>x.id===mid)||{};
+    let cur="";
+    if(key.slice(0,3)==="ay:"){ const v=mid?AY[mid+"|"+key.slice(3)]:null; cur=(v==null?"":v); }
+    else if(key.slice(0,4)==="avn:"){ cur=(mid&&AVMAP[mid]&&AVMAP[mid][key.slice(4)])||""; }
+    else if(key==="ise_giris") cur=dshow(m.ise_giris)||"";
+    else cur=(m[key]==null?"":m[key]);
+    const old=td.innerHTML; td.innerHTML=`<input value="${esc(cur)}">`;
+    const inp=td.querySelector("input"); inp.focus(); inp.select(); let done=false;
+    const fin=async ok=>{ if(done) return; done=true; const val=inp.value.trim();
+      if(!ok||val===String(cur)){ td.innerHTML=old; return; }
+      try{ await save(td,key,val); }catch(e){ alert("Kaydedilemedi: "+e.message); }
+      loadRef(); };
+    inp.onblur=()=>fin(true);
+    inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } if(e.key==="Escape"){ fin(false); } };
+  });
+  view.querySelectorAll(".pdel").forEach(b=>b.onclick=async()=>{
+    const kod=b.dataset.kod, mid=b.dataset.mid;
+    const ad=kod?((D(k).find(r=>r.kod===kod)||{}).tam_ad||kod):((MP.find(x=>x.id===mid)||{}).kisi||"(adsız)");
+    if(!confirm(ad+(kod?" ("+kod+")":"")+" silinsin mi? Kişi ve maaş-prim kayıtları birlikte silinir.")) return;
+    if(mid){ const {error}=await sb.from("maas_prim").delete().eq("id",mid); if(error){ alert(error.message); return; } }
+    if(kod){ const {error}=await sb.from("kisiler").delete().eq("kod",kod); if(error){ alert(error.message); return; } }
+    loadRef();
+  });
 }
 
-/* ---------- KİŞİLER satır düzeni (Referans panosu) — yazma yalnız authenticated int@arbor.com.tr; anon RLS ile kapalı ---------- */
+/* ---------- KİŞİLER satır düzeni (Personel panosu, eski Referans) — yazma yalnız authenticated int@arbor.com.tr; anon RLS ile kapalı ---------- */
 function startKisiEdit(el){
   if(el.querySelector("input")) return;
   const kod=el.dataset.kod, f=el.dataset.f;
@@ -1642,12 +1815,12 @@ async function loadFormlar(){
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
   /* FORM-ERISIM (KOD-GIRIS 23.09.2026): Kullanıcı sütunu = form_erisim tablosu — form-giris edge fonksiyonunun
-     yetki kaynağıyla aynı (kişi kodu → forma giriş + otomatik rol; herkes = Referans'taki tüm kişiler; MB her forma). */
+     yetki kaynağıyla aynı (kişi kodu → forma giriş + otomatik rol; herkes = Personel'deki tüm kişiler; MB her forma). */
   try{ const [fe,kk]=await Promise.all([sb.from("form_erisim").select("yol,kisiler,herkes"),sb.from("kisiler").select("kod,tam_ad")]);
     if(!fe.error&&fe.data&&fe.data.length){ const KAD={}; ((kk&&!kk.error)?(kk.data||[]):[]).forEach(r=>KAD[r.kod]=r.tam_ad);
       const FE={}; fe.data.forEach(r=>FE[r.yol]=r);
       forms.forEach(f=>{ const r=FE[f.url]; if(!r) return; f._fe=1;
-        if(r.herkes){ f.who="Herkes"; f.tam="Referans'taki tüm kişiler (kişisel kodla)"; }
+        if(r.herkes){ f.who="Herkes"; f.tam="Personel'deki tüm kişiler (kişisel kodla)"; }
         else { f.who=(r.kisiler||[]).join(" · "); f.tam=(r.kisiler||[]).map(x=>KAD[x]||x).join(" · "); } }); } }catch(e){}
   /* FORMLAR-260921: Teklif Talepleri + eski fy/fy2 formları yayından kaldırıldı */
   const FK={"sel-arb/":"sel_arb_form","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap",
@@ -1767,7 +1940,7 @@ async function loadFormlar(){
 }
 /* FORM-ERISIM-ED (23.09.2026, Melih): Formlar > Kullanıcı hücresi düzenlenebilir → form_erisim.kisiler / herkes
    (form-giris yetkisinin tek kaynağı). Giriş: kişi kodları (boşluk, virgül veya · ile) ya da "Herkes".
-   Kodlar Referans > Kişiler'de olmalı. Listeye eklenen yeni kişi formun varsayılan rolüyle girer (rol_map'te yoksa). */
+   Kodlar Personel sekmesinde olmalı. Listeye eklenen yeni kişi formun varsayılan rolüyle girer (rol_map'te yoksa). */
 async function formErisimEdit(td){
   if(td.querySelector("input")) return;
   const yol=td.dataset.yol, cx=td.querySelector(".cx"), cur=cx.textContent.trim();
@@ -1787,7 +1960,7 @@ async function formErisimEdit(td){
       const {data,error}=await sb.from("kisiler").select("kod").in("kod",kodlar);
       if(error){ alert(error.message); geri(); return; }
       const vr=new Set((data||[]).map(r=>r.kod)), yok=kodlar.filter(k=>!vr.has(k));
-      if(yok.length){ alert("Referans > Kişiler'de olmayan kod: "+yok.join(", ")); geri(); return; }
+      if(yok.length){ alert("Personel sekmesinde olmayan kod: "+yok.join(", ")); geri(); return; }
       rec={herkes:false,kisiler:kodlar};
     }
     rec.updated_at=new Date().toISOString();
@@ -2502,7 +2675,7 @@ async function loadMali(){
   if(b==="icmal"){ loadIcmal("mali-body"); return; }
   /* MK Faaliyet = MK prim blokları + Tıkanmış Şantiyeler (eski ayrı Şantiye sekmesi buraya taşındı) */
   if(b==="mali_mkprim"){ document.getElementById("mali-body").innerHTML=`<div id="mkp-a"></div><div id="mkp-b"></div>`; loadMkPrim("mkp-a"); loadSantiye("mkp-b"); return; }
-  if(b==="mali_maasprim"){ loadOzelHtml("mali_maasprim","mali-body"); return; } /* Maaş-Prim: tam sadakat ham-HTML (pano_ozel_html, bölüm-RLS) */
+  /* MAASPRIM-PERSONEL (23.09.2026): Maaş-Prim panosu kaldırıldı; bilgileri Personel (eski Referans) sekmesinde */
   if(b==="ahsap"){ loadAhsap("mali-body"); return; }
   if(b==="fiyat"){ loadFiyat("mali-body"); return; } /* Fiyatlandırma: kaynak veri + editör (fiyat_* tablolar, anon) */
   /* SEL-ARB = mutabakat matrisi + Dépenses (eski ayrı Dépenses sekmesi buraya taşındı) */
