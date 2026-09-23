@@ -54,6 +54,7 @@
   input.cell.terminuyari{color:#b40000;font-weight:700}
   /* TERMIN-BOS (2026-09-18): "Teklif Bekleniyor" satırında Teklif Teslim Tarihi boşsa hücre kırmızı dolu */
   input.cell.terminbos{background:#ffd9d9;border-color:#d9534f}
+  .cell.eksikbos{background:#ffd9d9 !important;border-color:#d9534f}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
   .colp{width:1%;white-space:nowrap}
   td.pairA{background:#eaf5ee}
@@ -430,13 +431,23 @@ function terminGec(r){
   if(!ist||!tes) return false;
   return ist<tes;
 }
+/* YD-EKSIK-BOS (2026-09-23, Melih): durumu boş satırda 1-6 ve 8-11. sütunlardaki boş hücreler kırmızı;
+   durumu "Teklif İncelendi" olan satırda Öncelik hücresi kırmızı. Taslak (boş) satır hariç. */
+function eksikBos(r,f,key){
+  if(!r || key==="draft") return false;
+  const i=COLS.findIndex(c=>c.f===f)+1; if(i<1) return false;
+  const bos=r[f]==null||String(r[f]).trim()==="";
+  if(!r.durum) return bos && ((i>=1&&i<=6)||(i>=8&&i<=11));
+  if(r.durum==="Teklif İncelendi" && f==="oncelik") return true;
+  return false;
+}
 function rowHTML(r,key){
   const bg = key==="draft" ? "" : (DURUM_BG[r.durum]||"");
   const bgv=bg||'transparent';
   const ttAge=daysAgo(r.teklif_teslim_tarihi);
   const durumWarn=(r.durum==="Teklif Bekleniyor" && ttAge!==null && ttAge>15) ? " durum-warn" : "";
   return '<tr data-i="'+key+'" style="background:'+bgv+'">'+COLS.map(c=>{
-      const v=dispVal(r,c), req=c.req?" req":"", empty=c.req&&!String(v).trim()?" bad":"";
+      const v=dispVal(r,c), req=c.req?" req":"", empty=(c.req&&!String(v).trim()?" bad":"")+(eksikBos(r,c.f,key)?" eksikbos":"");
       if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="width:'+c.w+'px" title="'+esc(v)+'">'+esc(v)+'</textarea></td>';
       if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+'" data-f="'+c.f+'" style="width:'+c.w+'px">'+opts+'</select></td>'; }
       let uyari="",ipucu="";
@@ -549,6 +560,7 @@ async function saveRow(key,f,val,el){
   const advanced=await maybeAutoAdvance(r);
   /* TERMIN-UYARI: iki tarihten biri değişince kırmızı-kalın işareti yeniden hesaplansın */
   if(advanced || f==='istenen_tarih' || f==='teklif_teslim_tarihi') render();
+  else if(el) el.classList.toggle('eksikbos', eksikBos(r,f,key));  /* YD-EKSIK-BOS */
 }
 /* REVIZYON-KOPYA (2026-09-18): Durum "Revizyon İstendi" yapıldığı anda satırın bir kopyası
    açılır — tutar alanları (Montaj Hariç Net Tutar + donmuş € karşılıkları) BOŞ, Teklif Birimi
