@@ -274,13 +274,15 @@ function render(){
       +`<td class="sa-num sa-g"${carry?' title="Son dönem değeri (Önceki Alacak son sütunu)"':''}>${carry?`<span class="carry">${esc(fmt(gv))}</span>`:esc(fmt(gv))}</td>`
       +dates.map((d,i)=>`<td class="sa-num${oc(i)}">${esc(fmt(fn(d)))}</td>`).join("")+`</tr>`;
   }).join("");
+  /* SELARB-FORM-ALTSIZ (23.09.2026, Melih): alt toplam satırları (Güncel Alacak Toplam … Faaliyet Kaybı) formda gösterilmez; yalnız SEL-ARB panosunda */
+  void ft;
   const tgTxt=ST.open?"◂":"▸";
   const head=`<thead><tr><th rowspan="2">Proje</th><th rowspan="2">Firma</th><th rowspan="2" class="sa-num sa-dh">Δ güncel→son €</th>`
     +`<th rowspan="2" class="sa-num sa-g">Güncel Alacak (€)</th>`
     +`<th class="sa-tg" id="saTg" colspan="${ST.open?Math.max(nd,1):1}" title="Diğer ayları aç/kapat">Önceki Alacak (€) ${tgTxt}</th></tr>`
     +`<tr>${dates.map((d,i)=>`<th class="sa-num${oc(i)}">${esc(dLbl(d))}</th>`).join("")}</tr></thead>`;
   const btn=hidden?`<div class="hint"><button class="btn2" id="saEmpty">${ST.showEmpty?"Boş-alacak satırları gizle":"Boş-alacak satırları göster"} (${hidden})</button></div>`:"";
-  document.getElementById("tbl").innerHTML=btn+`<div class="sa-wrap"><table class="${ST.open?"open":""}">${head}<tbody>${nw}${tr}${ft}</tbody></table></div>`;
+  document.getElementById("tbl").innerHTML=btn+`<div class="sa-wrap"><table class="${ST.open?"open":""}">${head}<tbody>${nw}${tr}</tbody></table></div>`;
   bind();
 }
 function bind(){
