@@ -1508,15 +1508,18 @@ async function loadEgitim(){
   const gecSay=P.filter(r=>{ const sd=siradaki(r); return sd&&sd<today; }).length;
   /* EGITIM-OZET (23.09.2026): bu yıl / bu ay — gerçekleşen eğitim, yayınlanan ve revize edilen doküman */
   const gE=[]; P.forEach(r=>gercList(r).forEach(t=>{ if(t.slice(0,4)==YIL) gE.push({t,bolum:r.bolum,kod:r.kod,konu:r.konu}); }));
-  const yE=D.filter(r=>r.yayim_tarihi&&r.yayim_tarihi.slice(0,4)==YIL).map(r=>({t:r.yayim_tarihi,bolum:r.bolum,kod:r.kod,konu:r.konu}));
-  const rE=D.filter(r=>r.revizyon_tarihi&&r.revizyon_tarihi.slice(0,4)==YIL).map(r=>({t:r.revizyon_tarihi,bolum:r.bolum,kod:r.kod,konu:r.konu}));
+  /* EGITIM-DOK-BIRLES (23.09.2026): yayınlanan + revize tek kartta, en sağda Yeni/Revize */
+  const yE=D.filter(r=>r.yayim_tarihi&&r.yayim_tarihi.slice(0,4)==YIL).map(r=>({t:r.yayim_tarihi,bolum:r.bolum,kod:r.kod,konu:r.konu,tip:"Yeni"}))
+    .concat(D.filter(r=>r.revizyon_tarihi&&r.revizyon_tarihi.slice(0,4)==YIL).map(r=>({t:r.revizyon_tarihi,bolum:r.bolum,kod:r.kod,konu:r.konu,tip:"Revize"})));
   const ozKart=(bas,arr)=>{
     arr.sort((a,b)=>b.t.localeCompare(a.t));
     const ay=arr.filter(x=>x.t.slice(0,7)==AY).length;
-    const li=arr.length?arr.map(x=>`<tr${x.t.slice(0,7)==AY?' style="font-weight:600"':''}><td>${dOnly(x.t)}</td><td>${esc(x.bolum||"—")}</td><td>${esc(x.kod||"—")}</td><td title="${esc(x.konu||"")}">${esc(x.konu||"—")}</td></tr>`).join(""):`<tr><td colspan="4" class="muted">Bu yıl kayıt yok</td></tr>`;
-    return `<div class="egoz"><div class="egozh">${bas}</div><div class="egozn"><span><b>${ay}</b> bu ay</span><span><b>${arr.length}</b> bu yıl</span></div><div class="egozl"><table class="egt egoztb"><colgroup><col style="width:10ch"><col style="width:14ch"><col style="width:12ch"><col style="width:34ch"></colgroup><thead><tr><th>Tarih</th><th>Bölüm</th><th>Kod</th><th>Konu</th></tr></thead><tbody>${li}</tbody></table></div></div>`;
+    const tp=arr.some(x=>x.tip), nc=tp?5:4;
+    const tipTd=x=>tp?`<td style="color:${x.tip==="Yeni"?"#0a6b3f":"#8a6100"};font-weight:600">${x.tip}</td>`:"";
+    const li=arr.length?arr.map(x=>`<tr${x.t.slice(0,7)==AY?' style="font-weight:600"':''}><td>${dOnly(x.t)}</td><td>${esc(x.bolum||"—")}</td><td>${esc(x.kod||"—")}</td><td title="${esc(x.konu||"")}">${esc(x.konu||"—")}</td>${tipTd(x)}</tr>`).join(""):`<tr><td colspan="${nc}" class="muted">Bu yıl kayıt yok</td></tr>`;
+    return `<div class="egoz"><div class="egozh">${bas}</div><div class="egozn"><span><b>${ay}</b> bu ay</span><span><b>${arr.length}</b> bu yıl</span></div><div class="egozl"><table class="egt egoztb"><colgroup><col style="width:10ch"><col style="width:14ch"><col style="width:12ch"><col style="width:34ch">${tp?'<col style="width:8ch">':''}</colgroup><thead><tr><th>Tarih</th><th>Bölüm</th><th>Kod</th><th>Konu</th>${tp?'<th>Durum</th>':''}</tr></thead><tbody>${li}</tbody></table></div></div>`;
   };
-  const ozetHtml=`<div class="egozw">${ozKart("Gerçekleşen Eğitim",gE)}${ozKart("Yayınlanan Doküman",yE)}${ozKart("Revize Edilen Doküman",rE)}</div>`;
+  const ozetHtml=`<div class="egozw">${ozKart("Gerçekleşen Eğitim",gE)}${ozKart("Yayınlanan Doküman",yE)}</div>`;
   view.innerHTML=`<div class="stamp">Son güncelleme: ${esc(erpT)} (ERP çekimi) · ${P.length} plan satırı · ${gecSay} gecikmiş</div>
     <style>/* EGITIM-HIZA (23.09.2026): tüm bölüm blokları aynı sütun genişliği */
      table.egt{border-collapse:collapse;table-layout:fixed;width:1px;font-size:12px}
