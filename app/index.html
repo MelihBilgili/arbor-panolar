@@ -737,6 +737,7 @@ async function loadSatis(){
     .satis-wrap table.aup tbody td:nth-child(8),.satis-wrap table.aup tbody td:nth-child(10){border-left:2px solid #dbe5ef}
     .satis-wrap table.aup td.t-durum>.cx{width:9.1ch}
     .satis-wrap td.gecgun{color:#b23a2e;font-weight:700}
+    .satis-wrap td.eksikbos{background:#ffd9d9 !important;box-shadow:inset 0 0 0 1px #d9534f}
     table.ssum td.sdlist{vertical-align:top;padding:2px 6px 6px}
     .sdi{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0;border-bottom:1px solid #eef1f4}
     .sdi-p{color:#2c3542}
@@ -836,7 +837,12 @@ function pipelineTables(ydRows, today){
   const two=(title,rows,cols)=>
     pipeGenTbl(title+' - Yurt Dışı 1',rows.filter(r=>r.blok==='YD1'),cols)
     +pipeGenTbl(title+' - Yurt Dışı 2',rows.filter(r=>r.blok==='YD2'),cols);
-  return two('Eksik Kaydedilmiş Teklif Talepleri',eksik,C1)
+  /* YD-EKSIK-BOS (2026-09-23, Melih): formdaki kuralın aynısı — durumu boş satırda form sütunu 1-6 ve 8-11
+     (Proje, Müşteri, Gelen/İstenen Tarih, İhale?, Adet, Ürün Tipi, Kemer/Karolaj, Şartname Ahşap?) boşsa hücre kırmızı */
+  const EKSIK_F=['proje','musteri','gelen_tarih','istenen_tarih','ihale','adet','urun_tipi_serisi','kemer_karolaj','sartname_ahsap'];
+  const C1E=C1.map(c=>{ const f=c.f||({'Gelen Tarih':'gelen_tarih','İstenen Tarih':'istenen_tarih'})[c.h];
+    return EKSIK_F.includes(f)?Object.assign({},c,{cls:r=>(!r.durum&&(r[f]==null||String(r[f]).trim()===''))?'eksikbos':''}):c; });
+  return two('Eksik Kaydedilmiş Teklif Talepleri',eksik,C1E)
     +two('Öncelik Belirlenmesi Gerekenler',oncelik,C1)
     +two('Teklif Hazırlığında',hazirlik,C2)
     +two('Takiptekiler',takiptekiler,C4);
@@ -2862,6 +2868,7 @@ setInterval(()=>{ if(!document.getElementById("view")) return; if(document.query
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
 
 <!-- ARBOR-DRAGSCROLL -->
 <style>
