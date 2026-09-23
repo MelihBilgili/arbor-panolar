@@ -1399,7 +1399,7 @@ async function loadRef(){
   const aylbl=(y,m)=>[AYAD[m-1]+" "+y,"Yol-Yemek Dahil","Prim (TL)"];
   const C=[
     /* PERSONEL-ED (23.09.2026): Bölüm ve Rol sütunları çıkarıldı; Ad Soyad/E-posta/Prim Notları %33 dar */
-    {t:"kod", l:["Kod"]}, {t:"ki", f:"tam_ad", l:["Ad Soyad"], cls:"pad"}, {t:"ki", f:"email", l:["E-posta"], cls:"pem"},
+    {t:"kod", l:["Kod"], cls:"pkod"}, {t:"ki", f:"tam_ad", l:["Ad Soyad"], cls:"pad"}, {t:"ki", f:"email", l:["E-posta"], cls:"pem"},
     {t:"ki", f:"sifre", l:["Şifre"], tt:"Form giriş kodu — 6 hane, benzersiz"},
     {t:"m", f:"ise_giris", l:["İşe","Giriş"], ty:"d"}, {t:"m", f:"tahsil", l:["Tahsil","(yıl)"], ty:"t"}, {t:"kidem", l:["Kıdem","(yıl)"]},
     {t:"m", f:"yol_yemek", l:["Yol-Yemek","(TL)"], ty:"n"}, {t:"m", f:"son_artis", l:["Son Artış","(%)"], ty:"t"},
@@ -1416,11 +1416,11 @@ async function loadRef(){
   C.push({t:"frm", l:["Aylık","Güncellenecek","Formlar"]}, {t:"m", f:"prim_notu", l:["Prim","Notları"], ty:"t", cls:"pnot"}, {t:"del", l:[]});
   const HIDE=c=>(c.hid&&!PRS_OPEN)?' style="display:none"':"";
   const NUMC=c=>(c.t==="m"&&(c.ty==="n"||c.ty==="d"))||c.t==="ay"||c.t==="avg"||c.t==="kidem";
-  const th=C.map(c=>`<th class="${NUMC(c)?"num ":""}${c.t==="avg"?"pavg ":""}${c.hid?"phid ":""}${c.t==="frm"?"pfrm ":""}"${c.tt?` title="${esc(c.tt)}"`:""}${HIDE(c)}>${c.l.length?c.l.map(esc).join("<br>"):"&nbsp;"}</th>`).join("");
+  const th=C.map(c=>`<th class="${c.cls&&c.cls!=="pnot"?c.cls+" ":""}${NUMC(c)?"num ":""}${c.t==="avg"?"pavg ":""}${c.hid?"phid ":""}${c.t==="frm"?"pfrm ":""}"${c.tt?` title="${esc(c.tt)}"`:""}${HIDE(c)}>${c.l.length?c.l.map(esc).join("<br>"):"&nbsp;"}</th>`).join("");
   const kc=(kod,f,v,cls)=>`<td${cls?` class="${cls}" title="${esc(v||"")}"`:""}><span class="ed kicell" data-kod="${esc(kod)}" data-f="${f}">${v?esc(v):'—'}</span></td>`;
   const cell=(R,c)=>{
     const m=R.m, mid=m?m.id:"", hide=HIDE(c), dk=`data-mid="${esc(mid)}" data-kod="${esc(R.kod||"")}"`;
-    if(c.t==="kod") return R.kod?`<td class="kod" title="Kod — değişince şifre, maaş-prim ve form yetkileri yeni koda taşınır"><span class="ed kicell" data-kod="${esc(R.kod)}" data-f="kod">${esc(R.kod)}</span></td>`:`<td class="kod muted" title="Kişiler listesinde yok (kodsuz maaş-prim kaydı)">—</td>`;
+    if(c.t==="kod") return R.kod?`<td class="kod pkod" title="Kod — değişince şifre, maaş-prim ve form yetkileri yeni koda taşınır"><span class="ed kicell" data-kod="${esc(R.kod)}" data-f="kod">${esc(R.kod)}</span></td>`:`<td class="kod pkod muted" title="Kişiler listesinde yok (kodsuz maaş-prim kaydı)">—</td>`;
     if(c.t==="ki"){ if(R.kod) return kc(R.kod,c.f,c.f==="sifre"?SIF[R.kod]:R.k[c.f],c.cls);
       if(c.f==="tam_ad") return `<td class="ped pad" data-k="kisi" ${dk} title="${esc(m.kisi||"")}">${txt(m.kisi)}</td>`; return `<td>${dash}</td>`; }
     if(c.t==="kidem") return `<td class="num">${m?txt(kidemOf(m)):dash}</td>`;
@@ -1436,10 +1436,10 @@ async function loadRef(){
     return `<td class="ped${c.cls?" "+c.cls:""}" data-k="${c.f}" ${dk}>${txt(v)}</td>`;
   };
   const addRow=`<tr class="kaddrow">`+C.map(c=>{
-    if(c.t==="kod") return `<td><input id="ki-kod" class="cell" placeholder="Kod"></td>`;
+    if(c.t==="kod") return `<td class="pkod"><input id="ki-kod" class="cell" size="1" placeholder="Kod"></td>`;
     if(c.t==="ki"){ if(c.f==="sifre") return `<td><button class="kbtn" id="ki-add" title="Şifre yeni kişiye otomatik atanır">Ekle</button></td>`;
       const id={tam_ad:"ki-ad",email:"ki-email"}[c.f], ph={tam_ad:"Ad Soyad",email:"E-posta"}[c.f];
-      return `<td><input id="${id}" class="cell" placeholder="${ph}"></td>`; }
+      return `<td class="${c.cls||""}"><input id="${id}" class="cell" size="1" placeholder="${ph}"></td>`; }
     return `<td${HIDE(c)}></td>`; }).join("")+`</tr>`;
   const body=addRow+ROWS.map(R=>`<tr data-kod="${esc(R.kod||"")}">`+C.map(c=>cell(R,c)).join("")+`</tr>`).join("");
   const st=await tblStamp("kisiler");
@@ -1455,7 +1455,9 @@ async function loadRef(){
      .kitbl th.pfrm{background:#334e68} .kitbl td.pfrm{white-space:normal;font-size:10.5px;line-height:14px;max-width:14ch}
      .kitbl .frm.ok{color:#1c2733;font-weight:600} .kitbl .frm.yok{color:#b40000;font-weight:600}
      .kitbl td.pnot{white-space:normal;font-size:10.5px;line-height:13px;min-width:29.5ch;max-width:37.5ch} /* MAASPRIM-SATIR-NOT · PERSONEL-ED %33 dar */
-     .kitbl td.pad{max-width:19ch;overflow:hidden;text-overflow:ellipsis} .kitbl td.pem{max-width:22ch;overflow:hidden;text-overflow:ellipsis} /* PERSONEL-ED */
+     /* PERSONEL-ED · PERSONEL-GEN2 (23.09.2026): Kod %80, Ad %20, E-posta %50 daha dar; ekleme satırı input'ları sütunu genişletmez */
+     .kitbl .pkod{width:5ch;max-width:5ch} .kitbl .pad{width:15ch;max-width:15ch;overflow:hidden;text-overflow:ellipsis} .kitbl .pem{width:11ch;max-width:11ch;overflow:hidden;text-overflow:ellipsis}
+     .kitbl .kaddrow input.cell{box-sizing:border-box;min-width:0;width:100%}
      .kitbl td.pad .ed,.kitbl td.pem .ed{display:inline;min-width:0}
      .kitbl td.pav{white-space:normal;font-size:10.5px;max-width:10.4ch}
      .kitbl td.ped{cursor:text} .kitbl td.ped:hover{outline:1px solid #b9cfe6;outline-offset:-1px}
