@@ -98,6 +98,14 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <div id="s_akis"></div>
    </div>
 
+   <!-- OB-PRIM (2026-09-24, Melih): MK'nın ÖB performans notu → ob_prim_ay.mk_notu (dönem = geçen ay) -->
+   <div class="card" id="obNotCard">
+    <div class="chd"><h2 id="obNotH2">Özgül Bedestenci — Performans Değerlendirmesi <span class="cnt" id="obNotDon"></span></h2></div>
+    <div style="font-size:12.5px;margin:0 0 6px">Geçtiğimiz ay boyunca Özgül Bedestenci'nin performansına ilişkin notunuzu 0 ile 10 arası bir rakamla belirtiniz.</div>
+    <select id="obNot" style="font:inherit;font-size:13px;padding:5px 9px;border:1px solid #cdd6df;border-radius:8px;background:#fffdf8;min-width:90px"><option value=""></option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
+    <span class="msg" id="obNotMsg"></span>
+   </div>
+
   </div>
 </div>
 
@@ -386,12 +394,30 @@ function onaySifirla(){ Object.keys(ONAYLAR).forEach(id=>{ try{ localStorage.rem
 onayKur("sanH2","santiye","Tıkanmış Şantiyelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("a1","alacak","Yurt Dışı Alacaklara İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 
+/* ===== OB-PRIM: MK'nın ÖB performans notu (ob_prim_ay.mk_notu, dönem = geçen ay) ===== */
+const AYLAR_OBN=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const OBN_DON=(function(){ const d=new Date(); const y=d.getMonth()===0?d.getFullYear()-1:d.getFullYear(); const m=d.getMonth()===0?12:d.getMonth(); return y+"-"+String(m).padStart(2,"0"); })();
+(function(){ const p=OBN_DON.split("-"); document.getElementById("obNotDon").textContent="("+AYLAR_OBN[+p[1]-1]+" "+p[0]+")"; })();
+async function obNotYukle(){
+  const {data}=await sb.from("ob_prim_ay").select("mk_notu").eq("donem",OBN_DON).limit(1);
+  const v=(data&&data[0]&&data[0].mk_notu!=null)?String(Math.round(data[0].mk_notu)):"";
+  document.getElementById("obNot").value=v;
+}
+async function obNotVar(){ const {data}=await sb.from("ob_prim_ay").select("mk_notu").eq("donem",OBN_DON).limit(1); return !!(data&&data[0]&&data[0].mk_notu!=null); }
+document.getElementById("obNot").onchange=async function(){
+  const m=document.getElementById("obNotMsg"); const v=this.value===""?null:Number(this.value);
+  const {error}=await sb.from("ob_prim_ay").upsert({donem:OBN_DON,mk_notu:v,updated_at:new Date().toISOString()},{onConflict:"donem"});
+  m.className="msg "+(error?"err":"ok"); m.style.color=error?"#b40000":"#2e7d54"; m.textContent=error?("Hata: "+error.message):"Kaydedildi.";
+};
+obNotYukle();
+
 /* ===== Aylık güncelleme: mk_ay_islendi (append) + mk-faaliyet-mail ===== */
 const AYLAR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 const DONEM=AYLAR[new Date().getMonth()]+" "+new Date().getFullYear();
 document.getElementById("ayBtn").onclick=async()=>{
   const m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
   if(!onayKapi()) return;
+  if(!(await obNotVar())){ alert("Aylık Güncelleme yapılamadı.\n\nÖnce Özgül Bedestenci için geçen ayın performans notunu (0-10) seçmelisiniz."); document.getElementById("obNot").scrollIntoView({block:"center"}); return; } /* OB-PRIM */
   if(!confirm('"'+DONEM+'" ayı için aylık güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN.\n\nOnaylıyor musunuz?')) return;
   btn.disabled=true; m.className="msg"; m.textContent="İşaretleniyor…";
   const {error}=await sb.from("mk_ay_islendi").insert({ay:DONEM});
