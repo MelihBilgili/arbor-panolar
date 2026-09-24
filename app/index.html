@@ -2438,7 +2438,7 @@ async function loadObrapor(tgt){
      Başvuruları bloğu (devlet_destek, ÖB formundan). İade primi = sonuç tarihi kapanan aya düşen iade toplamı × 5/1000. */
   const selEur=odR.reduce((t,r)=>t+(Number(r.tutar_eur)||0),0);
   if(odR.length) ib+=`<div class="muted" style="font-size:12px;margin:4px 2px 0">Ödeme toplamı ${nf(selEur)} € · ÖB primi (1/10.000): <b>${nf(selEur/10000)} €</b></div>`;
-  const ddq=await sb.from("devlet_destek").select("*").order("sira",{ascending:true,nullsFirst:false}).order("id");
+  const ddq=await sb.from("devlet_destek").select("*").order("son_basvuru",{ascending:false,nullsFirst:true}).order("id",{ascending:false}); /* DD-SIRA */
   const ddR=(ddq&&!ddq.error)?(ddq.data||[]):[];
   const ddBug=new Date().toISOString().slice(0,10), dd30=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
   const ddG=v=>v?esc(dgun(String(v))):"";
