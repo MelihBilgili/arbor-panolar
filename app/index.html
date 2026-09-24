@@ -3109,7 +3109,7 @@ async function loadSozluk(tgt){
       inp.value="";
       await loadSozluk(tgt);
       const m2=document.getElementById("sz-msg");
-      if(m2){ m2.className="szmsg ok"; m2.textContent=(d.existed?"Zaten vardı: ":"Eklendi: ")+d.kelime+(d.dil?" ("+d.dil+")":""); }
+      if(m2){ m2.className="szmsg ok"; /* SOZLUK-ANLAM (24.09.2026): sorulan/eklenen kelimenin anlamı kutunun yanında */ m2.style.whiteSpace="normal"; m2.textContent=(d.existed?"Zaten vardı: ":"Eklendi: ")+d.kelime+(d.dil?" ("+d.dil+")":"")+(d.anlam?" — "+d.anlam:""); }
       const i2=document.getElementById("sz-inp"); if(i2) i2.focus();
     }catch(ex){ msg.className="szmsg err"; msg.textContent="Hata: "+ex; addb.disabled=false; inp.disabled=false; }
   }
