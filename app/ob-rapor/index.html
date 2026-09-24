@@ -133,7 +133,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
    </style>
    <div class="card">
     <div class="chd"><h2>Yurt Dışı Birimlerden Selectron’a Yapılan Ödemeler <span class="cnt" id="c2"></span></h2>
-      <button class="add" id="a2">＋ Yeni Ödeme Ekle</button></div>
+      <span id="a2"></span></div>
     <div class="scroll"><table><thead><tr>
       <th style="width:16%">Yurt Dışı Birim</th><th style="width:18%">Ödeme Tarihi</th><th style="width:24%">Gönderen Banka</th><th style="width:16%">Tutar</th><th style="width:14%">Para Birimi</th><th class="x"></th>
     </tr></thead><tbody id="t2"><tr><td colspan="6">Yükleniyor…</td></tr></tbody></table></div>
@@ -142,7 +142,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 
    <div class="card">
     <div class="chd"><h2>Yurt Dışı Birimlerden Selectron'a Kesilen Faturalar <span class="cnt" id="c3"></span></h2>
-      <button class="add" id="a3">＋ Yeni Fatura Ekle</button></div>
+      <span id="a3"></span></div>
     <div class="scroll"><table><thead><tr>
       <th style="width:16%">Yurt Dışı Birim</th><th style="width:13%">Fatura No</th><th style="width:13%">Tarih</th><th style="width:24%">Proje(ler)</th><th style="width:14%">Tutar</th><th style="width:12%">Para Birimi</th><th class="x"></th>
     </tr></thead><tbody id="t3"><tr><td colspan="7">Yükleniyor…</td></tr></tbody></table></div>
@@ -729,25 +729,46 @@ sLoadListe(); loadSelArbListe(); sLoadAkis();
         if(error) bmsg(mid,"Hata: "+error.message,false); else reload(); };
     });
   }
+  /* SA-BOS-SATIR: boş satırda seçim dışı bir alan doldurulunca kayıt oluşur (seçim kutularının değeri de yazılır) */
+  function bosBind(tb,tbl,mid,reload,secim){
+    const tr=document.querySelector("#"+tb+" tr[data-new]"); if(!tr) return;
+    tr.querySelectorAll("[data-f]").forEach(el=>{ el.onchange=async()=>{
+      const f=el.getAttribute("data-f"); if(secim[f]||el.value.trim()==="") return;
+      const body={}; tr.querySelectorAll("select[data-f]").forEach(x=>{ if(x.value) body[x.getAttribute("data-f")]=x.value; });
+      if(f==="tutar"){ const t=num(el.value); try{ Object.assign(body,{tutar:t},await eurOf(t,body.para_birimi||"EUR")); }catch(e){ body.tutar=t; } }
+      else body[f]=el.value;
+      const {error}=await sb.from(tbl).insert(body);
+      if(error) bmsg(mid,"Hata: "+error.message,false); else { bmsg(mid,"Yeni satır kaydedildi.",true); reload(); } }; });
+  }
   let R2=[];
   async function load2(){
     const {data,error}=await sb.from("sel_odeme").select("*").order("id",{ascending:false});
     if(error){ $("t2").innerHTML='<tr><td colspan="6">Hata: '+escq(error.message)+'</td></tr>'; return; }
-    R2=data||[]; $("c2").textContent="("+R2.length+")";
-    $("t2").innerHTML=R2.length?R2.map(r=>'<tr data-id="'+r.id+'">'
+    R2=data||[];
+    /* SA-ODEME-CARI (2026-09-24, Melih): cari aydan önceki ödemeler kapalı (açılır-kapanır satır); boş tarihli ve cari ay satırları açık */
+    const _d=new Date(), ayBas=_d.getFullYear()+"-"+String(_d.getMonth()+1).padStart(2,"0")+"-01";
+    const eski=R2.filter(r=>r.odeme_tarihi&&String(r.odeme_tarihi)<ayBas), cari=R2.filter(r=>!(r.odeme_tarihi&&String(r.odeme_tarihi)<ayBas));
+    $("c2").textContent="(bu ay "+cari.length+")";
+    const satir=r=>'<tr data-id="'+r.id+'"'+(eski.indexOf(r)>-1?' class="eski2" style="display:'+(window._eski2?"":"none")+';background:#f6f7f9"':'')+'>'
       +'<td><select data-f="yd_birim">'+optsYDB(r.yd_birim)+'</select></td>'
       +'<td><input type="date" data-f="odeme_tarihi" value="'+escq(r.odeme_tarihi||"")+'"></td>'
       +'<td><select data-f="gonderen_banka">'+opts(["BNP","CA"],r.gonderen_banka)+'</select></td>'
       +'<td><input class="num" data-f="tutar" value="'+escq(r.tutar==null?"":r.tutar)+'"></td>'
       +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
-      +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
-      :'<tr><td colspan="6">Ödeme yok.</td></tr>';
+      +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>';
+    /* SA-BOS-SATIR: ekle düğmesi yerine en üstte boş satır */
+    const bos2='<tr data-new="1" style="background:#fffbea">'
+      +'<td><select data-f="yd_birim">'+optsYDB("")+'</select></td>'
+      +'<td><input type="date" data-f="odeme_tarihi"></td>'
+      +'<td><select data-f="gonderen_banka">'+opts(["BNP","CA"],"")+'</select></td>'
+      +'<td><input class="num" data-f="tutar"></td>'
+      +'<td><select data-f="para_birimi">'+opts(PB,"EUR")+'</select></td><td class="x"></td></tr>';
+    $("t2").innerHTML=bos2+cari.map(satir).join("")
+      +(eski.length?'<tr id="eski2t" style="cursor:pointer"><td colspan="6" style="color:#7a8896;font-size:12px">'+(window._eski2?"▾":"▸")+' Önceki aylar ('+eski.length+' ödeme) — '+(window._eski2?"kapat":"göster")+'</td></tr>'+eski.map(satir).join(""):"");
+    const et=$("eski2t"); if(et) et.onclick=()=>{ window._eski2=!window._eski2; load2(); };
     bind("t2","sel_odeme","m2",load2);
+    bosBind("t2","sel_odeme","m2",load2,{yd_birim:1,para_birimi:1});
   }
-  $("a2").onclick=async()=>{
-    const {error}=await sb.from("sel_odeme").insert({para_birimi:"EUR",yd_birim:YDB[0]});
-    if(error) bmsg("m2","Hata: "+error.message,false); else load2();
-  };
   let R3=[];
   async function load3(){
     const {data,error}=await sb.from("arbor_kesilen_fatura").select("*").order("id",{ascending:false});
@@ -761,13 +782,15 @@ sLoadListe(); loadSelArbListe(); sLoadAkis();
       +'<td><input class="num" data-f="tutar" value="'+escq(r.tutar==null?"":r.tutar)+'"></td>'
       +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
       +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
-      :'<tr><td colspan="7">Fatura yok.</td></tr>';
+      :'';
+    /* SA-BOS-SATIR */
+    $("t3").insertAdjacentHTML("afterbegin",'<tr data-new="1" style="background:#fffbea">'
+      +'<td><select data-f="yd_birim">'+opts(YDB,"Arbor SAS")+'</select></td>'
+      +'<td><input data-f="ft_no"></td><td><input type="date" data-f="tarih"></td><td><input data-f="projeler"></td>'
+      +'<td><input class="num" data-f="tutar"></td><td><select data-f="para_birimi">'+opts(PB,"EUR")+'</select></td><td class="x"></td></tr>');
     bind("t3","arbor_kesilen_fatura","m3",load3);
+    bosBind("t3","arbor_kesilen_fatura","m3",load3,{yd_birim:1,para_birimi:1});
   }
-  $("a3").onclick=async()=>{
-    const {error}=await sb.from("arbor_kesilen_fatura").insert({para_birimi:"EUR",yd_birim:"Arbor SAS"});
-    if(error) bmsg("m3","Hata: "+error.message,false); else load3();
-  };
   load2(); load3();
 })();
 
