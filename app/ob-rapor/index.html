@@ -159,6 +159,19 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     </tr></thead><tbody id="t4"><tr><td colspan="12">Yükleniyor…</td></tr></tbody></table></div>
     <div class="msg" id="m4"></div>
    </div>
+
+   <!-- OB-DPGF (2026-09-24, Melih): DPGF-Situation bloğu — sol DPGF (ob_dpgf), sağ Situation (ob_situation). Tutarlar €; ay = Tarih. ÖB performans primine esas. -->
+   <div class="card" id="dsCard">
+    <div class="chd"><h2>DPGF - Situation</h2><span id="a5"></span></div>
+    <div class="hint" style="margin:0 2px 6px">Yeni kayıt için en üstteki boş satırı doldurun. Tarih = hazırlanma tarihi (boş bırakılırsa bugün). Tutarlar € cinsindendir.</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+     <div style="flex:1 1 380px;min-width:0"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">DPGF <span class="cnt" id="c5"></span></h3>
+      <div class="scroll"><table style="min-width:520px"><thead><tr><th style="width:120px">Tarih</th><th>Proje</th><th>Correspondence</th><th style="width:110px">Tutar (€)</th><th class="x"></th></tr></thead><tbody id="t5"></tbody></table></div></div>
+     <div style="flex:1.4 1 520px;min-width:0"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">Situation <span class="cnt" id="c6"></span></h3>
+      <div class="scroll"><table style="min-width:760px"><thead><tr><th style="width:120px">Tarih</th><th>Proje</th><th style="width:80px">İlerleme No</th><th style="width:110px">Dönem</th><th style="width:110px">Tutar (€)</th><th style="width:140px">Onay Durumu</th><th class="x"></th></tr></thead><tbody id="t6"></tbody></table></div></div>
+    </div>
+    <div class="msg" id="m5"></div>
+   </div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -386,6 +399,7 @@ onayKur("s_btn","santiye","Tıkanmış Şantiyelere İlişkin Aşağıdaki Bilgi
 onayKur("a2","odeme","Selectron'a Yapılan Ödemelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("a3","fatura","Kesilen Faturalara İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("a4","devlet","Devlet Destek Başvurularına İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum"); /* DEVLET-DESTEK */
+onayKur("a5","dpgf","DPGF ve Situation Bilgilerinin Güncel Olduğunu Onaylıyorum"); /* OB-DPGF */
 
 /* HAFTALIK GÜNCELLEME — yalnız Takipteki İşler (27.08.2026, Melih): Dépenses aktarımı ve
    SEL-ARB kapatma AYLIK GÜNCELLEME'ye taşındı; onay düğmeleri de aylığa bağlandı. */
@@ -829,6 +843,47 @@ async function ddKapi(){
     });
   }
   load4();
+})();
+
+/* ===== OB-DPGF (2026-09-24): DPGF (ob_dpgf) + Situation (ob_situation) — boş-satır deseni ===== */
+(function(){
+  const $=id=>document.getElementById(id);
+  const escq=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const num=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null; if(t.indexOf(",")>-1&&t.indexOf(".")>-1){t=t.replace(/\./g,"").replace(",",".");}else{t=t.replace(",",".");} const v=parseFloat(t); return isNaN(v)?null:v; };
+  const nf=v=>v==null?"":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  function bmsg(t,ok){ const m=$("m5"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
+  const ONAY=["Onaylandı","Görüşmede","Düzeltme İstendi","İptal Edildi"];
+  const opts=(list,cur)=>['<option value=""></option>'].concat(list.map(o=>'<option'+(String(cur||"")===o?" selected":"")+'>'+escq(o)+'</option>')).join("");
+  const inp=(f,v,cls,typ)=>'<input'+(typ?' type="'+typ+'"':'')+(cls?' class="'+cls+'"':'')+' data-f="'+f+'" value="'+escq(v==null?"":v)+'">';
+  const T={
+    ob_dpgf:{tb:"t5",cnt:"c5",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje)+'</td>','<td>'+inp("correspondence",r.correspondence)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']},
+    ob_situation:{tb:"t6",cnt:"c6",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje)+'</td>','<td>'+inp("ilerleme_no",r.ilerleme_no)+'</td>','<td>'+inp("donem",r.donem)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td><select data-f="onay_durumu">'+opts(ONAY,r.onay_durumu)+'</select></td>']}
+  };
+  async function load(tbl){
+    const t=T[tbl];
+    const {data,error}=await sb.from(tbl).select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false});
+    if(error){ $(t.tb).innerHTML='<tr><td colspan="7">Hata: '+escq(error.message)+'</td></tr>'; return; }
+    const R=data||[]; $(t.cnt).textContent="("+R.length+")";
+    $(t.tb).innerHTML='<tr data-new="1" style="background:#fffbea">'+t.cols({}).join("")+'<td class="x"></td></tr>'
+      +R.map(r=>'<tr data-id="'+r.id+'">'+t.cols(r).join("")+'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("");
+    const val=(f,el)=>f==="tutar"?num(el.value):(el.value===""?null:el.value);
+    const nr=$(t.tb).querySelector("tr[data-new]");
+    nr.querySelectorAll("[data-f]").forEach(el=>{ el.onchange=async()=>{
+      const f=el.getAttribute("data-f"); if(el.value.trim()==="") return;
+      const body={}; body[f]=val(f,el);
+      const {error}=await sb.from(tbl).insert(body);
+      if(error) bmsg("Hata: "+error.message,false); else { bmsg("Yeni satır kaydedildi.",true); load(tbl); } }; });
+    $(t.tb).querySelectorAll("tr[data-id]").forEach(tr=>{
+      const id=tr.getAttribute("data-id");
+      tr.querySelectorAll("[data-f]").forEach(el=>{ el.onchange=async()=>{
+        const f=el.getAttribute("data-f"); const body={updated_at:new Date().toISOString()}; body[f]=val(f,el);
+        const {error}=await sb.from(tbl).update(body).eq("id",id);
+        if(error) bmsg("Hata: "+error.message,false); else { bmsg("Kaydedildi.",true); if(f==="tarih") load(tbl); } }; });
+      tr.querySelector(".del").onclick=async()=>{ if(!confirm("Bu satır silinsin mi?")) return;
+        const {error}=await sb.from(tbl).delete().eq("id",id); if(error) bmsg("Hata: "+error.message,false); else load(tbl); };
+    });
+  }
+  load("ob_dpgf"); load("ob_situation");
 })();
 </script>
 
