@@ -152,8 +152,8 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
    <!-- DEVLET-DESTEK (2026-09-24, Melih): Devlet Destek Başvuruları bloğu (devlet_destek). İade edilen tutar aylık toplamı ÖB primine esas (‰5, sonuç tarihinin ayı). -->
    <div class="card" id="ddCard">
     <div class="chd"><h2>Devlet Destek Başvuruları <span class="cnt" id="c4"></span></h2>
-      <button class="add" id="a4">＋ Yeni Test Ekle</button></div>
-    <div class="hint" style="margin:0 2px 6px">Son başvuru tarihi geçmiş ve başvurusu yapılmamış satırlar kırmızı, 30 gün içinde dolacaklar sarı görünür. Durum "Sonuçlandı" ise Sonuç Tarihi ve İade Edilen Tutar (₺) zorunludur.</div>
+      <span id="a4"></span></div>
+    <div class="hint" style="margin:0 2px 6px">Son başvuru tarihi geçmiş ve başvurusu yapılmamış satırlar kırmızı, 30 gün içinde dolacaklar sarı görünür. Yeni test için en üstteki boş satırı doldurun. Durum "Sonuçlandı" ise Sonuç Tarihi ve İade Edilen Tutar (₺) zorunludur.</div>
     <div class="scroll"><table id="ddTbl" style="min-width:1450px"><thead><tr>
       <th style="width:250px">Test</th><th style="width:120px">Proje</th><th style="width:130px">Test Tarihi</th><th style="width:105px">Test Tutarı</th><th style="width:70px">PB</th><th style="width:125px">Son Başvuru</th><th style="width:125px">Başvuru Tarihi</th><th style="width:175px">Durum</th><th style="width:125px">Sonuç Tarihi</th><th style="width:120px">İade Edilen (₺)</th><th style="width:220px">Açıklama</th><th class="x"></th>
     </tr></thead><tbody id="t4"><tr><td colspan="12">Yükleniyor…</td></tr></tbody></table></div>
@@ -780,11 +780,18 @@ async function ddKapi(){
     if(r.son_basvuru<bugun) return "background:#fde2e2"; if(r.son_basvuru<=ileri30) return "background:#fff4cc"; return ""; }
   let R4=[];
   async function load4(){
-    const {data,error}=await sb.from("devlet_destek").select("*").order("sira",{ascending:true,nullsFirst:false}).order("id");
+    /* DD-BOS-SATIR: son başvurusu boş olanlar üstte, sonra son başvuru yeniden eskiye */
+    const {data,error}=await sb.from("devlet_destek").select("*").order("son_basvuru",{ascending:false,nullsFirst:true}).order("id",{ascending:false});
     if(error){ $("t4").innerHTML='<tr><td colspan="12">Hata: '+escq(error.message)+'</td></tr>'; return; }
     R4=data||[]; $("c4").textContent="("+R4.length+")";
     const inp=(f,v,cls,typ)=>'<input'+(typ?' type="'+typ+'"':'')+(cls?' class="'+cls+'"':'')+' data-f="'+f+'" value="'+escq(v==null?"":v)+'">';
-    $("t4").innerHTML=R4.length?R4.map(r=>'<tr data-id="'+r.id+'">'
+    const bos='<tr data-new="1" style="background:#fffbea">'
+      +'<td>'+inp("test","")+'</td><td>'+inp("proje","")+'</td><td>'+inp("test_tarihi","")+'</td>'
+      +'<td>'+inp("test_tutari","","num")+'</td><td><select data-f="test_pb">'+opts(["EUR","TL","GBP","USD"],"TL")+'</select></td>'
+      +'<td>'+inp("son_basvuru","","","date")+'</td><td>'+inp("basvuru_tarihi","","","date")+'</td>'
+      +'<td><select data-f="durum">'+opts(DD_DURUM,"Yapılacak")+'</select></td>'
+      +'<td>'+inp("sonuc_tarihi","","","date")+'</td><td>'+inp("iade_tutari","","num")+'</td><td>'+inp("aciklama","")+'</td><td class="x"></td></tr>';
+    $("t4").innerHTML=bos+R4.map(r=>'<tr data-id="'+r.id+'">'
       +'<td>'+inp("test",r.test)+'</td><td>'+inp("proje",r.proje)+'</td><td>'+inp("test_tarihi",r.test_tarihi)+'</td>'
       +'<td>'+inp("test_tutari",nf(r.test_tutari),"num")+'</td>'
       +'<td><select data-f="test_pb">'+opts(["EUR","TL","GBP","USD"],r.test_pb)+'</select></td>'
@@ -794,8 +801,18 @@ async function ddKapi(){
       +'<td>'+inp("sonuc_tarihi",r.sonuc_tarihi,"","date")+'</td>'
       +'<td>'+inp("iade_tutari",nf(r.iade_tutari),"num")+'</td>'
       +'<td>'+inp("aciklama",r.aciklama)+'</td>'
-      +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
-      :'<tr><td colspan="12">Kayıt yok.</td></tr>';
+      +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("");
+    const nr=document.querySelector("#t4 tr[data-new]");
+    nr.querySelectorAll("[data-f]").forEach(el=>{
+      el.onchange=async()=>{
+        const f=el.getAttribute("data-f"); if(f==="test_pb"||f==="durum") return;
+        if(el.value.trim()==="") return;
+        const body={durum:nr.querySelector('[data-f="durum"]').value||"Yapılacak",test_pb:nr.querySelector('[data-f="test_pb"]').value||"TL"};
+        body[f]=(f==="test_tutari"||f==="iade_tutari")?num(el.value):el.value;
+        const {error}=await sb.from("devlet_destek").insert(body);
+        if(error) bmsg("Hata: "+error.message,false); else { bmsg("Yeni satır kaydedildi.",true); load4(); }
+      };
+    });
     document.querySelectorAll("#t4 tr[data-id]").forEach(tr=>{
       const id=tr.getAttribute("data-id");
       tr.querySelectorAll("[data-f]").forEach(el=>{
@@ -811,11 +828,6 @@ async function ddKapi(){
         if(error) bmsg("Hata: "+error.message,false); else load4(); };
     });
   }
-  $("a4").onclick=async()=>{
-    const mx=R4.reduce((m,r)=>Math.max(m,r.sira||0),0);
-    const {error}=await sb.from("devlet_destek").insert({sira:mx+1,durum:"Yapılacak",test_pb:"TL"});
-    if(error) bmsg("Hata: "+error.message,false); else load4();
-  };
   load4();
 })();
 </script>
