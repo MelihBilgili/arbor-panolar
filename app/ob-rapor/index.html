@@ -148,6 +148,17 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     </tr></thead><tbody id="t3"><tr><td colspan="7">Yükleniyor…</td></tr></tbody></table></div>
     <div class="msg" id="m3"></div>
    </div>
+
+   <!-- DEVLET-DESTEK (2026-09-24, Melih): Devlet Destek Başvuruları bloğu (devlet_destek). İade edilen tutar aylık toplamı ÖB primine esas (‰5, sonuç tarihinin ayı). -->
+   <div class="card" id="ddCard">
+    <div class="chd"><h2>Devlet Destek Başvuruları <span class="cnt" id="c4"></span></h2>
+      <button class="add" id="a4">＋ Yeni Test Ekle</button></div>
+    <div class="hint" style="margin:0 2px 6px">Son başvuru tarihi geçmiş ve başvurusu yapılmamış satırlar kırmızı, 30 gün içinde dolacaklar sarı görünür. Durum "Sonuçlandı" ise Sonuç Tarihi ve İade Edilen Tutar (₺) zorunludur.</div>
+    <div class="scroll"><table id="ddTbl" style="min-width:1450px"><thead><tr>
+      <th style="width:250px">Test</th><th style="width:120px">Proje</th><th style="width:130px">Test Tarihi</th><th style="width:105px">Test Tutarı</th><th style="width:70px">PB</th><th style="width:125px">Son Başvuru</th><th style="width:125px">Başvuru Tarihi</th><th style="width:175px">Durum</th><th style="width:125px">Sonuç Tarihi</th><th style="width:120px">İade Edilen (₺)</th><th style="width:220px">Açıklama</th><th class="x"></th>
+    </tr></thead><tbody id="t4"><tr><td colspan="12">Yükleniyor…</td></tr></tbody></table></div>
+    <div class="msg" id="m4"></div>
+   </div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -374,6 +385,7 @@ onayKur("dAdd","depenses","Tedarikçi Giderlerine İlişkin Aşağıdaki Bilgile
 onayKur("s_btn","santiye","Tıkanmış Şantiyelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("a2","odeme","Selectron'a Yapılan Ödemelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("a3","fatura","Kesilen Faturalara İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
+onayKur("a4","devlet","Devlet Destek Başvurularına İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum"); /* DEVLET-DESTEK */
 
 /* HAFTALIK GÜNCELLEME — yalnız Takipteki İşler (27.08.2026, Melih): Dépenses aktarımı ve
    SEL-ARB kapatma AYLIK GÜNCELLEME'ye taşındı; onay düğmeleri de aylığa bağlandı. */
@@ -398,6 +410,7 @@ async function haftalikGuncelle(){
 async function aylikGuncelle(){
   if(!onayKapi()) return;
   if(!afYorumKapi()) return;
+  if(!(await ddKapi())) return; /* DEVLET-DESTEK */
   const eksik=await selArbBosVar();
   const selArbOk=eksik.length===0;
   const selLine = selArbOk
@@ -740,6 +753,70 @@ sLoadListe(); loadSelArbListe(); sLoadAkis();
     if(error) bmsg("m3","Hata: "+error.message,false); else load3();
   };
   load2(); load3();
+})();
+
+/* ===== DEVLET-DESTEK (2026-09-24): Devlet Destek Başvuruları (devlet_destek) ===== */
+const DD_DURUM=["Yapılacak","Başvuruldu – Bekleniyor","Sonuçlandı","Reddedildi","Başvuru Yapılmayacak"];
+async function ddKapi(){
+  const {data,error}=await sb.from("devlet_destek").select("test,durum,basvuru_tarihi,sonuc_tarihi,iade_tutari");
+  if(error) return true;
+  const e=[];
+  (data||[]).forEach(r=>{ const ad=r.test||"(adsız test)";
+    if(r.durum==="Sonuçlandı"&&(!r.sonuc_tarihi||r.iade_tutari==null)) e.push(ad+" — Sonuç Tarihi / İade Edilen Tutar eksik");
+    if((r.durum==="Başvuruldu – Bekleniyor"||r.durum==="Sonuçlandı"||r.durum==="Reddedildi")&&!r.basvuru_tarihi) e.push(ad+" — Başvuru Tarihi eksik"); });
+  if(e.length){ alert("Aylık Güncelleme yapılamadı.\n\nDevlet Destek Başvuruları bloğunda eksik bilgi var:\n\n• "+e.join("\n• ")); return false; }
+  return true;
+}
+(function(){
+  const $=id=>document.getElementById(id);
+  const escq=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const num=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null; if(t.indexOf(",")>-1&&t.indexOf(".")>-1){t=t.replace(/\./g,"").replace(",",".");}else{t=t.replace(",",".");} const v=parseFloat(t); return isNaN(v)?null:v; };
+  const nf=v=>v==null?"":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  function bmsg(t,ok){ const m=$("m4"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
+  const opts=(list,cur)=>['<option value=""></option>'].concat(list.map(o=>'<option'+(String(cur||"")===o?" selected":"")+'>'+escq(o)+'</option>')).join("");
+  const bugun=new Date().toISOString().slice(0,10);
+  const ileri30=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+  function renk(r){ if(r.durum!=="Yapılacak"||!r.son_basvuru) return "";
+    if(r.son_basvuru<bugun) return "background:#fde2e2"; if(r.son_basvuru<=ileri30) return "background:#fff4cc"; return ""; }
+  let R4=[];
+  async function load4(){
+    const {data,error}=await sb.from("devlet_destek").select("*").order("sira",{ascending:true,nullsFirst:false}).order("id");
+    if(error){ $("t4").innerHTML='<tr><td colspan="12">Hata: '+escq(error.message)+'</td></tr>'; return; }
+    R4=data||[]; $("c4").textContent="("+R4.length+")";
+    const inp=(f,v,cls,typ)=>'<input'+(typ?' type="'+typ+'"':'')+(cls?' class="'+cls+'"':'')+' data-f="'+f+'" value="'+escq(v==null?"":v)+'">';
+    $("t4").innerHTML=R4.length?R4.map(r=>'<tr data-id="'+r.id+'">'
+      +'<td>'+inp("test",r.test)+'</td><td>'+inp("proje",r.proje)+'</td><td>'+inp("test_tarihi",r.test_tarihi)+'</td>'
+      +'<td>'+inp("test_tutari",nf(r.test_tutari),"num")+'</td>'
+      +'<td><select data-f="test_pb">'+opts(["EUR","TL","GBP","USD"],r.test_pb)+'</select></td>'
+      +'<td style="'+renk(r)+'">'+inp("son_basvuru",r.son_basvuru,"","date")+'</td>'
+      +'<td>'+inp("basvuru_tarihi",r.basvuru_tarihi,"","date")+'</td>'
+      +'<td><select data-f="durum">'+opts(DD_DURUM,r.durum)+'</select></td>'
+      +'<td>'+inp("sonuc_tarihi",r.sonuc_tarihi,"","date")+'</td>'
+      +'<td>'+inp("iade_tutari",nf(r.iade_tutari),"num")+'</td>'
+      +'<td>'+inp("aciklama",r.aciklama)+'</td>'
+      +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
+      :'<tr><td colspan="12">Kayıt yok.</td></tr>';
+    document.querySelectorAll("#t4 tr[data-id]").forEach(tr=>{
+      const id=tr.getAttribute("data-id");
+      tr.querySelectorAll("[data-f]").forEach(el=>{
+        el.onchange=async()=>{
+          const f=el.getAttribute("data-f"); const body={updated_at:new Date().toISOString()};
+          body[f]=(f==="test_tutari"||f==="iade_tutari")?num(el.value):(el.value===""?null:el.value);
+          const {error}=await sb.from("devlet_destek").update(body).eq("id",id);
+          if(error) bmsg("Hata: "+error.message,false); else { bmsg("Kaydedildi.",true); if(f==="durum"||f==="son_basvuru") load4(); }
+        };
+      });
+      tr.querySelector(".del").onclick=async()=>{ if(!confirm("Bu satır silinsin mi?")) return;
+        const {error}=await sb.from("devlet_destek").delete().eq("id",id);
+        if(error) bmsg("Hata: "+error.message,false); else load4(); };
+    });
+  }
+  $("a4").onclick=async()=>{
+    const mx=R4.reduce((m,r)=>Math.max(m,r.sira||0),0);
+    const {error}=await sb.from("devlet_destek").insert({sira:mx+1,durum:"Yapılacak",test_pb:"TL"});
+    if(error) bmsg("Hata: "+error.message,false); else load4();
+  };
+  load4();
 })();
 </script>
 
