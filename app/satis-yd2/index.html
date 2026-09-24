@@ -335,6 +335,21 @@ async function maybeAutoAdvance(r){
   }
   return false;
 }
+/* TAKIP-GERI (2026-09-24, Melih): "Takip Bekleniyor" satırına son 15 gün içinde takip notu
+   eklenmişse satır "Teklif Teslim Edildi"ye döner; not 15 günü aşınca maybeFlagTakipBekleniyor geri alır. */
+async function maybeUnflagTakip(r){
+  if(r.durum!=="Takip Bekleniyor") return false;
+  const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi), last=tkLatest(log);
+  const noteOk=!!(last.n && String(last.n).trim());
+  const takipAge=noteOk?daysAgo(r.son_takip_tarihi):null;
+  if(takipAge===null || takipAge>15) return false;
+  if(r.id){
+    const {error}=await sb.from("satis_yd_akis").update({durum:"Teklif Teslim Edildi"}).eq("id",r.id);
+    if(error) return false;
+  }
+  r.durum="Teklif Teslim Edildi";
+  return true;
+}
 async function maybeFlagTakipBekleniyor(r){
   if(r.durum!=="Teklif Teslim Edildi") return false;
   const tteAge=daysAgo(r.teklif_teslim_tarihi);
@@ -355,7 +370,7 @@ async function load(){
   const {data,error}=await sb.from("satis_yd_akis").select("*").eq("blok",BLOK);
   if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
   ROWS=data||[]; DRAFT=newDraftRow();
-  for(const r of ROWS){ await durumDuzelt(r); await maybeFlagTakipBekleniyor(r); }
+  for(const r of ROWS){ await durumDuzelt(r); await maybeUnflagTakip(r); await maybeFlagTakipBekleniyor(r); }
   render();
 }
 /* SIRALAMA (2026-09-18, Melih): Satırlar önce Durum grubuna (DISPLAY_ORDER) ayrılır —
@@ -621,6 +636,7 @@ async function tkCommitEntry(key,val){
   const {error}=await sb.from("satis_yd_akis").update(payload).eq("id",r.id);
   if(error){ m.className="msg err"; m.textContent=error.message; return; }
   r.son_takip_notlari=payload.son_takip_notlari; r.son_takip_tarihi=iso;
+  await maybeUnflagTakip(r); /* TAKIP-GERI */
   delete PENDING_TK[key];
   render();
   m.className="msg ok"; m.textContent="Kaydedildi ✓";
