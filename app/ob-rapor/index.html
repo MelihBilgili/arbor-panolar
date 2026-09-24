@@ -471,6 +471,11 @@ function afRender(){
   const r=AFROW||{};
   document.getElementById("afBox").innerHTML=
      '<div class="afr"><b>Dönem:</b> <span>'+afEsc(afDonemAd())+'</span></div>'
+    /* AF-PUAN (2026-09-24): Takipteki işler puanı (ÖB performans primi, OB-PRIM2 ile aynı formül) */
+    +(function(){ const n=x=>String(x||"").split("\n").map(y=>y.trim()).filter(Boolean).length; const tm=n(r.tamamlanan), gl=n(r.gelisme), ys=n(r.yerinde_sayan);
+       const p=Math.min(50,5*tm+2*gl);
+       return '<div class="afr"><span class="afpuan">Takipteki İşler Puanı: '+p+' / 50</span>'
+        +'<div style="margin-top:4px;color:#3d4a57">Hesap yöntemi: Tamamlanan her iş 5 puan, ilerleyen (gelişme kaydedilen) her iş 2 puan, yerinde sayan iş 0 puan; en çok 50 puan. Rutin öncelikli işler hesaba girmez. Dönem: '+tm+' tamamlanan × 5 + '+gl+' ilerleyen × 2 = '+(5*tm+2*gl)+(5*tm+2*gl>50?' (50 ile sınırlı)':'')+'; yerinde sayan '+ys+'.</div></div>'; })()
     +'<div class="afr"><b>Tamamlanan İşler:</b>'+afListe(r.tamamlanan)+'</div>'
     +'<div class="afr"><b>Gelişme Kaydedilen İşler:</b>'+afListe(r.gelisme)+'</div>'
     +'<div class="afr"><b>Gerçekleşen Faaliyet:</b> <div style="margin-top:2px">'+(r.faaliyet?afEsc(r.faaliyet):'<span style="color:#b0bac4">—</span>')+'</div></div>'
@@ -768,6 +773,7 @@ sLoadListe(); loadSelArbListe(); sLoadAkis();
     const et=$("eski2t"); if(et) et.onclick=()=>{ window._eski2=!window._eski2; load2(); };
     bind("t2","sel_odeme","m2",load2);
     bosBind("t2","sel_odeme","m2",load2,{yd_birim:1,para_birimi:1});
+    cariBanner("t2","Cari Ay Toplam EUR",R2.filter(r=>cariAyMi(r.odeme_tarihi)).map(r=>(r.tutar_eur!=null?Number(r.tutar_eur):((r.para_birimi||"EUR")==="EUR"?Number(r.tutar)||0:0))).reduce((a,b)=>a+b,0),"€"); /* CARI-TOPLAM */
   }
   let R3=[];
   async function load3(){
@@ -790,6 +796,8 @@ sLoadListe(); loadSelArbListe(); sLoadAkis();
       +'<td><input class="num" data-f="tutar"></td><td><select data-f="para_birimi">'+opts(PB,"EUR")+'</select></td><td class="x"></td></tr>');
     bind("t3","arbor_kesilen_fatura","m3",load3);
     bosBind("t3","arbor_kesilen_fatura","m3",load3,{yd_birim:1,para_birimi:1});
+    eskiKapat("t3","tarih",7); /* ESKI-KAPAT */
+    cariBanner("t3","Cari Ay Toplam EUR",R3.filter(r=>cariAyMi(r.tarih)).map(r=>(r.tutar_eur!=null?Number(r.tutar_eur):((r.para_birimi||"EUR")==="EUR"?Number(r.tutar)||0:0))).reduce((a,b)=>a+b,0),"€");
   }
   load2(); load3();
 })();
@@ -823,6 +831,7 @@ async function ddKapi(){
     const {data,error}=await sb.from("devlet_destek").select("*").order("son_basvuru",{ascending:false,nullsFirst:true}).order("id",{ascending:false});
     if(error){ $("t4").innerHTML='<tr><td colspan="12">Hata: '+escq(error.message)+'</td></tr>'; return; }
     R4=data||[]; $("c4").textContent="("+R4.length+")";
+    cariBanner("t4","Cari Ay İade Edilen Toplam TL",R4.filter(r=>cariAyMi(r.sonuc_tarihi)).reduce((a,r)=>a+(Number(r.iade_tutari)||0),0),"₺"); /* CARI-TOPLAM */
     const inp=(f,v,cls,typ)=>'<input'+(typ?' type="'+typ+'"':'')+(cls?' class="'+cls+'"':'')+' data-f="'+f+'" value="'+escq(v==null?"":v)+'">';
     const bos='<tr data-new="1" style="background:#fffbea">'
       +'<td>'+inp("test","")+'</td><td>'+inp("proje","")+'</td><td>'+inp("test_tarihi","")+'</td>'
@@ -870,6 +879,32 @@ async function ddKapi(){
   load4();
 })();
 
+/* ===== CARI-TOPLAM / ESKI-KAPAT (2026-09-24, Melih): tabloların üstünde belirgin "Cari Ay Toplam" kutusu;
+   cari aydan önceki satırlar kapalı, "▸ Önceki aylar" satırıyla açılır (veri silinmez) ===== */
+window._EKSI=window._EKSI||{};
+function cariAyBas(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-01"; }
+function cariAyMi(v){ return !!v && String(v).slice(0,7)===cariAyBas().slice(0,7); }
+function cariAyAd(){ const A=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]; const d=new Date(); return A[d.getMonth()]+" "+d.getFullYear(); }
+function cariFmt(v){ return Number(v||0).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function cariBanner(tb,etiket,tutar,birim){
+  const tbody=document.getElementById(tb); if(!tbody) return;
+  const sc=tbody.closest(".scroll")||tbody.closest("table"); if(!sc) return;
+  let b=sc.previousElementSibling;
+  if(!b||!b.classList||!b.classList.contains("carit")){ b=document.createElement("div"); b.className="carit"; sc.parentNode.insertBefore(b,sc); }
+  b.innerHTML=etiket+' <span style="font-weight:400;color:#3d5a52">('+cariAyAd()+')</span>: <span class="carv">'+cariFmt(tutar)+' '+birim+'</span>';
+}
+function eskiKapat(tb,dateF,cols){
+  const tbody=document.getElementById(tb); if(!tbody) return;
+  const ab=cariAyBas();
+  const eski=[...tbody.querySelectorAll("tr[data-id]")].filter(tr=>{ const el=tr.querySelector('[data-f="'+dateF+'"]'); return el&&el.value&&el.value<ab; });
+  if(!eski.length) return;
+  const tg=document.createElement("tr"); tg.style.cursor="pointer";
+  const ciz=()=>{ const o=!!window._EKSI[tb]; tg.innerHTML='<td colspan="'+cols+'" style="color:#7a8896;font-size:12px">'+(o?"▾":"▸")+' Önceki aylar ('+eski.length+' kayıt) — '+(o?"kapat":"göster")+'</td>';
+    eski.forEach(tr=>{ tr.style.display=o?"":"none"; }); };
+  tbody.appendChild(tg); eski.forEach(tr=>{ tr.style.background="#f6f7f9"; tbody.appendChild(tr); });
+  tg.onclick=()=>{ window._EKSI[tb]=!window._EKSI[tb]; ciz(); }; ciz();
+}
+document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block;background:#eaf6f1;border:1.5px solid #0a6b57;color:#0a6b57;border-radius:8px;padding:5px 12px;margin:0 0 7px;font-size:14px;font-weight:700}.carit .carv{font-size:15.5px}.afpuan{display:inline-block;background:#fff4d6;border:1.5px solid #8a6100;color:#5c4300;border-radius:8px;padding:5px 12px;font-size:15px;font-weight:800}</style>");
 /* ===== OB-DPGF (2026-09-24): DPGF (ob_dpgf) + Situation (ob_situation) — boş-satır deseni ===== */
 (function(){
   const $=id=>document.getElementById(id);
@@ -908,6 +943,9 @@ async function ddKapi(){
       tr.querySelector(".del").onclick=async()=>{ if(!confirm("Bu satır silinsin mi?")) return;
         const {error}=await sb.from(tbl).delete().eq("id",id); if(error) bmsg("Hata: "+error.message,false); else load(tbl); };
     });
+    eskiKapat(t.tb,"tarih",tbl==="ob_situation"?7:5); /* ESKI-KAPAT */
+    cariBanner(t.tb,"Cari Ay Toplam EUR"+(tbl==="ob_situation"?" <span style=\"font-weight:400;font-size:12px\">(İptal Edildi hariç)</span>":""),
+      R.filter(r=>cariAyMi(r.tarih)&&!(tbl==="ob_situation"&&r.onay_durumu==="İptal Edildi")).reduce((a,r)=>a+(Number(r.tutar)||0),0),"€"); /* CARI-TOPLAM */
   }
   load("ob_dpgf"); load("ob_situation"); load("ob_avenant");
 })();
