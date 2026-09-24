@@ -2434,6 +2434,24 @@ async function loadObrapor(tgt){
     <div class="obaf"><div class="obafy">${esc(afR.ob_yorum)}</div></div>`;
   ib+=`<h3 class="sec">Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler <span class="muted">(${esc(afAd)})</span></h3>
     <div class="obaf">${odTbl}</div>`;
+  /* DEVLET-DESTEK (2026-09-24, Melih): Selectron ödemeleri primi 1/10.000 (tutar_eur toplamı) + Devlet Destek
+     Başvuruları bloğu (devlet_destek, ÖB formundan). İade primi = sonuç tarihi kapanan aya düşen iade toplamı × 5/1000. */
+  const selEur=odR.reduce((t,r)=>t+(Number(r.tutar_eur)||0),0);
+  if(odR.length) ib+=`<div class="muted" style="font-size:12px;margin:4px 2px 0">Ödeme toplamı ${nf(selEur)} € · ÖB primi (1/10.000): <b>${nf(selEur/10000)} €</b></div>`;
+  const ddq=await sb.from("devlet_destek").select("*").order("sira",{ascending:true,nullsFirst:false}).order("id");
+  const ddR=(ddq&&!ddq.error)?(ddq.data||[]):[];
+  const ddBug=new Date().toISOString().slice(0,10), dd30=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
+  const ddG=v=>v?esc(dgun(String(v))):"";
+  const ddRenk=r=>(r.durum!=="Yapılacak"||!r.son_basvuru)?"":(r.son_basvuru<ddBug?' style="background:#fde2e2"':(r.son_basvuru<=dd30?' style="background:#fff4cc"':""));
+  const ddAy=ddR.filter(r=>r.sonuc_tarihi&&String(r.sonuc_tarihi)>=afDon+"-01"&&String(r.sonuc_tarihi)<=afSon);
+  const ddAyTop=ddAy.reduce((t,r)=>t+(Number(r.iade_tutari)||0),0);
+  const ddYil=String(_y), ddYilTop=ddR.filter(r=>String(r.sonuc_tarihi||"").slice(0,4)===ddYil).reduce((t,r)=>t+(Number(r.iade_tutari)||0),0);
+  let ddTbl=`<div class="scroll"><table class="obod"><thead><tr><th>Test</th><th>Proje</th><th>Test Tarihi</th><th class="num">Test Tutarı</th><th>Son Başvuru</th><th>Başvuru</th><th>Durum</th><th>Sonuç</th><th class="num">İade (₺)</th><th>Açıklama</th></tr></thead><tbody>`
+    + (ddR.length?ddR.map(r=>`<tr><td>${esc(r.test||"")}</td><td>${esc(r.proje||"")}</td><td>${esc(r.test_tarihi||"")}</td><td class="num">${r.test_tutari==null?"":nf(r.test_tutari)+" "+esc(r.test_pb||"")}</td><td${ddRenk(r)}>${ddG(r.son_basvuru)}</td><td>${ddG(r.basvuru_tarihi)}</td><td>${esc(r.durum||"")}</td><td>${ddG(r.sonuc_tarihi)}</td><td class="num">${r.iade_tutari==null?"":nf(r.iade_tutari)}</td><td>${esc(r.aciklama||"")}</td></tr>`).join(""):`<tr><td colspan="10" class="muted">Kayıt yok.</td></tr>`)
+    + `</tbody></table></div>`
+    + `<div class="muted" style="font-size:12px;margin:4px 2px 0">${esc(afAd)} iade toplamı ${nf(ddAyTop)} ₺ · ÖB primi (5/1000): <b>${nf(ddAyTop*0.005)} ₺</b> · ${ddYil} yılı iade toplamı ${nf(ddYilTop)} ₺</div>`;
+  ib+=`<h3 class="sec">Devlet Destek Başvuruları <span class="muted">(${ddR.length})</span></h3>
+    <div class="obaf" style="max-width:none">${ddTbl}</div>`;
   /* Panonun altında serbest metin kutusu → ÖB'ye anında mail (pano-mesaj-mail, alıcı form_takip'ten) */
   ib+=`<div class="obmail">
     <div class="obmh">ÖB'ye Mail Gönder</div>
@@ -2459,6 +2477,7 @@ async function loadObrapor(tgt){
     table.obod th,table.obod td{border-bottom:1px solid #eef1f5;padding:2px 8px;text-align:left;white-space:nowrap}
     table.obod thead th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px}
     table.obod tr.itot td{background:#f4f7fb;font-weight:700}
+    table.obod td.num,table.obod th.num{text-align:right}
     .obmail{margin-top:12px;background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 12px;max-width:900px}
     .obmail .obmh{font-size:12.5px;font-weight:700;color:#16324f;margin-bottom:6px}
     .obmail textarea{width:100%;min-height:88px;font:inherit;font-size:12.5px;line-height:1.45;padding:7px 9px;border:1px solid #cdd6df;border-radius:8px;background:#fffdf8;resize:vertical}
