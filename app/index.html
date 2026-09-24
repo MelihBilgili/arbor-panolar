@@ -2452,6 +2452,80 @@ async function loadObrapor(tgt){
     + `<div class="muted" style="font-size:12px;margin:4px 2px 0">${esc(afAd)} iade toplamı ${nf(ddAyTop)} ₺ · ÖB primi (5/1000): <b>${nf(ddAyTop*0.005)} ₺</b> · ${ddYil} yılı iade toplamı ${nf(ddYilTop)} ₺</div>`;
   ib+=`<h3 class="sec">Devlet Destek Başvuruları <span class="muted">(${ddR.length})</span></h3>
     <div class="obaf" style="max-width:none">${ddTbl}</div>`;
+  /* ===== OB-DPGF + OB-PRIM (2026-09-24, Melih): DPGF-Situation bloğu (ob_dpgf/ob_situation, ÖB formundan) ve
+     ÖB Performans Primi. Dönem = kapanan ay (afDon). Puan (100): Takipteki işler 50 · Zamanında güncelleme 10
+     (ÖB Faaliyet 5 + Sel-Arb 5; ayın ilk iş gününden sonraki her iş günü −1) · MK notu 10 (MK formu) · MB notu 10
+     (bu pano) · DPGF € 8 · Situation € 7 (hedefe oranla, İptal Edildi hariç). Takipteki işler = Aylık Faaliyet
+     listeleri, öncelik ağırlığı 1→3, 2→2, 3/-→1; Tamamlanan tam, Gelişme yarım, Yerinde sayan 0 puan.
+     Ek primler: Selectron ödemeleri € × 1/10.000 · Devlet destek iadesi ₺ × 5/1000. ===== */
+  const [dpq,stq,paq,ppq,pyq2,kurOB]=await Promise.all([
+    sb.from("ob_dpgf").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}),
+    sb.from("ob_situation").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}),
+    sb.from("ob_prim_ay").select("*").eq("donem",afDon).limit(1),
+    sb.from("ob_prim_param").select("anahtar,deger"),
+    sb.from("pano_yayin").select("anahtar,yayin_at").in("anahtar",["ob_rapor","sel_arb_form"]),
+    satisKur().catch(()=>null)
+  ]);
+  const dpR=(dpq&&!dpq.error)?(dpq.data||[]):[], stR=(stq&&!stq.error)?(stq.data||[]):[];
+  const inAy=r=>r.tarih&&String(r.tarih)>=afDon+"-01"&&String(r.tarih)<=afSon;
+  const dsTbl=(R,cols)=>`<div class="scroll"><table class="obod"><thead><tr>${cols.map(c=>`<th${c[2]?' class="num"':''}>${c[0]}</th>`).join("")}</tr></thead><tbody>`
+    +(R.length?R.map(r=>`<tr${inAy(r)?' style="background:#f3f8ff"':''}>${cols.map(c=>`<td${c[2]?' class="num"':''}>${c[1](r)}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cols.length}" class="muted">Kayıt yok.</td></tr>`)
+    +`</tbody></table></div>`;
+  const dpAy=dpR.filter(inAy).reduce((t,r)=>t+(Number(r.tutar)||0),0);
+  const stAy=stR.filter(r=>inAy(r)&&r.onay_durumu!=="İptal Edildi").reduce((t,r)=>t+(Number(r.tutar)||0),0);
+  ib+=`<h3 class="sec">DPGF - Situation <span class="muted">(${esc(afAd)} satırları mavi)</span></h3>
+    <div class="obaf" style="max-width:none;display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+     <div><div class="obafh">DPGF · ${esc(afAd)}: ${nf(dpAy)} €</div>${dsTbl(dpR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Correspondence",r=>esc(r.correspondence||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
+     <div><div class="obafh">Situation · ${esc(afAd)}: ${nf(stAy)} € <span class="muted" style="font-weight:400">(İptal Edildi hariç)</span></div>${dsTbl(stR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["İlerleme No",r=>esc(r.ilerleme_no||"")],["Dönem",r=>esc(r.donem||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Onay Durumu",r=>esc(r.onay_durumu||"")]])}</div>
+    </div>`;
+  /* --- puanlar --- */
+  const PA=(paq&&!paq.error&&paq.data&&paq.data[0])||{};
+  const PP={}; ((ppq&&!ppq.error)?(ppq.data||[]):[]).forEach(r=>PP[r.anahtar]=r.deger==null?null:Number(r.deger));
+  const oncW={}; iRows.forEach(r=>{ const o=String(r.oncelik==null?"":r.oncelik).trim(); oncW[String(r.konu||"").trim()]=o==="1"?3:o==="2"?2:1; });
+  const lst=t=>String(t||"").split("\n").map(x=>x.trim()).filter(Boolean);
+  const wOf=k=>oncW[k]||1;
+  let tkP=null, tkAcik="Aylık Faaliyet tespiti yok";
+  if(afR){ const tm=lst(afR.tamamlanan), gl=lst(afR.gelisme), ys=lst(afR.yerinde_sayan);
+    const W=a=>a.reduce((t,k)=>t+wOf(k),0), top=W(tm)+W(gl)+W(ys);
+    if(top>0){ tkP=50*(W(tm)+0.5*W(gl))/top; tkAcik=`Tamamlanan ${tm.length} · Gelişme ${gl.length} · Yerinde sayan ${ys.length} (ağırlıklı ${nf(W(tm)+0.5*W(gl))} / ${nf(top)})`; } }
+  const pyB={}; ((pyq2&&!pyq2.error)?(pyq2.data||[]):[]).forEach(r=>pyB[r.anahtar]=r.yayin_at);
+  const bugunD=new Date(); bugunD.setHours(0,0,0,0);
+  const ilkIs=new Date(bugunD.getFullYear(),bugunD.getMonth(),1); while(ilkIs.getDay()===0||ilkIs.getDay()===6) ilkIs.setDate(ilkIs.getDate()+1);
+  const isGecik=d=>{ let n=0; const x=new Date(ilkIs); while(x<d){ x.setDate(x.getDate()+1); if(x<=d&&x.getDay()!==0&&x.getDay()!==6) n++; } return n; };
+  const zmn=k=>{ const at=pyB[k]; const ayBas=new Date(bugunD.getFullYear(),bugunD.getMonth(),1);
+    let d=at?new Date(at):null; if(d) d.setHours(0,0,0,0);
+    const yapildi=d&&d>=ayBas; const g=isGecik(yapildi?d:bugunD);
+    return {p:Math.max(0,5-g),t:yapildi?`${ddG(at.slice(0,10))} (${g} iş günü gecikme)`:`henüz güncellenmedi (${g} iş günü gecikme)`}; };
+  const zOB=zmn("ob_rapor"), zSA=zmn("sel_arb_form");
+  const hedefP=(v,h,max)=>(h>0)?Math.min(max,max*v/h):null;
+  const dpP=hedefP(dpAy,PP.dpgf_hedef,8), stP=hedefP(stAy,PP.situation_hedef,7);
+  const mkP=PA.mk_notu!=null?Number(PA.mk_notu):null, mbP=PA.mb_notu!=null?Number(PA.mb_notu):null;
+  const KAL=[["Takipteki işler",50,tkP,tkAcik],["Zamanında güncelleme — ÖB Faaliyet formu",5,zOB.p,zOB.t],["Zamanında güncelleme — Sel-Arb formu",5,zSA.p,zSA.t],
+    ["MK notu",10,mkP,mkP==null?"MK formunda henüz girilmedi":`${mkP} / 10`],["MB notu",10,mbP,"mbsel"],
+    ["Aylık DPGF €",8,dpP,`${nf(dpAy)} € / hedef `+"dph"],["Aylık Situation €",7,stP,`${nf(stAy)} € / hedef `+"sth"]];
+  const puan=KAL.reduce((t,k)=>t+(k[2]||0),0), eksikK=KAL.filter(k=>k[2]==null).map(k=>k[0]);
+  const pin=(id,v,w)=>`<input id="${id}" class="obpin" style="width:${w||11}ch" value="${v==null?"":nf(v)}">`;
+  const mbSel=`<select id="ob-mbnot" class="obpin"><option value=""></option>${[0,1,2,3,4,5,6,7,8,9,10].map(i=>`<option${mbP===i?" selected":""}>${i}</option>`).join("")}</select> <span class="muted">Geçtiğimiz ay boyunca Özgül Bedestenci'nin performansına ilişkin notunuzu 0 ile 10 arası bir rakamla belirtiniz.</span>`;
+  const acik=a=>a==="mbsel"?mbSel:a.replace("dph",pin("ob-dph",PP.dpgf_hedef)+" €").replace("sth",pin("ob-sth",PP.situation_hedef)+" €");
+  const taban=PP.taban_prim, perfTL=taban>0?taban*puan/100:null;
+  const selPrimE=selEur/10000, ddPrimTL=ddAyTop*0.005, eurTL=kurOB&&kurOB.TL>0?kurOB.TL:null;
+  const topTL=(perfTL||0)+ddPrimTL+(eurTL?selPrimE*eurTL:0);
+  ib+=`<h3 class="sec">ÖB Performans Primi <span class="muted">(${esc(afAd)})</span></h3>
+    <div class="obaf" style="max-width:none"><div class="scroll"><table class="obod"><thead><tr><th>Kriter</th><th>Ölçüm</th><th class="num">Puan</th><th class="num">En çok</th></tr></thead><tbody>`
+    + KAL.map(k=>`<tr><td>${esc(k[0])}</td><td>${k[3]==="mbsel"||/dph|sth/.test(k[3])?acik(k[3]):esc(k[3])}</td><td class="num">${k[2]==null?"—":nf(k[2])}</td><td class="num">${k[1]}</td></tr>`).join("")
+    + `<tr class="itot"><td colspan="2">TOPLAM PUAN${eksikK.length?` <span class="muted" style="font-weight:400">(eksik: ${esc(eksikK.join(", "))})</span>`:""}</td><td class="num">${nf(puan)}</td><td class="num">100</td></tr>`
+    + `</tbody></table></div>
+    <div class="scroll" style="margin-top:8px"><table class="obod"><tbody>
+     <tr><td>Performans primi = taban ${pin("ob-taban",taban,12)} ₺ × ${nf(puan)} / 100</td><td class="num">${perfTL==null?"— (taban girilmedi)":nf(perfTL)+" ₺"}</td></tr>
+     <tr><td>Selectron ödemeleri primi = ${nf(selEur)} € × 1/10.000</td><td class="num">${nf(selPrimE)} €${eurTL?` (${nf(selPrimE*eurTL)} ₺)`:""}</td></tr>
+     <tr><td>Devlet destek primi = ${nf(ddAyTop)} ₺ × 5/1000</td><td class="num">${nf(ddPrimTL)} ₺</td></tr>
+     <tr class="itot"><td>TOPLAM PRİM${eurTL?` <span class="muted" style="font-weight:400">(1 € = ${nf(eurTL)} ₺)</span>`:" (€ kısmı hariç — kur alınamadı)"}</td><td class="num">${nf(topTL)} ₺</td></tr>
+    </tbody></table></div><span class="msg" id="ob-prim-msg"></span></div>`;
+  try{ sb.from("ob_prim_ay").upsert({donem:afDon,toplam_puan:Math.round(puan*100)/100,updated_at:new Date().toISOString(),
+    puan_detay:{kalemler:KAL.map(k=>({kriter:k[0],en_cok:k[1],puan:k[2]==null?null:Math.round(k[2]*100)/100})),dpgf_eur:dpAy,situation_eur:stAy,
+      selectron_eur:selEur,selectron_prim_eur:selPrimE,iade_tl:ddAyTop,iade_prim_tl:ddPrimTL,taban_tl:taban,performans_prim_tl:perfTL,kur_eur_tl:eurTL,toplam_prim_tl:topTL}},
+    {onConflict:"donem"}).then(()=>{},()=>{}); }catch(e){}
+  window._obPrimTgt=tgt; window._obPrimDon=afDon;
   /* Panonun altında serbest metin kutusu → ÖB'ye anında mail (pano-mesaj-mail, alıcı form_takip'ten) */
   ib+=`<div class="obmail">
     <div class="obmh">ÖB'ye Mail Gönder</div>
@@ -2478,6 +2552,7 @@ async function loadObrapor(tgt){
     table.obod thead th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px}
     table.obod tr.itot td{background:#f4f7fb;font-weight:700}
     table.obod td.num,table.obod th.num{text-align:right}
+    .obpin{font:inherit;font-size:12px;padding:1px 5px;border:1px solid #cdd6df;border-radius:5px;background:#fffdf5;text-align:right}
     .obmail{margin-top:12px;background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 12px;max-width:900px}
     .obmail .obmh{font-size:12.5px;font-weight:700;color:#16324f;margin-bottom:6px}
     .obmail textarea{width:100%;min-height:88px;font:inherit;font-size:12.5px;line-height:1.45;padding:7px 9px;border:1px solid #cdd6df;border-radius:8px;background:#fffdf8;resize:vertical}
@@ -2503,6 +2578,15 @@ async function loadObrapor(tgt){
     }catch(e){ mg.className="msg err"; mg.textContent="Hata: "+e; }
     mb.disabled=false;
   };
+  /* OB-PRIM: MB notu ve prim parametreleri (değişince kaydet + panoyu yeniden çiz) */
+  const _pm=(t,ok)=>{ const m=document.getElementById("ob-prim-msg"); if(m){ m.className="msg "+(ok?"ok":"err"); m.textContent=t; } };
+  const _num=v=>{ let t=String(v||"").replace(/[^0-9,.\-]/g,""); if(!t) return null; if(t.indexOf(",")>-1&&t.indexOf(".")>-1) t=t.replace(/\./g,"").replace(",","."); else t=t.replace(",","."); const n=parseFloat(t); return isNaN(n)?null:n; };
+  const mbn=document.getElementById("ob-mbnot");
+  if(mbn) mbn.onchange=async()=>{ const {error}=await sb.from("ob_prim_ay").upsert({donem:window._obPrimDon,mb_notu:mbn.value===""?null:Number(mbn.value),updated_at:new Date().toISOString()},{onConflict:"donem"});
+    if(error) _pm("Hata: "+error.message,false); else loadObrapor(tgt); };
+  [["ob-dph","dpgf_hedef"],["ob-sth","situation_hedef"],["ob-taban","taban_prim"]].forEach(([id,k])=>{ const el=document.getElementById(id); if(!el) return;
+    el.onchange=async()=>{ const {error}=await sb.from("ob_prim_param").upsert({anahtar:k,deger:_num(el.value),updated_at:new Date().toISOString()},{onConflict:"anahtar"});
+      if(error) _pm("Hata: "+error.message,false); else loadObrapor(tgt); }; });
 }
 
 /* DA-KALDIRILDI (21.09.2026, Melih): DA Faaliyet panosu ve formu (app/da-rapor/) kaldırıldı; veri tabloları (da_isler, da_aylik_faaliyet) silinmedi. */
