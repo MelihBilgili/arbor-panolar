@@ -162,13 +162,15 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 
    <!-- OB-DPGF (2026-09-24, Melih): DPGF-Situation bloğu — sol DPGF (ob_dpgf), sağ Situation (ob_situation). Tutarlar €; ay = Tarih. ÖB performans primine esas. -->
    <div class="card" id="dsCard">
-    <div class="chd"><h2>DPGF - Situation</h2><span id="a5"></span></div>
+    <div class="chd"><h2>DPGF's - Situations - Avenants</h2><span id="a5"></span></div>
     <div class="hint" style="margin:0 2px 6px">Yeni kayıt için en üstteki boş satırı doldurun. Tarih = hazırlanma tarihi (boş bırakılırsa bugün). Tutarlar € cinsindendir.</div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
-     <div style="flex:1 1 380px;min-width:0"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">DPGF <span class="cnt" id="c5"></span></h3>
+    <div><!-- OB-AVENANT: tablolar alt alta -->
+     <div style="margin-bottom:12px"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">DPGF <span class="cnt" id="c5"></span></h3>
       <div class="scroll"><table style="min-width:520px"><thead><tr><th style="width:120px">Tarih</th><th>Proje</th><th>Correspondence</th><th style="width:110px">Tutar (€)</th><th class="x"></th></tr></thead><tbody id="t5"></tbody></table></div></div>
-     <div style="flex:1.4 1 520px;min-width:0"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">Situation <span class="cnt" id="c6"></span></h3>
+     <div style="margin-bottom:12px"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">Situations <span class="cnt" id="c6"></span></h3>
       <div class="scroll"><table style="min-width:760px"><thead><tr><th style="width:120px">Tarih</th><th>Proje</th><th style="width:80px">İlerleme No</th><th style="width:110px">Dönem</th><th style="width:110px">Tutar (€)</th><th style="width:140px">Onay Durumu</th><th class="x"></th></tr></thead><tbody id="t6"></tbody></table></div></div>
+     <div><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">Avenants <span class="cnt" id="c7"></span></h3>
+      <div class="scroll"><table style="min-width:620px"><thead><tr><th style="width:120px">Tarih</th><th>Proje</th><th>Açıklama</th><th style="width:110px">Tutar (€)</th><th class="x"></th></tr></thead><tbody id="t7"></tbody></table></div></div>
     </div>
     <div class="msg" id="m5"></div>
    </div>
@@ -399,7 +401,7 @@ onayKur("s_btn","santiye","Tıkanmış Şantiyelere İlişkin Aşağıdaki Bilgi
 onayKur("a2","odeme","Selectron'a Yapılan Ödemelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("a3","fatura","Kesilen Faturalara İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("a4","devlet","Devlet Destek Başvurularına İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum"); /* DEVLET-DESTEK */
-onayKur("a5","dpgf","DPGF ve Situation Bilgilerinin Güncel Olduğunu Onaylıyorum"); /* OB-DPGF */
+onayKur("a5","dpgf","DPGF, Situation ve Avenant Bilgilerinin Güncel Olduğunu Onaylıyorum"); /* OB-DPGF */
 
 /* HAFTALIK GÜNCELLEME — yalnız Takipteki İşler (27.08.2026, Melih): Dépenses aktarımı ve
    SEL-ARB kapatma AYLIK GÜNCELLEME'ye taşındı; onay düğmeleri de aylığa bağlandı. */
@@ -857,7 +859,8 @@ async function ddKapi(){
   const inp=(f,v,cls,typ)=>'<input'+(typ?' type="'+typ+'"':'')+(cls?' class="'+cls+'"':'')+' data-f="'+f+'" value="'+escq(v==null?"":v)+'">';
   const T={
     ob_dpgf:{tb:"t5",cnt:"c5",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje)+'</td>','<td>'+inp("correspondence",r.correspondence)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']},
-    ob_situation:{tb:"t6",cnt:"c6",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje)+'</td>','<td>'+inp("ilerleme_no",r.ilerleme_no)+'</td>','<td>'+inp("donem",r.donem)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td><select data-f="onay_durumu">'+opts(ONAY,r.onay_durumu)+'</select></td>']}
+    ob_situation:{tb:"t6",cnt:"c6",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje)+'</td>','<td>'+inp("ilerleme_no",r.ilerleme_no)+'</td>','<td>'+inp("donem",r.donem)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td><select data-f="onay_durumu">'+opts(ONAY,r.onay_durumu)+'</select></td>']},
+    ob_avenant:{tb:"t7",cnt:"c7",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje)+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']}
   };
   async function load(tbl){
     const t=T[tbl];
@@ -883,7 +886,7 @@ async function ddKapi(){
         const {error}=await sb.from(tbl).delete().eq("id",id); if(error) bmsg("Hata: "+error.message,false); else load(tbl); };
     });
   }
-  load("ob_dpgf"); load("ob_situation");
+  load("ob_dpgf"); load("ob_situation"); load("ob_avenant");
 })();
 </script>
 
