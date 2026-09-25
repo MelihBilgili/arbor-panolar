@@ -63,6 +63,8 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div class="ibtns" style="margin:2px 0 10px;align-items:center">
     <button class="mnbtn" id="iMonth">Aylık Güncelleme</button>
     <span class="hint" style="margin:0;align-self:center">Formdaki tüm bilgiler aktarılır</span>
+    <!-- ZG-PUAN (2026-09-25) --><span class="afpuan" id="zgPuan" style="margin-left:14px">Zamanında Güncelleme Puanı: … / 10</span>
+    <span class="hint" style="margin:0;align-self:center">ÖB Faaliyet ve Sel-Arb formlarının ortalaması alınır</span>
   </div>
 
   <div class="grp">
@@ -87,7 +89,10 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <select id="dAy" class="dsel" title="Yeni kaydın ayı"></select>
       <button class="iadd" id="dAdd">+ Tedarikçi Ekle</button>
     </div>
-    <div id="dList"><div class="load">Yükleniyor…</div></div>
+    <!-- YD-FT-GEREKEN (2026-09-25) --><div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
+      <div id="dList" style="flex:1 1 440px;min-width:0"><div class="load">Yükleniyor…</div></div>
+      <div id="ydBox" class="ydbox"></div>
+    </div>
   </div>
 
   <div class="grp"><h2>Tıkanmış Şantiyeler — Durum Girişi (ÖB)</h2>
@@ -535,6 +540,7 @@ async function loadDep(){
   if(error){ document.getElementById("dList").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
   DROWS=data||[];
   renderDep();
+  try{ zgHesap(); ydHesap(); }catch(e){} /* ZG-PUAN / YD-FT-GEREKEN */
 }
 /* Dépenses ay-accordion: cari ay varsayılan açık, geçmiş aylar gizli; başlığa tıkla aç/kapat */
 let DOPEN=null;
@@ -594,6 +600,45 @@ async function delDep(id){
   DROWS=DROWS.filter(x=>x.id!==id); renderDep();
 }
 document.getElementById("dAdd").onclick=addDep;
+
+/* ===== ZG-PUAN (2026-09-25): Zamanında Güncelleme Puanı — panodaki OB-PRIM2 ile aynı formül:
+   ÖB Faaliyet (pano_yayin.ob_rapor) ve Sel-Arb (pano_yayin.sel_arb_form) ayrı ayrı 11 − güncelleme gününün
+   ayın iş günleri içindeki sırası (en az 0); ikisinin ortalaması. Bu ay güncellenmemişse bugünün sırası esas alınır. ===== */
+async function zgHesap(){
+  const el=document.getElementById("zgPuan"); if(!el) return;
+  const {data,error}=await sb.from("pano_yayin").select("anahtar,yayin_at").in("anahtar",["ob_rapor","sel_arb_form"]);
+  if(error){ el.textContent="Zamanında Güncelleme Puanı: — / 10"; el.title="Hata: "+error.message; return; }
+  const pyB={}; (data||[]).forEach(r=>pyB[r.anahtar]=r.yayin_at);
+  const bugun=new Date(); bugun.setHours(0,0,0,0);
+  const ilkIs=new Date(bugun.getFullYear(),bugun.getMonth(),1); while(ilkIs.getDay()===0||ilkIs.getDay()===6) ilkIs.setDate(ilkIs.getDate()+1);
+  const gecik=d=>{ let n=0; const x=new Date(ilkIs); while(x<d){ x.setDate(x.getDate()+1); if(x<=d&&x.getDay()!==0&&x.getDay()!==6) n++; } return n; };
+  const ayBas=new Date(bugun.getFullYear(),bugun.getMonth(),1);
+  const zmn=k=>{ const at=pyB[k]; let d=at?new Date(at):null; if(d) d.setHours(0,0,0,0);
+    const yap=d&&d>=ayBas; const sira=gecik(yap?d:bugun)+1;
+    return {p:Math.max(0,11-sira),t:(yap?dDate(at):"bu ay henüz güncellenmedi")+" ("+sira+". iş günü)"}; };
+  const a=zmn("ob_rapor"), b=zmn("sel_arb_form"), p=(a.p+b.p)/2;
+  el.textContent="Zamanında Güncelleme Puanı: "+p.toLocaleString("tr-TR",{maximumFractionDigits:1})+" / 10";
+  el.title="ÖB Faaliyet: "+a.t+" → "+a.p+"\nSel-Arb: "+b.t+" → "+b.p+"\nHer form: 11 − güncelleme gününün ayın iş günleri içindeki sırası (en az 0)";
+}
+/* ===== YD-FT-GEREKEN (2026-09-25): Yurt Dışı Birimlerden Selectron'a Faturalandırılması Gereken Tutar (EUR)
+   2026 sonuna kadar 0. 2027'den itibaren: yılbaşından bugüne işlenen Dépenses toplamı − yılbaşından bugüne
+   Yurt Dışı Birimlerden Selectron'a Kesilen Faturalar (arbor_kesilen_fatura, € karşılığı) toplamı. Tamsayı, binlik ayraçlı. ===== */
+async function ydHesap(){
+  const el=document.getElementById("ydBox"); if(!el) return;
+  const now=new Date(), y=now.getFullYear(), m=now.getMonth()+1;
+  let v=0, acik="2026 sonuna kadar sıfırdır.";
+  if(y>=2027){
+    const dep=DROWS.filter(r=>r.yil===y&&r.ay<=m).reduce((t,r)=>t+(Number(r.tutar)||0),0);
+    const bugunS=y+"-"+String(m).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+    const {data,error}=await sb.from("arbor_kesilen_fatura").select("tarih,tutar,tutar_eur,para_birimi").gte("tarih",y+"-01-01").lte("tarih",bugunS);
+    if(error){ el.innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
+    const ft=(data||[]).reduce((t,r)=>t+(r.tutar_eur!=null?Number(r.tutar_eur):((r.para_birimi||"EUR")==="EUR"?Number(r.tutar)||0:0)),0);
+    v=dep-ft; acik=y+" yılbaşından bugüne: Dépenses "+dEur(dep)+" € − Kesilen Faturalar "+dEur(ft)+" €";
+  }
+  el.innerHTML='<div class="ydl">Yurt Dışı Birimlerden Selectron\'a Faturalandırılması Gereken Tutar (EUR):</div>'
+    +'<div class="ydv">'+dEur(v)+'</div><div class="ydn">'+esc(acik)+'</div>';
+}
+document.head.insertAdjacentHTML("beforeend","<style>.ydbox{flex:0 0 260px;background:#fff4d6;border:1.5px solid #8a6100;color:#5c4300;border-radius:8px;padding:9px 13px}.ydbox .ydl{font-weight:700;font-size:13px}.ydbox .ydv{font-size:20px;font-weight:800;margin-top:4px}.ydbox .ydn{font-size:11.5px;color:#7a6a40;margin-top:3px}</style>");
 
 /* ===== Tıkanmış Şantiyeler — ÖB durum girişi + yeni şantiye (SEL-ARB seçiminden) ===== */
 const $$=id=>document.getElementById(id);
@@ -797,6 +842,7 @@ sLoadListe(); loadSelArbListe(); sLoadAkis();
     bind("t3","arbor_kesilen_fatura","m3",load3);
     bosBind("t3","arbor_kesilen_fatura","m3",load3,{yd_birim:1,para_birimi:1});
     eskiKapat("t3","tarih",7); /* ESKI-KAPAT */
+    try{ if(typeof ydHesap==="function") ydHesap(); }catch(e){} /* YD-FT-GEREKEN */
     cariBanner("t3","Cari Ay Toplam EUR",R3.filter(r=>cariAyMi(r.tarih)).map(r=>(r.tutar_eur!=null?Number(r.tutar_eur):((r.para_birimi||"EUR")==="EUR"?Number(r.tutar)||0:0))).reduce((a,b)=>a+b,0),"€");
   }
   load2(); load3();
