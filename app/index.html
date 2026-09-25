@@ -3109,7 +3109,7 @@ async function loadSozluk(tgt){
       inp.value="";
       await loadSozluk(tgt);
       const m2=document.getElementById("sz-msg");
-      if(m2){ m2.className="szmsg ok"; /* SOZLUK-ANLAM (24.09.2026): sorulan/eklenen kelimenin anlamı kutunun yanında */ m2.style.whiteSpace="normal"; m2.textContent=(d.existed?"Zaten vardı: ":"Eklendi: ")+d.kelime+(d.dil?" ("+d.dil+")":"")+(d.anlam?" — "+d.anlam:""); }
+      if(m2){ m2.className="szmsg ok"; m2.textContent=(d.existed?"Zaten vardı: ":"Eklendi: ")+d.kelime+(d.dil?" ("+d.dil+")":""); }
       const i2=document.getElementById("sz-inp"); if(i2) i2.focus();
     }catch(ex){ msg.className="szmsg err"; msg.textContent="Hata: "+ex; addb.disabled=false; inp.disabled=false; }
   }
@@ -3137,7 +3137,19 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
   const nm=r=>(r.latince||r.ad||"");
   rows.sort((x,y)=>nm(x).localeCompare(nm(y),"tr"));
   const notVar=rows.some(r=>(r.notlar||"").trim());
+  /* BAHCE-AYLIK (25.09.2026): 'bahce_bakim' (bitki_id, ay 1-12, is_) — ay çipleri + o ayın işleri */
+  const {data:bkData}=await sb.from("bahce_bakim").select("bitki_id,ay,is_");
+  const bk=bkData||[]; const byId={}; rows.forEach(r=>byId[r.id]=r);
+  const AYL=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+  if(!state.bahceAy) state.bahceAy=(new Date()).getMonth()+1;
   let h=`<style>
+    .bha{display:flex;flex-wrap:wrap;gap:3px;margin:0 0 6px}
+    .bha button{border:1px solid #cfd8cf;background:#fff;color:#2f5d3a;border-radius:10px;font-size:11px;padding:2px 6px;cursor:pointer}
+    .bha button.on{background:#2f5d3a;color:#fff;border-color:#2f5d3a}
+    .bha button.bos{color:#b9c2cc}
+    .bhl{margin:0 0 10px;padding:0;list-style:none;font-size:12px;max-width:560px}
+    .bhl li{padding:3px 0;border-bottom:1px solid #eef1f5;line-height:1.35}
+    .bhl i{font-weight:600;color:#2f5d3a}
     .bht{border-collapse:collapse;width:auto;font-size:12px}
     .bht th{background:#2f5d3a;color:#fff;font-weight:600;padding:3px 5px;text-align:left;white-space:nowrap}
     .bht td{border-bottom:1px solid #eef1f5;padding:3px 5px;vertical-align:top;line-height:1.35}
@@ -3154,11 +3166,16 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
   if(error){ h+=`<div class="load">Hata: ${esc(error.message)}</div>`; }
   else if(!rows.length){ h+=`<div class="load">Henüz bitki yok.</div>`; }
   else {
+    /* BAHCE-AYLIK */
+    const ay=state.bahceAy, buAy=bk.filter(x=>x.ay===ay&&byId[x.bitki_id]).sort((a,b)=>nm(byId[a.bitki_id]).localeCompare(nm(byId[b.bitki_id]),"tr"));
+    h+='<div class="bha">'+AYL.map((a,i)=>{const n=bk.filter(x=>x.ay===i+1&&byId[x.bitki_id]).length;return '<button data-ay="'+(i+1)+'" class="'+(i+1===ay?'on':(n?'':'bos'))+'" title="'+n+' iş">'+a+'</button>';}).join('')+'</div>';
+    h+='<ul class="bhl">'+(buAy.length?buAy.map(x=>{const r=byId[x.bitki_id];return '<li><i title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</i> — '+esc(x.is_)+'</li>';}).join(''):'<li style="color:#8a94a0">Bu ay iş yok.</li>')+'</ul>';
     h+='<div class="scroll"><table class="bht"><thead><tr><th>Bitki</th><th title="Işık">Işık</th><th title="Soğuğa dayanım">Soğuk</th><th>Toprak</th><th>Sulama</th><th title="Çok yıllık">Ç.Yıl</th>'+(notVar?'<th>Not</th>':'')+'<th></th></tr></thead><tbody>';
     rows.forEach(r=>{ h+='<tr><td class="bhk" title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</td><td class="bhi">'+esc(r.isik||"")+'</td><td class="bhs">'+esc(r.soguk||"")+'</td><td class="bht2">'+esc(r.toprak||"")+'</td><td class="bhu">'+esc(r.sulama||"")+'</td><td class="bhc">'+esc(r.cok_yillik||"")+'</td>'+(notVar?'<td>'+esc(r.notlar||"")+'</td>':'')+'<td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(nm(r))+'">✕</button></td></tr>'; });
     h+='</tbody></table></div>';
   }
   body.innerHTML=h;
+  body.querySelectorAll(".bha button").forEach(b=>{ b.onclick=()=>{ state.bahceAy=+b.dataset.ay; loadBahce(tgt); }; });   /* BAHCE-AYLIK */
   body.querySelectorAll(".bhdel").forEach(b=>{
     b.onclick=async()=>{
       if(!confirm('"'+b.dataset.k+'" Bahçe panosundan silinsin mi?')) return;
