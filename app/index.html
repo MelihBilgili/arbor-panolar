@@ -3162,19 +3162,41 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     .bhdel{border:0;background:none;cursor:pointer;color:#b9c2cc;font-size:13px;line-height:1;padding:1px 3px;border-radius:4px}
     .bhdel:hover{color:#c0392b;background:#fdecea}
     .bhnot{font-size:11px;color:#6b7683;margin:0 0 6px}
+    .bhadd td{background:#f5f9f5;border-bottom:2px solid #cfd8cf}
+    .bhin{font-size:11.5px;padding:2px 3px;border:1px solid #cfd8cf;border-radius:4px;background:#fff;box-sizing:border-box}
+    .bhok{border:0;background:#2f5d3a;color:#fff;cursor:pointer;font-size:13px;line-height:1;padding:3px 6px;border-radius:4px}
   </style>`;
   if(error){ h+=`<div class="load">Hata: ${esc(error.message)}</div>`; }
-  else if(!rows.length){ h+=`<div class="load">Henüz bitki yok.</div>`; }
-  else {
+  else {   /* BAHCE-EKLE-SATIR: boş tabloda da ekleme satırı görünsün */
     /* BAHCE-AYLIK */
     /* BAHCE-BUAY-SUTUN (25.09.2026): ay çipi ve üst liste kaldırıldı; bu ayın işleri tabloda sütun */
     const ay=(new Date()).getMonth()+1, isMap={};
     bk.forEach(x=>{ if(x.ay===ay&&byId[x.bitki_id]) (isMap[x.bitki_id]=isMap[x.bitki_id]||[]).push(x.is_); });
     h+='<div class="scroll"><table class="bht"><thead><tr><th>Bitki</th><th title="Işık">Işık</th><th title="Soğuğa dayanım">Soğuk</th><th>Toprak</th><th>Sulama</th><th title="Çok yıllık">Ç.Yıl</th><th>Bu Ay Yapılacaklar</th>'+(notVar?'<th>Not</th>':'')+'<th></th></tr></thead><tbody>';
+    /* BAHCE-EKLE-SATIR (25.09.2026): en üstte boş ekleme satırı — bahce_bitki insert (+ bu ayın işi → bahce_bakim) */
+    const sel=(c,o)=>'<select class="bhin" data-c="'+c+'"><option></option>'+o.map(v=>'<option>'+v+'</option>').join('')+'</select>';
+    h+='<tr class="bhadd"><td><input class="bhin" data-c="latince" placeholder="Latince ad" style="width:15ch"><br><input class="bhin" data-c="ad" placeholder="Türkçe ad" style="width:15ch;margin-top:2px"></td><td>'+sel("isik",["☀️","⛅","☁️","☀️⛅","⛅☁️"])+'</td><td><input class="bhin" data-c="soguk" placeholder="−15°" style="width:5ch"></td><td><input class="bhin" data-c="toprak" maxlength="30" placeholder="Toprak, pH" style="width:14ch"></td><td>'+sel("sulama",["Az","Orta","Çok"])+'</td><td>'+sel("cok_yillik",["Evet","Hayır","Şartlı"])+'</td><td><input class="bhin" data-c="_is" placeholder="Bu ay iş" style="width:14ch"></td>'+(notVar?'<td><input class="bhin" data-c="notlar" style="width:12ch"></td>':'')+'<td class="bhx"><button class="bhok" title="Ekle">＋</button></td></tr>';
     rows.forEach(r=>{ h+='<tr><td class="bhk" title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</td><td class="bhi">'+esc(r.isik||"")+'</td><td class="bhs">'+esc(r.soguk||"")+'</td><td class="bht2">'+esc(r.toprak||"")+'</td><td class="bhu">'+esc(r.sulama||"")+'</td><td class="bhc">'+esc(r.cok_yillik||"")+'</td><td class="bhay">'+esc((isMap[r.id]||[]).join("; "))+'</td>'+(notVar?'<td>'+esc(r.notlar||"")+'</td>':'')+'<td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(nm(r))+'">✕</button></td></tr>'; });
     h+='</tbody></table></div>';
   }
   body.innerHTML=h;
+  /* BAHCE-EKLE-SATIR */
+  const addTr=body.querySelector(".bhadd");
+  if(addTr){
+    const kaydet=async()=>{
+      const v={}; addTr.querySelectorAll(".bhin").forEach(i=>{ v[i.dataset.c]=(i.value||"").trim(); });
+      if(!v.latince&&!v.ad){ alert("Latince ya da Türkçe ad girin."); return; }
+      const row={ad:v.ad||v.latince, latince:v.latince||null};
+      ["isik","soguk","toprak","sulama","cok_yillik","notlar"].forEach(c=>{ if(v[c]) row[c]=v[c]; });
+      const ok=addTr.querySelector(".bhok"); ok.disabled=true;
+      const {data:ins,error:ie}=await sb.from("bahce_bitki").insert(row).select("id").single();
+      if(ie){ ok.disabled=false; alert("Ekleme hatası: "+(ie.message||ie)); return; }
+      if(v._is){ const {error:be}=await sb.from("bahce_bakim").insert({bitki_id:ins.id, ay:(new Date()).getMonth()+1, is_:v._is}); if(be) alert("Bitki eklendi, iş eklenemedi: "+(be.message||be)); }
+      loadBahce(tgt);
+    };
+    addTr.querySelector(".bhok").onclick=kaydet;
+    addTr.querySelectorAll("input.bhin").forEach(i=>{ i.onkeydown=e=>{ if(e.key==="Enter") kaydet(); }; });
+  }
   body.querySelectorAll(".bhdel").forEach(b=>{
     b.onclick=async()=>{
       if(!confirm('"'+b.dataset.k+'" Bahçe panosundan silinsin mi?')) return;
