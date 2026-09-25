@@ -3175,7 +3175,7 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     h+='<div class="scroll"><table class="bht"><thead><tr><th>Bitki</th><th title="Işık">Işık</th><th title="Soğuğa dayanım">Soğuk</th><th>Toprak</th><th>Sulama</th><th title="Çok yıllık">Ç.Yıl</th><th>Bu Ay Yapılacaklar</th>'+(notVar?'<th>Not</th>':'')+'<th></th></tr></thead><tbody>';
     /* BAHCE-EKLE-SATIR (25.09.2026): en üstte boş ekleme satırı — bahce_bitki insert (+ bu ayın işi → bahce_bakim) */
     /* BAHCE-EKLE-SATIR: yalnız Latince ad girilir (25.09.2026, Melih) */
-    h+='<tr class="bhadd"><td><input class="bhin" data-c="latince" placeholder="Latince ad" style="width:18ch"></td><td></td><td></td><td></td><td></td><td></td><td></td>'+(notVar?'<td></td>':'')+'<td class="bhx"><button class="bhok" title="Ekle">＋</button></td></tr>';
+    h+='<tr class="bhadd"><td><input class="bhin" data-c="latince" placeholder="Bitki adı (her dil)" style="width:18ch"></td><td></td><td></td><td></td><td></td><td></td><td></td>'+(notVar?'<td></td>':'')+'<td class="bhx"><button class="bhok" title="Ekle">＋</button></td></tr>';
     rows.forEach(r=>{ h+='<tr><td class="bhk" title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</td><td class="bhi">'+esc(r.isik||"")+'</td><td class="bhs">'+esc(r.soguk||"")+'</td><td class="bht2">'+esc(r.toprak||"")+'</td><td class="bhu">'+esc(r.sulama||"")+'</td><td class="bhc">'+esc(r.cok_yillik||"")+'</td><td class="bhay">'+esc((isMap[r.id]||[]).join("; "))+'</td>'+(notVar?'<td>'+esc(r.notlar||"")+'</td>':'')+'<td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(nm(r))+'">✕</button></td></tr>'; });
     h+='</tbody></table></div>';
   }
@@ -3185,11 +3185,14 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
   if(addTr){
     const kaydet=async()=>{
       const v={}; addTr.querySelectorAll(".bhin").forEach(i=>{ v[i.dataset.c]=(i.value||"").trim(); });
-      if(!v.latince){ alert("Latince ad girin."); return; }
-      const row={ad:v.latince, latince:v.latince};
-      const ok=addTr.querySelector(".bhok"); ok.disabled=true;
-      const {data:ins,error:ie}=await sb.from("bahce_bitki").insert(row).select("id").single();
-      if(ie){ ok.disabled=false; alert("Ekleme hatası: "+(ie.message||ie)); return; }
+      if(!v.latince){ alert("Bitki adı girin."); return; }
+      /* BAHCE-OTO-DOLDUR (25.09.2026): edge 'bahce-ekle' — her dilde ad → Latince + tüm alanlar + aylık bakım (Anthropic) */
+      const ok=addTr.querySelector(".bhok"), inp=addTr.querySelector("input.bhin"); ok.disabled=true; inp.disabled=true; ok.textContent="…";
+      const {data:res,error:fe}=await sb.functions.invoke("bahce-ekle",{body:{ad:v.latince}});
+      let msg=fe?(fe.message||String(fe)):(res&&!res.ok?res.error:"");
+      if(fe&&fe.context&&fe.context.json){ try{ const j=await fe.context.json(); if(j&&j.error) msg=j.error; }catch(_){} }
+      if(msg){ ok.disabled=false; inp.disabled=false; ok.textContent="＋"; alert("Eklenemedi: "+msg); return; }
+      if(res.existed) alert(res.latince+" panoda zaten var.");
       loadBahce(tgt);
     };
     addTr.querySelector(".bhok").onclick=kaydet;
