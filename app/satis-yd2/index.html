@@ -252,11 +252,18 @@ function daysAgo(iso){ if(!iso) return null; const s=String(iso).slice(0,10); co
 /* ===== TAKIP-LOG (fy_form/arbor_app deseninin aynısı) ===== */
 function tkParseLog(raw,dcol){
   if(raw==null||raw==="") return [];
-  try{ const v=JSON.parse(raw); if(Array.isArray(v)) return v.map(x=>({t:(x&&x.t)||"",e:(x&&x.e)||"",n:(x&&x.n)||""})); }catch(e){}
+  try{ const v=JSON.parse(raw); if(Array.isArray(v)) return v.map(x=>({t:(x&&x.t)||"",e:(x&&x.e)||"",n:(x&&x.n)||"",g:(x&&x.g)||""})); }catch(e){}
   return [{t:dcol||"",e:"",n:String(raw)}];
 }
-function tkLatest(log){ return log[0]||{t:"",e:"",n:""}; }
-function tkHist(log){ return log.length? log.map(x=>(x.t?fmtDate(x.t)+" — ":"")+(x.e?x.e+": ":"")+(x.n||"")).join("\n") : ""; }
+function tkLatest(log){ return log[0]||{t:"",e:"",n:"",g:""}; }
+/* YD-GOREVLI (2026-09-25, Melih): Ekleyen sütunu kalktı, yerine Görevli. Ekle'de Görevli seçimi zorunlu:
+   formun yetkili kullanıcıları (form_erisim.kisiler, okunamazsa yedek liste) + MB + Hiç Kimse + Herkes.
+   Not, ekleyenin kısaltmasıyla ("MB: …") yazılır; log kaydı {t,e,g,n}. */
+let GOREVLI_YETKILI=null;
+function GOREVLI_YEDEK(){ return BLOK==="YD1"?["MN","OBL","MK","KS"]:["MKB","OBL","MK","AK"]; }
+function GOREVLI_OPTS(){ const k=(GOREVLI_YETKILI||GOREVLI_YEDEK()).slice(); if(k.indexOf("MB")<0) k.unshift("MB"); return k.concat(["Hiç Kimse","Herkes"]); }
+function tkNotYaz(x){ const n=x.n||""; if(!x.e||!n) return n; return n.indexOf(x.e+":")===0?n:x.e+": "+n; }
+function tkHist(log){ return log.length? log.map(x=>(x.t?fmtDate(x.t)+" — ":"")+tkNotYaz(x)+(x.g?" [Görevli: "+x.g+"]":"")).join("\n") : ""; }
 
 const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Teklif Teslim Edildi","Revizyon İstendi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
@@ -294,7 +301,7 @@ function colFilled(r,idx){
   const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi), last=tkLatest(log);
   const noteOk=!!(last.n && String(last.n).trim());
   if(idx===19) return !!last.t && noteOk;
-  if(idx===20) return !!last.e && noteOk;
+  if(idx===20) return !!(last.g||last.e) && noteOk; /* YD-GOREVLI */
   if(idx===21) return noteOk;
   return false;
 }
@@ -370,7 +377,8 @@ async function load(){
   const {data,error}=await sb.from("satis_yd_akis").select("*").eq("blok",BLOK);
   if(error){ document.getElementById("list").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
   ROWS=data||[]; DRAFT=newDraftRow();
-  for(const r of ROWS){ await durumDuzelt(r); await maybeUnflagTakip(r); await maybeFlagTakipBekleniyor(r); }
+  for(const r of ROWS){ await durumDuzelt(r); await maybeFlagTakipBekleniyor(r); } /* TAKIP-SORU: açılışta otomatik geri dönüş yok */
+  try{ const fe=await sb.from("form_erisim").select("kisiler").eq("yol",BLOK==="YD1"?"satis-yd1/":"satis-yd2/").maybeSingle(); if(fe&&fe.data&&Array.isArray(fe.data.kisiler)&&fe.data.kisiler.length) GOREVLI_YETKILI=fe.data.kisiler; }catch(e){} /* YD-GOREVLI */
   render();
 }
 /* SIRALAMA (2026-09-18, Melih): Satırlar önce Durum grubuna (DISPLAY_ORDER) ayrılır —
@@ -432,20 +440,21 @@ function msKapat(){ document.getElementById("ms-ov").classList.remove("on"); }
 })();
 function pairCells(r,i,bg){
   const bgv=bg||'transparent';
-  if(PENDING_TK[i]){
+  if(PENDING_TK[i]){ /* YD-GOREVLI: Ekle'de Görevli seçimi zorunlu */
+    const pp=(typeof PENDING_TK[i]==="object")?PENDING_TK[i]:{n:"",g:""};
     return '<td class="pairA gs" style="background:'+bgv+'"><div class="tklatest">—</div></td>'
-      +'<td class="pairA" style="background:'+bgv+'"><div class="tklatest">—</div></td>'
-      +'<td class="pairA tknotes" style="background:'+bgv+'"><textarea class="cell tknote-pending" data-row="'+i+'" rows="1" placeholder="Not yazın…"></textarea></td>';
+      +'<td class="pairA" style="background:'+bgv+'"><select class="cell tkgorevli-pending'+(pp.g?'':' eksikbos')+'" data-row="'+i+'"><option value=""'+(pp.g?'':' selected')+' disabled>— Seçiniz —</option>'+GOREVLI_OPTS().map(o=>'<option value="'+esc(o)+'"'+(o===pp.g?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
+      +'<td class="pairA tknotes" style="background:'+bgv+'"><textarea class="cell tknote-pending" data-row="'+i+'" rows="1" placeholder="Not yazın…">'+esc(pp.n||"")+'</textarea></td>';
   }
   const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi), last=tkLatest(log), hist=tkHist(log);
   const histDates = log.length ? log.map(x=>x.t?fmtDate(x.t):"—").join("\n") : "";
-  const histEkleyen = log.length ? log.map(x=>x.e||"—").join("\n") : "";
+  const histEkleyen = log.length ? log.map(x=>x.g||"—").join("\n") : "";
   const noteEmpty = log.length && last.n==="";
   const noteCell = noteEmpty
     ? '<textarea class="cell tknote-input" data-row="'+i+'" rows="1" placeholder="Not yazın…"></textarea>'
-    : '<div class="tklatest" title="'+esc(hist)+'">'+esc(last.n||"—")+'</div>';
+    : '<div class="tklatest" title="'+esc(hist)+'">'+esc(last.n?tkNotYaz(last):"—")+'</div>';
   const dateDisp = noteEmpty ? "—" : (last.t?fmtDate(last.t):"—");
-  const ekleyenDisp = noteEmpty ? "—" : (last.e||"—");
+  const ekleyenDisp = noteEmpty ? "—" : (last.g||"—"); /* YD-GOREVLI: sütun artık Görevli */
   return '<td class="pairA gs" style="background:'+bgv+'"><div class="tklatest" title="'+esc(histDates)+'">'+esc(dateDisp)+'</div></td>'
     +'<td class="pairA" style="background:'+bgv+'"><div class="tklatest" title="'+esc(histEkleyen)+'">'+esc(ekleyenDisp)+'</div></td>'
     +'<td class="pairA tknotes" style="background:'+bgv+'"><button class="tkAddBtn" data-row="'+i+'">Ekle</button>'+noteCell+'</td>';
@@ -500,9 +509,9 @@ function rowHTML(r,key){
 }
 function render(){
   sortROWS();
-  let h='<table><colgroup>'+COLS.map(c=>'<col style="width:'+c.w+'px">').join('')+'<col style="width:72px"><col style="width:60px"><col style="width:150px"><col style="width:130px"><col style="width:28px"></colgroup><thead><tr>'
+  let h='<table><colgroup>'+COLS.map(c=>'<col style="width:'+c.w+'px">').join('')+'<col style="width:72px"><col style="width:84px"><col style="width:150px"><col style="width:130px"><col style="width:28px"></colgroup><thead><tr>'
     +COLS.map(c=>'<th title="'+esc(c.h)+'">'+c.h+'</th>').join('')
-    +'<th class="pairA gs">Takip Tarihi</th><th class="pairA">Ekleyen</th><th class="pairA">Takip Notları</th>'
+    +'<th class="pairA gs">Takip Tarihi</th><th class="pairA">Görevli</th><th class="pairA">Takip Notları / Görevleri</th>'
     +'<th>Durum</th><th></th></tr></thead><tbody>';
   h+=rowHTML(DRAFT,"draft");
   ROWS.forEach((r,i)=>{ h+=rowHTML(r,i); });
@@ -518,7 +527,8 @@ function render(){
   });
   list.querySelectorAll(".tkAddBtn").forEach(b=>b.onclick=()=>tkStartEntry(b.dataset.row));
   list.querySelectorAll(".tknote-input").forEach(ta=>ta.addEventListener("change",()=>tkSaveNote(ta.dataset.row,ta.value)));
-  list.querySelectorAll(".tknote-pending").forEach(ta=>ta.addEventListener("change",()=>tkCommitEntry(ta.dataset.row,ta.value)));
+  list.querySelectorAll(".tknote-pending").forEach(ta=>{ ta.addEventListener("input",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object") p.n=ta.value; }); ta.addEventListener("change",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object"){ p.n=ta.value; tkCommitEntry(ta.dataset.row); } }); });
+  list.querySelectorAll(".tkgorevli-pending").forEach(s=>s.addEventListener("change",()=>{ const p=PENDING_TK[s.dataset.row]; if(p&&typeof p==="object"){ p.g=s.value; s.classList.remove("eksikbos"); tkCommitEntry(s.dataset.row); } })); /* YD-GOREVLI */
   list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delRow(+b.closest("tr").dataset.i));
   if(ARB_FOCUS_ROW!=null){ const ta=list.querySelector('tr[data-i="'+ARB_FOCUS_ROW+'"] .tknote-input, tr[data-i="'+ARB_FOCUS_ROW+'"] .tknote-pending'); if(ta) ta.focus(); ARB_FOCUS_ROW=null; }
   sums();
@@ -564,7 +574,7 @@ async function saveRow(key,f,val,el){
     const tier=DURUM_SIRA[v];
     if(tier>=1 && tier<=4 && !rangeFilled(r,1,6)){ el.value=r.durum||""; setMsg("Bu durum için ilk 6 sütun (Proje, Müşteri, Müşteri Önem Sınıfı, Gelen Tarih, İstenen Tarih, İhale?) dolu olmalı.",false); return; }
     if(tier===5 && !state5Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için 1-6, 8-11, 13 ve 14-18 sütunlarının hepsi dolu olmalı.",false); return; }
-    if(tier>=6 && !state6to11Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için Takip Tarihi/Ekleyen/Takip Notları alanları dolu olmalı.",false); return; }
+    if(tier>=6 && !state6to11Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için Takip Tarihi/Görevli/Takip Notları alanları dolu olmalı.",false); return; }
   }
   if(key==="draft"){
     r[f]=val;
@@ -625,18 +635,46 @@ let ARB_FOCUS_ROW=null;
 function tkStartEntry(key){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
   if(!r.id){ m.className="msg err"; m.textContent="Önce Proje ve Müşteri yazıp satırı kaydedin."; return; }
-  PENDING_TK[key]=true; ARB_FOCUS_ROW=key; render();
+  PENDING_TK[key]={n:"",g:""}; ARB_FOCUS_ROW=key; render();
 }
-async function tkCommitEntry(key,val){
+/* TAKIP-SORU (2026-09-25, Melih): "Takip Bekleniyor" satırına not eklenince soru kutusu:
+   1. Takipten çıkar → "Teklif Teslim Edildi" (15 gün sonra maybeFlagTakipBekleniyor tekrar takibe alır)
+   2. Takip Bekleniyor durumunda kalsın. TAKIP-GERI'nin otomatik dönüşü kaldırıldı. */
+function takipSoruKutu(){
+  return new Promise(res=>{
+    const ov=document.createElement("div");
+    ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999";
+    const bs="display:block;width:100%;text-align:left;padding:9px 10px;margin-bottom:8px;border:1px solid #cdd6df;border-radius:8px;cursor:pointer;font:inherit;";
+    ov.innerHTML='<div style="background:#fff;border-radius:10px;padding:18px 20px;max-width:400px;width:90%;box-shadow:0 8px 30px rgba(0,0,0,.25)">'
+      +'<div style="font-weight:700;margin-bottom:12px">Satır "Takip Bekleniyor" durumunda. Ne yapılsın?</div>'
+      +'<button data-s="1" style="'+bs+'background:#eaf5ee">1. Takipten çıkar (15 gün sonra kendiliğinden tekrar takibe girer)</button>'
+      +'<button data-s="2" style="'+bs+'background:#f5f7f9">2. Takip Bekleniyor durumunda kalsın</button></div>';
+    ov.querySelectorAll("button").forEach(b=>b.onclick=()=>{ ov.remove(); res(b.dataset.s); });
+    document.body.appendChild(ov);
+  });
+}
+async function takipSoru(r){
+  if(r.durum!=="Takip Bekleniyor") return false;
+  const s=await takipSoruKutu();
+  if(s!=="1") return false;
+  if(r.id){ const {error}=await sb.from("satis_yd_akis").update({durum:"Teklif Teslim Edildi"}).eq("id",r.id); if(error) return false; }
+  r.durum="Teklif Teslim Edildi"; return true;
+}
+async function tkCommitEntry(key){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
-  const txt=(val||"").trim(); if(!txt) return;
+  const p=PENDING_TK[key]; if(!p||typeof p!=="object"||p.busy) return;
+  const txt=(p.n||"").trim(); if(!txt) return;
+  if(!p.g){ m.className="msg err"; m.textContent="Görevli seçiniz."; return; }
+  p.busy=true;
   const iso=todayISO();
-  const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi); log.unshift({t:iso,e:ARB_EKLEYEN,n:txt});
+  const ek=ARB_EKLEYEN||"";
+  const nYaz=(ek && txt.indexOf(ek+":")!==0)? ek+": "+txt : txt; /* YD-GOREVLI */
+  const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi); log.unshift({t:iso,e:ek,g:p.g,n:nYaz});
   const payload={ son_takip_notlari:JSON.stringify(log), son_takip_tarihi:iso };
   const {error}=await sb.from("satis_yd_akis").update(payload).eq("id",r.id);
-  if(error){ m.className="msg err"; m.textContent=error.message; return; }
+  if(error){ p.busy=false; m.className="msg err"; m.textContent=error.message; return; }
   r.son_takip_notlari=payload.son_takip_notlari; r.son_takip_tarihi=iso;
-  await maybeUnflagTakip(r); /* TAKIP-GERI */
+  await takipSoru(r); /* TAKIP-SORU */
   delete PENDING_TK[key];
   render();
   m.className="msg ok"; m.textContent="Kaydedildi ✓";
