@@ -331,6 +331,7 @@ async function maybeAutoAdvance(r){
   const cur=DURUM_SIRA[r.durum]||0;
   if(cur>=5) return false;
   const eligible=computeAutoTier(r);
+  if(r.id && r.muhtemel_kaynak_id && eligible>=4){ if(await muhtemelRevTamam(r)) return true; } /* MUHTEMEL-REV-OTO: kısmi kopya teslime hak kazanınca Teslim Edildi yerine Muhtemel */
   if(eligible>cur){
     const newDurum=DURUM_OPTS[eligible-1];
     if(r.id){
@@ -575,6 +576,10 @@ async function saveRow(key,f,val,el){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
   let v=convVal(f,val);
   if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YYYY biçiminde olmalı."; return; }
+  /* MUHTEMEL-REV-SAVE (2026-09-25, Melih): Muhtemel satırda "Revizyon İstendi" seçilirse durum değişmez, kısmi kopya açılır;
+     kısmi kopya elle "Teklif Teslim Edildi" yapılırsa Muhtemel'e geçer ve özgün satır "Revizyon İstendi" olur */
+  if(f==='durum' && key!=="draft" && r.durum==="Muhtemel" && v==="Revizyon İstendi"){ el.value="Muhtemel"; await muhtemelRevKopya(r); render(); return; }
+  if(f==='durum' && key!=="draft" && r.muhtemel_kaynak_id && v==="Teklif Teslim Edildi" && rangeFilled(r,1,6)){ if(await muhtemelRevTamam(r)){ render(); return; } }
   if(f==='durum' && v){
     const tier=DURUM_SIRA[v];
     if(tier>=1 && tier<=4 && !rangeFilled(r,1,6)){ el.value=r.durum||""; setMsg("Bu durum için ilk 6 sütun (Proje, Müşteri, Müşteri Önem Sınıfı, Gelen Tarih, İstenen Tarih, İhale?) dolu olmalı.",false); return; }
@@ -618,7 +623,7 @@ async function saveRow(key,f,val,el){
    Notları'nın başına "Revizyon" yazılır, kopyanın durumu "Teklif İncelendi" olur ve takip
    günlüğü sıfırlanır. Özgün satır "Revizyon İstendi" olarak olduğu gibi kalır. Kopya, satır
    her "Revizyon İstendi" yapıldığında yeniden üretilir (2. revizyon = 2. kopya). */
-async function revizyonKopyasi(r){
+async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muhtemel özgün satır (kısmi kopya) */
   const m=document.getElementById("msg");
   const rec={blok:BLOK};
   COLS.forEach(c=>{ rec[c.f]=(r[c.f]==null?null:r[c.f]); });
@@ -629,11 +634,53 @@ async function revizyonKopyasi(r){
   rec.teklif_birimi_notlari = eskiNot ? ("Revizyon — "+eskiNot) : "Revizyon";
   rec.durum=rangeFilled(rec,1,6)?"Teklif Bekleniyor":null; /* YD-DURUM-KURAL: öncelik 1 belli → Teklif Bekleniyor */
   rec.son_takip_notlari=null; rec.son_takip_tarihi=null;
+  if(kaynakId) rec.muhtemel_kaynak_id=kaynakId;
   const {data,error}=await sb.from("satis_yd_akis").insert(rec).select();
   if(error){ m.className="msg err"; m.textContent="Revizyon kopyası oluşturulamadı: "+error.message; return false; }
   ROWS.push(data[0]);
   m.className="msg ok"; m.textContent="Revizyon kopyası oluşturuldu ✓ (tutar boş · Öncelik 1 · Teklif Bekleniyor)";
   sums();
+  return true;
+}
+/* MUHTEMEL-REV (2026-09-25, Melih): Muhtemel satırda "Revizyon İstendi" seçilince özgün satır Muhtemel'de KALIR;
+   REVIZYON-KOPYA kuralıyla kısmi kopya açılır (muhtemel_kaynak_id = özgün id; satır başına tek açık kopya).
+   Kopya teslime hak kazanınca (otomatik ilerleme 4. kademe ya da elle "Teklif Teslim Edildi") "Teklif Teslim Edildi"
+   yerine "Muhtemel" olur, özgün satır "Revizyon İstendi"ye geçer. Her adım iki satırın takip notlarına otomatik yazılır.
+   Özgün satır silinmiş/Muhtemel'den çıkmışsa kopya bağı kopar, normal akışa döner. */
+function mrNot(r,txt){ const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi); const iso=todayISO(); log.unshift({t:iso,e:ARB_EKLEYEN||"Oto",n:txt}); return {son_takip_notlari:JSON.stringify(log),son_takip_tarihi:iso}; }
+async function muhtemelRevKopya(r){
+  if(ROWS.some(x=>x.muhtemel_kaynak_id===r.id)){ setMsg("Bu Muhtemel satırın açık bir revizyon kopyası zaten var.",false); return false; }
+  const ok=await revizyonKopyasi(r,r.id);
+  if(!ok) return false;
+  const k=ROWS[ROWS.length-1];
+  const pk=mrNot(k,"Muhtemel satırın revizyon kopyası (özgün #"+r.id+"). Teslim edilince Muhtemel'e geçecek.");
+  const po=mrNot(r,"Revizyon istendi — kısmi kopya açıldı (#"+k.id+"). Revize teklif teslim edilene kadar Muhtemel'de kalıyor.");
+  const e1=(await sb.from("satis_yd_akis").update(pk).eq("id",k.id)).error;
+  const e2=(await sb.from("satis_yd_akis").update(po).eq("id",r.id)).error;
+  if(!e1) Object.assign(k,pk);
+  if(!e2) Object.assign(r,po);
+  if(e1||e2){ setMsg("Kopya açıldı ama not yazılamadı: "+(e1||e2).message,false); return true; }
+  setMsg("Revizyon kopyası açıldı ✓ — özgün satır Muhtemel'de kalıyor",true);
+  return true;
+}
+async function muhtemelRevTamam(k){
+  const o=ROWS.find(x=>x.id===k.muhtemel_kaynak_id);
+  if(!o || o.durum!=="Muhtemel"){
+    const {error}=await sb.from("satis_yd_akis").update({muhtemel_kaynak_id:null}).eq("id",k.id);
+    if(!error) k.muhtemel_kaynak_id=null;
+    return false;
+  }
+  const pk=mrNot(k,"Revize teklif teslim edildi — Muhtemel'e alındı; önceki teklif (#"+o.id+") Revizyon İstendi'ye geçti.");
+  pk.durum="Muhtemel"; pk.muhtemel_kaynak_id=null;
+  const po=mrNot(o,"Revize teklif teslim edildi (#"+k.id+") — satır Muhtemel'den çıktı, Revizyon İstendi'ye geçti.");
+  po.durum="Revizyon İstendi";
+  const e1=(await sb.from("satis_yd_akis").update(pk).eq("id",k.id)).error;
+  if(e1){ setMsg("Kayıt hatası: "+e1.message,false); return false; }
+  Object.assign(k,pk);
+  const e2=(await sb.from("satis_yd_akis").update(po).eq("id",o.id)).error;
+  if(e2){ setMsg("Kopya Muhtemel'e alındı ama özgün satır güncellenemedi: "+e2.message,false); return true; }
+  Object.assign(o,po);
+  setMsg("Revize teklif Muhtemel'e alındı ✓ — özgün satır Revizyon İstendi",true);
   return true;
 }
 let ARB_FOCUS_ROW=null;
