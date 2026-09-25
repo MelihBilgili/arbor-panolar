@@ -3157,25 +3157,24 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     .bht td.bhi{white-space:nowrap;font-size:13px;letter-spacing:-1px}
     .bht td.bhs,.bht td.bhu,.bht td.bhc{white-space:nowrap;text-align:center}
     .bht td.bht2{max-width:30ch}
+    .bht td.bhay{max-width:40ch;font-size:11.5px}
     .bht td.bhx{width:20px;padding:3px 2px;text-align:center}
     .bhdel{border:0;background:none;cursor:pointer;color:#b9c2cc;font-size:13px;line-height:1;padding:1px 3px;border-radius:4px}
     .bhdel:hover{color:#c0392b;background:#fdecea}
     .bhnot{font-size:11px;color:#6b7683;margin:0 0 6px}
   </style>`;
-  h+='<div class="bhnot">'+rows.length+' bitki · ☀️ güneş · ⛅ yarı gölge · ☁️ gölge</div>';
   if(error){ h+=`<div class="load">Hata: ${esc(error.message)}</div>`; }
   else if(!rows.length){ h+=`<div class="load">Henüz bitki yok.</div>`; }
   else {
     /* BAHCE-AYLIK */
-    const ay=state.bahceAy, buAy=bk.filter(x=>x.ay===ay&&byId[x.bitki_id]).sort((a,b)=>nm(byId[a.bitki_id]).localeCompare(nm(byId[b.bitki_id]),"tr"));
-    h+='<div class="bha">'+AYL.map((a,i)=>{const n=bk.filter(x=>x.ay===i+1&&byId[x.bitki_id]).length;return '<button data-ay="'+(i+1)+'" class="'+(i+1===ay?'on':(n?'':'bos'))+'" title="'+n+' iş">'+a+'</button>';}).join('')+'</div>';
-    h+='<ul class="bhl">'+(buAy.length?buAy.map(x=>{const r=byId[x.bitki_id];return '<li><i title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</i> — '+esc(x.is_)+'</li>';}).join(''):'<li style="color:#8a94a0">Bu ay iş yok.</li>')+'</ul>';
-    h+='<div class="scroll"><table class="bht"><thead><tr><th>Bitki</th><th title="Işık">Işık</th><th title="Soğuğa dayanım">Soğuk</th><th>Toprak</th><th>Sulama</th><th title="Çok yıllık">Ç.Yıl</th>'+(notVar?'<th>Not</th>':'')+'<th></th></tr></thead><tbody>';
-    rows.forEach(r=>{ h+='<tr><td class="bhk" title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</td><td class="bhi">'+esc(r.isik||"")+'</td><td class="bhs">'+esc(r.soguk||"")+'</td><td class="bht2">'+esc(r.toprak||"")+'</td><td class="bhu">'+esc(r.sulama||"")+'</td><td class="bhc">'+esc(r.cok_yillik||"")+'</td>'+(notVar?'<td>'+esc(r.notlar||"")+'</td>':'')+'<td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(nm(r))+'">✕</button></td></tr>'; });
+    /* BAHCE-BUAY-SUTUN (25.09.2026): ay çipi ve üst liste kaldırıldı; bu ayın işleri tabloda sütun */
+    const ay=(new Date()).getMonth()+1, isMap={};
+    bk.forEach(x=>{ if(x.ay===ay&&byId[x.bitki_id]) (isMap[x.bitki_id]=isMap[x.bitki_id]||[]).push(x.is_); });
+    h+='<div class="scroll"><table class="bht"><thead><tr><th>Bitki</th><th title="Işık">Işık</th><th title="Soğuğa dayanım">Soğuk</th><th>Toprak</th><th>Sulama</th><th title="Çok yıllık">Ç.Yıl</th><th>Bu Ay Yapılacaklar</th>'+(notVar?'<th>Not</th>':'')+'<th></th></tr></thead><tbody>';
+    rows.forEach(r=>{ h+='<tr><td class="bhk" title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</td><td class="bhi">'+esc(r.isik||"")+'</td><td class="bhs">'+esc(r.soguk||"")+'</td><td class="bht2">'+esc(r.toprak||"")+'</td><td class="bhu">'+esc(r.sulama||"")+'</td><td class="bhc">'+esc(r.cok_yillik||"")+'</td><td class="bhay">'+esc((isMap[r.id]||[]).join("; "))+'</td>'+(notVar?'<td>'+esc(r.notlar||"")+'</td>':'')+'<td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(nm(r))+'">✕</button></td></tr>'; });
     h+='</tbody></table></div>';
   }
   body.innerHTML=h;
-  body.querySelectorAll(".bha button").forEach(b=>{ b.onclick=()=>{ state.bahceAy=+b.dataset.ay; loadBahce(tgt); }; });   /* BAHCE-AYLIK */
   body.querySelectorAll(".bhdel").forEach(b=>{
     b.onclick=async()=>{
       if(!confirm('"'+b.dataset.k+'" Bahçe panosundan silinsin mi?')) return;
