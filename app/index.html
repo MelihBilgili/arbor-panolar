@@ -3128,7 +3128,7 @@ async function loadSozluk(tgt){
 }
 
 /* ---------- BAHÇE (Özel grubu) — BAHCE-SEKME (21.09.2026, Melih). Kaynak Supabase 'bahce_bitki'
-   (ad · latince · isik · soguk · toprak · sulama · cok_yillik · notlar). Satırları Claude ekler
+   (ad · latince · isik · soguk · toprak · sulama · notlar). Satırları Claude ekler
    (bahce-bitki skill'i: Melih yalnız bitki adı yazınca). Panoda yalnız okuma + ✕ silme. RLS int@. ---------- */
 async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre dar tablo */
   const body=document.getElementById(tgt);
@@ -3155,7 +3155,7 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     .bht td{border-bottom:1px solid #eef1f5;padding:3px 5px;vertical-align:top;line-height:1.35}
     .bht td.bhk{font-style:italic;font-weight:600;color:#2f5d3a;max-width:34vw}
     .bht td.bhi{white-space:nowrap;font-size:13px;letter-spacing:-1px}
-    .bht td.bhs,.bht td.bhu,.bht td.bhc{white-space:nowrap;text-align:center}
+    /* BAHCE-COKYIL-YOK */ .bht td.bhs,.bht td.bhu{white-space:nowrap;text-align:center}
     .bht td.bht2{max-width:30ch}
     .bht td.bhay{max-width:40ch;font-size:11.5px}
     .bht td.bhx{width:20px;padding:3px 2px;text-align:center}
@@ -3172,11 +3172,11 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     /* BAHCE-BUAY-SUTUN (25.09.2026): ay çipi ve üst liste kaldırıldı; bu ayın işleri tabloda sütun */
     const ay=(new Date()).getMonth()+1, isMap={};
     bk.forEach(x=>{ if(x.ay===ay&&byId[x.bitki_id]) (isMap[x.bitki_id]=isMap[x.bitki_id]||[]).push(x.is_); });
-    h+='<div class="scroll"><table class="bht"><thead><tr><th>Bitki</th><th title="Işık">Işık</th><th title="Soğuğa dayanım">Soğuk</th><th>Toprak</th><th>Sulama</th><th title="Çok yıllık">Ç.Yıl</th><th>Bu Ay Yapılacaklar</th>'+(notVar?'<th>Not</th>':'')+'<th></th></tr></thead><tbody>';
+    h+='<div class="scroll"><table class="bht"><thead><tr><th>Bitki</th><th title="Işık">Işık</th><th title="Soğuğa dayanım">Soğuk</th><th>Toprak</th><th>Sulama</th><th>Bu Ay Yapılacaklar</th>'+(notVar?'<th>Not</th>':'')+'<th></th></tr></thead><tbody>';
     /* BAHCE-EKLE-SATIR (25.09.2026): en üstte boş ekleme satırı — bahce_bitki insert (+ bu ayın işi → bahce_bakim) */
     /* BAHCE-EKLE-SATIR: yalnız Latince ad girilir (25.09.2026, Melih) */
-    h+='<tr class="bhadd"><td><input class="bhin" data-c="latince" placeholder="Bitki adı (her dil)" style="width:18ch"></td><td></td><td></td><td></td><td></td><td></td><td></td>'+(notVar?'<td></td>':'')+'<td class="bhx"><button class="bhok" title="Ekle">＋</button></td></tr>';
-    rows.forEach(r=>{ h+='<tr><td class="bhk" title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</td><td class="bhi">'+esc(r.isik||"")+'</td><td class="bhs">'+esc(r.soguk||"")+'</td><td class="bht2">'+esc(r.toprak||"")+'</td><td class="bhu">'+esc(r.sulama||"")+'</td><td class="bhc">'+esc(r.cok_yillik||"")+'</td><td class="bhay">'+esc((isMap[r.id]||[]).join("; "))+'</td>'+(notVar?'<td>'+esc(r.notlar||"")+'</td>':'')+'<td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(nm(r))+'">✕</button></td></tr>'; });
+    h+='<tr class="bhadd"><td><input class="bhin" data-c="latince" placeholder="Bitki adı (her dil)" style="width:18ch"></td><td></td><td></td><td></td><td></td><td></td>'+(notVar?'<td></td>':'')+'<td class="bhx"><button class="bhok" title="Ekle">＋</button></td></tr>';
+    rows.forEach(r=>{ h+='<tr><td class="bhk" title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</td><td class="bhi">'+esc(r.isik||"")+'</td><td class="bhs">'+esc(r.soguk||"")+'</td><td class="bht2">'+esc(r.toprak||"")+'</td><td class="bhu">'+esc(r.sulama||"")+'</td><td class="bhay">'+esc((isMap[r.id]||[]).join("; "))+'</td>'+(notVar?'<td>'+esc(r.notlar||"")+'</td>':'')+'<td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(nm(r))+'">✕</button></td></tr>'; });
     h+='</tbody></table></div>';
   }
   body.innerHTML=h;
