@@ -273,6 +273,7 @@ function blok(r){
     +'<div class="sol">'
       +kv("Proje Kodu",r.proje_no)+kv("Proje Adı",r.proje_adi)+kv("Ürün Adedi",r.adet)
       +kv("MVT",fd(r.mvt))+kv("AÜP",fd(r.aup))+kv("PST",fd(r.pst))
+      +kv("Durum",r.proje_durumu)  /* SANTIYE-DURUM-SATIR: PST altinda proje durumu (ERP Prj) */
     +'</div>'
     +'<div class="sag">'
       +soru("mvt",mvtSoru)
@@ -355,6 +356,8 @@ document.getElementById("ay_btn").onclick=async()=>{
 
 yukle();
 </script>
+
+
 
 
 
