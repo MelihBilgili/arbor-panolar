@@ -54,7 +54,7 @@
   <div class="sub">Arbor SAS'ın firma/proje bazlı güncel alacakları. <b>Güncel Alacak (€)</b> sütunu ay boyunca düzenlenir; ay sona erince kendiliğinden sabitlenip <b>Önceki Alacak (€)</b> grubuna eklenir ve SEL-ARB panosunda yeni ay sütunu olur. Yeni firma/proje için en üstteki boş satırı doldurunuz.</div>
 </header>
 <div class="wrap">
-  <div class="btns"><button id="bGuncelle">Aylık Güncelle</button><span id="rolLbl"></span><span class="msg" id="msg"></span></div>
+  <div class="btns"><button id="bGuncelle">Güncelle</button><span id="rolLbl"></span><span class="msg" id="msg"></span></div>
   <div class="hint" id="stamp"></div>
   <div id="tbl"><div class="hint">Yükleniyor…</div></div>
 </div>
@@ -261,9 +261,9 @@ function render(){
   /* SELARB-KAYNAK: alt satırların kaynağı Firma sütununda gri yazılır */
   const F=[
     ["Güncel Alacak Toplam (€)", d=>top(d), gSum, false, "Bu formdaki satırların toplamı"],
-    ["Selectron'a Gönderilen Toplam (€)", d=>ozBy[d]?ozBy[d].gonderilen:null, oL?oL.gonderilen:null, true, "ÖB Faaliyet formu → Selectron'a Ödemeler bloğu (kümülatif, ÖB Aylık Güncelle ile eklenir)"],
-    ["Selectron'a Borç (€)", d=>ozBy[d]?ozBy[d].borc:null, oL?oL.borc:null, true, "OE Faaliyet formu → Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar (kümülatif, OE Aylık Güncelle ile eklenir)"],
-    ["Selectron'a Ft Edilen Toplam (€)", d=>{const v=ozBy[d]?ozBy[d].fatura_edilen:null; return (v==null||Math.round(v)===0)?null:v;}, oL&&Math.round(oL.fatura_edilen||0)?oL.fatura_edilen:null, true, "ÖB Faaliyet formu → Yurt Dışı Birimlerden Selectron'a Kesilen Faturalar (kümülatif, ÖB Aylık Güncelle ile eklenir)"],
+    ["Selectron'a Gönderilen Toplam (€)", d=>ozBy[d]?ozBy[d].gonderilen:null, oL?oL.gonderilen:null, true, "ÖB Faaliyet formu → Selectron'a Ödemeler bloğu (kümülatif, ÖB Güncelle ile eklenir)"],
+    ["Selectron'a Borç (€)", d=>ozBy[d]?ozBy[d].borc:null, oL?oL.borc:null, true, "OE Faaliyet formu → Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar (kümülatif, OE Güncelle ile eklenir)"],
+    ["Selectron'a Ft Edilen Toplam (€)", d=>{const v=ozBy[d]?ozBy[d].fatura_edilen:null; return (v==null||Math.round(v)===0)?null:v;}, oL&&Math.round(oL.fatura_edilen||0)?oL.fatura_edilen:null, true, "ÖB Faaliyet formu → Yurt Dışı Birimlerden Selectron'a Kesilen Faturalar (kümülatif, ÖB Güncelle ile eklenir)"],
   ];
   const kay=(b,g1,t,f)=>b==null?null:b-((g1||0)+(t||0)+(f||0));
   F.push(["Arbor SAS Faaliyet Kaybı Toplam (€)", d=>{ const o=ozBy[d]; return o?kay(o.borc,o.gonderilen,top(d),o.fatura_edilen):null; },
@@ -320,7 +320,7 @@ document.getElementById("bGuncelle").onclick=async()=>{
   const {error}=await sb.from("pano_yayin").upsert({anahtar:"sel_arb_form",yayin_at:ts,updated_at:ts},{onConflict:"anahtar"});
   if(error){ msg("Güncellenemedi: "+error.message,"err"); return; }
   document.getElementById("stamp").textContent="Son güncelleme: "+new Date(ts).toLocaleDateString("tr-TR");
-  msg("Aylık güncelleme kaydedildi. Güncel Alacak sütunu ay sonunda Önceki Alacak grubuna eklenecek.","ok");
+  msg("Güncelleme kaydedildi. Güncel Alacak sütunu ay sonunda Önceki Alacak grubuna eklenecek.","ok");
 };
 load();
 </script>
