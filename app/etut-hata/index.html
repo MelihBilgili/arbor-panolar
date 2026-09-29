@@ -1,0 +1,392 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Etüt-Proje Hataları</title>
+<!-- ETUT-PROJE-HATALAR (2026-09-29): Etüt formunun Hata Puanları bloğu ayrı forma taşındı (etut_hata sayfa=hatalar) — kaynak etut_form.html'den türetildi -->
+<!-- ETUT-FORM (2026-09-28): Etüt formu — ETUT-HAKEDIS: Etüt Hakediş xlsx sayfaları tek sayfa bloklar (ETUT-TEK-SAYFA: Hata Puanları · Hata Yakalama Puanları · Proje Yükü · DK1 · Memnuniyet · İcmal); dönem kutusu yok -->
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#c9dcf0;margin-top:3px;line-height:1.5;max-width:960px}
+  .wrap{max-width:100%;margin:0 auto;padding:10px 8px 40px}
+  .btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:6px 0 10px}
+  .btn2{border:1px solid #cdd8e4;background:#fff;color:#16324f;border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer}
+  .msg{font-size:12.5px;min-height:17px}
+  .msg.ok{color:#0a6b3f;font-weight:600}.msg.err{color:#b40000;font-weight:600}
+  .hint{font-size:11.5px;color:#6b7a89;margin:2px 2px 8px}
+  .cl-wrap{overflow-x:auto}
+  .cl-wrap table{border-collapse:collapse;width:auto;font-size:11.5px;background:#fff}
+  .cl-wrap th,.cl-wrap td{border-bottom:1px solid #eef1f5;padding:1px 3px;white-space:nowrap;line-height:17px;vertical-align:top}
+  .cl-wrap thead th{background:#16324f;color:#fff;font-weight:600;padding:4px 5px;position:sticky;top:0;z-index:1;text-align:left}
+  .cl-wrap thead th.h2{white-space:normal;line-height:12px;padding:3px 4px;font-size:10px}
+  .cl-wrap td input,.cl-wrap td textarea{font:inherit;border:1px solid transparent;border-radius:4px;padding:1px 4px;background:transparent;width:100%}
+  .cl-wrap td textarea{resize:none;overflow:hidden;line-height:16px;display:block;white-space:pre-wrap}
+  .cl-wrap td input:hover,.cl-wrap td textarea:hover{border-color:#dde3ea}
+  .cl-wrap td input:focus,.cl-wrap td textarea:focus{outline:2px solid #0a6b57;border-color:#0a6b57;background:#fff}
+  td.n input{text-align:right}
+  tr.cl-new td{background:#f2f7fc}
+  tr.cl-new td input,tr.cl-new td textarea{border:1px dashed #9fb3c8;background:#fff}
+  td.del{color:#9aa7b4;cursor:pointer;text-align:center;padding:2px 6px}
+  td.del:hover{color:#b40000}
+  td.del.onay{color:#b40000;font-weight:700}
+  td.saved{animation:ok 1.2s}
+  @keyframes ok{from{background:#c8f0d4}to{background:transparent}}
+  td.bad input,td.bad textarea{border-color:#b40000;background:#ffecec}
+  .puan{margin-top:8px;font-size:11.5px;color:#3a4a5a;background:#fff;border:1px solid #e3e8ee;border-radius:8px;padding:8px 12px;max-width:900px;line-height:1.6}
+  .puan b{color:#16324f}
+  .blk{margin:0 0 22px}
+  .blk h2{font-size:14.5px;color:#16324f;margin:6px 0 6px;padding-bottom:3px;border-bottom:2px solid #16324f}
+  .blk h2 .say{font-size:11px;font-weight:400;color:#6b7a89;margin-left:6px}
+  .durum{position:sticky;top:0;z-index:3;background:#f7f8fa;padding:4px 0;margin:0 0 4px;min-height:24px}
+  .bas{font-size:12px;font-weight:600;color:#16324f;margin:0 2px 6px}
+  td.c{background:#f1f3f6;color:#1c2430;padding:1px 6px}
+  td.z,th.z{border-left:0}
+  .cl-wrap thead tr.grp th{background:#2a4a6b;font-size:10px;font-weight:600;text-align:center;padding:2px 4px;white-space:normal;line-height:12px}
+  .cl-wrap thead th.n{text-align:right}
+  tfoot td{background:#e8edf3;border-top:2px solid #16324f;padding:3px 6px;font-size:11.5px}
+  td.n{text-align:right}
+  input.prm{font:inherit;text-align:right;border:1px solid #cdd6df;border-radius:4px;padding:1px 3px;background:#fffbe6}
+</style>
+</head>
+<body>
+<header>
+  <h1>Etüt-Proje Hataları</h1>
+  <div class="sub">Etüt ve Proje birimlerinin hataları. Yeni kayıt için en alttaki boş satırı doldurunuz; mevcut hücreler değiştirilince kaydedilir.</div>
+</header>
+<div class="wrap">
+  <div class="btns durum"><span id="rolLbl"></span><span class="msg" id="msg"></span></div>
+  <div id="tbl"><div class="hint">Yükleniyor…</div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ARB-KOD-GIRIS (23.09.2026): forma giris = kisisel 6 haneli kod (App > Referans > Kisiler > Sifre).
+   form-giris edge fonksiyonu kodu dogrular, yetkiyi form_erisim'den kontrol eder, rolu otomatik secer ve
+   rol hesabi icin tek kullanimlik token doner; burada verifyOtp ile oturum acilir. Rol hesaplarinin parolasi yoktur. */
+window.ARB_FORM_YOL=(function(){ var m=/\/app\/([^\/]+)\//.exec(location.pathname); return m?m[1]+"/":""; })();
+window.ARB_KOD_GIRIS=async function(cli,kod){
+  kod=String(kod==null?"":kod).replace(/\D/g,"");
+  if(kod.length!==6) return {error:{message:"Kod 6 haneli olmal\u0131d\u0131r."}};
+  try{
+    var r=await fetch("https://zehysygpqxqmrzangvuc.supabase.co/functions/v1/form-giris",{method:"POST",cache:"no-store",
+      headers:{"Content-Type":"application/json",apikey:"sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc"},
+      body:JSON.stringify({form:window.ARB_FORM_YOL,kod:kod})});
+    var j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok||!j.ok||!j.token_hash) return {error:{message:j.hata||"Kod hatal\u0131."}};
+    var v=await cli.auth.verifyOtp({token_hash:j.token_hash,type:"magiclink"});
+    if(v.error) return {error:{message:"Giri\u015f a\u00e7\u0131lamad\u0131: "+v.error.message}};
+    try{ localStorage.setItem("arb_kisi_"+window.ARB_FORM_YOL,JSON.stringify({kod:j.kisi,ad:j.ad,rol:j.rol})); }catch(e){}
+    return {error:null,data:j};
+  }catch(e){ return {error:{message:"Ba\u011flant\u0131 hatas\u0131."}}; }
+};
+window.ARB_KISI_AL=function(em){ try{ var k=JSON.parse(localStorage.getItem("arb_kisi_"+window.ARB_FORM_YOL)||"null"); return (k&&(!em||k.rol===em))?k:null; }catch(e){ return null; } };
+</script>
+<script>
+/* ===== ARBOR FORM KAPISI — Etüt rol hesabı (kod: form_erisim etut/) + MB geçişi ===== */
+const ARB_ROLLER = [
+  { email:"etut.form@arbor.com.tr", ad:"Etüt" }
+];
+const ARB_STORE = "arbform_etut_hata";
+const ARB_NOSTORE = (u,o)=> fetch(u, Object.assign({}, o||{}, {cache:"no-store"}));
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE},global:{fetch:ARB_NOSTORE}});
+const ARB_MB = "int@arbor.com.tr";
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{global:{fetch:ARB_NOSTORE}});
+var ARB_ACTIVE = ARB_GATE_SB;
+var ARB_EMAIL = "";
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  var opts='<option value="" disabled selected>— Rolünüzü seçiniz —</option>'
+    + ARB_ROLLER.map(function(r){ return '<option value="'+r.email+'">'+r.ad+'</option>'; }).join("");
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:330px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:10px">Arbor — Etüt-Proje Hataları</div>'
+    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:10px">Kişisel giriş kodunuzu giriniz. Rolünüz koda göre otomatik belirlenir.</div>'
+    +'<input id="arb-pw" type="password" placeholder="6 haneli giriş kodu" autocomplete="off" inputmode="numeric" maxlength="6" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giriş</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px"></div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var pw=document.getElementById("arb-pw").value;
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giriş yapılıyor…";
+    var r=await ARB_KOD_GIRIS(ARB_GATE_SB,pw);
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent=((r.error&&r.error.message)||"Kod hatalı."); return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  var izin=ARB_ROLLER.map(function(r){return r.email;});
+  if(izin.indexOf(em)<0){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(izin.indexOf(em)>=0 || em===ARB_MB){ ARB_EMAIL=em; (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script type="text/plain" id="arbmain">
+const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const KISI = ARB_EMAIL==="etut.form@arbor.com.tr" ? (ARB_KISI_AL(ARB_EMAIL)||{kod:"ETUT"}) : {kod:"MB"};
+const ROL = KISI.kod;
+(function(){
+  if(ARB_EMAIL!=="etut.form@arbor.com.tr") return;
+  const l=document.getElementById("rolLbl");
+  l.innerHTML='<b style="color:#16324f;font-size:12.5px">Oturum: '+esc(ROL)+'</b>';
+  const b=document.createElement("button"); b.textContent="Çıkış"; b.className="btn2"; b.style.marginLeft="8px";
+  b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); };
+  l.appendChild(b);
+})();
+const msg=(t,c)=>{ const m=document.getElementById("msg"); m.textContent=t||""; m.className="msg"+(c?" "+c:""); };
+const fmtN=(v,d)=>(v==null||v===""||!isFinite(v))?"":Number(v).toLocaleString("tr-TR",d==null?{maximumFractionDigits:2}:{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmtD=v=>{ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(v||""); return m?m[3]+"/"+m[2]+"/"+m[1].slice(2):(v||""); };
+const parseD=s=>{ s=String(s==null?"":s).trim(); if(s==="") return null;
+  const m=/^(\d{1,2})[\/.\-]+(\d{1,2})[\/.\-]+(\d{2}|\d{4})$/.exec(s); if(!m) return NaN;
+  const y=m[3].length===2?2000+(+m[3]):+m[3], a=+m[2], g=+m[1], t=new Date(Date.UTC(y,a-1,g));
+  if(t.getUTCMonth()!==a-1||t.getUTCDate()!==g) return NaN;
+  return y+"-"+String(a).padStart(2,"0")+"-"+String(g).padStart(2,"0"); };
+const parseTr=s=>{ s=String(s==null?"":s).trim().replace(/\s|€|%/g,""); if(s==="") return null;
+  if(s.indexOf(",")>=0) s=s.replace(/\./g,"").replace(",","."); else if(/^\-?\d{1,3}(\.\d{3})+$/.test(s)) s=s.replace(/\./g,"");
+  const n=Number(s); return isFinite(n)?n:NaN; };
+const val=(c,v)=>c.t==="n"?parseTr(v):c.t==="d"?parseD(v):(String(v||"").trim()||null);
+const num=v=>Number(v)||0;
+
+/* ===== ETUT-HAKEDIS: veri ===== */
+const D={hata:[],pers:[],yuk:[],mem:[],dk:[]}; const P={}; let KID={};  /* ETUT-KIDEM: etut_personel.id → kıdem (yıl), Personel panosu (maas_prim) */
+const kid=p=>KID[p.id];
+const TBL={hatalar:"etut_hata",etut:"etut_hata",icmal:"etut_personel",yuk:"etut_proje_yuk",mem:"etut_memnuniyet",dk:"etut_dk"};
+const rowsOf=id=>id==="hatalar"?D.hata.filter(r=>r.sayfa!=="etut"):id==="etut"?D.hata.filter(r=>r.sayfa==="etut"):id==="icmal"?D.pers:D[id];
+/* kişi eşleşmesi: ilk ad, metin içinde bağımsız kelime (Hatayı Yapan / Yakalayan serbest metin) */
+const ilk=p=>String(p.ad||"").trim().split(/\s+/)[0].toLocaleLowerCase("tr");
+const icerir=(txt,p)=>{ const f=ilk(p); if(!f) return false; const t=" "+String(txt||"").toLocaleLowerCase("tr")+" ";
+  return new RegExp("[^\\p{L}]"+f.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"[^\\p{L}]","u").test(t); };
+const hataPuani=p=>D.hata.filter(r=>icerir(r.yapan,p)).reduce((s,r)=>s+num(r.hata_puani),0);
+const yakalamaPuani=p=>D.hata.filter(r=>icerir(r.yakalayan,p)).reduce((s,r)=>s+num(r.basari_puani),0);
+const zk=r=>0.1*num(r.zorluk)+1;
+const projeYuku=p=>D.yuk.reduce((s,r)=>s+zk(r)*num((r.yuk||{})[p.kisa]),0);
+const dkT=r=>num(r.dk1)+2*num(r.dk2)+3*num(r.dk3)+5*num(r.dk4);
+const dkToplam=()=>D.dk.reduce((s,r)=>s+dkT(r),0);
+const odul=r=>num(r.pgd_tutari)*(num(r.rapidite)+num(r.pertinence))/2000;
+const nul=v=>v==null||v==="";
+function icmal(p){
+  const hs=D.pers.map(hataPuani), mh=Math.max(0,...hs), mk=Math.max(0,...D.pers.map(x=>num(kid(x))));
+  const h=hataPuani(p), B=projeYuku(p);
+  const C=(1-(mh?P.c_hatasizlik*h/mh:0))*(1-(mk?P.c_hatasizlik*num(kid(p))/mk:0));
+  const Dk=1+0.01*P.c_yakalama*yakalamaPuani(p);
+  const E=nul(p.inisiyatif)?null:1-(1+Math.min(num(kid(p)),4)*P.c_inisiyatif)*(100-num(p.inisiyatif))/100;
+  const F0=E==null?null:B*P.c_prim*E*C*Dk;
+  /* ETUT-ICMAL2: Hesaplanan Prim = (eski Prim+DK1) + Memnuniyet Primi */
+  return {B,C,D:Dk,E,F:F0==null?null:F0+dkToplam()+num(p.memnuniyet_eur),h,y:yakalamaPuani(p)};
+}
+const MEMK=()=>["TH",...D.pers.map(p=>p.kisa).filter(Boolean)];
+
+/* ===== sekme tanımları: k anahtar ("a.b" = jsonb alanı) · h başlık ("|" satır sonu) · t tür (t metin · m uzun · n sayı · d tarih · c hesap) · w ch ===== */
+const HATA_COLS=[{k:"pgd",h:"PGD",t:"t",w:20},{k:"proje",h:"Proje",t:"t",w:12},{k:"tarih",h:"Tarih",t:"d",w:8},
+  {k:"yapan",h:"Hatayı Yapan|İsim Soyisim",t:"t",w:22},{k:"yakalayan",h:"Hatayı Yakalayan|İsim Soyisim",t:"t",w:18},{k:"hata",h:"Hata",t:"m",w:46}];
+const TABS=[
+ {id:"hatalar",ad:"Hata Puanları",req:"hata",fixed:{sayfa:"hatalar"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},
+   {k:"aksetti",h:"Müşteriye ya da Üretime|Aksetti mi?",t:"t",w:12},{k:"notlar",h:"Notlar",t:"m",w:36}],
+  baslik:"Etüt ve Proje birimlerinin ilgili dönem zarfında yaptığı tüm hatalar aşağıdaki tabloya kaydedilir.",
+  not:`<b>Hata Puanı:</b><br>10 puanlık örnek hata: P522 numaralı pozda müşteri poz numarası hatalı girilmiştir. Kendi içimizde düzeltilmiştir.<br>
+   100 puanlık örnek hata: HSP ölçüleri yanlıştır. Müşteri tarafından düzeltilmiştir.<br>Yapılan yeni hatalar yukarıdaki örneklerle mukayese edilerek puanlanır.`},
+ {id:"etut",ad:"Hata Yakalama Puanları",req:"hata",fixed:{sayfa:"etut"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},{k:"basari_puani",h:"Başarı|Puanı",t:"n",w:5}]},
+ {id:"yuk",ad:"Proje Yükü",req:"proje",cols:()=>[{k:"proje",h:"Projeler",t:"t",w:24},
+   ...D.pers.filter(p=>p.kisa).map(p=>({k:"yuk."+p.kisa,h:p.kisa,t:"n",w:4,tt:p.ad})),{k:"zorluk",h:"Proje|Zorluğu",t:"n",w:5},
+   ...D.pers.filter(p=>p.kisa).map(p=>({h:p.kisa,t:"c",d:0,z:1,tt:p.ad+" — zorluğa göre oranlanmış",f:r=>((r.yuk||{})[p.kisa]==null||(r.yuk||{})[p.kisa]==="")?null:zk(r)*num(r.yuk[p.kisa])}))],
+  grup:()=>{ const n=D.pers.filter(p=>p.kisa).length; return `<tr class="grp"><th></th><th colspan="${n}">Yük (%)</th><th></th><th colspan="${n}">Zorluğa göre oranlanmış proje yükü</th><th></th></tr>`; },
+  foot:()=>{ const K=D.pers.filter(p=>p.kisa); return `<tr class="tf"><td><b>Toplam</b></td>${K.map(p=>`<td class="n">${fmtN(D.yuk.reduce((s,r)=>s+num((r.yuk||{})[p.kisa]),0),0)}</td>`).join("")}<td></td>${K.map(p=>`<td class="n"><b>${fmtN(projeYuku(p),0)}</b></td>`).join("")}<td></td></tr>`; },
+  not:`Proje zorluğu 1 ve 5 arasında oranlanmıştır. Oranlanmış yük = (0,1 × zorluk + 1) × yük.`},
+ {id:"dk",ad:"DK1",req:"proje",cols:()=>[/* ETUT-DK-TURSUZ: Tür sütunu kaldırıldı */{k:"proje",h:"Proje / Part",t:"t",w:30},{k:"kisi1",h:"Kişi 1",t:"t",w:5},{k:"kisi2",h:"Kişi 2",t:"t",w:5},
+   {k:"adet",h:"Adet",t:"n",w:4},{k:"dk1",h:"dk1",t:"n",w:4},{k:"dk2",h:"dk2",t:"n",w:4},{k:"dk3",h:"dk3",t:"n",w:4},{k:"dk4",h:"dk4",t:"n",w:4},
+   {h:"dk toplam",t:"c",f:dkT,d:0},{k:"tarih",h:"Tarih",t:"d",w:8}],
+  foot:()=>`<tr class="tf"><td colspan="8"><b>Toplam</b></td><td class="n"><b>${fmtN(dkToplam(),0)}</b></td><td></td><td></td></tr>`,
+  not:"dk toplam = dk1 × 1 + dk2 × 2 + dk3 × 3 + dk4 × 5. Toplam, İcmal'de DK1 sütunudur ve Hesaplanan Prim'e eklenir."},
+ {id:"mem",ad:"Memnuniyet",req:"proje",cols:()=>[{k:"proje",h:"Proje",t:"t",w:24},{k:"cevap_tarihi",h:"Cevap|Tarihi",t:"d",w:8},{k:"pgd_tutari",h:"ERP'deki PGD|Tutarı (€)",t:"n",w:9,d:0},
+   {k:"rapidite",h:"Rapidité",t:"n",w:4},{k:"pertinence",h:"Pertin.&Qual.|Réponses",t:"n",w:5},{k:"oneriler",h:"Suggestions / Recommandations",t:"m",w:32},
+   {h:"Hesaplanan|Ödül (€)",t:"c",f:odul,d:0},
+   ...MEMK().flatMap(k=>[{k:"dagilim."+k,h:k+"|%",t:"n",w:3},{h:k+"|€",t:"c",d:0,f:r=>{ const v=(r.dagilim||{})[k]; return (v==null||v==="")?null:num(v)*odul(r)/100; }}])],
+  grup:()=>`<tr class="grp"><th colspan="3"></th><th colspan="2">Satisfaisant: 2 · M.Sat.: 1 · Insatisfaisant: 0 puan</th><th></th><th></th><th colspan="${MEMK().length*2}">Ödüllerin Kişilere Dağılımı</th><th></th></tr>`,
+  foot:()=>`<tr class="tf"><td><b>Toplam</b></td><td></td><td class="n">${fmtN(D.mem.reduce((s,r)=>s+num(r.pgd_tutari),0),0)}</td><td></td><td></td><td></td><td class="n"><b>${fmtN(D.mem.reduce((s,r)=>s+odul(r),0),0)}</b></td>${MEMK().map(k=>`<td></td><td class="n"><b>${fmtN(D.mem.reduce((s,r)=>{ const v=(r.dagilim||{})[k]; return s+((v==null||v==="")?0:num(v)*odul(r)/100); },0),0)}</b></td>`).join("")}<td></td></tr>`,
+  not:"Hesaplanan Ödül = PGD Tutarı × (Rapidité + Pertinence) / 2000 · kişi € = % × Hesaplanan Ödül / 100."},
+ {id:"icmal",ad:"İcmal",req:"ad",cols:()=>[
+   {k:"ad",h:"İsim Soyisim",t:"t",w:17},{k:"kisa",h:"Kısa",t:"t",w:4},{h:"Kıdem|(yıl)",t:"c",f:r=>kid(r),d:1,tt:"Personel panosundan (işe giriş tarihi)"},{k:"inisiyatif",h:"İnisiyatif|Puanı",t:"n",w:5},
+   {h:"Toplam|Hata Puanı",t:"c",f:r=>icmal(r).h,d:0},{h:"Toplam Hata|Yakalama Puanı",t:"c",f:r=>icmal(r).y,d:0},
+   {h:"Proje|Yükü",t:"c",f:r=>icmal(r).B,d:0},{h:"Hatasızlık|Katsayısı",t:"c",f:r=>icmal(r).C,d:3},{h:"Hata Yakalama|Katsayısı",t:"c",f:r=>icmal(r).D,d:3},
+   {h:"İnisiyatif|Katsayısı",t:"c",f:r=>icmal(r).E,d:3},{h:"DK1",t:"c",f:()=>dkToplam(),d:0},{k:"memnuniyet_eur",h:"Memnuniyet|Primi (€)",t:"n",w:7,d:0},
+   {h:"Hesaplanan|Prim (TL)",t:"c",f:r=>icmal(r).F,d:0},{k:"th_oneri",h:"TH Öneri|(TL)",t:"n",w:7,d:0,tt:"Personel panosunda son ayın Yol-Yemek Dahil Prim (TL) sütununa yazılır"}],
+  foot:()=>{ const S=k=>fmtN(D.pers.reduce((s,r)=>s+num(r[k]),0),0), SF=k=>fmtN(D.pers.reduce((s,r)=>s+num(icmal(r)[k]),0),0), pi=k=>`<input class="prm" data-param="${k}" value="${esc(fmtN(P[k]))}" style="width:6ch">`;
+    return `<tr class="tf"><td colspan="2"><b>Çarpan / Toplam</b></td><td></td><td></td><td></td><td></td><td></td><td class="n">${pi("c_hatasizlik")}</td><td class="n">${pi("c_yakalama")}</td><td class="n">${pi("c_inisiyatif")}</td><td class="n" title="Proje Yükü çarpanı">${pi("c_prim")}</td><td class="n">${S("memnuniyet_eur")}</td><td class="n">${SF("F")}</td><td class="n">${S("th_oneri")}</td><td></td></tr>`; },
+  not:`<b>Proje Yükü:</b> FA tarafından zorluk derecesi ve adete göre tayin edilir (Proje Yükü tablosu, zorluğa göre oranlanmış toplam).<br>
+   <b>Hatasızlık Katsayısı:</b> Hatalar sayfasında ilgili kişiye ait hata puanlarının toplamı ve kişinin kıdemi dikkate alınarak belirlenir.<br>
+   <b>Hata Yakalama Katsayısı:</b> Başkalarının sorumluluğundaki hatalarını yakalayana, yakaladığı hata dikkate alınarak katsayı tayin edilir.<br>
+   <b>İnisiyatif Katsayısı:</b> Hatalar sayfasında ilgili kişiye ait İnisiyatif Puanı ve kişinin kıdemi dikkate alınarak belirlenir.<br>
+   <b>İnisiyatif Puanı:</b> Şefine sormaya ihtiyaç duymadan, doğru şekilde inisiyatif kullanan, müşteriye sormak yerine müşteriyi yönlendirebilen kişiye, 0-100 arasında puan yazılır.<br>
+   <b>Memnuniyet Prim Yüzdeleri:</b> TH: 100 / projede emeği geçen kişi sayısı şeklinde hesaplanır. Personel: TH'dan kalan yüzde emeği geçen personele emekleri oranında dağıtılır. Örn. bir projede TH, BT ve MN çalışmışsa TH %33'tür; kalan %67 BT ile MN arasında TH tarafından emek payına göre dağıtılır.<br>
+   <span class="hint">Kıdem = Personel panosu (işe giriş tarihinden). Toplam Hata Puanı = Hata Puanları + Hata Yakalama Puanları tablolarında Hatayı Yapan'da adı geçen satırların Hata Puanı · Toplam Hata Yakalama Puanı = Hatayı Yakalayan'da adı geçen satırların Başarı Puanı (ilk ad ile eşleşir) · Hesaplanan Prim = Proje Yükü × çarpan × katsayılar + DK1 + Memnuniyet Primi · TH Öneri, Personel panosunda son ayın Yol-Yemek Dahil Prim (TL) değeri olur.</span>`}
+];
+/* ETUT-PROJE-HATALAR: bu formda yalnız Hata Puanları bloğu */
+TABS.splice(0,TABS.length,...TABS.filter(t=>t.id==="hatalar"));
+const blk=id=>TABS.find(t=>t.id===id);
+const gv=(r,k)=>{ const i=k.indexOf("."); return i<0?r[k]:((r[k.slice(0,i)]||{})[k.slice(i+1)]); };
+const grow=t=>{ t.style.height="auto"; t.style.height=(t.scrollHeight+2)+"px"; };
+function cell(c,r){
+  if(c.t==="c"){ const v=r?c.f(r):null; return `<td class="n c${c.z?" z":""}">${r?fmtN(v,c.d):""}</td>`; }
+  const v=r?gv(r,c.k):null, shown=c.t==="n"?fmtN(v,c.d):c.t==="d"?fmtD(v):(v==null?"":v);
+  const a=`data-k="${c.k}"${r?` data-id="${r.id}"`:' data-new="1"'} style="width:${c.w+1}ch"`;
+  if(c.t==="m") return `<td class="m"><textarea ${a} rows="1">${esc(shown)}</textarea></td>`;
+  return `<td class="${c.t==="n"||c.t==="d"?"n":""}"><input ${a} type="text"${c.t==="n"?' inputmode="decimal"':''}${c.t==="d"?' placeholder="gg/aa/yy"':''} value="${esc(shown)}"></td>`;
+}
+/* ETUT-TEK-SAYFA: sekme yok; bloklar alt alta (Hata Puanları · Hata Yakalama Puanları · Proje Yükü · DK1 · Memnuniyet · İcmal) */
+function blokHTML(T){
+  const C=T.cols(), R=rowsOf(T.id);
+  const head=(T.grup?T.grup():"")+'<tr>'+C.map(c=>`<th class="${c.t==="n"||c.t==="c"?"n":""}${c.h.indexOf("|")>=0?" h2":""}${c.z?" z":""}"${c.tt?` title="${esc(c.tt)}"`:""}>${esc(c.h).replace("|","<br>")}</th>`).join("")+'<th></th></tr>';
+  const body=R.map(r=>'<tr>'+C.map(c=>cell(c,r)).join("")+`<td class="del" data-del="${r.id}" title="Satırı sil">✕</td></tr>`).join("");
+  /* ETUT-BOS-SATIR: en altta daima boş satır; zorunlu alan girilince kaydedilir */
+  const nw='<tr class="cl-new">'+C.map(c=>cell(c,null)).join("")+'<td></td></tr>';
+  return `<section class="blk" data-blk="${T.id}"><h2>${esc(T.ad)} <span class="say">${R.length} kayıt</span></h2>${T.baslik?`<div class="bas">${esc(T.baslik)}</div>`:""}
+    <div class="cl-wrap"><table><thead>${head}</thead><tbody>${body}${nw}</tbody>${T.foot?"<tfoot>"+T.foot()+"</tfoot>":""}</table></div>${T.not?`<div class="puan">${T.not}</div>`:""}</section>`;
+}
+function render(){
+  const ae=document.activeElement, odak=ae&&ae.dataset&&(ae.dataset.k||ae.dataset.param)?{k:ae.dataset.k,p:ae.dataset.param,id:ae.dataset.id,nw:ae.dataset.new,b:(ae.closest("[data-blk]")||{dataset:{}}).dataset.blk}:null;
+  document.getElementById("tbl").innerHTML=TABS.map(blokHTML).join("");
+  document.querySelectorAll("#tbl textarea").forEach(grow);
+  TABS.forEach(T=>{ const q=document.querySelector(`[data-blk="${T.id}"] tr.cl-new [data-k="${T.req}"]`); if(q) q.placeholder="Yeni kayıt"; });
+  if(odak){ const B=`[data-blk="${odak.b}"] `; const e=document.querySelector(odak.p?`[data-param="${odak.p}"]`:odak.nw?B+`tr.cl-new [data-k="${odak.k}"]`:B+`[data-k="${odak.k}"][data-id="${odak.id}"]`); if(e) e.focus(); }
+}
+async function load(){
+  /* ETUT-PROJE-HATALAR: yalnız etut_hata okunur (İcmal hesabı Etüt formunda) */
+  const h=await sb.from("etut_hata").select("*").order("tarih",{ascending:true,nullsFirst:false}).order("id",{ascending:true});
+  if(h.error){ document.getElementById("tbl").innerHTML='<div class="msg err">Hata: '+esc(h.error.message)+'</div>'; return; }
+  D.hata=h.data; render();
+}
+async function kidemYukle(){ const kd=await sb.rpc("etut_kidem"); if(kd&&!kd.error){ KID={}; (kd.data||[]).forEach(r=>{ if(r.kidem!=null) KID[r.id]=Number(r.kidem); }); } }
+async function kaydet(inp){
+  if(inp.dataset.param){ const v=parseTr(inp.value); if(v==null||Number.isNaN(v)){ msg("Geçersiz sayı","err"); inp.value=fmtN(P[inp.dataset.param]); return; }
+    const {error}=await sb.from("etut_param").update({deger:v,updated_at:new Date().toISOString(),updated_by:ROL}).eq("anahtar",inp.dataset.param);
+    if(error){ msg("Kaydedilemedi: "+error.message,"err"); return; } P[inp.dataset.param]=v; msg("Kaydedildi","ok"); render(); return; }
+  const T=blk(inp.closest("[data-blk]").dataset.blk), C=T.cols(), tb=TBL[T.id], c=C.find(x=>x.k===inp.dataset.k), td=inp.parentElement, v=val(c,inp.value);
+  if(Number.isNaN(v)){ td.classList.add("bad"); msg((c.t==="d"?"Geçersiz tarih (gg/aa/yy): ":"Geçersiz sayı: ")+inp.value,"err"); return; }
+  td.classList.remove("bad");
+  if(inp.dataset.new){
+    const rec=Object.assign({},T.fixed||{});
+    for(const i of inp.closest("tr").querySelectorAll("[data-k]")){ const cc=C.find(x=>x.k===i.dataset.k), vv=val(cc,i.value);
+      if(Number.isNaN(vv)){ i.parentElement.classList.add("bad"); msg("Geçersiz değer: "+i.value,"err"); return; }
+      const j=cc.k.indexOf("."); if(j<0) rec[cc.k]=vv; else if(vv!=null){ const a=cc.k.slice(0,j); rec[a]=rec[a]||{}; rec[a][cc.k.slice(j+1)]=vv; } }
+    if(!rec[T.req]) return;
+    if(T.id==="icmal") rec.sira=Math.max(0,...D.pers.map(x=>x.sira||0))+1;
+    rec.updated_by=ROL;
+    const {data,error}=await sb.from(tb).insert(rec).select();
+    if(error){ msg("Eklenemedi: "+error.message,"err"); return; }
+    if(T.id==="icmal") await kidemYukle();
+    (T.id==="hatalar"||T.id==="etut"?D.hata:T.id==="icmal"?D.pers:D[T.id]).push(data[0]); msg("Eklendi","ok"); render();
+    const n=document.querySelector(`[data-blk="${T.id}"] tr.cl-new [data-k]`); if(n) n.focus();
+    return;
+  }
+  const id=+inp.dataset.id, r=rowsOf(T.id).find(x=>x.id===id); if(!r) return;
+  if(c.k===T.req&&!v){ inp.value=r[c.k]; msg("Bu alan boş bırakılamaz (satırı silmek için ✕)","err"); return; }
+  const eski=gv(r,c.k); if((eski==null||eski===""?null:(c.t==="n"?Number(eski):eski))===v) return;
+  const j=c.k.indexOf("."), upd={updated_at:new Date().toISOString(),updated_by:ROL};
+  if(j<0) upd[c.k]=v; else { const a=c.k.slice(0,j), o=Object.assign({},r[a]||{}); if(v==null) delete o[c.k.slice(j+1)]; else o[c.k.slice(j+1)]=v; upd[a]=o; }
+  const {error}=await sb.from(tb).update(upd).eq("id",id);
+  if(error){ msg("Kaydedilemedi: "+error.message,"err"); return; }
+  Object.assign(r,upd); const bagYok=c.k==="th_oneri"&&!r.maas_prim_id; msg(bagYok?"Kaydedildi — Personel panosunda eşleşen kişi yok, prim oraya yazılmadı":"Kaydedildi",bagYok?"err":"ok");
+  if(c.k==="ad"){ const x=await sb.from("etut_personel").select("maas_prim_id").eq("id",id).single(); if(x.data) r.maas_prim_id=x.data.maas_prim_id; await kidemYukle(); }
+  render();
+}
+const W=document.getElementById("tbl");
+W.addEventListener("change",e=>{ if(e.target.matches("[data-k],[data-param]")) kaydet(e.target); });
+W.addEventListener("input",e=>{ if(e.target.tagName==="TEXTAREA") grow(e.target); });
+W.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey&&e.target.matches("[data-k],[data-param]")){ e.preventDefault(); e.target.blur(); } });
+W.addEventListener("click",async e=>{ const d=e.target.closest("[data-del]"); if(!d) return;
+  if(d.dataset.onay!=="1"){ d.dataset.onay="1"; d.textContent="Sil?"; d.classList.add("onay"); setTimeout(()=>{ if(d.isConnected){ d.dataset.onay=""; d.textContent="✕"; d.classList.remove("onay"); } },3000); return; }
+  const T=blk(d.closest("[data-blk]").dataset.blk), id=+d.dataset.del;
+  const {error}=await sb.from(TBL[T.id]).delete().eq("id",id);
+  if(error){ msg("Silinemedi: "+error.message,"err"); return; }
+  if(T.id==="hatalar"||T.id==="etut") D.hata=D.hata.filter(x=>x.id!==id); else if(T.id==="icmal") D.pers=D.pers.filter(x=>x.id!==id); else D[T.id]=D[T.id].filter(x=>x.id!==id);
+  msg("Silindi","ok"); render(); });
+load();
+</script>
+
+<!-- ARBOR-DRAGSCROLL -->
+<style>
+  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
+  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+<script>
+(function(){
+  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
+  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
+  function scrollable(n){
+    var st=getComputedStyle(n);
+    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
+    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
+    return okx||oky;
+  }
+  function start(n,e){
+    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+    document.body.classList.add("arb-dragging"); e.preventDefault();
+  }
+  document.addEventListener("mousedown",function(e){
+    if(e.button!==0||skip(e.target)) return;
+    var n=e.target, hucre=null;
+    while(n && n.nodeType===1 && n!==document.body){
+      if(scrollable(n)){
+        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
+        if(!n.closest("td,th")) return start(n,e);
+        if(!hucre) hucre=n;
+      }
+      n=n.parentElement;
+    }
+    if(hucre) return start(hucre,e);
+  },true);
+  document.addEventListener("mousemove",function(e){
+    if(!el) return;
+    var dx=e.clientX-sx, dy=e.clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    el.scrollLeft=l-dx; el.scrollTop=t-dy;
+  });
+  document.addEventListener("mouseup",function(){
+    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
+  });
+  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
+})();
+</script>
+<!-- /ARBOR-DRAGSCROLL -->
+<script>
+/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
+(function(){
+  function fx(el){
+    if(!el||el.nodeType!==1) return;
+    var tag=el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
+    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
+    if(el.children.length) return;
+    var t=(el.textContent||'').trim();
+    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
+  }
+  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
+  document.addEventListener('input',function(e){ fx(e.target); },true);
+  document.addEventListener('change',function(e){ fx(e.target); },true);
+  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<!-- /ARB-HOVERTITLE -->
+</body>
+</html>
