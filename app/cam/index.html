@@ -2,7 +2,7 @@
 <title>Arbor — Cam Fiyatlandırma</title><style>
 :root{color-scheme:light}*{box-sizing:border-box}
 body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
-header{background:#16324f;color:#fff;padding:12px 16px}header h1{font-size:17px;margin:0;font-weight:700}header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
+header{background:#16324f;color:#fff;padding:12px 16px}header h1{font-size:17px;margin:0;font-weight:700}header.hdl{display:flex;align-items:center;justify-content:space-between;gap:12px}header .camlink{color:#fff;font-size:13px;font-weight:600;text-decoration:none;border:1px solid rgba(255,255,255,.45);border-radius:6px;padding:4px 10px;white-space:nowrap}header .camlink:hover{background:rgba(255,255,255,.12)}header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
 .wrap{max-width:980px;margin:0 auto;padding:16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:680px){.grid{grid-template-columns:1fr}}
 .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:14px}
 label{display:block;font-size:12px;font-weight:600;color:#16324f;margin:8px 0 3px}
@@ -83,7 +83,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 })();
 </script>
 
-<header><h1>Cam Fiyatlandırma</h1></header>
+<header class="hdl"><h1>Cam Fiyatlandırma</h1><!-- CAM-LISTE-LINK --><a class="camlink" href="../cam-listesi/" target="_blank" rel="noopener">Cam Listesi ↗</a></header>
 <div class="wrap"><div class="grid">
 <div class="card">
   <!-- CAM-V21 DUZEN3 --><div class="row3"><div><label>Yapı</label><select id="yapi"><option value="cift">Çift cam</option><option value="uclu">Üçlü cam</option></select></div><div><label>Kaplama</label><select id="kap"><option value="yok">Kaplamasız</option><option value="lowe" selected>Low-E</option><option value="solar">Solar Low-E</option></select></div><div><label>Form / Karolaj</label><select id="form"><option value="duz">Düz</option><option value="karolaj">Karolaj</option><option value="egrisel">Eğrisel (kemerli, dairesel dahil)</option><option value="ke">Karolaj+Eğrisel</option></select></div></div>
@@ -359,6 +359,8 @@ calc();
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
+
 
 
 
