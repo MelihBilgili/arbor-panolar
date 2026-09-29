@@ -78,6 +78,16 @@
   select.cell.filled{-webkit-appearance:none;-moz-appearance:none;appearance:none}
   select.cell.filled::-ms-expand{display:none}
   select.cell.durum-warn{color:#b40000;font-weight:700}
+  /* YD-NOT-EKLE */
+  .ntcell{display:flex;align-items:center;gap:4px}
+  .ntcell .ntlast{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:26px;display:flex;align-items:center;cursor:default}
+  .ntcell .ntlast span{overflow:hidden;text-overflow:ellipsis}
+  .ntbox{max-width:460px}
+  .ntbox textarea{width:100%;box-sizing:border-box;min-height:90px;font:inherit;padding:8px;border:1px solid #cdd6df;border-radius:8px}
+  .ntbox .ntalt{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+  .ntbox .ntalt button{border:0;border-radius:7px;padding:6px 14px;font-size:12.5px;font-weight:700;cursor:pointer}
+  .ntbox .ntkaydet{background:#2e7d54;color:#fff}.ntbox .ntvaz{background:#e3e8ee;color:#16324f}
+  .ntbox .ntgecmis{font-size:12px;color:#5a6b7d;white-space:pre-wrap;margin-top:8px;max-height:160px;overflow:auto}
 html,body{max-width:100vw;overflow-x:hidden}
 </style>
 </head>
@@ -103,6 +113,14 @@ html,body{max-width:100vw;overflow-x:hidden}
   </div>
 </div>
 
+<div class="msov" id="nt-ov"><!-- YD-NOT-EKLE -->
+  <div class="msbox ntbox">
+    <div class="mshd"><h2 id="nt-baslik">Not Ekle</h2></div>
+    <textarea id="nt-txt" placeholder="Notu yazın…"></textarea>
+    <div class="ntalt"><button type="button" class="ntvaz" id="nt-vaz">Vazgeç</button><button type="button" class="ntkaydet" id="nt-kaydet">Kaydet</button></div>
+    <div class="ntgecmis" id="nt-gecmis"></div>
+  </div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -265,10 +283,10 @@ function GOREVLI_OPTS(){ const k=(GOREVLI_YETKILI||GOREVLI_YEDEK()).slice(); if(
 function tkNotYaz(x){ const n=x.n||""; if(!x.e||!n) return n; return n.indexOf(x.e+":")===0?n:x.e+": "+n; }
 function tkHist(log){ return log.length? log.map(x=>(x.t?fmtDate(x.t)+" — ":"")+tkNotYaz(x)+(x.g?" [Görevli: "+x.g+"]":"")).join("\n") : ""; }
 
-const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Teklif Teslim Edildi","Revizyon İstendi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
+const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Teklif Teslim Edildi","Revizyon İstendi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı","İptal"];  /* YD-IPTAL (29.09.2026): her durumdan seçilebilir, en altta */
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
-const DURUM_BG={"Teklif İncelendi":"#eafbfa","Teklif Bekleniyor":"#e0f5e0","Revizyon İstendi":"#e8dfb8","Muhtemel":"#7ed957","Kazandık":"#4caf50","Kaybettik":"#c9c9c9","Müşteri İşi Alamadı":"#e8dfb8","Takip Bekleniyor":"#f7e8f2"};
-const DISPLAY_ORDER=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Takip Bekleniyor","Teklif Teslim Edildi","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı","Revizyon İstendi"];
+const DURUM_BG={"Teklif İncelendi":"#eafbfa","Teklif Bekleniyor":"#e0f5e0","Revizyon İstendi":"#e8dfb8","Muhtemel":"#7ed957","Kazandık":"#4caf50","Kaybettik":"#c9c9c9","Müşteri İşi Alamadı":"#e8dfb8","Takip Bekleniyor":"#f7e8f2","İptal":"#d5d5d5"};
+const DISPLAY_ORDER=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Takip Bekleniyor","Teklif Teslim Edildi","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı","Revizyon İstendi","İptal"];
 const DISPLAY_SIRA={}; DISPLAY_ORDER.forEach((d,i)=>DISPLAY_SIRA[d]=i+1);
 const COLS=[
  {f:'proje',h:'Proje',w:112,t:'text',req:1},
@@ -277,12 +295,12 @@ const COLS=[
  {f:'gelen_tarih',h:'Gelen Tarih',w:53,t:'date'},
  {f:'istenen_tarih',h:'İstenen Tarih',w:53,t:'date'},
  {f:'ihale',h:'İhale?',w:57,t:'sel',opts:['Alındı','Alınmadı']},
- {f:'talebe_iliskin_notlar',h:'Talebe İlişkin Notlar',w:90,t:'area'},
+ {f:'talebe_iliskin_notlar',h:'Talebe İlişkin Notlar',w:120,t:'note'},
  {f:'adet',h:'Adet',w:43,t:'int'},
  {f:'urun_tipi_serisi',h:'Ürün Tipi / Serisi',w:48,t:'text'},
  {f:'kemer_karolaj',h:'Kemer/Karolaj',w:47,t:'sel',opts:['Yalnız kemer','Yalnız karolaj','Hiçbiri','Hepsi']},
  {f:'sartname_ahsap',h:'Şartname Ahşap?',w:49,t:'sel',opts:['Evet','Hayır']},
- {f:'teklif_birimi_notlari',h:'Teklif Birimi Notları',w:90,t:'area'},
+ {f:'teklif_birimi_notlari',h:'Teklif Birimi Notları',w:120,t:'note'},
  {f:'oncelik',h:'Öncelik',w:30,t:'sel',opts:['1','2','3']},
  {f:'teklif_teslim_tarihi',h:'Teklif Teslim Tarihi',w:62,t:'date'},
  {f:'agac',h:'Ağaç',w:55,t:'sel',opts:['ÇAM DKD','ÇAM KKK-20cm','ÇAM KKK-70cm','İROKO DKD','LAREKS DKD','MERANTİ DKD','MEŞE DKD','ACCOYA','OKALİPTUS DKD','OKALİPTUS KKK','SAPELLİ DKD']},
@@ -499,6 +517,8 @@ function rowHTML(r,key){
   const durumWarn=(r.durum==="Teklif Bekleniyor" && ttAge!==null && ttAge>15) ? " durum-warn" : "";
   return '<tr data-i="'+key+'" style="background:'+bgv+'">'+COLS.map(c=>{
       const v=dispVal(r,c), req=c.req?" req":"", empty=(c.req&&!String(v).trim()?" bad":"")+(eksikBos(r,c.f,key)?" eksikbos":"");
+      if(c.t==='note'){ const sat=ntSatirlar(r[c.f]); /* YD-NOT-EKLE: son not görünür, hover'da tümü alt alta */
+        return '<td style="background:'+bgv+'"><div class="ntcell" style="width:'+c.w+'px"><button class="tkAddBtn ntAddBtn" data-row="'+key+'" data-nf="'+c.f+'">Ekle</button><div class="ntlast" title="'+esc(sat.join("\n"))+'"><span>'+esc(sat[0]||"")+'</span></div></div></td>'; }
       if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="width:'+c.w+'px" title="'+esc(v)+'">'+esc(v)+'</textarea></td>';
       if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; const kilit=c.f==='oncelik'?' disabled title="Öncelik Arbor panosundan (Satış › Öncelik Belirlenmesi Gerekenler) belirlenir"':'';  /* YD-ONCELIK-PANO */ return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+'" data-f="'+c.f+'"'+kilit+' style="width:'+c.w+'px">'+opts+'</select></td>'; }
       let uyari="",ipucu="";
@@ -531,7 +551,8 @@ function render(){
       if(el.tagName==='SELECT') el.classList.toggle('filled', !!el.value);
     });
   });
-  list.querySelectorAll(".tkAddBtn").forEach(b=>b.onclick=()=>tkStartEntry(b.dataset.row));
+  list.querySelectorAll(".tkAddBtn:not(.ntAddBtn)").forEach(b=>b.onclick=()=>tkStartEntry(b.dataset.row));
+  list.querySelectorAll(".ntAddBtn").forEach(b=>b.onclick=()=>ntAc(b.dataset.row,b.dataset.nf));  /* YD-NOT-EKLE */
   list.querySelectorAll(".tknote-input").forEach(ta=>ta.addEventListener("change",()=>tkSaveNote(ta.dataset.row,ta.value)));
   list.querySelectorAll(".tknote-pending").forEach(ta=>{ ta.addEventListener("input",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object") p.n=ta.value; }); ta.addEventListener("change",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object"){ p.n=ta.value; tkCommitEntry(ta.dataset.row); } }); });
   list.querySelectorAll(".tkgorevli-pending").forEach(s=>s.addEventListener("change",()=>{ const p=PENDING_TK[s.dataset.row]; if(p&&typeof p==="object"){ p.g=s.value; s.classList.remove("eksikbos"); tkCommitEntry(s.dataset.row); } })); /* YD-GOREVLI */
@@ -580,7 +601,7 @@ async function saveRow(key,f,val,el){
      kısmi kopya elle "Teklif Teslim Edildi" yapılırsa Muhtemel'e geçer ve özgün satır "Revizyon İstendi" olur */
   if(f==='durum' && key!=="draft" && r.durum==="Muhtemel" && v==="Revizyon İstendi"){ el.value="Muhtemel"; await muhtemelRevKopya(r); render(); return; }
   if(f==='durum' && key!=="draft" && r.muhtemel_kaynak_id && v==="Teklif Teslim Edildi" && rangeFilled(r,1,6)){ if(await muhtemelRevTamam(r)){ render(); return; } }
-  if(f==='durum' && v){
+  if(f==='durum' && v && v!=="İptal"){  /* YD-IPTAL: iptal için ön koşul yok */
     const tier=DURUM_SIRA[v];
     if(tier>=1 && tier<=4 && !rangeFilled(r,1,6)){ el.value=r.durum||""; setMsg("Bu durum için ilk 6 sütun (Proje, Müşteri, Müşteri Önem Sınıfı, Gelen Tarih, İstenen Tarih, İhale?) dolu olmalı.",false); return; }
     if(tier===5 && !state5Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için 1-6, 8-11, 13 ve 14-18 sütunlarının hepsi dolu olmalı.",false); return; }
@@ -631,7 +652,7 @@ async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muht
   rec.teklif_teslim_tarihi=null; /* revize teklif henüz teslim edilmedi — pano "Verilen (Ad.)" sayımı şişmesin */
   rec.oncelik=1; /* revizyon her zaman en yüksek öncelik (Melih, 2026-09-18) — kolon smallint */
   const eskiNot=String(r.teklif_birimi_notlari||"").trim();
-  rec.teklif_birimi_notlari = eskiNot ? ("Revizyon — "+eskiNot) : "Revizyon";
+  rec.teklif_birimi_notlari = ntYeniDeger(eskiNot,"Revizyon");  /* YD-NOT-EKLE */
   rec.durum=rangeFilled(rec,1,6)?"Teklif Bekleniyor":null; /* YD-DURUM-KURAL: öncelik 1 belli → Teklif Bekleniyor */
   rec.son_takip_notlari=null; rec.son_takip_tarihi=null;
   if(kaynakId) rec.muhtemel_kaynak_id=kaynakId;
@@ -683,6 +704,37 @@ async function muhtemelRevTamam(k){
   setMsg("Revize teklif Muhtemel'e alındı ✓ — özgün satır Revizyon İstendi",true);
   return true;
 }
+/* YD-NOT-EKLE (29.09.2026, Melih): Talebe İlişkin Notlar ve Teklif Birimi Notları'na "Ekle" düğmesi.
+   Kutuya yazılan not başına "GG/AA/YY KİŞİ: " eklenerek alanın EN ÜSTÜNE yazılır; eski notlar altta kalır
+   (satır = not, yeniden eskiye). Hücrede son not görünür, hover'da hepsi alt alta. */
+function ntSatirlar(v){ return String(v==null?"":v).split(/\r?\n/).map(x=>x.trim()).filter(Boolean); }
+function ntDamga(){ const d=new Date(); return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+String(d.getFullYear()).slice(2)+" "+(ARB_EKLEYEN||"?")+": "; }
+function ntYeniDeger(eski,txt){ const t=String(txt||"").replace(/\s*\r?\n\s*/g," ").trim(); const s=ntSatirlar(eski); s.unshift(ntDamga()+t); return s.join("\n"); }
+let NT_HEDEF=null;
+function ntAc(key,f){
+  const r=getRow(key); if(!r) return; const c=COLS.find(x=>x.f===f); NT_HEDEF={key:key,f:f};
+  document.getElementById("nt-baslik").textContent=(c?c.h:"Not")+" — Ekle";
+  const ta=document.getElementById("nt-txt"); ta.value="";
+  document.getElementById("nt-gecmis").textContent=ntSatirlar(r[f]).join("\n");
+  document.getElementById("nt-ov").classList.add("on"); setTimeout(()=>ta.focus(),30);
+}
+function ntKapat(){ document.getElementById("nt-ov").classList.remove("on"); NT_HEDEF=null; }
+async function ntKaydet(){
+  if(!NT_HEDEF) return; const txt=document.getElementById("nt-txt").value.trim(); if(!txt){ ntKapat(); return; }
+  const {key,f}=NT_HEDEF; const r=getRow(key); if(!r){ ntKapat(); return; }
+  const yeni=ntYeniDeger(r[f],txt);
+  if(key==="draft"){ r[f]=yeni; ntKapat(); render(); return; }
+  const upd={}; upd[f]=yeni;
+  const {error}=await sb.from("satis_yd_akis").update(upd).eq("id",r.id);
+  if(error){ setMsg("Kayıt hatası: "+error.message,false); return; }
+  r[f]=yeni; ntKapat();
+  const adv=await maybeAutoAdvance(r); render(); setMsg("Kaydedildi ✓",true);
+}
+(function(){ const k=document.getElementById("nt-kaydet"); if(k) k.onclick=ntKaydet;
+  const v=document.getElementById("nt-vaz"); if(v) v.onclick=ntKapat;
+  const ov=document.getElementById("nt-ov"); if(ov) ov.onclick=e=>{ if(e.target===ov) ntKapat(); };
+  const ta=document.getElementById("nt-txt"); if(ta) ta.onkeydown=e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); ntKaydet(); } if(e.key==="Escape") ntKapat(); };
+})();
 let ARB_FOCUS_ROW=null;
 function tkStartEntry(key){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
