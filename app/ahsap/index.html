@@ -43,7 +43,7 @@
 
   <div class="bar">
     <button class="save" id="aAdd">+ Yeni Sipariş Ekle</button>
-    <button class="upd" id="aUpd">Aylık Güncelleme</button>
+    <button class="upd" id="aUpd">Güncelle</button>
     <div class="msg" id="msg"></div>
   </div>
 
@@ -202,7 +202,7 @@ async function delRow(id){
   AROWS=AROWS.filter(x=>x.id!==id); render(); msg("Silindi",true);
 }
 async function aylikGuncelle(){
-  if(!confirm("AYLIK GÜNCELLEME\n\nMelih'in Ahşap panosundaki 'Son güncelleme' tarihi bugüne çekilecek ve ay kapatılacak.\n\nDevam edilsin mi?")) return;
+  if(!confirm("GÜNCELLEME\n\nMelih'in Ahşap panosundaki 'Son güncelleme' tarihi bugüne çekilecek ve ay kapatılacak.\n\nDevam edilsin mi?")) return;
   const btn=$("aUpd"); btn.disabled=true;
   let note="";
   try{ const {data,error}=await sb.rpc("ahsap_ay_kapat"); if(!error&&data) note=" "+data; }catch(e){}
@@ -211,7 +211,7 @@ async function aylikGuncelle(){
   const d=new Date(); const ay=AY[d.getMonth()]+" "+d.getFullYear();
   try{ const mr=await sb.functions.invoke("ahsap-ay-mail",{body:{ay}}); if(mr&&!mr.error) note+=" · Bildirim maili gönderildi."; }catch(e){}
   btn.disabled=false;
-  msg("Aylık güncelleme yapıldı."+note,true);
+  msg("Güncelleme yapıldı."+note,true);
   loadAlim();
 }
 $("aAdd").onclick=addRow;
@@ -246,6 +246,8 @@ loadAlim();
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
+
 <!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
