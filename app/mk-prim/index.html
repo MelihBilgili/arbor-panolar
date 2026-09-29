@@ -68,7 +68,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </header>
 <div class="wrap">
   <div class="aybar">
-    <button class="btn" id="ayBtn">Aylık Güncelle</button>
+    <button class="btn" id="ayBtn">Güncelle</button>
     <span class="msg" id="ayMsg"></span>
   </div>
   <div id="blocks"></div>
@@ -411,14 +411,14 @@ document.getElementById("obNot").onchange=async function(){
 };
 obNotYukle();
 
-/* ===== Aylık güncelleme: mk_ay_islendi (append) + mk-faaliyet-mail ===== */
+/* ===== Güncelleme: mk_ay_islendi (append) + mk-faaliyet-mail ===== */
 const AYLAR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 const DONEM=AYLAR[new Date().getMonth()]+" "+new Date().getFullYear();
 document.getElementById("ayBtn").onclick=async()=>{
   const m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
   if(!onayKapi()) return;
-  if(!(await obNotVar())){ alert("Aylık Güncelleme yapılamadı.\n\nÖnce Özgül Bedestenci için geçen ayın performans notunu (0-10) seçmelisiniz."); document.getElementById("obNot").scrollIntoView({block:"center"}); return; } /* OB-PRIM */
-  if(!confirm('"'+DONEM+'" ayı için aylık güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN.\n\nOnaylıyor musunuz?')) return;
+  if(!(await obNotVar())){ alert("Güncelleme yapılamadı.\n\nÖnce Özgül Bedestenci için geçen ayın performans notunu (0-10) seçmelisiniz."); document.getElementById("obNot").scrollIntoView({block:"center"}); return; } /* OB-PRIM */
+  if(!confirm('"'+DONEM+'" ayı için güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca güncelleme için basın; düzeltme/revizyon için BASMAYIN.\n\nOnaylıyor musunuz?')) return;
   btn.disabled=true; m.className="msg"; m.textContent="İşaretleniyor…";
   const {error}=await sb.from("mk_ay_islendi").insert({ay:DONEM});
   if(error){ btn.disabled=false; m.className="msg err"; m.textContent="Hata: "+error.message; return; }
@@ -520,6 +520,8 @@ loadMK().then(()=>{ BLOCKS.forEach(b=>{ if(!DATA[b.tur].length) DATA[b.tur].push
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
+
 
 
 
