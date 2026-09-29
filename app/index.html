@@ -8,6 +8,7 @@
   :root{color-scheme:light}
   *{box-sizing:border-box}
   html,body{max-width:100vw;overflow-x:hidden}
+  /* FORM-GUNCELLE-AD (29.09.2026): formlardaki "Aylık Güncelle" düğmesi "Güncelle" oldu */
   /* APP-MENU-STICKY (29.09.2026): üst menü kaydırmada sabit; clip kaydırma kabı oluşturmaz, sticky çalışır */
   @supports (overflow:clip){html,body{overflow-x:clip}}
   body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
@@ -928,14 +929,14 @@ async function loadHazir(){
   const [{data,error},erpRes,ozRes,dgRes,adRes,oeRes]=await Promise.all([
     sb.from("hazir_pem_prj").select("*"),
     sb.from("hazir_erp").select("tur,kalem_key,erp"),
-    /* SEVK-CANLI-OZET (07.09.2026): "Sevk Durum Değişimi" artık AYLIK GÜNCELLE düğmesine
+    /* SEVK-CANLI-OZET (07.09.2026): "Sevk Durum Değişimi" artık GÜNCELLE düğmesine
        basılmasını beklemez. onceki<>guncel olan satırda CANLI özet (canli_ozet) gösterilir;
        satır düğmeden bu yana değişmemişse son düğme özeti (degisim_ozet). Bayat satır varsa
        aşağıda sevk-degisim-ozet fonksiyonu mod:"canli" ile bir kez çağrılıp pano tazelenir. */
     sb.from("sevk_durumu_onur").select("tur,kalem_key,degisim_ozet,canli_ozet,canli_kaynak,onceki,guncel"),
     sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1),
     sb.from("pano_adet_ozet").select("damga,pem_adet,prj_adet").limit(2),
-    /* HAZIR-IKI-DAMGA: sevk durumu damgası = OE formundaki AYLIK GÜNCELLE düğmesine son basılma
+    /* HAZIR-IKI-DAMGA: sevk durumu damgası = OE formundaki GÜNCELLE düğmesine son basılma
        (pano_yayin.oe_sevk). sevk_durumu_onur.updated_at KULLANILMAZ — o satır-bazlı otomatik
        kayıttır (hücreye yazma), düğmeye basma değil. */
     sb.from("pano_yayin").select("yayin_at").eq("anahtar","oe_sevk").limit(1)
@@ -1747,7 +1748,7 @@ async function loadEgitim(){
    Kaynak: santiye_form (7 form tanımı) + santiye_form_proje (ERP'den doldurulan
    proje blokları + şantiye sorumlusunun MVT/PST onayları).
    Doldurma: her ayın 21'inden sonraki ilk ERP çekiminde kod/_santiye_form_fill.py.
-   Damga: pano_yayin['santiye_<kod>'] = o formun "Aylık Güncelle" düğmesine son basılma.
+   Damga: pano_yayin['santiye_<kod>'] = o formun "Güncelle" düğmesine son basılma.
    Pano SALT-OKUR — cevaplar yalnız formlardan girilir.
    DİKKAT: adı loadSantiyeOnay — loadSantiye ZATEN VAR (MK Faaliyet altındaki
    "tıkanmış şantiyeler" tablosu, ~satır 2200). Aynı ada koyulursa sonraki bildirim
@@ -1787,7 +1788,7 @@ async function loadSantiyeOnay(){
     const head=`<h3 class="sec">${esc(f.ad)} <span class="muted" style="font-weight:400">· ${esc(f.kisi_kod||"")} · ${rs.length} proje`
       +(kirmizi?` · <b style="color:#b40000">${kirmizi} itiraz</b>`:"")
       +(eksik?` · <b style="color:#8a6100">${eksik} cevapsız</b>`:"")
-      +` · Aylık Güncelle: ${dmg?dOnly(dmg):"—"}</span></h3>`;
+      +` · Güncelle: ${dmg?dOnly(dmg):"—"}</span></h3>`;
     if(!rs.length) return head+`<div class="hint">Bu dönemde bu forma düşen proje yok.</div>`;
     const body=rs.map(r=>`<tr>`
       +`<td class="sb"><div class="cx">${esc(r.proje_no)}</div></td>`
@@ -2058,7 +2059,7 @@ async function loadAhsap(tgt){
        başlıklar sarılmıyordu → yıl sütunu gibi küçült + iki satıra sar (thsm/thw) elle verilir. */
     aylar(y).forEach(ym=>{ hh+=`<th class="num ahm ahm-${y} ahhide thsm"><span class="thw">${esc(AY_TR[+ym.slice(5,7)-1])} Ort. (€/m3)</span></th>`; });
   });
-  /* Son güncelleme = Ahşap formundaki AYLIK GÜNCELLEME düğmesine son basılma (pano_yayin) */
+  /* Son güncelleme = Ahşap formundaki GÜNCELLE düğmesine son basılma (pano_yayin) */
   const py=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","ahsap").limit(1);
   const pyAt=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
   body.innerHTML=`<style>
@@ -2248,7 +2249,7 @@ async function loadGmenkul(tgt){
 }
 /* ---------- SEL-ARB — özel render: Firma 15ch / Proje 20ch (nowrap+ellipsis, tam metin title/scroll), tarih sütunları üstünde "Arbor SAS Alacak €" spanning başlık, "Δ ilk→son €", son tarih dolu-alacak satırları görünür + boşlar gizli/toggle, footer daima görünür. Bölüm-RLS aynı (pano_ozel_*). ---------- */
 const SA_FOOT=new Set(["Selectron'a Gönderilen Toplam (€)","Selectron'a Borç (€)","Güncel Alacak Toplam (€)","Selectron'a Ft Edilen Toplam (€)","Arbor SAS Faaliyet Kaybı Toplam (€)","TOPLAM GÜNCEL ALACAK"]);
-const SA_NOTE="Tarih sütunlarındaki tutarlar o tarihteki güncel ALACAK (receivable) tutarlarıdır · Selectron–Arbor SAS mutabakat · form-beslemeli (Yurt Dışı Alacak + OE Faaliyet); aylık güncelleme ile ay başına tek sütun.";
+const SA_NOTE="Tarih sütunlarındaki tutarlar o tarihteki güncel ALACAK (receivable) tutarlarıdır · Selectron–Arbor SAS mutabakat · form-beslemeli (Yurt Dışı Alacak + OE Faaliyet); güncelleme ile ay başına tek sütun.";
 /* SELARB-CANLI-SUTUN (22.09.2026, Melih): donmuş aylık sütunlar (sel_arb_snapshot/sel_arb_ozet) + canlı "Bu Ay (Açık) €" sütunu (sel_arb_guncel, sel-arb formu ÖB/MK). */
 async function loadSelArb(tgt){
   const body=document.getElementById(tgt);
@@ -2395,7 +2396,7 @@ async function loadObrapor(tgt){
   /* En yeni ISO hafta = "Son ÖB Notları" sütunu; gizli sütunlar ondan öncekiler (yeni→eski) */
   const haftaKeys=Object.keys(weekMap).sort().reverse().slice(1);
   const dgun=d=>d.slice(8,10)+"."+d.slice(5,7)+"."+d.slice(2,4);
-  /* Son güncelleme = ÖB formundaki HAFTALIK GÜNCELLEME düğmesine son basılma (pano_yayin) */
+  /* Son güncelleme = ÖB formundaki HAFTALIK GÜNCELLE düğmesine son basılma (pano_yayin) */
   const py=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","ob_rapor").limit(1);
   const pyAt=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
   const cx=(v,cls)=>`<td class="${cls||""}"><div class="cx">${esc(v==null?"":v)}</div></td>`;
@@ -2956,7 +2957,7 @@ async function loadSantiye(tgt){
   const rows=(s.data||[]).filter(r=>r.durum!=="Çözüldü");
   const ay=d=>{ if(!d) return 0; const x=new Date(d); if(isNaN(x)) return 0; const n=new Date(); return (n.getFullYear()-x.getFullYear())*12+(n.getMonth()-x.getMonth()); };
   const sdk=d=>d?String(d).slice(8,10)+"."+String(d).slice(5,7)+"."+String(d).slice(2,4):"";
-  /* MK son güncelleme = en yeni snapshot.updated_at (aylık güncelleme düğmesine son basılma; yalnız MK) */
+  /* MK son güncelleme = en yeni snapshot.updated_at (güncelleme düğmesine son basılma; yalnız MK) */
   let mkStamp=null; (mk.data||[]).forEach(x=>{ if(x.updated_at&&(mkStamp==null||String(x.updated_at)>String(mkStamp))) mkStamp=x.updated_at; }); mkStamp=mkStamp?dOnly(mkStamp):"—";
   /* Arbor SAS Alacak — SEL-ARB en yeni çekim; bağ = santiye.sel_arb_sira (ÖB formundaki seçim) */
   const saRows=(sa&&!sa.error)?(sa.data||[]):[];
@@ -3265,6 +3266,7 @@ setInterval(()=>{ if(!document.getElementById("view")) return; if(document.query
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
 
 
 
