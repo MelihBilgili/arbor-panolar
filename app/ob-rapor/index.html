@@ -53,15 +53,15 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <body>
 <header>
   <h1>Faaliyet Formu</h1>
-  <div class="sub">Haftalık faaliyetler kaydedilir. Buraya takipteki işler, tedarikçi giderleri ve tıkanmış şantiyeler işlenir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak Aylık Güncelleme düğmesine basılmadıkça aktarılmaz.</div>
+  <div class="sub">Haftalık faaliyetler kaydedilir. Buraya takipteki işler, tedarikçi giderleri ve tıkanmış şantiyeler işlenir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak Güncelle düğmesine basılmadıkça aktarılmaz.</div>
 </header>
 <div class="wrap">
   <div id="msg" class="msg"></div>
 
-  <!-- HAFTALIK-DUGME-KALDIRILDI (2026-09-18, Melih): "Haftalık Güncelleme" düğmesi formdan çıkarıldı.
+  <!-- HAFTALIK-DUGME-KALDIRILDI (2026-09-18, Melih): "Haftalık Güncelle" düğmesi formdan çıkarıldı.
        haftalikGuncelle() fonksiyonu kodda duruyor ama artık hiçbir yerden çağrılmıyor (bkz. CLAUDE.md). -->
   <div class="ibtns" style="margin:2px 0 10px;align-items:center">
-    <button class="mnbtn" id="iMonth">Aylık Güncelleme</button>
+    <button class="mnbtn" id="iMonth">Güncelle</button>
     <span class="hint" style="margin:0;align-self:center">Formdaki tüm bilgiler aktarılır</span>
     <!-- ZG-PUAN (2026-09-25) --><span class="afpuan" id="zgPuan" style="margin-left:14px">Zamanında Güncelleme Puanı: … / 10</span>
     <span class="hint" style="margin:0;align-self:center">ÖB Faaliyet ve Sel-Arb formlarının ortalaması alınır</span>
@@ -117,7 +117,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <div id="s_akis"></div>
   </div>
 
-  <!-- === Yurt Dışı Alacak — Blok 2 & 3 (sel_odeme / arbor_kesilen_fatura) — SEL-ARB'a "Aylık Güncelle" (Yurt Dışı Alacak formu) ile aktarılır === -->
+  <!-- === Yurt Dışı Alacak — Blok 2 & 3 (sel_odeme / arbor_kesilen_fatura) — SEL-ARB'a "Güncelle" (Yurt Dışı Alacak formu) ile aktarılır === -->
   <div id="sa23wrap">
    <style>
     #sa23wrap .card{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:12px 14px;margin-top:16px}
@@ -399,7 +399,7 @@ function onayKur(hedefId,id,ad){
   ciz(); h.insertAdjacentElement("afterend",b);
 }
 function onayEksik(){ return Object.keys(ONAYLAR).filter(id=>!onayVar(id)).map(id=>ONAYLAR[id].ad); }
-function onayKapi(){ const e=onayEksik(); if(e.length){ alert("Aylık Güncelleme yapılamadı.\n\nÖnce aşağıdaki onay düğmelerine basmalısınız:\n\n• "+e.join("\n\n• ")); return false; } return true; }
+function onayKapi(){ const e=onayEksik(); if(e.length){ alert("Güncelleme yapılamadı.\n\nÖnce aşağıdaki onay düğmelerine basmalısınız:\n\n• "+e.join("\n\n• ")); return false; } return true; }
 function onaySifirla(){ Object.keys(ONAYLAR).forEach(id=>{ try{ localStorage.removeItem(onayKey(id)); }catch(e){} const o=ONAYLAR[id]; o.el.classList.remove("ok"); o.el.textContent=o.ad; }); }
 onayKur("dAdd","depenses","Tedarikçi Giderlerine İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("s_btn","santiye","Tıkanmış Şantiyelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
@@ -409,7 +409,7 @@ onayKur("a4","devlet","Devlet Destek Başvurularına İlişkin Aşağıdaki Bilg
 onayKur("a5","dpgf","DPGF, Situation ve Avenant Bilgilerinin Güncel Olduğunu Onaylıyorum"); /* OB-DPGF */
 
 /* HAFTALIK GÜNCELLEME — yalnız Takipteki İşler (27.08.2026, Melih): Dépenses aktarımı ve
-   SEL-ARB kapatma AYLIK GÜNCELLEME'ye taşındı; onay düğmeleri de aylığa bağlandı. */
+   SEL-ARB kapatma GÜNCELLEME'ye taşındı; onay düğmeleri de aylığa bağlandı. */
 async function haftalikGuncelle(){
   const sil=IROWS.filter(r=>r.durum==="Tamamlandı"||r.durum==="İptal oldu");
   if(!confirm("Haftalık Güncelleme (yalnız Takipteki İşler):\n\n• Aktif kalan işlerin önceki→son değişim özeti üretilip panoya yazılacak, sonra son değer 'önceki'ye kaydırılacak (ilk basışta baseline; özet boş).\n• Durumu Tamamlandı/İptal oldu olan "+sil.length+" iş TAMAMEN SİLİNECEK (geri alınamaz).\n\nDevam?")) return;
@@ -427,7 +427,7 @@ async function haftalikGuncelle(){
   msg((data.note||"Özet güncellendi")+(sil.length?` · ${sil.length} iş silindi`:""),true); loadIsler();
 }
 
-/* AYLIK GÜNCELLEME — formdaki bütün bloklar: blok onayları + ÖB'nin aylık yorumu şart. */
+/* GÜNCELLEME — formdaki bütün bloklar: blok onayları + ÖB'nin aylık yorumu şart. */
 async function aylikGuncelle(){
   if(!onayKapi()) return;
   if(!afYorumKapi()) return;
@@ -437,7 +437,7 @@ async function aylikGuncelle(){
   const selLine = selArbOk
     ? "\n• SEL-ARB aylık kapatma: bu dönem ödemeler + kesilen faturalar toplama eklenecek (güncel alacaklar Sel-Arb formundan gelir)."
     : "\n• SEL-ARB kapatma ATLANACAK — eksik alan var: "+eksik.join(", ")+" (ilgili blokları tamamlayın).";
-  if(!confirm("Aylık Güncelleme ("+afDonemAd()+"):\n\n• Kapanan ayın faaliyet tespitleri yeniden üretilecek (yorumunuz korunur).\n• Dépenses giderleri panoya aktarılacak."+selLine+"\n\nDevam?")) return;
+  if(!confirm("Güncelleme ("+afDonemAd()+"):\n\n• Kapanan ayın faaliyet tespitleri yeniden üretilecek (yorumunuz korunur).\n• Dépenses giderleri panoya aktarılacak."+selLine+"\n\nDevam?")) return;
   const btn=document.getElementById("iMonth"); btn.disabled=true; msg("Aylık aktarım yapılıyor…",true);
   let notlar=[];
   try{ const {data:ad,error:ae}=await sb.functions.invoke("ob-degisim-ozet",{body:{mod:"aylik"}});
@@ -464,7 +464,7 @@ document.getElementById("iMonth").onclick=aylikGuncelle;
 
 /* ===== AYLIK FAALİYET bloğu (ob_aylik_faaliyet) — kapanan ayın tespitleri Claude tarafından
    haftalık form kayıtlarından (ob_isler_log) üretilir; son bölümü ÖB doldurur ve bu bölüm
-   anlamlı doldurulmadan AYLIK GÜNCELLEME çalışmaz. ===== */
+   anlamlı doldurulmadan GÜNCELLEME çalışmaz. ===== */
 const AF_AY=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 function afDonem(){ const d=new Date(); const y=(d.getMonth()===0)?d.getFullYear()-1:d.getFullYear(); const m=(d.getMonth()===0)?12:d.getMonth(); return y+"-"+String(m).padStart(2,"0"); }
 function afDonemAd(){ const p=afDonem().split("-"); return AF_AY[+p[1]-1]+" "+p[0]; }
@@ -514,8 +514,8 @@ function afYorumKapi(){
   const ta=document.getElementById("afYorum");
   const v=(ta?ta.value:(AFROW&&AFROW.ob_yorum)||"").trim();
   if(v.length>=10 && /[A-Za-zÇĞİÖŞÜçğıöşü]/.test(v)) return true;
-  alert("Aylık Güncelleme yapılamadı.\n\nÖnce Aylık Faaliyet bloğundaki \"Aylık Faaliyete İlişkin Özgül Bedestenci Yorumu\" bölümünü doldurmalısınız.");
-  msg("Aylık yorum girilmeden aylık güncelleme yapılamaz.",false);
+  alert("Güncelleme yapılamadı.\n\nÖnce Aylık Faaliyet bloğundaki \"Aylık Faaliyete İlişkin Özgül Bedestenci Yorumu\" bölümünü doldurmalısınız.");
+  msg("Aylık yorum girilmeden güncelleme yapılamaz.",false);
   if(ta){ ta.style.borderColor="#c62828"; ta.scrollIntoView({block:"center"}); ta.focus(); }
   return false;
 }
@@ -739,7 +739,7 @@ loadIsler();
 loadDep();
 sLoadListe(); loadSelArbListe(); sLoadAkis();
 
-/* ===== Yurt Dışı Alacak — Blok 2 (sel_odeme) & Blok 3 (arbor_kesilen_fatura) — Yurt Dışı Alacak formundan taşındı; veri aynı tablolarda, SEL-ARB'a Aylık Güncelle ile aktarılır ===== */
+/* ===== Yurt Dışı Alacak — Blok 2 (sel_odeme) & Blok 3 (arbor_kesilen_fatura) — Yurt Dışı Alacak formundan taşındı; veri aynı tablolarda, SEL-ARB'a Güncelle ile aktarılır ===== */
 (function(){
   const $=id=>document.getElementById(id);
   const escq=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -857,7 +857,7 @@ async function ddKapi(){
   (data||[]).forEach(r=>{ const ad=r.test||"(adsız test)";
     if(r.durum==="Sonuçlandı"&&(!r.sonuc_tarihi||r.iade_tutari==null)) e.push(ad+" — Sonuç Tarihi / İade Edilen Tutar eksik");
     if((r.durum==="Başvuruldu – Bekleniyor"||r.durum==="Sonuçlandı"||r.durum==="Reddedildi")&&!r.basvuru_tarihi) e.push(ad+" — Başvuru Tarihi eksik"); });
-  if(e.length){ alert("Aylık Güncelleme yapılamadı.\n\nDevlet Destek Başvuruları bloğunda eksik bilgi var:\n\n• "+e.join("\n• ")); return false; }
+  if(e.length){ alert("Güncelleme yapılamadı.\n\nDevlet Destek Başvuruları bloğunda eksik bilgi var:\n\n• "+e.join("\n• ")); return false; }
   return true;
 }
 (function(){
@@ -1024,6 +1024,8 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
+
 
 
 
