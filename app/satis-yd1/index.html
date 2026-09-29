@@ -72,6 +72,11 @@
   .tknote-input{min-height:26px}
   .tkAddBtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:0 10px;height:26px;display:block;font-size:11.5px;font-weight:700;cursor:pointer;flex:none}
   .tkAddBtn:hover{background:#204a75}
+  /* YD-EKLE-TIKLA: Ekle dugmesi yok; not hucresine tiklayinca ekleme acilir */
+  .tknotes .tklatest{max-width:none}
+  .tkClick,.ntClick{cursor:pointer!important;border:1px dashed #b9c6d3;border-radius:6px;padding:0 6px;box-sizing:border-box;width:100%}
+  .tkClick:hover,.ntClick:hover{background:#eef3f8;border-color:#16324f}
+  .tkClick:empty::before,.ntClick span:empty::before{content:'+ not';color:#9aa7b4}
   .legend{display:flex;flex-wrap:wrap;gap:14px;padding:10px 6px 4px;font-size:12px;color:#5a6b7d}
   .lg-item{display:inline-flex;align-items:center;gap:6px}
   .lg-sw{width:14px;height:14px;border-radius:3px;border:1px solid #cdd6df;display:inline-block}
@@ -295,12 +300,12 @@ const COLS=[
  {f:'gelen_tarih',h:'Gelen Tarih',w:53,t:'date'},
  {f:'istenen_tarih',h:'İstenen Tarih',w:53,t:'date'},
  {f:'ihale',h:'İhale?',w:57,t:'sel',opts:['Alındı','Alınmadı']},
- {f:'talebe_iliskin_notlar',h:'Talebe İlişkin Notlar',w:120,t:'note'},
+ {f:'talebe_iliskin_notlar',h:'Talebe İlişkin Notlar',w:90,t:'note'},
  {f:'adet',h:'Adet',w:43,t:'int'},
  {f:'urun_tipi_serisi',h:'Ürün Tipi / Serisi',w:48,t:'text'},
  {f:'kemer_karolaj',h:'Kemer/Karolaj',w:47,t:'sel',opts:['Yalnız kemer','Yalnız karolaj','Hiçbiri','Hepsi']},
  {f:'sartname_ahsap',h:'Şartname Ahşap?',w:49,t:'sel',opts:['Evet','Hayır']},
- {f:'teklif_birimi_notlari',h:'Teklif Birimi Notları',w:120,t:'note'},
+ {f:'teklif_birimi_notlari',h:'Teklif Birimi Notları',w:90,t:'note'},
  {f:'oncelik',h:'Öncelik',w:30,t:'sel',opts:['1','2','3']},
  {f:'teklif_teslim_tarihi',h:'Teklif Teslim Tarihi',w:62,t:'date'},
  {f:'agac',h:'Ağaç',w:55,t:'sel',opts:['ÇAM DKD','ÇAM KKK-20cm','ÇAM KKK-70cm','İROKO DKD','LAREKS DKD','MERANTİ DKD','MEŞE DKD','ACCOYA','OKALİPTUS DKD','OKALİPTUS KKK','SAPELLİ DKD']},
@@ -476,12 +481,12 @@ function pairCells(r,i,bg){
   const noteEmpty = log.length && last.n==="";
   const noteCell = noteEmpty
     ? '<textarea class="cell tknote-input" data-row="'+i+'" rows="1" placeholder="Not yazın…"></textarea>'
-    : '<div class="tklatest" title="'+esc(hist)+'">'+esc(last.n?tkNotYaz(last):"—")+'</div>';
+    : '<div class="tklatest tkClick" data-row="'+i+'" title="'+esc(hist)+'">'+esc(last.n?tkNotYaz(last):"")+'</div>';  /* YD-EKLE-TIKLA */
   const dateDisp = noteEmpty ? "—" : (last.t?fmtDate(last.t):"—");
   const ekleyenDisp = noteEmpty ? "—" : (last.g||"—"); /* YD-GOREVLI: sütun artık Görevli */
   return '<td class="pairA gs" style="background:'+bgv+'"><div class="tklatest" title="'+esc(histDates)+'">'+esc(dateDisp)+'</div></td>'
     +'<td class="pairA" style="background:'+bgv+'"><div class="tklatest" title="'+esc(histEkleyen)+'">'+esc(ekleyenDisp)+'</div></td>'
-    +'<td class="pairA tknotes" style="background:'+bgv+'"><button class="tkAddBtn" data-row="'+i+'">Ekle</button>'+noteCell+'</td>';
+    +'<td class="pairA tknotes" style="background:'+bgv+'">'+noteCell+'</td>';
 }
 /* TERMIN-UYARI (2026-09-18): müşterinin İstenen Tarih'i, teklifin Teklif Teslim Tarihi'nden
    önceyse termin kaçmış demektir — Teklif Teslim Tarihi hücresi kırmızı-kalın yazılır.
@@ -518,7 +523,7 @@ function rowHTML(r,key){
   return '<tr data-i="'+key+'" style="background:'+bgv+'">'+COLS.map(c=>{
       const v=dispVal(r,c), req=c.req?" req":"", empty=(c.req&&!String(v).trim()?" bad":"")+(eksikBos(r,c.f,key)?" eksikbos":"");
       if(c.t==='note'){ const sat=ntSatirlar(r[c.f]); /* YD-NOT-EKLE: son not görünür, hover'da tümü alt alta */
-        return '<td style="background:'+bgv+'"><div class="ntcell" style="width:'+c.w+'px"><button class="tkAddBtn ntAddBtn" data-row="'+key+'" data-nf="'+c.f+'">Ekle</button><div class="ntlast" title="'+esc(sat.join("\n"))+'"><span>'+esc(sat[0]||"")+'</span></div></div></td>'; }
+        return '<td style="background:'+bgv+'"><div class="ntcell" style="width:'+c.w+'px"><div class="ntlast ntClick" data-row="'+key+'" data-nf="'+c.f+'" title="'+esc(sat.join("\n"))+'"><span>'+esc(sat[0]||"")+'</span></div></div></td>'; }
       if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="width:'+c.w+'px" title="'+esc(v)+'">'+esc(v)+'</textarea></td>';
       if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; const kilit=c.f==='oncelik'?' disabled title="Öncelik Arbor panosundan (Satış › Öncelik Belirlenmesi Gerekenler) belirlenir"':'';  /* YD-ONCELIK-PANO */ return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+'" data-f="'+c.f+'"'+kilit+' style="width:'+c.w+'px">'+opts+'</select></td>'; }
       let uyari="",ipucu="";
@@ -551,8 +556,8 @@ function render(){
       if(el.tagName==='SELECT') el.classList.toggle('filled', !!el.value);
     });
   });
-  list.querySelectorAll(".tkAddBtn:not(.ntAddBtn)").forEach(b=>b.onclick=()=>tkStartEntry(b.dataset.row));
-  list.querySelectorAll(".ntAddBtn").forEach(b=>b.onclick=()=>ntAc(b.dataset.row,b.dataset.nf));  /* YD-NOT-EKLE */
+  list.querySelectorAll(".tkClick").forEach(b=>b.onclick=()=>tkStartEntry(b.dataset.row));  /* YD-EKLE-TIKLA */
+  list.querySelectorAll(".ntClick").forEach(b=>b.onclick=()=>ntAc(b.dataset.row,b.dataset.nf));  /* YD-NOT-EKLE */
   list.querySelectorAll(".tknote-input").forEach(ta=>ta.addEventListener("change",()=>tkSaveNote(ta.dataset.row,ta.value)));
   list.querySelectorAll(".tknote-pending").forEach(ta=>{ ta.addEventListener("input",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object") p.n=ta.value; }); ta.addEventListener("change",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object"){ p.n=ta.value; tkCommitEntry(ta.dataset.row); } }); });
   list.querySelectorAll(".tkgorevli-pending").forEach(s=>s.addEventListener("change",()=>{ const p=PENDING_TK[s.dataset.row]; if(p&&typeof p==="object"){ p.g=s.value; s.classList.remove("eksikbos"); tkCommitEntry(s.dataset.row); } })); /* YD-GOREVLI */
