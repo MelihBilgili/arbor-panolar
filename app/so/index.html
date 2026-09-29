@@ -218,7 +218,7 @@ function render(){
   });
   h+='</tbody></table>';
   const list=document.getElementById("list"); list.innerHTML=h;
-  /* Her hücre değişikliği ANINDA Supabase'e yazılır (Aylık Güncelle'ye basılmasa da kalıcı). */
+  /* Her hücre değişikliği ANINDA Supabase'e yazılır (Güncelle'ye basılmasa da kalıcı). */
   list.querySelectorAll("[data-f]").forEach(el=>{
     const i=+el.closest("tr").dataset.i, f=el.dataset.f;
     el.addEventListener("input",()=>{ ROWS[i][f]=el.value; sums(); });
@@ -274,7 +274,7 @@ async function publish(){
 }
 document.getElementById("addM").onclick=()=>addRow("Muhtemel");
 document.getElementById("addA").onclick=()=>addRow("Alınan");
-/* ===== Aylık güncelleme işareti (satis_ay_islendi + mail; yurtiçi takip yok) ===== */
+/* ===== Güncelleme işareti (satis_ay_islendi + mail; yurtiçi takip yok) ===== */
 setupAyIsaret("SO",null);
 function setupAyIsaret(KAYNAK,SNAP){
   const AYLAR=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
@@ -286,7 +286,7 @@ function setupAyIsaret(KAYNAK,SNAP){
   const donem=String(kapAy.getMonth()+1).padStart(2,"0")+"."+String(kapAy.getFullYear()).slice(-2);
   btn0.onclick=async()=>{
     const m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
-    if(!confirm('"'+ay+'" ayı kapatılacak: liste yeni bir çekim olarak panoya yayınlanacak ve Melih\'e mail atılacak.\n\nYalnızca aylık güncelleme için basın; düzeltme/revizyon için BASMAYIN (girişler zaten anında kaydediliyor).\n\nOnaylıyor musunuz?')) return;
+    if(!confirm('"'+ay+'" ayı kapatılacak: liste yeni bir çekim olarak panoya yayınlanacak ve Melih\'e mail atılacak.\n\nYalnızca güncelleme için basın; düzeltme/revizyon için BASMAYIN (girişler zaten anında kaydediliyor).\n\nOnaylıyor musunuz?')) return;
     btn.disabled=true; m.className="msg"; m.textContent="Yayınlanıyor…";
     /* Önce listeyi yeni çekim olarak yayınla (pano önceki çekime göre farkı gösterir) */
     const ok=await publish();
@@ -335,6 +335,8 @@ load();
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
+
 
 
 
