@@ -283,7 +283,7 @@ function refUpd(){const e=$('ref'),d=$('refdif'),pc=($('pencad')||{}).value||'',
   else{big.textContent=f2(b,2)+' \u20ac/m\u00b2';if(bad)host.insertAdjacentHTML('beforeend','<div class="bfwarn">Onays\u0131z Kullanmay\u0131n\u0131z</div>');}}
 function ownName(q){const k=$('kap').value,t=q.tp?' Temperli':'',a=q.ac?' Akustik':'',sa=q.sat?' Satin':'',x=q.xc?' Extra Clear':'';
   const p=q.c.map((c,j)=>c+(j===0?a+x+(k==='solar'?' Solar Low-E':'')+sa:'')+t+(j===q.c.length-1?(k==='lowe'?' Low-E':'')+(q.fp?' Fire Proof':''):''));
-  const cav=q.cav+(q.ar?' Ar':'')+(q.we?' WE':'');return q.tr?p[0]+' / '+cav+' / '+p[1]+' / '+cav+' / '+p[2]:p[0]+' / '+cav+' / '+p[1];}
+  /* CAM-AR-WE */const gw=[q.ar?'Ar':'',q.we?'We':''].filter(Boolean).join('-'),cav=q.cav+(gw?' '+gw:'');return q.tr?p[0]+' / '+cav+' / '+p[1]+' / '+cav+' / '+p[2]:p[0]+' / '+cav+' / '+p[1];}
 function vtxt(v,h){const c=(ok,h)=>h==null?'':(ok?' <span class="ok">✓</span>':' <span class="no">✗</span>');
   return 'Ug '+f2(v.ug,1)+c(h.ug==null||v.ug<=h.ug,h.ug)+' · TL '+f2(v.tl,2)+c(h.tl==null||v.tl>=h.tl,h.tl)+' · Rw+Ctr '+Math.round(v.rw)+' dB'+c(h.rw==null||v.rw>=h.rw,h.rw)+' · SF '+f2(v.sf,2)+c(h.sf==null||v.sf<=h.sf,h.sf);}
 function calc(){const q=own(),u=ctxUI(),h=hedef();$('ortaWrap').style.display=q.tr?'block':'none';$('avgnote').textContent=u.adet>0?('Ortalama\n'+fmt(u.ort)+' m²/adet'):'';
