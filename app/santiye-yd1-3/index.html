@@ -35,6 +35,7 @@
   .kv .k{flex:0 0 96px;color:#7a8896}
   .kv .v{font-weight:600;color:#1c2430;word-break:break-word}
   .kv .v.no{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+  .kv .v input.part{font:inherit;font-weight:600;border:1px dashed #b9c4cf;border-radius:4px;padding:0 5px;width:100%;box-sizing:border-box;background:#fffdf5}
   .soru{margin-bottom:10px}
   .soru:last-child{margin-bottom:0}
   .soru .q{font-size:12.5px;line-height:1.45;margin-bottom:5px}
@@ -271,7 +272,9 @@ function blok(r){
     : "Burada belirtilen <b>MVT</b>’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?";
   return '<div class="blk'+(tam?" done":"")+'" id="blk_'+r.id+'">'
     +'<div class="sol">'
-      +kv("Proje Kodu",r.proje_no)+kv("Proje Adı",r.proje_adi)+kv("Ürün Adedi",r.adet)
+      +kv("PGD",r.proje_adi)  /* PSEL-260930: Proje Kodu kaldırıldı, Proje Adı → PGD (ERP), Part serbest */
+      +'<div class="kv"><div class="k">Part</div><div class="v"><input class="part" id="part_'+r.id+'" value="'+esc(r.part||"")+'" placeholder="—"></div></div>'
+      +kv("Ürün Adedi",r.adet)
       +kv("MVT",fd(r.mvt))+kv("AÜP",fd(r.aup))+kv("PST",fd(r.pst))
       +kv("Durum",r.proje_durumu)  /* SANTIYE-DURUM-SATIR: PST altinda proje durumu (ERP Prj) */
     +'</div>'
@@ -315,6 +318,8 @@ function bagla(r){
       ta.classList.remove("miss");
       await kaydet(r.id,{[alan+"_sebep"]:r[alan+"_sebep"]}); boya(r); };
   });
+  const pa=document.getElementById("part_"+r.id); /* PSEL-260930 */
+  if(pa) pa.onchange=async()=>{ r.part=pa.value.trim()||null; await kaydet(r.id,{part:r.part}); };
   const hu=document.getElementById("hus_"+r.id);
   if(hu) hu.onchange=async()=>{ r.onemli_hususlar=hu.value.trim()||null;
     await kaydet(r.id,{onemli_hususlar:r.onemli_hususlar}); };
@@ -356,6 +361,7 @@ document.getElementById("ay_btn").onclick=async()=>{
 
 yukle();
 </script>
+
 
 
 
