@@ -194,7 +194,7 @@ function icmal(p){
 const MEMK=()=>["TH",...D.pers.map(p=>p.kisa).filter(Boolean)];
 
 /* ===== sekme tanımları: k anahtar ("a.b" = jsonb alanı) · h başlık ("|" satır sonu) · t tür (t metin · m uzun · n sayı · d tarih · c hesap) · w ch ===== */
-const HATA_COLS=[{k:"pgd",h:"PGD",t:"t",w:20},{k:"proje",h:"Proje",t:"t",w:12},{k:"tarih",h:"Tarih",t:"d",w:8},
+const HATA_COLS=[{k:"pgd",h:"PGD",t:"t",w:20,sap:1},{k:"part",h:"Part",t:"t",w:12},{k:"tarih",h:"Tarih",t:"d",w:8},
   {k:"yapan",h:"Hatayı Yapan|İsim Soyisim",t:"t",w:22},{k:"yakalayan",h:"Hatayı Yakalayan|İsim Soyisim",t:"t",w:18},{k:"hata",h:"Hata",t:"m",w:46}];
 const TABS=[
  {id:"hatalar",ad:"Hata Puanları",req:"hata",fixed:{sayfa:"hatalar"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},
@@ -203,23 +203,23 @@ const TABS=[
   not:`<b>Hata Puanı:</b><br>10 puanlık örnek hata: P522 numaralı pozda müşteri poz numarası hatalı girilmiştir. Kendi içimizde düzeltilmiştir.<br>
    100 puanlık örnek hata: HSP ölçüleri yanlıştır. Müşteri tarafından düzeltilmiştir.<br>Yapılan yeni hatalar yukarıdaki örneklerle mukayese edilerek puanlanır.`},
  {id:"etut",ad:"Hata Yakalama Puanları",req:"hata",fixed:{sayfa:"etut"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},{k:"basari_puani",h:"Başarı|Puanı",t:"n",w:5}]},
- {id:"yuk",ad:"Proje Yükü",req:"proje",cols:()=>[{k:"proje",h:"Projeler",t:"t",w:24},
+ {id:"yuk",ad:"Proje Yükü",req:"proje",cols:()=>[{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},
    ...D.pers.filter(p=>p.kisa).map(p=>({k:"yuk."+p.kisa,h:p.kisa,t:"n",w:4,tt:p.ad})),{k:"zorluk",h:"Proje|Zorluğu",t:"n",w:5},
    ...D.pers.filter(p=>p.kisa).map(p=>({h:p.kisa,t:"c",d:0,z:1,tt:p.ad+" — zorluğa göre oranlanmış",f:r=>((r.yuk||{})[p.kisa]==null||(r.yuk||{})[p.kisa]==="")?null:zk(r)*num(r.yuk[p.kisa])}))],
-  grup:()=>{ const n=D.pers.filter(p=>p.kisa).length; return `<tr class="grp"><th></th><th colspan="${n}">Yük (%)</th><th></th><th colspan="${n}">Zorluğa göre oranlanmış proje yükü</th><th></th></tr>`; },
-  foot:()=>{ const K=D.pers.filter(p=>p.kisa); return `<tr class="tf"><td><b>Toplam</b></td>${K.map(p=>`<td class="n">${fmtN(D.yuk.reduce((s,r)=>s+num((r.yuk||{})[p.kisa]),0),0)}</td>`).join("")}<td></td>${K.map(p=>`<td class="n"><b>${fmtN(projeYuku(p),0)}</b></td>`).join("")}<td></td></tr>`; },
+  grup:()=>{ const n=D.pers.filter(p=>p.kisa).length; return `<tr class="grp"><th colspan="2"></th><th colspan="${n}">Yük (%)</th><th></th><th colspan="${n}">Zorluğa göre oranlanmış proje yükü</th><th></th></tr>`; },
+  foot:()=>{ const K=D.pers.filter(p=>p.kisa); return `<tr class="tf"><td><b>Toplam</b></td><td></td>${K.map(p=>`<td class="n">${fmtN(D.yuk.reduce((s,r)=>s+num((r.yuk||{})[p.kisa]),0),0)}</td>`).join("")}<td></td>${K.map(p=>`<td class="n"><b>${fmtN(projeYuku(p),0)}</b></td>`).join("")}<td></td></tr>`; },
   not:`Proje zorluğu 1 ve 5 arasında oranlanmıştır. Oranlanmış yük = (0,1 × zorluk + 1) × yük.`},
- {id:"dk",ad:"DK1",req:"proje",cols:()=>[/* ETUT-DK-TURSUZ: Tür sütunu kaldırıldı */{k:"proje",h:"Proje / Part",t:"t",w:30},{k:"kisi1",h:"Kişi 1",t:"t",w:5},{k:"kisi2",h:"Kişi 2",t:"t",w:5},
+ {id:"dk",ad:"DK1",req:"proje",cols:()=>[/* ETUT-DK-TURSUZ: Tür sütunu kaldırıldı */{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},{k:"kisi1",h:"Kişi 1",t:"t",w:5},{k:"kisi2",h:"Kişi 2",t:"t",w:5},
    {k:"adet",h:"Adet",t:"n",w:4},{k:"dk1",h:"dk1",t:"n",w:4},{k:"dk2",h:"dk2",t:"n",w:4},{k:"dk3",h:"dk3",t:"n",w:4},{k:"dk4",h:"dk4",t:"n",w:4},
    {h:"dk toplam",t:"c",f:dkT,d:0},{k:"tarih",h:"Tarih",t:"d",w:8}],
-  foot:()=>`<tr class="tf"><td colspan="8"><b>Toplam</b></td><td class="n"><b>${fmtN(dkToplam(),0)}</b></td><td></td><td></td></tr>`,
+  foot:()=>`<tr class="tf"><td colspan="9"><b>Toplam</b></td><td class="n"><b>${fmtN(dkToplam(),0)}</b></td><td></td><td></td></tr>`,
   not:"dk toplam = dk1 × 1 + dk2 × 2 + dk3 × 3 + dk4 × 5. Toplam, İcmal'de DK1 sütunudur ve Hesaplanan Prim'e eklenir."},
- {id:"mem",ad:"Memnuniyet",req:"proje",cols:()=>[{k:"proje",h:"Proje",t:"t",w:24},{k:"cevap_tarihi",h:"Cevap|Tarihi",t:"d",w:8},{k:"pgd_tutari",h:"ERP'deki PGD|Tutarı (€)",t:"n",w:9,d:0},
+ {id:"mem",ad:"Memnuniyet",req:"proje",cols:()=>[{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},{k:"cevap_tarihi",h:"Cevap|Tarihi",t:"d",w:8},{k:"pgd_tutari",h:"ERP'deki PGD|Tutarı (€)",t:"n",w:9,d:0},
    {k:"rapidite",h:"Rapidité",t:"n",w:4},{k:"pertinence",h:"Pertin.&Qual.|Réponses",t:"n",w:5},{k:"oneriler",h:"Suggestions / Recommandations",t:"m",w:32},
    {h:"Hesaplanan|Ödül (€)",t:"c",f:odul,d:0},
    ...MEMK().flatMap(k=>[{k:"dagilim."+k,h:k+"|%",t:"n",w:3},{h:k+"|€",t:"c",d:0,f:r=>{ const v=(r.dagilim||{})[k]; return (v==null||v==="")?null:num(v)*odul(r)/100; }}])],
-  grup:()=>`<tr class="grp"><th colspan="3"></th><th colspan="2">Satisfaisant: 2 · M.Sat.: 1 · Insatisfaisant: 0 puan</th><th></th><th></th><th colspan="${MEMK().length*2}">Ödüllerin Kişilere Dağılımı</th><th></th></tr>`,
-  foot:()=>`<tr class="tf"><td><b>Toplam</b></td><td></td><td class="n">${fmtN(D.mem.reduce((s,r)=>s+num(r.pgd_tutari),0),0)}</td><td></td><td></td><td></td><td class="n"><b>${fmtN(D.mem.reduce((s,r)=>s+odul(r),0),0)}</b></td>${MEMK().map(k=>`<td></td><td class="n"><b>${fmtN(D.mem.reduce((s,r)=>{ const v=(r.dagilim||{})[k]; return s+((v==null||v==="")?0:num(v)*odul(r)/100); },0),0)}</b></td>`).join("")}<td></td></tr>`,
+  grup:()=>`<tr class="grp"><th colspan="4"></th><th colspan="2">Satisfaisant: 2 · M.Sat.: 1 · Insatisfaisant: 0 puan</th><th></th><th></th><th colspan="${MEMK().length*2}">Ödüllerin Kişilere Dağılımı</th><th></th></tr>`,
+  foot:()=>`<tr class="tf"><td><b>Toplam</b></td><td></td><td></td><td class="n">${fmtN(D.mem.reduce((s,r)=>s+num(r.pgd_tutari),0),0)}</td><td></td><td></td><td></td><td class="n"><b>${fmtN(D.mem.reduce((s,r)=>s+odul(r),0),0)}</b></td>${MEMK().map(k=>`<td></td><td class="n"><b>${fmtN(D.mem.reduce((s,r)=>{ const v=(r.dagilim||{})[k]; return s+((v==null||v==="")?0:num(v)*odul(r)/100); },0),0)}</b></td>`).join("")}<td></td></tr>`,
   not:"Hesaplanan Ödül = PGD Tutarı × (Rapidité + Pertinence) / 2000 · kişi € = % × Hesaplanan Ödül / 100."},
  {id:"icmal",ad:"İcmal",req:"ad",cols:()=>[
    {k:"ad",h:"İsim Soyisim",t:"t",w:17},{k:"kisa",h:"Kısa",t:"t",w:4},{h:"Kıdem|(yıl)",t:"c",f:r=>kid(r),d:1,tt:"Personel panosundan (işe giriş tarihi)"},{k:"inisiyatif",h:"İnisiyatif|Puanı",t:"n",w:5},
@@ -245,7 +245,7 @@ const grow=t=>{ t.style.height="auto"; t.style.height=(t.scrollHeight+2)+"px"; }
 function cell(c,r){
   if(c.t==="c"){ const v=r?c.f(r):null; return `<td class="n c${c.z?" z":""}">${r?fmtN(v,c.d):""}</td>`; }
   const v=r?gv(r,c.k):null, shown=c.t==="n"?fmtN(v,c.d):c.t==="d"?fmtD(v):(v==null?"":v);
-  const a=`data-k="${c.k}"${r?` data-id="${r.id}"`:' data-new="1"'} style="width:${c.w+1}ch"`;
+  const a=`data-k="${c.k}"${r?` data-id="${r.id}"`:' data-new="1"'}${c.sap?' data-sap="1" readonly':''} style="width:${c.w+1}ch"`; /* PSEL-260930 sap */
   if(c.t==="m") return `<td class="m"><textarea ${a} rows="1">${esc(shown)}</textarea></td>`;
   return `<td class="${c.t==="n"||c.t==="d"?"n":""}"><input ${a} type="text"${c.t==="n"?' inputmode="decimal"':''}${c.t==="d"?' placeholder="gg/aa/yy"':''} value="${esc(shown)}"></td>`;
 }
@@ -318,6 +318,86 @@ W.addEventListener("click",async e=>{ const d=e.target.closest("[data-del]"); if
   if(T.id==="hatalar"||T.id==="etut") D.hata=D.hata.filter(x=>x.id!==id); else if(T.id==="icmal") D.pers=D.pers.filter(x=>x.id!==id); else D[T.id]=D[T.id].filter(x=>x.id!==id);
   msg("Silindi","ok"); render(); });
 load();
+
+/* PSEL-260930: Proje/PGD hücreleri Sel-Arb projelerinden seçilir — input[data-sap="1"] tek, "m" çoklu (" + " ile birleşir).
+   Kaynak view sel_arb_proje (sel_arb_guncel: sira, firma, proje). Seçimde input+change olayı tetiklenir (formun kendi kaydı çalışır).
+   data-sap-firma="<alan>": tek seçimde aynı satırdaki [data-f=<alan>] boşsa projenin firması yazılır. Tek kaynak kod/_psel_picker.js */
+(function(){
+  if(window.__PSEL) return; window.__PSEL=1;
+  let L=null;
+  const E=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const st=document.createElement("style");
+  st.textContent=".psel-bg{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:8vh}"
+   +".psel{background:#fff;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.25);width:min(460px,94vw);max-height:78vh;display:flex;flex-direction:column;font:13px system-ui,Segoe UI,sans-serif;color:#1d2b3a}"
+   +".psel .ph{padding:10px 12px 0;font-weight:700;color:#16324f}.psel input.q{margin:8px 10px;padding:6px 8px;border:1px solid #bbb;border-radius:5px;font-size:13px}"
+   +".psel .ls{overflow:auto;flex:1;padding:0 6px 6px}.psel label{display:flex;gap:6px;align-items:center;padding:4px 6px;border-radius:4px;cursor:pointer}"
+   +".psel label:hover{background:#eef4fb}.psel .fr{color:#8a97a4;font-size:11px;margin-left:4px}.psel .yok{color:#b25b00;font-size:11px;margin-left:4px}"
+   +".psel .ft{display:flex;gap:8px;justify-content:flex-end;padding:8px 10px;border-top:1px solid #eee}"
+   +".psel button{padding:5px 12px;border-radius:5px;border:1px solid #bbb;background:#f6f6f6;cursor:pointer;font-size:12px}.psel button.ok{background:#16324f;color:#fff;border-color:#16324f}"
+   +"input[data-sap]{cursor:pointer;caret-color:transparent}";
+  document.head.appendChild(st);
+  async function yukle(){
+    if(L) return L;
+    const {data,error}=await sb.from("sel_arb_proje").select("sira,firma,proje").order("proje");
+    if(error) throw error;
+    const g=new Set(); L=[];
+    (data||[]).forEach(r=>{ const k=String(r.proje).trim().toLocaleLowerCase("tr"); if(!g.has(k)){ g.add(k); L.push(r); } });
+    L.sort((a,b)=>String(a.proje).localeCompare(String(b.proje),"tr"));
+    return L;
+  }
+  function yaz(inp,v){
+    inp.value=v;
+    inp.dispatchEvent(new Event("input",{bubbles:true}));
+    inp.dispatchEvent(new Event("change",{bubbles:true}));
+  }
+  async function ac(inp){
+    const multi=inp.getAttribute("data-sap")==="m";
+    const bg=document.createElement("div"); bg.className="psel-bg";
+    bg.innerHTML='<div class="psel"><div class="ph">Sel-Arb projesi seç'+(multi?' (birden çok seçilebilir)':'')+'</div><input class="q" placeholder="Ara: proje veya firma…"><div class="ls">Yükleniyor…</div>'
+      +'<div class="ft"><button class="tm">Temizle</button><button class="ip">Vazgeç</button>'+(multi?'<button class="ok">Tamam</button>':'')+'</div></div>';
+    document.body.appendChild(bg);
+    const q=bg.querySelector(".q"), ls=bg.querySelector(".ls"), kapat=()=>bg.remove();
+    bg.addEventListener("mousedown",e=>{ if(e.target===bg) kapat(); });
+    bg.querySelector(".ip").onclick=kapat;
+    bg.querySelector(".tm").onclick=()=>{ kapat(); yaz(inp,""); };
+    let list; try{ list=await yukle(); }catch(e){ ls.textContent="Proje listesi okunamadı: "+(e.message||e); return; }
+    const cur=String(inp.value||"").split(/\s\+\s/).map(s=>s.trim()).filter(Boolean);
+    const sec=new Set(cur);
+    const bilinen=new Set(list.map(r=>r.proje));
+    const disari=cur.filter(v=>!bilinen.has(v));
+    const ciz=()=>{
+      const t=(q.value||"").toLocaleLowerCase("tr").trim();
+      const rows=disari.map(v=>({proje:v,firma:"",yok:1})).concat(list)
+        .filter(r=>!t||(String(r.proje)+" "+String(r.firma||"")).toLocaleLowerCase("tr").includes(t));
+      ls.innerHTML=rows.length?rows.map(r=>'<label data-p="'+E(r.proje)+'" data-fr="'+E(r.firma||"")+'">'
+        +(multi?'<input type="checkbox"'+(sec.has(r.proje)?' checked':'')+'>':'<input type="radio" name="psel"'+(sec.has(r.proje)?' checked':'')+'>')
+        +'<span>'+E(r.proje)+(r.yok?'<span class="yok">(Sel-Arb’de yok — eski kayıt)</span>':'<span class="fr">· '+E(r.firma||"")+'</span>')+'</span></label>').join("")
+        :'<div style="color:#8a97a4;padding:6px">Eşleşen proje yok.</div>';
+      ls.querySelectorAll("label").forEach(lb=>{
+        const c=lb.querySelector("input"), p=lb.getAttribute("data-p");
+        if(multi){ c.onchange=()=>{ if(c.checked) sec.add(p); else sec.delete(p); }; }
+        else lb.onclick=e=>{ e.preventDefault(); kapat(); yaz(inp,p);
+          const ff=inp.getAttribute("data-sap-firma"), tr=inp.closest("tr");
+          if(ff&&tr){ const fe=tr.querySelector('[data-f="'+ff+'"]'); const fr=lb.getAttribute("data-fr");
+            if(fe&&!String(fe.value||"").trim()&&fr){ fe.value=fr; fe.dispatchEvent(new Event("input",{bubbles:true})); fe.dispatchEvent(new Event("change",{bubbles:true})); } } };
+      });
+    };
+    ciz(); q.oninput=ciz; q.focus();
+    q.onkeydown=e=>{ if(e.key==="Escape") kapat(); };
+    if(multi) bg.querySelector(".ok").onclick=()=>{ kapat();
+      const sira=[...cur.filter(v=>sec.has(v)), ...list.map(r=>r.proje).filter(p=>sec.has(p)&&!cur.includes(p))];
+      const v=sira.join(" + "); if(v!==String(inp.value||"")) yaz(inp,v); };
+  }
+  document.addEventListener("mousedown",e=>{
+    const inp=e.target&&e.target.closest&&e.target.closest("input[data-sap]");
+    if(!inp||inp.disabled) return; e.preventDefault(); ac(inp);
+  },true);
+  document.addEventListener("keydown",e=>{
+    const inp=e.target; if(!(inp&&inp.matches&&inp.matches("input[data-sap]"))) return;
+    if(e.key==="Enter"||e.key===" "||e.key==="ArrowDown"){ e.preventDefault(); ac(inp); }
+  },true);
+})();
+
 </script>
 
 <!-- ARBOR-DRAGSCROLL -->
