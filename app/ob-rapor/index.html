@@ -829,7 +829,7 @@ sLoadListe(); loadSelArbListe(); sLoadAkis();
       +'<td><select data-f="yd_birim">'+opts(YDB,r.yd_birim)+'</select></td>'
       +'<td><input data-f="ft_no" value="'+escq(r.ft_no||"")+'"></td>'
       +'<td><input type="date" data-f="tarih" value="'+escq(r.tarih||"")+'"></td>'
-      +'<td><input data-f="projeler" value="'+escq(r.projeler||"")+'"></td>'
+      +'<td><input data-f="projeler" data-sap="m" readonly value="'+escq(r.projeler||"")+'"></td>'
       +'<td><input class="num" data-f="tutar" value="'+escq(r.tutar==null?"":r.tutar)+'"></td>'
       +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
       +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
@@ -837,7 +837,7 @@ sLoadListe(); loadSelArbListe(); sLoadAkis();
     /* SA-BOS-SATIR */
     $("t3").insertAdjacentHTML("afterbegin",'<tr data-new="1" style="background:#fffbea">'
       +'<td><select data-f="yd_birim">'+opts(YDB,"Arbor SAS")+'</select></td>'
-      +'<td><input data-f="ft_no"></td><td><input type="date" data-f="tarih"></td><td><input data-f="projeler"></td>'
+      +'<td><input data-f="ft_no"></td><td><input type="date" data-f="tarih"></td><td><input data-f="projeler" data-sap="m" readonly></td>'
       +'<td><input class="num" data-f="tutar"></td><td><select data-f="para_birimi">'+opts(PB,"EUR")+'</select></td><td class="x"></td></tr>');
     bind("t3","arbor_kesilen_fatura","m3",load3);
     bosBind("t3","arbor_kesilen_fatura","m3",load3,{yd_birim:1,para_birimi:1});
@@ -880,13 +880,13 @@ async function ddKapi(){
     cariBanner("t4","Cari Ay İade Edilen Toplam TL",R4.filter(r=>cariAyMi(r.sonuc_tarihi)).reduce((a,r)=>a+(Number(r.iade_tutari)||0),0),"₺"); /* CARI-TOPLAM */
     const inp=(f,v,cls,typ)=>'<input'+(typ?' type="'+typ+'"':'')+(cls?' class="'+cls+'"':'')+' data-f="'+f+'" value="'+escq(v==null?"":v)+'">';
     const bos='<tr data-new="1" style="background:#fffbea">'
-      +'<td>'+inp("test","")+'</td><td>'+inp("proje","")+'</td><td>'+inp("test_tarihi","")+'</td>'
+      +'<td>'+inp("test","")+'</td><td>'+inp("proje","").replace("<input",'<input data-sap="1" readonly')+'</td><td>'+inp("test_tarihi","")+'</td>'
       +'<td>'+inp("test_tutari","","num")+'</td><td><select data-f="test_pb">'+opts(["EUR","TL","GBP","USD"],"TL")+'</select></td>'
       +'<td>'+inp("son_basvuru","","","date")+'</td><td>'+inp("basvuru_tarihi","","","date")+'</td>'
       +'<td><select data-f="durum">'+opts(DD_DURUM,"Yapılacak")+'</select></td>'
       +'<td>'+inp("sonuc_tarihi","","","date")+'</td><td>'+inp("iade_tutari","","num")+'</td><td>'+inp("aciklama","")+'</td><td class="x"></td></tr>';
     $("t4").innerHTML=bos+R4.map(r=>'<tr data-id="'+r.id+'">'
-      +'<td>'+inp("test",r.test)+'</td><td>'+inp("proje",r.proje)+'</td><td>'+inp("test_tarihi",r.test_tarihi)+'</td>'
+      +'<td>'+inp("test",r.test)+'</td><td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td><td>'+inp("test_tarihi",r.test_tarihi)+'</td>'
       +'<td>'+inp("test_tutari",nf(r.test_tutari),"num")+'</td>'
       +'<td><select data-f="test_pb">'+opts(["EUR","TL","GBP","USD"],r.test_pb)+'</select></td>'
       +'<td style="'+renk(r)+'">'+inp("son_basvuru",r.son_basvuru,"","date")+'</td>'
@@ -962,9 +962,9 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
   const opts=(list,cur)=>['<option value=""></option>'].concat(list.map(o=>'<option'+(String(cur||"")===o?" selected":"")+'>'+escq(o)+'</option>')).join("");
   const inp=(f,v,cls,typ)=>'<input'+(typ?' type="'+typ+'"':'')+(cls?' class="'+cls+'"':'')+' data-f="'+f+'" value="'+escq(v==null?"":v)+'">';
   const T={
-    ob_dpgf:{tb:"t5",cnt:"c5",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje)+'</td>','<td>'+inp("correspondence",r.correspondence)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']},
-    ob_situation:{tb:"t6",cnt:"c6",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje)+'</td>','<td>'+inp("ilerleme_no",r.ilerleme_no)+'</td>','<td>'+inp("donem",r.donem)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td><select data-f="onay_durumu">'+opts(ONAY,r.onay_durumu)+'</select></td>']},
-    ob_avenant:{tb:"t7",cnt:"c7",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje)+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']}
+    ob_dpgf:{tb:"t5",cnt:"c5",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("correspondence",r.correspondence)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']},
+    ob_situation:{tb:"t6",cnt:"c6",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("ilerleme_no",r.ilerleme_no)+'</td>','<td>'+inp("donem",r.donem)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td><select data-f="onay_durumu">'+opts(ONAY,r.onay_durumu)+'</select></td>']},
+    ob_avenant:{tb:"t7",cnt:"c7",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']}
   };
   async function load(tbl){
     const t=T[tbl];
@@ -995,6 +995,86 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
   }
   load("ob_dpgf"); load("ob_situation"); load("ob_avenant");
 })();
+
+/* PSEL-260930: Proje/PGD hücreleri Sel-Arb projelerinden seçilir — input[data-sap="1"] tek, "m" çoklu (" + " ile birleşir).
+   Kaynak view sel_arb_proje (sel_arb_guncel: sira, firma, proje). Seçimde input+change olayı tetiklenir (formun kendi kaydı çalışır).
+   data-sap-firma="<alan>": tek seçimde aynı satırdaki [data-f=<alan>] boşsa projenin firması yazılır. Tek kaynak kod/_psel_picker.js */
+(function(){
+  if(window.__PSEL) return; window.__PSEL=1;
+  let L=null;
+  const E=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const st=document.createElement("style");
+  st.textContent=".psel-bg{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:8vh}"
+   +".psel{background:#fff;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.25);width:min(460px,94vw);max-height:78vh;display:flex;flex-direction:column;font:13px system-ui,Segoe UI,sans-serif;color:#1d2b3a}"
+   +".psel .ph{padding:10px 12px 0;font-weight:700;color:#16324f}.psel input.q{margin:8px 10px;padding:6px 8px;border:1px solid #bbb;border-radius:5px;font-size:13px}"
+   +".psel .ls{overflow:auto;flex:1;padding:0 6px 6px}.psel label{display:flex;gap:6px;align-items:center;padding:4px 6px;border-radius:4px;cursor:pointer}"
+   +".psel label:hover{background:#eef4fb}.psel .fr{color:#8a97a4;font-size:11px;margin-left:4px}.psel .yok{color:#b25b00;font-size:11px;margin-left:4px}"
+   +".psel .ft{display:flex;gap:8px;justify-content:flex-end;padding:8px 10px;border-top:1px solid #eee}"
+   +".psel button{padding:5px 12px;border-radius:5px;border:1px solid #bbb;background:#f6f6f6;cursor:pointer;font-size:12px}.psel button.ok{background:#16324f;color:#fff;border-color:#16324f}"
+   +"input[data-sap]{cursor:pointer;caret-color:transparent}";
+  document.head.appendChild(st);
+  async function yukle(){
+    if(L) return L;
+    const {data,error}=await sb.from("sel_arb_proje").select("sira,firma,proje").order("proje");
+    if(error) throw error;
+    const g=new Set(); L=[];
+    (data||[]).forEach(r=>{ const k=String(r.proje).trim().toLocaleLowerCase("tr"); if(!g.has(k)){ g.add(k); L.push(r); } });
+    L.sort((a,b)=>String(a.proje).localeCompare(String(b.proje),"tr"));
+    return L;
+  }
+  function yaz(inp,v){
+    inp.value=v;
+    inp.dispatchEvent(new Event("input",{bubbles:true}));
+    inp.dispatchEvent(new Event("change",{bubbles:true}));
+  }
+  async function ac(inp){
+    const multi=inp.getAttribute("data-sap")==="m";
+    const bg=document.createElement("div"); bg.className="psel-bg";
+    bg.innerHTML='<div class="psel"><div class="ph">Sel-Arb projesi seç'+(multi?' (birden çok seçilebilir)':'')+'</div><input class="q" placeholder="Ara: proje veya firma…"><div class="ls">Yükleniyor…</div>'
+      +'<div class="ft"><button class="tm">Temizle</button><button class="ip">Vazgeç</button>'+(multi?'<button class="ok">Tamam</button>':'')+'</div></div>';
+    document.body.appendChild(bg);
+    const q=bg.querySelector(".q"), ls=bg.querySelector(".ls"), kapat=()=>bg.remove();
+    bg.addEventListener("mousedown",e=>{ if(e.target===bg) kapat(); });
+    bg.querySelector(".ip").onclick=kapat;
+    bg.querySelector(".tm").onclick=()=>{ kapat(); yaz(inp,""); };
+    let list; try{ list=await yukle(); }catch(e){ ls.textContent="Proje listesi okunamadı: "+(e.message||e); return; }
+    const cur=String(inp.value||"").split(/\s\+\s/).map(s=>s.trim()).filter(Boolean);
+    const sec=new Set(cur);
+    const bilinen=new Set(list.map(r=>r.proje));
+    const disari=cur.filter(v=>!bilinen.has(v));
+    const ciz=()=>{
+      const t=(q.value||"").toLocaleLowerCase("tr").trim();
+      const rows=disari.map(v=>({proje:v,firma:"",yok:1})).concat(list)
+        .filter(r=>!t||(String(r.proje)+" "+String(r.firma||"")).toLocaleLowerCase("tr").includes(t));
+      ls.innerHTML=rows.length?rows.map(r=>'<label data-p="'+E(r.proje)+'" data-fr="'+E(r.firma||"")+'">'
+        +(multi?'<input type="checkbox"'+(sec.has(r.proje)?' checked':'')+'>':'<input type="radio" name="psel"'+(sec.has(r.proje)?' checked':'')+'>')
+        +'<span>'+E(r.proje)+(r.yok?'<span class="yok">(Sel-Arb’de yok — eski kayıt)</span>':'<span class="fr">· '+E(r.firma||"")+'</span>')+'</span></label>').join("")
+        :'<div style="color:#8a97a4;padding:6px">Eşleşen proje yok.</div>';
+      ls.querySelectorAll("label").forEach(lb=>{
+        const c=lb.querySelector("input"), p=lb.getAttribute("data-p");
+        if(multi){ c.onchange=()=>{ if(c.checked) sec.add(p); else sec.delete(p); }; }
+        else lb.onclick=e=>{ e.preventDefault(); kapat(); yaz(inp,p);
+          const ff=inp.getAttribute("data-sap-firma"), tr=inp.closest("tr");
+          if(ff&&tr){ const fe=tr.querySelector('[data-f="'+ff+'"]'); const fr=lb.getAttribute("data-fr");
+            if(fe&&!String(fe.value||"").trim()&&fr){ fe.value=fr; fe.dispatchEvent(new Event("input",{bubbles:true})); fe.dispatchEvent(new Event("change",{bubbles:true})); } } };
+      });
+    };
+    ciz(); q.oninput=ciz; q.focus();
+    q.onkeydown=e=>{ if(e.key==="Escape") kapat(); };
+    if(multi) bg.querySelector(".ok").onclick=()=>{ kapat();
+      const sira=[...cur.filter(v=>sec.has(v)), ...list.map(r=>r.proje).filter(p=>sec.has(p)&&!cur.includes(p))];
+      const v=sira.join(" + "); if(v!==String(inp.value||"")) yaz(inp,v); };
+  }
+  document.addEventListener("mousedown",e=>{
+    const inp=e.target&&e.target.closest&&e.target.closest("input[data-sap]");
+    if(!inp||inp.disabled) return; e.preventDefault(); ac(inp);
+  },true);
+  document.addEventListener("keydown",e=>{
+    const inp=e.target; if(!(inp&&inp.matches&&inp.matches("input[data-sap]"))) return;
+    if(e.key==="Enter"||e.key===" "||e.key==="ArrowDown"){ e.preventDefault(); ac(inp); }
+  },true);
+})();
+
 </script>
 
 
@@ -1024,6 +1104,7 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
 
 
 
