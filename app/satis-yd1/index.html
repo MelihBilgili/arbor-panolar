@@ -55,7 +55,7 @@
   /* TERMIN-BOS (2026-09-18): "Teklif Bekleniyor" satırında Teklif Teslim Tarihi boşsa hücre kırmızı dolu */
   input.cell.terminbos{background:#ffd9d9;border-color:#d9534f}
   /* TERMIN-GECMIS (2026-09-30): "Teklif Bekleniyor" satırında Teklif Teslim Tarihi geçmişse zemin pembe, yazı normal */
-  input.cell.termingecmis{background:#ffd9d9;border-color:#d9534f;color:inherit;font-weight:400}
+  input.cell.termingecmis{background:#ffd9d9;border-color:#d9534f} /* v2: TERMIN-UYARI da tutarsa kırmızı-kalın ayrıca */
   .cell.eksikbos{background:#ffd9d9 !important;border-color:#d9534f}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
   .colp{width:1%;white-space:nowrap}
@@ -540,7 +540,7 @@ function rowHTML(r,key){
       let uyari="",ipucu="";
       if(c.f==='teklif_teslim_tarihi'){
         if(terminBos(r)){ uyari=" terminbos"; ipucu=' title="Teklif Bekleniyor — Teklif Teslim Tarihi girilmemiş"'; }
-        else if(terminGecmis(r)){ uyari=" termingecmis"; ipucu=' title="Teklif Bekleniyor — Teklif Teslim Tarihi geçti"'; } /* TERMIN-GECMIS */
+        else if(terminGecmis(r)){ uyari=" termingecmis"+(terminGec(r)?" terminuyari":""); ipucu=' title="Teklif Bekleniyor — Teklif Teslim Tarihi geçti'+(terminGec(r)?' · İstenen Tarih\'ten sonra':'')+'"'; } /* TERMIN-GECMIS v2 */
         else if(terminGec(r)){ uyari=" terminuyari"; ipucu=' title="İstenen Tarih, Teklif Teslim Tarihi\'nden erken — termin aşıldı"'; }
       }
       return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+'" data-f="'+c.f+'" type="text"'+ipucu+' style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
