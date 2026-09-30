@@ -179,6 +179,14 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     </div>
     <div class="msg" id="m5"></div>
    </div>
+
+   <!-- OB-TAHSILAT-260930 (Melih): Tahsilat bloğu (ob_tahsilat). Proje bazlı toplam Sel-Arb formunun Tahsilat sütununa gider (view sel_arb_ob_toplam). -->
+   <div class="card" id="thCard">
+    <div class="chd"><h2>Tahsilat <span class="cnt" id="c8"></span></h2></div>
+    <div class="hint" style="margin:0 2px 6px">Yeni tahsilat için en üstteki boş satırı doldurun. Tutarlar € cinsindendir; proje bazlı toplam Sel-Arb formunda Tahsilat sütununda görünür.</div>
+    <div class="scroll"><table style="min-width:620px"><thead><tr><th style="width:120px">Tarih</th><th>Proje</th><th>Açıklama</th><th style="width:110px">Tutar (€)</th><th class="x"></th></tr></thead><tbody id="t8"></tbody></table></div>
+    <div class="msg" id="m8"></div>
+   </div>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -957,13 +965,14 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
   const escq=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const num=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null; if(t.indexOf(",")>-1&&t.indexOf(".")>-1){t=t.replace(/\./g,"").replace(",",".");}else{t=t.replace(",",".");} const v=parseFloat(t); return isNaN(v)?null:v; };
   const nf=v=>v==null?"":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
-  function bmsg(t,ok){ const m=$("m5"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
+  function bmsg(t,ok,tb){ const m=$(tb==="ob_tahsilat"?"m8":"m5"); /* OB-TAHSILAT-260930 */ m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
   const ONAY=["Onaylandı","Görüşmede","Düzeltme İstendi","İptal Edildi"];
   const opts=(list,cur)=>['<option value=""></option>'].concat(list.map(o=>'<option'+(String(cur||"")===o?" selected":"")+'>'+escq(o)+'</option>')).join("");
   const inp=(f,v,cls,typ)=>'<input'+(typ?' type="'+typ+'"':'')+(cls?' class="'+cls+'"':'')+' data-f="'+f+'" value="'+escq(v==null?"":v)+'">';
   const T={
     ob_dpgf:{tb:"t5",cnt:"c5",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("correspondence",r.correspondence)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']},
     ob_situation:{tb:"t6",cnt:"c6",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("ilerleme_no",r.ilerleme_no)+'</td>','<td>'+inp("donem",r.donem)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td><select data-f="onay_durumu">'+opts(ONAY,r.onay_durumu)+'</select></td>']},
+    ob_tahsilat:{tb:"t8",cnt:"c8",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']}, /* OB-TAHSILAT-260930 */
     ob_avenant:{tb:"t7",cnt:"c7",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']}
   };
   async function load(tbl){
@@ -979,21 +988,21 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
       const f=el.getAttribute("data-f"); if(el.value.trim()==="") return;
       const body={}; body[f]=val(f,el);
       const {error}=await sb.from(tbl).insert(body);
-      if(error) bmsg("Hata: "+error.message,false); else { bmsg("Yeni satır kaydedildi.",true); load(tbl); } }; });
+      if(error) bmsg("Hata: "+error.message,false,tbl); else { bmsg("Yeni satır kaydedildi.",true,tbl); load(tbl); } }; });
     $(t.tb).querySelectorAll("tr[data-id]").forEach(tr=>{
       const id=tr.getAttribute("data-id");
       tr.querySelectorAll("[data-f]").forEach(el=>{ el.onchange=async()=>{
         const f=el.getAttribute("data-f"); const body={updated_at:new Date().toISOString()}; body[f]=val(f,el);
         const {error}=await sb.from(tbl).update(body).eq("id",id);
-        if(error) bmsg("Hata: "+error.message,false); else { bmsg("Kaydedildi.",true); if(f==="tarih") load(tbl); } }; });
+        if(error) bmsg("Hata: "+error.message,false,tbl); else { bmsg("Kaydedildi.",true,tbl); if(f==="tarih") load(tbl); } }; });
       tr.querySelector(".del").onclick=async()=>{ if(!confirm("Bu satır silinsin mi?")) return;
-        const {error}=await sb.from(tbl).delete().eq("id",id); if(error) bmsg("Hata: "+error.message,false); else load(tbl); };
+        const {error}=await sb.from(tbl).delete().eq("id",id); if(error) bmsg("Hata: "+error.message,false,tbl); else load(tbl); };
     });
     eskiKapat(t.tb,"tarih",tbl==="ob_situation"?7:5); /* ESKI-KAPAT */
     cariBanner(t.tb,"Cari Ay Toplam EUR"+(tbl==="ob_situation"?" <span style=\"font-weight:400;font-size:12px\">(İptal Edildi hariç)</span>":""),
       R.filter(r=>cariAyMi(r.tarih)&&!(tbl==="ob_situation"&&r.onay_durumu==="İptal Edildi")).reduce((a,r)=>a+(Number(r.tutar)||0),0),"€"); /* CARI-TOPLAM */
   }
-  load("ob_dpgf"); load("ob_situation"); load("ob_avenant");
+  load("ob_dpgf"); load("ob_situation"); load("ob_avenant"); load("ob_tahsilat"); /* OB-TAHSILAT-260930 */
 })();
 
 /* PSEL-260930: Proje/PGD hücreleri Sel-Arb projelerinden seçilir — input[data-sap="1"] tek, "m" çoklu (" + " ile birleşir).
@@ -1104,6 +1113,7 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
 
 
 
