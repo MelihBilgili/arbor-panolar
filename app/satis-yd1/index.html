@@ -54,6 +54,8 @@
   input.cell.terminuyari{color:#b40000;font-weight:700}
   /* TERMIN-BOS (2026-09-18): "Teklif Bekleniyor" satırında Teklif Teslim Tarihi boşsa hücre kırmızı dolu */
   input.cell.terminbos{background:#ffd9d9;border-color:#d9534f}
+  /* TERMIN-GECMIS (2026-09-30): "Teklif Bekleniyor" satırında Teklif Teslim Tarihi geçmişse zemin pembe, yazı normal */
+  input.cell.termingecmis{background:#ffd9d9;border-color:#d9534f;color:inherit;font-weight:400}
   .cell.eksikbos{background:#ffd9d9 !important;border-color:#d9534f}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
   .colp{width:1%;white-space:nowrap}
@@ -498,6 +500,15 @@ function pairCells(r,i,bg){
 function terminBos(r){
   return !!r && r.durum==="Teklif Bekleniyor" && !String(r.teklif_teslim_tarihi||"").trim();
 }
+/* TERMIN-GECMIS (2026-09-30, Melih): durumu "Teklif Bekleniyor" olup Teklif Teslim Tarihi bugünden
+   önce kalmış satırlarda hücre zemini pembe; tarih normal (kırmızı-kalın değil) yazılır. */
+function terminGecmis(r){
+  if(!r || r.durum!=="Teklif Bekleniyor") return false;
+  const tes=r.teklif_teslim_tarihi?String(r.teklif_teslim_tarihi).slice(0,10):"";
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(tes)) return false;
+  const d=new Date(), bugun=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  return tes<bugun;
+}
 function terminGec(r){
   if(!r || r.durum!=="Teklif Bekleniyor") return false;
   const ist=r&&r.istenen_tarih?String(r.istenen_tarih).slice(0,10):"";
@@ -529,6 +540,7 @@ function rowHTML(r,key){
       let uyari="",ipucu="";
       if(c.f==='teklif_teslim_tarihi'){
         if(terminBos(r)){ uyari=" terminbos"; ipucu=' title="Teklif Bekleniyor — Teklif Teslim Tarihi girilmemiş"'; }
+        else if(terminGecmis(r)){ uyari=" termingecmis"; ipucu=' title="Teklif Bekleniyor — Teklif Teslim Tarihi geçti"'; } /* TERMIN-GECMIS */
         else if(terminGec(r)){ uyari=" terminuyari"; ipucu=' title="İstenen Tarih, Teklif Teslim Tarihi\'nden erken — termin aşıldı"'; }
       }
       return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+'" data-f="'+c.f+'" type="text"'+ipucu+' style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
