@@ -233,13 +233,13 @@ function render(){
   const ozSon=[...ST.oz].sort((x,y)=>x.tarih<y.tarih?1:-1)[0]||null;
   const ozBy={}; ST.oz.forEach(x=>ozBy[x.tarih]=x);
   const vals={}; ST.snap.forEach(x=>{ (vals[x.sira]=vals[x.sira]||{})[x.tarih]=x.alacak; });
-  const rows=ST.g.map(r=>({id:r.id,sira:r.sira,firma:r.firma||"",proje:r.proje||"—",g:r.alacak==null?null:Number(r.alacak),v:vals[r.sira]||{}}));
+  const rows=ST.g.map(r=>({id:r.id,sira:r.sira,firma:r.firma||"",proje:r.proje||"—",g:r.alacak==null?null:Number(r.alacak),v:vals[r.sira]||{},yd:r.updated_by==="YD-KAZANDIK"}));
   /* Önceki sütunlar: en yeni (dates[0]) açık, diğerleri ▸ ile açılır */
   const oc=(i)=>i===0?"":" sa-old";
   let hidden=0;
   const tr=rows.map(r=>{
     const lv=r.v[last]==null?null:Number(r.v[last]);
-    const bos=!(r.g) && !(lv);
+    const bos=!(r.g) && !(lv) && !r.yd;   /* PSEL-260930: YD'den yeni gelen proje gizlenmez */
     if(bos) hidden++;
     const hide=bos&&!ST.showEmpty;
     return `<tr data-id="${r.id}"${hide?' style="display:none"':''}>`
@@ -250,10 +250,7 @@ function render(){
       +dates.map((d,i)=>`<td class="sa-num${oc(i)}">${esc(fmt(r.v[d]))}</td>`).join("")+`</tr>`;
   }).join("");
   /* En üstte daima boş satır (SELARB-BOS-SATIR) */
-  const nw=`<tr class="sa-new"><td class="sa-proje"><input id="nProje" placeholder="Yeni proje"></td>`
-    +`<td class="sa-firma"><input id="nFirma" placeholder="Firma"></td><td class="sa-delta"></td>`
-    +`<td class="sa-num sa-g"><input id="nAlacak" type="text" inputmode="decimal" size="1" placeholder="€"></td>`
-    +dates.map((d,i)=>`<td class="${oc(i).trim()}"></td>`).join("")+`</tr>`;
+  const nw=""; /* PSEL-260930 SELARB-YENI-YOK: yeni proje satırı kaldırıldı — projeler yalnız YD1/YD2 'Kazandık' ile gelir (trigger yd_kazandik_selarb) */
   /* Alt satırlar — SEL-ARB panosu ile aynı hesap; Güncel sütununda Gönderilen/Borç/Ft Edilen son dönem değeridir (gri) */
   const gSum=rows.reduce((a,r)=>a+(r.g||0),0);
   const top=d=>{ let s=0,any=false; rows.forEach(r=>{ if(r.v[d]!=null){ s+=Number(r.v[d]); any=true; } }); return any?s:null; };
@@ -302,6 +299,7 @@ function bind(){
     inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } };
   });
   const nP=document.getElementById("nProje"), nF=document.getElementById("nFirma"), nA=document.getElementById("nAlacak");
+  if(!nP) return; /* PSEL-260930 */
   const ekle=async()=>{
     const p=nP.value.trim(), f=nF.value.trim();
     if(!p||!f) return;                       /* Proje + Firma dolunca kaydedilir */
