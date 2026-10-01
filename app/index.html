@@ -2508,9 +2508,9 @@ async function loadObrapor(tgt){
   ib+=`<h3 class="sec">Devlet Destek Başvuruları <span class="muted">(${ddR.length})</span></h3>
     <div class="obaf" style="max-width:none">${ddTbl}</div>`;
   /* ===== OB-DPGF + OB-PRIM (2026-09-24, Melih; OB-PRIM2 güncel): DPGF's - Situations - Avenants bloğu (ob_dpgf/ob_situation/ob_avenant,
-     tablolar alt alta) ve ÖB Performans Primi. Dönem = kapanan ay (afDon). Puan: Takipteki işler 100 (tamamlanan 5, ilerleyen 2, tavan 100 — OB-TK100 01.10.2026)
+     tablolar alt alta) ve ÖB Performans Primi. Dönem = kapanan ay (afDon). Puan: Takipteki işler 50 (OB-AGIRLIK2: tamamlanan 3×ağırlık/100, ilerleyen 0,5×ağırlık/100, tavan 50)
      · Zamanında güncelleme 10 (ÖB Faaliyet ve Sel-Arb ayrı ayrı 11 − ayın kaçıncı iş günü; ortalama) · MK notu 10 · MB notu 10
-     · (OB-PRIM3: DPGF/Situation puandan çıktı; OB-TK100: toplam tavan 130). Ek primler: DPGF 2 €/adet + €/2000 · Situation 1 €/adet + €/1000 (İptal hariç) · Selectron € × 1/10.000 · Avenants € × 5/1000
+     · (OB-PRIM3: DPGF/Situation puandan çıktı; toplam tavan 80). Ek primler: DPGF 2 €/adet + €/2000 · Situation 1 €/adet + €/1000 (İptal hariç) · Selectron € × 1/10.000 · Avenants € × 5/1000
      · Devlet destek iadesi ₺ × 5/1000. ===== */
   const [dpq,stq,paq,ppq,pyq2,kurOB,avq,pvq]=await Promise.all([ /* OB-AVENANT */
     sb.from("ob_dpgf").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}),
@@ -2548,8 +2548,12 @@ async function loadObrapor(tgt){
   const wOf=k=>oncW[k]||1;
   let tkP=null, tkAcik="Aylık Faaliyet tespiti yok";
   if(afR){ const tm=lst(afR.tamamlanan), gl=lst(afR.gelisme), ys=lst(afR.yerinde_sayan);
-    /* OB-PRIM2 + OB-TK100 (01.10.2026, Melih): Tamamlanan iş 5, ilerleyen (gelişme kaydedilen) iş 2 puan; en çok 100 */
-    tkP=Math.min(100,5*tm.length+2*gl.length); tkAcik=`Tamamlanan ${tm.length} × 5 + İlerleyen ${gl.length} × 2 (Yerinde sayan ${ys.length})`; }
+    /* OB-AGIRLIK2 (01.10.2026, Melih): her tamamlanan iş 3 × ağırlık/100, her ilerleyen iş 0,5 × ağırlık/100; en çok 50.
+       Ağırlık = ob_isler.agirlik (konu eşleşmesi; bulunamazsa 100). OB-TK100'ün 100 tavanı geri alındı. */
+    const agW={}; iRows.forEach(r=>{ agW[String(r.konu||"").trim()]=Number(r.agirlik)||100; });
+    const agS=a=>a.reduce((t,k)=>t+(agW[k]||100),0), tmW=agS(tm), glW=agS(gl);
+    const tkHam=3*tmW/100+0.5*glW/100;
+    tkP=Math.min(50,tkHam); tkAcik=`Tamamlanan ${tm.length} iş (ağırlık toplamı ${nf(tmW)}) × 3/100 + İlerleyen ${gl.length} iş (ağırlık toplamı ${nf(glW)}) × 0,5/100 = ${nf(tkHam)}${tkHam>50?" (50 ile sınırlı)":""} (Yerinde sayan ${ys.length})`; }
   const pyB={}; ((pyq2&&!pyq2.error)?(pyq2.data||[]):[]).forEach(r=>pyB[r.anahtar]=r.yayin_at);
   const bugunD=new Date(); bugunD.setHours(0,0,0,0);
   const ilkIs=new Date(bugunD.getFullYear(),bugunD.getMonth(),1); while(ilkIs.getDay()===0||ilkIs.getDay()===6) ilkIs.setDate(ilkIs.getDate()+1);
@@ -2564,7 +2568,7 @@ async function loadObrapor(tgt){
   const hedefP=(v,h,max)=>(h>0)?Math.min(max,max*v/h):null;
   const dpP=hedefP(dpAy,PP.dpgf_hedef,10), stP=hedefP(stAy,PP.situation_hedef,10);
   const mkP=PA.mk_notu!=null?Number(PA.mk_notu):null, mbP=PA.mb_notu!=null?Number(PA.mb_notu):null;
-  const KAL=[["Takipteki işler",100,tkP,tkAcik],["Zamanında güncelleme (ÖB Faaliyet + Sel-Arb ortalaması)",10,zP,`ÖB Faaliyet: ${zOB.t} → ${zOB.p} · Sel-Arb: ${zSA.t} → ${zSA.p}`],
+  const KAL=[["Takipteki işler",50,tkP,tkAcik],["Zamanında güncelleme (ÖB Faaliyet + Sel-Arb ortalaması)",10,zP,`ÖB Faaliyet: ${zOB.t} → ${zOB.p} · Sel-Arb: ${zSA.t} → ${zSA.p}`],
     ["MK notu",10,mkP,mkP==null?"MK formunda henüz girilmedi":`${mkP} / 10`],["MB notu",10,mbP,"mbsel"],
     ]; /* OB-PRIM3 (2026-09-28, Melih): DPGF/Situation puandan çıktı → ek prim; puan tavanı 80, perf = taban × puan/80 */
   const dpN=dpR.filter(inAy).length, stN=stR.filter(r=>inAy(r)&&r.onay_durumu!=="İptal Edildi").length;
@@ -2573,7 +2577,7 @@ async function loadObrapor(tgt){
   const pin=(id,v,w)=>`<input id="${id}" class="obpin" style="width:${w||11}ch" value="${v==null?"":nf(v)}">`;
   const mbSel=`<select id="ob-mbnot" class="obpin"><option value=""></option>${[0,1,2,3,4,5,6,7,8,9,10].map(i=>`<option${mbP===i?" selected":""}>${i}</option>`).join("")}</select> <span class="muted">Geçtiğimiz ay boyunca Özgül Bedestenci'nin performansına ilişkin notunuzu 0 ile 10 arası bir rakamla belirtiniz.</span>`;
   const acik=a=>a==="mbsel"?mbSel:a.replace("dph",pin("ob-dph",PP.dpgf_hedef)+" €").replace("sth",pin("ob-sth",PP.situation_hedef)+" €");
-  const PTAVAN=KAL.reduce((t,k)=>t+k[1],0); /* OB-TK100: tavan = kriter azamileri toplamı (130) */
+  const PTAVAN=KAL.reduce((t,k)=>t+k[1],0); /* tavan = kriter azamileri toplamı (80) */
   const taban=PP.taban_prim, perfTL=taban>0?taban*puan/PTAVAN:null;
   const selPrimE=selEur/10000, ddPrimTL=ddAyTop*0.005, eurTL=kurOB&&kurOB.TL>0?kurOB.TL:null;
   const avPrimE=avAy*0.005;
