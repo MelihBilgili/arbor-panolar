@@ -2295,9 +2295,9 @@ async function loadSelArb(tgt){
     ["tahsilat","Tahsilat","o"],["situ","Yapılmış Situ","o"],["yapilacak_situ","Yapılacak Situ","n"],
     ["ilk_odeme_tarih","Beklenen İlk Ödeme Tarihi","d"],["ilk_odeme_tutar","Beklenen İlk Ödeme Tutarı","n"]];
   const kxKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
-  const obBy={}; ((obt&&!obt.error&&obt.data)||[]).forEach(x=>obBy[kxKey(x.proje_key)]=x);
+  const obBy={}, obS={}; ((obt&&!obt.error&&obt.data)||[]).forEach(x=>{ obBy[kxKey(x.proje_key)]=x; obS[x.sira]=x; });   /* SELARB-DEVIR-261001 */
   const gBy={}; guncel.forEach(x=>gBy[x.sira]=x);
-  const kxVal=(sira,proje)=>{ const g=gBy[sira]||{}, ob=obBy[kxKey(g.proje||proje)]||{};
+  const kxVal=(sira,proje)=>{ const g=gBy[sira]||{}, ob=obS[sira]||obBy[kxKey(g.proje||proje)]||{};
     return KXP.map(([f,ad,t])=>{ const v=t==="o"?ob[f]:g[f]; return (v==null||v==="")?null:(t==="d"?v:Number(v)); }); };
   const kxFmt=(v,i)=>v==null?"":(KXP[i][2]==="d"?(String(v).slice(8,10)+"."+String(v).slice(5,7)+"."+String(v).slice(2,4)):Math.round(v).toLocaleString("tr-TR"));
   guncel.forEach(x=>{
@@ -2355,7 +2355,7 @@ async function loadSelArb(tgt){
   let dlt=basliklar[basliklar.length-1]; if(dlt.indexOf("€")<0) dlt=dlt+" €";
   let hiddenCount=0;
   const trs=rows.map(h=>{
-    const isFoot=SA_FOOT.has(h[0]), show=isFoot||filled(h[lastIdx])||filled(h[canliIdx])||(h.kx&&h.kx.some(v=>v!=null));
+    const isFoot=SA_FOOT.has(h[0]), show=isFoot||filled(h[lastIdx])||filled(h[canliIdx]);   /* SELARB-DEVIR-261001: gizleme alacak bazlı */
     if(!show) hiddenCount++;
     const mid=[]; for(let i=0;i<nd;i++) mid.push(`<td class="sa-num">${esc(h[2+i]||"")}</td>`);
     return `<tr class="${isFoot?'sa-foot':''}${show?'':' sa-hide'}"${show?'':' style="display:none"'}>`
