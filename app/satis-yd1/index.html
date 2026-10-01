@@ -288,7 +288,7 @@ let GOREVLI_YETKILI=null;
 function GOREVLI_YEDEK(){ return BLOK==="YD1"?["MN","OBL","MK","KS"]:["MKB","OBL","MK","AK"]; }
 function GOREVLI_OPTS(){ const k=(GOREVLI_YETKILI||GOREVLI_YEDEK()).slice(); if(k.indexOf("MB")<0) k.unshift("MB"); return k.concat(["Hiç Kimse","Herkes"]); }
 function tkNotYaz(x){ const n=x.n||""; if(!x.e||!n) return n; return n.indexOf(x.e+":")===0?n:x.e+": "+n; }
-function tkHist(log){ return log.length? log.map(x=>(x.t?fmtDate(x.t)+" — ":"")+tkNotYaz(x)+(x.g?" [Görevli: "+x.g+"]":"")).join("\n") : ""; }
+function tkHist(log){ return log.length? log.map(x=>(x.t?fmtDate(x.t)+" — ":"")+tkNotYaz(x)).join("\n") : ""; } /* TK-HIST-GOREVLISIZ (2026-10-01, Melih): geçmişte [Görevli: X] yazılmaz */
 
 const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Teklif Teslim Edildi","Revizyon İstendi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı","İptal"];  /* YD-IPTAL (29.09.2026): her durumdan seçilebilir, en altta */
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
