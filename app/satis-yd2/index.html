@@ -46,6 +46,7 @@
   input.cell,select.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:0 7px;height:26px;line-height:24px;display:block;width:100%;background:transparent}
   select.cell{padding-bottom:0}
   select[data-f="musteri_onem_sinifi"],select[data-f="ihale"],select[data-f="agac"]{padding-left:2px}
+  select[data-f="ihale"].ihale-al{color:#1e8e3e} select[data-f="ihale"] option{color:#000} /* IHALE-ALINDI-YESIL */
   input.cell:focus,select.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
   td.net input{text-align:right}
   textarea.cell{min-height:26px;padding-top:3px;resize:none}
@@ -211,6 +212,8 @@ const ARB_ROLE_EMAIL = "fy2.form@arbor.com.tr";
 /* YD-COK-ROL (21.09.2026): birincil rol + OBL (Orhan Bulut) + MK (Mehmet Konak) */
 const ARB_ROLLER = [ARB_ROLE_EMAIL, "obl.form@arbor.com.tr", "mk.form@arbor.com.tr"].concat(ARB_ROLE_EMAIL==="fy.form@arbor.com.tr"?["ks.form@arbor.com.tr"]:[]); /* YD-KS-ROL (22.09.2026): KS yalniz YD1 */
 const ARB_ROL_AD = {"fy.form@arbor.com.tr":"MN — Mustafa Nas","fy2.form@arbor.com.tr":"MKB — Melike Başaran","obl.form@arbor.com.tr":"OBL — Orhan Bulut","mk.form@arbor.com.tr":"MK — Mehmet Konak","ks.form@arbor.com.tr":"KS — Kamil Şen"};
+/* IHALE-ALINDI-YESIL: seçim değişince yeşil sınıfı anında güncellenir */
+document.addEventListener('change',function(e){ var t=e.target; if(t&&t.matches&&t.matches('select[data-f="ihale"]')) t.classList.toggle('ihale-al', t.value==='Alındı'); });
 const ARB_STORE = "arbform_yd_akis_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
 const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
 const ARB_MB = "int@arbor.com.tr";
@@ -536,7 +539,7 @@ function rowHTML(r,key){
       if(c.t==='note'){ const sat=ntSatirlar(r[c.f]); /* YD-NOT-EKLE: son not görünür, hover'da tümü alt alta */
         return '<td style="background:'+bgv+'"><div class="ntcell" style="width:'+c.w+'px"><div class="ntlast ntClick" data-row="'+key+'" data-nf="'+c.f+'" title="'+esc(sat.join("\n"))+'"><span>'+esc(sat[0]||"")+'</span></div></div></td>'; }
       if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="width:'+c.w+'px" title="'+esc(v)+'">'+esc(v)+'</textarea></td>';
-      if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; const kilit=c.f==='oncelik'?' disabled title="Öncelik Arbor panosundan (Satış › Öncelik Belirlenmesi Gerekenler) belirlenir"':'';  /* YD-ONCELIK-PANO */ return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+'" data-f="'+c.f+'"'+kilit+' style="width:'+c.w+'px">'+opts+'</select></td>'; }
+      if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; const ihAl=(c.f==='ihale'&&String(v)==='Alındı')?' ihale-al':''; const kilit=c.f==='oncelik'?' disabled title="Öncelik Arbor panosundan (Satış › Öncelik Belirlenmesi Gerekenler) belirlenir"':'';  /* YD-ONCELIK-PANO */ return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+ihAl+'" data-f="'+c.f+'"'+kilit+' style="width:'+c.w+'px">'+opts+'</select></td>'; }
       let uyari="",ipucu="";
       if(c.f==='teklif_teslim_tarihi'){
         if(terminBos(r)){ uyari=" terminbos"; ipucu=' title="Teklif Bekleniyor — Teklif Teslim Tarihi girilmemiş"'; }
