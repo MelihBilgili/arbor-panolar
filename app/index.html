@@ -648,7 +648,7 @@ function startEdit(el){
   const cur=el.textContent.trim().replace(/^\+.*/,"").replace(/^tarih$/,"");
   const inp=document.createElement("input"); inp.className="cell"; inp.type = type==='date'?'date':'text';
   inp.value = type==='date'? "": cur;
-  el.innerHTML=""; el.appendChild(inp); inp.focus();
+  el.innerHTML=""; el.appendChild(inp); if(type==='date'&&window.ARB_TYY) window.ARB_TYY(inp); /* ARB-TARIH-YY */ inp.focus();
   const commit=async()=>{
     let val=inp.value;
     if(type==='date' && !val){ el.innerHTML='<span style=color:#b7c6d6>tarih</span>'; return; }
@@ -1645,7 +1645,7 @@ function loadProsedur(){
     const items=PROS.filter(d=>d.sec===s && !hidden.includes(d.no)).sort((a,b)=>dnum(b.tarih)-dnum(a.tarih));
     if(!items.length) return;
     sec+=`<div class="secH">${esc(SECS[s])}</div>`;
-    items.forEach(d=>{ sec+=`<div class="law" data-no="${esc(d.no)}"><div class="lno${d.ek?' ek':''}">${esc(d.no)}</div><div class="lbody"><div class="lhead"><span class="lcaret">▶</span><span class="ltitle">${esc(d.ad)}</span><span class="ldate">(${esc(d.tarih)})</span></div><div class="ltext">${d.metin}</div></div><div class="lx" title="İptal (gizle)">✕</div></div>`; });
+    items.forEach(d=>{ sec+=`<div class="law" data-no="${esc(d.no)}"><div class="lno${d.ek?' ek':''}">${esc(d.no)}</div><div class="lbody"><div class="lhead"><span class="lcaret">▶</span><span class="ltitle">${esc(String(d.ad||"").replace(/\b(\d{1,2})\.(\d{1,2})\.\d{2}(\d{2})\b/g,"$1.$2.$3"))}</span><span class="ldate">(${esc(String(d.tarih||"").replace(/\b(\d{1,2})\.(\d{1,2})\.\d{2}(\d{2})\b/g,"$1.$2.$3"))})</span></div><div class="ltext">${d.metin}</div></div><div class="lx" title="İptal (gizle)">✕</div></div>`; });
   });
   view.innerHTML=`<style>
     #view .secH{margin:9px 0 3px;font-size:12px}
@@ -1688,7 +1688,7 @@ async function loadEgitim(){
     const per=periyotAy(row.periyot); const baz=sonGerc(row)||row.yayim_tarihi; if(!per||!baz) return null;
     const d=new Date(baz+"T00:00:00"); d.setMonth(d.getMonth()+per); return d;
   }
-  function fmt(d){ return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+d.getFullYear(); }
+  function fmt(d){ return String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+String(d.getFullYear()).slice(2); } /* ARB-TARIH-YY */
   function grupla(arr,key){ const m={}; arr.forEach(r=>{ const k=r[key]||"—"; (m[k]=m[k]||[]).push(r); }); return m; }
   const today=new Date();
   const YIL=String(today.getFullYear()), AY=YIL+"-"+String(today.getMonth()+1).padStart(2,"0");
@@ -1753,7 +1753,7 @@ async function loadEgitim(){
      .egozl{max-height:220px;overflow:auto}
      /* EGITIM-ADET-ORTA (01.10.2026): Bu Yıl (adet) başlık+değer ortalı */ table.egt th.egc,table.egt td.egc{text-align:center}
      tr.egayh{cursor:pointer;background:#f3f6fa;font-weight:600;color:#16324f}tr.egayh:hover{background:#e8eef5}tr.egayh .egok{display:inline-block;width:1.2em}
-     table.egt col.ek{width:14ch}table.egt col.ekonu{width:60ch}table.egt col.e3{width:14ch}table.egt col.e4{width:13ch}table.egt col.e5{width:20ch}
+     table.egt col.ek{width:14ch}table.egt col.ekonu{width:60ch}table.egt col.e3{width:14ch}table.egt col.e4{width:12ch}table.egt col.e5{width:18ch}
     </style>
     ${ozetHtml}
     ${planHtml}
@@ -1862,9 +1862,9 @@ async function loadFormlar(){
     {ad:"Yurt Dışı Şantiye 2.2", who:"EKB",tam:"Erkut Bilen",     url:"santiye-yd2-2/", sik:"Her ayın ilk iş günü"},
     /* CAM-LISTE-LINK (29.09.2026): Cam Listesi formu (app/cam-listesi/, EU) Formlar listesinden çıkarıldı; Cam Fiyatlandırma başlığındaki linkten açılır */
     /* ETUT-FORM: Etüt ve Proje birimlerinin dönem hataları (etut_hata) — TH girer */
-    {ad:"Etüt",                who:"TH",tam:"Toufik Hadjene",    url:"etut/",        sik:"Süresiz"},
+    {ad:"Etüt",                who:"TH",tam:"Toufik Hadjene",    url:"etut/",        sik:"Her ayın ilk iş günü"} /* ETUT-SIKLIK-261001 */,
      /* ETUT-PROJE-HATALAR (29.09.2026): Etüt formunun Hata Puanları bloğu ayrı forma taşındı (etut_hata sayfa=hatalar) */
-     {ad:"Etüt-Proje Hataları", who:"TH",tam:"Toufik Hadjene",    url:"etut-hata/",   sik:"Süresiz"},
+     {ad:"Etüt-Proje Hataları", who:"TH",tam:"Toufik Hadjene",    url:"etut-hata/",   sik:"Her ayın ilk iş günü"},
     {ad:"Cam Fiyatlandırma",   who:"Herkes",            url:"cam/",         sik:"Süresiz"},
     {ad:"Ürün Fiyatlandırma",  who:"Herkes",            url:"teklif/",      sik:"Süresiz"}
   ];
@@ -1955,7 +1955,7 @@ async function loadFormlar(){
     return `<tr>`
       +`<td class="sb"><div class="cx"><a class="fad" href="${esc(f.url)}" target="_blank" title="Formu aç">${esc(f.ad)}</a>${(()=>{ const e=engBy[FK[f.url]], b=BTN_AT[f.url];
           if(!e||(b&&new Date(b)>=new Date(e.at))) return "";
-          const d=new Date(e.at), tt="Güncelleme DURDURULDU: "+d.toLocaleString("tr-TR")+"\n\n"+e.mesaj;
+          const d=new Date(e.at), tt="Güncelleme DURDURULDU: "+d.toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"})+"\n\n"+e.mesaj;
           return ` <b style="color:#b40000" title="${esc(tt)}">⚠ durduruldu ${fdate(e.at)}</b>`; })()}</div></td>`
       +`<td title="${esc(f.tam||f.who)}${f._fe?" — düzenlemek için tıklayınız":""}"${f._fe?` class="feed" data-yol="${esc(f.url)}"`:""}><div class="cx">${esc(f.who)}</div></td>`  /* FORM-KISALTMA: yalnız kişi kısaltması, tam ad hover */
       +`<td><div class="cx">${esc(sik)}</div></td>`
@@ -3365,5 +3365,57 @@ setInterval(()=>{ if(!document.getElementById("view")) return; if(document.query
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
+<script>
+/* ARB-TARIH-YY (01.10.2026, Melih): tarih girişleri GG.AA.YY metin kutusu — takvim simgesi yok, dar sütun.
+   Tek kaynak kod/_tarih_yy.js (formlara ve app'e SON </body> önüne gömülür).
+   input[type=date] bulunduğunda metin kutusuna çevrilir; kod için davranış aynı kalır:
+   .value okuması ISO (YYYY-AA-GG) ya da "" döner, ISO yazılınca GG.AA.YY gösterilir, .type hâlâ "date" der.
+   Giriş: 011026 · 1.10.26 · 01/10/2026 · 01-10-26 → 01.10.26. Eksik/geçersiz yazımda input/change olayı
+   koda iletilmez (yarım tarih kaydedilmez); odaktan çıkınca geçersizse önceki değere döner. */
+(function(){
+  if(window.ARB_TYY) return;
+  var D=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value");
+  var TD=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"type");
+  function p2(n){ n=String(n); return n.length<2?"0"+n:n; }
+  function isoOk(y,m,d){ var x=new Date(+y,+m-1,+d); return x.getFullYear()==+y&&x.getMonth()==+m-1&&x.getDate()==+d; }
+  function iso2d(s){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s==null?"":s)); return m?m[3]+"."+m[2]+"."+m[1].slice(2):(s==null?"":String(s)); }
+  function d2iso(s){ s=String(s==null?"":s).trim(); if(!s) return "";
+    var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s); if(m) return isoOk(m[1],m[2],m[3])?s:null;
+    m=/^(\d{1,2})[.\/\-](\d{1,2})[.\/\-](\d{2}|\d{4})$/.exec(s)||/^(\d{2})(\d{2})(\d{2}|\d{4})$/.exec(s); if(!m) return null;
+    var y=m[3].length==2?"20"+m[3]:m[3]; if(!isoOk(y,m[2],m[1])) return null;
+    return y+"-"+p2(m[2])+"-"+p2(m[1]); }
+  function conv(el){
+    if(!el||el.__tyy) return el; el.__tyy=1;
+    var v=D.get.call(el);
+    TD.set.call(el,"text");
+    Object.defineProperty(el,"type",{configurable:true,get:function(){return "date";},set:function(){}});
+    Object.defineProperty(el,"value",{configurable:true,
+      get:function(){ var r=d2iso(D.get.call(el)); return r==null?"":r; },
+      set:function(x){ D.set.call(el,iso2d(x)); el.__tyyOk=D.get.call(el); }});
+    el.classList.add("tarih-yy"); el.setAttribute("data-tarih","1");
+    if(!el.placeholder) el.placeholder="GG.AA.YY";
+    el.setAttribute("inputmode","numeric"); el.setAttribute("autocomplete","off"); el.maxLength=10;
+    D.set.call(el,iso2d(v)); el.__tyyOk=D.get.call(el);
+    return el; }
+  function scan(root){ if(!root||!root.querySelectorAll) return;
+    if(root.tagName==="INPUT"&&TD.get.call(root)==="date") conv(root);
+    var a=root.querySelectorAll('input[type="date"]'); for(var i=0;i<a.length;i++) conv(a[i]); }
+  function gate(e){ var el=e.target; if(!el||!el.__tyy) return;
+    if(e.type==="input"){ e.stopImmediatePropagation(); return; }  /* yazarken kayıt yok; yalnız change (odaktan çıkış) */
+    var raw=D.get.call(el), r=d2iso(raw);
+    if(r==null){ e.stopImmediatePropagation();
+      if(e.type==="change"){ D.set.call(el,el.__tyyOk||""); } return; }
+    if(e.type==="change"){ D.set.call(el,iso2d(r)); el.__tyyOk=D.get.call(el); } }
+  window.addEventListener("input",gate,true);
+  window.addEventListener("change",gate,true);
+  var st=document.createElement("style");
+  st.textContent="input.tarih-yy{width:8.6ch!important;min-width:0!important;max-width:none!important;box-sizing:content-box!important;padding-left:3px!important;padding-right:3px!important;font-variant-numeric:tabular-nums}";
+  (document.head||document.documentElement).appendChild(st);
+  scan(document);
+  new MutationObserver(function(ms){ for(var i=0;i<ms.length;i++){ var n=ms[i].addedNodes; for(var j=0;j<n.length;j++) if(n[j].nodeType===1) scan(n[j]); } })
+    .observe(document.documentElement,{childList:true,subtree:true});
+  window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
+})();
+</script>
 </body>
 </html>
