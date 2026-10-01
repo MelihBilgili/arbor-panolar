@@ -670,7 +670,7 @@ async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muht
   COLS.forEach(c=>{ rec[c.f]=(r[c.f]==null?null:r[c.f]); });
   rec.net_tutar=null; rec.net_tutar_eur=null; rec.eur_kur=null; rec.kur_tarihi=null;
   rec.teklif_teslim_tarihi=null; /* revize teklif henüz teslim edilmedi — pano "Verilen (Ad.)" sayımı şişmesin */
-  { const d=new Date(); rec.gelen_tarih=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); } /* REV-GELEN-TARIH (2026-10-01, Melih): revizyon kopyasının Gelen Tarih'i = Revizyon İstendi'ye geçirildiği gün (yerel tarih) */
+  { const d=new Date(); rec.gelen_tarih=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); rec.istenen_tarih=rec.gelen_tarih; /* REV-ISTENEN-TARIH (2026-10-01, Melih): İstenen Tarih de geçiş günü */ } /* REV-GELEN-TARIH (2026-10-01, Melih): revizyon kopyasının Gelen Tarih'i = Revizyon İstendi'ye geçirildiği gün (yerel tarih) */
   rec.oncelik=1; /* revizyon her zaman en yüksek öncelik (Melih, 2026-09-18) — kolon smallint */
   const eskiNot=String(r.teklif_birimi_notlari||"").trim();
   rec.teklif_birimi_notlari = ntYeniDeger(eskiNot,"Revizyon");  /* YD-NOT-EKLE */
