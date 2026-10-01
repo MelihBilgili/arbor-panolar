@@ -2489,16 +2489,18 @@ async function loadObrapor(tgt){
      · Zamanında güncelleme 10 (ÖB Faaliyet ve Sel-Arb ayrı ayrı 11 − ayın kaçıncı iş günü; ortalama) · MK notu 10 · MB notu 10
      · (OB-PRIM3: DPGF/Situation puandan çıktı; OB-TK100: toplam tavan 130). Ek primler: DPGF 2 €/adet + €/2000 · Situation 1 €/adet + €/1000 (İptal hariç) · Selectron € × 1/10.000 · Avenants € × 5/1000
      · Devlet destek iadesi ₺ × 5/1000. ===== */
-  const [dpq,stq,paq,ppq,pyq2,kurOB,avq]=await Promise.all([ /* OB-AVENANT */
+  const [dpq,stq,paq,ppq,pyq2,kurOB,avq,pvq]=await Promise.all([ /* OB-AVENANT */
     sb.from("ob_dpgf").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}),
     sb.from("ob_situation").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}),
     sb.from("ob_prim_ay").select("*").eq("donem",afDon).limit(1),
     sb.from("ob_prim_param").select("anahtar,deger"),
     sb.from("pano_yayin").select("anahtar,yayin_at").in("anahtar",["ob_rapor","sel_arb_form"]),
     satisKur().catch(()=>null),
-    sb.from("ob_avenant").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false})
+    sb.from("ob_avenant").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}),
+    sb.from("ob_pv_reception").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}) /* OB-PVR */
   ]);
   const avR=(avq&&!avq.error)?(avq.data||[]):[];
+  const pvR=(pvq&&!pvq.error)?(pvq.data||[]):[]; /* OB-PVR */
   const dpR=(dpq&&!dpq.error)?(dpq.data||[]):[], stR=(stq&&!stq.error)?(stq.data||[]):[];
   const inAy=r=>r.tarih&&String(r.tarih)>=afDon+"-01"&&String(r.tarih)<=afSon;
   const dsTbl=(R,cols)=>`<div class="scroll"><table class="obod"><thead><tr>${cols.map(c=>`<th${c[2]?' class="num"':''}>${c[0]}</th>`).join("")}</tr></thead><tbody>`
@@ -2507,11 +2509,13 @@ async function loadObrapor(tgt){
   const dpAy=dpR.filter(inAy).reduce((t,r)=>t+(Number(r.tutar)||0),0);
   const stAy=stR.filter(r=>inAy(r)&&r.onay_durumu!=="İptal Edildi").reduce((t,r)=>t+(Number(r.tutar)||0),0);
   const avAy=avR.filter(inAy).reduce((t,r)=>t+(Number(r.tutar)||0),0);
-  ib+=`<h3 class="sec">DPGF's - Situations - Avenants <span class="muted">(${esc(afAd)} satırları mavi)</span></h3>
+  const pvN=pvR.filter(inAy).length, pvAy=pvR.filter(inAy).reduce((t,r)=>t+(Number(r.tutar)||0),0); /* OB-PVR */
+  ib+=`<h3 class="sec">DPGF's  -  Situations  -  Avenants - PV's de Réception <span class="muted">(${esc(afAd)} satırları mavi)</span></h3>
     <div class="obaf" style="max-width:none">
      <div style="margin-bottom:10px"><div class="obafh">DPGF · ${esc(afAd)}: ${nf(dpAy)} €</div>${dsTbl(dpR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Correspondence",r=>esc(r.correspondence||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
      <div style="margin-bottom:10px"><div class="obafh">Situations · ${esc(afAd)}: ${nf(stAy)} € <span class="muted" style="font-weight:400">(İptal Edildi hariç)</span></div>${dsTbl(stR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["İlerleme No",r=>esc(r.ilerleme_no||"")],["Dönem",r=>esc(r.donem||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Onay Durumu",r=>esc(r.onay_durumu||"")]])}</div>
      <div><div class="obafh">Avenants · ${esc(afAd)}: ${nf(avAy)} €</div>${dsTbl(avR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Açıklama",r=>esc(r.aciklama||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
+     <div style="margin-top:10px"><div class="obafh">PV's de Réception · ${esc(afAd)}: ${pvN} adet · ${nf(pvAy)} € <span class="muted" style="font-weight:400">(tutar = Sel-Arb kontrat)</span></div>${dsTbl(pvR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Açıklama",r=>esc(r.aciklama||"")]])}</div> <!-- OB-PVR -->
     </div>`;
   /* --- puanlar --- */
   const PA=(paq&&!paq.error&&paq.data&&paq.data[0])||{};
@@ -2550,7 +2554,8 @@ async function loadObrapor(tgt){
   const taban=PP.taban_prim, perfTL=taban>0?taban*puan/PTAVAN:null;
   const selPrimE=selEur/10000, ddPrimTL=ddAyTop*0.005, eurTL=kurOB&&kurOB.TL>0?kurOB.TL:null;
   const avPrimE=avAy*0.005;
-  const topTL=(perfTL||0)+ddPrimTL+(eurTL?(selPrimE+avPrimE+dpPrimE+stPrimE)*eurTL:0);
+  const pvPrimE=2*pvN+pvAy/1000; /* OB-PVR: adet × 2 € + kontrat toplamı / 1000 */
+  const topTL=(perfTL||0)+ddPrimTL+(eurTL?(selPrimE+avPrimE+dpPrimE+stPrimE+pvPrimE)*eurTL:0);
   ib+=`<h3 class="sec">ÖB Performans Primi <span class="muted">(${esc(afAd)})</span></h3>
     <div class="obaf" style="max-width:none"><div class="scroll"><table class="obod"><thead><tr><th>Kriter</th><th>Ölçüm</th><th class="num">Puan</th><th class="num">En çok</th></tr></thead><tbody>`
     + KAL.map(k=>`<tr><td>${esc(k[0])}</td><td>${k[3]==="mbsel"||/dph|sth/.test(k[3])?acik(k[3]):esc(k[3])}</td><td class="num">${k[2]==null?"—":nf(k[2])}</td><td class="num">${k[1]}</td></tr>`).join("")
@@ -2562,12 +2567,13 @@ async function loadObrapor(tgt){
      <tr><td>DPGF primi = ${dpN} adet × 2 € + ${nf(dpAy)} € / 2000</td><td class="num">${nf(dpPrimE)} €${eurTL?` (${nf(dpPrimE*eurTL)} ₺)`:""}</td></tr>
      <tr><td>Situation primi = ${stN} adet × 1 € + ${nf(stAy)} € / 1000 <span class="muted">(İptal Edildi hariç)</span></td><td class="num">${nf(stPrimE)} €${eurTL?` (${nf(stPrimE*eurTL)} ₺)`:""}</td></tr>
      <tr><td>Avenants primi = ${nf(avAy)} € × 5/1000</td><td class="num">${nf(avPrimE)} €${eurTL?` (${nf(avPrimE*eurTL)} ₺)`:""}</td></tr>
+     <tr><td>PV's de Réception primi = ${pvN} adet × 2 € + ${nf(pvAy)} € / 1000</td><td class="num">${nf(pvPrimE)} €${eurTL?` (${nf(pvPrimE*eurTL)} ₺)`:""}</td></tr>
      <tr><td>Devlet destek primi = ${nf(ddAyTop)} ₺ × 5/1000</td><td class="num">${nf(ddPrimTL)} ₺</td></tr>
      <tr class="itot"><td>TOPLAM PRİM${eurTL?` <span class="muted" style="font-weight:400">(1 € = ${nf(eurTL)} ₺)</span>`:" (€ kısmı hariç — kur alınamadı)"}</td><td class="num">${nf(topTL)} ₺</td></tr>
     </tbody></table></div><span class="msg" id="ob-prim-msg"></span></div>`;
   try{ sb.from("ob_prim_ay").upsert({donem:afDon,toplam_puan:Math.round(puan*100)/100,updated_at:new Date().toISOString(),
     puan_detay:{kalemler:KAL.map(k=>({kriter:k[0],en_cok:k[1],puan:k[2]==null?null:Math.round(k[2]*100)/100})),dpgf_eur:dpAy,situation_eur:stAy,dpgf_adet:dpN,situation_adet:stN,dpgf_prim_eur:dpPrimE,situation_prim_eur:stPrimE,
-      selectron_eur:selEur,selectron_prim_eur:selPrimE,avenant_eur:avAy,avenant_prim_eur:avPrimE,iade_tl:ddAyTop,iade_prim_tl:ddPrimTL,taban_tl:taban,performans_prim_tl:perfTL,kur_eur_tl:eurTL,toplam_prim_tl:topTL}},
+      selectron_eur:selEur,selectron_prim_eur:selPrimE,avenant_eur:avAy,avenant_prim_eur:avPrimE,pvr_adet:pvN,pvr_eur:pvAy,pvr_prim_eur:pvPrimE,iade_tl:ddAyTop,iade_prim_tl:ddPrimTL,taban_tl:taban,performans_prim_tl:perfTL,kur_eur_tl:eurTL,toplam_prim_tl:topTL}},
     {onConflict:"donem"}).then(()=>{},()=>{}); }catch(e){}
   window._obPrimTgt=tgt; window._obPrimDon=afDon;
   /* Panonun altında serbest metin kutusu → ÖB'ye anında mail (pano-mesaj-mail, alıcı form_takip'ten) */
