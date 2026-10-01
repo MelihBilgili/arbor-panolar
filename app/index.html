@@ -2485,9 +2485,9 @@ async function loadObrapor(tgt){
   ib+=`<h3 class="sec">Devlet Destek Başvuruları <span class="muted">(${ddR.length})</span></h3>
     <div class="obaf" style="max-width:none">${ddTbl}</div>`;
   /* ===== OB-DPGF + OB-PRIM (2026-09-24, Melih; OB-PRIM2 güncel): DPGF's - Situations - Avenants bloğu (ob_dpgf/ob_situation/ob_avenant,
-     tablolar alt alta) ve ÖB Performans Primi. Dönem = kapanan ay (afDon). Puan (100): Takipteki işler 50 (tamamlanan 5, ilerleyen 2, tavan 50)
+     tablolar alt alta) ve ÖB Performans Primi. Dönem = kapanan ay (afDon). Puan: Takipteki işler 100 (tamamlanan 5, ilerleyen 2, tavan 100 — OB-TK100 01.10.2026)
      · Zamanında güncelleme 10 (ÖB Faaliyet ve Sel-Arb ayrı ayrı 11 − ayın kaçıncı iş günü; ortalama) · MK notu 10 · MB notu 10
-     · (OB-PRIM3: DPGF/Situation puandan çıktı, tavan 80). Ek primler: DPGF 2 €/adet + €/2000 · Situation 1 €/adet + €/1000 (İptal hariç) · Selectron € × 1/10.000 · Avenants € × 5/1000
+     · (OB-PRIM3: DPGF/Situation puandan çıktı; OB-TK100: toplam tavan 130). Ek primler: DPGF 2 €/adet + €/2000 · Situation 1 €/adet + €/1000 (İptal hariç) · Selectron € × 1/10.000 · Avenants € × 5/1000
      · Devlet destek iadesi ₺ × 5/1000. ===== */
   const [dpq,stq,paq,ppq,pyq2,kurOB,avq]=await Promise.all([ /* OB-AVENANT */
     sb.from("ob_dpgf").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}),
@@ -2521,8 +2521,8 @@ async function loadObrapor(tgt){
   const wOf=k=>oncW[k]||1;
   let tkP=null, tkAcik="Aylık Faaliyet tespiti yok";
   if(afR){ const tm=lst(afR.tamamlanan), gl=lst(afR.gelisme), ys=lst(afR.yerinde_sayan);
-    /* OB-PRIM2: Tamamlanan iş 5, ilerleyen (gelişme kaydedilen) iş 2 puan; en çok 50 */
-    tkP=Math.min(50,5*tm.length+2*gl.length); tkAcik=`Tamamlanan ${tm.length} × 5 + İlerleyen ${gl.length} × 2 (Yerinde sayan ${ys.length})`; }
+    /* OB-PRIM2 + OB-TK100 (01.10.2026, Melih): Tamamlanan iş 5, ilerleyen (gelişme kaydedilen) iş 2 puan; en çok 100 */
+    tkP=Math.min(100,5*tm.length+2*gl.length); tkAcik=`Tamamlanan ${tm.length} × 5 + İlerleyen ${gl.length} × 2 (Yerinde sayan ${ys.length})`; }
   const pyB={}; ((pyq2&&!pyq2.error)?(pyq2.data||[]):[]).forEach(r=>pyB[r.anahtar]=r.yayin_at);
   const bugunD=new Date(); bugunD.setHours(0,0,0,0);
   const ilkIs=new Date(bugunD.getFullYear(),bugunD.getMonth(),1); while(ilkIs.getDay()===0||ilkIs.getDay()===6) ilkIs.setDate(ilkIs.getDate()+1);
@@ -2537,7 +2537,7 @@ async function loadObrapor(tgt){
   const hedefP=(v,h,max)=>(h>0)?Math.min(max,max*v/h):null;
   const dpP=hedefP(dpAy,PP.dpgf_hedef,10), stP=hedefP(stAy,PP.situation_hedef,10);
   const mkP=PA.mk_notu!=null?Number(PA.mk_notu):null, mbP=PA.mb_notu!=null?Number(PA.mb_notu):null;
-  const KAL=[["Takipteki işler",50,tkP,tkAcik],["Zamanında güncelleme (ÖB Faaliyet + Sel-Arb ortalaması)",10,zP,`ÖB Faaliyet: ${zOB.t} → ${zOB.p} · Sel-Arb: ${zSA.t} → ${zSA.p}`],
+  const KAL=[["Takipteki işler",100,tkP,tkAcik],["Zamanında güncelleme (ÖB Faaliyet + Sel-Arb ortalaması)",10,zP,`ÖB Faaliyet: ${zOB.t} → ${zOB.p} · Sel-Arb: ${zSA.t} → ${zSA.p}`],
     ["MK notu",10,mkP,mkP==null?"MK formunda henüz girilmedi":`${mkP} / 10`],["MB notu",10,mbP,"mbsel"],
     ]; /* OB-PRIM3 (2026-09-28, Melih): DPGF/Situation puandan çıktı → ek prim; puan tavanı 80, perf = taban × puan/80 */
   const dpN=dpR.filter(inAy).length, stN=stR.filter(r=>inAy(r)&&r.onay_durumu!=="İptal Edildi").length;
@@ -2546,17 +2546,18 @@ async function loadObrapor(tgt){
   const pin=(id,v,w)=>`<input id="${id}" class="obpin" style="width:${w||11}ch" value="${v==null?"":nf(v)}">`;
   const mbSel=`<select id="ob-mbnot" class="obpin"><option value=""></option>${[0,1,2,3,4,5,6,7,8,9,10].map(i=>`<option${mbP===i?" selected":""}>${i}</option>`).join("")}</select> <span class="muted">Geçtiğimiz ay boyunca Özgül Bedestenci'nin performansına ilişkin notunuzu 0 ile 10 arası bir rakamla belirtiniz.</span>`;
   const acik=a=>a==="mbsel"?mbSel:a.replace("dph",pin("ob-dph",PP.dpgf_hedef)+" €").replace("sth",pin("ob-sth",PP.situation_hedef)+" €");
-  const taban=PP.taban_prim, perfTL=taban>0?taban*puan/80:null;
+  const PTAVAN=KAL.reduce((t,k)=>t+k[1],0); /* OB-TK100: tavan = kriter azamileri toplamı (130) */
+  const taban=PP.taban_prim, perfTL=taban>0?taban*puan/PTAVAN:null;
   const selPrimE=selEur/10000, ddPrimTL=ddAyTop*0.005, eurTL=kurOB&&kurOB.TL>0?kurOB.TL:null;
   const avPrimE=avAy*0.005;
   const topTL=(perfTL||0)+ddPrimTL+(eurTL?(selPrimE+avPrimE+dpPrimE+stPrimE)*eurTL:0);
   ib+=`<h3 class="sec">ÖB Performans Primi <span class="muted">(${esc(afAd)})</span></h3>
     <div class="obaf" style="max-width:none"><div class="scroll"><table class="obod"><thead><tr><th>Kriter</th><th>Ölçüm</th><th class="num">Puan</th><th class="num">En çok</th></tr></thead><tbody>`
     + KAL.map(k=>`<tr><td>${esc(k[0])}</td><td>${k[3]==="mbsel"||/dph|sth/.test(k[3])?acik(k[3]):esc(k[3])}</td><td class="num">${k[2]==null?"—":nf(k[2])}</td><td class="num">${k[1]}</td></tr>`).join("")
-    + `<tr class="itot"><td colspan="2">TOPLAM PUAN${eksikK.length?` <span class="muted" style="font-weight:400">(eksik: ${esc(eksikK.join(", "))})</span>`:""}</td><td class="num">${nf(puan)}</td><td class="num">80</td></tr>`
+    + `<tr class="itot"><td colspan="2">TOPLAM PUAN${eksikK.length?` <span class="muted" style="font-weight:400">(eksik: ${esc(eksikK.join(", "))})</span>`:""}</td><td class="num">${nf(puan)}</td><td class="num">${PTAVAN}</td></tr>`
     + `</tbody></table></div>
     <div class="scroll" style="margin-top:8px"><table class="obod"><tbody>
-     <tr><td>Performans primi = taban ${pin("ob-taban",taban,12)} ₺ × ${nf(puan)} / 80</td><td class="num">${perfTL==null?"— (taban girilmedi)":nf(perfTL)+" ₺"}</td></tr>
+     <tr><td>Performans primi = taban ${pin("ob-taban",taban,12)} ₺ × ${nf(puan)} / ${PTAVAN}</td><td class="num">${perfTL==null?"— (taban girilmedi)":nf(perfTL)+" ₺"}</td></tr>
      <tr><td>Selectron ödemeleri primi = ${nf(selEur)} € × 1/10.000</td><td class="num">${nf(selPrimE)} €${eurTL?` (${nf(selPrimE*eurTL)} ₺)`:""}</td></tr>
      <tr><td>DPGF primi = ${dpN} adet × 2 € + ${nf(dpAy)} € / 2000</td><td class="num">${nf(dpPrimE)} €${eurTL?` (${nf(dpPrimE*eurTL)} ₺)`:""}</td></tr>
      <tr><td>Situation primi = ${stN} adet × 1 € + ${nf(stAy)} € / 1000 <span class="muted">(İptal Edildi hariç)</span></td><td class="num">${nf(stPrimE)} €${eurTL?` (${nf(stPrimE*eurTL)} ₺)`:""}</td></tr>
