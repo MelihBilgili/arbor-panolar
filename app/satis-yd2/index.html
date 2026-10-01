@@ -613,7 +613,7 @@ async function eurAlanlari(r,upd){
 async function saveRow(key,f,val,el){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
   let v=convVal(f,val);
-  if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YYYY biçiminde olmalı."; return; }
+  if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YY biçiminde olmalı."; return; }
   /* MUHTEMEL-REV-SAVE (2026-09-25, Melih): Muhtemel satırda "Revizyon İstendi" seçilirse durum değişmez, kısmi kopya açılır;
      kısmi kopya elle "Teklif Teslim Edildi" yapılırsa Muhtemel'e geçer ve özgün satır "Revizyon İstendi" olur */
   if(f==='durum' && key!=="draft" && r.durum==="Muhtemel" && v==="Revizyon İstendi"){ el.value="Muhtemel"; await muhtemelRevKopya(r); render(); return; }
