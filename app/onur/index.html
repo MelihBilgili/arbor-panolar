@@ -67,7 +67,7 @@ html,body{max-width:100vw;overflow-x:hidden}
     <div class="chd"><h2>Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar <span class="cnt" id="cf"></span></h2>
       <span id="af"></span></div>
     <div class="scroll"><table id="ftt"><thead><tr>
-      <th style="width:16%">Yurt Dışı Birim</th><th style="width:13%">Fatura No</th><th style="width:13%">Tarih</th><th style="width:24%">Proje(ler)</th><th style="width:14%">Tutar</th><th style="width:12%">Para Birimi</th><th class="x"></th>
+      <th style="width:16%">Yurt Dışı Birim</th><th style="width:13%">Fatura No</th><th style="width:9%">Tarih</th><th style="width:28%">Proje(ler)</th><th style="width:14%">Tutar</th><th style="width:12%">Para Birimi</th><th class="x"></th>
     </tr></thead><tbody id="tf"><tr><td colspan="7">Yükleniyor…</td></tr></tbody></table></div>
     <div class="msg" id="mf"></div>
   </div>
@@ -565,6 +565,7 @@ loadFt(); load();
 
 
 
+
 <!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
@@ -612,5 +613,57 @@ loadFt(); load();
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
+<script>
+/* ARB-TARIH-YY (01.10.2026, Melih): tarih girişleri GG.AA.YY metin kutusu — takvim simgesi yok, dar sütun.
+   Tek kaynak kod/_tarih_yy.js (formlara ve app'e SON </body> önüne gömülür).
+   input[type=date] bulunduğunda metin kutusuna çevrilir; kod için davranış aynı kalır:
+   .value okuması ISO (YYYY-AA-GG) ya da "" döner, ISO yazılınca GG.AA.YY gösterilir, .type hâlâ "date" der.
+   Giriş: 011026 · 1.10.26 · 01/10/2026 · 01-10-26 → 01.10.26. Eksik/geçersiz yazımda input/change olayı
+   koda iletilmez (yarım tarih kaydedilmez); odaktan çıkınca geçersizse önceki değere döner. */
+(function(){
+  if(window.ARB_TYY) return;
+  var D=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value");
+  var TD=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"type");
+  function p2(n){ n=String(n); return n.length<2?"0"+n:n; }
+  function isoOk(y,m,d){ var x=new Date(+y,+m-1,+d); return x.getFullYear()==+y&&x.getMonth()==+m-1&&x.getDate()==+d; }
+  function iso2d(s){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s==null?"":s)); return m?m[3]+"."+m[2]+"."+m[1].slice(2):(s==null?"":String(s)); }
+  function d2iso(s){ s=String(s==null?"":s).trim(); if(!s) return "";
+    var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s); if(m) return isoOk(m[1],m[2],m[3])?s:null;
+    m=/^(\d{1,2})[.\/\-](\d{1,2})[.\/\-](\d{2}|\d{4})$/.exec(s)||/^(\d{2})(\d{2})(\d{2}|\d{4})$/.exec(s); if(!m) return null;
+    var y=m[3].length==2?"20"+m[3]:m[3]; if(!isoOk(y,m[2],m[1])) return null;
+    return y+"-"+p2(m[2])+"-"+p2(m[1]); }
+  function conv(el){
+    if(!el||el.__tyy) return el; el.__tyy=1;
+    var v=D.get.call(el);
+    TD.set.call(el,"text");
+    Object.defineProperty(el,"type",{configurable:true,get:function(){return "date";},set:function(){}});
+    Object.defineProperty(el,"value",{configurable:true,
+      get:function(){ var r=d2iso(D.get.call(el)); return r==null?"":r; },
+      set:function(x){ D.set.call(el,iso2d(x)); el.__tyyOk=D.get.call(el); }});
+    el.classList.add("tarih-yy"); el.setAttribute("data-tarih","1");
+    if(!el.placeholder) el.placeholder="GG.AA.YY";
+    el.setAttribute("inputmode","numeric"); el.setAttribute("autocomplete","off"); el.maxLength=10;
+    D.set.call(el,iso2d(v)); el.__tyyOk=D.get.call(el);
+    return el; }
+  function scan(root){ if(!root||!root.querySelectorAll) return;
+    if(root.tagName==="INPUT"&&TD.get.call(root)==="date") conv(root);
+    var a=root.querySelectorAll('input[type="date"]'); for(var i=0;i<a.length;i++) conv(a[i]); }
+  function gate(e){ var el=e.target; if(!el||!el.__tyy) return;
+    if(e.type==="input"){ e.stopImmediatePropagation(); return; }  /* yazarken kayıt yok; yalnız change (odaktan çıkış) */
+    var raw=D.get.call(el), r=d2iso(raw);
+    if(r==null){ e.stopImmediatePropagation();
+      if(e.type==="change"){ D.set.call(el,el.__tyyOk||""); } return; }
+    if(e.type==="change"){ D.set.call(el,iso2d(r)); el.__tyyOk=D.get.call(el); } }
+  window.addEventListener("input",gate,true);
+  window.addEventListener("change",gate,true);
+  var st=document.createElement("style");
+  st.textContent="input.tarih-yy{width:8.6ch!important;min-width:0!important;max-width:none!important;box-sizing:content-box!important;padding-left:3px!important;padding-right:3px!important;font-variant-numeric:tabular-nums}";
+  (document.head||document.documentElement).appendChild(st);
+  scan(document);
+  new MutationObserver(function(ms){ for(var i=0;i<ms.length;i++){ var n=ms[i].addedNodes; for(var j=0;j<n.length;j++) if(n[j].nodeType===1) scan(n[j]); } })
+    .observe(document.documentElement,{childList:true,subtree:true});
+  window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
+})();
+</script>
 </body>
 </html>
