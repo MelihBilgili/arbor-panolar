@@ -267,7 +267,7 @@ function render(){
   const ozSon=[...ST.oz].sort((x,y)=>x.tarih<y.tarih?1:-1)[0]||null;
   const ozBy={}; ST.oz.forEach(x=>ozBy[x.tarih]=x);
   const vals={}; ST.snap.forEach(x=>{ (vals[x.sira]=vals[x.sira]||{})[x.tarih]=x.alacak; });
-  const rows=ST.g.map(r=>({id:r.id,sira:r.sira,firma:r.firma||"",proje:r.proje||"—",g:r.alacak==null?null:Number(r.alacak),v:vals[r.sira]||{},yd:r.updated_by==="YD-KAZANDIK",raw:r}));
+  const rows=ST.g.map(r=>({id:r.id,sira:r.sira,firma:r.firma||"",proje:r.proje||"—",g:r.alacak==null?null:Number(r.alacak),v:vals[r.sira]||{},yd:r.updated_by==="YD-KAZANDIK"||r.updated_by==="ELLE"/* SELARB-ELLE-261001: elle eklenen boş satır gizlenmez */,raw:r}));
   /* Önceki sütunlar: en yeni (dates[0]) açık, diğerleri ▸ ile açılır */
   const oc=(i)=>i===0?"":" sa-old";
   let hidden=0;
