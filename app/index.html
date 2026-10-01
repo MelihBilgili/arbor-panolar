@@ -2443,10 +2443,10 @@ async function loadObrapor(tgt){
   const kar=obWeeksOpen?"▾":"▸";
   /* OB-SUTUN (2026-09-18): Durum 20ch→12ch (-%40), Öncelik 20ch→6ch (-%70);
      "Son Değişim Özeti" sütunu tamamen kaldırıldı (veri alanı `degisim_ozet` duruyor). */
-  let cg=`<col class="k35"><col class="kdur"><col class="konc"><col class="k100">`
+  let cg=`<col class="k35"><col class="kagr"><col class="kdur"><col class="konc"><col class="k100">`
     + (obWeeksOpen?haftaKeys.map(()=>`<col class="k40">`).join(""):"")
     + `<col class="k60">`;
-  let hd=`<th>Konu</th><th>Durum</th><th>Öncelik</th><th class="obwh" id="ob-wk" title="Geçmiş hafta notlarını aç/kapa">Son ÖB Notları <span class="ahcar">${kar}</span></th>`
+  let hd=`<th>Konu</th><th class="thsm" title="Ağırlık (en az 100) — panodan düzenlenir, ÖB formuna salt-okur gider"><span class="thw">Ağırlık (min 100)</span></th><th>Durum</th><th>Öncelik</th><th class="obwh" id="ob-wk" title="Geçmiş hafta notlarını aç/kapa">Son ÖB Notları <span class="ahcar">${kar}</span></th>`
     + (obWeeksOpen?haftaKeys.map(k=>`<th class="thsm" title="${dgun(weekMap[k].maxDate)}"><span class="thw">${isoWk(weekMap[k].maxDate)}. Hafta ÖB Notu</span></th>`).join(""):"")
     + `<th>Aylık Değişim Özeti</th>`;
   let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3>`
@@ -2454,11 +2454,11 @@ async function loadObrapor(tgt){
     +`<colgroup>${cg}</colgroup>`
     +`<thead><tr>${hd}</tr></thead><tbody>`;
   iRows.forEach(r=>{
-    ib+=`<tr>${cx(r.konu,"sb")}${cx(r.durum)}${cx(r.oncelik)}${cx(r.ob_notlari)}`
+    ib+=`<tr>${cx(r.konu,"sb")}<td class="num"><input class="obagr" data-id="${r.id}" type="text" inputmode="numeric" size="1" value="${r.agirlik==null?100:Number(r.agirlik)}"></td>${cx(r.durum)}${cx(r.oncelik)}${cx(r.ob_notlari)}`
       + (obWeeksOpen?haftaKeys.map(k=>cx((weekMap[k].notes||{})[String(r.id)])).join(""):"")
       + `${cx(r.aylik_ozet)}</tr>`;
   });
-  if(!iRows.length) ib+=`<tr><td colspan="5" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
+  if(!iRows.length) ib+=`<tr><td colspan="6" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
   ib+=`</tbody></table></div>`;
   /* AYLIK FAALİYET — Takipteki İşler'in hemen altı (27.08.2026): ÖB'nin kapanan aya ilişkin
      yorumu (ob_aylik_faaliyet.ob_yorum, ÖB formundan girilir) + o ayda Selectron'a yapılan
@@ -2608,6 +2608,7 @@ async function loadObrapor(tgt){
   view.innerHTML=`<style>
     table.obt{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
     table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k40{width:40ch}table.obt col.k60{width:48ch}table.obt col.k100{width:59.5ch}
+    table.obt col.kagr{width:8ch}table.obt input.obagr{width:6ch;text-align:right;font:inherit;padding:1px 4px;border:1px solid #cdd6df;border-radius:4px;background:#fffdf5} /* OB-AGIRLIK */
     table.obt col.kdur{width:12ch}table.obt col.konc{width:6ch}
     table.obt th.obwh{cursor:pointer;background:#22456b}
     table.obt th.obwh:hover{background:#2d5a8a}
@@ -2635,6 +2636,11 @@ async function loadObrapor(tgt){
     .obmail .msg{font-size:12px}.obmail .msg.ok{color:#0a6b3f;font-weight:600}.obmail .msg.err{color:#b40000;font-weight:600}
   </style>
   ${ib}`;
+  /* OB-AGIRLIK (01.10.2026, Melih): Takipteki işler ağırlığı panoda düzenlenir (en az 100) → ob_isler.agirlik; ÖB formu salt-okur gösterir */
+  view.querySelectorAll("input.obagr").forEach(el=>{ el.onchange=async()=>{
+    let v=parseFloat(String(el.value).replace(",",".")); if(isNaN(v)||v<100){ v=100; }
+    el.value=v; const {error}=await sb.from("ob_isler").update({agirlik:v}).eq("id",+el.dataset.id);
+    if(error){ el.style.background="#ffe5e5"; el.title="Hata: "+error.message; } else loadObrapor(tgt); }; });
   const wh=document.getElementById("ob-wk");
   if(wh) wh.onclick=()=>{ obWeeksOpen=!obWeeksOpen; loadObrapor(tgt); };
   const mb=document.getElementById("ob-mail-btn");
