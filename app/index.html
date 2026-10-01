@@ -1697,10 +1697,10 @@ async function loadEgitim(){
   Object.keys(pG).sort((a,b)=>a.localeCompare(b,"tr")).forEach(bol=>{
     const rows=pG[bol].slice().sort((a,b)=>(a.kod||"").localeCompare(b.kod||"","tr"));
     const bG=rows.filter(r=>gercList(r).some(x=>x.slice(0,4)==YIL)).length;
-    planHtml+=`<div class="secH">${esc(bol)} (${rows.length}) <span class="muted" style="font-weight:400">· bu yıl gerçekleşen konu: ${bG}/${rows.length}</span></div><div class="scroll"><table class="egt"><colgroup><col class="ek"><col class="ekonu"><col class="e3"><col class="e4"><col class="e4"><col class="e3"><col class="e5"></colgroup><thead><tr><th>Kod</th><th>Konu</th><th>Periyot</th><th>Yayım Tarihi</th><th>Son Gerçekleşen</th><th>Bu Yıl (adet)</th><th>Sıradaki Eğitim</th></tr></thead><tbody>`;
+    planHtml+=`<div class="secH">${esc(bol)} (${rows.length}) <span class="muted" style="font-weight:400">· bu yıl gerçekleşen konu: ${bG}/${rows.length}</span></div><div class="scroll"><table class="egt"><colgroup><col class="ek"><col class="ekonu"><col class="e3"><col class="e4"><col class="e4"><col class="e3"><col class="e5"></colgroup><thead><tr><th>Kod</th><th>Konu</th><th>Periyot</th><th>Yayım Tarihi</th><th>Son Gerçekleşen</th><th class="egc">Bu Yıl (adet)</th><th>Sıradaki Eğitim</th></tr></thead><tbody>`;
     rows.forEach(r=>{
       const sd=siradaki(r), gec = sd && sd<today;
-      planHtml+=`<tr><td>${esc(r.kod||"—")}</td><td title="${esc(r.konu||"")}">${esc(r.konu||"—")}</td><td>${esc(r.periyot||"—")}</td><td>${dOnly(r.yayim_tarihi)}</td><td>${sonGerc(r)?dOnly(sonGerc(r)):"—"}</td><td class="num">${gercList(r).filter(x=>x.slice(0,4)==YIL).length||"—"}</td><td${gec?' style="color:#b23a2e;font-weight:600"':''}>${sd?fmt(sd):"—"}${gec?" (gecikmiş)":""}</td></tr>`;
+      planHtml+=`<tr><td>${esc(r.kod||"—")}</td><td title="${esc(r.konu||"")}">${esc(r.konu||"—")}</td><td>${esc(r.periyot||"—")}</td><td>${dOnly(r.yayim_tarihi)}</td><td>${sonGerc(r)?dOnly(sonGerc(r)):"—"}</td><td class="egc">${gercList(r).filter(x=>x.slice(0,4)==YIL).length||"—"}</td><td${gec?' style="color:#b23a2e;font-weight:600"':''}>${sd?fmt(sd):"—"}${gec?" (gecikmiş)":""}</td></tr>`;
     });
     planHtml+="</tbody></table></div>";
   });
@@ -1751,6 +1751,7 @@ async function loadEgitim(){
      .egozh{font-weight:700;color:#16324f;margin-bottom:4px}
      .egozn{display:flex;gap:16px;font-size:12px;margin-bottom:6px}.egozn b{font-size:18px;color:#16324f;margin-right:3px}
      .egozl{max-height:220px;overflow:auto}
+     /* EGITIM-ADET-ORTA (01.10.2026): Bu Yıl (adet) başlık+değer ortalı */ table.egt th.egc,table.egt td.egc{text-align:center}
      tr.egayh{cursor:pointer;background:#f3f6fa;font-weight:600;color:#16324f}tr.egayh:hover{background:#e8eef5}tr.egayh .egok{display:inline-block;width:1.2em}
      table.egt col.ek{width:14ch}table.egt col.ekonu{width:60ch}table.egt col.e3{width:14ch}table.egt col.e4{width:13ch}table.egt col.e5{width:20ch}
     </style>
