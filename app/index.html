@@ -2291,9 +2291,10 @@ async function loadSelArb(tgt){
   const canliBy={}; guncel.forEach(x=>{ canliBy[x.sira]=x.alacak; });
   /* SELARB-KONTRAT-PANO (01.10.2026, Melih): Firma sağında Sel-Arb formundaki 10 sütun (salt-okur).
      Serbest = sel_arb_guncel kolonları; Avenant/Tahsilat/Yapılmış Situ = view sel_arb_ob_toplam (ÖB formu, proje adı eşlemesi). */
-  const KXP=[["kontrat","Kontrat","n"],["avenant","Avenant","o"],["ceza","Ceza","n"],["dgd","DGD","n"],["rg","RG","n"],
-    ["tahsilat","Tahsilat","o"],["situ","Yapılmış Situ","o"],["yapilacak_situ","Yapılacak Situ","n"],
-    ["ilk_odeme_tarih","Beklenen İlk Ödeme Tarihi","d"],["ilk_odeme_tutar","Beklenen İlk Ödeme Tutarı","n"]];
+  /* SELARB-BASLIK-261001 (Melih): (€) başlıklar; Beklenen İlk Ödeme başlıkları iki satır, küçük punto, dar sütun */
+  const KXP=[["kontrat","Kontrat","n"],["avenant","Avenants (€)","o"],["ceza","Ceza (€)","n"],["dgd","DGD (€)","n"],["rg","RG (€)","n"],
+    ["tahsilat","Tahsilat (€)","o"],["situ","Yapılmış Situ (€)","o"],["yapilacak_situ","Yapılacak Situ (€)","n"],
+    ["ilk_odeme_tarih","Beklenen İlk\nÖdeme Tarihi","d"],["ilk_odeme_tutar","Beklenen İlk\nÖdeme Tutarı (€)","n"]];
   const kxKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
   const obBy={}, obS={}; ((obt&&!obt.error&&obt.data)||[]).forEach(x=>{ obBy[kxKey(x.proje_key)]=x; obS[x.sira]=x; });   /* SELARB-DEVIR-261001 */
   const gBy={}; guncel.forEach(x=>gBy[x.sira]=x);
@@ -2387,13 +2388,14 @@ async function loadSelArb(tgt){
   .sa-wrap th.sa-kxh,.sa-wrap td.sa-kx{text-align:center}
   .sa-wrap thead th.sa-kxh{background:#2c5378}
   .sa-wrap thead th.sa-kxh.sa-kxo{background:#50657a}
-  .sa-wrap td.sa-kx.sa-kxo{background:#f3f5f8} /* SELARB-CARI-AY: sarı zemin kaldırıldı, diğer sütunlarla aynı renk */
+  .sa-wrap td.sa-kx.sa-kxo{background:#f3f5f8}
+  .sa-wrap thead th.sa-sm{font-size:9.5px;line-height:11px;white-space:normal;padding:1px 3px}   /* SELARB-BASLIK-261001 */ /* SELARB-CARI-AY: sarı zemin kaldırıldı, diğer sütunlarla aynı renk */
   </style>`;
   const btn=hiddenCount?`<button class="btn" id="sa-toggle" data-on="0">Boş-alacak satırları göster (${hiddenCount})</button>`:"";
   const pyS=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","sel_arb").limit(1);
   const pyAtS=(pyS&&!pyS.error&&pyS.data&&pyS.data[0])?pyS.data[0].yayin_at:null;
   body.innerHTML=`${style}<div class="stamp">Son güncelleme: ${pyAtS?dOnly(pyAtS):esc(stamp)}</div>${btn?`<div class="hint">${btn}</div>`:""}<div class="sa-wrap scroll"><table><thead>`
-    +`<tr><th rowspan="2">${esc(basliklar[0]||"Proje")}</th><th rowspan="2">${esc(basliklar[1]||"Firma")}</th>${KXP.map(k=>`<th rowspan="2" class="sa-kxh${k[2]==="o"?" sa-kxo":""}" title="${k[2]==="o"?"ÖB Faaliyet formundan":"Sel-Arb formundan"}">${esc(k[1])}</th>`).join("")}<th rowspan="2" class="sa-num sa-canli-h">Cari Ay €</th><th rowspan="2" class="sa-num sa-dh">${esc(dlt)}</th><th colspan="${nd}" class="sa-num" style="text-align:center">Alacak €</th></tr>`
+    +`<tr><th rowspan="2">${esc(basliklar[0]||"Proje")}</th><th rowspan="2">${esc(basliklar[1]||"Firma")}</th>${KXP.map(k=>`<th rowspan="2" class="sa-kxh${k[2]==="o"?" sa-kxo":""}${k[1].indexOf("\n")>=0?" sa-sm":""}" title="${k[2]==="o"?"ÖB Faaliyet formundan":"Sel-Arb formundan"}">${esc(k[1]).replace(/\n/g,"<br>")}</th>`).join("")}<th rowspan="2" class="sa-num sa-canli-h">Cari Ay €</th><th rowspan="2" class="sa-num sa-dh">${esc(dlt)}</th><th colspan="${nd}" class="sa-num" style="text-align:center">Alacak €</th></tr>`
     +`<tr>${dateHdrs}</tr></thead><tbody>${trs}</tbody></table></div>`;
   const tg=document.getElementById("sa-toggle");
   if(tg) tg.onclick=()=>{ const on=tg.dataset.on==="1"; document.querySelectorAll("#"+tgt+" tr.sa-hide").forEach(x=>x.style.display=on?"none":""); tg.dataset.on=on?"0":"1"; tg.textContent=on?`Boş-alacak satırları göster (${hiddenCount})`:`Boş-alacak satırları gizle (${hiddenCount})`; };
