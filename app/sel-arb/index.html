@@ -232,7 +232,7 @@ async function load(){
   ]);
   const e=s.error||o.error||g.error; if(e){ document.getElementById("tbl").innerHTML='<div class="msg err">Hata: '+esc(e.message)+'</div>'; return; }
   ST.snap=s.data||[]; ST.oz=o.data||[]; ST.g=g.data||[];
-  ST.ob={}; ((obt&&!obt.error&&obt.data)||[]).forEach(x=>ST.ob[x.proje_key]=x);   /* SELARB-KONTRAT-260930 */
+  ST.ob={}; ST.obS={}; ((obt&&!obt.error&&obt.data)||[]).forEach(x=>{ ST.ob[x.proje_key]=x; ST.obS[x.sira]=x; });   /* SELARB-DEVIR-261001: satır (sira) bazlı */   /* SELARB-KONTRAT-260930 */
   const pa=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
   document.getElementById("stamp").textContent="Son güncelleme: "+(pa?new Date(pa).toLocaleDateString("tr-TR"):"—");
   render();
@@ -245,7 +245,7 @@ const KX=[["kontrat","Kontrat","in"],["avenant","Avenant","ro"],["ceza","Ceza","
   ["ilk_odeme_tarih","Beklenen İlk Ödeme Tarihi","dt"],["ilk_odeme_tutar","Beklenen İlk Ödeme Tutarı (€)","in"]];
 const kKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kObKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
-const kOb=r=>{ const k=kKey(r.proje); if(ST.ob[k]) return ST.ob[k]; for(const x in ST.ob){ if(kObKey(x)===k) return ST.ob[x]; } return {}; };
+const kOb=r=>{ if(ST.obS&&ST.obS[r.sira]) return ST.obS[r.sira]; const k=kKey(r.proje); if(ST.ob[k]) return ST.ob[k]; for(const x in ST.ob){ if(kObKey(x)===k) return ST.ob[x]; } return {}; };
 const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}" title="${t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"}">${esc(ad)}</th>`).join("");
 const kCells=r=>{ const ob=kOb(r); return KX.map(([f,ad,t])=>{
   if(t==="ro") return `<td class="sa-num sa-ro">${esc(fmt(ob[f]))}</td>`;
@@ -267,7 +267,7 @@ function render(){
   let hidden=0;
   const tr=rows.map(r=>{
     const lv=r.v[last]==null?null:Number(r.v[last]);
-    const bos=!(r.g) && !(lv) && !r.yd && !kDolu(r.raw);   /* PSEL-260930: YD'den yeni gelen proje gizlenmez */
+    const bos=!(r.g) && !(lv) && !r.yd;   /* SELARB-DEVIR-261001: kontrat vb. tüm satırlarda dolu → gizleme yine alacak bazlı */   /* PSEL-260930: YD'den yeni gelen proje gizlenmez */
     if(bos) hidden++;
     const hide=bos&&!ST.showEmpty;
     return `<tr data-id="${r.id}"${hide?' style="display:none"':''}>`
