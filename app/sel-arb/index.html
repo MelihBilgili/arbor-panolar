@@ -56,6 +56,11 @@
   /* SELARB-KONTRAT-ORTA (01.10.2026, Melih): yeni sütunlarda başlık, hücre ve giriş ortalı */
   .sa-wrap th.sa-k,.sa-wrap th.sa-ro,td.sa-x,td.sa-ro{text-align:center}
   td.sa-x input,td.sa-x input[type=date]{text-align:center}
+  /* SELARB-BASLIK-261001 */
+  .sa-wrap thead th.sa-sm{font-size:9.5px;line-height:11px;white-space:normal;padding:1px 3px}
+  td.sa-x input[data-f=ilk_odeme_tarih]{width:10.5ch;font-size:10px;padding:0 1px}
+  td.sa-x input[data-f=ilk_odeme_tutar]{width:8ch;padding:1px 2px}
+  td.sa-x:has(input[data-f^=ilk_odeme]){padding:2px 2px}
   @keyframes ok2{from{background:#c8f0d4}to{background:#fff}}
 </style>
 </head>
@@ -240,13 +245,14 @@ async function load(){
 /* SELARB-KONTRAT-260930 (Melih): Firma sağında sözleşme/ödeme sütunları.
    in = serbest (sel_arb_guncel kolonları), ro = ÖB Faaliyet formundan proje bazlı toplam (view sel_arb_ob_toplam:
    Avenant = ob_avenant, Tahsilat = ob_tahsilat, Yapılmış Situ = ob_situation 'İptal Edildi' hariç; eşleme proje adı, büyük/küçük harf duyarsız) */
-const KX=[["kontrat","Kontrat","in"],["avenant","Avenant","ro"],["ceza","Ceza","in"],["dgd","DGD","in"],["rg","RG","in"],
-  ["tahsilat","Tahsilat","ro"],["situ","Yapılmış Situ","ro"],["yapilacak_situ","Yapılacak Situ","in"],
-  ["ilk_odeme_tarih","Beklenen İlk Ödeme Tarihi","dt"],["ilk_odeme_tutar","Beklenen İlk Ödeme Tutarı (€)","in"]];
+/* SELARB-BASLIK-261001 (Melih): (€) başlıklar; Beklenen İlk Ödeme başlıkları iki satır (\n → <br>), küçük punto, dar sütun */
+const KX=[["kontrat","Kontrat","in"],["avenant","Avenants (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
+  ["tahsilat","Tahsilat (€)","ro"],["situ","Yapılmış Situ (€)","ro"],["yapilacak_situ","Yapılacak Situ (€)","in"],
+  ["ilk_odeme_tarih","Beklenen İlk\nÖdeme Tarihi","dt"],["ilk_odeme_tutar","Beklenen İlk\nÖdeme Tutarı (€)","in"]];
 const kKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kObKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kOb=r=>{ if(ST.obS&&ST.obS[r.sira]) return ST.obS[r.sira]; const k=kKey(r.proje); if(ST.ob[k]) return ST.ob[k]; for(const x in ST.ob){ if(kObKey(x)===k) return ST.ob[x]; } return {}; };
-const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}" title="${t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"}">${esc(ad)}</th>`).join("");
+const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}${ad.indexOf("\n")>=0?" sa-sm":""}" title="${t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"}">${esc(ad).replace(/\n/g,"<br>")}</th>`).join("");
 const kCells=r=>{ const ob=kOb(r); return KX.map(([f,ad,t])=>{
   if(t==="ro") return `<td class="sa-num sa-ro">${esc(fmt(ob[f]))}</td>`;
   if(t==="dt") return `<td class="sa-x"><input type="date" data-id="${r.id}" data-f="${f}" value="${esc(r[f]||"")}"></td>`;
