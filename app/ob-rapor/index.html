@@ -337,6 +337,7 @@ async function loadIsler(){
   const {data,error}=await sb.from("ob_isler").select("*").order("arsiv").order("id");
   if(error){ document.getElementById("iList").innerHTML='<div class="load">Hata: '+esc(error.message)+'</div>'; return; }
   IROWS=data||[]; renderIsler();
+  try{ if(document.getElementById("afBox")&&document.getElementById("afBox").innerHTML) afRender(); }catch(e){} /* OB-AGIRLIK2: puan ağırlıklarla yeniden */
 }
 function durumOpts(v){ return OBI_DURUM.map(d=>'<option'+(d===v?' selected':'')+'>'+esc(d)+'</option>').join(""); }
 function oncelikOpts(v){ const c=(v==null||v==="")?"-":String(v); return OBI_ONCELIK.map(d=>'<option'+(d===c?' selected':'')+'>'+esc(d)+'</option>').join(""); }
@@ -488,10 +489,14 @@ function afRender(){
   document.getElementById("afBox").innerHTML=
      '<div class="afr"><b>Dönem:</b> <span>'+afEsc(afDonemAd())+'</span></div>'
     /* AF-PUAN (2026-09-24): Takipteki işler puanı (ÖB performans primi, OB-PRIM2 ile aynı formül) */
-    +(function(){ const n=x=>String(x||"").split("\n").map(y=>y.trim()).filter(Boolean).length; const tm=n(r.tamamlanan), gl=n(r.gelisme), ys=n(r.yerinde_sayan);
-       const p=Math.min(100,5*tm+2*gl); /* OB-TK100 (01.10.2026): tavan 100 */
-       return '<div class="afr"><span class="afpuan">Takipteki İşler Puanı: '+p+' / 100</span>'
-        +'<div style="margin-top:4px;color:#3d4a57">Hesap yöntemi: Tamamlanan her iş 5 puan, ilerleyen (gelişme kaydedilen) her iş 2 puan, yerinde sayan iş 0 puan; en çok 100 puan. Rutin öncelikli işler hesaba girmez. Dönem: '+tm+' tamamlanan × 5 + '+gl+' ilerleyen × 2 = '+(5*tm+2*gl)+(5*tm+2*gl>100?' (100 ile sınırlı)':'')+'; yerinde sayan '+ys+'.</div></div>'; })()
+    +(function(){ const L=x=>String(x||"").split("\n").map(y=>y.trim()).filter(Boolean); const tmL=L(r.tamamlanan), glL=L(r.gelisme); const tm=tmL.length, gl=glL.length, ys=L(r.yerinde_sayan).length;
+       /* OB-AGIRLIK2 (01.10.2026): tamamlanan 3 × ağırlık/100, ilerleyen 0,5 × ağırlık/100; en çok 50 (ağırlık ob_isler.agirlik, konu eşleşmesi, yoksa 100) */
+       const agW={}; (typeof IROWS!=="undefined"?IROWS:[]).forEach(x=>{ agW[String(x.konu||"").trim()]=Number(x.agirlik)||100; });
+       const tmW=tmL.reduce((t,k)=>t+(agW[k]||100),0), glW=glL.reduce((t,k)=>t+(agW[k]||100),0);
+       const f2=v=>Number(v).toLocaleString("tr-TR",{maximumFractionDigits:2});
+       const ham=3*tmW/100+0.5*glW/100, p=f2(Math.min(50,ham));
+       return '<div class="afr"><span class="afpuan">Takipteki İşler Puanı: '+p+' / 50</span>'
+        +'<div style="margin-top:4px;color:#3d4a57">Hesap yöntemi: Tamamlanan her iş 3 × ağırlık/100, ilerleyen (gelişme kaydedilen) her iş 0,5 × ağırlık/100 puan, yerinde sayan iş 0 puan; en çok 50 puan. Ağırlık (en az 100) panodan belirlenir. Rutin öncelikli işler hesaba girmez. Dönem: '+tm+' tamamlanan (ağırlık toplamı '+f2(tmW)+') × 3/100 + '+gl+' ilerleyen (ağırlık toplamı '+f2(glW)+') × 0,5/100 = '+f2(ham)+(ham>50?' (50 ile sınırlı)':'')+'; yerinde sayan '+ys+'.</div></div>'; })()
     +'<div class="afr"><b>Tamamlanan İşler:</b>'+afListe(r.tamamlanan)+'</div>'
     +'<div class="afr"><b>Gelişme Kaydedilen İşler:</b>'+afListe(r.gelisme)+'</div>'
     +'<div class="afr"><b>Gerçekleşen Faaliyet:</b> <div style="margin-top:2px">'+(r.faaliyet?afEsc(r.faaliyet):'<span style="color:#b0bac4">—</span>')+'</div></div>'
