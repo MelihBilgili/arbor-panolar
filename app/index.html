@@ -2490,7 +2490,7 @@ async function loadObrapor(tgt){
   ib+=`<h3 class="sec">Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler <span class="muted">(${esc(afAd)})</span></h3>
     <div class="obaf">${odTbl}</div>`;
   /* DEVLET-DESTEK (2026-09-24, Melih): Selectron ödemeleri primi 1/10.000 (tutar_eur toplamı) + Devlet Destek
-     Başvuruları bloğu (devlet_destek, ÖB formundan). İade primi = sonuç tarihi kapanan aya düşen iade toplamı × 5/1000. */
+     Başvuruları bloğu (devlet_destek, ÖB formundan). İade primi = sonuç tarihi kapanan aya düşen iade toplamı × 1/100 (DD-PRIM-1YUZDE 02.10.2026; önce 5/1000). */
   const selEur=odR.reduce((t,r)=>t+(Number(r.tutar_eur)||0),0);
   if(odR.length) ib+=`<div class="muted" style="font-size:12px;margin:4px 2px 0">Ödeme toplamı ${nf(selEur)} € · ÖB primi (1/10.000): <b>${nf(selEur/10000)} €</b></div>`;
   const ddq=await sb.from("devlet_destek").select("*").order("son_basvuru",{ascending:false,nullsFirst:true}).order("id",{ascending:false}); /* DD-SIRA */
@@ -2504,14 +2504,14 @@ async function loadObrapor(tgt){
   let ddTbl=`<div class="scroll"><table class="obod"><thead><tr><th>Test</th><th>Proje</th><th>Test Tarihi</th><th class="num">Test Tutarı</th><th>Son Başvuru</th><th>Başvuru</th><th>Durum</th><th>Sonuç</th><th class="num">İade (₺)</th><th>Açıklama</th></tr></thead><tbody>`
     + (ddq&&ddq.error?`<tr><td colspan="10" style="color:#b40000">Okunamadı: ${esc(ddq.error.message)}</td></tr>`:ddR.length?ddR.map(r=>`<tr><td>${esc(r.test||"")}</td><td>${esc(r.proje||"")}</td><td>${esc(r.test_tarihi||"")}</td><td class="num">${r.test_tutari==null?"":nf(r.test_tutari)+" "+esc(r.test_pb||"")}</td><td${ddRenk(r)}>${ddG(r.son_basvuru)}</td><td>${ddG(r.basvuru_tarihi)}</td><td>${esc(r.durum||"")}</td><td>${ddG(r.sonuc_tarihi)}</td><td class="num">${r.iade_tutari==null?"":nf(r.iade_tutari)}</td><td>${esc(r.aciklama||"")}</td></tr>`).join(""):`<tr><td colspan="10" class="muted">Kayıt yok.</td></tr>`)
     + `</tbody></table></div>`
-    + `<div class="muted" style="font-size:12px;margin:4px 2px 0">${esc(afAd)} iade toplamı ${nf(ddAyTop)} ₺ · ÖB primi (5/1000): <b>${nf(ddAyTop*0.005)} ₺</b> · ${ddYil} yılı iade toplamı ${nf(ddYilTop)} ₺</div>`;
+    + `<div class="muted" style="font-size:12px;margin:4px 2px 0">${esc(afAd)} iade toplamı ${nf(ddAyTop)} ₺ · ÖB primi (1/100): <b>${nf(ddAyTop*0.01)} ₺</b> · ${ddYil} yılı iade toplamı ${nf(ddYilTop)} ₺</div>`;
   ib+=`<h3 class="sec">Devlet Destek Başvuruları <span class="muted">(${ddR.length})</span></h3>
     <div class="obaf" style="max-width:none">${ddTbl}</div>`;
   /* ===== OB-DPGF + OB-PRIM (2026-09-24, Melih; OB-PRIM2 güncel): DPGF's - Situations - Avenants bloğu (ob_dpgf/ob_situation/ob_avenant,
      tablolar alt alta) ve ÖB Performans Primi. Dönem = kapanan ay (afDon). Puan: Takipteki işler 50 (OB-AGIRLIK2: tamamlanan 3×ağırlık/100, ilerleyen 0,5×ağırlık/100, tavan 50)
      · Zamanında güncelleme 10 (ÖB Faaliyet ve Sel-Arb ayrı ayrı 11 − ayın kaçıncı iş günü; ortalama) · MK notu 10 · MB notu 10
      · (OB-PRIM3: DPGF/Situation puandan çıktı; toplam tavan 80). Ek primler: DPGF 2 €/adet + €/2000 · Situation 1 €/adet + €/1000 (İptal hariç) · Selectron € × 1/10.000 · Avenants € × 5/1000
-     · Devlet destek iadesi ₺ × 5/1000. ===== */
+     · Devlet destek iadesi ₺ × 1/100. ===== */
   const [dpq,stq,paq,ppq,pyq2,kurOB,avq,pvq]=await Promise.all([ /* OB-AVENANT */
     sb.from("ob_dpgf").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}),
     sb.from("ob_situation").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}),
@@ -2582,7 +2582,7 @@ async function loadObrapor(tgt){
   const acik=a=>a==="mbsel"?mbSel:a.replace("dph",pin("ob-dph",PP.dpgf_hedef)+" €").replace("sth",pin("ob-sth",PP.situation_hedef)+" €");
   const PTAVAN=KAL.reduce((t,k)=>t+k[1],0); /* tavan = kriter azamileri toplamı (80) */
   const taban=PP.taban_prim, perfTL=taban>0?taban*puan/PTAVAN:null;
-  const selPrimE=selEur/10000, ddPrimTL=ddAyTop*0.005, eurTL=kurOB&&kurOB.TL>0?kurOB.TL:null;
+  const selPrimE=selEur/10000, ddPrimTL=ddAyTop*0.01, eurTL=kurOB&&kurOB.TL>0?kurOB.TL:null;
   const avPrimE=avAy*0.005;
   const pvPrimE=2*pvN+pvAy/1000; /* OB-PVR: adet × 2 € + kontrat toplamı / 1000 */
   const topTL=(perfTL||0)+ddPrimTL+(eurTL?(selPrimE+avPrimE+dpPrimE+stPrimE+pvPrimE)*eurTL:0);
@@ -2598,7 +2598,7 @@ async function loadObrapor(tgt){
      <tr><td>Situation primi = ${stN} adet × 1 € + ${nf(stAy)} € / 1000 <span class="muted">(İptal Edildi hariç)</span></td><td class="num">${nf(stPrimE)} €${eurTL?` (${nf(stPrimE*eurTL)} ₺)`:""}</td></tr>
      <tr><td>Avenants primi = ${nf(avAy)} € × 5/1000</td><td class="num">${nf(avPrimE)} €${eurTL?` (${nf(avPrimE*eurTL)} ₺)`:""}</td></tr>
      <tr><td>PV's de Réception primi = ${pvN} adet × 2 € + ${nf(pvAy)} € / 1000</td><td class="num">${nf(pvPrimE)} €${eurTL?` (${nf(pvPrimE*eurTL)} ₺)`:""}</td></tr>
-     <tr><td>Devlet destek primi = ${nf(ddAyTop)} ₺ × 5/1000</td><td class="num">${nf(ddPrimTL)} ₺</td></tr>
+     <tr><td>Devlet destek primi = ${nf(ddAyTop)} ₺ × 1/100</td><td class="num">${nf(ddPrimTL)} ₺</td></tr>
      <tr class="itot"><td>TOPLAM PRİM${eurTL?` <span class="muted" style="font-weight:400">(1 € = ${nf(eurTL)} ₺)</span>`:" (€ kısmı hariç — kur alınamadı)"}</td><td class="num">${nf(topTL)} ₺</td></tr>
     </tbody></table></div><span class="msg" id="ob-prim-msg"></span></div>`;
   try{ sb.from("ob_prim_ay").upsert({donem:afDon,toplam_puan:Math.round(puan*100)/100,updated_at:new Date().toISOString(),
