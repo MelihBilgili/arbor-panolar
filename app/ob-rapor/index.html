@@ -272,10 +272,12 @@ window.ARB_KISI_AL=function(em){ try{ var k=JSON.parse(localStorage.getItem("arb
 /* ===== ARBOR FORM KAPISI (2026-08-20) — anon erisim kapali, rol hesabiyla giris ===== */
 const ARB_ROLE_EMAIL = "ob.form@arbor.com.tr";
 const ARB_STORE = "arbform_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
-const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
+/* JWT-GELECEK-RETRY (02.10.2026): yeni oturumun ilk isteklerinde Supabase sunucu saati farki PGRST303 verebilir -> 1,5 sn sonra bir kez tekrar */
+var ARB_RFETCH = async function(u,o){ var r=await fetch(u,o); if(r.status===401){ try{ var j=await r.clone().json(); if(j&&j.code==="PGRST303"){ await new Promise(function(z){setTimeout(z,1500);}); return fetch(u,o); } }catch(e){} } return r; };
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE},global:{fetch:ARB_RFETCH}});
 const ARB_MB = "int@arbor.com.tr";
 /* panolarin varsayilan oturumu (ayni origin, varsayilan storageKey) */
-const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{global:{fetch:ARB_RFETCH}});
 var ARB_ACTIVE = ARB_GATE_SB;
 /* form kodu kendi createClient cagirsa bile aktif oturumlu istemci doner */
 supabase.createClient = function(){ return ARB_ACTIVE; };
@@ -489,7 +491,7 @@ function afRender(){
   document.getElementById("afBox").innerHTML=
      '<div class="afr"><b>Dönem:</b> <span>'+afEsc(afDonemAd())+'</span></div>'
     /* AF-PUAN (2026-09-24): Takipteki işler puanı (ÖB performans primi, OB-PRIM2 ile aynı formül) */
-    +(function(){ const L=x=>String(x||"").split("\n").map(y=>y.trim()).filter(Boolean); const tmL=L(r.tamamlanan), glL=L(r.gelisme); const tm=tmL.length, gl=glL.length, ys=L(r.yerinde_sayan).length;
+    +(function(){ /* OB-RUTIN-HARIC (02.10.2026): Rutin öncelikli işler puana girmez */ const rutK=new Set((typeof IROWS!=="undefined"?IROWS:[]).filter(x=>String(x.oncelik==null?"":x.oncelik).trim()==="Rutin").map(x=>String(x.konu||"").trim())); const L=x=>String(x||"").split("\n").map(y=>y.trim()).filter(y=>y&&!rutK.has(y)); const tmL=L(r.tamamlanan), glL=L(r.gelisme); const tm=tmL.length, gl=glL.length, ys=L(r.yerinde_sayan).length;
        /* OB-AGIRLIK2 (01.10.2026): tamamlanan 3 × ağırlık/100, ilerleyen 0,5 × ağırlık/100; en çok 50 (ağırlık ob_isler.agirlik, konu eşleşmesi, yoksa 100) */
        const agW={}; (typeof IROWS!=="undefined"?IROWS:[]).forEach(x=>{ agW[String(x.konu||"").trim()]=Number(x.agirlik)||100; });
        const tmW=tmL.reduce((t,k)=>t+(agW[k]||100),0), glW=glL.reduce((t,k)=>t+(agW[k]||100),0);
