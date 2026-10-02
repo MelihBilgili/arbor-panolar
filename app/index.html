@@ -2547,7 +2547,10 @@ async function loadObrapor(tgt){
   const lst=t=>String(t||"").split("\n").map(x=>x.trim()).filter(Boolean);
   const wOf=k=>oncW[k]||1;
   let tkP=null, tkAcik="Aylık Faaliyet tespiti yok";
-  if(afR){ const tm=lst(afR.tamamlanan), gl=lst(afR.gelisme), ys=lst(afR.yerinde_sayan);
+  /* OB-RUTIN-HARIC (02.10.2026, Melih): Rutin öncelikli işler puana girmez */
+  const rutK=new Set(iRows.filter(r=>String(r.oncelik==null?"":r.oncelik).trim()==="Rutin").map(r=>String(r.konu||"").trim()));
+  const lstR=t=>lst(t).filter(k=>!rutK.has(k));
+  if(afR){ const tm=lstR(afR.tamamlanan), gl=lstR(afR.gelisme), ys=lstR(afR.yerinde_sayan);
     /* OB-AGIRLIK2 (01.10.2026, Melih): her tamamlanan iş 3 × ağırlık/100, her ilerleyen iş 0,5 × ağırlık/100; en çok 50.
        Ağırlık = ob_isler.agirlik (konu eşleşmesi; bulunamazsa 100). OB-TK100'ün 100 tavanı geri alındı. */
     const agW={}; iRows.forEach(r=>{ agW[String(r.konu||"").trim()]=Number(r.agirlik)||100; });
