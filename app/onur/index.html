@@ -158,10 +158,12 @@ window.ARB_KISI_AL=function(em){ try{ var k=JSON.parse(localStorage.getItem("arb
 /* ===== ARBOR FORM KAPISI (2026-08-20) — anon erisim kapali, rol hesabiyla giris ===== */
 const ARB_ROLE_EMAIL = "onur.form@arbor.com.tr";
 const ARB_STORE = "arbform_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
-const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
+/* JWT-GELECEK-RETRY (02.10.2026): yeni oturumun ilk isteklerinde Supabase sunucu saati farki PGRST303 verebilir -> 1,5 sn sonra bir kez tekrar */
+var ARB_RFETCH = async function(u,o){ var r=await fetch(u,o); if(r.status===401){ try{ var j=await r.clone().json(); if(j&&j.code==="PGRST303"){ await new Promise(function(z){setTimeout(z,1500);}); return fetch(u,o); } }catch(e){} } return r; };
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE},global:{fetch:ARB_RFETCH}});
 const ARB_MB = "int@arbor.com.tr";
 /* panolarin varsayilan oturumu (ayni origin, varsayilan storageKey) */
-const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{global:{fetch:ARB_RFETCH}});
 var ARB_ACTIVE = ARB_GATE_SB;
 /* form kodu kendi createClient cagirsa bile aktif oturumlu istemci doner */
 supabase.createClient = function(){ return ARB_ACTIVE; };
