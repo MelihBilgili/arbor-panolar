@@ -1441,9 +1441,10 @@ async function loadRef(){
   const kc=(kod,f,v,cls)=>`<td${cls?` class="${cls}" title="${esc(v||"")}"`:""}><span class="ed kicell" data-kod="${esc(kod)}" data-f="${f}">${v?esc(v):'—'}</span></td>`;
   const cell=(R,c)=>{
     const m=R.m, mid=m?m.id:"", hide=HIDE(c), dk=`data-mid="${esc(mid)}" data-kod="${esc(R.kod||"")}"`;
-    if(c.t==="kod") return R.kod?`<td class="kod pkod" title="Kod — değişince şifre, maaş-prim ve form yetkileri yeni koda taşınır"><span class="ed kicell" data-kod="${esc(R.kod)}" data-f="kod">${esc(R.kod)}</span></td>`:`<td class="kod pkod muted" title="Kişiler listesinde yok (kodsuz maaş-prim kaydı)">—</td>`;
+    if(c.t==="kod") return R.kod?`<td class="kod pkod" title="Kod — değişince şifre, maaş-prim ve form yetkileri yeni koda taşınır"><span class="ed kicell" data-kod="${esc(R.kod)}" data-f="kod">${esc(R.kod)}</span></td>`:`<td class="kod pkod muted ped" data-k="__kod" ${dk} title="Kod gir — kişi Kişiler listesine eklenir, ardından E-posta/Şifre girilebilir">—</td>`; /* PERSONEL-KODSUZ-ED */
     if(c.t==="ki"){ if(R.kod) return kc(R.kod,c.f,c.f==="sifre"?SIF[R.kod]:R.k[c.f],c.cls);
-      if(c.f==="tam_ad") return `<td class="ped pad" data-k="kisi" ${dk} title="${esc(m.kisi||"")}">${txt(m.kisi)}</td>`; return `<td>${dash}</td>`; }
+      if(c.f==="tam_ad") return `<td class="ped pad" data-k="kisi" ${dk} title="${esc(m.kisi||"")}">${txt(m.kisi)}</td>`;
+      return `<td class="ped${c.cls?" "+c.cls:""}" data-k="__${c.f}" ${dk}>${dash}</td>`; }
     if(c.t==="kidem") return `<td class="num">${m?txt(kidemOf(m)):dash}</td>`;
     if(c.t==="avg") return `<td class="num pavg">${m?fmtN(avgOf(m.id)):dash}</td>`;
     if(c.t==="frm"){ const L=R.kod?KF[R.kod]:null; return `<td class="pfrm">${(L&&L.length)?L.map(f=>'<span class="frm'+(f.ok?" ok":" yok")+'" title="'+esc(f.title)+'">'+esc(f.ad)+'</span>').join(" · "):dash}</td>`; }
@@ -1516,6 +1517,16 @@ async function loadRef(){
   }
   async function save(td,key,val){
     const id=await ensureMid(td);
+    if(key==="__kod"||key==="__email"||key==="__sifre"){ /* PERSONEL-KODSUZ-ED */
+      const mr=MP.find(x=>x.id===id)||{}; let kod=(key==="__kod")?val:null;
+      if(!kod){ kod=(prompt("Önce bu kişiye bir Kod verin (ör. "+String(mr.kisi||"").split(/\s+/).map(w=>w[0]||"").join("").toLocaleUpperCase("tr")+"):")||"").trim(); if(!kod) throw new Error("Kod girilmedi"); }
+      if(KOD_SET.has(kod)) throw new Error("Bu kod zaten kullanılıyor: "+kod);
+      const rec={kod,tam_ad:mr.kisi||kod,updated_at:now()}; if(key==="__email") rec.email=val||null;
+      const r1=await sb.from("kisiler").insert(rec); if(r1.error) throw new Error(r1.error.message);
+      const r2=await sb.from("maas_prim").update({kisi_kod:kod,updated_at:now()}).eq("id",id); if(r2.error) throw new Error(r2.error.message);
+      if(key==="__sifre"&&val){ if(!/^\d{6}$/.test(val)) throw new Error("Kişi eklendi; şifre 6 haneli rakam olmalı.");
+        const r3=await sb.from("kisi_sifre").upsert({kod,sifre:val,updated_at:now()}); if(r3.error) throw new Error(r3.error.code==="23505"?"Kişi eklendi; bu şifre başka bir kişide kullanılıyor.":r3.error.message); }
+      return; }
     if(key.slice(0,4)==="avn:"){ const mk=key.slice(4); if(!AVMAP[id]) AVMAP[id]={}; if(val==="") delete AVMAP[id][mk]; else AVMAP[id][mk]=val;
       if(!Object.keys(AVMAP[id]).length) delete AVMAP[id];
       const has=Object.keys(AVMAP).some(x=>AVMAP[x]&&Object.keys(AVMAP[x]).length);
