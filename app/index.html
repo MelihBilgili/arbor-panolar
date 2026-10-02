@@ -1469,35 +1469,39 @@ async function loadRef(){
     <!-- REF-SADE (23.09.2026): akış satırı, Kişiler başlığı/açıklaması ve tablodan sonraki tüm içerik kaldırıldı -->
     <style>
      .kitbl{border-collapse:collapse;width:auto;font-size:11.5px}
-     .kitbl th,.kitbl td{border-bottom:1px solid #eef1f5;border-right:1px solid #f1f4f8;padding:2px 6px;text-align:left;white-space:nowrap;vertical-align:middle;line-height:15px}
+     .kitbl th,.kitbl td{border-bottom:1px solid #eef1f5;border-right:1px solid #f1f4f8;padding:1px 6px;text-align:left;white-space:nowrap;vertical-align:middle;line-height:11px} /* PERSONEL-SIKI: satır %30 alçak */
      .kitbl thead th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px;line-height:11px;padding:2px 5px;vertical-align:bottom;position:sticky;top:0;z-index:1}
      .kitbl th.num,.kitbl td.num{text-align:right}
      .kitbl th.pavg{background:#0f4a74;cursor:pointer;user-select:none} .kitbl td.pavg{background:#f3f7fb;font-weight:600;color:#16324f}
      .kitbl th.phid{background:#245b85} .kitbl td.phid{background:#f7fafd}
-     .kitbl th.pfrm{background:#334e68} .kitbl td.pfrm{white-space:normal;font-size:10.5px;line-height:14px;max-width:14ch}
-     .kitbl th.pbld{background:#334e68} .kitbl td.pbld{white-space:normal;font-size:10.5px;line-height:14px;max-width:14ch} /* MAIL-BILDIRIM-KONU */
+     .kitbl th.pfrm{background:#334e68} .kitbl td.pfrm{white-space:normal;font-size:9.5px;line-height:10px;max-width:14ch}
+     .kitbl th.pbld{background:#334e68} .kitbl td.pbld{white-space:normal;font-size:9.5px;line-height:10px;max-width:14ch} /* MAIL-BILDIRIM-KONU */
      .kitbl .frm.ok{color:#1c2733;font-weight:600} .kitbl .frm.yok{color:#b40000;font-weight:600}
-     .kitbl td.pnot{white-space:normal;font-size:10.5px;line-height:13px;min-width:29.5ch;max-width:37.5ch} /* MAASPRIM-SATIR-NOT · PERSONEL-ED %33 dar */
+     .kitbl td.pnot{white-space:normal;font-size:9.5px;line-height:9.5px;min-width:29.5ch;max-width:37.5ch} /* MAASPRIM-SATIR-NOT · PERSONEL-ED %33 dar */
      /* PERSONEL-ED · PERSONEL-GEN2 (23.09.2026): Kod %80, Ad %20, E-posta %50 daha dar; ekleme satırı input'ları sütunu genişletmez */
      .kitbl .pkod{width:5ch;max-width:5ch} .kitbl .pad{width:15ch;max-width:15ch;overflow:hidden;text-overflow:ellipsis} .kitbl .pem{width:11ch;max-width:11ch;overflow:hidden;text-overflow:ellipsis}
-     .kitbl .kaddrow input.cell{box-sizing:border-box;min-width:0;width:100%}
+     .kitbl .kaddrow input.cell{box-sizing:border-box;min-width:0;width:100%;padding:0 3px;height:16px}
      .kitbl td.pad .ed,.kitbl td.pem .ed{display:inline;min-width:0}
-     .kitbl td.pav{white-space:normal;font-size:10.5px;max-width:10.4ch}
+     .kitbl td.pav{white-space:normal;font-size:9.5px;line-height:10px;max-width:10.4ch}
      .kitbl td.ped{cursor:text} .kitbl td.ped:hover{outline:1px solid #b9cfe6;outline-offset:-1px}
-     .kitbl td.ped input{width:100%;min-width:6ch;font:inherit;font-size:11px;padding:1px 3px;border:1px solid #2e7d54;border-radius:4px;background:#fffdf0}
+     .kitbl td.ped input{width:100%;min-width:6ch;font:inherit;font-size:11px;padding:0 3px;line-height:11px;border:1px solid #2e7d54;border-radius:4px;background:#fffdf0}
      .kitbl tbody tr:hover td{background:#eef6ff}
      .kitbl .kaddrow td{background:#f6f9fc}
-     .kitbl .kbtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:3px 10px;font-weight:600;cursor:pointer;font-size:11.5px}
+     .kitbl .kbtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:1px 10px;font-weight:600;cursor:pointer;font-size:11.5px}
      .kitbl .kbtn:hover{background:#22456b}
      .kitbl .kdel{border:1px solid #e3b3b3;background:#fff;color:#b40000;border-radius:5px;cursor:pointer;padding:1px 8px}
      .kitbl .kdel:hover{background:#b40000;color:#fff}
      .kitbl .ed{display:inline-block;min-width:40px}
     </style>
-    <div class="scroll"><table class="kitbl"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
+    <div class="scroll" id="prs-scroll"><table class="kitbl"><thead><tr>${th}</tr></thead><tbody>${body}</tbody></table></div>
 `;
   view.querySelectorAll(".kicell").forEach(el=>el.onclick=()=>startKisiEdit(el));
   const _ka=document.getElementById("ki-add"); if(_ka) _ka.onclick=kisiAdd;
   const thA=view.querySelector("th.pavg"); if(thA) thA.onclick=()=>{ PRS_OPEN=!PRS_OPEN; loadRef(); };
+  /* PERSONEL-SIKI: kaydırma kutusu pencere altına kadar uzar (82vh sınırı → altta boşluk kalmaz) */
+  { const prsFit=()=>{ const b=document.getElementById("prs-scroll"); if(!b) return; const t=b.getBoundingClientRect().top;
+      b.style.maxHeight=Math.max(200, window.innerHeight - t - 4)+"px"; };
+    prsFit(); if(!window.__prsFitOn){ window.__prsFitOn=1; window.addEventListener("resize",prsFit); } }
   /* ---- maaş-prim hücre düzenleme ---- */
   const numOf=s=>{ if(s==null) return null; let t=String(s).replace(/[^0-9,.\-]/g,""); if(t==="") return null;
     t=t.replace(/\./g,"").replace(",","."); const v=parseFloat(t); return isNaN(v)?null:v; };
