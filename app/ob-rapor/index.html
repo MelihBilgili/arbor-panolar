@@ -982,7 +982,7 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
   const T={
     ob_dpgf:{tb:"t5",cnt:"c5",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("correspondence",r.correspondence)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']},
     ob_situation:{tb:"t6",cnt:"c6",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("ilerleme_no",r.ilerleme_no)+'</td>','<td>'+inp("donem",r.donem)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td><select data-f="onay_durumu">'+opts(ONAY,r.onay_durumu)+'</select></td>']},
-    ob_tahsilat:{tb:"t8",cnt:"c8",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']}, /* OB-TAHSILAT-260930 */
+    ob_tahsilat:{tb:"t8",cnt:"c8",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" data-sap-ek="Harç ve Vergi İadesi|Diğer (Proje Dışı)" readonly') /* TAHSILAT-EK-SECENEK */+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']}, /* OB-TAHSILAT-260930 */
     ob_pv_reception:{tb:"t9",cnt:"c9",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("tutar",nf(r.tutar),"num").replace("<input",'<input readonly tabindex="-1" style="background:#f1f3f5" title="Sel-Arb kontrat tutarı (otomatik)"').replace('data-f="tutar"','data-ro="tutar"')+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>']}, /* OB-PVR */
     ob_avenant:{tb:"t7",cnt:"c7",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']}
   };
@@ -1060,15 +1060,17 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
     let list; try{ list=await yukle(); }catch(e){ ls.textContent="Proje listesi okunamadı: "+(e.message||e); return; }
     const cur=String(inp.value||"").split(/\s\+\s/).map(s=>s.trim()).filter(Boolean);
     const sec=new Set(cur);
-    const bilinen=new Set(list.map(r=>r.proje));
+    /* TAHSILAT-EK-SECENEK (02.10.2026): data-sap-ek="A|B" → Sel-Arb dışı sabit seçenekler listenin başında */
+    const ek=String(inp.getAttribute("data-sap-ek")||"").split("|").map(s=>s.trim()).filter(Boolean).map(v=>({proje:v,firma:"",ek:1}));
+    const bilinen=new Set(list.map(r=>r.proje).concat(ek.map(r=>r.proje)));
     const disari=cur.filter(v=>!bilinen.has(v));
     const ciz=()=>{
       const t=(q.value||"").toLocaleLowerCase("tr").trim();
-      const rows=disari.map(v=>({proje:v,firma:"",yok:1})).concat(list)
+      const rows=disari.map(v=>({proje:v,firma:"",yok:1})).concat(ek,list)
         .filter(r=>!t||(String(r.proje)+" "+String(r.firma||"")).toLocaleLowerCase("tr").includes(t));
       ls.innerHTML=rows.length?rows.map(r=>'<label data-p="'+E(r.proje)+'" data-fr="'+E(r.firma||"")+'">'
         +(multi?'<input type="checkbox"'+(sec.has(r.proje)?' checked':'')+'>':'<input type="radio" name="psel"'+(sec.has(r.proje)?' checked':'')+'>')
-        +'<span>'+E(r.proje)+(r.yok?'<span class="yok">(Sel-Arb’de yok — eski kayıt)</span>':'<span class="fr">· '+E(r.firma||"")+'</span>')+'</span></label>').join("")
+        +'<span>'+E(r.proje)+(r.yok?'<span class="yok">(Sel-Arb’de yok — eski kayıt)</span>':r.ek?'<span class="fr">· proje dışı</span>':'<span class="fr">· '+E(r.firma||"")+'</span>')+'</span></label>').join("")
         :'<div style="color:#8a97a4;padding:6px">Eşleşen proje yok.</div>';
       ls.querySelectorAll("label").forEach(lb=>{
         const c=lb.querySelector("input"), p=lb.getAttribute("data-p");
