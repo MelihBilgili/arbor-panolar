@@ -307,9 +307,12 @@ function blok(r){
                                        && (r.pst_onay==="Evet" || (r.pst_sebep||"").trim());
   /* MVT-GECMIS: formun açıldığı güne göre MVT tarihi geçmişse MVT sorusu anlamını yitirir
      (o tarih artık verilemez) → soru "hemen yükleme ister miydiniz?"e döner. Evet/Hayır aynı. */
-  const mvtSoru = mvtGecti(r.mvt)
-    ? "Eğer hazır olsaydı hemen yükleme ister miydiniz?"
-    : "Burada belirtilen <b>MVT</b>’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?";
+  /* URETIM7-SORU (2026-10-05, Melih): "7 Üretim" durumunda ilk soru AÜP'ye göre — AÜP formun açıldığı
+     güne göre geçmişse "Eğer hazırsa hemen yüklenecek mi?", değilse standart MVT onay sorusu. */
+  const MVT_STD = "Burada belirtilen <b>MVT</b>’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?";
+  const mvtSoru = /^7(\s|$)/.test(String(r.proje_durumu||"").trim())
+    ? (mvtGecti(r.aup) ? "Eğer hazırsa hemen yüklenecek mi?" : MVT_STD)
+    : (mvtGecti(r.mvt) ? "Eğer hazır olsaydı hemen yükleme ister miydiniz?" : MVT_STD);
   return '<div class="blk'+(tam?" done":"")+'" id="blk_'+r.id+'">'
     +'<div class="sol">'
       +kv("Proje",r.proje_adi)  /* SANTIYE-KOMPAKT: PGD → Proje, Part kaldırıldı */
@@ -404,6 +407,7 @@ document.getElementById("ay_btn").onclick=async()=>{
 
 yukle();
 </script>
+
 
 
 
