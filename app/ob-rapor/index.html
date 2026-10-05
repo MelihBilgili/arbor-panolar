@@ -415,7 +415,7 @@ function onayKur(hedefId,id,ad){
 function onayEksik(){ return Object.keys(ONAYLAR).filter(id=>!onayVar(id)).map(id=>ONAYLAR[id].ad); }
 function onayKapi(){ const e=onayEksik(); if(e.length){ alert("Güncelleme yapılamadı.\n\nÖnce aşağıdaki onay düğmelerine basmalısınız:\n\n• "+e.join("\n\n• ")); return false; } return true; }
 function onaySifirla(){ Object.keys(ONAYLAR).forEach(id=>{ try{ localStorage.removeItem(onayKey(id)); }catch(e){} const o=ONAYLAR[id]; o.el.classList.remove("ok"); o.el.textContent=o.ad; }); }
-onayKur("dAdd","depenses","Tedarikçi Giderlerine İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
+onayKur("dAdd","depenses","Tedarikçi Giderlerine İlişkin Son Ay Hariç Olmak Üzere Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum"); /* OB-DEPENSES-ONAY */
 onayKur("s_btn","santiye","Tıkanmış Şantiyelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("a2","odeme","Selectron'a Yapılan Ödemelere İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
 onayKur("a3","fatura","Kesilen Faturalara İlişkin Aşağıdaki Bilgilerin Güncel Olduğunu Onaylıyorum");
