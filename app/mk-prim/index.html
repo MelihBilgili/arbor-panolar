@@ -433,6 +433,7 @@ document.getElementById("ayBtn").onclick=async()=>{
   try{ const r=await sb.functions.invoke("mk-faaliyet-mail",{body:{ay:DONEM}});
     if(r.error){ note=" (mail gönderilemedi: "+(r.error.message||r.error)+")"; }
   }catch(e){ note=" (mail gönderilemedi)"; }
+  if(!(snapNote.indexOf("hata")>-1||note)) alert("Güncelleme başarıyla tamamlandı.\n\n"+DONEM+" ayı işaretlendi"+snapNote+"."); /* GUNC-BASARI-UYARI */
   if(snapNote.indexOf("hata")>-1||note) alert("Güncelleme tamamlanamadı — ay işaretlendi ancak:\n\n• "+[snapNote,note].filter(x=>x&&(x.indexOf("hata")>-1||x.indexOf("gönderilemedi")>-1)).map(x=>x.replace(/^[\s(·]+|\)$/g,"")).join("\n• ")+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); /* GUNC-HATA-UYARI */
   sLoadAkis(); onaySifirla();
   btn.disabled=false; m.className="msg ok"; m.textContent="✓ "+DONEM+" ayı işaretlendi."+snapNote+note;
@@ -662,6 +663,7 @@ loadMK().then(()=>{ BLOCKS.forEach(b=>{ if(!DATA[b.tur].length) DATA[b.tur].push
   window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
 })();
 </script>
+
 <!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
