@@ -1806,7 +1806,11 @@ async function loadSantiyeOnay(){
   let onay=0, red=0, bos=0;
   /* SANTIYE-SEVK-BLOK (2026-10-05): 8 / 8.1 Sevke Hazır projeler formda soru almaz → cevapsız sayılmaz */
   const sevkHazir=r=>/^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").trim());
+  /* PST-BELIRLE (2026-10-05): "7 Üretim" + ERP PST boş → formda onay yerine PST girilir (pst_santiye) */
+  const pstGir=r=>/^7(\s|$)/.test(String(r.proje_durumu||"").trim()) && !r.pst;
+  const pstVar=r=>pstGir(r) ? !!r.pst_santiye : !!r.pst_onay;
   rows.filter(r=>!sevkHazir(r)).forEach(r=>{ ["mvt_onay","pst_onay"].forEach(a=>{
+    if(a==="pst_onay" && pstGir(r)){ if(r.pst_santiye) onay++; else bos++; return; }
     if(r[a]==="Evet") onay++; else if(r[a]==="Hayır") red++; else bos++; }); });
 
   const cevap=(o,s)=>{
@@ -1819,7 +1823,7 @@ async function loadSantiyeOnay(){
       .sort((a,b)=>String(a.mvt||"9").localeCompare(String(b.mvt||"9"))||String(a.proje_no).localeCompare(String(b.proje_no)));
     const dmg = pyBy["santiye_"+f.kod];
     const kirmizi = rs.filter(r=>r.mvt_onay==="Hayır"||r.pst_onay==="Hayır").length;
-    const eksik   = rs.filter(r=>!sevkHazir(r)&&(!r.mvt_onay||!r.pst_onay)).length;
+    const eksik   = rs.filter(r=>!sevkHazir(r)&&(!r.mvt_onay||!pstVar(r))).length;
     const head=`<h3 class="sec">${esc(f.ad)} <span class="muted" style="font-weight:400">· ${esc(f.kisi_kod||"")} · ${rs.length} proje`
       +(kirmizi?` · <b style="color:#b40000">${kirmizi} itiraz</b>`:"")
       +(eksik?` · <b style="color:#8a6100">${eksik} cevapsız</b>`:"")
@@ -1829,9 +1833,9 @@ async function loadSantiyeOnay(){
       +`<td class="sb"><div class="cx">${esc(r.proje_no)}</div></td>`
       +`<td><div class="cx">${esc(r.proje_adi)}</div></td>`
       +`<td class="num">${r.adet==null?"—":r.adet}</td>`
-      +`<td class="num">${fdt(r.mvt)}</td><td class="num">${fdt(r.aup)}</td><td class="num">${fdt(r.pst)}</td>`
+      +`<td class="num">${fdt(r.mvt)}</td><td class="num">${fdt(r.aup)}</td><td class="num">${r.pst?fdt(r.pst):(r.pst_santiye?`<span title="Şantiyenin girdiği PST" style="color:#0a4f8a;font-weight:600">${fdt(r.pst_santiye)}</span>`:"—")}</td>`
       +`<td>${cevap(r.mvt_onay)}</td><td><div class="cx">${esc(r.mvt_sebep||"")}</div></td>`
-      +`<td>${cevap(r.pst_onay)}</td><td><div class="cx">${esc(r.pst_sebep||"")}</div></td>`
+      +`<td>${pstGir(r)?(r.pst_santiye?'<span style="color:#0a4f8a;font-weight:600">Belirlendi</span>':'<span class="muted">—</span>'):cevap(r.pst_onay)}</td><td><div class="cx">${esc(r.pst_sebep||"")}</div></td>`
       +`</tr>`).join("");
     return head+`<div class="scroll"><table class="sty"><colgroup>`
       +`<col class="s18"><col class="s34"><col class="s6"><col class="s8"><col class="s8"><col class="s8">`
@@ -3412,6 +3416,11 @@ setInterval(()=>{ if(!document.getElementById("view")) return; if(document.query
   window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
 })();
 </script>
+
+
+
+
+
 
 
 <!-- ARBOR-DRAGSCROLL -->
