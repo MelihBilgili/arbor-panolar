@@ -63,6 +63,8 @@
   .sevk th{background:#16324f;color:#fff;font-weight:600;font-size:11.5px;text-align:left;padding:5px 8px;white-space:nowrap}
   .sevk td{border-bottom:1px solid #eef1f5;padding:4px 8px;vertical-align:middle}
   .sevk td.n,.sevk th.n{text-align:right;white-space:nowrap}
+  input.pstb{font:inherit;font-size:13px;width:110px;padding:5px 8px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8;margin-top:4px}
+  input.pstb.miss{border-color:#c0392b;background:#fdecea}
   .sevk td input.pstg{font:inherit;font-size:12.5px;padding:3px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8}
   .sevk td textarea{width:100%;min-width:260px;font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8;resize:vertical;min-height:30px;height:30px}
   .hidden{display:none}
@@ -306,8 +308,7 @@ function blok(r){
       +'<textarea class="seb'+(on==="Hayır"?"":" hidden")+'" id="seb_'+alan+'_'+r.id+'" data-id="'+r.id+'" data-a="'+alan+'" placeholder="Sebep">'+esc(seb)+'</textarea>'
       +'</div>';
   };
-  const tam = r.mvt_onay && r.pst_onay && (r.mvt_onay==="Evet" || (r.mvt_sebep||"").trim())
-                                       && (r.pst_onay==="Evet" || (r.pst_sebep||"").trim());
+  const tam = cevapTam(r);
   /* MVT-GECMIS: formun açıldığı güne göre MVT tarihi geçmişse MVT sorusu anlamını yitirir
      (o tarih artık verilemez) → soru "hemen yükleme ister miydiniz?"e döner. Evet/Hayır aynı. */
   /* URETIM7-SORU (2026-10-05, Melih): "7 Üretim" durumunda ilk soru AÜP'ye göre — AÜP formun açıldığı
@@ -326,7 +327,7 @@ function blok(r){
     +'<div class="sag">'
       +'<div class="sorular">'
       +soru("mvt",mvtSoru)
-      +soru("pst","<b>PST</b>’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?")
+      +(pstGir(r) ? pstKutu(r) : soru("pst","<b>PST</b>’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?"))
       +'</div>'
       /* HUSUS-KUTU: proje bazlı serbest not; anında kaydedilir, zorunlu değildir. SANTIYE-KOMPAKT: sağ sütunda */
       +'<div class="hus">'
@@ -334,6 +335,23 @@ function blok(r){
         +'<textarea class="seb" id="hus_'+r.id+'" data-id="'+r.id+'" placeholder="">'+esc(r.onemli_hususlar||"")+'</textarea>'
       +'</div>'
     +'</div></div>';
+}
+
+/* PST-BELIRLE (2026-10-05, Melih): "7 Üretim" + ERP PST boş → PST onay sorusu yerine "PST belirleyiniz:" GG/AA/YY kutusu → pst_santiye */
+function pstGir(r){ return /^7(\s|$)/.test(String(r.proje_durumu||"").trim()) && !r.pst; }
+function trTarih(iso){ if(!iso) return ""; const m=String(iso).slice(0,10).match(/^(\d{4})-(\d{2})-(\d{2})$/); return m? m[3]+"/"+m[2]+"/"+m[1].slice(2) : ""; }
+function isoTarih(t){ const m=String(t||"").trim().match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/); if(!m) return null;
+  const y=m[3].length===2?2000+(+m[3]):+m[3], mo=+m[2], d=+m[1]; const dt=new Date(y,mo-1,d);
+  if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d) return null;
+  return y+"-"+String(mo).padStart(2,"0")+"-"+String(d).padStart(2,"0"); }
+function pstKutu(r){
+  return '<div class="soru"><div class="q"><b>PST</b> belirleyiniz:</div>'
+    +'<input type="text" class="pstb" id="pstb_'+r.id+'" placeholder="GG/AA/YY" maxlength="10" inputmode="numeric" value="'+esc(trTarih(r.pst_santiye))+'"></div>';
+}
+function cevapTam(r){
+  const mvtOk = r.mvt_onay && (r.mvt_onay==="Evet" || (r.mvt_sebep||"").trim());
+  const pstOk = pstGir(r) ? !!r.pst_santiye : (r.pst_onay && (r.pst_onay==="Evet" || (r.pst_sebep||"").trim()));
+  return !!(mvtOk && pstOk);
 }
 
 /* MVT tarihi bugünden önce mi? (yalnız gün karşılaştırması) */
@@ -359,8 +377,15 @@ function bagla(r){
       boya(r);
     };
   });
+  const pb=document.getElementById("pstb_"+r.id);
+  if(pb) pb.onchange=async()=>{
+    const v=pb.value.trim(); const iso=v?isoTarih(v):null;
+    if(v && !iso){ pb.classList.add("miss"); msg("PST GG/AA/YY biçiminde olmalı (ör. 15/11/26).",false); return; }
+    pb.classList.remove("miss"); pb.value=trTarih(iso); r.pst_santiye=iso;
+    await kaydet(r.id,{pst_santiye:iso}); boya(r); };
   ["mvt","pst"].forEach(alan=>{
     const ta=document.getElementById("seb_"+alan+"_"+r.id);
+    if(!ta) return;
     ta.onchange=async()=>{ r[alan+"_sebep"]=ta.value.trim()||null;
       ta.classList.remove("miss");
       await kaydet(r.id,{[alan+"_sebep"]:r[alan+"_sebep"]}); boya(r); };
@@ -374,8 +399,7 @@ function bagla(r){
 
 function boya(r){
   const el=document.getElementById("blk_"+r.id); if(!el) return;
-  const tam = r.mvt_onay && r.pst_onay && (r.mvt_onay==="Evet" || (r.mvt_sebep||"").trim())
-                                       && (r.pst_onay==="Evet" || (r.pst_sebep||"").trim());
+  const tam = cevapTam(r);
   el.classList.toggle("done",!!tam); if(tam) el.classList.remove("miss");
 }
 
@@ -390,7 +414,10 @@ document.getElementById("ay_btn").onclick=async()=>{
   SATIR.forEach(r=>{
     const el=document.getElementById("blk_"+r.id); el.classList.remove("miss");
     let bos=false;
+    const pb=document.getElementById("pstb_"+r.id);
+    if(pb){ pb.classList.remove("miss"); if(!r.pst_santiye){ bos=true; pb.classList.add("miss"); } }
     ["mvt","pst"].forEach(a=>{
+      if(a==="pst" && pstGir(r)) return;
       const ta=document.getElementById("seb_"+a+"_"+r.id); ta.classList.remove("miss");
       if(!r[a+"_onay"]) bos=true;
       else if(r[a+"_onay"]==="Hayır" && !(r[a+"_sebep"]||"").trim()){ bos=true; ta.classList.add("miss"); }
@@ -410,6 +437,7 @@ document.getElementById("ay_btn").onclick=async()=>{
 
 yukle();
 </script>
+
 
 
 
