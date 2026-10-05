@@ -861,7 +861,7 @@ function pipelineTables(ydRows, today){
   const EKSIK_F=['proje','musteri','musteri_onem_sinifi','gelen_tarih','istenen_tarih','ihale','adet','urun_tipi_serisi','kemer_karolaj','sartname_ahsap'];
   /* YD-EKSIK-ONEM: Eksik bloklarına Müşteri Önem Sınıfı sütunu (Müşteri'den sonra) */
   const C1E=[].concat(C1.slice(0,2),[{h:'Müşteri Önem Sınıfı',f:'musteri_onem_sinifi'}],C1.slice(2)).map(c=>{ const f=c.f||({'Gelen Tarih':'gelen_tarih','İstenen Tarih':'istenen_tarih'})[c.h];
-    return EKSIK_F.includes(f)?Object.assign({},c,{cls:r=>(!r.durum&&(r[f]==null||String(r[f]).trim()===''))?'eksikbos':''}):c; });
+    return EKSIK_F.includes(f)?Object.assign({},c,{cls:r=>((!r.durum||r.durum==='Teklif Talebi Geldi')&&(r[f]==null||String(r[f]).trim()===''))?'eksikbos':'' /* YD-EKSIK-BOS2 */}):c; });
   return two('Eksik Kaydedilmiş Teklif Talepleri',eksik,C1E)
     +two('Öncelik Belirlenmesi Gerekenler',oncelik,C1.concat([{h:'Öncelik',wcls:'oncsec',html:r=>`<select class="ydonc" data-id="${r.id}" title="Öncelik seç — forma yazılır, satır Teklif Hazırlığında'ya geçer"><option value=""></option>${['1','2','3'].map(o=>`<option${String(r.oncelik||'')===o?' selected':''}>${o}</option>`).join('')}</select>`}]))
     +two('Teklif Hazırlığında',hazirlik,C2)
@@ -3347,53 +3347,7 @@ setInterval(()=>{ if(!document.getElementById("view")) return; if(document.query
 
 
 
-<!-- ARBOR-DRAGSCROLL -->
-<style>
-  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
-  *{scrollbar-width:none;-ms-overflow-style:none}
-  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
-  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
-</style>
-<script>
-(function(){
-  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
-  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
-  function scrollable(n){
-    var st=getComputedStyle(n);
-    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
-    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
-    return okx||oky;
-  }
-  function start(n,e){
-    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
-    document.body.classList.add("arb-dragging"); e.preventDefault();
-  }
-  document.addEventListener("mousedown",function(e){
-    if(e.button!==0||skip(e.target)) return;
-    var n=e.target, hucre=null;
-    while(n && n.nodeType===1 && n!==document.body){
-      if(scrollable(n)){
-        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
-        if(!n.closest("td,th")) return start(n,e);
-        if(!hucre) hucre=n;
-      }
-      n=n.parentElement;
-    }
-    if(hucre) return start(hucre,e);
-  },true);
-  document.addEventListener("mousemove",function(e){
-    if(!el) return;
-    var dx=e.clientX-sx, dy=e.clientY-sy;
-    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
-    el.scrollLeft=l-dx; el.scrollTop=t-dy;
-  });
-  document.addEventListener("mouseup",function(){
-    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
-  });
-  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
-})();
-</script>
-<!-- /ARBOR-DRAGSCROLL -->
+
 <script>
 /* ARB-TARIH-YY (01.10.2026, Melih): tarih girişleri GG.AA.YY metin kutusu — takvim simgesi yok, dar sütun.
    Tek kaynak kod/_tarih_yy.js (formlara ve app'e SON </body> önüne gömülür).
@@ -3446,5 +3400,53 @@ setInterval(()=>{ if(!document.getElementById("view")) return; if(document.query
   window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
 })();
 </script>
+
+<!-- ARBOR-DRAGSCROLL -->
+<style>
+  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
+  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+<script>
+(function(){
+  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
+  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
+  function scrollable(n){
+    var st=getComputedStyle(n);
+    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
+    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
+    return okx||oky;
+  }
+  function start(n,e){
+    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+    document.body.classList.add("arb-dragging"); e.preventDefault();
+  }
+  document.addEventListener("mousedown",function(e){
+    if(e.button!==0||skip(e.target)) return;
+    var n=e.target, hucre=null;
+    while(n && n.nodeType===1 && n!==document.body){
+      if(scrollable(n)){
+        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
+        if(!n.closest("td,th")) return start(n,e);
+        if(!hucre) hucre=n;
+      }
+      n=n.parentElement;
+    }
+    if(hucre) return start(hucre,e);
+  },true);
+  document.addEventListener("mousemove",function(e){
+    if(!el) return;
+    var dx=e.clientX-sx, dy=e.clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    el.scrollLeft=l-dx; el.scrollTop=t-dy;
+  });
+  document.addEventListener("mouseup",function(){
+    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
+  });
+  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
+})();
+</script>
+<!-- /ARBOR-DRAGSCROLL -->
 </body>
 </html>
