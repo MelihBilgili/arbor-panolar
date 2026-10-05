@@ -206,7 +206,7 @@ if (document.readyState === "loading") document.addEventListener("DOMContentLoad
 /* FORM-ENGEL-IZ (2026-09-22): güncelleme düğmesi bir kontrol yüzünden durdurulursa (uyarı penceresi) form_engel'e kayıt → Formlar panosunda uyarı */
 (function(){ var FK="onur_sevk", oa=window.alert.bind(window);
   window.alert=function(m){ try{ var t=String(m==null?"":m);
-    if(/G[üu]ncelle(me)?\s+yap[ıi]la/i.test(t) && typeof ARB_ACTIVE!=="undefined" && ARB_ACTIVE)
+    if(/G[üu]ncelle(me)?\s+(yap[ıi]la|tamamlana)/i.test(t) && typeof ARB_ACTIVE!=="undefined" && ARB_ACTIVE)
       ARB_ACTIVE.from("form_engel").insert({form_key:FK, mesaj:t.slice(0,600)}).then(function(){},function(){});
   }catch(e){} return oa(m); };
 })();
@@ -425,7 +425,7 @@ $("ay_btn").onclick=async()=>{
     const ilk=document.querySelector("#list .ed.miss"); if(ilk) ilk.scrollIntoView({block:"center"});
     return;
   }
-  if(bosVar()){ alert("Güncelleme yapılamaz — fatura listesinde boş alan var.\n\nKırmızı işaretli alanları doldurun."); fmsg("ay_msg","Boş alan var — kırmızı hücreleri doldurun.",false); return; }
+  if(bosVar()){ alert("Güncelleme yapılamadı.\n\nSebep: fatura listesinde boş alan var.\n\nKırmızı işaretli alanları doldurun."); fmsg("ay_msg","Boş alan var — kırmızı hücreleri doldurun.",false); return; }
   if(!confirm("GÜNCELLE\n\n1) Her kalemin önceki→güncel sevk durumu değişim özeti üretilip panoya yazılacak, güncel değer 'önceki'ye kaydırılacak.\n2) Bu ay eklenen faturaların € toplamı SEL-ARB panosundaki \"Selectron'a Borç\" tutarına eklenecek.\n\nDevam?")) return;
   const btn=$("ay_btn"); btn.disabled=true; fmsg("ay_msg","Aktarılıyor…",true);
   let notlar=[];
@@ -439,16 +439,18 @@ $("ay_btn").onclick=async()=>{
     if(error||!(data&&data.ok)) notlar.push("Sevk özeti hata: "+((error&&error.message)||(data&&data.error)||"bilinmiyor"));
     else notlar.push(data.note||("Sevk özeti: "+data.updated+" kalem"));
   }catch(e){ notlar.push("Sevk özeti hata: "+e); }
-  const hata=notlar.some(n=>n.indexOf("hata")>-1);
+  let hata=notlar.some(n=>n.indexOf("hata")>-1); /* GUNC-HATA-UYARI */
   /* OE-YAYIN-DAMGA: düğmeye basılma damgası. Hazır PEM/PRJ panosunun "Sevk durumu (OE)" tarihi ve
      Formlar sekmesindeki geciken hesabı bunu okur — sevk_durumu_onur.updated_at satır-bazlı
      otomatik kayıttır, düğmeye basma sayılmaz. */
   if(!hata){
-    try{ await sb.from("pano_yayin").upsert({anahtar:"oe_sevk",yayin_at:new Date().toISOString()},{onConflict:"anahtar"}); }catch(e){}
+    try{ const _pr=await sb.from("pano_yayin").upsert({anahtar:"oe_sevk",yayin_at:new Date().toISOString()},{onConflict:"anahtar"});
+      if(_pr.error){ notlar.push("Son güncelleme tarihi yazılamadı (hata): "+_pr.error.message); hata=true; } }catch(e){ notlar.push("Son güncelleme tarihi yazılamadı (hata): "+e); hata=true; }
   }
   if(!hata) onaySifirla();
   fmsg("ay_msg",notlar.join(" · "),!hata);
   btn.disabled=false; loadFt(); load();
+  if(hata) alert("Güncelleme yapılamadı.\n\nSebep:\n• "+notlar.filter(n=>n.indexOf("hata")>-1).join("\n• ")+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); /* GUNC-HATA-UYARI */
 };
 
 loadFt(); load();
@@ -568,53 +570,7 @@ loadFt(); load();
 
 
 
-<!-- ARBOR-DRAGSCROLL -->
-<style>
-  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
-  *{scrollbar-width:none;-ms-overflow-style:none}
-  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
-  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
-</style>
-<script>
-(function(){
-  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
-  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
-  function scrollable(n){
-    var st=getComputedStyle(n);
-    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
-    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
-    return okx||oky;
-  }
-  function start(n,e){
-    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
-    document.body.classList.add("arb-dragging"); e.preventDefault();
-  }
-  document.addEventListener("mousedown",function(e){
-    if(e.button!==0||skip(e.target)) return;
-    var n=e.target, hucre=null;
-    while(n && n.nodeType===1 && n!==document.body){
-      if(scrollable(n)){
-        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
-        if(!n.closest("td,th")) return start(n,e);
-        if(!hucre) hucre=n;
-      }
-      n=n.parentElement;
-    }
-    if(hucre) return start(hucre,e);
-  },true);
-  document.addEventListener("mousemove",function(e){
-    if(!el) return;
-    var dx=e.clientX-sx, dy=e.clientY-sy;
-    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
-    el.scrollLeft=l-dx; el.scrollTop=t-dy;
-  });
-  document.addEventListener("mouseup",function(){
-    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
-  });
-  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
-})();
-</script>
-<!-- /ARBOR-DRAGSCROLL -->
+
 <script>
 /* ARB-TARIH-YY (01.10.2026, Melih): tarih girişleri GG.AA.YY metin kutusu — takvim simgesi yok, dar sütun.
    Tek kaynak kod/_tarih_yy.js (formlara ve app'e SON </body> önüne gömülür).
@@ -667,5 +623,52 @@ loadFt(); load();
   window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
 })();
 </script>
+<!-- ARBOR-DRAGSCROLL -->
+<style>
+  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
+  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+<script>
+(function(){
+  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
+  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
+  function scrollable(n){
+    var st=getComputedStyle(n);
+    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
+    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
+    return okx||oky;
+  }
+  function start(n,e){
+    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+    document.body.classList.add("arb-dragging"); e.preventDefault();
+  }
+  document.addEventListener("mousedown",function(e){
+    if(e.button!==0||skip(e.target)) return;
+    var n=e.target, hucre=null;
+    while(n && n.nodeType===1 && n!==document.body){
+      if(scrollable(n)){
+        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
+        if(!n.closest("td,th")) return start(n,e);
+        if(!hucre) hucre=n;
+      }
+      n=n.parentElement;
+    }
+    if(hucre) return start(hucre,e);
+  },true);
+  document.addEventListener("mousemove",function(e){
+    if(!el) return;
+    var dx=e.clientX-sx, dy=e.clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    el.scrollLeft=l-dx; el.scrollTop=t-dy;
+  });
+  document.addEventListener("mouseup",function(){
+    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
+  });
+  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
+})();
+</script>
+<!-- /ARBOR-DRAGSCROLL -->
 </body>
 </html>
