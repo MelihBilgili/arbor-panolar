@@ -450,6 +450,7 @@ $("ay_btn").onclick=async()=>{
   if(!hata) onaySifirla();
   fmsg("ay_msg",notlar.join(" · "),!hata);
   btn.disabled=false; loadFt(); load();
+  if(!hata) alert("Güncelleme başarıyla tamamlandı.\n\n• "+notlar.join("\n• ")); /* GUNC-BASARI-UYARI */
   if(hata) alert("Güncelleme yapılamadı.\n\nSebep:\n• "+notlar.filter(n=>n.indexOf("hata")>-1).join("\n• ")+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); /* GUNC-HATA-UYARI */
 };
 
@@ -623,6 +624,7 @@ loadFt(); load();
   window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
 })();
 </script>
+
 <!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
