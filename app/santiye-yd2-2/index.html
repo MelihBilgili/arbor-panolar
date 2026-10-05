@@ -206,6 +206,15 @@ function ARB_BOOT(){ (async function(){
 })(); }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
 </script>
+<script>
+/* FORM-ENGEL-IZ (2026-09-22; GUNC-HATA-UYARI 2026-10-05): güncelleme düğmesi bir kontrol ya da hata yüzünden durdurulursa (uyarı penceresi) form_engel'e kayıt → Formlar panosunda uyarı */
+(function(){ var FK="santiye_yd2_2", oa=window.alert.bind(window);
+  window.alert=function(m){ try{ var t=String(m==null?"":m);
+    if(/G[üu]ncelle(me)?\s+(yap[ıi]la|tamamlana)/i.test(t) && typeof ARB_ACTIVE!=="undefined" && ARB_ACTIVE)
+      ARB_ACTIVE.from("form_engel").insert({form_key:FK, mesaj:t.slice(0,600)}).then(function(){},function(){});
+  }catch(e){} return oa(m); };
+})();
+</script>
 <script type="text/plain" id="arbmain">
 const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 const FORM_KODU = "yd2_2";
@@ -339,7 +348,7 @@ async function kaydet(id,patch){
 
 /* GÜNCELLE — bütün bloklar cevaplanmadan (Hayır ise sebep yazılmadan) çalışmaz. */
 document.getElementById("ay_btn").onclick=async()=>{
-  let ilk=null, eksik=0;
+  let ilk=null, eksik=0, eksikAd=[]; /* GUNC-HATA-UYARI */
   SATIR.forEach(r=>{
     const el=document.getElementById("blk_"+r.id); el.classList.remove("miss");
     let bos=false;
@@ -348,19 +357,21 @@ document.getElementById("ay_btn").onclick=async()=>{
       if(!r[a+"_onay"]) bos=true;
       else if(r[a+"_onay"]==="Hayır" && !(r[a+"_sebep"]||"").trim()){ bos=true; ta.classList.add("miss"); }
     });
-    if(bos){ el.classList.add("miss"); eksik++; if(!ilk) ilk=el; }
+    if(bos){ el.classList.add("miss"); eksik++; if(!ilk) ilk=el; eksikAd.push(((r.proje_no||"")+" "+(r.proje_adi||"")).trim()); }
   });
   if(eksik){ msg(eksik+" projede MVT/PST onayı (ya da 'Hayır' sebebi) eksik.",false);
+             alert("Güncelleme yapılamadı.\n\nSebep: "+eksik+" projede MVT/PST onayı (ya da \"Hayır\" cevabının sebebi) eksik:\n\n• "+eksikAd.slice(0,15).join("\n• ")+(eksikAd.length>15?"\n• … ("+(eksikAd.length-15)+" proje daha)":"")+"\n\nKırmızı işaretli projeleri tamamlayın.");
              if(ilk) ilk.scrollIntoView({behavior:"smooth",block:"center"}); return; }
   const b=document.getElementById("ay_btn"); b.disabled=true; msg("Aktarılıyor…",true);
   const {error}=await sb.from("pano_yayin").upsert({anahtar:PY_ANAHTAR,yayin_at:new Date().toISOString()},{onConflict:"anahtar"});
   b.disabled=false;
-  if(error){ msg("Aktarılamadı: "+error.message,false); return; }
+  if(error){ msg("Aktarılamadı: "+error.message,false); alert("Güncelleme yapılamadı.\n\nSebep: bilgiler panoya aktarılamadı — "+error.message+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); return; }
   msg("Aktarıldı — bilgiler Şantiye Onay panosuna işlendi.",true);
 };
 
 yukle();
 </script>
+
 
 
 
