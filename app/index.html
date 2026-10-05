@@ -1804,7 +1804,9 @@ async function loadSantiyeOnay(){
   const erpT = rows.length ? rows.map(r=>r.erp_tarih).filter(Boolean).sort().reverse()[0] : null;
 
   let onay=0, red=0, bos=0;
-  rows.forEach(r=>{ ["mvt_onay","pst_onay"].forEach(a=>{
+  /* SANTIYE-SEVK-BLOK (2026-10-05): 8 / 8.1 Sevke Hazır projeler formda soru almaz → cevapsız sayılmaz */
+  const sevkHazir=r=>/^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").trim());
+  rows.filter(r=>!sevkHazir(r)).forEach(r=>{ ["mvt_onay","pst_onay"].forEach(a=>{
     if(r[a]==="Evet") onay++; else if(r[a]==="Hayır") red++; else bos++; }); });
 
   const cevap=(o,s)=>{
@@ -1817,7 +1819,7 @@ async function loadSantiyeOnay(){
       .sort((a,b)=>String(a.mvt||"9").localeCompare(String(b.mvt||"9"))||String(a.proje_no).localeCompare(String(b.proje_no)));
     const dmg = pyBy["santiye_"+f.kod];
     const kirmizi = rs.filter(r=>r.mvt_onay==="Hayır"||r.pst_onay==="Hayır").length;
-    const eksik   = rs.filter(r=>!r.mvt_onay||!r.pst_onay).length;
+    const eksik   = rs.filter(r=>!sevkHazir(r)&&(!r.mvt_onay||!r.pst_onay)).length;
     const head=`<h3 class="sec">${esc(f.ad)} <span class="muted" style="font-weight:400">· ${esc(f.kisi_kod||"")} · ${rs.length} proje`
       +(kirmizi?` · <b style="color:#b40000">${kirmizi} itiraz</b>`:"")
       +(eksik?` · <b style="color:#8a6100">${eksik} cevapsız</b>`:"")
@@ -3410,6 +3412,7 @@ setInterval(()=>{ if(!document.getElementById("view")) return; if(document.query
   window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
 })();
 </script>
+
 
 <!-- ARBOR-DRAGSCROLL -->
 <style>
