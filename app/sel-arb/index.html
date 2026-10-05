@@ -204,6 +204,15 @@ function ARB_BOOT(){ (async function(){
 })(); }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
 </script>
+<script>
+/* FORM-ENGEL-IZ (2026-09-22; GUNC-HATA-UYARI 2026-10-05): güncelleme düğmesi bir kontrol ya da hata yüzünden durdurulursa (uyarı penceresi) form_engel'e kayıt → Formlar panosunda uyarı */
+(function(){ var FK="sel_arb_form", oa=window.alert.bind(window);
+  window.alert=function(m){ try{ var t=String(m==null?"":m);
+    if(/G[üu]ncelle(me)?\s+(yap[ıi]la|tamamlana)/i.test(t) && typeof ARB_ACTIVE!=="undefined" && ARB_ACTIVE)
+      ARB_ACTIVE.from("form_engel").insert({form_key:FK, mesaj:t.slice(0,600)}).then(function(){},function(){});
+  }catch(e){} return oa(m); };
+})();
+</script>
 <script type="text/plain" id="arbmain">
 const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -367,7 +376,7 @@ function bind(){
 document.getElementById("bGuncelle").onclick=async()=>{
   const ts=new Date().toISOString();
   const {error}=await sb.from("pano_yayin").upsert({anahtar:"sel_arb_form",yayin_at:ts,updated_at:ts},{onConflict:"anahtar"});
-  if(error){ msg("Güncellenemedi: "+error.message,"err"); return; }
+  if(error){ msg("Güncellenemedi: "+error.message,"err"); alert("Güncelleme yapılamadı.\n\nSebep: güncelleme tarihi kaydedilemedi — "+error.message+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); return; } /* GUNC-HATA-UYARI */
   document.getElementById("stamp").textContent="Son güncelleme: "+new Date(ts).toLocaleDateString("tr-TR",{day:"2-digit",month:"2-digit",year:"2-digit"});
   msg("Güncelleme kaydedildi. Güncel Alacak sütunu ay sonunda Önceki Alacak grubuna eklenecek.","ok");
 };
