@@ -62,7 +62,7 @@
   .sevk table{border-collapse:collapse;width:100%;font-size:12.5px}
   .sevk th{background:#16324f;color:#fff;font-weight:600;font-size:11.5px;text-align:left;padding:5px 8px;white-space:nowrap}
   .sevk td{border-bottom:1px solid #eef1f5;padding:4px 8px;vertical-align:middle}
-  .sevk td.n{text-align:right;white-space:nowrap}
+  .sevk td.n,.sevk th.n{text-align:right;white-space:nowrap}
   .sevk td textarea{width:100%;min-width:260px;font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8;resize:vertical;min-height:30px;height:30px}
   .hidden{display:none}
   .empty{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:22px;text-align:center;color:#7a8896;font-size:13px}
@@ -283,7 +283,7 @@ async function yukle(){
 function sevkHazir(r){ return /^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").trim()); }
 function sevkTablo(rs){
   return '<div class="sevk"><h3>Sevke Hazır Projeler</h3><table><thead><tr>'
-    +'<th>Proje</th><th>Adet</th><th>AÜP</th><th>Sevk Tarihi</th><th style="width:40%">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
+    +'<th>Proje</th><th class="n">Adet</th><th class="n">AÜP</th><th class="n">Sevk Tarihi</th><th style="width:40%">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
     +rs.map(r=>'<tr><td>'+esc(r.proje_adi||"—")+'</td><td class="n">'+esc(r.adet==null?"—":r.adet)+'</td>'
       +'<td class="n">'+fd(r.aup)+'</td><td class="n">'+fd(r.pst)+'</td>'
       +'<td><textarea id="hus_'+r.id+'" data-id="'+r.id+'">'+esc(r.onemli_hususlar||"")+'</textarea></td></tr>').join("")
@@ -404,6 +404,7 @@ document.getElementById("ay_btn").onclick=async()=>{
 
 yukle();
 </script>
+
 
 
 
