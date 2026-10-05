@@ -63,6 +63,7 @@
   .sevk th{background:#16324f;color:#fff;font-weight:600;font-size:11.5px;text-align:left;padding:5px 8px;white-space:nowrap}
   .sevk td{border-bottom:1px solid #eef1f5;padding:4px 8px;vertical-align:middle}
   .sevk td.n,.sevk th.n{text-align:right;white-space:nowrap}
+  .sevk td input.pstg{font:inherit;font-size:12.5px;padding:3px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8}
   .sevk td textarea{width:100%;min-width:260px;font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8;resize:vertical;min-height:30px;height:30px}
   .hidden{display:none}
   .empty{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:22px;text-align:center;color:#7a8896;font-size:13px}
@@ -274,6 +275,8 @@ async function yukle(){
   /* SANTIYE-SEVK-BLOK: 8 / 8.1 durumundakiler soru almaz → üstte tablo; onay kontrolüne girmez */
   const SV = SATIR.filter(sevkHazir), DG = SATIR.filter(r=>!sevkHazir(r));
   box.innerHTML = (SV.length ? sevkTablo(SV) : "") + DG.map(blok).join("");
+  SV.forEach(r=>{ const pg=document.getElementById("pstg_"+r.id);
+    if(pg) pg.onchange=async()=>{ r.pst_santiye=pg.value||null; await kaydet(r.id,{pst_santiye:r.pst_santiye}); }; });
   SV.forEach(r=>{ const hu=document.getElementById("hus_"+r.id);
     if(hu) hu.onchange=async()=>{ r.onemli_hususlar=hu.value.trim()||null; await kaydet(r.id,{onemli_hususlar:r.onemli_hususlar}); }; });
   DG.forEach(bagla);
@@ -285,7 +288,7 @@ function sevkTablo(rs){
   return '<div class="sevk"><h3>Sevke Hazır Projeler</h3><table><thead><tr>'
     +'<th>Proje</th><th class="n">Adet</th><th class="n">AÜP</th><th class="n">PST</th><th style="width:40%">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
     +rs.map(r=>'<tr><td>'+esc(r.proje_adi||"—")+'</td><td class="n">'+esc(r.adet==null?"—":r.adet)+'</td>'
-      +'<td class="n">'+fd(r.aup)+'</td><td class="n"></td>'  /* SEVK-PST-BOS (2026-10-05): PST kutusu boş */
+      +'<td class="n">'+fd(r.aup)+'</td><td class="n"><input type="date" class="pstg" id="pstg_'+r.id+'" value="'+esc(r.pst_santiye?String(r.pst_santiye).slice(0,10):"")+'"></td>'  /* SEVK-PST-GIRIS (2026-10-05): boş başlar, şantiye girer → pst_santiye */
       +'<td><textarea id="hus_'+r.id+'" data-id="'+r.id+'">'+esc(r.onemli_hususlar||"")+'</textarea></td></tr>').join("")
     +'</tbody></table></div>';
 }
@@ -407,6 +410,7 @@ document.getElementById("ay_btn").onclick=async()=>{
 
 yukle();
 </script>
+
 
 
 
