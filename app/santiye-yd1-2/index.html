@@ -367,10 +367,12 @@ document.getElementById("ay_btn").onclick=async()=>{
   b.disabled=false;
   if(error){ msg("Aktarılamadı: "+error.message,false); alert("Güncelleme yapılamadı.\n\nSebep: bilgiler panoya aktarılamadı — "+error.message+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); return; }
   msg("Aktarıldı — bilgiler Şantiye Onay panosuna işlendi.",true);
+  alert("Güncelleme başarıyla tamamlandı.\n\nBilgiler Şantiye Onay panosuna işlendi."); /* GUNC-BASARI-UYARI */
 };
 
 yukle();
 </script>
+
 
 
 
