@@ -225,7 +225,7 @@ async function aylikGuncelle(){ /* GUNC-HATA-UYARI */
   btn.disabled=false;
   if(hatalar.length){ msg("Güncelleme tamamlanamadı — "+hatalar.join(" · "),false);
     alert("Güncelleme tamamlanamadı.\n\nSebep:\n• "+hatalar.join("\n• ")+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); }
-  else msg("Güncelleme yapıldı."+note,true);
+  else { msg("Güncelleme yapıldı."+note,true); alert("Güncelleme başarıyla tamamlandı.\n\n"+note.trim()); } /* GUNC-BASARI-UYARI */
   loadAlim();
 }
 $("aAdd").onclick=addRow;
@@ -317,6 +317,7 @@ loadAlim();
   window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
 })();
 </script>
+
 <!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
