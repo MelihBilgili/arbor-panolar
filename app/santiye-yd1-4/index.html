@@ -283,9 +283,9 @@ async function yukle(){
 function sevkHazir(r){ return /^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").trim()); }
 function sevkTablo(rs){
   return '<div class="sevk"><h3>Sevke Hazır Projeler</h3><table><thead><tr>'
-    +'<th>Proje</th><th class="n">Adet</th><th class="n">AÜP</th><th class="n">Sevk Tarihi</th><th style="width:40%">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
+    +'<th>Proje</th><th class="n">Adet</th><th class="n">AÜP</th><th class="n">PST</th><th style="width:40%">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
     +rs.map(r=>'<tr><td>'+esc(r.proje_adi||"—")+'</td><td class="n">'+esc(r.adet==null?"—":r.adet)+'</td>'
-      +'<td class="n">'+fd(r.aup)+'</td><td class="n">'+fd(r.pst)+'</td>'
+      +'<td class="n">'+fd(r.aup)+'</td><td class="n"></td>'  /* SEVK-PST-BOS (2026-10-05): PST kutusu boş */
       +'<td><textarea id="hus_'+r.id+'" data-id="'+r.id+'">'+esc(r.onemli_hususlar||"")+'</textarea></td></tr>').join("")
     +'</tbody></table></div>';
 }
@@ -404,6 +404,7 @@ document.getElementById("ay_btn").onclick=async()=>{
 
 yukle();
 </script>
+
 
 
 
