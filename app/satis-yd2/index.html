@@ -96,6 +96,21 @@
   .ntbox .ntalt button{border:0;border-radius:7px;padding:6px 14px;font-size:12.5px;font-weight:700;cursor:pointer}
   .ntbox .ntkaydet{background:#2e7d54;color:#fff}.ntbox .ntvaz{background:#e3e8ee;color:#16324f}
   .ntbox .ntgecmis{font-size:12px;color:#5a6b7d;white-space:pre-wrap;margin-top:8px;max-height:160px;overflow:auto}
+  /* YD-ILGILI (05.10.2026): Müşteri hücresi — proje ilgilisi kartı (hover/tıklama) */
+  td.mus input.cell{cursor:pointer}
+  td.mus.ilg-var input.cell{box-shadow:inset 3px 0 0 #2e7d54}
+  .ilgpop{position:fixed;z-index:80;background:#fff;border:1px solid #b9c6d3;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.22);padding:9px 12px 10px;width:270px;display:none;font-size:12.5px}
+  .ilgpop.on{display:block}
+  .ilgpop h4{margin:0 0 4px;font-size:12.5px;color:#16324f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ilgpop label{display:block;font-size:11px;color:#5a6b7d;margin-top:5px}
+  .ilgpop input{display:block;width:100%;font:inherit;padding:0 7px;border:1px solid #cdd6df;border-radius:6px;height:26px;margin-top:2px}
+  .ilgpop input:focus{border-color:#2e7d54;outline:none}
+  .ilgpop input.bad{border-color:#d9534f;background:#fff4f4}
+  .ilgpop .ilgalt{display:flex;gap:12px;align-items:center;margin-top:7px;font-size:12px}
+  .ilgpop .ilgalt a{color:#16324f;font-weight:600;text-decoration:none}
+  .ilgpop .ilgalt a:hover{text-decoration:underline}
+  .ilgpop .ilgmsg{margin-left:auto;font-weight:600;color:#2e7d54}
+  .ilgpop .ilgmsg.err{color:#b40000}
 html,body{max-width:100vw;overflow-x:hidden}
 </style>
 </head>
@@ -128,6 +143,13 @@ html,body{max-width:100vw;overflow-x:hidden}
     <div class="ntalt"><button type="button" class="ntvaz" id="nt-vaz">Vazgeç</button><button type="button" class="ntkaydet" id="nt-kaydet">Kaydet</button></div>
     <div class="ntgecmis" id="nt-gecmis"></div>
   </div>
+</div>
+<div class="ilgpop" id="ilg-pop"><!-- YD-ILGILI -->
+  <h4 id="ilg-bas">Proje İlgilisi</h4>
+  <label>Ad Soyad<input id="ilg-ilgili_ad" data-ilg="ilgili_ad" autocomplete="off"></label>
+  <label>E-posta<input id="ilg-ilgili_mail" data-ilg="ilgili_mail" type="email" autocomplete="off"></label>
+  <label>Telefon<input id="ilg-ilgili_tel" data-ilg="ilgili_tel" type="tel" autocomplete="off"></label>
+  <div class="ilgalt"><a id="ilg-mailto" href="#">✉ Mail at</a><a id="ilg-telto" href="#">☎ Ara</a><span class="ilgmsg" id="ilg-msg"></span></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -525,7 +547,7 @@ function eksikBos(r,f,key){
   if(!r || key==="draft") return false;
   const i=COLS.findIndex(c=>c.f===f)+1; if(i<1) return false;
   const bos=r[f]==null||String(r[f]).trim()==="";
-  if(!r.durum) return bos && ((i>=1&&i<=6)||(i>=8&&i<=11));
+  if(!r.durum || r.durum==="Teklif Talebi Geldi") return bos && ((i>=1&&i<=6)||(i>=8&&i<=11)); /* YD-EKSIK-BOS2 (05.10.2026, Melih): "Teklif Talebi Geldi"de de boşlar pembe */
   if(r.durum==="Teklif İncelendi" && f==="oncelik") return true;
   return false;
 }
@@ -546,7 +568,8 @@ function rowHTML(r,key){
         else if(terminGecmis(r)){ uyari=" termingecmis"+(terminGec(r)?" terminuyari":""); ipucu=' title="Teklif Bekleniyor — Teklif Teslim Tarihi geçti'+(terminGec(r)?' · İstenen Tarih\'ten sonra':'')+'"'; } /* TERMIN-GECMIS v2 */
         else if(terminGec(r)){ uyari=" terminuyari"; ipucu=' title="İstenen Tarih, Teklif Teslim Tarihi\'nden erken — termin aşıldı"'; }
       }
-      return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+'" data-f="'+c.f+'" type="text"'+ipucu+' style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
+      const tdc=(c.t==='num'?'net':'')+(c.f==='musteri'?'mus'+(ilgVar(r)?' ilg-var':''):''); /* YD-ILGILI */
+      return '<td class="'+tdc+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+'" data-f="'+c.f+'" type="text"'+ipucu+' style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
     +pairCells(r,key,bg)
     +'<td style="background:'+bgv+'"><select class="cell'+(r.durum?" filled":"")+durumWarn+'" data-f="durum" style="width:122px"><option value=""></option>'+DURUM_OPTS.map(o=>'<option'+(r.durum===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
@@ -573,6 +596,8 @@ function render(){
   });
   list.querySelectorAll(".tkClick").forEach(b=>b.onclick=()=>tkStartEntry(b.dataset.row));  /* YD-EKLE-TIKLA */
   list.querySelectorAll(".ntClick").forEach(b=>b.onclick=()=>ntAc(b.dataset.row,b.dataset.nf));  /* YD-NOT-EKLE */
+  list.querySelectorAll("td.mus").forEach(td=>{ td.addEventListener("mouseenter",()=>ilgAc(td,false)); td.addEventListener("mouseleave",()=>{ if(!ILG.pin) ilgKapatGec(); }); td.addEventListener("click",()=>ilgAc(td,true)); }); /* YD-ILGILI */
+  if(ILG.key!=null){ const td=list.querySelector('tr[data-i="'+ILG.key+'"] td.mus'); if(td) ILG.td=td; else ilgKapat(); }
   list.querySelectorAll(".tknote-input").forEach(ta=>ta.addEventListener("change",()=>tkSaveNote(ta.dataset.row,ta.value)));
   list.querySelectorAll(".tknote-pending").forEach(ta=>{ ta.addEventListener("input",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object") p.n=ta.value; }); ta.addEventListener("change",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object"){ p.n=ta.value; tkCommitEntry(ta.dataset.row); } }); });
   list.querySelectorAll(".tkgorevli-pending").forEach(s=>s.addEventListener("change",()=>{ const p=PENDING_TK[s.dataset.row]; if(p&&typeof p==="object"){ p.g=s.value; s.classList.remove("eksikbos"); tkCommitEntry(s.dataset.row); } })); /* YD-GOREVLI */
@@ -633,6 +658,7 @@ async function saveRow(key,f,val,el){
     const rec={blok:BLOK};
     COLS.forEach(c=>{ rec[c.f]=convVal(c.f, r[c.f]==null?"":String(r[c.f])); });
     rec.durum=r.durum||null;
+    ILG_F.forEach(k=>{ if(r[k]) rec[k]=r[k]; }); /* YD-ILGILI */
     await eurAlanlari(rec,rec);
     const {data,error}=await sb.from("satis_yd_akis").insert(rec).select();
     if(error){ m.className="msg err"; m.textContent="Kayıt hatası: "+error.message; return; }
@@ -676,6 +702,7 @@ async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muht
   rec.teklif_birimi_notlari = ntYeniDeger(eskiNot,"Revizyon");  /* YD-NOT-EKLE */
   rec.durum=rangeFilled(rec,1,6)?"Teklif Bekleniyor":null; /* YD-DURUM-KURAL: öncelik 1 belli → Teklif Bekleniyor */
   rec.son_takip_notlari=null; rec.son_takip_tarihi=null;
+  ILG_F.forEach(k=>{ rec[k]=r[k]||null; }); /* YD-ILGILI: ilgili bilgisi kopyaya geçer */
   if(kaynakId) rec.muhtemel_kaynak_id=kaynakId;
   const {data,error}=await sb.from("satis_yd_akis").insert(rec).select();
   if(error){ m.className="msg err"; m.textContent="Revizyon kopyası oluşturulamadı: "+error.message; return false; }
@@ -755,6 +782,69 @@ async function ntKaydet(){
   const v=document.getElementById("nt-vaz"); if(v) v.onclick=ntKapat;
   const ov=document.getElementById("nt-ov"); if(ov) ov.onclick=e=>{ if(e.target===ov) ntKapat(); };
   const ta=document.getElementById("nt-txt"); if(ta) ta.onkeydown=e=>{ if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){ e.preventDefault(); ntKaydet(); } if(e.key==="Escape") ntKapat(); };
+})();
+/* YD-ILGILI (05.10.2026, Melih): proje ilgilisinin adı, e-postası, telefonu (satis_yd_akis.ilgili_ad/_mail/_tel).
+   Müşteri hücresinin üzerine gelince kart açılır (görüntüle + düzenle), ayrılınca kapanır; tıklayınca sabitlenir
+   (dışarı tıklama / Esc ile kapanır). Her alan değişince anında kaydedilir. Dolu satırda Müşteri hücresinin solunda yeşil çizgi. */
+const ILG_F=["ilgili_ad","ilgili_mail","ilgili_tel"];
+const ILG={key:null,td:null,t:null,pin:false};
+function ilgVar(r){ return !!r && ILG_F.some(k=>String(r[k]||"").trim()); }
+function ilgLinkler(){
+  const m=document.getElementById("ilg-ilgili_mail").value.trim(), t=document.getElementById("ilg-ilgili_tel").value.trim();
+  const a=document.getElementById("ilg-mailto"), b=document.getElementById("ilg-telto");
+  a.style.display=m?"":"none"; a.href=m?"mailto:"+m:"#";
+  b.style.display=t?"":"none"; b.href=t?"tel:"+t.replace(/[^\d+]/g,""):"#";
+}
+function ilgKonum(){
+  const p=document.getElementById("ilg-pop"); if(!ILG.td||!p.classList.contains("on")) return;
+  const rc=ILG.td.getBoundingClientRect(), w=p.offsetWidth, h=p.offsetHeight;
+  let x=Math.max(6,Math.min(rc.left,window.innerWidth-w-6)), y=rc.bottom+3;
+  if(y+h>window.innerHeight-6) y=Math.max(6,rc.top-h-3);
+  p.style.left=x+"px"; p.style.top=y+"px";
+}
+function ilgAc(td,pin){
+  const tr=td.closest("tr"); if(!tr) return; const key=tr.dataset.i, r=getRow(key); if(!r) return;
+  clearTimeout(ILG.t); const p=document.getElementById("ilg-pop");
+  if(ILG.key!==key || !p.classList.contains("on")){
+    if(p.contains(document.activeElement)) document.activeElement.blur();
+    ILG.key=key; ILG.pin=false;
+    ILG_F.forEach(k=>{ const el=document.getElementById("ilg-"+k); el.value=r[k]||""; el.classList.remove("bad"); });
+    document.getElementById("ilg-bas").textContent="Proje İlgilisi — "+(String(r.proje||"").trim()||"yeni satır");
+    const ms=document.getElementById("ilg-msg"); ms.textContent=""; ms.className="ilgmsg";
+    ilgLinkler();
+  }
+  ILG.td=td; if(pin) ILG.pin=true;
+  p.classList.add("on"); ilgKonum();
+}
+function ilgKapat(){ clearTimeout(ILG.t); const p=document.getElementById("ilg-pop"); if(p) p.classList.remove("on"); ILG.key=null; ILG.td=null; ILG.pin=false; }
+function ilgKapatGec(){ clearTimeout(ILG.t); ILG.t=setTimeout(()=>{ const p=document.getElementById("ilg-pop"); if(ILG.pin||(p&&p.contains(document.activeElement))) return; ilgKapat(); },350); }
+async function ilgKaydet(el){
+  const k=el.dataset.ilg, key=ILG.key, r=getRow(key); if(!r) return;
+  const ms=document.getElementById("ilg-msg"); let v=el.value.trim();
+  if(k==="ilgili_mail" && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){ el.classList.add("bad"); ms.className="ilgmsg err"; ms.textContent="E-posta geçersiz"; return; }
+  el.classList.remove("bad"); const yeni=v||null;
+  if((r[k]||null)===yeni){ ilgLinkler(); return; }
+  if(key==="draft" || !r.id){ r[k]=yeni; ms.className="ilgmsg"; ms.textContent="Satır kaydedilince yazılır"; ilgLinkler(); return; }
+  const upd={}; upd[k]=yeni;
+  const {error}=await sb.from("satis_yd_akis").update(upd).eq("id",r.id);
+  if(error){ ms.className="ilgmsg err"; ms.textContent="Kayıt hatası"; setMsg("Kayıt hatası: "+error.message,false); return; }
+  r[k]=yeni; ms.className="ilgmsg"; ms.textContent="Kaydedildi ✓"; ilgLinkler();
+  const td=document.querySelector('#list tr[data-i="'+key+'"] td.mus'); if(td) td.classList.toggle("ilg-var",ilgVar(r));
+}
+(function(){
+  const p=document.getElementById("ilg-pop"); if(!p) return;
+  p.addEventListener("mouseenter",()=>clearTimeout(ILG.t));
+  p.addEventListener("mouseleave",()=>{ if(!ILG.pin) ilgKapatGec(); });
+  p.addEventListener("mousedown",()=>{ ILG.pin=true; });
+  p.querySelectorAll("input[data-ilg]").forEach(el=>{
+    el.addEventListener("change",()=>ilgKaydet(el));
+    el.addEventListener("input",ilgLinkler);
+    el.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); el.blur(); } if(e.key==="Escape"){ el.blur(); ilgKapat(); } });
+  });
+  document.addEventListener("mousedown",e=>{ if(!p.classList.contains("on")) return; if(p.contains(e.target)||(e.target.closest&&e.target.closest("td.mus"))) return; ilgKapat(); });
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") ilgKapat(); });
+  window.addEventListener("resize",ilgKonum);
+  document.addEventListener("scroll",ilgKonum,true);
 })();
 let ARB_FOCUS_ROW=null;
 function tkStartEntry(key){
