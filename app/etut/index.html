@@ -473,4 +473,232 @@ load();
 </script>
 <!-- /ARB-HOVERTITLE -->
 </body>
-</html>
+</html<!-- ARB-EXCEL-BTN -->
+<script>
+/* ARB-EXCEL-BTN (EXCEL-MAIL, 06.10.2026) — TEK KAYNAK: kod/_excel_btn.js, sayfalara kod/_excel_btn_inject.py ile girer.
+   Her gorunur tablonun ust sagina "Excel" dugmesi (sayfa duzenine dokunmayan, position:fixed katman).
+   Basinca tablo (gorunen hali; input/select degerleri dahil, birlesik hucreler korunur) xlsx'e cevrilir ve
+   edge 'tablo-excel-mail' ile giris yapan kullaniciya mail eki olarak gider. Tablo haric tutmak icin: data-noexcel. */
+(function () {
+  if (window.ARB_XL_INIT) return; window.ARB_XL_INIT = 1;
+  var SB = "https://zehysygpqxqmrzangvuc.supabase.co";
+  var XLSX_URL = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+  var st = document.createElement("style");
+  st.textContent = ".arb-xl-btn{position:fixed;z-index:40;font:600 10.5px/1 system-ui,'Segoe UI',Arial,sans-serif;padding:3px 7px;" +
+    "border:1px solid #1d6f42;color:#1d6f42;background:#fff;border-radius:5px;cursor:pointer;opacity:.8;display:none;white-space:nowrap}" +
+    ".arb-xl-btn:hover{opacity:1;background:#1d6f42;color:#fff}.arb-xl-btn[disabled]{opacity:.55;cursor:wait}@media print{.arb-xl-btn{display:none!important}}";
+  document.head.appendChild(st);
+  var BTN = []; // {t, b}
+
+  function uygun(t) {
+    if (!t.isConnected || (t.parentElement && t.parentElement.closest("table"))) return false;
+    if (t.closest("[data-noexcel]")) return false;
+    var r = t.rows; if (!r || r.length < 2) return false;
+    var mx = 0; for (var i = 0; i < Math.min(r.length, 6); i++) mx = Math.max(mx, r[i].cells.length);
+    return mx >= 2;
+  }
+  function tara() {
+    var ts = document.querySelectorAll("table");
+    for (var i = 0; i < ts.length; i++) {
+      var t = ts[i]; if (t.__arbxl || !uygun(t)) continue;
+      var b = document.createElement("button"); b.type = "button"; b.className = "arb-xl-btn"; b.textContent = "Excel";
+      b.title = "Tablonun Excel halini e-posta ile gönder";
+      (function (tt, bb) { bb.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); gonder(tt, bb); }); })(t, b);
+      document.body.appendChild(b); t.__arbxl = b; BTN.push({ t: t, b: b });
+    }
+    for (var j = BTN.length - 1; j >= 0; j--) if (!BTN[j].t.isConnected) { BTN[j].b.remove(); BTN.splice(j, 1); }
+    yerlestir();
+  }
+  function gorunurSag(t, rc) {
+    var right = Math.min(rc.right, window.innerWidth), top = rc.top, el = t.parentElement;
+    while (el && el !== document.body && el !== document.documentElement) {
+      var cs = getComputedStyle(el);
+      if (cs.overflowX !== "visible" || cs.overflowY !== "visible") { var pr = el.getBoundingClientRect(); right = Math.min(right, pr.right); top = Math.max(top, pr.top); }
+      el = el.parentElement;
+    }
+    return { right: right, top: top };
+  }
+  function yerlestir() {
+    for (var i = 0; i < BTN.length; i++) {
+      var t = BTN[i].t, b = BTN[i].b, goster = false;
+      var rc = t.getBoundingClientRect();
+      if (rc.width > 100 && rc.height > 10 && rc.bottom > 0 && rc.top < window.innerHeight) {
+        var g = gorunurSag(t, rc), x = g.right - 6, y = Math.max(rc.top, g.top, 0) + 4;
+        if (x > rc.left + 40 && y < rc.bottom) {
+          var h = document.elementFromPoint(x, y);
+          goster = !!h && (t.contains(h) || (h.classList && h.classList.contains("arb-xl-btn")));
+          if (goster) {
+            var bw = b.offsetWidth || 44, bh = b.offsetHeight || 18;
+            var by = rc.top - bh - 2; if (by < 0) by = Math.max(rc.top, 0) + 2;
+            var bx = g.right - bw;
+            b.style.left = Math.round(bx) + "px"; b.style.top = Math.round(by) + "px";
+          }
+        }
+      }
+      var d = goster ? "block" : "none"; if (b.style.display !== d) b.style.display = d;
+    }
+  }
+  var raf = 0; function yp() { if (!raf) raf = requestAnimationFrame(function () { raf = 0; yerlestir(); }); }
+  var to = 0; function tp() { clearTimeout(to); to = setTimeout(tara, 350); }
+  window.addEventListener("scroll", yp, true); window.addEventListener("resize", yp);
+  document.addEventListener("click", function () { setTimeout(yp, 60); }, true);
+  function basla() {
+    tara();
+    new MutationObserver(function (ms) {
+      for (var i = 0; i < ms.length; i++) { var n = ms[i].target; if (!(n.classList && n.classList.contains("arb-xl-btn"))) { tp(); return; } }
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class", "hidden"] });
+    setInterval(yp, 1500);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", basla); else basla();
+
+  // ---------- tablo → hucre degerleri
+  function gizli(el) { return !(el.offsetParent || el.getClientRects().length); }
+  function metin(n) {
+    if (n.nodeType === 3) return n.nodeValue;
+    if (n.nodeType !== 1) return "";
+    var tg = n.tagName;
+    if (tg === "SCRIPT" || tg === "STYLE" || tg === "BUTTON" || (n.classList && n.classList.contains("arb-xl-btn"))) return "";
+    if (gizli(n) && tg !== "BR") return "";
+    if (tg === "BR") return "\n";
+    if (tg === "SELECT") { var o = n.options[n.selectedIndex]; return o && o.value !== "" ? o.text : ""; }
+    if (tg === "INPUT") {
+      var ty = (n.type || "").toLowerCase();
+      if (ty === "checkbox") return n.checked ? "✓" : "";
+      if (ty === "radio") return n.checked ? (n.value || "✓") : "";
+      if (ty === "hidden" || ty === "button" || ty === "submit" || ty === "file") return "";
+      return n.value || "";
+    }
+    if (tg === "TEXTAREA") return n.value || "";
+    var s = "", blok = /^(DIV|P|LI|TR|H\d)$/.test(tg);
+    for (var c = n.firstChild; c; c = c.nextSibling) s += metin(c);
+    return blok ? "\n" + s + "\n" : s;
+  }
+  function hucre(c) {
+    var s = metin(c).replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").trim();
+    var ti = (c.getAttribute("title") || "").trim();
+    if (ti && /(…|\.\.\.)$/.test(s) && ti.length > s.length) s = ti;
+    if (s === "✕" || s === "×") s = "";
+    return s;
+  }
+  function sayi(s) {
+    var x = s.replace(/\s/g, "").replace(/[€$£₺]$/, "").replace(/^[€$£₺]/, "");
+    if (!x || x.length > 16 || /^-?0\d/.test(x)) return null;
+    if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(x) || /^-?\d+(,\d+)?$/.test(x)) {
+      var v = parseFloat(x.replace(/\./g, "").replace(",", ".")); return isFinite(v) ? v : null;
+    }
+    return null;
+  }
+  function matris(t) {
+    var rows = [], merges = [], occ = {}, ri = 0, basSatir = 0;
+    for (var i = 0; i < t.rows.length; i++) {
+      var tr = t.rows[i]; if (gizli(tr)) continue;
+      var ci = 0, row = rows[ri] || (rows[ri] = []), hepTh = true, var1 = false, m0 = merges.length;
+      for (var j = 0; j < tr.cells.length; j++) {
+        var c = tr.cells[j]; if (gizli(c)) continue;
+        while (occ[ri + ":" + ci]) ci++;
+        var v = hucre(c), n = sayi(v), cs = Math.max(1, c.colSpan || 1), rs = Math.max(1, c.rowSpan || 1);
+        if (c.tagName !== "TH") hepTh = false; if (v) var1 = true;
+        row[ci] = n === null ? v : n;
+        if (cs > 1 || rs > 1) {
+          merges.push({ s: { r: ri, c: ci }, e: { r: ri + rs - 1, c: ci + cs - 1 } });
+          for (var a = 0; a < rs; a++) for (var b2 = 0; b2 < cs; b2++) if (a || b2) occ[(ri + a) + ":" + (ci + b2)] = 1;
+        }
+        ci += cs;
+      }
+      if (!var1 && merges.length === m0 && !Object.keys(occ).some(function (q) { return q.indexOf(ri + ":") === 0; })) { rows.length = ri; continue; }
+      if (ri === basSatir && (hepTh || (tr.parentElement && tr.parentElement.tagName === "THEAD"))) basSatir = ri + 1;
+      ri++;
+    }
+    var w = 0; rows.forEach(function (r) { w = Math.max(w, r.length); });
+    rows = rows.map(function (r) { var o = []; for (var k = 0; k < w; k++) o.push(r[k] === undefined ? "" : r[k]); return o; });
+    return { rows: rows, merges: merges, bas: basSatir };
+  }
+  function baslik(t) {
+    if (t.caption && t.caption.textContent.trim()) return t.caption.textContent.trim();
+    var el = t;
+    for (var lv = 0; lv < 6 && el && el !== document.body; lv++) {
+      var p = el.previousElementSibling, k = 0;
+      while (p && k < 4) {
+        if (!gizli(p) && p.tagName !== "TABLE" && p.tagName !== "SCRIPT" && p.tagName !== "STYLE") {
+          var tx = (p.innerText || "").trim().split("\n")[0].trim();
+          var fw = parseInt(getComputedStyle(p).fontWeight, 10) || 400;
+          if (tx.length >= 2 && tx.length <= 90 && (/^H[1-6]$/.test(p.tagName) || fw >= 600 || /tit|bas|head|hdr|bh/i.test(p.className || ""))) return tx;
+        }
+        p = p.previousElementSibling; k++;
+      }
+      el = el.parentElement;
+    }
+    var th = t.querySelector("th"); return th && th.textContent.trim() ? th.textContent.trim().slice(0, 60) : "Tablo";
+  }
+
+  // ---------- oturum: formda kisi kodu girisi (arb_kisi_<yol>) + rol hesabi; panoda int@
+  function formYol() {
+    if (window.ARB_FORM_YOL) return String(window.ARB_FORM_YOL);
+    var m = location.pathname.match(/\/app\/([^\/]+)\/?/); return m ? m[1] + "/" : "";
+  }
+  function oturumlar() {
+    var out = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i), v; try { v = JSON.parse(localStorage.getItem(k)); } catch (e) { continue; }
+      if (v && v.currentSession) v = v.currentSession;
+      if (v && v.access_token && v.user && v.user.email) out.push({ em: String(v.user.email).toLowerCase(), tok: v.access_token, exp: (v.expires_at || 0) * 1000 });
+    }
+    return out;
+  }
+  function oturumSec() {
+    var yol = formYol(), ks = null, ss = oturumlar(), simdi = Date.now() + 20000, sec = null;
+    try { ks = JSON.parse(localStorage.getItem("arb_kisi_" + yol) || "null"); } catch (e) { }
+    function bul(em) { for (var i = 0; i < ss.length; i++) if (ss[i].em === em && ss[i].exp > simdi) return ss[i]; return null; }
+    if (ks && ks.rol) { sec = bul(String(ks.rol).toLowerCase()); if (sec) return { s: sec, kisi: ks.kod, form: yol }; }
+    if (window.ARB_EM) { sec = bul(String(window.ARB_EM).toLowerCase()); if (sec) return { s: sec, kisi: ks && ks.kod, form: yol }; }
+    sec = bul("int@arbor.com.tr"); if (sec) return { s: sec, kisi: "MB", form: yol };
+    for (var j = 0; j < ss.length; j++) if (ss[j].exp > simdi && /@arbor\.com\.tr$/.test(ss[j].em)) return { s: ss[j], kisi: ks && ks.kod, form: yol };
+    return null;
+  }
+  function yukle() {
+    return new Promise(function (ok, no) {
+      if (window.XLSX && window.XLSX.write) return ok();
+      var s = document.createElement("script"); s.src = XLSX_URL; s.onload = function () { ok(); };
+      s.onerror = function () { no(new Error("Excel kütüphanesi yüklenemedi.")); }; document.head.appendChild(s);
+    });
+  }
+  function ascii(s) {
+    var M = { "ç": "c", "Ç": "C", "ğ": "g", "Ğ": "G", "ı": "i", "İ": "I", "ö": "o", "Ö": "O", "ş": "s", "Ş": "S", "ü": "u", "Ü": "U" };
+    return s.replace(/[çÇğĞıİöÖşŞüÜ]/g, function (c) { return M[c]; }).replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  }
+  function gonder(t, b) {
+    if (b.disabled) return;
+    var ot = oturumSec();
+    if (!ot) { alert("Excel gönderilemedi.\n\nSebep: Oturum bulunamadı ya da süresi doldu. Sayfayı yenileyip tekrar deneyiniz."); return; }
+    var bas = baslik(t), sayfa = (document.title || "Arbor").replace(/\s+/g, " ").trim();
+    var m = matris(t);
+    if (!m.rows.length) { alert("Excel gönderilemedi.\n\nSebep: Tablo boş."); return; }
+    b.disabled = true; b.textContent = "Gönderiliyor…";
+    yukle().then(function () {
+      var X = window.XLSX, ws = X.utils.aoa_to_sheet(m.rows);
+      if (m.merges.length) ws["!merges"] = m.merges;
+      ws["!cols"] = (m.rows[0] || []).map(function (_, c) {
+        var w = 6; m.rows.forEach(function (r) { String(r[c]).split("\n").forEach(function (l) { w = Math.max(w, l.length + 2); }); });
+        return { wch: Math.min(w, 60) };
+      });
+      if (m.bas > 0 && m.rows.length > m.bas) ws["!autofilter"] = { ref: X.utils.encode_range({ s: { r: m.bas - 1, c: 0 }, e: { r: m.rows.length - 1, c: m.rows[0].length - 1 } }) };
+      var wb = X.utils.book_new();
+      X.utils.book_append_sheet(wb, ws, (bas.replace(/[\[\]:*?\/\\]/g, " ").trim() || "Tablo").slice(0, 31));
+      var b64 = X.write(wb, { bookType: "xlsx", type: "base64" });
+      var d = new Date(), gun = ("0" + d.getDate()).slice(-2) + ("0" + (d.getMonth() + 1)).slice(-2) + String(d.getFullYear()).slice(-2);
+      var dosya = (ascii(bas).slice(0, 60) || "Tablo") + "_" + gun + ".xlsx";
+      return fetch(SB + "/functions/v1/tablo-excel-mail", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + ot.s.tok },
+        body: JSON.stringify({ b64: b64, dosya: dosya, baslik: bas, sayfa: sayfa, form: ot.form, kisi: ot.kisi || "" })
+      }).then(function (r) { return r.json().catch(function () { return { ok: false, hata: "HTTP " + r.status }; }); });
+    }).then(function (j) {
+      if (j && j.ok) alert("Excel dosyası e-posta ile gönderildi.\n\nAlıcı: " + j.to + "\nTablo: " + bas);
+      else alert("Excel gönderilemedi.\n\nSebep: " + ((j && (j.hata || j.message || j.msg)) || "bilinmeyen hata"));
+    }).catch(function (e) {
+      alert("Excel gönderilemedi.\n\nSebep: " + (e && e.message ? e.message : e));
+    }).then(function () { b.disabled = false; b.textContent = "Excel"; });
+  }
+})();
+</script>
+<!-- /ARB-EXCEL-BTN -->
+>
