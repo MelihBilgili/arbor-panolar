@@ -173,7 +173,8 @@ const rowsOf=id=>id==="hatalar"?D.hata.filter(r=>r.sayfa!=="etut"):id==="etut"?D
 const ilk=p=>String(p.ad||"").trim().split(/\s+/)[0].toLocaleLowerCase("tr");
 const icerir=(txt,p)=>{ const f=ilk(p); if(!f) return false; const t=" "+String(txt||"").toLocaleLowerCase("tr")+" ";
   return new RegExp("[^\\p{L}]"+f.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"[^\\p{L}]","u").test(t); };
-const hataPuani=p=>D.hata.filter(r=>icerir(r.yapan,p)).reduce((s,r)=>s+num(r.hata_puani),0);
+/* ETUT-HATA-YAKALAMA: Hata Puanı yalnız sayfa=hatalar (Yakalama satırları oraya aynalanır) */
+const hataPuani=p=>D.hata.filter(r=>r.sayfa!=="etut"&&icerir(r.yapan,p)).reduce((s,r)=>s+num(r.hata_puani),0);
 const yakalamaPuani=p=>D.hata.filter(r=>icerir(r.yakalayan,p)).reduce((s,r)=>s+num(r.basari_puani),0);
 const zk=r=>0.1*num(r.zorluk)+1;
 const projeYuku=p=>D.yuk.reduce((s,r)=>s+zk(r)*num((r.yuk||{})[p.kisa]),0);
@@ -235,7 +236,7 @@ const TABS=[
    <b>İnisiyatif Katsayısı:</b> Hatalar sayfasında ilgili kişiye ait İnisiyatif Puanı ve kişinin kıdemi dikkate alınarak belirlenir.<br>
    <b>İnisiyatif Puanı:</b> Şefine sormaya ihtiyaç duymadan, doğru şekilde inisiyatif kullanan, müşteriye sormak yerine müşteriyi yönlendirebilen kişiye, 0-100 arasında puan yazılır.<br>
    <b>Memnuniyet Prim Yüzdeleri:</b> TH: 100 / projede emeği geçen kişi sayısı şeklinde hesaplanır. Personel: TH'dan kalan yüzde emeği geçen personele emekleri oranında dağıtılır. Örn. bir projede TH, BT ve MN çalışmışsa TH %33'tür; kalan %67 BT ile MN arasında TH tarafından emek payına göre dağıtılır.<br>
-   <span class="hint">Kıdem = Personel panosu (işe giriş tarihinden). Toplam Hata Puanı = Etüt-Proje Hataları formu + Hata Yakalama Puanları tablosunda Hatayı Yapan'da adı geçen satırların Hata Puanı · Toplam Hata Yakalama Puanı = Hatayı Yakalayan'da adı geçen satırların Başarı Puanı (ilk ad ile eşleşir) · Hesaplanan Prim = Proje Yükü × çarpan × katsayılar + DK1 + Memnuniyet Primi · TH Öneri, Personel panosunda son ayın Yol-Yemek Dahil Prim (TL) değeri olur.</span>`}
+   <span class="hint">Kıdem = Personel panosu (işe giriş tarihinden). Toplam Hata Puanı = Etüt-Proje Hataları formunda (Etüt Hata Yakalama satırları dahil) Hatayı Yapan'da adı geçen satırların Hata Puanı · Toplam Hata Yakalama Puanı = Hatayı Yakalayan'da adı geçen satırların Başarı Puanı (ilk ad ile eşleşir) · Hesaplanan Prim = Proje Yükü × çarpan × katsayılar + DK1 + Memnuniyet Primi · TH Öneri, Personel panosunda son ayın Yol-Yemek Dahil Prim (TL) değeri olur.</span>`}
 ];
 /* ETUT-PROJE-HATALAR (29.09.2026): Hata Puanları bloğu Etüt-Proje Hataları formuna taşındı; etut_hata (sayfa=hatalar) İcmal hesabında kullanılmaya devam eder */
 TABS.splice(TABS.findIndex(t=>t.id==="hatalar"),1);
