@@ -990,7 +990,9 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
   };
   async function load(tbl){
     const t=T[tbl];
-    const {data,error}=await sb.from(tbl).select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false});
+    const {data,error}=tbl==="ob_avenant" /* OB-TS-SIRA-261006 */
+      ? await sb.from(tbl).select("*").order("tarih",{ascending:false,nullsFirst:false}).order("no",{ascending:false}).order("id",{ascending:false})
+      : await sb.from(tbl).select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false});
     if(error){ $(t.tb).innerHTML='<tr><td colspan="7">Hata: '+escq(error.message)+'</td></tr>'; return; }
     const R=data||[]; $(t.cnt).textContent="("+R.length+")";
     $(t.tb).innerHTML='<tr data-new="1" style="background:#fffbea">'+t.cols({}).join("")+'<td class="x"></td></tr>'
