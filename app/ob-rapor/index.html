@@ -149,8 +149,8 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <div class="chd"><h2>Yurt Dışı Birimlerden Selectron'a Kesilen Faturalar <span class="cnt" id="c3"></span></h2>
       <span id="a3"></span></div>
     <div class="scroll"><table><thead><tr>
-      <th style="width:16%">Yurt Dışı Birim</th><th style="width:13%">Fatura No</th><th style="width:9%">Tarih</th><th style="width:28%">Proje(ler)</th><th style="width:14%">Tutar</th><th style="width:12%">Para Birimi</th><th class="x"></th>
-    </tr></thead><tbody id="t3"><tr><td colspan="7">Yükleniyor…</td></tr></tbody></table></div>
+      <th style="width:24%">Yurt Dışı Birim</th><th style="width:22%">Fatura No</th><th style="width:14%">Tarih</th><th style="width:20%">Tutar</th><th style="width:14%">Para Birimi</th><th class="x"></th><!-- KF-PROJE-YOK (06.10.2026): Proje(ler) sütunu kaldırıldı; DB kolonu duruyor -->
+    </tr></thead><tbody id="t3"><tr><td colspan="6">Yükleniyor…</td></tr></tbody></table></div>
     <div class="msg" id="m3"></div>
    </div>
 
@@ -381,7 +381,7 @@ async function delIsler(id){
 const SELARB_REQ=[
   /* SELARB-TEK-KAYNAK (21.09.2026): Güncel Alacaklar artık Sel-Arb formunda (app/sel-arb/) — MK Blok 1 denetimden çıktı */
   ["sel_odeme",["yd_birim","odeme_tarihi","gonderen_banka","tutar","para_birimi"],"Selectron'a Ödemeler (ÖB Blok 2)"],
-  ["arbor_kesilen_fatura",["yd_birim","ft_no","tarih","projeler","tutar","para_birimi"],"Kesilen Faturalar (ÖB Blok 3)"]
+  ["arbor_kesilen_fatura",["yd_birim","ft_no","tarih","tutar","para_birimi"],"Kesilen Faturalar (ÖB Blok 3)"] /* KF-PROJE-YOK: projeler zorunlu değil */
 ];
 async function selArbBosVar(){
   const eksik=[];
@@ -843,13 +843,12 @@ sLoadListe(); loadSelArbListe(); sLoadAkis();
   let R3=[];
   async function load3(){
     const {data,error}=await sb.from("arbor_kesilen_fatura").select("*").order("id",{ascending:false});
-    if(error){ $("t3").innerHTML='<tr><td colspan="7">Hata: '+escq(error.message)+'</td></tr>'; return; }
+    if(error){ $("t3").innerHTML='<tr><td colspan="6">Hata: '+escq(error.message)+'</td></tr>'; return; }
     R3=data||[]; $("c3").textContent="("+R3.length+")";
     $("t3").innerHTML=R3.length?R3.map(r=>'<tr data-id="'+r.id+'">'
       +'<td><select data-f="yd_birim">'+opts(YDB,r.yd_birim)+'</select></td>'
       +'<td><input data-f="ft_no" value="'+escq(r.ft_no||"")+'"></td>'
       +'<td><input type="date" data-f="tarih" value="'+escq(r.tarih||"")+'"></td>'
-      +'<td><input data-f="projeler" data-sap="m" readonly value="'+escq(r.projeler||"")+'"></td>'
       +'<td><input class="num" data-f="tutar" value="'+escq(r.tutar==null?"":r.tutar)+'"></td>'
       +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
       +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("")
@@ -857,11 +856,11 @@ sLoadListe(); loadSelArbListe(); sLoadAkis();
     /* SA-BOS-SATIR */
     $("t3").insertAdjacentHTML("afterbegin",'<tr data-new="1" style="background:#fffbea">'
       +'<td><select data-f="yd_birim">'+opts(YDB,"Arbor SAS")+'</select></td>'
-      +'<td><input data-f="ft_no"></td><td><input type="date" data-f="tarih"></td><td><input data-f="projeler" data-sap="m" readonly></td>'
+      +'<td><input data-f="ft_no"></td><td><input type="date" data-f="tarih"></td>'
       +'<td><input class="num" data-f="tutar"></td><td><select data-f="para_birimi">'+opts(PB,"EUR")+'</select></td><td class="x"></td></tr>');
     bind("t3","arbor_kesilen_fatura","m3",load3);
     bosBind("t3","arbor_kesilen_fatura","m3",load3,{yd_birim:1,para_birimi:1});
-    eskiKapat("t3","tarih",7); /* ESKI-KAPAT */
+    eskiKapat("t3","tarih",6); /* ESKI-KAPAT */ /* KF-PROJE-YOK */
     try{ if(typeof ydHesap==="function") ydHesap(); }catch(e){} /* YD-FT-GEREKEN */
     cariBanner("t3","Cari Ay Toplam EUR",R3.filter(r=>cariAyMi(r.tarih)).map(r=>(r.tutar_eur!=null?Number(r.tutar_eur):((r.para_birimi||"EUR")==="EUR"?Number(r.tutar)||0:0))).reduce((a,b)=>a+b,0),"€");
   }
