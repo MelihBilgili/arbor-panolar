@@ -45,6 +45,7 @@
   .del,.fdel{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:15px;padding:0 4px}
   .load{padding:30px;text-align:center;color:#8a97a4}
   @media (max-width:700px){ .sechead .ara{margin-left:0;width:100%} }
+.ciro{font-size:11px;color:#5a6b7d;white-space:nowrap;margin-left:4px;align-self:center}
 </style>
 </head>
 <body>
@@ -255,10 +256,15 @@ const SINIF_AD={1:"1. Sınıf Fransa",2:"2. Sınıf Fransa",3:"1. Sınıf İngil
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const MAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 let SINIF={}; const ARA={YD1:"",YD2:""}; const BAG={};
+/* MUSTERI-CIRO (06.10.2026): sınıfsız şirketlerde ✕ sağında son yıllık ciro (milyon, virgülden sonra 0 hane); kaynak musteri_firma.ciro_mn/ciro_birim/ciro_yil/ciro_kaynak */
+let CIRO={};
+function ciroHtml(fid){ const c=CIRO[fid]; if(!c||c.ciro_mn==null) return ""; const v=Math.round(Number(c.ciro_mn)).toLocaleString("tr-TR");
+  return '<span class="ciro" title="Yıllık ciro '+esc((c.ciro_yil||"")+" · "+(c.ciro_kaynak||""))+'">('+v+" M"+esc(c.ciro_birim||"€")+")</span>"; }
 function setMsg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; }
 function sinifTxt(b,firma){ const a=SINIF[b+"|"+MUS.k(firma)]; return a?a.slice().sort().map(s=>SINIF_AD[s]||s).join(", "):""; }
 async function load(){
   try{ await MUS.yukle(sb); }catch(e){ setMsg("Yüklenemedi: "+(e.message||e),false); return; }
+  const cr=await sb.from("musteri_firma").select("id,ciro_mn,ciro_birim,ciro_yil,ciro_kaynak"); CIRO={}; (cr.data||[]).forEach(x=>CIRO[x.id]=x); /* MUSTERI-CIRO */
   const r=await sb.from("fiyat_musteri_sinif").select("sinif,ad");
   SINIF={}; (r.data||[]).forEach(x=>{ const kk=(x.sinif<=2?"YD1":"YD2")+"|"+MUS.k(x.ad); (SINIF[kk]=SINIF[kk]||[]).push(x.sinif); });
   if(!document.querySelector("section.blk")) iskelet();
@@ -288,7 +294,7 @@ function govde(b){
     if(q && !(MUS.k(f.firma).includes(q) || L.some(r=>[r.ad_soyad,r.mail,r.tel].some(v=>MUS.k(v).includes(q))))) return;
     say++; sayI+=L.length; const n=Math.max(1,L.length), cls=' class="g'+(g++%2)+'"';
     const bas='<td rowspan="'+n+'" class="fc"><div class="fwrap"><input class="cell fi" data-fid="'+f.id+'" value="'+esc(f.firma)+'" title="Şirket adı — değiştirilirse Fiyatlandırma panosundaki sınıf listesinde de değişir">'
-      +((L.length||sinifTxt(b,f.firma))?'':'<button class="fdel" type="button" data-fid="'+f.id+'" title="Şirketi sil">✕</button>')+'</div></td><td rowspan="'+n+'" class="sn">'+esc(sinifTxt(b,f.firma))+'</td>';
+      +((L.length||sinifTxt(b,f.firma))?'':'<button class="fdel" type="button" data-fid="'+f.id+'" title="Şirketi sil">✕</button>')+(sinifTxt(b,f.firma)?'':ciroHtml(f.id))+'</div></td><td rowspan="'+n+'" class="sn">'+esc(sinifTxt(b,f.firma))+'</td>';
     if(!L.length){ h+='<tr'+cls+'>'+bas+'<td colspan="4" class="bos">ilgili kaydı yok — üstteki satırdan ekleyin</td></tr>'; return; }
     L.forEach((r,i)=>{ h+='<tr'+cls+'>'+(i?'':bas)
       +'<td><input class="cell il" data-iid="'+r.id+'" data-k="ad_soyad" value="'+esc(r.ad_soyad)+'"></td>'
