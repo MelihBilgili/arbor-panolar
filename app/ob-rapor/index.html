@@ -174,8 +174,8 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <div class="scroll"><table style="min-width:520px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th>Correspondence</th><th style="width:110px">Tutar (€)</th><th class="x"></th></tr></thead><tbody id="t5"></tbody></table></div></div>
      <div style="margin-bottom:12px"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">Situations <span class="cnt" id="c6"></span></h3>
       <div class="scroll"><table style="min-width:760px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th style="width:80px">İlerleme No</th><th style="width:110px">Dönem</th><th style="width:110px">Tutar (€)</th><th style="width:140px">Onay Durumu</th><th class="x"></th></tr></thead><tbody id="t6"></tbody></table></div></div>
-     <div><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">Avenants <span class="cnt" id="c7"></span></h3>
-      <div class="scroll"><table style="min-width:620px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th>Açıklama</th><th style="width:110px">Tutar (€)</th><th class="x"></th></tr></thead><tbody id="t7"></tbody></table></div></div>
+     <div><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">TS <span class="cnt" id="c7"></span></h3><!-- OB-TS-261006 -->
+      <div class="scroll"><table style="min-width:1150px"><thead><tr><th style="width:72px">Tarih</th><th style="width:95px">No</th><th style="width:170px">Proje</th><th style="width:230px">İçerik</th><th>Açıklama</th><th style="width:120px">Tutar (€, KDV hariç)</th><th style="width:140px">Durum</th><th class="x"></th></tr></thead><tbody id="t7"></tbody></table></div></div>
      <div style="margin-top:12px"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">PV's de Réception <span class="cnt" id="c9"></span></h3><!-- OB-PVR (01.10.2026): Tutar = Sel-Arb kontrat tutarı (trigger) -->
       <div class="scroll"><table style="min-width:620px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th style="width:130px">Tutar (€)</th><th>Açıklama</th><th class="x"></th></tr></thead><tbody id="t9"></tbody></table></div></div>
     </div>
@@ -978,6 +978,7 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
   const nf=v=>v==null?"":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
   function bmsg(t,ok,tb){ const m=$(tb==="ob_tahsilat"?"m8":"m5"); /* OB-TAHSILAT-260930 */ m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
   const ONAY=["Onaylandı","Görüşmede","Düzeltme İstendi","İptal Edildi"];
+  const TSD=["Avenant geldi","Dönüş bekleniyor","İptal edildi"]; /* OB-TS-261006 */
   const opts=(list,cur)=>['<option value=""></option>'].concat(list.map(o=>'<option'+(String(cur||"")===o?" selected":"")+'>'+escq(o)+'</option>')).join("");
   const inp=(f,v,cls,typ)=>'<input'+(typ?' type="'+typ+'"':'')+(cls?' class="'+cls+'"':'')+' data-f="'+f+'" value="'+escq(v==null?"":v)+'">';
   const T={
@@ -985,7 +986,7 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
     ob_situation:{tb:"t6",cnt:"c6",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("ilerleme_no",r.ilerleme_no)+'</td>','<td>'+inp("donem",r.donem)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td><select data-f="onay_durumu">'+opts(ONAY,r.onay_durumu)+'</select></td>']},
     ob_tahsilat:{tb:"t8",cnt:"c8",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" data-sap-ek="Harç ve Vergi İadesi|Diğer (Proje Dışı)" readonly') /* TAHSILAT-EK-SECENEK */+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']}, /* OB-TAHSILAT-260930 */
     ob_pv_reception:{tb:"t9",cnt:"c9",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("tutar",nf(r.tutar),"num").replace("<input",'<input readonly tabindex="-1" style="background:#f1f3f5" title="Sel-Arb kontrat tutarı (otomatik)"').replace('data-f="tutar"','data-ro="tutar"')+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>']}, /* OB-PVR */
-    ob_avenant:{tb:"t7",cnt:"c7",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']}
+    ob_avenant:{tb:"t7",cnt:"c7",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("no",r.no)+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("icerik",r.icerik)+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td><select data-f="durum">'+opts(TSD,r.durum)+'</select></td>']} /* OB-TS-261006 */
   };
   async function load(tbl){
     const t=T[tbl];
@@ -1010,9 +1011,9 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
       tr.querySelector(".del").onclick=async()=>{ if(!confirm("Bu satır silinsin mi?")) return;
         const {error}=await sb.from(tbl).delete().eq("id",id); if(error) bmsg("Hata: "+error.message,false,tbl); else load(tbl); };
     });
-    eskiKapat(t.tb,"tarih",tbl==="ob_situation"?7:5); /* ESKI-KAPAT */
-    cariBanner(t.tb,"Cari Ay Toplam EUR"+(tbl==="ob_situation"?" <span style=\"font-weight:400;font-size:12px\">(İptal Edildi hariç)</span>":""),
-      R.filter(r=>cariAyMi(r.tarih)&&!(tbl==="ob_situation"&&r.onay_durumu==="İptal Edildi")).reduce((a,r)=>a+(Number(r.tutar)||0),0),"€"); /* CARI-TOPLAM */
+    eskiKapat(t.tb,"tarih",tbl==="ob_situation"?7:(tbl==="ob_avenant"?8:5)); /* OB-TS-261006 */ /* ESKI-KAPAT */
+    cariBanner(t.tb,"Cari Ay Toplam EUR"+(tbl==="ob_situation"?" <span style=\"font-weight:400;font-size:12px\">(İptal Edildi hariç)</span>":(tbl==="ob_avenant"?" <span style=\"font-weight:400;font-size:12px\">(yalnız Avenant geldi)</span>":"")),
+      R.filter(r=>cariAyMi(r.tarih)&&!(tbl==="ob_situation"&&r.onay_durumu==="İptal Edildi")&&!(tbl==="ob_avenant"&&(r.durum!=="Avenant geldi"||r.aktarim))).reduce((a,r)=>a+(Number(r.tutar)||0),0),"€"); /* CARI-TOPLAM */
   }
   load("ob_dpgf"); load("ob_situation"); load("ob_avenant"); load("ob_pv_reception"); load("ob_tahsilat"); /* OB-PVR */ /* OB-TAHSILAT-260930 */
 })();
@@ -1187,6 +1188,7 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
   window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
 })();
 </script>
+
 
 
 
