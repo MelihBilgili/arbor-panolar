@@ -2763,9 +2763,11 @@ async function loadFiyat(target){
   const msBlock=(sinif,title)=>{
     const rows=M.filter(r=>r.sinif===sinif).slice().sort((a,b)=>String(a.ad||"").localeCompare(String(b.ad||""),"tr"));
     let body=rows.map(r=>`<tr data-id="${r.id}"><td class="fc"><div class="mcx">${ec("fiyat_musteri_sinif",r.id,"ad",r.ad)}</div></td><td><button class="fdel" data-t="fiyat_musteri_sinif" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
-    return `<h3 class="sec">${esc(title)}</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Şirket</th><th></th></tr></thead><tbody>${body}`
+    /* FIYAT-SEC-UST (06.10.2026, Melih): "Müşteriler'den seçin" satırı listenin EN ÜSTÜNDE — uzun listelerde
+       (FR1, UK1) 82vh kaydırma kutusunun altında görünmez kalıyordu. */
+    return `<h3 class="sec">${esc(title)}</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Şirket</th><th></th></tr></thead><tbody>`
       +`<tr class="faddrow"><td>${msSec(sinif,rows)}</td><td><button class="btn" id="fm${sinif}-add" data-sinif="${sinif}">Ekle</button></td></tr>`
-      +`</tbody></table></div>`;
+      +`${body}</tbody></table></div>`;
   };
   const style=`<style>
    .ftbl{border-collapse:collapse;width:auto;font-size:11.5px}
