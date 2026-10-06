@@ -761,7 +761,7 @@ async function loadSatis(){
     .sdi-p{color:#2c3542}
     .sdi-t{color:#516072;white-space:nowrap;text-align:right}</style>
     <div class="satis-wrap">
-    ${satisSummary(regions,hasBase)}
+    <div style="display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap"><div style="min-width:0">${satisSummary(regions,hasBase)}</div>${ydTakipGorevBlok(ydRows)}</div>
     ${pipelineTables(ydRows,nowIst)}
     ${yillikTeklifIstatistigi(ydRows,kur)}
     </div>`;
@@ -785,6 +785,13 @@ function satisSummary(regions,hasBase){
   });
   return `<div class="scroll" style="max-height:none;overflow-y:visible;overflow-x:auto;-webkit-overflow-scrolling:touch;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num">Alınan</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
+/* TAKIP-GOREV-PANO (06.10.2026, Melih): Muhtemel/Alınan özetinin sağında kullanıcı bazlı bekleyen takip görevleri (YD1+YD2).
+   Tanım YD formundaki TAKIP-GOREV (tkBekleyenG) ile aynı: son takip kaydının Görevli'si, Hiç Kimse hariç, kapalı durumlar hariç. */
+const YD_TK_KAPALI=["Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı","İptal","Revizyon İstendi"];
+function ydTakipG(r){ if(!r||YD_TK_KAPALI.indexOf(r.durum)>=0) return ""; let log=[]; try{ const v=JSON.parse(r.son_takip_notlari||""); if(Array.isArray(v)) log=v; }catch(e){} const g=String((log[0]&&log[0].g)||"").trim(); return (g&&g!=="Hiç Kimse")?g:""; }
+function ydTakipGorevBlok(rows){ const say={}; rows.forEach(r=>{ const g=ydTakipG(r); if(g) say[g]=(say[g]||0)+1; });
+  const k=Object.keys(say).sort((a,b)=>say[b]-say[a]||a.localeCompare(b,'tr'));
+  return `<div class="tkgpano" style="font-size:13px;color:#16324f;padding:4px 2px;min-width:170px"><div style="font-weight:700;margin-bottom:4px">Bekleyen Takip Görevleri:</div>${k.length?k.map(g=>`<div>${esc(g)}: ${say[g]} Adet</div>`).join(''):'<div style="color:#7b8794">Yok</div>'}</div>`; }
 /* satis_yd_akis'in son_takip_notlari JSON geçmiş-logu ([{t,e,n}], yeni-en-üstte) — yalnız okuma */
 function ydTkParse(raw){ if(raw==null||raw==="") return [];
   try{ const v=JSON.parse(raw); if(Array.isArray(v)) return v.map(x=>({t:(x&&x.t)||"",e:(x&&x.e)||"",n:(x&&x.n)||""})); }catch(e){}
