@@ -197,7 +197,7 @@ const MEMK=()=>["TH",...D.pers.map(p=>p.kisa).filter(Boolean)];
 const HATA_COLS=[{k:"pgd",h:"PGD",t:"t",w:20,sap:1,sapk:"yd"},{k:"part",h:"Part",t:"t",w:12},{k:"tarih",h:"Tarih",t:"d",w:8},
   {k:"yapan",h:"Hatayı Yapan|İsim Soyisim",t:"t",w:22},{k:"yakalayan",h:"Hatayı Yakalayan|İsim Soyisim",t:"t",w:18},{k:"hata",h:"Hata",t:"m",w:46}];
 const TABS=[
- {id:"hatalar",ad:"Hata Puanları",req:"hata",fixed:{sayfa:"hatalar"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},
+ {id:"hatalar",ad:"Hata Puanları",req:"hata",fixed:{sayfa:"hatalar"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},/* ETUT-YAKALAMA-PUANSIZ (06.10.2026) */{k:"basari_puani",h:"Başarı|Puanı",t:"n",w:5},
    {k:"aksetti",h:"Müşteriye ya da Üretime|Aksetti mi?",t:"t",w:12},{k:"notlar",h:"Notlar",t:"m",w:36}],
   baslik:"Etüt ve Proje birimlerinin ilgili dönem zarfında yaptığı tüm hatalar aşağıdaki tabloya kaydedilir. <!-- ETUT-HATA-YAKALAMA -->Etüt Hata Yakalama formuna girilen satırlar buraya otomatik gelir.",
   not:`<b>Hata Puanı:</b><br>10 puanlık örnek hata: P522 numaralı pozda müşteri poz numarası hatalı girilmiştir. Kendi içimizde düzeltilmiştir.<br>
