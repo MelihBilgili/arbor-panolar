@@ -2560,13 +2560,13 @@ async function loadObrapor(tgt){
     +`</tbody></table></div>`;
   const dpAy=dpR.filter(inAy).reduce((t,r)=>t+(Number(r.tutar)||0),0);
   const stAy=stR.filter(r=>inAy(r)&&r.onay_durumu!=="İptal Edildi").reduce((t,r)=>t+(Number(r.tutar)||0),0);
-  const avAy=avR.filter(inAy).reduce((t,r)=>t+(Number(r.tutar)||0),0);
+  const avAy=avR.filter(r=>inAy(r)&&r.durum==="Avenant geldi"&&!r.aktarim).reduce( /* OB-TS-261006 */(t,r)=>t+(Number(r.tutar)||0),0);
   const pvN=pvR.filter(inAy).length, pvAy=pvR.filter(inAy).reduce((t,r)=>t+(Number(r.tutar)||0),0); /* OB-PVR */
   ib+=`<h3 class="sec">DPGF's  -  Situations  -  Avenants - PV's de Réception <span class="muted">(${esc(afAd)} satırları mavi)</span></h3>
     <div class="obaf" style="max-width:none">
      <div style="margin-bottom:10px"><div class="obafh">DPGF · ${esc(afAd)}: ${nf(dpAy)} €</div>${dsTbl(dpR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Correspondence",r=>esc(r.correspondence||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
      <div style="margin-bottom:10px"><div class="obafh">Situations · ${esc(afAd)}: ${nf(stAy)} € <span class="muted" style="font-weight:400">(İptal Edildi hariç)</span></div>${dsTbl(stR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["İlerleme No",r=>esc(r.ilerleme_no||"")],["Dönem",r=>esc(r.donem||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Onay Durumu",r=>esc(r.onay_durumu||"")]])}</div>
-     <div><div class="obafh">Avenants · ${esc(afAd)}: ${nf(avAy)} €</div>${dsTbl(avR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Açıklama",r=>esc(r.aciklama||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
+     <div><div class="obafh">TS · ${esc(afAd)}: ${nf(avAy)} € <span class="muted" style="font-weight:400">(Avenant geldi · KDV hariç; Excel aktarımından yalnız dönüş bekleyenler listelenir)</span></div>${dsTbl(avR.filter(r=>!r.aktarim||r.durum==="Dönüş bekleniyor"),[["Tarih",r=>ddG(r.tarih)],["No",r=>esc(r.no||"")],["Proje",r=>esc(r.proje||"")],["İçerik",r=>esc(r.icerik||"")],["Açıklama",r=>esc(r.aciklama||"")],["Tutar (€, KDV hariç)",r=>r.tutar==null?"":nf(r.tutar),1],["Durum",r=>esc(r.durum||"")]])}</div><!-- OB-TS-261006 -->
      <div style="margin-top:10px"><div class="obafh">PV's de Réception · ${esc(afAd)}: ${pvN} adet · ${nf(pvAy)} € <span class="muted" style="font-weight:400">(tutar = Sel-Arb kontrat)</span></div>${dsTbl(pvR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Açıklama",r=>esc(r.aciklama||"")]])}</div> <!-- OB-PVR -->
     </div>`;
   /* --- puanlar --- */
@@ -2625,7 +2625,7 @@ async function loadObrapor(tgt){
      <tr><td>Selectron ödemeleri primi = ${nf(selEur)} € × 1/10.000</td><td class="num">${nf(selPrimE)} €${eurTL?` (${nf(selPrimE*eurTL)} ₺)`:""}</td></tr>
      <tr><td>DPGF primi = ${dpN} adet × 2 € + ${nf(dpAy)} € / 2000</td><td class="num">${nf(dpPrimE)} €${eurTL?` (${nf(dpPrimE*eurTL)} ₺)`:""}</td></tr>
      <tr><td>Situation primi = ${stN} adet × 1 € + ${nf(stAy)} € / 1000 <span class="muted">(İptal Edildi hariç)</span></td><td class="num">${nf(stPrimE)} €${eurTL?` (${nf(stPrimE*eurTL)} ₺)`:""}</td></tr>
-     <tr><td>Avenants primi = ${nf(avAy)} € × 5/1000</td><td class="num">${nf(avPrimE)} €${eurTL?` (${nf(avPrimE*eurTL)} ₺)`:""}</td></tr>
+     <tr><td>TS primi (Avenant geldi) = ${nf(avAy)} € × 5/1000</td><td class="num">${nf(avPrimE)} €${eurTL?` (${nf(avPrimE*eurTL)} ₺)`:""}</td></tr>
      <tr><td>PV's de Réception primi = ${pvN} adet × 2 € + ${nf(pvAy)} € / 1000</td><td class="num">${nf(pvPrimE)} €${eurTL?` (${nf(pvPrimE*eurTL)} ₺)`:""}</td></tr>
      <tr><td>Devlet destek primi = ${nf(ddAyTop)} ₺ × 1/100</td><td class="num">${nf(ddPrimTL)} ₺</td></tr>
      <tr class="itot"><td>TOPLAM PRİM${eurTL?` <span class="muted" style="font-weight:400">(1 € = ${nf(eurTL)} ₺)</span>`:" (€ kısmı hariç — kur alınamadı)"}</td><td class="num">${nf(topTL)} ₺</td></tr>
@@ -3425,6 +3425,7 @@ setInterval(()=>{ if(!document.getElementById("view")) return; if(document.query
   window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
 })();
 </script>
+
 
 
 
