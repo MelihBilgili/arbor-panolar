@@ -2548,7 +2548,7 @@ async function loadObrapor(tgt){
     sb.from("ob_prim_param").select("anahtar,deger"),
     sb.from("pano_yayin").select("anahtar,yayin_at").in("anahtar",["ob_rapor","sel_arb_form"]),
     satisKur().catch(()=>null),
-    sb.from("ob_avenant").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}),
+    sb.from("ob_avenant").select("*").order("tarih",{ascending:false,nullsFirst:false}).order("no",{ascending:false}).order("id",{ascending:false}), /* OB-TS-SIRA-261006 */
     sb.from("ob_pv_reception").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}) /* OB-PVR */
   ]);
   const avR=(avq&&!avq.error)?(avq.data||[]):[];
