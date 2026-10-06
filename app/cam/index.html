@@ -15,7 +15,7 @@ select,input{width:100%;padding:8px 10px;border:1px solid #cdd6df;border-radius:
 .hint{font-size:11.5px;color:#8a97a4;margin:8px 2px}h3{color:#16324f;font-size:13px;margin:14px 0 4px}
 table{border-collapse:collapse;width:100%;font-size:12px;margin-top:6px}th{background:#eef4fb;color:#16324f;text-align:left;padding:5px 7px;font-size:11px}td{border-bottom:1px solid #eef1f5;padding:4px 7px}.num{text-align:right;white-space:nowrap}
 .perfgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hedef{background:#f4f8fc;border:1px solid #dde6f0;border-radius:8px;padding:6px 10px 10px}.hedef label{margin:6px 0 2px}.hedef input{padding:6px 8px}.htit{font-size:12px;font-weight:700;color:#16324f}.htit span{font-weight:400;color:#8a97a4}
-.out .unitrow{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}.out .komb{text-align:right;font-size:13px;max-width:60%}.out .komb b{font-size:14px}.out .komb .pv{color:#cfe0f0;font-size:12px;margin-top:3px}.ok{color:#8fe3a8}.no{color:#ffb3a7}
+.out .unitrow{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}.out .komb{text-align:right;font-size:13px;max-width:60%}.out .komb b{font-size:14px}.out .komb .pv{color:#cfe0f0;font-size:12px;margin-top:3px}.ok{color:#8fe3a8}.no{color:#ffb3a7}.out .hdfw{color:#ffb3a7;font-size:12.5px;font-weight:600;margin-top:6px}/* CAM-HEDEF-UYARI */
 .formula{background:#f2f8f4;border-left:4px solid #2e7d54;border-radius:8px;padding:10px 12px;font-size:12px;color:#2a4a38;margin-top:10px}code{background:#eef2f6;border-radius:4px;padding:1px 5px}
 .out .line.yk{align-items:flex-start;gap:14px}.out .line.yk .yl{text-align:left}.out .line.yk .yr{text-align:right}.out .line.yk .ll{color:#cfe0f0}.out .line.yk .yp{color:#cfe0f0;font-size:12.5px;margin-bottom:6px}.out .line.yk .lv{color:#cfe0f0;font-size:12.5px}.out .line.yk .yr b{color:#fff}
 
@@ -86,7 +86,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <header class="hdl"><h1>Cam Fiyatlandırma</h1><!-- CAM-LISTE-LINK --><a class="camlink" href="../cam-listesi/" target="_blank" rel="noopener">Cam Listesi ↗</a></header>
 <div class="wrap"><div class="grid">
 <div class="card">
-  <!-- CAM-V21 DUZEN3 --><div class="row3"><div><label>Yapı</label><select id="yapi"><option value="cift">Çift cam</option><option value="uclu">Üçlü cam</option></select></div><div><label>Kaplama</label><select id="kap"><option value="yok">Kaplamasız</option><option value="lowe" selected>Low-E</option><option value="solar">Solar Low-E</option></select></div><div><label>Form / Karolaj</label><select id="form"><option value="duz">Düz</option><option value="karolaj">Karolaj</option><option value="egrisel">Eğrisel (kemerli, dairesel dahil)</option><option value="ke">Karolaj+Eğrisel</option></select></div></div>
+  <!-- CAM-V21 DUZEN3 --><div class="row3"><div><label>Yapı</label><select id="yapi"><option value="cift">Çift cam</option><option value="uclu">Üçlü cam</option></select></div><div><label>Kaplama</label><select id="kap"><option value="yok">Kaplamasız</option><option value="lowe" selected>Low-E</option><option value="solar">Solar Low-E</option><option value="solar_n6244">Solar Low-E N(62/44)</option><option value="solar_n7037">Solar Low-E N(70/37)</option><option value="solar_n5033">Solar Low-E N(50/33)</option><option value="solar_n5025">Solar Low-E N(50/25)</option></select><!-- CAM-SECICI-KAPLAMA --></div><div><label>Form / Karolaj</label><select id="form"><option value="duz">Düz</option><option value="karolaj">Karolaj</option><option value="egrisel">Eğrisel (kemerli, dairesel dahil)</option><option value="ke">Karolaj+Eğrisel</option></select></div></div>
   <div class="row3"><div><label>Dış cam</label><select id="dis"><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option><option>44.1</option><option>44.2</option><option>44.4</option><option>44.6</option><option>46.2</option><option>46.4</option><option>46.6</option><option>55.1</option><option>64.6</option><option>66.1</option><option>66.2</option><option>66.6</option><option>66.8</option><option>86.6</option><option>88.6</option></select></div><div><label>Ara boşluk (mm)</label><select id="cav"><option>10</option><option>12</option><option>14</option><option selected>16</option><option>20</option></select></div><div><label>İç cam</label><select id="ic"><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option><option>44.2</option><option>44.6</option><option>55.1</option><option>64.2</option><option>66.2</option><option>66.3</option><option>68.4</option><option>88.2</option><option value="24">24 (yangın camı)</option></select></div></div>
   <div id="ortaWrap" style="display:none"><label>Orta cam kodu (üçlü)</label><select id="orta"><option>4</option><option>6</option></select></div>
   <!-- CAM-V18 DUZEN -->
@@ -190,6 +190,8 @@ const LISTE_SNAP=[{"sira":2,"kombinasyon":"3 / 6 Ar-We / 3, Ug=3,1","ug":3.1,"tl
 /* CAM-V8 LISTE-CANLI: katalog (cam listesi) Supabase cam_listesi'nden canli okunur (oturum varsa: EU formu veya MB); yoksa gomulu anlik goruntu */
 const GADJ_NF={"10/6|16|*|0110001011":[0.0008,1],"4/4/4|20|*|1000001010":[0.0616,4],"4/44.2|16|*|0100000011":[-0.1294,9],"4/4|12|*|0000000000":[-0.0157,2],"4/4|12|*|0110000000":[-0.1745,12],"4/4|16|*|0000000000":[-0.0474,69],"4/4|16|*|0000000001":[0.3441,1],"4/4|16|*|0000001000":[0.0938,7],"4/4|16|*|0000001011":[0.095,1],"4/4|16|*|0000010000":[-0.0292,29],"4/4|16|*|0100000000":[0.0452,52],"4/4|16|*|0100000011":[0.0726,2],"4/4|16|*|0100001011":[0.0318,2],"4/4|16|*|0100010011":[0.059,1],"4/4|16|*|0100011011":[0.0425,1],"4/4|16|*|0110000000":[-0.032,43],"4/4|16|*|0110000011":[-0.0218,9],"4/4|16|*|0110001010":[-0.0636,1],"4/4|16|*|0110001011":[-0.0163,15],"4/6|16|*|0100010011":[-0.0311,1],"44.1/4|12|*|0000000000":[-0.0643,2],"44.1/4|16|*|0000000000":[-0.1215,3],"44.1/4|16|*|0000101000":[-0.0054,2],"44.1/4|16|*|0100001000":[0.0067,9],"44.1/6|10|*|0100000000":[0.0152,1],"44.1/6|16|*|0000000000":[-0.003,1],"44.1/6|16|*|0100000011":[0.0075,1],"44.2/24|16|*|0111000011":[0.0624,2],"44.2/27|16|*|0111100100":[-0.0529,1],"44.2/44.2|12|*|0000100000":[-0.116,4],"44.2/44.2|16|*|0100000011":[-0.1092,20],"44.2/44.2|16|*|0100010011":[0.035,2],"44.2/44.2|16|*|0100100011":[-0.0414,16],"44.2/44.2|16|*|0110000011":[-0.0832,4],"44.2/4|12|*|0000100000":[0.0096,2],"44.2/4|12|*|0100100000":[0.1207,4],"44.2/4|16|*|0000000000":[0.0255,4],"44.2/4|16|*|0000000011":[-0.0182,1],"44.2/4|16|*|0000001011":[-0.2164,7],"44.2/4|16|*|0000010000":[-0.047,2],"44.2/4|16|*|0000100000":[0.0702,19],"44.2/4|16|*|0000110000":[0.0893,1],"44.2/4|16|*|0100000011":[0.0243,39],"44.2/4|16|*|0100010011":[-0.0492,10],"44.2/4|16|*|0100100000":[0.0158,18],"44.2/4|16|*|0110000011":[-0.0002,2],"44.2/4|16|*|0110100000":[0.0069,1],"44.2/5|16|*|0000100000":[0.146,1],"44.2/66.2|16|*|0100000011":[0.036,1],"44.2/66.3|16|*|0100000011":[-0.047,2],"44.2/6|14|*|0000100000":[-0.1001,3],"44.2/6|14|*|0100001011":[-0.0043,2],"44.2/6|14|*|0100100000":[-0.0099,14],"44.2/6|16|*|0000000000":[0.0007,2],"44.2/6|16|*|0000100011":[0.008,1],"44.2/6|16|*|0100000000":[0.0779,2],"44.2/6|16|*|0100000011":[0.0897,1],"44.2/6|16|*|0100100011":[-0.1618,35],"44.2/6|16|*|0100110011":[-0.062,4],"44.4/4|16|*|0000001011":[-0.0802,4],"44.4/68.4|20|*|0100100011":[-0.0497,2],"44.4/6|16|*|0100110011":[-0.037,1],"44.6/24|16|*|0111000011":[0.0458,2],"44.6/44.2|16|*|0100000011":[0.0304,3],"44.6/44.2|16|*|0100100011":[0.0174,2],"44.6/44.2|16|*|0110000011":[-0.0098,2],"44.6/44.2|20|*|0100100011":[0.0309,1],"44.6/44.6|16|*|0100000011":[-0.0034,1],"44.6/44.6|16|*|0100010011":[-0.0004,1],"44.6/4|16|*|0100000011":[0.0553,24],"44.6/4|16|*|0100010011":[0.0369,3],"44.6/4|16|*|0100100011":[-0.001,2],"44.6/4|16|*|0100110011":[-0.008,2],"44.6/4|16|*|0110100011":[-0.008,2],"44.6/6|16|*|0100000011":[0.0707,2],"44.6/6|16|*|0100100011":[-0.0522,2],"46.2/64.2|16|*|0100100011":[0.0432,13],"46.2/64.2|16|*|0110100011":[0.1007,1],"46.4/4|16|*|0110101110":[0.2595,2],"46.6/64.2|16|*|0100100011":[0.0081,1],"55.1/55.1|16|*|0000000000":[0.0215,1],"6/10|16|*|0110001001":[0.0245,8],"6/4/4|16|*|1100000011":[0.0024,1],"6/44.2|10|*|0110001000":[0.1272,3],"6/44.2|16|*|0100001011":[0.0129,15],"6/4|16|*|0000001001":[-0.0279,1],"6/4|16|*|0100000011":[-0.2252,67],"6/4|16|*|0100010011":[0.0116,11],"6/4|16|*|0110000011":[-0.0049,2],"6/6|16|*|0000000000":[0.3479,1],"6/6|16|*|0000001000":[-0.0214,1],"6/6|16|*|0100000011":[0.1951,2],"6/6|16|*|0100001000":[-0.1367,16],"6/6|16|*|0110000000":[-0.2157,2],"64.6/4|14|*|0100110011":[-0.0007,1],"66.1/6|10|*|0100000000":[-0.0542,1],"66.2/44.2|10|*|0100100001":[-0.0345,1],"66.2/44.2|10|*|0100100011":[0.1123,5],"66.2/44.2|10|*|0110100011":[0.0375,1],"66.2/44.2|16|*|0000100000":[0.0207,2],"66.2/44.2|16|*|0000100101":[0.1379,7],"66.2/66.2|16|*|0100100011":[0.0036,1],"66.6/66.2|14|*|0100100011":[0.0134,1],"66.6/66.2|16|*|0100100011":[0.0041,1],"66.6/6|16|*|0100100011":[-0.0451,1],"66.6/88.2|16|*|0110100000":[-0.0335,2],"66.8/6|16|*|0100100011":[-0.091,1],"88.6/66.2|16|*|0100100011":[-0.0194,1]}; /* CAM-FORM-HER-ZAMAN: formsuz grup [adj,n] */
 const KAT=2.5; /* CAM-V8 KAT: birim fiyat = model x 2,5 */
+/* CAM-SECICI-KAPLAMA (06.10.2026): secici solar kaplama carpani; tekliflerde 6 satir, proje-disi CV ile kiyaslandi (v261006_sf) */
+const SEC_COAT={n5025:1,n5033:1,n5128:1,n7037:1,n7040:1},SEC_K=1.25,KAP_AD={n6244:'N(62/44)',n7037:'N(70/37)',n5033:'N(50/33)',n5025:'N(50/25)'};
 const M=DB.coef,G=DB.groups;
 const buildCat=rows=>rows.map(CAMF.catRow).filter(x=>x);
 let CAT=buildCat(LISTE_SNAP);
@@ -204,7 +206,7 @@ let CAT=buildCat(LISTE_SNAP);
 /* CAM-V8 YAKIN-SATIRLAR: cam listesi / fiyat teklifleri en yakin kombinasyonlar */
 const nmT=s=>String(s).replace(/\s*\|\|\|.*$/,'').replace(/,?\s*Ug\s*=\s*[\d.,]+/i,'').trim();
 function Dq(q,C){const m=k=>(C[k]||0)!==(q[k]||0)?1:0;
-  return 100*m('tr')+10*m('lowe')+4*m('solar')+3*m('ac')+3*m('sat')+3*m('fp')+2*m('xc')+m('ar')+m('we')+0.5*m('tp')
+  return 100*m('tr')+10*m('lowe')+4*m('solar')+3*m('ac')+3*m('sat')+3*m('fp')+2*m('xc')+m('ar')+m('we')+0.5*m('tp')+2*((C.coat||'')!==(q.coat||'')?1:0)
     +1.5*(C.c[0]!==q.c[0]?1:0)+1.5*(C.c[C.c.length-1]!==q.c[q.c.length-1]?1:0)+Math.abs(C.tg-q.tg)/2+0.7*Math.abs((C.nlam||0)-(q.nlam||0))+Math.abs(C.cav-q.cav)/6;}
 const vplain=v=>'Ug '+f2(v.ug,1)+' · TL '+f2(v.tl,2)+' · Rw+Ctr '+(v.rw==null?'—':Math.round(v.rw)+' dB')+' · SF '+f2(v.sf,2);
 const kalL=C=>C.lkal!=null?C.lkal:kalin(C);
@@ -241,12 +243,12 @@ const f2=(n,d)=>n==null?'—':n.toLocaleString('tr-TR',{minimumFractionDigits:d,
 const cl=v=>v?1:0,cavUI=c=>[10,12,14,16,20].reduce((a,o)=>Math.abs(o-c)<Math.abs(a-c)?o:a,16);
 function pane(c){c=String(c).replace(',','.');const m=c.match(/^(\d)(\d)\.(\d)$/);return m?{mm:+m[1]+ +m[2],lam:1,pvb:+m[3]}:{mm:+c,lam:0,pvb:0};}
 /* secili kombinasyon */
-function own(){const kap=$('kap').value,triple=$('yapi').value==='uclu'?1:0;
+function own(){const kap=$('kap').value,triple=$('yapi').value==='uclu'?1:0,kc=kap.indexOf('solar_')===0?kap.slice(6):'';
   const codes=triple?[$('dis').value,$('orta').value,$('ic').value]:[$('dis').value,$('ic').value];const P=codes.map(pane);
   const ar=cl($('argon').checked),we=cl($('we').checked);
   return {c:codes,cav:+$('cav').value,cu:+$('cav').value,tg:P.reduce((a,p)=>a+p.mm,0),nlam:P.reduce((a,p)=>a+p.lam,0),pvb4:P.filter(p=>p.lam&&p.pvb>=4).length,tr:triple,
-    lowe:cl(kap!=='yok'),solar:cl(kap==='solar'),cool:0,plan:0,en:0,sat:cl($('satin').checked),xc:cl($('extraclear').checked),ac:cl($('acoustic').checked),
-    fp:cl($('fireproof').checked||$('fireproof30').checked),tp:cl($('temper').checked),ar,we,sw:0,coat:'',own:1};}
+    lowe:cl(kap!=='yok'),solar:cl(kap.indexOf('solar')===0),cool:0,plan:0,en:0,sat:cl($('satin').checked),xc:cl($('extraclear').checked),ac:cl($('acoustic').checked),
+    fp:cl($('fireproof').checked||$('fireproof30').checked),tp:cl($('temper').checked),ar,we,sw:0,coat:kc,own:1};}
 /* katalogdan Ug/TL/Rw+Ctr/SF (egitimdeki atama ile ayni kural) */
 function dist(q,C,t){const m=k=>C[k]!==q[k]?1:0,d=C.c[0]!==q.c[0]?1:0,i=C.c[C.c.length-1]!==q.c[q.c.length-1]?1:0;
   if(t==='ug')return 100*m('lowe')+100*m('tr')+3*m('ar')+Math.abs(C.cav-q.cav)/4+0.5*m('coat')+0.3*m('solar')+0.05*Math.abs(C.tg-q.tg)/4+0.2*m('fp');
@@ -263,11 +265,19 @@ function price(q,v,u){const tp=cl(q.tp||$('temper').checked),we=q.we;
     satin:q.sat,temper:tp,acoustic:q.ac,extraclear:q.xc,fireproof:q.fp,argon:q.ar,we,
     karolaj:cl(u.frm==='karolaj'||u.frm==='ke'),egrisel:cl(u.frm==='egrisel'||u.frm==='ke'),l_ortm2:Math.log(Math.min(Math.max(u.ort,0.05),4)),
     tl:v.tl,rwctr:v.rw,sf:v.sf,l_m2:Math.log(Math.min(Math.max(u.m2||1,0.2),300)),kucuk_m2:cl(u.m2>0&&u.m2<2),kucuk_adet:cl(u.adet>0&&u.adet<=2)};
-  let s=DB.ic;for(const k in M)s+=M[k]*(X[k]||0);const est=Math.exp(s);
+  let s=DB.ic;for(const k in M)s+=M[k]*(X[k]||0);const est=Math.exp(s)*(q.solar&&SEC_COAT[q.coat]?SEC_K:1);
   const flags=[q.tr,q.lowe,q.solar,q.fp,q.ac,q.sat,tp,q.xc,q.ar,we].join('');
   const key=q.c.join('/')+'|'+q.cu+'|'+u.frm+'|'+flags;
   /* CAM-FORM-HER-ZAMAN (29.09.2026): gecmis duzeltmesi formsuz anahtarla; form carpani modelde her zaman */
   const kn=q.c.join('/')+'|'+q.cu+'|*|'+flags,an=GADJ_NF[kn],g=an?{n:an[1],adj:an[0]}:null;/* CAM-EI-FIYAT (01.10.2026): model EI30 seviyesinde, EI60 = EI30 x 1,1 */const k30=q.fp&&!$('fireproof30').checked?1.1:1;return{est:est*k30,unit:(g?est*Math.exp(g.adj):est)*k30,g,key,tp};}
+/* CAM-HEDEF-UYARI (06.10.2026): secilen kombinasyonun degerleri hedefi karsilamiyorsa uyari */
+function hedefUyari(v,h){const o=[];const t=(x,d)=>f2(x,d);
+  if(h.ug!=null&&v.ug>h.ug+1e-9)o.push('Ug '+t(v.ug,1)+' (hedef ≤ '+t(h.ug,1)+')');
+  if(h.tl!=null&&v.tl<h.tl-1e-9)o.push('TL '+t(v.tl,2)+' (hedef ≥ '+t(h.tl,2)+')');
+  if(h.rw!=null&&v.rw<h.rw-1e-9)o.push('Rw+Ctr '+Math.round(v.rw)+' dB (hedef ≥ '+Math.round(h.rw)+')');
+  if(h.sf!=null&&v.sf>h.sf+1e-9)o.push('Solar faktör '+t(v.sf,2)+' (hedef ≤ '+t(h.sf,2)+')');
+  if(!o.length)return '';const sf=h.sf!=null&&v.sf>h.sf+1e-9&&$('kap').value!=='solar_n5025';
+  return '<div class="hdfw">⚠ Seçilen kombinasyon hedefi karşılamıyor: '+o.join(' · ')+(sf?' — Kaplamada daha düşük solar faktörlü bir tür (ör. N(50/25)) seçin.':'')+'</div>';}
 function hedef(){const r=id=>{const x=$(id).value.trim();return x===''?null:+x.replace(',','.');};return{ug:r('h_ug'),tl:r('h_tl'),rw:r('h_rw'),sf:r('h_sf')};}
 function meets(v,h){return(h.ug==null||v.ug<=h.ug+1e-9)&&(h.tl==null||v.tl>=h.tl-1e-9)&&(h.rw==null||v.rw>=h.rw-1e-9)&&(h.sf==null||v.sf<=h.sf+1e-9);}
 /* CAM-V18 REF-FIYAT: referans fiyatin birim fiyata gore farki (tam sayi %), |fark|>15 kirmizi */
@@ -284,7 +294,7 @@ function refUpd(){const e=$('ref'),d=$('refdif'),pc=($('pencad')||{}).value||'',
   if(!show){big.textContent='\u2014';host.insertAdjacentHTML('beforeend','<div class="bfhint">'+(pc===''?'Pencad\'de fiyat var m\u0131? se\u00e7in':'Referans fiyat\u0131 girin')+'</div>');}
   else{big.textContent=f2(b,2)+' \u20ac/m\u00b2';if(bad)host.insertAdjacentHTML('beforeend','<div class="bfwarn">Onays\u0131z Kullanmay\u0131n\u0131z</div>');}}
 function ownName(q){const k=$('kap').value,t=q.tp?' Temperli':'',a=q.ac?' Akustik':'',sa=q.sat?' Satin':'',x=q.xc?' Extra Clear':'';
-  const p=q.c.map((c,j)=>c+(j===0?a+x+(k==='solar'?' Solar Low-E':'')+sa:'')+t+(j===q.c.length-1?(k==='lowe'?' Low-E':'')+(q.fp?($('fireproof30').checked?' EI30':' EI60')+' Fire Proof':''):''));
+  const p=q.c.map((c,j)=>c+(j===0?a+x+(k.indexOf('solar')===0?' Solar Low-E'+(KAP_AD[k.slice(6)]?' '+KAP_AD[k.slice(6)]:''):'')+sa:'')+t+(j===q.c.length-1?(k==='lowe'?' Low-E':'')+(q.fp?($('fireproof30').checked?' EI30':' EI60')+' Fire Proof':''):''));
   /* CAM-AR-WE */const gw=[q.ar?'Ar':'',q.we?'We':''].filter(Boolean).join('-'),cav=q.cav+(gw?' '+gw:'');return q.tr?p[0]+' / '+cav+' / '+p[1]+' / '+cav+' / '+p[2]:p[0]+' / '+cav+' / '+p[1];}
 function vtxt(v,h){const c=(ok,h)=>h==null?'':(ok?' <span class="ok">✓</span>':' <span class="no">✗</span>');
   return 'Ug '+f2(v.ug,1)+c(h.ug==null||v.ug<=h.ug,h.ug)+' · TL '+f2(v.tl,2)+c(h.tl==null||v.tl>=h.tl,h.tl)+' · Rw+Ctr '+Math.round(v.rw)+' dB'+c(h.rw==null||v.rw>=h.rw,h.rw)+' · SF '+f2(v.sf,2)+c(h.sf==null||v.sf<=h.sf,h.sf);}
@@ -304,7 +314,7 @@ function calc(){const q=own(),u=ctxUI(),h=hedef();$('ortaWrap').style.display=q.
   if(!bz){const cz=G.filter(r=>r.k.split('|')[3]===_fl).sort((a,b)=>Math.abs(a.tg-sel.q.tg)-Math.abs(b.tg-sel.q.tg)||b.n-a.n);bz=cz[0];}
   $('out').innerHTML='<div class="unitrow"><div><div class="lbl">Birim fiyat '+badge+'</div><div class="big">'+f2(unit*KAT,2)/* CAM-V16 BIRIM-2HANE */+' €/m²</div></div>'+
    '<div class="komb"><div class="lbl">Fiyatlanan kombinasyon</div><b>'+/* CAM-V17 KOMB-FORMDAN: ad ve kalinlik formdaki secimlerden; fiyat hedeflerle secilen kombinasyondan */ownName(q)+' · '+f2(kalin(q),2)+' mm</b></div></div>'+
-   yakinlar(q,po,h,hasH,u);
+   hedefUyari(vo,h)+yakinlar(q,po,h,hasH,u);
   window._BF=unit*KAT;refUpd();
   const tgs=sel.q.tg,fk=P.key.split('|').slice(2,4).join('|');
   const sim=G.filter(r=>r!==g&&r.k.split('|').slice(2,4).join('|')===fk&&Math.abs(r.tg-tgs)<=2);
@@ -362,6 +372,7 @@ calc();
 })();
 </script>
 <!-- /ARB-HOVERTITLE -->
+
 
 
 
