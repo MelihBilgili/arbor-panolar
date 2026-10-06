@@ -581,8 +581,11 @@ function msKapat(){ document.getElementById("ms-ov").classList.remove("on"); }
   const ov=document.getElementById("ms-ov"); if(ov) ov.onclick=e=>{ if(e.target===ov) msKapat(); };
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") msKapat(); });
 })();
+/* TAKIP-NOT-YASAK (06.10.2026, Melih): durumu boş / Teklif Talebi Geldi / Teklif İncelendi / Teklif Bekleniyor satırlarında takip notu eklenemez, hücreler boş-kilitli. */
+function tkYasak(r){ return !!r && (!r.durum || ["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor"].indexOf(r.durum)>=0); }
 function pairCells(r,i,bg){
   const bgv=bg||'transparent';
+  if(tkYasak(r)){ delete PENDING_TK[i]; const tt=' title="Bu durumda takip notu eklenemez"'; return '<td class="pairA gs" style="background:'+bgv+'"'+tt+'><div class="tklatest">—</div></td><td class="pairA" style="background:'+bgv+'"'+tt+'><div class="tklatest">—</div></td><td class="pairA tknotes" style="background:'+bgv+'"'+tt+'><div class="tklatest" style="color:#9aa5b1">—</div></td>'; } /* TAKIP-NOT-YASAK */
   if(PENDING_TK[i]){ /* YD-GOREVLI: Ekle'de Görevli seçimi zorunlu */
     const pp=(typeof PENDING_TK[i]==="object")?PENDING_TK[i]:{n:"",g:""};
     return '<td class="pairA gs" style="background:'+bgv+'"><div class="tklatest">—</div></td>'
@@ -807,7 +810,7 @@ async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muht
    Kopya teslime hak kazanınca (otomatik ilerleme 4. kademe ya da elle "Teklif Teslim Edildi") "Teklif Teslim Edildi"
    yerine "Muhtemel" olur, özgün satır "Revizyon İstendi"ye geçer. Her adım iki satırın takip notlarına otomatik yazılır.
    Özgün satır silinmiş/Muhtemel'den çıkmışsa kopya bağı kopar, normal akışa döner. */
-function mrNot(r,txt){ const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi); const iso=todayISO(); log.unshift({t:iso,e:ARB_EKLEYEN||"Oto",n:txt}); return {son_takip_notlari:JSON.stringify(log),son_takip_tarihi:iso}; }
+function mrNot(r,txt){ if(tkYasak(r)) return {son_takip_notlari:null,son_takip_tarihi:null}; /* TAKIP-NOT-YASAK */ const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi); const iso=todayISO(); log.unshift({t:iso,e:ARB_EKLEYEN||"Oto",n:txt}); return {son_takip_notlari:JSON.stringify(log),son_takip_tarihi:iso}; }
 async function muhtemelRevKopya(r){
   if(ROWS.some(x=>x.muhtemel_kaynak_id===r.id)){ setMsg("Bu Muhtemel satırın açık bir revizyon kopyası zaten var.",false); return false; }
   const ok=await revizyonKopyasi(r,r.id);
@@ -965,6 +968,7 @@ let ARB_FOCUS_ROW=null;
 function tkStartEntry(key){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
   if(!r.id){ m.className="msg err"; m.textContent="Önce Proje ve Müşteri yazıp satırı kaydedin."; return; }
+  if(tkYasak(r)){ m.className="msg err"; m.textContent="Bu durumda takip notu eklenemez."; return; } /* TAKIP-NOT-YASAK */
   PENDING_TK[key]={n:"",g:""}; ARB_FOCUS_ROW=key; render();
 }
 /* TAKIP-SORU (2026-09-25, Melih): "Takip Bekleniyor" satırına not eklenince soru kutusu:
@@ -995,6 +999,7 @@ async function tkCommitEntry(key){
   const p=PENDING_TK[key]; if(!p||typeof p!=="object"||p.busy) return;
   const txt=(p.n||"").trim(); if(!txt) return;
   if(!p.g){ m.className="msg err"; m.textContent="Görevli seçiniz."; return; }
+  if(tkYasak(r)){ delete PENDING_TK[key]; render(); m.className="msg err"; m.textContent="Bu durumda takip notu eklenemez."; return; } /* TAKIP-NOT-YASAK */
   p.busy=true;
   const iso=todayISO();
   const ek=ARB_EKLEYEN||"";
@@ -1012,6 +1017,7 @@ async function tkCommitEntry(key){
 async function tkSaveNote(key,val){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
   const txt=(val||"").trim(); if(!txt) return;
+  if(tkYasak(r)) return; /* TAKIP-NOT-YASAK */
   const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi); if(!log.length) return;
   log[0].n=txt;
   const payload={ son_takip_notlari:JSON.stringify(log) };
