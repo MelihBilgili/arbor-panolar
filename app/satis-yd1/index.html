@@ -99,7 +99,8 @@
   .ntbox .ntgecmis{font-size:12px;color:#5a6b7d;white-space:pre-wrap;margin-top:8px;max-height:160px;overflow:auto}
   /* YD-ILGILI (05.10.2026): Müşteri hücresi — proje ilgilisi kartı (hover/tıklama) */
   td.mus input.cell{cursor:pointer}
-  td.mus.ilg-var input.cell{box-shadow:inset 3px 0 0 #2e7d54}
+  td.mus.ilg-var input.cell{border-left:3px solid #2e7d54;padding-left:5px} /* ILG-CIZGI-FIX (06.10.2026): inset gölge yuvarlak köşede taşıyordu */
+  .ntcell .ntlast.ntkilit{cursor:not-allowed;color:#6a7888} /* NOT-YETKI */
   .ilgpop{position:fixed;z-index:80;background:#fff;border:1px solid #b9c6d3;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.22);padding:9px 12px 10px;width:270px;display:none;font-size:12.5px}
   .ilgpop.on{display:block}
   .ilgpop h4{margin:0 0 4px;font-size:12.5px;color:#16324f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -589,18 +590,19 @@ function pairCells(r,i,bg){
   if(PENDING_TK[i]){ /* YD-GOREVLI: Ekle'de Görevli seçimi zorunlu */
     const pp=(typeof PENDING_TK[i]==="object")?PENDING_TK[i]:{n:"",g:""};
     return '<td class="pairA gs" style="background:'+bgv+'"><div class="tklatest">—</div></td>'
-      +'<td class="pairA" style="background:'+bgv+'"><select class="cell tkgorevli-pending'+(pp.g?'':' eksikbos')+'" data-row="'+i+'"><option value=""'+(pp.g?'':' selected')+' disabled>— Seçiniz —</option>'+GOREVLI_OPTS().map(o=>'<option value="'+esc(o)+'"'+(o===pp.g?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
+      +'<td class="pairA" style="background:'+bgv+'"><select class="cell tkgorevli-pending'+(pp.g?'':' eksikbos')+'" data-row="'+i+'"><option value=""'+(pp.g?'':' selected')+' disabled>— Seçiniz —</option>'+GOREVLI_OPTS().map(o=>'<option value="'+esc(o)+'"'+(o===pp.g?' selected':'')+'>'+esc(o==="Hiç Kimse"?"-":o)+'</option>').join('')+'</select></td>'
       +'<td class="pairA tknotes" style="background:'+bgv+'"><textarea class="cell tknote-pending" data-row="'+i+'" rows="1" placeholder="Not yazın…">'+esc(pp.n||"")+'</textarea></td>';
   }
   const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi), last=tkLatest(log), hist=tkHist(log);
   const histDates = log.length ? log.map(x=>x.t?fmtDate(x.t):"—").join("\n") : "";
-  const histEkleyen = log.length ? log.map(x=>x.g||"—").join("\n") : "";
+  const gDisp=g=>(g==="Hiç Kimse"?"-":(g||"—")); /* GOREVLI-HICKIMSE-TIRE (06.10.2026) */
+  const histEkleyen = log.length ? log.map(x=>gDisp(x.g)).join("\n") : "";
   const noteEmpty = log.length && last.n==="";
   const noteCell = noteEmpty
     ? '<textarea class="cell tknote-input" data-row="'+i+'" rows="1" placeholder="Not yazın…"></textarea>'
     : '<div class="tklatest tkClick" data-row="'+i+'" title="'+esc(hist)+'">'+esc(last.n?tkNotYaz(last):"")+'</div>';  /* YD-EKLE-TIKLA */
   const dateDisp = noteEmpty ? "—" : (last.t?fmtDate(last.t):"—");
-  const ekleyenDisp = noteEmpty ? "—" : (last.g||"—"); /* YD-GOREVLI: sütun artık Görevli */
+  const ekleyenDisp = noteEmpty ? "—" : gDisp(last.g); /* YD-GOREVLI: sütun artık Görevli */
   const gbg=tkBenim(r)?'#ffd9d9':bgv; /* TAKIP-GOREV: kendi görevim pembe */
   return '<td class="pairA gs" style="background:'+bgv+'"><div class="tklatest" title="'+esc(histDates)+'">'+esc(dateDisp)+'</div></td>'
     +'<td class="pairA" style="background:'+gbg+'"><div class="tklatest" title="'+esc(histEkleyen)+'">'+esc(ekleyenDisp)+'</div></td>'
@@ -651,7 +653,7 @@ function rowHTML(r,key){
   return '<tr data-i="'+key+'" style="background:'+bgv+'">'+COLS.map(c=>{
       const v=dispVal(r,c), req=c.req?" req":"", empty=(c.req&&!String(v).trim()?" bad":"")+(eksikBos(r,c.f,key)?" eksikbos":"");
       if(c.t==='note'){ const sat=ntSatirlar(r[c.f]); /* YD-NOT-EKLE: son not görünür, hover'da tümü alt alta */
-        return '<td style="background:'+bgv+'"><div class="ntcell" style="width:'+c.w+'px"><div class="ntlast ntClick" data-row="'+key+'" data-nf="'+c.f+'" title="'+esc(sat.join("\n"))+'"><span>'+esc(sat[0]||"")+'</span></div></div></td>'; }
+        return '<td style="background:'+bgv+'"><div class="ntcell" style="width:'+c.w+'px"><div class="ntlast ntClick'+(ntYasak(c.f)?' ntkilit':'')+'" data-row="'+key+'" data-nf="'+c.f+'" title="'+esc(sat.join("\n"))+'"><span>'+esc(sat[0]||"")+'</span></div></div></td>'; }
       if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="width:'+c.w+'px" title="'+esc(v)+'">'+esc(v)+'</textarea></td>';
       if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; const ihAl=(c.f==='ihale'&&String(v)==='Alındı')?' ihale-al':''; const kilit=c.f==='oncelik'?' disabled title="Öncelik Arbor panosundan (Satış › Öncelik Belirlenmesi Gerekenler) belirlenir"':'';  /* YD-ONCELIK-PANO */ return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+ihAl+'" data-f="'+c.f+'"'+kilit+' style="width:'+c.w+'px">'+opts+'</select></td>'; }
       let uyari="",ipucu="";
@@ -853,7 +855,11 @@ function ntSatirlar(v){ return String(v==null?"":v).split(/\r?\n/).map(x=>x.trim
 function ntDamga(){ const d=new Date(); return pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+String(d.getFullYear()).slice(2)+" "+(ARB_EKLEYEN||"?")+": "; }
 function ntYeniDeger(eski,txt){ const t=String(txt||"").replace(/\s*\r?\n\s*/g," ").trim(); const s=ntSatirlar(eski); s.unshift(ntDamga()+t); return s.join("\n"); }
 let NT_HEDEF=null;
+/* NOT-YETKI (06.10.2026, Melih): OBL Talebe İlişkin Notlar'a, MN Teklif Birimi Notları'na kayıt yapamaz (okuyabilir). */
+const NT_YASAK={talebe_iliskin_notlar:["OBL"],teklif_birimi_notlari:["MN"]};
+function ntYasak(f){ return !!ARB_EKLEYEN && (NT_YASAK[f]||[]).indexOf(ARB_EKLEYEN)>=0; }
 function ntAc(key,f){
+  if(ntYasak(f)){ setMsg("Bu not alanına kayıt yetkiniz yok.",false); return; } /* NOT-YETKI */
   const r=getRow(key); if(!r) return; const c=COLS.find(x=>x.f===f); NT_HEDEF={key:key,f:f};
   document.getElementById("nt-baslik").textContent=(c?c.h:"Not")+" — Ekle";
   const ta=document.getElementById("nt-txt"); ta.value="";
@@ -862,7 +868,7 @@ function ntAc(key,f){
 }
 function ntKapat(){ document.getElementById("nt-ov").classList.remove("on"); NT_HEDEF=null; }
 async function ntKaydet(){
-  if(!NT_HEDEF) return; const txt=document.getElementById("nt-txt").value.trim(); if(!txt){ ntKapat(); return; }
+  if(!NT_HEDEF) return; if(ntYasak(NT_HEDEF.f)){ ntKapat(); return; } /* NOT-YETKI */ const txt=document.getElementById("nt-txt").value.trim(); if(!txt){ ntKapat(); return; }
   const {key,f}=NT_HEDEF; const r=getRow(key); if(!r){ ntKapat(); return; }
   const yeni=ntYeniDeger(r[f],txt);
   if(key==="draft"){ r[f]=yeni; ntKapat(); render(); return; }
