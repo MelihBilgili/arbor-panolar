@@ -46,6 +46,7 @@
   .load{padding:30px;text-align:center;color:#8a97a4}
   @media (max-width:700px){ .sechead .ara{margin-left:0;width:100%} }
 .ciro{font-size:11px;color:#5a6b7d;white-space:nowrap;margin-left:4px;align-self:center}
+.ciro.yok{color:#a3aeba;font-style:italic}
 </style>
 </head>
 <body>
@@ -258,13 +259,14 @@ const MAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 let SINIF={}; const ARA={YD1:"",YD2:""}; const BAG={};
 /* MUSTERI-CIRO (06.10.2026): sınıfsız şirketlerde ✕ sağında son yıllık ciro (milyon, virgülden sonra 0 hane); kaynak musteri_firma.ciro_mn/ciro_birim/ciro_yil/ciro_kaynak */
 let CIRO={};
-function ciroHtml(fid){ const c=CIRO[fid]; if(!c||c.ciro_mn==null) return ""; const v=Math.round(Number(c.ciro_mn)).toLocaleString("tr-TR");
+function ciroHtml(fid){ const c=CIRO[fid]; /* MUSTERI-CIRO2: ciro yoksa sabit metin */
+  if(!c||c.ciro_mn==null) return '<span class="ciro yok" title="'+(c&&c.ciro_arandi?"Son arama: "+esc(String(c.ciro_arandi).slice(0,10)):"Henüz aranmadı — günlük görev arayacak")+'">(ciro bilgisi bulunamadı)</span>'; const v=Math.round(Number(c.ciro_mn)).toLocaleString("tr-TR");
   return '<span class="ciro" title="Yıllık ciro '+esc((c.ciro_yil||"")+" · "+(c.ciro_kaynak||""))+'">('+v+" M"+esc(c.ciro_birim||"€")+")</span>"; }
 function setMsg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; }
 function sinifTxt(b,firma){ const a=SINIF[b+"|"+MUS.k(firma)]; return a?a.slice().sort().map(s=>SINIF_AD[s]||s).join(", "):""; }
 async function load(){
   try{ await MUS.yukle(sb); }catch(e){ setMsg("Yüklenemedi: "+(e.message||e),false); return; }
-  const cr=await sb.from("musteri_firma").select("id,ciro_mn,ciro_birim,ciro_yil,ciro_kaynak"); CIRO={}; (cr.data||[]).forEach(x=>CIRO[x.id]=x); /* MUSTERI-CIRO */
+  const cr=await sb.from("musteri_firma").select("id,ciro_mn,ciro_birim,ciro_yil,ciro_kaynak,ciro_arandi"); CIRO={}; (cr.data||[]).forEach(x=>CIRO[x.id]=x); /* MUSTERI-CIRO */
   const r=await sb.from("fiyat_musteri_sinif").select("sinif,ad");
   SINIF={}; (r.data||[]).forEach(x=>{ const kk=(x.sinif<=2?"YD1":"YD2")+"|"+MUS.k(x.ad); (SINIF[kk]=SINIF[kk]||[]).push(x.sinif); });
   if(!document.querySelector("section.blk")) iskelet();
