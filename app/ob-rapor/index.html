@@ -1190,6 +1190,7 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
 
 
 
+
 <!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
@@ -1284,6 +1285,18 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
     }
     return { right: right, top: top };
   }
+  function dolu(x, y, w, h) { /* dugmenin konacagi alanda tiklanabilir/yazili oge var mi */
+    var pts = [[x + 2, y + 2], [x + w - 2, y + 2], [x + 2, y + h - 2], [x + w - 2, y + h - 2], [x + w / 2, y + h / 2]];
+    for (var i = 0; i < pts.length; i++) {
+      var es = document.elementsFromPoint(pts[i][0], pts[i][1]);
+      for (var j = 0; j < es.length; j++) {
+        var e = es[j]; if (e.classList && e.classList.contains("arb-xl-btn")) continue;
+        if (e.closest && e.closest("button,input,select,textarea,a,label,[onclick]")) return true;
+        break;
+      }
+    }
+    return false;
+  }
   function yerlestir() {
     for (var i = 0; i < BTN.length; i++) {
       var t = BTN[i].t, b = BTN[i].b, goster = false;
@@ -1295,8 +1308,8 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
           goster = !!h && (t.contains(h) || (h.classList && h.classList.contains("arb-xl-btn")));
           if (goster) {
             var bw = b.offsetWidth || 44, bh = b.offsetHeight || 18;
-            var by = rc.top - bh - 2; if (by < 0) by = Math.max(rc.top, 0) + 2;
-            var bx = g.right - bw;
+            var bx = g.right - bw, by = rc.top - bh - 2;
+            if (by < 0 || dolu(bx, by, bw, bh)) by = Math.max(rc.top, 0) + 2; /* ustte bos yer yoksa tablonun ust sag kosesine */
             b.style.left = Math.round(bx) + "px"; b.style.top = Math.round(by) + "px";
           }
         }
@@ -1379,7 +1392,11 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
     rows = rows.map(function (r) { var o = []; for (var k = 0; k < w; k++) o.push(r[k] === undefined ? "" : r[k]); return o; });
     return { rows: rows, merges: merges, bas: basSatir };
   }
-  function baslik(t) {
+  function temiz(x) { /* emoji/simge basini ve ' · ' sonrasini at */
+    x = String(x || '').split(' · ')[0].replace(/^[^0-9A-Za-zÀ-ɏ]+/, '').trim(); return x || 'Tablo';
+  }
+  function baslik(t) { return temiz(baslik0(t)); }
+  function baslik0(t) {
     if (t.caption && t.caption.textContent.trim()) return t.caption.textContent.trim();
     var el = t;
     for (var lv = 0; lv < 6 && el && el !== document.body; lv++) {
