@@ -199,7 +199,7 @@ const HATA_COLS=[{k:"pgd",h:"PGD",t:"t",w:20,sap:1,sapk:"yd"},{k:"part",h:"Part"
 const TABS=[
  {id:"hatalar",ad:"Hata Puanları",req:"hata",fixed:{sayfa:"hatalar"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},
    {k:"aksetti",h:"Müşteriye ya da Üretime|Aksetti mi?",t:"t",w:12},{k:"notlar",h:"Notlar",t:"m",w:36}],
-  baslik:"Etüt ve Proje birimlerinin ilgili dönem zarfında yaptığı tüm hatalar aşağıdaki tabloya kaydedilir.",
+  baslik:"Etüt ve Proje birimlerinin ilgili dönem zarfında yaptığı tüm hatalar aşağıdaki tabloya kaydedilir. <!-- ETUT-HATA-YAKALAMA -->Etüt Hata Yakalama formuna girilen satırlar buraya otomatik gelir.",
   not:`<b>Hata Puanı:</b><br>10 puanlık örnek hata: P522 numaralı pozda müşteri poz numarası hatalı girilmiştir. Kendi içimizde düzeltilmiştir.<br>
    100 puanlık örnek hata: HSP ölçüleri yanlıştır. Müşteri tarafından düzeltilmiştir.<br>Yapılan yeni hatalar yukarıdaki örneklerle mukayese edilerek puanlanır.`},
  {id:"etut",ad:"Hata Yakalama Puanları",req:"hata",fixed:{sayfa:"etut"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},{k:"basari_puani",h:"Başarı|Puanı",t:"n",w:5}]},
