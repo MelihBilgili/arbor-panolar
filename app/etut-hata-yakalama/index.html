@@ -203,7 +203,7 @@ const TABS=[
   baslik:"Etüt ve Proje birimlerinin ilgili dönem zarfında yaptığı tüm hatalar aşağıdaki tabloya kaydedilir.",
   not:`<b>Hata Puanı:</b><br>10 puanlık örnek hata: P522 numaralı pozda müşteri poz numarası hatalı girilmiştir. Kendi içimizde düzeltilmiştir.<br>
    100 puanlık örnek hata: HSP ölçüleri yanlıştır. Müşteri tarafından düzeltilmiştir.<br>Yapılan yeni hatalar yukarıdaki örneklerle mukayese edilerek puanlanır.`},
- {id:"etut",ad:"Hata Yakalama Puanları",req:"hata",fixed:{sayfa:"etut"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},{k:"basari_puani",h:"Başarı|Puanı",t:"n",w:5}]},
+ {id:"etut",ad:"Hata Yakalama",req:"hata",fixed:{sayfa:"etut"},cols:()=>[/* ETUT-YAKALAMA-PUANSIZ (06.10.2026): Hata/Başarı Puanı Etüt-Proje Hataları'nda girilir */...HATA_COLS]},
  {id:"yuk",ad:"Proje Yükü",req:"proje",cols:()=>[{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},
    ...D.pers.filter(p=>p.kisa).map(p=>({k:"yuk."+p.kisa,h:p.kisa,t:"n",w:4,tt:p.ad})),{k:"zorluk",h:"Proje|Zorluğu",t:"n",w:5},
    ...D.pers.filter(p=>p.kisa).map(p=>({h:p.kisa,t:"c",d:0,z:1,tt:p.ad+" — zorluğa göre oranlanmış",f:r=>((r.yuk||{})[p.kisa]==null||(r.yuk||{})[p.kisa]==="")?null:zk(r)*num(r.yuk[p.kisa])}))],
