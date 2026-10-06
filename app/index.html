@@ -3286,6 +3286,8 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     .bhadd td{background:#f5f9f5;border-bottom:2px solid #cfd8cf}
     .bhin{font-size:11.5px;padding:2px 3px;border:1px solid #cfd8cf;border-radius:4px;background:#fff;box-sizing:border-box}
     .bhok{border:0;background:#2f5d3a;color:#fff;cursor:pointer;font-size:13px;line-height:1;padding:3px 6px;border-radius:4px}
+    /* BAHCE-LEJANT */ .bhlj{margin:10px 0 4px;font-size:11.5px;color:#4a5560;line-height:1.6;max-width:560px}
+    .bhlj b{color:#2f5d3a;font-weight:600}
   </style>`;
   if(error){ h+=`<div class="load">Hata: ${esc(error.message)}</div>`; }
   else {   /* BAHCE-EKLE-SATIR: boş tabloda da ekleme satırı görünsün */
@@ -3299,6 +3301,8 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     h+='<tr class="bhadd"><td><input class="bhin" data-c="latince" placeholder="Bitki adı (her dil)" style="width:18ch"></td><td></td><td></td><td></td><td></td><td></td>'+(notVar?'<td></td>':'')+'<td class="bhx"><button class="bhok" title="Ekle">＋</button></td></tr>';
     rows.forEach(r=>{ h+='<tr><td class="bhk" title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</td><td class="bhi">'+esc(r.isik||"")+'</td><td class="bhs">'+esc(r.soguk||"")+'</td><td class="bht2">'+esc(r.toprak||"")+'</td><td class="bhu">'+esc(r.sulama||"")+'</td><td class="bhay">'+esc((isMap[r.id]||[]).join("; "))+'</td>'+(notVar?'<td>'+esc(r.notlar||"")+'</td>':'')+'<td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(nm(r))+'">✕</button></td></tr>'; });
     h+='</tbody></table></div>';
+    /* BAHCE-LEJANT (06.10.2026): tablonun altında simge lejantı */
+    h+='<div class="bhlj"><b>Işık:</b> ☀️ tam güneş · ⛅ yarı gölge · ☁️ gölge<br><b>Toprak (kova oranı, toplam 10):</b> 🟫 besinsiz bahçe toprağı · 🍂 olgun kompost · 🌱 kapak toprağı · ⚪ pomza 3–8 mm · 🫴🏻N dikimde N avuç dolomit · ↻🫴🏻1/3y 3 yılda bir 1 avuç<br><b>Malç:</b> ◻️ pomza · 🌲 5–8 cm kuru çam iğnesi</div>';
   }
   body.innerHTML=h;
   /* BAHCE-EKLE-SATIR */
