@@ -1016,6 +1016,38 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
     eskiKapat(t.tb,"tarih",tbl==="ob_situation"?7:(tbl==="ob_avenant"?8:5)); /* OB-TS-261006 */ /* ESKI-KAPAT */
     cariBanner(t.tb,"Cari Ay Toplam EUR"+(tbl==="ob_situation"?" <span style=\"font-weight:400;font-size:12px\">(İptal Edildi hariç)</span>":(tbl==="ob_avenant"?" <span style=\"font-weight:400;font-size:12px\">(yalnız Avenant geldi)</span>":"")),
       R.filter(r=>cariAyMi(r.tarih)&&!(tbl==="ob_situation"&&r.onay_durumu==="İptal Edildi")&&!(tbl==="ob_avenant"&&(r.durum!=="Avenant geldi"||r.aktarim))).reduce((a,r)=>a+(Number(r.tutar)||0),0),"€"); /* CARI-TOPLAM */
+    if(tbl==="ob_avenant"){ tsBar(R); tsFiltre(true); } /* OB-TS-FILTRE-261006 */
+  }
+  /* OB-TS-FILTRE-261006: TS filtre çubuğu (Proje · Durum · No/İçerik/Açıklama arama) */
+  function tsBar(R){
+    if(!$("tsF")){
+      const h=$("c7").closest("h3");
+      h.insertAdjacentHTML("afterend",'<div id="tsF" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 6px;font-size:13px"><b style="color:#16324f">Filtre:</b>'
+        +'<select id="tsFp" style="max-width:260px"></select>'
+        +'<select id="tsFd"><option value="">Tüm durumlar</option>'+TSD.map(o=>'<option>'+escq(o)+'</option>').join("")+'</select>'
+        +'<input id="tsFq" placeholder="No / içerik / açıklama ara" style="width:220px">'
+        +'<button type="button" id="tsFx">Temizle</button><span id="tsFs" style="color:#3d5a52"></span></div>');
+      $("tsFp").onchange=()=>tsFiltre(); $("tsFd").onchange=()=>tsFiltre(); $("tsFq").oninput=()=>tsFiltre();
+      $("tsFx").onclick=()=>{ $("tsFp").value=""; $("tsFd").value=""; $("tsFq").value=""; tsFiltre(); };
+    }
+    const cur=$("tsFp").value;
+    const P=[...new Set(R.map(r=>r.proje).filter(Boolean))].sort((x,y)=>x.localeCompare(y,"tr"));
+    $("tsFp").innerHTML='<option value="">Tüm projeler</option>'+P.map(p=>'<option'+(p===cur?' selected':'')+'>'+escq(p)+'</option>').join("");
+  }
+  function tsFiltre(yukleme){
+    const p=$("tsFp").value, d=$("tsFd").value, q=$("tsFq").value.trim().toLocaleLowerCase("tr");
+    const on=!!(p||d||q), tb=$("t7");
+    if(!on){ $("tsFs").textContent=""; if(window._TSF_ON&&!yukleme){ window._TSF_ON=false; load("ob_avenant"); } window._TSF_ON=false; return; }
+    window._TSF_ON=true;
+    let n=0,t=0,g=0;
+    tb.querySelectorAll("tr[data-id]").forEach(tr=>{
+      const v=k=>{ const e=tr.querySelector('[data-f="'+k+'"]'); return e?e.value:""; };
+      const ok=(!p||v("proje")===p)&&(!d||v("durum")===d)&&(!q||(v("no")+" "+v("icerik")+" "+v("aciklama")+" "+v("proje")).toLocaleLowerCase("tr").includes(q));
+      tr.style.display=ok?"":"none";
+      if(ok){ n++; const x=num(v("tutar"))||0; t+=x; if(v("durum")==="Avenant geldi") g+=x; }
+    });
+    tb.querySelectorAll("tr:not([data-id]):not([data-new])").forEach(tr=>{ tr.style.display="none"; }); /* "Önceki aylar" satırı filtrede gizli, eşleşenler hep görünür */
+    $("tsFs").textContent=n+" satır · toplam "+nf(t)+" € · Avenant geldi "+nf(g)+" €";
   }
   load("ob_dpgf"); load("ob_situation"); load("ob_avenant"); load("ob_pv_reception"); load("ob_tahsilat"); /* OB-PVR */ /* OB-TAHSILAT-260930 */
 })();
