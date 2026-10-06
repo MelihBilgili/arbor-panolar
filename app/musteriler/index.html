@@ -47,6 +47,14 @@
   @media (max-width:700px){ .sechead .ara{margin-left:0;width:100%} }
 .ciro{font-size:11px;color:#5a6b7d;white-space:nowrap;margin-left:4px;align-self:center}
 .ciro.yok{color:#a3aeba;font-style:italic}
+  /* MUSTERI-COKLU */
+  td.cl{padding:3px 4px;line-height:1.9}
+  .chip{display:inline-flex;align-items:center;gap:2px;background:#eef3f8;border:1px solid #d5e0ea;border-radius:12px;padding:0 3px 0 8px;margin:1px 3px 1px 0;font-size:12px;max-width:100%}
+  .chip a{color:#16324f;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .chip a:hover{text-decoration:underline}
+  .chip .cdel{border:0;background:none;color:#b40000;cursor:pointer;font-size:14px;line-height:1;padding:0 3px}
+  input.cadd{font:inherit;font-size:12px;border:1px dashed #cdd6df;border-radius:6px;height:24px;padding:0 6px;width:150px;max-width:100%;background:transparent}
+  input.cadd:focus{border-style:solid;border-color:#2e7d54;outline:none;background:#fff}
 </style>
 </head>
 <body>
@@ -138,43 +146,54 @@ window.ARB_KISI_AL=function(em){ try{ var k=JSON.parse(localStorage.getItem("arb
 </script>
 <script>
 /* MUSTERI-ONERI (05.10.2026) — Müşteriler kayıt/öneri ortak modülü. TEK KAYNAK: kod/_musteri_oneri.js
-   Gömülü kopyalar: musteriler_form.html, satis_yd_akis_form_template.html (python kod\_musteri_oneri_sync.py <html>).
-   Tablolar: musteri_firma(blok,firma) · musteri_ilgili(firma_id,ad_soyad,mail,tel). Sıra: Şirket → Ad Soyad → E-posta/Telefon. */
+   Gömülü kopyalar: musteriler_form.html, satis_yd_akis_form_template.html (kod\_musteri_coklu_patch_261006.py eşitler).
+   MUSTERI-COKLU (06.10.2026): şirket → birden çok yetkili (musteri_ilgili: firma_id, ad_soyad) → her yetkilinin
+   birden çok e-posta/telefonu (musteri_iletisim: ilgili_id, tur 'mail'|'tel', deger). musteri_ilgili.mail/tel ESKİ, yazılmaz.
+   Sıra: Şirket → Yetkili → E-posta/Telefon. */
 window.MUS=(function(){
-  var F=[], I=[];
+  var F=[], I=[], C=[];
   function n(s){ return String(s==null?"":s).replace(/\s+/g," ").trim(); }
-  function k(s){ return n(s).toLocaleLowerCase("tr"); }
+  function k(s){ return n(s).toLocaleLowerCase("tr").replace(/ı/g,"i").normalize("NFD").replace(/[\u0300-\u036f]/g,""); } /* MUSTERI-COKLU: LUCIANI/luciani, Léon/Leon eşleşsin */
   function e(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   async function yukle(sb){
     var a=await sb.from("musteri_firma").select("id,blok,firma").order("firma");
-    var b=await sb.from("musteri_ilgili").select("id,firma_id,ad_soyad,mail,tel,created_at").order("id");
-    if(a.error) throw a.error; if(b.error) throw b.error;
-    F=a.data||[]; I=b.data||[]; return {F:F,I:I};
+    var b=await sb.from("musteri_ilgili").select("id,firma_id,ad_soyad,created_at").order("id");
+    var c=await sb.from("musteri_iletisim").select("id,ilgili_id,tur,deger").order("id");
+    if(a.error) throw a.error; if(b.error) throw b.error; if(c.error) throw c.error;
+    F=a.data||[]; I=b.data||[]; C=c.data||[]; return {F:F,I:I,C:C};
   }
   function firmalar(blok){ return F.filter(function(f){return f.blok===blok;}).sort(function(x,y){return String(x.firma).localeCompare(String(y.firma),"tr");}); }
   function firmaBul(blok,ad){ var q=k(ad); if(!q) return null; return F.find(function(f){return f.blok===blok&&k(f.firma)===q;})||null; }
-  function ilgililer(fid){ return I.filter(function(r){return r.firma_id===fid;}); }
-  function adlar(fid){ var s={},o=[]; ilgililer(fid).forEach(function(r){ var q=k(r.ad_soyad); if(q&&!s[q]){ s[q]=1; o.push(n(r.ad_soyad)); } }); return o.sort(function(x,y){return x.localeCompare(y,"tr");}); }
-  function kayitlar(fid,ad){ var q=k(ad); return ilgililer(fid).filter(function(r){return k(r.ad_soyad)===q;}); }
-  /* Ekleme/güncelleme: aynı kişi + aynı e-posta/telefon varsa yeni satır açılmaz, boş alan doldurulur */
+  function ilgililer(fid){ return I.filter(function(r){return r.firma_id===fid;}).sort(function(x,y){return String(x.ad_soyad).localeCompare(String(y.ad_soyad),"tr");}); }
+  function kisiBul(fid,ad){ var q=k(ad); if(!fid||!q) return null; return I.find(function(r){return r.firma_id===fid&&k(r.ad_soyad)===q;})||null; }
+  function adlar(fid){ return ilgililer(fid).map(function(r){return n(r.ad_soyad);}); }
+  function iletisim(iid,tur){ return C.filter(function(c){return c.ilgili_id===iid&&c.tur===tur;}); }
+  async function iletisimEkle(sb,iid,tur,deger){
+    deger=n(deger); if(!iid||!deger) return null;
+    var var_=iletisim(iid,tur).find(function(c){return k(c.deger)===k(deger);}); if(var_) return var_;
+    var r=await sb.from("musteri_iletisim").insert({ilgili_id:iid,tur:tur,deger:deger}).select("id,ilgili_id,tur,deger"); if(r.error) throw r.error;
+    C.push(r.data[0]); return r.data[0];
+  }
+  async function iletisimSil(sb,cid){
+    var r=await sb.from("musteri_iletisim").delete().eq("id",cid); if(r.error) throw r.error;
+    C=C.filter(function(c){return c.id!==cid;});
+  }
+  async function kisiEkle(sb,fid,ad){
+    ad=n(ad); var var_=kisiBul(fid,ad); if(var_) return var_;
+    var r=await sb.from("musteri_ilgili").insert({firma_id:fid,ad_soyad:ad}).select("id,firma_id,ad_soyad,created_at"); if(r.error) throw r.error;
+    I.push(r.data[0]); return r.data[0];
+  }
+  /* Ekleme: şirket yoksa açılır, yetkili yoksa açılır, e-posta/telefon o yetkilide yoksa eklenir (çift kayıt yok) */
   async function kaydet(sb,blok,firma,ad,mail,tel){
-    firma=n(firma); ad=n(ad); mail=n(mail)||null; tel=n(tel)||null;
+    firma=n(firma); ad=n(ad); mail=n(mail); tel=n(tel);
     if(!firma) throw new Error("Şirket boş");
     var f=firmaBul(blok,firma);
     if(!f){ var r=await sb.from("musteri_firma").insert({blok:blok,firma:firma}).select("id,blok,firma"); if(r.error) throw r.error; f=r.data[0]; F.push(f); }
     if(!ad) return {firma:f,ilgili:null};
-    var rows=kayitlar(f.id,ad), em=k(mail), te=n(tel);
-    var ayni=rows.find(function(r){ return k(r.mail)===em && n(r.tel)===te; });
-    if(ayni) return {firma:f,ilgili:ayni};
-    var hedef=null, upd=null;
-    if(mail&&tel){ hedef=rows.find(function(r){return k(r.mail)===em&&!n(r.tel);}); if(hedef) upd={tel:tel};
-      if(!hedef){ hedef=rows.find(function(r){return n(r.tel)===te&&!n(r.mail);}); if(hedef) upd={mail:mail}; } }
-    if(!hedef && (mail||tel)){ hedef=rows.find(function(r){return !n(r.mail)&&!n(r.tel);}); if(hedef) upd={mail:mail,tel:tel}; }
-    if(!hedef && mail && !tel){ hedef=rows.find(function(r){return k(r.mail)===em;}); if(hedef) return {firma:f,ilgili:hedef}; }
-    if(!hedef && tel && !mail){ hedef=rows.find(function(r){return n(r.tel)===te;}); if(hedef) return {firma:f,ilgili:hedef}; }
-    if(hedef){ var u=await sb.from("musteri_ilgili").update(upd).eq("id",hedef.id).select(); if(u.error) throw u.error; Object.assign(hedef,u.data[0]); return {firma:f,ilgili:hedef}; }
-    var ins=await sb.from("musteri_ilgili").insert({firma_id:f.id,ad_soyad:ad,mail:mail,tel:tel}).select(); if(ins.error) throw ins.error;
-    I.push(ins.data[0]); return {firma:f,ilgili:ins.data[0]};
+    var p=await kisiEkle(sb,f.id,ad);
+    if(mail) await iletisimEkle(sb,p.id,"mail",mail);
+    if(tel) await iletisimEkle(sb,p.id,"tel",tel);
+    return {firma:f,ilgili:p};
   }
   /* Dört kutuyu sıralı öneriye bağlar. o={blok:()=>"YD1", firma,ad,mail,tel:<input>, pre:"benzersiz-önek"} */
   function bagla(o){
@@ -185,20 +204,19 @@ window.MUS=(function(){
     function tazele(){
       dF.innerHTML=firmalar(B()).map(function(f){return '<option value="'+e(f.firma)+'">';}).join("");
       var id=fid(); dA.innerHTML=id?adlar(id).map(function(a){return '<option value="'+e(a)+'">';}).join(""):"";
-      var rs=id?kayitlar(id,o.ad.value):[], sm={}, st={};
-      dM.innerHTML=rs.filter(function(r){var q=k(r.mail); if(!q||sm[q]) return false; sm[q]=1; return true;}).map(function(r){return '<option value="'+e(n(r.mail))+'" label="'+e(n(r.tel)||"")+'">';}).join("");
-      dT.innerHTML=rs.filter(function(r){var q=n(r.tel); if(!q||st[q]) return false; st[q]=1; return true;}).map(function(r){return '<option value="'+e(n(r.tel))+'" label="'+e(n(r.mail)||"")+'">';}).join("");
+      var p=kisiBul(id,o.ad.value);
+      dM.innerHTML=p?iletisim(p.id,"mail").map(function(c){return '<option value="'+e(c.deger)+'">';}).join(""):"";
+      dT.innerHTML=p?iletisim(p.id,"tel").map(function(c){return '<option value="'+e(c.deger)+'">';}).join(""):"";
       var fv=!!n(o.firma.value), av=fv&&!!n(o.ad.value);
       o.ad.disabled=!fv; o.mail.disabled=!av; o.tel.disabled=!av;
-      o.ad.placeholder=fv?"Ad Soyad":"önce şirket"; o.mail.placeholder=av?"E-posta":"önce ad soyad"; o.tel.placeholder=av?"Telefon":"önce ad soyad";
+      o.ad.placeholder=fv?"Yetkili (ad soyad)":"önce şirket"; o.mail.placeholder=av?"E-posta":"önce yetkili"; o.tel.placeholder=av?"Telefon":"önce yetkili";
     }
     o.firma.addEventListener("input",tazele); o.ad.addEventListener("input",tazele);
-    o.mail.addEventListener("input",function(){ if(n(o.tel.value)) return; var id=fid(); if(!id) return; var r=kayitlar(id,o.ad.value).find(function(x){return k(x.mail)===k(o.mail.value)&&n(x.tel);}); if(r) o.tel.value=n(r.tel); });
-    o.tel.addEventListener("input",function(){ if(n(o.mail.value)) return; var id=fid(); if(!id) return; var r=kayitlar(id,o.ad.value).find(function(x){return n(x.tel)===n(o.tel.value)&&n(x.mail);}); if(r) o.mail.value=n(r.mail); });
     tazele(); return {tazele:tazele};
   }
-  return {yukle:yukle,firmalar:firmalar,firmaBul:firmaBul,ilgililer:ilgililer,adlar:adlar,kayitlar:kayitlar,kaydet:kaydet,bagla:bagla,
-          get F(){return F;}, get I(){return I;}, n:n, k:k};
+  return {yukle:yukle,firmalar:firmalar,firmaBul:firmaBul,ilgililer:ilgililer,kisiBul:kisiBul,adlar:adlar,iletisim:iletisim,
+          iletisimEkle:iletisimEkle,iletisimSil:iletisimSil,kisiEkle:kisiEkle,kaydet:kaydet,bagla:bagla,
+          get F(){return F;}, get I(){return I;}, get C(){return C;}, n:n, k:k, e:e};
 })();
 
 </script>
@@ -277,35 +295,51 @@ function iskelet(){
     '<section class="blk" data-b="'+b+'"><div class="sechead"><h2>'+esc(ad)+' ('+b+') — Müşteriler</h2><span class="say"></span><input class="ara" type="search" placeholder="Şirket / kişi ara…"></div>'
     +'<div class="addbar"><b>Yeni satır</b><input class="a-firma" placeholder="Şirket" autocomplete="off"><input class="a-ad" autocomplete="off"><input class="a-mail" type="email" autocomplete="off"><input class="a-tel" type="tel" autocomplete="off"><button class="btn a-ekle" type="button">Ekle</button><span class="amsg"></span></div>'
     +'<div class="card"><table><colgroup><col style="width:24%"><col style="width:13%"><col style="width:20%"><col style="width:24%"><col style="width:15%"><col style="width:4%"></colgroup>'
-    +'<thead><tr><th>Şirket</th><th>Sınıf</th><th>Ad Soyad</th><th>E-posta</th><th>Telefon</th><th></th></tr></thead><tbody></tbody></table></div></section>').join("");
+    +'<thead><tr><th>Şirket</th><th>Sınıf</th><th>Yetkili</th><th>E-postalar</th><th>Telefonlar</th><th></th></tr></thead><tbody></tbody></table></div></section>').join("");
   document.querySelectorAll("section.blk").forEach(sec=>{
     const b=sec.dataset.b, q=c=>sec.querySelector(c);
     BAG[b]=MUS.bagla({blok:b,firma:q(".a-firma"),ad:q(".a-ad"),mail:q(".a-mail"),tel:q(".a-tel"),pre:"mus-"+b});
     q(".ara").addEventListener("input",e=>{ ARA[b]=e.target.value; govde(b); });
     q(".a-ekle").onclick=()=>ekle(sec);
     const tb=q("tbody");
-    tb.addEventListener("change",e=>{ const el=e.target; if(el.classList.contains("fi")) firmaDegis(el); else if(el.classList.contains("il")) ilgiliDegis(el); });
-    tb.addEventListener("click",e=>{ const el=e.target; if(el.classList.contains("del")) ilgiliSil(el.dataset.iid); else if(el.classList.contains("fdel")) firmaSil(el.dataset.fid); });
+    tb.addEventListener("change",e=>{ const el=e.target; if(el.classList.contains("fi")) firmaDegis(el); else if(el.classList.contains("il")) ilgiliDegis(el); else if(el.classList.contains("cadd")) iletisimEkle(el); });
+    tb.addEventListener("click",e=>{ const el=e.target; if(el.classList.contains("del")) ilgiliSil(el.dataset.iid); else if(el.classList.contains("fdel")) firmaSil(el.dataset.fid); else if(el.classList.contains("cdel")) iletisimSil(el); });
+    tb.addEventListener("keydown",e=>{ const el=e.target; if(el.classList.contains("cadd")&&e.key==="Enter"){ e.preventDefault(); el.blur(); } });
   });
 }
-function govde(b){
+function govde(b){ /* MUSTERI-COKLU: yetkili başına satır, e-posta/telefon listeleri (ekle/sil) */
   const sec=document.querySelector('section.blk[data-b="'+b+'"]'); if(!sec) return;
   const q=MUS.k(ARA[b]); let say=0, sayI=0, g=0, h="";
+  const chips=(r,tur)=>MUS.iletisim(r.id,tur).map(c=>'<span class="chip">'+(tur==="mail"?'<a href="mailto:'+esc(c.deger)+'">'+esc(c.deger)+'</a>':'<a href="tel:'+esc(c.deger.replace(/[^\d+]/g,""))+'">'+esc(c.deger)+'</a>')+'<button class="cdel" type="button" data-cid="'+c.id+'" title="Sil">×</button></span>').join("")
+    +'<input class="cadd" data-iid="'+r.id+'" data-tur="'+tur+'" type="'+(tur==="mail"?"email":"tel")+'" placeholder="+ '+(tur==="mail"?"e-posta":"telefon")+'" autocomplete="off">';
   MUS.firmalar(b).forEach(f=>{
-    const L=MUS.ilgililer(f.id).slice().sort((x,y)=>String(x.ad_soyad).localeCompare(String(y.ad_soyad),"tr"));
-    if(q && !(MUS.k(f.firma).includes(q) || L.some(r=>[r.ad_soyad,r.mail,r.tel].some(v=>MUS.k(v).includes(q))))) return;
+    const L=MUS.ilgililer(f.id);
+    const ara=r=>[r.ad_soyad].concat(MUS.iletisim(r.id,"mail").map(c=>c.deger),MUS.iletisim(r.id,"tel").map(c=>c.deger));
+    if(q && !(MUS.k(f.firma).includes(q) || L.some(r=>ara(r).some(v=>MUS.k(v).includes(q))))) return;
     say++; sayI+=L.length; const n=Math.max(1,L.length), cls=' class="g'+(g++%2)+'"';
     const bas='<td rowspan="'+n+'" class="fc"><div class="fwrap"><input class="cell fi" data-fid="'+f.id+'" value="'+esc(f.firma)+'" title="Şirket adı — değiştirilirse Fiyatlandırma panosundaki sınıf listesinde de değişir">'
       +((L.length||sinifTxt(b,f.firma))?'':'<button class="fdel" type="button" data-fid="'+f.id+'" title="Şirketi sil">✕</button>')+(sinifTxt(b,f.firma)?'':ciroHtml(f.id))+'</div></td><td rowspan="'+n+'" class="sn">'+esc(sinifTxt(b,f.firma))+'</td>';
-    if(!L.length){ h+='<tr'+cls+'>'+bas+'<td colspan="4" class="bos">ilgili kaydı yok — üstteki satırdan ekleyin</td></tr>'; return; }
+    if(!L.length){ h+='<tr'+cls+'>'+bas+'<td colspan="4" class="bos">yetkili kaydı yok — üstteki satırdan ekleyin</td></tr>'; return; }
     L.forEach((r,i)=>{ h+='<tr'+cls+'>'+(i?'':bas)
       +'<td><input class="cell il" data-iid="'+r.id+'" data-k="ad_soyad" value="'+esc(r.ad_soyad)+'"></td>'
-      +'<td><input class="cell il" data-iid="'+r.id+'" data-k="mail" type="email" value="'+esc(r.mail||"")+'"></td>'
-      +'<td><input class="cell il" data-iid="'+r.id+'" data-k="tel" type="tel" value="'+esc(r.tel||"")+'"></td>'
-      +'<td><button class="del" type="button" data-iid="'+r.id+'" title="İlgiliyi sil">✕</button></td></tr>'; });
+      +'<td class="cl">'+chips(r,"mail")+'</td>'
+      +'<td class="cl">'+chips(r,"tel")+'</td>'
+      +'<td><button class="del" type="button" data-iid="'+r.id+'" title="Yetkiliyi sil (e-posta/telefonlarıyla)">✕</button></td></tr>'; });
   });
   sec.querySelector("tbody").innerHTML=h||'<tr><td colspan="6" class="bos">Kayıt yok.</td></tr>';
-  sec.querySelector(".say").textContent=say+" şirket · "+sayI+" ilgili";
+  sec.querySelector(".say").textContent=say+" şirket · "+sayI+" yetkili";
+}
+async function iletisimEkle(el){ /* MUSTERI-COKLU */
+  const v=el.value.trim(), tur=el.dataset.tur, iid=+el.dataset.iid; el.classList.remove("bad"); if(!v) return;
+  if(tur==="mail" && !MAIL_RE.test(v)){ el.classList.add("bad"); setMsg("E-posta geçersiz.",false); return; }
+  try{ await MUS.iletisimEkle(sb,iid,tur,v); }catch(e){ setMsg("Kayıt hatası: "+(e.message||e),false); return; }
+  setMsg("Kaydedildi ✓",true); const r=MUS.I.find(x=>x.id===iid), b=r&&(MUS.F.find(f=>f.id===r.firma_id)||{}).blok;
+  if(b){ govde(b); if(BAG[b]) BAG[b].tazele(); const yeni=document.querySelector('input.cadd[data-iid="'+iid+'"][data-tur="'+tur+'"]'); if(yeni) yeni.focus(); }
+}
+async function iletisimSil(el){ /* MUSTERI-COKLU */
+  const cid=+el.dataset.cid, c=MUS.C.find(x=>x.id===cid); if(!c) return; if(!confirm(c.deger+" silinsin mi?")) return;
+  try{ await MUS.iletisimSil(sb,cid); }catch(e){ setMsg("Silinemedi: "+(e.message||e),false); return; }
+  setMsg("Silindi",true); const r=MUS.I.find(x=>x.id===c.ilgili_id), b=r&&(MUS.F.find(f=>f.id===r.firma_id)||{}).blok; if(b){ govde(b); if(BAG[b]) BAG[b].tazele(); }
 }
 async function ekle(sec){
   const b=sec.dataset.b, q=c=>sec.querySelector(c), m=q(".amsg");
@@ -326,15 +360,13 @@ async function firmaDegis(el){
   if(error){ el.value=f.firma; setMsg("Kayıt hatası: "+error.message,false); return; }
   setMsg("Kaydedildi ✓",true); await load();
 }
-async function ilgiliDegis(el){
-  const r=MUS.I.find(x=>x.id===+el.dataset.iid); if(!r) return; const k=el.dataset.k; let v=el.value.trim();
-  el.classList.remove("bad");
-  if(k==="ad_soyad" && !v){ el.value=r.ad_soyad; setMsg("Ad Soyad boş olamaz.",false); return; }
-  if(k==="mail" && v && !MAIL_RE.test(v)){ el.classList.add("bad"); setMsg("E-posta geçersiz.",false); return; }
-  const upd={}; upd[k]=v||null;
-  const {error}=await sb.from("musteri_ilgili").update(upd).eq("id",r.id);
-  if(error){ el.value=r[k]||""; setMsg("Kayıt hatası: "+error.message,false); return; }
-  r[k]=upd[k]; setMsg("Kaydedildi ✓",true); const b=(MUS.F.find(f=>f.id===r.firma_id)||{}).blok; if(b&&BAG[b]) BAG[b].tazele();
+async function ilgiliDegis(el){ /* MUSTERI-COKLU: yalnız yetkili adı */
+  const r=MUS.I.find(x=>x.id===+el.dataset.iid); if(!r) return; const v=MUS.n(el.value);
+  if(!v){ el.value=r.ad_soyad; setMsg("Ad Soyad boş olamaz.",false); return; }
+  const ayni=MUS.kisiBul(r.firma_id,v); if(ayni && ayni.id!==r.id){ el.value=r.ad_soyad; setMsg("Bu şirkette bu adla yetkili zaten var.",false); return; }
+  const {error}=await sb.from("musteri_ilgili").update({ad_soyad:v}).eq("id",r.id);
+  if(error){ el.value=r.ad_soyad; setMsg("Kayıt hatası: "+error.message,false); return; }
+  r.ad_soyad=v; setMsg("Kaydedildi ✓",true); const b=(MUS.F.find(f=>f.id===r.firma_id)||{}).blok; if(b&&BAG[b]) BAG[b].tazele();
 }
 async function ilgiliSil(id){
   const r=MUS.I.find(x=>x.id===+id); if(!r) return; if(!confirm(r.ad_soyad+" silinsin mi?")) return;
