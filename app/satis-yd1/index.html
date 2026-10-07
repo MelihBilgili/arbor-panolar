@@ -657,7 +657,7 @@ function eksikBos(r,f,key){
   const i=COLS.findIndex(c=>c.f===f)+1; if(i<1) return false;
   const bos=r[f]==null||String(r[f]).trim()==="";
   if(!r.durum || r.durum==="Teklif Talebi Geldi") return bos && ((i>=1&&i<=6)||(i>=8&&i<=11)); /* YD-EKSIK-BOS2 (05.10.2026, Melih): "Teklif Talebi Geldi"de de boşlar pembe */
-  if(r.durum==="Teklif İncelendi" && f==="oncelik") return true;
+  if(r.durum==="Teklif İncelendi" && f==="oncelik") return bos; /* ONC-PEMBE-BOS (07.10.2026, Melih): öncelik belirlenmişse pembe değil; takılma sebebi Müşteri hücresinde (ILG-ZORUNLU) */
   return false;
 }
 function rowHTML(r,key){
