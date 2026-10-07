@@ -695,7 +695,8 @@ loadFt(); load();
   var st = document.createElement("style");
   st.textContent = ".arb-xl-btn{position:fixed;z-index:40;font:600 10.5px/1 system-ui,'Segoe UI',Arial,sans-serif;padding:3px 7px;" +
     "border:1px solid #1d6f42;color:#1d6f42;background:#fff;border-radius:5px;cursor:pointer;opacity:.8;display:none;white-space:nowrap}" +
-    ".arb-xl-btn:hover{opacity:1;background:#1d6f42;color:#fff}.arb-xl-btn[disabled]{opacity:.55;cursor:wait}@media print{.arb-xl-btn{display:none!important}}";
+    ".arb-xl-btn:hover{opacity:1;background:#1d6f42;color:#fff}.arb-xl-btn.koyu{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}.arb-xl-btn.koyu:hover{background:rgba(255,255,255,.18);color:#fff}" + /* XL-ZEMIN */
+    ".arb-xl-btn[disabled]{opacity:.55;cursor:wait}@media print{.arb-xl-btn{display:none!important}}";
   document.head.appendChild(st);
   var BTN = []; // {t, b}
 
@@ -739,6 +740,39 @@ loadFt(); load();
     }
     return false;
   }
+  function zeminKoyu(x, y) { /* XL-ZEMIN: dugmenin altindaki gercek arka plan koyu mu */
+    var es = document.elementsFromPoint(x, y), e = null;
+    for (var j = 0; j < es.length; j++) if (!(es[j].classList && es[j].classList.contains("arb-xl-btn"))) { e = es[j]; break; }
+    while (e && e.nodeType === 1) {
+      var m = (getComputedStyle(e).backgroundColor || "").match(/[\d.]+/g);
+      if (m && m.length >= 3 && (m.length < 4 || +m[3] > 0.3)) return (0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]) / 255 < 0.5;
+      e = e.parentElement;
+    }
+    return false;
+  }
+  function metinKutulari(tr) { /* satirdaki yazilarin ekran kutulari */
+    var out = [], w = document.createTreeWalker(tr, NodeFilter.SHOW_TEXT, null), n, rg = document.createRange();
+    while ((n = w.nextNode())) {
+      if (!n.nodeValue.trim()) continue;
+      rg.selectNodeContents(n); var rs = rg.getClientRects();
+      for (var k = 0; k < rs.length; k++) if (rs[k].width > 0) out.push(rs[k]);
+    }
+    return out;
+  }
+  function cakisir(ks, x, y, w, h) {
+    for (var k = 0; k < ks.length; k++) { var r = ks[k]; if (x < r.right + 4 && x + w > r.left - 4 && y < r.bottom && y + h > r.top) return true; }
+    return false;
+  }
+  function sabitUst(x, y, t) { /* XL-ZEMIN: tablonun ustu sabit menu/sekme cubugu mu (tabloyu icermeyen nav/header/fixed/sticky) */
+    var es = document.elementsFromPoint(x, y), e = null;
+    for (var j = 0; j < es.length; j++) if (!(es[j].classList && es[j].classList.contains("arb-xl-btn"))) { e = es[j]; break; }
+    for (var u = e; u && u.nodeType === 1 && u !== document.body; u = u.parentElement) {
+      if (u.contains(t)) return false;
+      var ps = getComputedStyle(u).position;
+      if (ps === "fixed" || ps === "sticky" || /^(NAV|HEADER)$/.test(u.tagName) || u.getAttribute("role") === "navigation") return true;
+    }
+    return false;
+  }
   function yerlestir() {
     for (var i = 0; i < BTN.length; i++) {
       var t = BTN[i].t, b = BTN[i].b, goster = false;
@@ -751,7 +785,15 @@ loadFt(); load();
           if (goster) {
             var bw = b.offsetWidth || 44, bh = b.offsetHeight || 18;
             var bx = g.right - bw, by = rc.top - bh - 2;
-            if (by < 0 || dolu(bx, by, bw, bh)) by = Math.max(rc.top, 0) + 2; /* ustte bos yer yoksa tablonun ust sag kosesine */
+            if (by < 0 || dolu(bx, by, bw, bh) || sabitUst(bx + bw / 2, by + bh / 2, t)) { /* ustte bos yer yoksa: ilk satirda yazi ve dugme olmayan en sagdaki yer */
+              var tr0 = null; for (var q = 0; q < t.rows.length; q++) if (t.rows[q].getClientRects().length) { tr0 = t.rows[q]; break; }
+              var rr = tr0 ? tr0.getBoundingClientRect() : rc;
+              by = Math.max(rr.top, 0) + Math.max(1, (Math.min(rr.height, 40) - bh) / 2);
+              var ks = tr0 ? metinKutulari(tr0) : [], x0 = bx - 4;
+              while (x0 > rc.left + 4 && (cakisir(ks, x0, by, bw, bh) || dolu(x0, by, bw, bh))) x0 -= 6;
+              bx = x0 > rc.left + 4 ? x0 : bx - 4;
+            }
+            b.classList.toggle("koyu", zeminKoyu(bx + bw / 2, by + bh / 2));
             b.style.left = Math.round(bx) + "px"; b.style.top = Math.round(by) + "px";
           }
         }
