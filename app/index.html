@@ -2799,7 +2799,7 @@ async function loadFiyat(target){
    .fpub{font-size:11px;color:#7a8896}
   </style>`;
   view.innerHTML=`${style}
-    <div class="fbar"><button id="fiyat-guncelle">GÜNCELLE</button><span class="fpub">${yr.yayin_at?("Son yayın: "+dOnly(yr.yayin_at)+" <span class=\"fpubx\">(bu düğmeye son basılıp fiyatlandırma formuna aktarıldığı tarih)</span>"):"Henüz yayınlanmadı"}${yr.bildirim_beklemede?" · <b style=color:#b47800>bildirim beklemede</b>":""}</span></div>
+    <div class="fbar"><button id="fiyat-guncelle">GÜNCELLE</button><span class="fpub">${yr.yayin_at?("Son yayın: "+dOnly(yr.yayin_at)+" <span class=\"fpubx\">(bu düğmeye son basılıp fiyatlandırma formuna aktarıldığı tarih)</span>"):"Henüz yayınlanmadı"}${yr.bildirim_beklemede?" · <b style=color:#b47800>bildirim beklemede</b> <button id=\"fiyat-bildir\" style=\"margin-left:6px;background:#b47800;color:#fff;border:0;border-radius:6px;padding:3px 10px;font-weight:700;cursor:pointer;font-size:12px\">BİLDİRİMİ GÖNDER</button>":""}</span></div>
     ${pTbl}${tTbl}${aTbl}${SINIFLAR.map(s=>msBlock(s[0],s[1])).join("")}`;
   // olaylar
   view.querySelectorAll(".fedit").forEach(el=>el.onclick=()=>startFiyEdit(el));
@@ -2821,6 +2821,7 @@ async function loadFiyat(target){
     const {error}=await sb.from("fiyat_musteri_sinif").insert(rec); if(error){alert(error.message);return;} loadFiyat();
   }; });
   document.getElementById("fiyat-guncelle").onclick=fiyGuncelle;
+  { const fb=document.getElementById("fiyat-bildir"); if(fb) fb.onclick=async()=>{ if(!confirm("Bekleyen fiyat değişiklik bildirimi fiyat bildirim listesindeki alıcılara gönderilecek. Onaylıyor musunuz?")) return; fb.disabled=true; fb.textContent="Gönderiliyor…"; const r=await fiyBildirimGonder(null); alert(r.ok?("Bildirim gönderildi ("+r.adet+" alıcı)."):("Bildirim gönderilemedi: "+r.hata)); loadFiyat(); }; }
 }
 function startFiyEdit(el){
   if(el.querySelector("input")) return;
@@ -2879,6 +2880,18 @@ function fiyBildirimMetni(onceki,simdi){
   if(!d.length) return {metin:"Fiyatlandırma kuralları yeniden yayınlanmıştır; önceki yayına göre değişen madde yoktur.\n\n"+FIY_KAPANIS,adet:0};
   return {metin:"Fiyatlandırma kurallarında aşağıdaki değişiklikler yapılmıştır:\n\n"+d.map(x=>"• "+x).join("\n")+"\n\n"+FIY_KAPANIS,adet:d.length};
 }
+/* FIYAT-OTO-BILDIRIM (2026-10-07): GUNCELLE yayindan hemen sonra fiyat-degisiklik-mail edge fn'ini
+   cagirir (arbor-mail -> Outlook int@). Basariliysa bildirim_beklemede=false; hata olursa beklemede kalir,
+   panodaki BILDIRIMI GONDER dugmesiyle tekrar denenir. metin=null -> fiyat_yayin.bildirim_metni kullanilir. */
+async function fiyBildirimGonder(metin){
+  try{
+    const {data,error}=await sb.functions.invoke("fiyat-degisiklik-mail",{body:metin?{metin}:{}});
+    if(error||!data||!data.ok) return {ok:false,hata:(error&&error.message)||(data&&data.error)||"bilinmeyen hata"};
+    const u=await sb.from("fiyat_yayin").update({bildirim_beklemede:false}).eq("id",1);
+    if(u.error) return {ok:true,adet:data.gonderilen,hata:u.error.message};
+    return {ok:true,adet:data.gonderilen};
+  }catch(e){ return {ok:false,hata:String(e)}; }
+}
 async function fiyGuncelle(){
   const btn=document.getElementById("fiyat-guncelle"); btn.disabled=true; btn.textContent="Hazırlanıyor…";
   const [pp,tt,aa,mm,yy]=await Promise.all([
@@ -2897,13 +2910,16 @@ async function fiyGuncelle(){
                sinif:(mm&&!mm.error)?(mm.data||[]):[]};
   const onceki=((yy.data&&yy.data[0])||{}).snapshot;
   const {metin}=fiyBildirimMetni(onceki,simdi);
-  if(!confirm("Fiyatlandırma değerleri yayınlanacak ve aşağıdaki bilgi maili beklemeye alınacak (int@arbor.com.tr Outlook üzerinden gönderilir):\n\n"+metin+"\n\nOnaylıyor musunuz?")) return;
+  if(!confirm("Fiyatlandırma değerleri yayınlanacak ve aşağıdaki bilgi maili fiyat bildirim listesindeki alıcılara gönderilecek (int@arbor.com.tr Outlook):\n\n"+metin+"\n\nOnaylıyor musunuz?")) return;
   btn.disabled=true; btn.textContent="Yayınlanıyor…";
   // Yayınla + bildirim beklemeye al (asıl gönderim Outlook üzerinden yapılır — Resend dış gönderim yapmıyor)
   const {error}=await sb.from("fiyat_yayin").update({ yayin_at:new Date().toISOString(), snapshot:simdi, bildirim_beklemede:true, bildirim_metni:metin }).eq("id",1);
   btn.disabled=false; btn.textContent="GÜNCELLE";
   if(error){ alert("Hata: "+error.message); return; }
-  alert("Yayınlandı. Değişiklik bildirimi BEKLEMEYE ALINDI — int@arbor.com.tr Outlook hesabından ilgili kişilere gönderilecek.");
+  btn.disabled=true; btn.textContent="Mail gönderiliyor…";
+  const gb=await fiyBildirimGonder(metin);
+  btn.disabled=false; btn.textContent="GÜNCELLE";
+  alert(gb.ok?("Yayınlandı ve değişiklik bildirimi gönderildi ("+gb.adet+" alıcı)."):("Yayınlandı, ancak bildirim maili gönderilemedi: "+gb.hata+"\nBildirim beklemede kaldı; panodaki BİLDİRİMİ GÖNDER düğmesiyle tekrar deneyin."));
   loadFiyat();
 }
 /* ---------- MALİ — grup: Bilanço, İcmal + hassas panolar (depenses/kredi/ahsap/sel_arb). Bölüm-RLS. ---------- */
