@@ -99,7 +99,8 @@
   .ntbox .ntgecmis{font-size:12px;color:#5a6b7d;white-space:pre-wrap;margin-top:8px;max-height:160px;overflow:auto}
   /* YD-ILGILI (05.10.2026): Müşteri hücresi — proje ilgilisi kartı (hover/tıklama) */
   td.mus input.cell{cursor:pointer}
-  td.mus.ilg-var input.cell{border-left:3px solid #2e7d54;padding-left:5px} /* ILG-CIZGI-FIX (06.10.2026): inset gölge yuvarlak köşede taşıyordu */
+  td.mus.ilg-var input.cell{border-left:3px solid #2e7d54;padding-left:3px}
+  td.mus input.cell{padding-left:3px;padding-right:2px;text-overflow:ellipsis;letter-spacing:-.2px} /* MUS-TASMA (07.10.2026): uzun müşteri adı kesik görünüyordu */ /* ILG-CIZGI-FIX (06.10.2026): inset gölge yuvarlak köşede taşıyordu */
   .ntcell .ntlast.ntkilit{cursor:not-allowed;color:#6a7888} /* NOT-YETKI */
   .ilgpop{position:fixed;z-index:80;background:#fff;border:1px solid #b9c6d3;border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.22);padding:9px 12px 10px;width:270px;display:none;font-size:12.5px}
   .ilgpop.on{display:block}
@@ -418,7 +419,7 @@ const DISPLAY_ORDER=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyo
 const DISPLAY_SIRA={}; DISPLAY_ORDER.forEach((d,i)=>DISPLAY_SIRA[d]=i+1);
 const COLS=[
  {f:'proje',h:'Proje',w:112,t:'text',req:1},
- {f:'musteri',h:'Müşteri',w:66,t:'text',req:1},
+ {f:'musteri',h:'Müşteri',w:80,t:'text',req:1},
  {f:'musteri_onem_sinifi',h:'Müşteri Önem Sınıfı',w:35,t:'sel',opts:['1. Sınıf ya da Ciro: >500 m€','2. Sınıf ya da Ciro: 101-500 m€','Ciro: 11-100 m€','Ciro: <10 m€']},
  {f:'gelen_tarih',h:'Gelen Tarih',w:53,t:'date'},
  {f:'istenen_tarih',h:'İstenen Tarih',w:53,t:'date'},
