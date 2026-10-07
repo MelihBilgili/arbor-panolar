@@ -978,7 +978,7 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
   const nf=v=>v==null?"":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
   function bmsg(t,ok,tb){ const m=$(tb==="ob_tahsilat"?"m8":"m5"); /* OB-TAHSILAT-260930 */ m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3500); }
   const ONAY=["Onaylandı","Görüşmede","Düzeltme İstendi","İptal Edildi"];
-  const TSD=["Avenant geldi","Dönüş bekleniyor","İptal edildi"]; /* OB-TS-261006 */
+  const TSD=["Avenant geldi","Onaylandı, avenant bekleniyor","Dönüş bekleniyor","İptal edildi"]; /* OB-TS-261006 */ /* TS-ONAY-AV (07.10.2026) */
   const opts=(list,cur)=>['<option value=""></option>'].concat(list.map(o=>'<option'+(String(cur||"")===o?" selected":"")+'>'+escq(o)+'</option>')).join("");
   const inp=(f,v,cls,typ)=>'<input'+(typ?' type="'+typ+'"':'')+(cls?' class="'+cls+'"':'')+' data-f="'+f+'" value="'+escq(v==null?"":v)+'">';
   const T={
