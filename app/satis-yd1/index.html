@@ -766,10 +766,59 @@ async function eurAlanlari(r,upd){
   const k=await kurAl();
   if(!(k.rates[pb]>0)){ upd.eur_kur=null; upd.net_tutar_eur=null; upd.kur_tarihi=null; return false; }
   upd.eur_kur=k.rates[pb]; upd.net_tutar_eur=tutar/k.rates[pb]; upd.kur_tarihi=k.tarih||null; return true; }
+/* MUSTERI-ONEM-OTO (08.10.2026, Melih): Müşteri değişince Müşteri Önem Sınıfı otomatik.
+   fiyat_musteri_sinif'te bu bloğun sınıfındaysa (YD1: 1-2, YD2: 3-6; tek kod = 1. sınıf, çift = 2. sınıf) → "1./2. Sınıf…".
+   Değilse uyarı kutusu (Devam et / Müşteriyi değiştir); devamda musteri_firma cirosuna göre dilim (£/$ kurla €'ya),
+   ciro yoksa önem boşaltılır, kullanıcı doldurur. */
+const ONEM_OPTS=COLS.find(c=>c.f==='musteri_onem_sinifi').opts;
+async function musOnemBul(ad){
+  const k=MUS.k(ad);
+  try{ const {data}=await sb.from("fiyat_musteri_sinif").select("sinif,ad");
+    const hit=(data||[]).find(x=>MUS.k(x.ad)===k && (BLOK==="YD1"? Number(x.sinif)<=2 : Number(x.sinif)>=3));
+    if(hit) return {sinifli:true,onem:ONEM_OPTS[(Number(hit.sinif)%2===1)?0:1]};
+  }catch(e){}
+  let onem=null;
+  try{ const {data}=await sb.from("musteri_firma").select("firma,ciro_mn,ciro_birim").eq("blok",BLOK);
+    const f=(data||[]).find(x=>MUS.k(x.firma)===k);
+    if(f && f.ciro_mn!=null && String(f.ciro_mn).trim()!==""){
+      let mn=Number(f.ciro_mn); const pb={"€":"EUR","EUR":"EUR","£":"GBP","GBP":"GBP","$":"USD","USD":"USD"}[String(f.ciro_birim||"€").trim()]||"EUR";
+      if(pb!=="EUR"){ const kr=await kurAl(); mn=(kr.rates[pb]>0)? mn/kr.rates[pb] : NaN; }
+      if(isFinite(mn)) onem = mn>500?ONEM_OPTS[0] : mn>100?ONEM_OPTS[1] : mn>10?ONEM_OPTS[2] : ONEM_OPTS[3];
+    }
+  }catch(e){}
+  return {sinifli:false,onem:onem};
+}
+function musUyariKutu(ad){
+  return new Promise(res=>{
+    const ov=document.createElement("div");
+    ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:10002";
+    ov.innerHTML='<div style="background:#fff;border-radius:10px;padding:18px 20px;max-width:460px;width:90%;box-shadow:0 8px 30px rgba(0,0,0,.25)">'
+      +'<div style="font-weight:700;margin-bottom:8px">'+esc(ad)+'</div>'
+      +'<div style="color:#b40000;margin-bottom:14px;line-height:1.45">Bu şirket herhangi bir müşteri sınıfına dahil olmadığından düşük indirim oranı uygulanacaktır. Bu şirketin önemli olduğunu düşünüyorsanız sınıflandırılması için amirinize müracaat ediniz!</div>'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" data-s="0" style="padding:7px 14px;border:1px solid #cdd6df;border-radius:8px;background:#f5f7f9;cursor:pointer;font:inherit">Müşteriyi değiştir</button>'
+      +'<button type="button" data-s="1" style="padding:7px 14px;border:1px solid #2e7d54;border-radius:8px;background:#eaf5ee;cursor:pointer;font:inherit;font-weight:700">Devam et</button></div></div>';
+    ov.querySelectorAll("button").forEach(b=>b.onclick=()=>{ ov.remove(); res(b.dataset.s==="1"); });
+    ov.addEventListener("keydown",e=>{ if(e.key==="Escape"){ ov.remove(); res(false); } });
+    document.body.appendChild(ov); ov.querySelector('button[data-s="1"]').focus();
+  });
+}
+async function musOnemKontrol(ad){
+  const s=await musOnemBul(ad);
+  if(s.sinifli) return {ok:true,onem:s.onem};
+  if(!(await musUyariKutu(ad))) return {ok:false};
+  return {ok:true,onem:s.onem};
+}
+function musOnemGoster(key,val){ const s=document.querySelector('#list tr[data-i="'+key+'"] select[data-f="musteri_onem_sinifi"]'); if(s){ s.value=val||""; s.classList.toggle("filled",!!val); } }
 async function saveRow(key,f,val,el){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
   let v=convVal(f,val);
   if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YY biçiminde olmalı."; return; }
+  let musOnem; /* MUSTERI-ONEM-OTO */
+  if(f==='musteri' && v && MUS.k(v)!==MUS.k(r.musteri)){
+    if(r._musOnay===MUS.k(v)){ musOnem=r._musOnem; delete r._musOnay; delete r._musOnem; }
+    else { const s=await musOnemKontrol(v); if(!s.ok){ if(el) el.value=r.musteri||""; setMsg("Müşteri değiştirilmedi",false); return; } musOnem=s.onem; }
+    if(key==="draft"){ r.musteri_onem_sinifi=musOnem||""; musOnemGoster(key,musOnem); }
+  }
   /* MUHTEMEL-REV-SAVE (2026-09-25, Melih): Muhtemel satırda "Revizyon İstendi" seçilirse durum değişmez, kısmi kopya açılır;
      kısmi kopya elle "Teklif Teslim Edildi" yapılırsa Muhtemel'e geçer ve özgün satır "Revizyon İstendi" olur */
   if(f==='durum' && key!=="draft" && r.durum==="Muhtemel" && v==="Revizyon İstendi"){ el.value="Muhtemel"; await muhtemelRevKopya(r); render(); return; }
@@ -801,6 +850,7 @@ async function saveRow(key,f,val,el){
     return;
   }
   const upd={}; upd[f]=v;
+  if(musOnem!==undefined) upd.musteri_onem_sinifi=musOnem||null; /* MUSTERI-ONEM-OTO */
   let kurOk=true;
   if(f==='net_tutar'||f==='para_birimi'){ setMsg("Güncel kur alınıyor…",true); kurOk=await eurAlanlari(r,upd); }
   const {error}=await sb.from("satis_yd_akis").update(upd).eq("id",r.id);
@@ -812,7 +862,7 @@ async function saveRow(key,f,val,el){
   if(f==='durum'){ if(v==="Revizyon İstendi") await revizyonKopyasi(r); render(); return; }
   const advanced=await maybeAutoAdvance(r);
   /* TERMIN-UYARI: iki tarihten biri değişince kırmızı-kalın işareti yeniden hesaplansın */
-  if(advanced || f==='istenen_tarih' || f==='teklif_teslim_tarihi') render();
+  if(advanced || f==='istenen_tarih' || f==='teklif_teslim_tarihi' || musOnem!==undefined) render(); /* MUSTERI-ONEM-OTO */
   else if(el) el.classList.toggle('eksikbos', eksikBos(r,f,key));  /* YD-EKSIK-BOS */
 }
 /* REVIZYON-KOPYA (2026-09-18): Durum "Revizyon İstendi" yapıldığı anda satırın bir kopyası
@@ -1000,6 +1050,8 @@ async function ilgKaydet(){
   ilgEl("ilgili_mail").classList.remove("bad");
   if(!firma){ ilgMsg("Şirket yazın",true); return; }
   if(mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)){ ilgEl("ilgili_mail").classList.add("bad"); ilgMsg("E-posta geçersiz",true); return; }
+  let ilgOnem; /* MUSTERI-ONEM-OTO: şirket değişiyorsa Müşteriler kaydından ÖNCE sınıf/uyarı */
+  if(MUS.k(firma)!==MUS.k(r.musteri)){ const s=await musOnemKontrol(firma); if(!s.ok){ ilgMsg("Müşteri değiştirilmedi",true); return; } ilgOnem=s.onem; r._musOnay=MUS.k(firma); r._musOnem=s.onem; }
   const btn=document.getElementById("ilg-kaydet"); btn.disabled=true; ilgMsg("Kaydediliyor…");
   let mres=null; /* MUSTERI-COKLU: seçilen yetkili satıra bağlanır */
   try{ mres=await MUS.kaydet(sb,BLOK,firma,ad,mail,tel); }
@@ -1012,7 +1064,7 @@ async function ilgKaydet(){
     if(musDegisti) await saveRow(key,"musteri",firma,null); /* proje yazılıysa taslak satır burada kaydolur */
     render(); ilgMsg(r.id?"Kaydedildi ✓":"Satır kaydedilince yazılır"); return;
   }
-  if(musDegisti) upd.musteri=firma;
+  if(musDegisti){ upd.musteri=firma; upd.musteri_onem_sinifi=ilgOnem||null; delete r._musOnay; delete r._musOnem; } /* MUSTERI-ONEM-OTO */
   const {error}=await sb.from("satis_yd_akis").update(upd).eq("id",r.id);
   btn.disabled=false;
   if(error){ ilgMsg("Kayıt hatası",true); setMsg("Kayıt hatası: "+error.message,false); return; }
