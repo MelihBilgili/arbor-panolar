@@ -182,7 +182,7 @@ const $=id=>document.getElementById(id);
 /* Hesaplayıcılar — kaynak adı → kısa etiket, sınıf, bağlantı */
 const KAYNAK={
   "Calumen":{e:"Calumen",c:"calumen",u:"https://calumen.com/#/home",t:"Saint-Gobain Calumen"},
-  "Guardian Glass Analytics":{e:"Guardian",c:"guardian",u:"https://glassanalytics.guardian.com/app/configure",t:"Guardian Glass Analytics"},
+  "Guardian Glass Analytics":{e:"Guardian",c:"guardian",u:"https://glassanalytics.guardian.com/app/configure",t:"Guardian Glass Analytics (otomatik toplu hesaba izin vermiyor; Guardian değerleri Selector'dan)"},
   "Şişecam GlassTool":{e:"Şişecam",c:"sisecam",u:"https://glasstool.sisecam.com/tr/HomePage.aspx",t:"Şişecam GlassTool"},
   "AGC Glass Configurator":{e:"AGC",c:"agc",u:"https://www.agc-yourglass.com/configurator/en",t:"AGC Glass Configurator"},
   "Vitro Construct IGU":{e:"Vitro",c:"vitro",u:"https://construct.vitroglazings.com/",t:"Vitro Construct IGU (LBNL WINDOW / IGDB)"},
@@ -195,7 +195,7 @@ const KAYNAK={
 /* CAM-KONFIG-AKUSTIK: Rw'si olmayan konfigürasyona aynı cam yapısının (cam kalınlıkları + akustik ara katman; kaplama etkisiz) ölçülmüş Rw (C;Ctr) değeri ≈ ile atanır.
    Kaynak: cam_akustik tablosu + Rw'si olan cam_konfig satırları. Boşluk farkı en çok 4 mm; ters yön (iç↔dış) de eşleşir. */
 function yapiKey(k){
-  const seg=String(k||"").replace(/\([^)]*\)/g,"").split(/\s*\/\s*/); const panes=[], gaps=[];
+  const seg=String(k||"").replace(/\([^)]*\)/g,"").replace(/(\d{2})\/(\d{2})/g,"$1-$2").split(/\s*\/\s*/); const panes=[], gaps=[];
   seg.forEach((t,i)=>{ const m=/(\d{1,4}(?:\.\d{1,2})?)/.exec(t); if(!m) return;
     if(i%2){ gaps.push(+m[1]); return; }
     const aku=/acoustic|akustik|silence|optiphon|phonic|\bst\b|\bSS\b/i.test(t);
@@ -214,7 +214,7 @@ const f2=(x,d)=>x==null?"–":Number(x).toLocaleString("tr-TR",{minimumFractionD
 const pct=x=>x==null?"–":Math.round(x*100);
 /* Kombinasyon metninden cam kalınlıkları → kalınlık ve yaklaşık ağırlık (cam 2,5 kg/m²·mm; PVB 0,38 mm ≈ 0,41 kg/m²) */
 function camlar(k){
-  const seg=String(k||"").replace(/\([^)]*\)/g,"").split(/\s*\/\s*/);
+  const seg=String(k||"").replace(/\([^)]*\)/g,"").replace(/(\d{2})\/(\d{2})/g,"$1-$2").split(/\s*\/\s*/); /* kaplama adlarindaki 70/35 gibi egik cizgiler yapi ayiricisi sayilmaz */
   const out=[];
   seg.forEach((s,i)=>{ if(i%2) return;
     const m=/^\s*(\d{2,4})\.(\d{1,2})/.exec(s);
