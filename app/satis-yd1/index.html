@@ -461,7 +461,7 @@ function computeAutoTier(r){
 }
 function computeAutoTier0(r){
   if(!rangeFilled(r,1,6)) return 0;
-  if(rangeFilled(r,14,18)) return 4;
+  if(rangeFilled(r,8,11) && rangeFilled(r,13,18)) return 4; /* BEKLENIYOR-TESLIM (08.10.2026, Melih): Teslim Edildi = Teklif Bekleniyor şartları + 13-18 dolu */
   if(colFilled(r,13) && rangeFilled(r,8,11)) return 3; /* BEKLENIYOR-8-11 (08.10.2026, Melih): Teklif Bekleniyor için 8-11 de dolu olmalı */
   if(rangeFilled(r,8,11)) return 2;
   return 1;
