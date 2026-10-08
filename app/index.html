@@ -1912,7 +1912,7 @@ async function loadFormlar(){
     if(!fe.error&&fe.data&&fe.data.length){ const KAD={}; ((kk&&!kk.error)?(kk.data||[]):[]).forEach(r=>KAD[r.kod]=r.tam_ad);
       const FE={}; fe.data.forEach(r=>FE[r.yol]=r);
       forms.forEach(f=>{ const r=FE[f.url]; if(!r) return; f._fe=1;
-        if(r.herkes){ f.who="Herkes"; f.tam="Personel'deki tüm kişiler (kişisel kodla)"; }
+        if(r.herkes){ f.who="Herkes"; f.tam="Personel'de kişisel kodu (şifresi) olan herkes"; } /* HERKES-SIFRELI (08.10.2026): Herkes = yalnız Personel'de şifresi olan aktif kişiler (form-giris kisi_sifre + aktif) */
         else { f.who=(r.kisiler||[]).join(" · "); f.tam=(r.kisiler||[]).map(x=>KAD[x]||x).join(" · "); } }); } }catch(e){}
   /* FORMLAR-260921: Teklif Talepleri + eski fy/fy2 formları yayından kaldırıldı */
   const FK={"sel-arb/":"sel_arb_form","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","fy/":"yd1","fy2/":"yd2","ahsap/":"ahsap",
