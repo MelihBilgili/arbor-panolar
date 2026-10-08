@@ -670,6 +670,11 @@ function eksikBos(r,f,key){
   const bos=r[f]==null||String(r[f]).trim()==="";
   if(!r.durum || r.durum==="Teklif Talebi Geldi") return bos && ((i>=1&&i<=6)||(i>=8&&i<=11)); /* YD-EKSIK-BOS2 (05.10.2026, Melih): "Teklif Talebi Geldi"de de boşlar pembe */
   if(r.durum==="Teklif İncelendi" && f==="oncelik") return bos; /* ONC-PEMBE-BOS (07.10.2026, Melih): öncelik belirlenmişse pembe değil; takılma sebebi Müşteri hücresinde (ILG-ZORUNLU) */
+  { /* EKSIK-DURUM-PEMBE (08.10.2026, Melih): durumun gerektirdiği boş hücre pembe — İncelendi 1-11, Bekleniyor 1-13, teslim ve sonrası 1-18 (7 ve 12 not sütunları hariç) */
+    const ileri=["Teklif Teslim Edildi","Revizyon İstendi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
+    const ust=r.durum==="Teklif İncelendi"?11:(r.durum==="Teklif Bekleniyor"?13:(ileri.indexOf(r.durum)>=0?18:0));
+    if(ust && i<=ust && i!==7 && i!==12) return bos;
+  }
   return false;
 }
 function rowHTML(r,key){
@@ -775,7 +780,7 @@ async function saveRow(key,f,val,el){
     if((tier===3||tier===4) && (DURUM_SIRA[r.durum]||0)<3 && !ilgTam(r)){ el.value=r.durum||""; setMsg("Teklif Bekleniyor'a geçmek için Müşteri hücresindeki proje ilgilisi kartı (Ad Soyad, E-posta, Telefon) tam doldurulmalı.",false); return; } /* ILG-ZORUNLU */
     if(tier===3 && !rangeFilled(r,8,11)){ el.value=r.durum||""; setMsg("Teklif Bekleniyor için Adet, Ürün Tipi / Serisi, Kemer/Karolaj ve Şartname Ahşap dolu olmalı.",false); return; } /* BEKLENIYOR-8-11 */
     if(tier===5 && !state5Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için 1-6, 8-11, 13 ve 14-18 sütunlarının hepsi dolu olmalı.",false); return; }
-    if(tier>=6 && !state6to11Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için Takip Tarihi/Görevli/Takip Notları alanları dolu olmalı.",false); return; }
+    if(tier>=6 && !state6to11Ready(r) && ["Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"].indexOf(v)<0){ /* DURUM-SAGTIK2: takip şartı yok */ el.value=r.durum||""; setMsg("Bu durum için Takip Tarihi/Görevli/Takip Notları alanları dolu olmalı.",false); return; }
   }
   if(key==="draft"){
     r[f]=val;
@@ -1109,12 +1114,45 @@ function ctxNeden(r,v){
     if(r.durum==="Muhtemel" && ROWS.some(x=>x.muhtemel_kaynak_id===r.id)) return "Bu Muhtemel satırın açık bir revizyon kopyası var";
     return "";
   }
-  if(v==="Üretimde"){ if(r.durum!=="Kazandık") return "Üretimde yalnız Kazandık satırda"; }
-  else if(["Teklif Teslim Edildi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"].indexOf(r.durum)<0) return "Teklif teslim edilmeden seçilemez";
-  if(!state6to11Ready(r)) return "Takip Tarihi, Görevli ve Takip Notu dolu olmalı";
+  /* DURUM-SAGTIK2 (08.10.2026, Melih): Muhtemel/Kazandık/Kaybettik/MİA teslimden sonra; takip şartı yok; MİA için İhale? = Alınmadı;
+     Kaybettik ve İptal tıklanınca zorunlu neden notu kutusu (ctxNedenNotu) */
+  if(v==="Üretimde") return r.durum==="Kazandık" ? "" : "Üretimde yalnız Kazandık satırda";
+  if(["Teklif Teslim Edildi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"].indexOf(r.durum)<0) return "Teklif teslim edilmeden seçilemez";
+  if(v==="Müşteri İşi Alamadı" && String(r.ihale||"")!=="Alınmadı") return "İhale? sütunu \"Alınmadı\" olmalı";
   return "";
 }
 function ctxKapat(){ const m=document.getElementById("ctx-menu"); if(m) m.remove(); }
+/* DURUM-SAGTIK2: Kaybettik / İptal için zorunlu neden notu; takip notlarına (Görevli: Hiç Kimse) eklenir — TAKIP-NOT-YASAK'tan muaf */
+function ctxNotKutu(baslik){
+  return new Promise(res=>{
+    const ov=document.createElement("div");
+    ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:10001";
+    ov.innerHTML='<div style="background:#fff;border-radius:10px;padding:18px 20px;max-width:420px;width:90%;box-shadow:0 8px 30px rgba(0,0,0,.25)">'
+      +'<div style="font-weight:700;margin-bottom:10px">'+esc(baslik)+' — neden notu (zorunlu)</div>'
+      +'<textarea id="ctx-not" rows="3" style="width:100%;box-sizing:border-box;font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:6px 8px"></textarea>'
+      +'<div id="ctx-not-uy" style="color:#b40000;font-size:12px;min-height:16px;margin:4px 0"></div>'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" data-s="0" style="padding:7px 14px;border:1px solid #cdd6df;border-radius:8px;background:#f5f7f9;cursor:pointer;font:inherit">Vazgeç</button>'
+      +'<button type="button" data-s="1" style="padding:7px 14px;border:1px solid #2e7d54;border-radius:8px;background:#eaf5ee;cursor:pointer;font:inherit;font-weight:700">'+esc(baslik)+'</button></div></div>';
+    const ta=ov.querySelector("#ctx-not");
+    ov.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+      if(b.dataset.s==="0"){ ov.remove(); res(null); return; }
+      const t=ta.value.trim(); if(!t){ ov.querySelector("#ctx-not-uy").textContent="Not yazılmadan devam edilemez."; ta.focus(); return; }
+      ov.remove(); res(t);
+    });
+    ov.addEventListener("keydown",e=>{ if(e.key==="Escape"){ ov.remove(); res(null); } });
+    document.body.appendChild(ov); ta.focus();
+  });
+}
+async function ctxNedenNotu(r,v){
+  const txt=await ctxNotKutu(v); if(!txt) return false;
+  const iso=todayISO(), ek=ARB_EKLEYEN||"";
+  const n=(ek?ek+": ":"")+v+" — "+txt;
+  const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi); log.unshift({t:iso,e:ek,g:"Hiç Kimse",n:n});
+  const payload={son_takip_notlari:JSON.stringify(log),son_takip_tarihi:iso};
+  const {error}=await sb.from("satis_yd_akis").update(payload).eq("id",r.id);
+  if(error){ setMsg("Not kaydedilemedi: "+error.message,false); return false; }
+  Object.assign(r,payload); return true;
+}
 function ctxAc(i,x,y){
   ctxKapat(); const r=ROWS[i]; if(!r||!r.id) return;
   const m=document.createElement("div"); m.id="ctx-menu";
@@ -1123,6 +1161,7 @@ function ctxAc(i,x,y){
   const w=m.offsetWidth,h=m.offsetHeight; m.style.left=Math.max(4,Math.min(x,innerWidth-w-4))+"px"; m.style.top=Math.max(4,Math.min(y,innerHeight-h-4))+"px";
   m.querySelectorAll("button").forEach(b=>b.onclick=async()=>{ if(b.classList.contains("off")) return; const v=b.dataset.v; ctxKapat();
     if(v==="__sil"){ await delRow(i); return; }
+    if(v==="Kaybettik"||v==="İptal"){ if(!(await ctxNedenNotu(r,v))) return; } /* DURUM-SAGTIK2 */
     await saveRow(String(i),"durum",v,{value:"",classList:{toggle(){}}});
   });
 }
