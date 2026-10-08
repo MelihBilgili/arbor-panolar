@@ -462,7 +462,7 @@ function computeAutoTier(r){
 function computeAutoTier0(r){
   if(!rangeFilled(r,1,6)) return 0;
   if(rangeFilled(r,14,18)) return 4;
-  if(colFilled(r,13)) return 3;
+  if(colFilled(r,13) && rangeFilled(r,8,11)) return 3; /* BEKLENIYOR-8-11 (08.10.2026, Melih): Teklif Bekleniyor için 8-11 de dolu olmalı */
   if(rangeFilled(r,8,11)) return 2;
   return 1;
 }
@@ -474,6 +474,10 @@ async function durumDuzelt(r){
   if(gecersiz || (cur>=1 && cur<=3 && !rangeFilled(r,1,6))){  /* Teklif Teslim Edildi ve sonrasi (gecmis kayitlar) bosaltilmaz */
     const {error}=await sb.from("satis_yd_akis").update({durum:null}).eq("id",r.id);
     if(error) return; r.durum=null;
+  }
+  if(r.durum==="Teklif Bekleniyor" && !rangeFilled(r,8,11)){  /* BEKLENIYOR-8-11: 8-11 eksik Teklif Bekleniyor → Teklif İncelendi */
+    const {error}=await sb.from("satis_yd_akis").update({durum:"Teklif İncelendi"}).eq("id",r.id);
+    if(!error) r.durum="Teklif İncelendi";
   }
   await maybeAutoAdvance(r);
 }
@@ -760,6 +764,7 @@ async function saveRow(key,f,val,el){
     const tier=DURUM_SIRA[v];
     if(tier>=1 && tier<=4 && !rangeFilled(r,1,6)){ el.value=r.durum||""; setMsg("Bu durum için ilk 6 sütun (Proje, Müşteri, Müşteri Önem Sınıfı, Gelen Tarih, İstenen Tarih, İhale?) dolu olmalı.",false); return; }
     if((tier===3||tier===4) && (DURUM_SIRA[r.durum]||0)<3 && !ilgTam(r)){ el.value=r.durum||""; setMsg("Teklif Bekleniyor'a geçmek için Müşteri hücresindeki proje ilgilisi kartı (Ad Soyad, E-posta, Telefon) tam doldurulmalı.",false); return; } /* ILG-ZORUNLU */
+    if(tier===3 && !rangeFilled(r,8,11)){ el.value=r.durum||""; setMsg("Teklif Bekleniyor için Adet, Ürün Tipi / Serisi, Kemer/Karolaj ve Şartname Ahşap dolu olmalı.",false); return; } /* BEKLENIYOR-8-11 */
     if(tier===5 && !state5Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için 1-6, 8-11, 13 ve 14-18 sütunlarının hepsi dolu olmalı.",false); return; }
     if(tier>=6 && !state6to11Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için Takip Tarihi/Görevli/Takip Notları alanları dolu olmalı.",false); return; }
   }
@@ -811,14 +816,14 @@ async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muht
   rec.oncelik=1; /* revizyon her zaman en yüksek öncelik (Melih, 2026-09-18) — kolon smallint */
   const eskiNot=String(r.teklif_birimi_notlari||"").trim();
   rec.teklif_birimi_notlari = ntYeniDeger(eskiNot,"Revizyon");  /* YD-NOT-EKLE */
-  rec.durum=rangeFilled(rec,1,6)?(ilgTam(r)?"Teklif Bekleniyor":"Teklif İncelendi"):null; /* ILG-ZORUNLU */ /* YD-DURUM-KURAL: öncelik 1 belli → Teklif Bekleniyor */
+  rec.durum=rangeFilled(rec,1,6)?((ilgTam(r)&&rangeFilled(rec,8,11))?"Teklif Bekleniyor":"Teklif İncelendi"):null; /* ILG-ZORUNLU */ /* BEKLENIYOR-8-11 */ /* YD-DURUM-KURAL: öncelik 1 belli → Teklif Bekleniyor */
   rec.son_takip_notlari=null; rec.son_takip_tarihi=null;
   ILG_F.forEach(k=>{ rec[k]=r[k]||null; }); rec.ilgili_id=r.ilgili_id||null; /* YD-ILGILI: ilgili bilgisi kopyaya geçer (MUSTERI-COKLU: ilgili_id de) */
   if(kaynakId) rec.muhtemel_kaynak_id=kaynakId;
   const {data,error}=await sb.from("satis_yd_akis").insert(rec).select();
   if(error){ m.className="msg err"; m.textContent="Revizyon kopyası oluşturulamadı: "+error.message; return false; }
   ROWS.push(data[0]);
-  m.className="msg ok"; m.textContent="Revizyon kopyası oluşturuldu ✓ (tutar boş · Öncelik 1 · Teklif Bekleniyor)";
+  m.className="msg ok"; m.textContent="Revizyon kopyası oluşturuldu ✓ (tutar boş · Öncelik 1 · "+(rec.durum||"durumsuz")+")"; /* BEKLENIYOR-8-11 */
   sums();
   return true;
 }
