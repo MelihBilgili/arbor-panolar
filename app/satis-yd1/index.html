@@ -87,6 +87,14 @@
   select.cell.filled{-webkit-appearance:none;-moz-appearance:none;appearance:none}
   select.cell.filled::-ms-expand{display:none}
   select.cell.durum-warn{color:#b40000;font-weight:700}
+  /* DURUM-SAGTIK */
+  .durumro{border:1px solid #cdd6df;border-radius:6px;padding:0 7px;height:26px;line-height:24px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:context-menu;box-sizing:border-box}
+  .durumro.durum-warn{color:#b40000;font-weight:700}
+  #ctx-menu{position:fixed;z-index:10000;background:#fff;border:1px solid #cdd6df;border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);padding:4px;min-width:180px}
+  #ctx-menu button{display:block;width:100%;text-align:left;font:inherit;border:0;background:none;padding:6px 10px;border-radius:5px;cursor:pointer}
+  #ctx-menu button:hover{background:#eef5f0}
+  #ctx-menu button.off{color:#aab3bb;cursor:not-allowed;background:none}
+  #ctx-menu button.ctx-sil{color:#b40000;border-top:1px solid #e3e8ed;margin-top:4px;border-radius:0 0 5px 5px}
   /* YD-NOT-EKLE */
   .ntcell{display:flex;align-items:center;gap:4px}
   .ntcell .ntlast{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:26px;display:flex;align-items:center;cursor:default}
@@ -685,7 +693,7 @@ function rowHTML(r,key){
       return '<td class="'+tdc+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+'" data-f="'+c.f+'" type="text"'+ipucu+' style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
     +pairCells(r,key,bg)
-    +'<td style="background:'+bgv+'"><select class="cell'+(r.durum?" filled":"")+durumWarn+'" data-f="durum" style="width:122px"><option value=""></option>'+DURUM_OPTS.map(o=>'<option'+(r.durum===o?' selected':'')+'>'+esc(o)+'</option>').join('')+'</select></td>'
+    +'<td style="background:'+bgv+'"><div class="durumro'+durumWarn+'" style="width:122px" title="'+(key==="draft"?"":"Durum değiştirmek için satıra sağ tıklayın")+'">'+esc(r.durum||"")+'</div></td>' /* DURUM-SAGTIK: elle seçim yok */
     +(key==="draft" ? '<td class="colp" style="background:'+bgv+'"></td>' : '<td class="colp" style="background:'+bgv+'"><button class="del" title="Satırı sil">✕</button></td>')
     +'</tr>';
 }
@@ -715,6 +723,7 @@ function render(){
   list.querySelectorAll(".tknote-pending").forEach(ta=>{ ta.addEventListener("input",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object") p.n=ta.value; }); ta.addEventListener("change",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object"){ p.n=ta.value; tkCommitEntry(ta.dataset.row); } }); });
   list.querySelectorAll(".tkgorevli-pending").forEach(s=>s.addEventListener("change",()=>{ const p=PENDING_TK[s.dataset.row]; if(p&&typeof p==="object"){ p.g=s.value; s.classList.remove("eksikbos"); tkCommitEntry(s.dataset.row); } })); /* YD-GOREVLI */
   list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delRow(+b.closest("tr").dataset.i));
+  list.querySelectorAll("tbody tr").forEach(tr=>{ if(tr.dataset.i==="draft") return; tr.addEventListener("contextmenu",e=>{ e.preventDefault(); ctxAc(+tr.dataset.i,e.clientX,e.clientY); }); }); /* DURUM-SAGTIK */
   tkGorevSay(); /* TAKIP-GOREV */
   if(ARB_FOCUS_ROW!=null){ const ta=list.querySelector('tr[data-i="'+ARB_FOCUS_ROW+'"] .tknote-input, tr[data-i="'+ARB_FOCUS_ROW+'"] .tknote-pending'); if(ta) ta.focus(); ARB_FOCUS_ROW=null; }
   sums();
@@ -1086,9 +1095,43 @@ async function tkSaveNote(key,val){
   r.son_takip_notlari=payload.son_takip_notlari; render();
   m.className="msg ok"; m.textContent="Kaydedildi ✓";
 }
+/* DURUM-SAGTIK (08.10.2026, Melih): Durum sütunundan elle seçim kaldırıldı. Satıra sağ tıklayınca menü:
+   Revizyon · Muhtemel · Kazandık · Üretimde · Kaybettik · Müşteri İşi Alamadı · İptal · Sil.
+   Şartı tutmayan seçenek soluk ve tıklanamaz (neden title'da). Geçiş saveRow ile yapılır (aynı şart/kopya kuralları). */
+const CTX_SEC=[["Revizyon","Revizyon İstendi"],["Muhtemel","Muhtemel"],["Kazandık","Kazandık"],["Üretimde","Üretimde"],["Kaybettik","Kaybettik"],["Müşteri İşi Alamadı","Müşteri İşi Alamadı"],["İptal","İptal"],["Sil","__sil"]];
+function ctxNeden(r,v){
+  if(v==="__sil") return "";
+  if(r.durum===v) return "Satır zaten bu durumda";
+  if(v==="İptal") return "";
+  if(v==="Revizyon İstendi"){
+    if(["Teklif Teslim Edildi","Takip Bekleniyor","Muhtemel"].indexOf(r.durum)<0) return "Revizyon yalnız Teklif Teslim Edildi, Takip Bekleniyor veya Muhtemel satırda";
+    if(!state5Ready(r)) return "1-6, 8-11 ve 13-18. sütunlar dolu olmalı";
+    if(r.durum==="Muhtemel" && ROWS.some(x=>x.muhtemel_kaynak_id===r.id)) return "Bu Muhtemel satırın açık bir revizyon kopyası var";
+    return "";
+  }
+  if(v==="Üretimde"){ if(r.durum!=="Kazandık") return "Üretimde yalnız Kazandık satırda"; }
+  else if(["Teklif Teslim Edildi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"].indexOf(r.durum)<0) return "Teklif teslim edilmeden seçilemez";
+  if(!state6to11Ready(r)) return "Takip Tarihi, Görevli ve Takip Notu dolu olmalı";
+  return "";
+}
+function ctxKapat(){ const m=document.getElementById("ctx-menu"); if(m) m.remove(); }
+function ctxAc(i,x,y){
+  ctxKapat(); const r=ROWS[i]; if(!r||!r.id) return;
+  const m=document.createElement("div"); m.id="ctx-menu";
+  m.innerHTML=CTX_SEC.map(([et,v])=>{ const n=ctxNeden(r,v); return '<button type="button" data-v="'+esc(v)+'" class="'+(n?'off':'')+(v==="__sil"?' ctx-sil':'')+'"'+(n?' title="'+esc(n)+'"':'')+'>'+esc(et)+'</button>'; }).join('');
+  document.body.appendChild(m);
+  const w=m.offsetWidth,h=m.offsetHeight; m.style.left=Math.max(4,Math.min(x,innerWidth-w-4))+"px"; m.style.top=Math.max(4,Math.min(y,innerHeight-h-4))+"px";
+  m.querySelectorAll("button").forEach(b=>b.onclick=async()=>{ if(b.classList.contains("off")) return; const v=b.dataset.v; ctxKapat();
+    if(v==="__sil"){ await delRow(i); return; }
+    await saveRow(String(i),"durum",v,{value:"",classList:{toggle(){}}});
+  });
+}
+document.addEventListener("mousedown",e=>{ const m=document.getElementById("ctx-menu"); if(m && !m.contains(e.target)) ctxKapat(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") ctxKapat(); });
+document.addEventListener("scroll",()=>ctxKapat(),true);
 async function delRow(i){
   const r=ROWS[i]; if(!r) return;
-  if(r.id){ if(!confirm("Bu satır silinsin mi? (geri alınamaz)")) return;
+  if(r.id){ if(!confirm('"'+(r.proje||"")+'" satırı TAMAMEN silinecek ve geri alınamaz. Emin misiniz?')) return; /* DURUM-SAGTIK: ikinci onay */
     const {error}=await sb.from("satis_yd_akis").delete().eq("id",r.id);
     if(error){ setMsg("Silinemedi: "+error.message,false); return; }
   }
