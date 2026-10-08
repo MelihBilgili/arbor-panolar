@@ -630,9 +630,10 @@ async function formMail(fk,btn){
   loadFormlar();
 }
 async function formReset(fk){
-  if(!confirm("Bu form güncellendi olarak işaretlensin mi? (geciken + mail sayacı sıfırlanır)")) return;
+  if(!confirm("Bu form güncellendi olarak işaretlensin mi? (geciken + mail sayacı + durduruldu uyarısı sıfırlanır)")) return;
   const bugun=new Date().toISOString().slice(0,10);
-  const {error}=await sb.from("form_takip").update({ son_guncelleme:bugun, mail_sayac:0 }).eq("form_key",fk);
+  /* FORM-ENGEL-CEK (08.10.2026): ✓ "durduruldu" uyarısını da kaldırır (engel_onay damgası) */
+  const {error}=await sb.from("form_takip").update({ son_guncelleme:bugun, mail_sayac:0, engel_onay:new Date().toISOString() }).eq("form_key",fk);
   if(error){ alert(error.message); return; }
   loadFormlar();
 }
@@ -1988,11 +1989,11 @@ async function loadFormlar(){
       gt=` title="Son tarih: ${d?fdate(d.toISOString()):"—"} · Son güncelleme: ${s?fdate(s.toISOString()):"—"}"`; }
     const gc=g==null?'<span class="muted">—</span>':(g>0?`<b style="color:#b40000"${gt}>${g}</b>`:`<span style="color:#7a8896"${gt}>0</span>`);
     const mail=r?`<button class="fmail" data-fk="${esc(r.form_key)}" title="${esc(r.ilgili_ad)} · ${esc(r.ilgili_email)} (cc: int@arbor.com.tr)">${(r.mail_sayac||0)+1}. mail</button>`
-                 +` <button class="freset" data-fk="${esc(r.form_key)}" title="Güncellendi olarak işaretle (geciken + mail sayacı sıfırlanır)">✓</button>`
+                 +` <button class="freset" data-fk="${esc(r.form_key)}" title="Güncellendi olarak işaretle (geciken + mail sayacı + durduruldu uyarısı sıfırlanır)">✓</button>`
                :'<span class="muted">—</span>';
     return `<tr>`
-      +`<td class="sb"><div class="cx"><a class="fad" href="${esc(f.url)}" target="_blank" title="Formu aç">${esc(f.ad)}</a>${(()=>{ const e=engBy[FK[f.url]], b=BTN_AT[f.url];
-          if(!e||(b&&new Date(b)>=new Date(e.at))) return "";
+      +`<td class="sb"><div class="cx"><a class="fad" href="${esc(f.url)}" target="_blank" title="Formu aç">${esc(f.ad)}</a>${(()=>{ const e=engBy[FK[f.url]], b=BTN_AT[f.url], eo=(ftBy[FK[f.url]]||{}).engel_onay;
+          if(!e||(b&&new Date(b)>=new Date(e.at))||(eo&&new Date(eo)>=new Date(e.at))) return ""; /* FORM-ENGEL-CEK */
           const d=new Date(e.at), tt="Güncelleme DURDURULDU: "+d.toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",year:"2-digit",hour:"2-digit",minute:"2-digit"})+"\n\n"+e.mesaj;
           return ` <b style="color:#b40000" title="${esc(tt)}">⚠ durduruldu ${fdate(e.at)}</b>`; })()}</div></td>`
       +`<td title="${esc(f.tam||f.who)}${f._fe?" — düzenlemek için tıklayınız":""}"${f._fe?` class="feed" data-yol="${esc(f.url)}"`:""}><div class="cx">${esc(f.who)}</div></td>`  /* FORM-KISALTMA: yalnız kişi kısaltması, tam ad hover */
