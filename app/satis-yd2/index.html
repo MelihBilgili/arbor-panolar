@@ -897,7 +897,13 @@ async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muht
    yerine "Muhtemel" olur, özgün satır "Revizyon İstendi"ye geçer. Her adım iki satırın takip notlarına otomatik yazılır.
    Özgün satır silinmiş/Muhtemel'den çıkmışsa kopya bağı kopar, normal akışa döner. */
 function mrNot(r,txt){ if(tkYasak(r)) return {son_takip_notlari:null,son_takip_tarihi:null}; /* TAKIP-NOT-YASAK */ const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi); const iso=todayISO(); log.unshift({t:iso,e:ARB_EKLEYEN||"Oto",n:txt}); return {son_takip_notlari:JSON.stringify(log),son_takip_tarihi:iso}; }
+/* MUHTEMEL-TEK (08.10.2026, Melih): bir projede (blok+proje) tek Muhtemel satır; revizyon yalnız en güncel Muhtemel satırdan,
+   revize teslim edilince aynı projedeki diğer tüm Muhtemel satırlar Revizyon İstendi'ye geçer (15GA - Petit çift Muhtemel dersi). */
+function mhAyni(a,b){ return a.blok===b.blok && String(a.proje||"").trim().toLowerCase()===String(b.proje||"").trim().toLowerCase(); }
+function mhDiger(r){ return ROWS.filter(x=>x.id && x.id!==r.id && x.durum==="Muhtemel" && mhAyni(x,r)); }
+function mhGuncel(r){ const l=ROWS.filter(x=>x.id && x.durum==="Muhtemel" && mhAyni(x,r)); l.sort((a,b)=>String(b.created_at||"").localeCompare(String(a.created_at||""))||(b.id-a.id)); return l[0]||null; }
 async function muhtemelRevKopya(r){
+  { const g=mhGuncel(r); if(g && g.id!==r.id){ setMsg("Projenin güncel Muhtemel satırı #"+g.id+" — revizyon oradan açılır.",false); return false; } }
   if(ROWS.some(x=>x.muhtemel_kaynak_id===r.id)){ setMsg("Bu Muhtemel satırın açık bir revizyon kopyası zaten var.",false); return false; }
   const ok=await revizyonKopyasi(r,r.id);
   if(!ok) return false;
@@ -929,6 +935,7 @@ async function muhtemelRevTamam(k){
   const e2=(await sb.from("satis_yd_akis").update(po).eq("id",o.id)).error;
   if(e2){ setMsg("Kopya Muhtemel'e alındı ama özgün satır güncellenemedi: "+e2.message,false); return true; }
   Object.assign(o,po);
+  for(const x of mhDiger(k)){ const px=mrNot(x,"Revize teklif teslim edildi (#"+k.id+") — satır Muhtemel'den çıktı, Revizyon İstendi'ye geçti."); px.durum="Revizyon İstendi"; if(!(await sb.from("satis_yd_akis").update(px).eq("id",x.id)).error) Object.assign(x,px); } /* MUHTEMEL-TEK */
   setMsg("Revize teklif Muhtemel'e alındı ✓ — özgün satır Revizyon İstendi",true);
   return true;
 }
@@ -1164,10 +1171,12 @@ function ctxNeden(r,v){
     if(["Teklif Teslim Edildi","Takip Bekleniyor","Muhtemel"].indexOf(r.durum)<0) return "Revizyon yalnız Teklif Teslim Edildi, Takip Bekleniyor veya Muhtemel satırda";
     if(!state5Ready(r)) return "1-6, 8-11 ve 13-18. sütunlar dolu olmalı";
     if(r.durum==="Muhtemel" && ROWS.some(x=>x.muhtemel_kaynak_id===r.id)) return "Bu Muhtemel satırın açık bir revizyon kopyası var";
+    if(r.durum==="Muhtemel"){ const g=mhGuncel(r); if(g && g.id!==r.id) return "Projenin güncel Muhtemel satırı #"+g.id+" — revizyon oradan açılır"; } /* MUHTEMEL-TEK */
     return "";
   }
   /* DURUM-SAGTIK2 (08.10.2026, Melih): Muhtemel/Kazandık/Kaybettik/MİA teslimden sonra; takip şartı yok; MİA için İhale? = Alınmadı;
      Kaybettik ve İptal tıklanınca zorunlu neden notu kutusu (ctxNedenNotu) */
+  if(v==="Muhtemel"){ const d=mhDiger(r); if(d.length) return "Bu projede zaten Muhtemel satır var (#"+d.map(x=>x.id).join(", #")+")"; } /* MUHTEMEL-TEK */
   if(v==="Üretimde") return r.durum==="Kazandık" ? "" : "Üretimde yalnız Kazandık satırda";
   if(["Teklif Teslim Edildi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"].indexOf(r.durum)<0) return "Teklif teslim edilmeden seçilemez";
   if(v==="Müşteri İşi Alamadı" && String(r.ihale||"")!=="Alınmadı") return "İhale? sütunu \"Alınmadı\" olmalı";
