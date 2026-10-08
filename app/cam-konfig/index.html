@@ -247,7 +247,7 @@ function kaynakYaz(){
   const tr=d=>d?d.slice(8,10)+"."+d.slice(5,7)+"."+d.slice(2,4):"";
   $("kaynaklar").innerHTML='<b>Hesaplayıcılar</b> — '+Object.keys(KAYNAK).map(k=>{ const K=KAYNAK[k];
     return '<a href="'+K.u+'" target="_blank" rel="noopener">'+esc(K.t)+'</a>'+(say[k]?' ('+say[k]+' konfigürasyon'+(son[k]?', '+tr(son[k]):'')+')':' (henüz veri yok)'); }).join(" · ")
-    +'<br>Değerler: Ug EN 673, LT/LR/g EN 410 (hesaplayıcının verdiği yuvarlanmış değerler); Rw (C;Ctr) EN ISO 717-1 — "≈" işaretli akustik değer, aynı cam yapısının ölçülmüş değeridir (kaplama akustiği etkilemez; üzerine gelince kaynağı görünür). Ağırlık kombinasyondan yaklaşık hesaplanır (cam 2,5 kg/m² mm). Vitro değerleri NFRC koşullarındadır (U değeri EN 673 Ug\'den biraz yüksek çıkar).';
+    +'<br>Değerler: Ug EN 673, LT/LR/g EN 410 (hesaplayıcının verdiği yuvarlanmış değerler); Rw (C;Ctr) EN ISO 717-1 — "≈" işaretli akustik değer, aynı cam yapısının ölçülmüş değeridir (kaplama akustiği etkilemez; üzerine gelince kaynağı görünür). Ağırlık kombinasyondan yaklaşık hesaplanır (cam 2,5 kg/m² mm).'+(say["Vitro Construct IGU"]?' Vitro değerleri NFRC koşullarındadır (U değeri EN 673 Ug\'den biraz yüksek çıkar).':'');
 }
 function hedef(){ const p=id=>num($(id).value);
   const lt=p("h_lt"), gmax=p("h_gmax"), gmin=p("h_gmin"), lr=p("h_lr");
@@ -301,7 +301,7 @@ function tablo(rows,h,yakinMod){
     +'<th>Kalınlık<br>mm</th><th>Ağırlık<br>kg/m²</th><th>Ug<br>W/m²K</th><th>LT<br>%</th><th>LR dış<br>%</th><th>g<br>%</th><th>LT/g</th><th>Rw (C;Ctr)<br>dB</th><th>Rw+Ctr<br>dB</th></tr></thead>';
   const tb=rows.map((r,i)=>{ const K=KAYNAK[r.kaynak]||{e:r.kaynak,c:""};
     const ozl=[r.lamine?"lamine":"",r.akustik?"akustik":"",r.extra_clear?"extra clear":"",r.temperli?"temperli":""].filter(Boolean).join(", ");
-    const rwt=r.rw==null?"–":(Math.round(r.rw)+(r.c!=null||r.ctr!=null?' ('+(r.c==null?'–':Math.round(r.c))+';'+(r.ctr==null?'–':Math.round(r.ctr))+')':''));
+    const rwt=r.rw==null?"–":(Math.round(r.rw)+(r.c!=null&&r.ctr!=null?' ('+Math.round(r.c)+';'+Math.round(r.ctr)+')':(r.ctr!=null?' (Ctr '+Math.round(r.ctr)+')':'')));
     return '<tr class="'+(yakinMod?'yakin':'')+'"><td>'+(i+1)+'</td><td class="l komb" title="'+esc((ozl?ozl+' · ':'')+(r.notlar||''))+'">'+esc(r.kombinasyon)+'</td>'
       +'<td class="l">'+esc(r.yapi||"–")+'</td><td class="l">'+esc(r.uretici||"–")+'</td>'
       +'<td class="l"><span class="etk '+K.c+'">'+esc(K.e)+'</span></td>'
@@ -443,8 +443,7 @@ load();
   window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
 })();
 </script>
-</body>
-</htm<!-- ARB-EXCEL-BTN -->
+<!-- ARB-EXCEL-BTN -->
 <script>
 /* ARB-EXCEL-BTN (EXCEL-MAIL, 06.10.2026) — TEK KAYNAK: kod/_excel_btn.js, sayfalara kod/_excel_btn_inject.py ile girer.
    Her gorunur tablonun ust sagina "Excel" dugmesi (sayfa duzenine dokunmayan, position:fixed katman).
@@ -730,4 +729,5 @@ load();
 })();
 </script>
 <!-- /ARB-EXCEL-BTN -->
-l>
+</body>
+</html>
