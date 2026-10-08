@@ -699,15 +699,15 @@ function rowHTML(r,key){
     }).join('')
     +pairCells(r,key,bg)
     +'<td style="background:'+bgv+'"><div class="durumro'+durumWarn+'" style="width:122px" title="'+(key==="draft"?"":"Durum değiştirmek için satıra sağ tıklayın")+'">'+esc(r.durum||"")+'</div></td>' /* DURUM-SAGTIK: elle seçim yok */
-    +(key==="draft" ? '<td class="colp" style="background:'+bgv+'"></td>' : '<td class="colp" style="background:'+bgv+'"><button class="del" title="Satırı sil">✕</button></td>')
+    /* SIL-CARPI-YOK (08.10.2026, Melih): sağdaki ✕ sütunu kaldırıldı — silme yalnız sağ tık › Sil */
     +'</tr>';
 }
 function render(){
   sortROWS();
-  let h='<table><colgroup>'+COLS.map(c=>'<col style="width:'+c.w+'px">').join('')+'<col style="width:72px"><col style="width:84px"><col style="width:150px"><col style="width:130px"><col style="width:28px"></colgroup><thead><tr>'
+  let h='<table><colgroup>'+COLS.map(c=>'<col style="width:'+c.w+'px">').join('')+'<col style="width:72px"><col style="width:84px"><col style="width:150px"><col style="width:130px"></colgroup><thead><tr>'
     +COLS.map(c=>'<th title="'+esc(c.h)+'">'+c.h+'</th>').join('')
     +'<th class="pairA gs">Takip Tarihi</th><th class="pairA">Görevli</th><th class="pairA">Takip Notları / Görevleri</th>'
-    +'<th>Durum</th><th></th></tr></thead><tbody>';
+    +'<th>Durum</th></tr></thead><tbody>';
   h+=rowHTML(DRAFT,"draft");
   ROWS.forEach((r,i)=>{ h+=rowHTML(r,i); });
   h+='</tbody></table>';
