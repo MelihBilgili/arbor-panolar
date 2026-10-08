@@ -187,8 +187,28 @@ const KAYNAK={
   "AGC Glass Configurator":{e:"AGC",c:"agc",u:"https://www.agc-yourglass.com/configurator/en",t:"AGC Glass Configurator"},
   "Vitro Construct IGU":{e:"Vitro",c:"vitro",u:"https://construct.vitroglazings.com/",t:"Vitro Construct IGU (LBNL WINDOW / IGDB)"},
   "Pilkington Spectrum":{e:"Pilkington",c:"pilk",u:"https://spectrum.pilkington.com/",t:"Pilkington Spectrum"},
-  "Cam Listesi":{e:"Cam Listesi",c:"liste",u:"../cam-listesi/",t:"Cam Listesi (üretici hesaplayıcı değerleri)"}
+  "Cam Listesi":{e:"Cam Listesi",c:"liste",u:"../cam-listesi/",t:"Cam Listesi (üretici hesaplayıcı değerleri)"},
+  "Guardian Glass Selector":{e:"Guardian",c:"guardian",u:"https://www.guardianglass.com/content/dam/guardianindustriesholdings/technical-center/europe/architectural/digital-glass-selector/Guardian-Glass-Digital-Selector-EN.pdf",t:"Guardian Glass Digital Selector 2025 (Glass Analytics değerleri)"},
+  "AGC Pocket Value":{e:"AGC",c:"agc",u:"https://agc-yourglass.com/sites/default/files/2025-02/Pocket_Value_AGC_02-2025_SHOWPAD_EN.pdf",t:"AGC Pocket Value 02-2025 (Glass Configurator değerleri)"},
+  "Saint-Gobain Kılavuz":{e:"Saint-Gobain",c:"calumen",u:"https://saint-gobain-glass.co.uk/document/commercial-product-performance-guide",t:"Saint-Gobain Commercial Product Performance Guide 2026"}
 };
+/* CAM-KONFIG-AKUSTIK: Rw'si olmayan konfigürasyona aynı cam yapısının (cam kalınlıkları + akustik ara katman; kaplama etkisiz) ölçülmüş Rw (C;Ctr) değeri ≈ ile atanır.
+   Kaynak: cam_akustik tablosu + Rw'si olan cam_konfig satırları. Boşluk farkı en çok 4 mm; ters yön (iç↔dış) de eşleşir. */
+function yapiKey(k){
+  const seg=String(k||"").replace(/\([^)]*\)/g,"").split(/\s*\/\s*/); const panes=[], gaps=[];
+  seg.forEach((t,i)=>{ const m=/(\d{1,4}(?:\.\d{1,2})?)/.exec(t); if(!m) return;
+    if(i%2){ gaps.push(+m[1]); return; }
+    const aku=/acoustic|akustik|silence|optiphon|phonic|\bst\b|\bSS\b/i.test(t);
+    panes.push(m[1]+(aku&&m[1].indexOf(".")>0?"a":"")); });
+  return {panes,gaps};
+}
+let ACU=[];
+function akuEkle(k,rw,c,ctr,src){ if(rw==null) return; const y=yapiKey(k); if(!y.panes.length||y.gaps.length!==y.panes.length-1) return; ACU.push({p:y.panes.join("|"),pr:y.panes.slice().reverse().join("|"),g:y.gaps,rw:+rw,c:c==null?null:+c,ctr:ctr==null?null:+ctr,src,k}); }
+function akuBul(k){ const y=yapiKey(k); if(!y.panes.length) return null; const key=y.panes.join("|"); let best=null,bd=1e9;
+  for(const a of ACU){ let gs; if(a.p===key) gs=a.g; else if(a.pr===key) gs=a.g.slice().reverse(); else continue;
+    if(gs.length!==y.gaps.length) continue; let d=0, ok=true; gs.forEach((g,i)=>{ const x=Math.abs(g-y.gaps[i]); if(x>4) ok=false; d+=x; }); if(!ok) continue;
+    if(d<bd){ bd=d; best=a; } }
+  return best; }
 const num=v=>{ if(v==null) return null; const s=String(v).trim().replace(",","."); if(s==="") return null; const x=+s; return isFinite(x)?x:null; };
 const f2=(x,d)=>x==null?"–":Number(x).toLocaleString("tr-TR",{minimumFractionDigits:d,maximumFractionDigits:d});
 const pct=x=>x==null?"–":Math.round(x*100);
@@ -210,7 +230,11 @@ async function load(){
   for(;;){ const {data,error}=await sb.from("cam_konfig").select("*").eq("aktif",true).order("id").range(from,from+999);
     if(error){ $("res").innerHTML='<div class="bos" style="color:#b40000">Okunamadı: '+esc(error.message)+'</div>'; return; }
     all=all.concat(data||[]); if(!data||data.length<1000) break; from+=1000; }
+  const ak=await sb.from("cam_akustik").select("*");
+  ACU=[]; ((ak&&!ak.error&&ak.data)||[]).forEach(a=>akuEkle(a.kombinasyon,a.rw,a.c,a.ctr,a.kaynak));
+  all.forEach(r=>{ if(r.rw!=null) akuEkle(r.kombinasyon,r.rw,r.c,r.ctr,((KAYNAK[r.kaynak]||{}).e||r.kaynak)+": "+r.kombinasyon); });
   DATA=all.map(r=>{ const o=Object.assign({},r); ["ug","lt","lr_dis","g","rw","c","ctr","kalinlik"].forEach(k=>o[k]=r[k]==null?null:+r[k]);
+    if(o.rw==null){ const a=akuBul(o.kombinasyon); if(a){ o.rw=a.rw; o.c=a.c; o.ctr=a.ctr; o._rwT=a.src+" — "+a.k; } }
     o._agr=agirlik(r); o._rwctr=(o.rw!=null&&o.ctr!=null)?o.rw+o.ctr:null; o._sel=(o.lt!=null&&o.g)?o.lt/o.g:null; return o; });
   const ur=[...new Set(DATA.map(r=>r.uretici).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));
   $("f_ur").innerHTML='<option value="">Hepsi</option>'+ur.map(u=>'<option>'+esc(u)+'</option>').join("");
@@ -223,7 +247,7 @@ function kaynakYaz(){
   const tr=d=>d?d.slice(8,10)+"."+d.slice(5,7)+"."+d.slice(2,4):"";
   $("kaynaklar").innerHTML='<b>Hesaplayıcılar</b> — '+Object.keys(KAYNAK).map(k=>{ const K=KAYNAK[k];
     return '<a href="'+K.u+'" target="_blank" rel="noopener">'+esc(K.t)+'</a>'+(say[k]?' ('+say[k]+' konfigürasyon'+(son[k]?', '+tr(son[k]):'')+')':' (henüz veri yok)'); }).join(" · ")
-    +'<br>Değerler: Ug EN 673, LT/LR/g EN 410 (hesaplayıcının verdiği yuvarlanmış değerler); Rw (C;Ctr) EN ISO 717-1. Ağırlık kombinasyondan yaklaşık hesaplanır (cam 2,5 kg/m² mm). Vitro değerleri NFRC koşullarındadır (U değeri EN 673 Ug\'den biraz yüksek çıkar).';
+    +'<br>Değerler: Ug EN 673, LT/LR/g EN 410 (hesaplayıcının verdiği yuvarlanmış değerler); Rw (C;Ctr) EN ISO 717-1 — "≈" işaretli akustik değer, aynı cam yapısının ölçülmüş değeridir (kaplama akustiği etkilemez; üzerine gelince kaynağı görünür). Ağırlık kombinasyondan yaklaşık hesaplanır (cam 2,5 kg/m² mm). Vitro değerleri NFRC koşullarındadır (U değeri EN 673 Ug\'den biraz yüksek çıkar).';
 }
 function hedef(){ const p=id=>num($(id).value);
   const lt=p("h_lt"), gmax=p("h_gmax"), gmin=p("h_gmin"), lr=p("h_lr");
@@ -288,8 +312,8 @@ function tablo(rows,h,yakinMod){
       +'<td class="'+bad(r,"lr")+'">'+pct(r.lr_dis)+'</td>'
       +'<td class="'+bad(r,"gmax")+bad(r,"gmin")+'">'+pct(r.g)+'</td>'
       +'<td class="'+bad(r,"sel")+'">'+(r._sel==null?"–":f2(r._sel,2))+'</td>'
-      +'<td class="'+bad(r,"rw")+'">'+rwt+'</td>'
-      +'<td class="'+bad(r,"rwctr")+'">'+(r._rwctr==null?"–":Math.round(r._rwctr))+'</td></tr>'; }).join("");
+      +'<td class="'+bad(r,"rw")+'"'+(r._rwT?' title="Yapı eşleşmesi: '+esc(r._rwT)+'"':'')+'>'+(r._rwT&&r.rw!=null?'≈':'')+rwt+'</td>'
+      +'<td class="'+bad(r,"rwctr")+'">'+(r._rwctr==null?"–":(r._rwT?'≈':'')+Math.round(r._rwctr))+'</td></tr>'; }).join("");
   return '<table>'+th+'<tbody>'+tb+'</tbody></table>';
 }
 let _t; document.querySelectorAll(".panel input,.panel select").forEach(el=>{
