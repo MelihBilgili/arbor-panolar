@@ -820,8 +820,11 @@ function pipeGenTbl(title, rows, cols){
 /* Yurt Dışı Satış 1+2 (satis_yd_akis) — durum bazlı 4 aşama, her biri YD1/YD2 alt-bloklarına ayrılır; Takipteki Teklifler bloklarının yerini alır */
 function pipelineTables(ydRows, today){
   const sorted=ydRows.slice().sort((a,b)=>String(b.gelen_tarih||'').localeCompare(String(a.gelen_tarih||'')));
-  const eksik=sorted.filter(r=>!r.durum||r.durum==='Teklif Talebi Geldi');
-  const oncelik=sorted.filter(r=>r.durum==='Teklif İncelendi');
+  /* YD-ILG-EKSIK-PANO (08.10.2026, Melih): proje ilgilisi kartı (Ad, E-posta, Telefon) eksik "Teklif İncelendi" satırı Öncelik bloğunda değil
+     Eksik Kaydedilmiş bloğunda görünür; Müşteri hücresi kırmızı (formdaki ILG-ZORUNLU ile aynı kural) */
+  const ilgTamP=r=>['ilgili_ad','ilgili_mail','ilgili_tel'].every(k=>String(r[k]||'').trim());
+  const eksik=sorted.filter(r=>!r.durum||r.durum==='Teklif Talebi Geldi'||(r.durum==='Teklif İncelendi'&&!ilgTamP(r)));
+  const oncelik=sorted.filter(r=>r.durum==='Teklif İncelendi'&&ilgTamP(r));
   const hazirlik=sorted.filter(r=>r.durum==='Teklif Bekleniyor');
   /* Takiptekiler: Teklif Teslim Tarihi'ne göre eskiden yeniye sıralanır (tarihi olmayanlar en sona) */
   const takiptekiler=sorted.filter(r=>r.durum==='Teklif Teslim Edildi'||r.durum==='Takip Bekleniyor')
@@ -868,7 +871,7 @@ function pipelineTables(ydRows, today){
   const EKSIK_F=['proje','musteri','musteri_onem_sinifi','gelen_tarih','istenen_tarih','ihale','adet','urun_tipi_serisi','kemer_karolaj','sartname_ahsap'];
   /* YD-EKSIK-ONEM: Eksik bloklarına Müşteri Önem Sınıfı sütunu (Müşteri'den sonra) */
   const C1E=[].concat(C1.slice(0,2),[{h:'Müşteri Önem Sınıfı',f:'musteri_onem_sinifi'}],C1.slice(2)).map(c=>{ const f=c.f||({'Gelen Tarih':'gelen_tarih','İstenen Tarih':'istenen_tarih'})[c.h];
-    return EKSIK_F.includes(f)?Object.assign({},c,{cls:r=>((!r.durum||r.durum==='Teklif Talebi Geldi')&&(r[f]==null||String(r[f]).trim()===''))?'eksikbos':'' /* YD-EKSIK-BOS2 */}):c; });
+    return EKSIK_F.includes(f)?Object.assign({},c,{cls:r=>(((!r.durum||r.durum==='Teklif Talebi Geldi')&&(r[f]==null||String(r[f]).trim()===''))||(f==='musteri'&&!ilgTamP(r)))?'eksikbos':'' /* YD-EKSIK-BOS2 */ /* YD-ILG-EKSIK-PANO */}):c; });
   return two('Eksik Kaydedilmiş Teklif Talepleri',eksik,C1E)
     +two('Öncelik Belirlenmesi Gerekenler',oncelik,C1.concat([{h:'Öncelik',wcls:'oncsec',html:r=>`<select class="ydonc" data-id="${r.id}" title="Öncelik seç — forma yazılır, satır Teklif Hazırlığında'ya geçer"><option value=""></option>${['1','2','3'].map(o=>`<option${String(r.oncelik||'')===o?' selected':''}>${o}</option>`).join('')}</select>`}]))
     +two('Teklif Hazırlığında',hazirlik,C2)
