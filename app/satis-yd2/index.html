@@ -631,7 +631,7 @@ function pairCells(r,i,bg){
     : '<div class="tklatest tkClick" data-row="'+i+'" title="'+esc(hist)+'">'+esc(last.n?tkNotYaz(last):"")+'</div>';  /* YD-EKLE-TIKLA */
   const dateDisp = noteEmpty ? "—" : (last.t?fmtDate(last.t):"—");
   const ekleyenDisp = noteEmpty ? "—" : gDisp(last.g); /* YD-GOREVLI: sütun artık Görevli */
-  const gbg=tkBenim(r)?'#ffd9d9':bgv; /* TAKIP-GOREV: kendi görevim pembe */
+  const gbg=(tkBenim(r)&&!tutarDolu(r))?'#ffd9d9':bgv; /* TAKIP-GOREV: kendi görevim pembe */ /* TUTAR-PEMBE-SADE */
   return '<td class="pairA gs" style="background:'+bgv+'"><div class="tklatest" title="'+esc(histDates)+'">'+esc(dateDisp)+'</div></td>'
     +'<td class="pairA" style="background:'+gbg+'"><div class="tklatest" title="'+esc(histEkleyen)+'">'+esc(ekleyenDisp)+'</div></td>'
     +'<td class="pairA tknotes" style="background:'+gbg+'">'+noteCell+'</td>';
@@ -643,13 +643,14 @@ function pairCells(r,i,bg){
    karşılaştırması doğru sonuç verir. */
 /* TERMIN-BOS (2026-09-18): Durumu "Teklif Bekleniyor" olup Teklif Teslim Tarihi girilmemiş
    satırlarda o hücre kırmızı doldurulur. */
+function tutarDolu(r){ return !!r && r.net_tutar!=null && String(r.net_tutar).trim()!==""; } /* TUTAR-PEMBE-SADE (09.10.2026, Melih): Montaj Hariç Net Tutar dolu satırda yalnız Müşteri/ilgili eksiği pembe, başka hiçbir hücre pembe değil */
 function terminBos(r){
-  return !!r && r.durum==="Teklif Bekleniyor" && !String(r.teklif_teslim_tarihi||"").trim();
+  return !!r && !tutarDolu(r) && r.durum==="Teklif Bekleniyor" && !String(r.teklif_teslim_tarihi||"").trim();
 }
 /* TERMIN-GECMIS (2026-09-30, Melih): durumu "Teklif Bekleniyor" olup Teklif Teslim Tarihi bugünden
    önce kalmış satırlarda hücre zemini pembe; tarih normal (kırmızı-kalın değil) yazılır. */
 function terminGecmis(r){
-  if(!r || r.durum!=="Teklif Bekleniyor") return false;
+  if(!r || r.durum!=="Teklif Bekleniyor" || tutarDolu(r)) return false; /* TUTAR-PEMBE-SADE */
   const tes=r.teklif_teslim_tarihi?String(r.teklif_teslim_tarihi).slice(0,10):"";
   if(!/^\d{4}-\d{2}-\d{2}$/.test(tes)) return false;
   const d=new Date(), bugun=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
@@ -666,6 +667,7 @@ function terminGec(r){
    durumu "Teklif İncelendi" olan satırda Öncelik hücresi kırmızı. Taslak (boş) satır hariç. */
 function eksikBos(r,f,key){
   if(!r || key==="draft") return false;
+  if(tutarDolu(r)) return f==="musteri" && (ilgPembe(r) || !String(r.musteri||"").trim()); /* TUTAR-PEMBE-SADE */
   if(f==="musteri" && ilgPembe(r)) return true; /* ILG-ZORUNLU */
   const i=COLS.findIndex(c=>c.f===f)+1; if(i<1) return false;
   const bos=r[f]==null||String(r[f]).trim()==="";
@@ -686,7 +688,7 @@ function rowHTML(r,key){
   const ttAge=daysAgo(r.teklif_teslim_tarihi);
   const durumWarn=(r.durum==="Teklif Bekleniyor" && ttAge!==null && ttAge>15) ? " durum-warn" : "";
   return '<tr data-i="'+key+'" style="background:'+bgv+'">'+COLS.map(c=>{
-      const v=dispVal(r,c), req=c.req?" req":"", empty=(c.req&&!String(v).trim()?" bad":"")+(eksikBos(r,c.f,key)?" eksikbos":"");
+      const v=dispVal(r,c), req=c.req?" req":"", empty=(c.req&&!String(v).trim()&&!tutarDolu(r)?" bad":"")+(eksikBos(r,c.f,key)?" eksikbos":"");
       if(c.t==='note'){ const sat=ntSatirlar(r[c.f]); /* YD-NOT-EKLE: son not görünür, hover'da tümü alt alta */
         return '<td style="background:'+bgv+'"><div class="ntcell" style="width:'+c.w+'px"><div class="ntlast ntClick'+(ntYasak(c.f)?' ntkilit':'')+'" data-row="'+key+'" data-nf="'+c.f+'" title="'+esc(sat.join("\n"))+'"><span>'+esc(sat[0]||"")+'</span></div></div></td>'; }
       if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="width:'+c.w+'px" title="'+esc(v)+'">'+esc(v)+'</textarea></td>';
