@@ -2597,8 +2597,9 @@ async function loadObrapor(tgt){
   const pvR=(pvq&&!pvq.error)?(pvq.data||[]):[]; /* OB-PVR */
   const dpR=(dpq&&!dpq.error)?(dpq.data||[]):[], stR=(stq&&!stq.error)?(stq.data||[]):[];
   const inAy=r=>r.tarih&&String(r.tarih)>=afDon+"-01"&&String(r.tarih)<=afSon;
-  const dsTbl=(R,cols)=>`<div class="scroll"><table class="obod"><thead><tr>${cols.map(c=>`<th${c[2]?' class="num"':''}>${c[0]}</th>`).join("")}</tr></thead><tbody>`
-    +(R.length?R.map(r=>`<tr${inAy(r)?' style="background:#f3f8ff"':''}>${cols.map(c=>`<td${c[2]?' class="num"':''}>${c[1](r)}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cols.length}" class="muted">Kayıt yok.</td></tr>`)
+  const dsEski=r=>!!(r.tarih&&String(r.tarih)<afDon+"-01"); /* TS-ESKI-KAPALI (09.10.2026, Melih): kap=1 tabloda kapanan aydan önceki tarihli satırlar kapalı, tıklayınca açılır */
+  const dsTbl=(R,cols,kap)=>`<div class="scroll"><table class="obod"><thead><tr>${cols.map(c=>`<th${c[2]?' class="num"':''}>${c[0]}</th>`).join("")}</tr></thead><tbody>`
+    +(R.length?(kap?R.filter(r=>!dsEski(r)).concat(R.filter(dsEski)):R).map((r,i,A)=>(kap&&dsEski(r)&&(i===0||!dsEski(A[i-1]))?`<tr class="ts-ac"><td colspan="${cols.length}" style="cursor:pointer;color:#3d4a57;font-size:12px;background:#f3f6f9">${window._tsAcik?"▾":"▸"} ${esc(afAd)} öncesi tarihli ${R.filter(dsEski).length} kayıt</td></tr>`:"")+`<tr${inAy(r)?' style="background:#f3f8ff"':(kap&&dsEski(r)?' class="ts-eski"'+(window._tsAcik?'':' style="display:none"'):'')}>${cols.map(c=>`<td${c[2]?' class="num"':''}>${c[1](r)}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cols.length}" class="muted">Kayıt yok.</td></tr>`)
     +`</tbody></table></div>`;
   const dpAy=dpR.filter(inAy).reduce((t,r)=>t+(Number(r.tutar)||0),0);
   const stAy=stR.filter(r=>inAy(r)&&r.onay_durumu!=="İptal Edildi").reduce((t,r)=>t+(Number(r.tutar)||0),0);
@@ -2608,7 +2609,7 @@ async function loadObrapor(tgt){
     <div class="obaf" style="max-width:none">
      <div data-m="OB-DS-YAN" style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start"><div style="margin-bottom:10px;flex:1 1 380px;min-width:0"><div class="obafh">DPGF · ${esc(afAd)}: ${nf(dpAy)} €</div>${dsTbl(dpR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Correspondence",r=>esc(r.correspondence||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
      <div style="margin-bottom:10px;flex:1 1 380px;min-width:0"><div class="obafh">Situations · ${esc(afAd)}: ${nf(stAy)} € <span class="muted" style="font-weight:400">(İptal Edildi hariç)</span></div>${dsTbl(stR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["İlerleme No",r=>esc(r.ilerleme_no||"")],["Dönem",r=>esc(r.donem||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Onay Durumu",r=>esc(r.onay_durumu||"")]])}</div>
-     </div><div><div class="obafh">TS · ${esc(afAd)}: ${nf(avAy)} € <span class="muted" style="font-weight:400">(Avenant geldi · KDV hariç; Excel aktarımından yalnız dönüş/avenant bekleyenler listelenir)</span></div>${dsTbl(avR.filter(r=>!r.aktarim||r.durum==="Dönüş bekleniyor"||r.durum==="Onaylandı, avenant bekleniyor"/* TS-ONAY-AV */),[["Tarih",r=>ddG(r.tarih)],["No",r=>esc(r.no||"")],["Proje",r=>esc(r.proje||"")],["İçerik",r=>esc(r.icerik||"")],["Açıklama",r=>esc(r.aciklama||"")],["Tutar (€, KDV hariç)",r=>r.tutar==null?"":nf(r.tutar),1],["Durum",r=>esc(r.durum||"")]])}</div><!-- OB-TS-261006 -->
+     </div><div><div class="obafh">TS · ${esc(afAd)}: ${nf(avAy)} € <span class="muted" style="font-weight:400">(Avenant geldi · KDV hariç; Excel aktarımından yalnız dönüş/avenant bekleyenler listelenir)</span></div>${dsTbl(avR.filter(r=>!r.aktarim||r.durum==="Dönüş bekleniyor"||r.durum==="Onaylandı, avenant bekleniyor"/* TS-ONAY-AV */),[["Tarih",r=>ddG(r.tarih)],["No",r=>esc(r.no||"")],["Proje",r=>esc(r.proje||"")],["İçerik",r=>esc(r.icerik||"")],["Açıklama",r=>esc(r.aciklama||"")],["Tutar (€, KDV hariç)",r=>r.tutar==null?"":nf(r.tutar),1],["Durum",r=>esc(r.durum||"")]],1)}</div><!-- OB-TS-261006 -->
      <div style="margin-top:10px"><div class="obafh">PV's de Réception · ${esc(afAd)}: ${pvN} adet · ${nf(pvAy)} € <span class="muted" style="font-weight:400">(tutar = Sel-Arb kontrat)</span></div>${dsTbl(pvR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Açıklama",r=>esc(r.aciklama||"")]])}</div> <!-- OB-PVR -->
     </div>`;
   /* --- puanlar --- */
@@ -2719,6 +2720,8 @@ async function loadObrapor(tgt){
     let v=parseFloat(String(el.value).replace(",",".")); if(isNaN(v)||v<100){ v=100; }
     el.value=v; const {error}=await sb.from("ob_isler").update({agirlik:v}).eq("id",+el.dataset.id);
     if(error){ el.style.background="#ffe5e5"; el.title="Hata: "+error.message; } else loadObrapor(tgt); }; });
+  view.querySelectorAll("tr.ts-ac").forEach(tr=>{ tr.onclick=()=>{ window._tsAcik=!window._tsAcik; const ac=window._tsAcik; /* TS-ESKI-KAPALI */
+    view.querySelectorAll("tr.ts-eski").forEach(x=>{ x.style.display=ac?"":"none"; }); const td=tr.firstElementChild; td.textContent=(ac?"▾":"▸")+td.textContent.slice(1); }; });
   view.querySelectorAll("tr.dd-ac").forEach(tr=>{ tr.onclick=()=>{ window._ddAcik=!window._ddAcik; const ac=window._ddAcik; /* DD-ESKI-KAPALI */
     view.querySelectorAll("tr.dd-eski").forEach(x=>{ x.style.display=ac?"":"none"; }); const td=tr.firstElementChild; td.textContent=(ac?"▾":"▸")+td.textContent.slice(1); }; });
   /* OB-ONC-PANO (09.10.2026, Melih): Takipteki işler önceliği panoda düzenlenir → ob_isler.oncelik; ÖB formu salt-okur gösterir */
