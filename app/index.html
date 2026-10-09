@@ -304,7 +304,7 @@ async function loadPerms(){
 const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_mkprim"]; /* MAASPRIM-PERSONEL: mali_maasprim kaldırıldı (→ Personel) */
 const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_mkprim"];
 /* ÖB Faaliyet artık Mali grubunun içinde (MK Faaliyet'in yanında) */
-const TABS=[["gundem","Ana Gündem"],["aup","AÜP"],["hazir","Hazır PEM/PRJ"],["santiye","Şantiye Onay"],["satis","Satış"],["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
+const TABS=[["gundem","Ana Gündem"],["aup","PRJ/PEM"],["santiye","Şantiye Onay"],["satis","Satış"],["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
 const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
 function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b))||a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
 function renderApp(){
@@ -323,7 +323,7 @@ function renderApp(){
 }
 function loadView(){
   if(state.tab==='gundem') loadGundem();
-  else if(state.tab==='hazir') loadHazir();
+  else if(state.tab==='hazir'){ state.tab='aup'; loadAup(); }  /* PRJ-PEM-SEKME: eski sekme anahtarı */
   else if(state.tab==='santiye') loadSantiyeOnay();
   else if(state.tab==='satis') loadSatis();
   else if(state.tab==='ref') loadRef();
@@ -941,8 +941,9 @@ function yillikTeklifIstatistigi(ydRows,kur){
 }
 
 /* ---------- HAZIR PEM/PRJ ---------- */
-async function loadHazir(){
-  const view=document.getElementById("view");
+/* PRJ-PEM-SEKME (09.10.2026): ayrı sekme yok; loadAup() PEM bloğunu loadHazir(el) ile kendi altına çizer. */
+async function loadHazir(el){
+  const view=el||document.getElementById("view");
   const [{data,error},erpRes,ozRes,dgRes,adRes,oeRes]=await Promise.all([
     sb.from("hazir_pem_prj").select("*"),
     sb.from("hazir_erp").select("tur,kalem_key,erp"),
@@ -1023,10 +1024,11 @@ async function loadHazir(){
   const hStamp='<div class="stamp">ERP: '+(st||"—")+' · Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")
     +' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)
     +' · PRJ Adet: '+Math.round(Number(a0.prj_adet)||0)+pctSpan(a0.prj_adet,a1.prj_adet)+'</div>';
-  view.innerHTML=`${hStamp}
+  const pemHd='<div class="aupsevkh">PEM <span style="font-weight:400;color:#5a6b7d">· Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")+' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)+'</span></div>';
+  view.innerHTML=`${el?pemHd:hStamp}
     <style>.hblk table{font-size:11.5px}.hblk th,.hblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.hblk thead th{vertical-align:bottom}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{width:3ch}.h5>span{width:5ch}.h8>span{width:8ch}.h15>span{width:15ch}.h20>span{width:68ch}.h25>span{width:25ch}.hdt>span{width:12.45ch}</style>
-    ${block("pem")}
-    ${block("prj")}`;
+    ${block("pem")||(el?'<div class="c" style="color:#5a6b7d;font-size:12px">Kayıt yok</div>':'')}
+    ${el?'':block("prj")}`;
   /* Bayat satır varsa canlı özetleri bir kez üret, sonra panoyu tazele (idempotent: fonksiyon
      yalnız imzası değişmiş satırlar için LLM çağırır, hepsi güncelse hiç çağırmaz). */
   if(sevkBayat && !window.__sevkCanliCalisti){
@@ -1034,11 +1036,11 @@ async function loadHazir(){
     const s=document.createElement("span");
     s.style.cssText="color:#8a6100;font-weight:600;margin-left:8px";
     s.textContent="· sevk değişim özetleri üretiliyor…";
-    const stEl=view.querySelector(".stamp"); if(stEl) stEl.appendChild(s);
+    const stEl=view.querySelector(".stamp,.aupsevkh"); if(stEl) stEl.appendChild(s);
     try{
       const {data,error}=await sb.functions.invoke("sevk-degisim-ozet",{body:{mod:"canli"}});
       if(error||(data&&data.ok===false)) s.textContent="· özet üretilemedi";
-      else { if(document.querySelector('.tabs button[data-t="hazir"].active')) return loadHazir(); }
+      else { if(document.querySelector('.tabs button[data-t="aup"].active')) return loadAup(); }
     }catch(e){ s.textContent="· özet üretilemedi"; }
   }
 }
@@ -1125,8 +1127,10 @@ async function loadAup(){
     <div class="aupsevkh">Sevke Hazır · 8 / 8.1 <span style="font-weight:400;color:#5a6b7d">· Proje: ${sdata.length} · Adet: ${money(sAd)} · Tutar: ${money(sTu)} €</span></div>
     <table class="aup aupmain"><colgroup>${AUP_COLW_SEVK.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
     <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">PST</th><th class="yp">Yükleme Planı</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
-    <tbody>${srows||'<tr><td colspan="10" class="c">Kayıt yok</td></tr>'}</tbody></table></div>`;
+    <tbody>${srows||'<tr><td colspan="10" class="c">Kayıt yok</td></tr>'}</tbody></table>
+    <div id="aup-pem"></div></div>`;
   aupFit();
+  loadHazir(document.getElementById("aup-pem"));  /* PRJ-PEM-SEKME */
 }
 /* AUP-COLW: NO · PROJE ADI · DURUM · Ad · MVT · AÜP · PST · PST-AÜP · Kayma · TUTAR € · Satış-Şantiye · Üretim
    (12px gövde yazısında 1ch ≈ 6,47px + 12px hücre dolgusu). PROJE ADI / Satış-Şantiye / Üretim
