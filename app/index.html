@@ -758,6 +758,7 @@ async function loadSatis(){
     .satis-wrap td.termuyari{color:#c00 !important;font-weight:700} /* TERMIN-UYARI-PANO */
     .satis-wrap td.ihaleal .cx{color:#1e8e3e;font-weight:700} /* IHALE-ALINDI-YESIL ihale-bold-v2 */
     .satis-wrap td.prjrev .cx{font-weight:700} .satis-wrap td.prjihale .cx{color:#0b5d2a} /* REV-PROJE-KOYU */
+    .satis-wrap table.sat td.hznot>.cx{max-width:79ch} /* HZ-NOT-DAR (09.10.2026, Melih): Teklif Hazırlığında Talebe İlişkin Notlar %75 dar (~317ch → 79ch), tam metin hover'da */
     table.ssum td.sdlist{vertical-align:top;padding:2px 6px 6px}
     .sdi{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0;border-bottom:1px solid #eef1f4}
     .sdi-p{color:#2c3542}
@@ -843,7 +844,7 @@ function pipelineTables(ydRows, today){
   const C2=[
     {h:'Proje',f:'proje',cls:r=>[ydRevMi(r)?'prjrev':'',(ydRevMi(r)&&String(r.ihale||'')==='Alındı')?'prjihale':''].filter(Boolean).join(' ')},  /* REV-PROJE-KOYU2: yeşil yalnız revizyonda */ /* REV-PROJE-KOYU: Teklif Hazırlığında — revizyon kalın, ihale alındı koyu yeşil */{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
     {h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi),cls:r=>(!r.teklif_teslim_tarihi&&!(r.net_tutar!=null&&String(r.net_tutar).trim()!==''))?'eksikbos':((r.istenen_tarih&&String(r.teklif_teslim_tarihi)>String(r.istenen_tarih))?'termuyari':'')},  /* TERMIN-UYARI-PANO: teslim > istenen → kırmızı yazı */ /* TERMIN-BOS-PANO: formdaki TERMIN-BOS kuralı — Teklif Bekleniyor + tarih boş → kırmızı */
-    {h:'İhale?',f:'ihale'},{h:'Talebe İlişkin Notlar',f:'talebe_iliskin_notlar'},{h:'Adet',f:'adet'},{h:'Teklif Birimi Notları',f:'teklif_birimi_notlari'},
+    {h:'İhale?',f:'ihale'},{h:'Talebe İlişkin Notlar',f:'talebe_iliskin_notlar',wcls:'hznot'},{h:'Adet',f:'adet'},{h:'Teklif Birimi Notları',f:'teklif_birimi_notlari'},
     {h:'Geciken Gün',get:r=>{const g=hazGecGun(r); return g==null?'':g;},cls:r=>hazGecGun(r)!=null?'gecgun':''}
   ];
   /* Sütun genişlikleri (tk1..tk15): kullanıcının verdiği daraltma yüzdeleri, mevcut auto-genişliğe
