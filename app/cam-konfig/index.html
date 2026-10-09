@@ -338,7 +338,7 @@ function tablo(rows,h,yakinMod){
     const ozl=[r.lamine?"lamine":"",r.akustik?"akustik":"",r.extra_clear?"extra clear":"",r.temperli?"temperli":""].filter(Boolean).join(", ");
     const rwt=r.rw==null?"":(' · Rw '+Math.round(r.rw)+(r.c!=null&&r.ctr!=null?' ('+Math.round(r.c)+';'+Math.round(r.ctr)+')':''));
     const fy=fiyat(r);
-    return '<tr class="'+(yakinMod?'yakin':'')+'"><td class="l komb" title="'+esc([(r.yapi||""),K.e,ozl,(r.notlar||"")].filter(Boolean).join(' · ')+rwt)+'">'+esc(r.kombinasyon)+'</td>'
+    return '<tr class="'+(yakinMod?'yakin':'')+'"><td class="l komb" title="'+esc([(r.yapi||""),K.e,ozl,(r.notlar||"")].filter(Boolean).join(' · ')+rwt)+'">'+esc(String(r.kombinasyon||"").replace(/Ar90\b/g,"Ar"))/* CAM-KONFIG-AR */+'</td>'
       +'<td class="l">'+esc(r.uretici||"–")+'</td>'
       +'<td class="'+bad(r,"kal")+'">'+f2(r.kalinlik,1)+'</td>'
       +'<td class="'+bad(r,"agr")+'">'+(r._agr==null?"–":f2(r._agr,0))+'</td>'
