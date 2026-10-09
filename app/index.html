@@ -840,7 +840,7 @@ function pipelineTables(ydRows, today){
     {h:'Teklif Birimi Notları',f:'teklif_birimi_notlari'}
   ];
   /* Geciken Gün = sayfa açılış tarihi − Teklif Teslim Tarihi (yalnız pozitifse kırmızı gösterilir) */
-  const hazGecGun=r=>{ if(!r.teklif_teslim_tarihi) return null; const g=gunFark(today,r.teklif_teslim_tarihi); return g>0?g:null; };
+  const hazGecGun=r=>{ if(!r.teklif_teslim_tarihi) return null; const g=gunFark(new Date(today.getFullYear(),today.getMonth(),today.getDate()),r.teklif_teslim_tarihi); /* GECGUN-GUNBASI (09.10.2026): saat yuvarlamasi bugunu 1 gostermesin */ return g>0?g:null; };
   const C2=[
     {h:'Proje',f:'proje',cls:r=>[ydRevMi(r)?'prjrev':'',(ydRevMi(r)&&String(r.ihale||'')==='Alındı')?'prjihale':''].filter(Boolean).join(' ')},  /* REV-PROJE-KOYU2: yeşil yalnız revizyonda */ /* REV-PROJE-KOYU: Teklif Hazırlığında — revizyon kalın, ihale alındı koyu yeşil */{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
     {h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi),cls:r=>(!r.teklif_teslim_tarihi&&!(r.net_tutar!=null&&String(r.net_tutar).trim()!==''))?'eksikbos':((r.istenen_tarih&&String(r.teklif_teslim_tarihi)>String(r.istenen_tarih))?'termuyari':'')},  /* TERMIN-UYARI-PANO: teslim > istenen → kırmızı yazı */ /* TERMIN-BOS-PANO: formdaki TERMIN-BOS kuralı — Teklif Bekleniyor + tarih boş → kırmızı */
@@ -2473,6 +2473,7 @@ async function loadSelArb(tgt){
 /* Geçmiş hafta not sütunları açık mı (Son ÖB Notları başlığına tıklanınca) */
 let obWeeksOpen=false;
 async function loadObrapor(tgt){
+  window._obYuklendi=Date.now(); /* OB-YENILE-10DK */
   const view=document.getElementById(tgt||"view");
   const isl=await sb.from("ob_isler").select("*").order("arsiv").order("id");
   if(isl.error){ view.innerHTML=`<div class="load">Hata: ${esc(isl.error.message)}</div>`; return; }
@@ -2522,7 +2523,7 @@ async function loadObrapor(tgt){
     +`<colgroup>${cg}</colgroup>`
     +`<thead><tr>${hd}</tr></thead><tbody>`;
   iRows.forEach(r=>{
-    ib+=`<tr>${cx(r.konu,"sb")}<td class="num"><input class="obagr" data-id="${r.id}" type="text" inputmode="numeric" size="1" value="${r.agirlik==null?100:Number(r.agirlik)}"></td>${cx(r.durum)}${cx(r.oncelik)}${cx(r.ob_notlari)}`
+    ib+=`<tr>${cx(r.konu,"sb")}<td class="num"><input class="obagr" data-id="${r.id}" type="text" inputmode="numeric" size="1" value="${r.agirlik==null?100:Number(r.agirlik)}"></td>${cx(r.durum)}<td><select class="obonc" data-id="${r.id}">${["-","1","2","3","Rutin"].map(o=>`<option${o===((r.oncelik==null||String(r.oncelik).trim()==='')?'-':String(r.oncelik).trim())?' selected':''}>${o}</option>`).join('')}</select></td>${cx(r.ob_notlari)}`
       + (obWeeksOpen?haftaKeys.map(k=>cx((weekMap[k].notes||{})[String(r.id)])).join(""):"")
       + `${cx(r.aylik_ozet)}</tr>`;
   });
@@ -2715,6 +2716,10 @@ async function loadObrapor(tgt){
   view.querySelectorAll("input.obagr").forEach(el=>{ el.onchange=async()=>{
     let v=parseFloat(String(el.value).replace(",",".")); if(isNaN(v)||v<100){ v=100; }
     el.value=v; const {error}=await sb.from("ob_isler").update({agirlik:v}).eq("id",+el.dataset.id);
+    if(error){ el.style.background="#ffe5e5"; el.title="Hata: "+error.message; } else loadObrapor(tgt); }; });
+  /* OB-ONC-PANO (09.10.2026, Melih): Takipteki işler önceliği panoda düzenlenir → ob_isler.oncelik; ÖB formu salt-okur gösterir */
+  view.querySelectorAll("select.obonc").forEach(el=>{ el.onchange=async()=>{
+    const {error}=await sb.from("ob_isler").update({oncelik:el.value}).eq("id",+el.dataset.id);
     if(error){ el.style.background="#ffe5e5"; el.title="Hata: "+error.message; } else loadObrapor(tgt); }; });
   const wh=document.getElementById("ob-wk");
   if(wh) wh.onclick=()=>{ obWeeksOpen=!obWeeksOpen; loadObrapor(tgt); };
@@ -3396,7 +3401,9 @@ async function boot(){
 }
 sb.auth.onAuthStateChange((_ev,s)=>{ if(!s){ state.session=null; renderLogin(); } });
 boot();
-setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; loadView(); }, 300000);
+setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return;
+  if(state.tab==='mali' && state.maliBolum==='ob_rapor' && Date.now()-(window._obYuklendi||0)<590000) return; /* OB-YENILE-10DK (09.10.2026, Melih): ÖB Faaliyet 10 dakikada bir */
+  loadView(); }, 300000);
 </script>
 
 
