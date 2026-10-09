@@ -259,7 +259,7 @@ const ARB_ROLE_EMAIL = "fy.form@arbor.com.tr";
 const ARB_ROLLER = [ARB_ROLE_EMAIL, "obl.form@arbor.com.tr", "mk.form@arbor.com.tr"].concat(ARB_ROLE_EMAIL==="fy.form@arbor.com.tr"?["ks.form@arbor.com.tr"]:[]); /* YD-KS-ROL (22.09.2026): KS yalniz YD1 */
 const ARB_ROL_AD = {"fy.form@arbor.com.tr":"MN — Mustafa Nas","fy2.form@arbor.com.tr":"MKB — Melike Başaran","obl.form@arbor.com.tr":"OBL — Orhan Bulut","mk.form@arbor.com.tr":"MK — Mehmet Konak","ks.form@arbor.com.tr":"KS — Kamil Şen"};
 /* IHALE-ALINDI-YESIL: seçim değişince yeşil sınıfı anında güncellenir */
-document.addEventListener('change',function(e){ var t=e.target; if(t&&t.matches&&t.matches('select[data-f="ihale"]')){ t.classList.toggle('ihale-al', t.value==='Alındı'); var tr=t.closest('tr'), p=tr&&tr.querySelector('input.prj-bek'); if(p) p.classList.toggle('prj-ihale', t.value==='Alındı'); } }); /* REV-PROJE-KOYU */
+document.addEventListener('change',function(e){ var t=e.target; if(t&&t.matches&&t.matches('select[data-f="ihale"]')){ t.classList.toggle('ihale-al', t.value==='Alındı'); var tr=t.closest('tr'), p=tr&&tr.querySelector('input.prj-rev'); if(p) p.classList.toggle('prj-ihale', t.value==='Alındı'); } }); /* REV-PROJE-KOYU */
 const ARB_STORE = "arbform_yd_akis_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
 const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
 const ARB_MB = "int@arbor.com.tr";
@@ -679,7 +679,7 @@ function eksikBos(r,f,key){
   return false;
 }
 function ydRevMi(r){ if(!r) return false; if(r.muhtemel_kaynak_id) return true; return String(r.teklif_birimi_notlari||"").split(/\r?\n/).some(function(x){ return /^(\d{2}\/\d{2}\/\d{2} [^:]{1,15}: )?Revizyon(\s*—.*)?$/i.test(x.trim()); }); } /* REV-PROJE-KOYU (09.10.2026, Melih): revizyon kopyası = muhtemel_kaynak_id ya da "Revizyon" not satırı */
-function prjCls(r,f,key){ if(f!=='proje'||key==='draft'||!r||r.durum!=='Teklif Bekleniyor') return ''; return ' prj-bek'+(ydRevMi(r)?' prj-rev':'')+(String(r.ihale||'')==='Alındı'?' prj-ihale':''); } /* REV-PROJE-KOYU: Teklif Bekleniyor'da revizyon proje adı kalın, ihale alındı koyu yeşil */
+function prjCls(r,f,key){ if(f!=='proje'||key==='draft'||!r||r.durum!=='Teklif Bekleniyor') return ''; return ' prj-bek'+(ydRevMi(r)?' prj-rev':'')+((ydRevMi(r)&&String(r.ihale||'')==='Alındı')?' prj-ihale':''); } /* REV-PROJE-KOYU: Teklif Bekleniyor'da revizyon proje adı kalın, ihale alındı koyu yeşil — REV-PROJE-KOYU2: yeşil yalnız revizyonda */
 function rowHTML(r,key){
   const bg = key==="draft" ? "" : (DURUM_BG[r.durum]||"");
   const bgv=bg||'transparent';
