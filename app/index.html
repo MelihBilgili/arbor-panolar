@@ -2570,8 +2570,10 @@ async function loadObrapor(tgt){
   const ddAy=ddR.filter(r=>r.sonuc_tarihi&&String(r.sonuc_tarihi)>=afDon+"-01"&&String(r.sonuc_tarihi)<=afSon);
   const ddAyTop=ddAy.reduce((t,r)=>t+(Number(r.iade_tutari)||0),0);
   const ddYil=String(_y), ddYilTop=ddR.filter(r=>String(r.sonuc_tarihi||"").slice(0,4)===ddYil).reduce((t,r)=>t+(Number(r.iade_tutari)||0),0);
+  const ddEskiMi=r=>!!(r.sonuc_tarihi&&String(r.sonuc_tarihi)<afDon+"-01"); /* DD-ESKI-KAPALI (09.10.2026, Melih): sonuç tarihi kapanan aydan önceki satırlar kapalı, tıklayınca açılır */
+  const ddYeni=ddR.filter(r=>!ddEskiMi(r)), ddEski=ddR.filter(ddEskiMi);
   let ddTbl=`<div class="scroll"><table class="obod"><thead><tr><th>Test</th><th>Proje</th><th>Test Tarihi</th><th class="num">Test Tutarı</th><th>Son Başvuru</th><th>Başvuru</th><th>Durum</th><th>Sonuç</th><th class="num">İade (₺)</th><th>Açıklama</th></tr></thead><tbody>`
-    + (ddq&&ddq.error?`<tr><td colspan="10" style="color:#b40000">Okunamadı: ${esc(ddq.error.message)}</td></tr>`:ddR.length?ddR.map(r=>`<tr><td>${esc(r.test||"")}</td><td>${esc(r.proje||"")}</td><td>${esc(r.test_tarihi||"")}</td><td class="num">${r.test_tutari==null?"":nf(r.test_tutari)+" "+esc(r.test_pb||"")}</td><td${ddRenk(r)}>${ddG(r.son_basvuru)}</td><td>${ddG(r.basvuru_tarihi)}</td><td>${esc(r.durum||"")}</td><td>${ddG(r.sonuc_tarihi)}</td><td class="num">${r.iade_tutari==null?"":nf(r.iade_tutari)}</td><td>${esc(r.aciklama||"")}</td></tr>`).join(""):`<tr><td colspan="10" class="muted">Kayıt yok.</td></tr>`)
+    + (ddq&&ddq.error?`<tr><td colspan="10" style="color:#b40000">Okunamadı: ${esc(ddq.error.message)}</td></tr>`:ddR.length?ddYeni.concat(ddEski).map((r,i)=>(i===ddYeni.length&&ddEski.length?`<tr class="dd-ac"><td colspan="10" style="cursor:pointer;color:#3d4a57;font-size:12px;background:#f3f6f9">${window._ddAcik?"▾":"▸"} ${esc(afAd)} öncesi sonuçlanan ${ddEski.length} kayıt</td></tr>`:"")+`<tr${ddEskiMi(r)?' class="dd-eski"'+(window._ddAcik?'':' style="display:none"'):''}><td>${esc(r.test||"")}</td><td>${esc(r.proje||"")}</td><td>${esc(r.test_tarihi||"")}</td><td class="num">${r.test_tutari==null?"":nf(r.test_tutari)+" "+esc(r.test_pb||"")}</td><td${ddRenk(r)}>${ddG(r.son_basvuru)}</td><td>${ddG(r.basvuru_tarihi)}</td><td>${esc(r.durum||"")}</td><td>${ddG(r.sonuc_tarihi)}</td><td class="num">${r.iade_tutari==null?"":nf(r.iade_tutari)}</td><td>${esc(r.aciklama||"")}</td></tr>`).join(""):`<tr><td colspan="10" class="muted">Kayıt yok.</td></tr>`)
     + `</tbody></table></div>`
     + `<div class="muted" style="font-size:12px;margin:4px 2px 0">${esc(afAd)} iade toplamı ${nf(ddAyTop)} ₺ · ÖB primi (1/100): <b>${nf(ddAyTop*0.01)} ₺</b> · ${ddYil} yılı iade toplamı ${nf(ddYilTop)} ₺</div>`;
   ib+=`<h3 class="sec">Devlet Destek Başvuruları <span class="muted">(${ddR.length})</span></h3>
@@ -2717,6 +2719,8 @@ async function loadObrapor(tgt){
     let v=parseFloat(String(el.value).replace(",",".")); if(isNaN(v)||v<100){ v=100; }
     el.value=v; const {error}=await sb.from("ob_isler").update({agirlik:v}).eq("id",+el.dataset.id);
     if(error){ el.style.background="#ffe5e5"; el.title="Hata: "+error.message; } else loadObrapor(tgt); }; });
+  view.querySelectorAll("tr.dd-ac").forEach(tr=>{ tr.onclick=()=>{ window._ddAcik=!window._ddAcik; const ac=window._ddAcik; /* DD-ESKI-KAPALI */
+    view.querySelectorAll("tr.dd-eski").forEach(x=>{ x.style.display=ac?"":"none"; }); const td=tr.firstElementChild; td.textContent=(ac?"▾":"▸")+td.textContent.slice(1); }; });
   /* OB-ONC-PANO (09.10.2026, Melih): Takipteki işler önceliği panoda düzenlenir → ob_isler.oncelik; ÖB formu salt-okur gösterir */
   view.querySelectorAll("select.obonc").forEach(el=>{ el.onchange=async()=>{
     const {error}=await sb.from("ob_isler").update({oncelik:el.value}).eq("id",+el.dataset.id);
