@@ -842,7 +842,7 @@ function pipelineTables(ydRows, today){
   const hazGecGun=r=>{ if(!r.teklif_teslim_tarihi) return null; const g=gunFark(today,r.teklif_teslim_tarihi); return g>0?g:null; };
   const C2=[
     {h:'Proje',f:'proje',cls:r=>[ydRevMi(r)?'prjrev':'',(ydRevMi(r)&&String(r.ihale||'')==='Alındı')?'prjihale':''].filter(Boolean).join(' ')},  /* REV-PROJE-KOYU2: yeşil yalnız revizyonda */ /* REV-PROJE-KOYU: Teklif Hazırlığında — revizyon kalın, ihale alındı koyu yeşil */{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
-    {h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi),cls:r=>!r.teklif_teslim_tarihi?'eksikbos':((r.istenen_tarih&&String(r.teklif_teslim_tarihi)>String(r.istenen_tarih))?'termuyari':'')},  /* TERMIN-UYARI-PANO: teslim > istenen → kırmızı yazı */ /* TERMIN-BOS-PANO: formdaki TERMIN-BOS kuralı — Teklif Bekleniyor + tarih boş → kırmızı */
+    {h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi),cls:r=>(!r.teklif_teslim_tarihi&&!(r.net_tutar!=null&&String(r.net_tutar).trim()!==''))?'eksikbos':((r.istenen_tarih&&String(r.teklif_teslim_tarihi)>String(r.istenen_tarih))?'termuyari':'')},  /* TERMIN-UYARI-PANO: teslim > istenen → kırmızı yazı */ /* TERMIN-BOS-PANO: formdaki TERMIN-BOS kuralı — Teklif Bekleniyor + tarih boş → kırmızı */
     {h:'İhale?',f:'ihale'},{h:'Talebe İlişkin Notlar',f:'talebe_iliskin_notlar'},{h:'Adet',f:'adet'},{h:'Teklif Birimi Notları',f:'teklif_birimi_notlari'},
     {h:'Geciken Gün',get:r=>{const g=hazGecGun(r); return g==null?'':g;},cls:r=>hazGecGun(r)!=null?'gecgun':''}
   ];
@@ -874,7 +874,7 @@ function pipelineTables(ydRows, today){
   const EKSIK_F=['proje','musteri','musteri_onem_sinifi','gelen_tarih','istenen_tarih','ihale','adet','urun_tipi_serisi','kemer_karolaj','sartname_ahsap'];
   /* YD-EKSIK-ONEM: Eksik bloklarına Müşteri Önem Sınıfı sütunu (Müşteri'den sonra) */
   const C1E=[].concat(C1.slice(0,2),[{h:'Müşteri Önem Sınıfı',f:'musteri_onem_sinifi'}],C1.slice(2)).map(c=>{ const f=c.f||({'Gelen Tarih':'gelen_tarih','İstenen Tarih':'istenen_tarih'})[c.h];
-    return EKSIK_F.includes(f)?Object.assign({},c,{cls:r=>(((!r.durum||r.durum==='Teklif Talebi Geldi')&&(r[f]==null||String(r[f]).trim()===''))||(f==='musteri'&&!ilgTamP(r)))?'eksikbos':'' /* YD-EKSIK-BOS2 */ /* YD-ILG-EKSIK-PANO */}):c; });
+    return EKSIK_F.includes(f)?Object.assign({},c,{cls:r=>(r.net_tutar!=null&&String(r.net_tutar).trim()!==''&&f!=='musteri')?'':(  /* TUTAR-PEMBE-SADE */((!r.durum||r.durum==='Teklif Talebi Geldi')&&(r[f]==null||String(r[f]).trim()===''))||(f==='musteri'&&!ilgTamP(r)))?'eksikbos':'' /* YD-EKSIK-BOS2 */ /* YD-ILG-EKSIK-PANO */}):c; });
   return two('Eksik Kaydedilmiş Teklif Talepleri',eksik,C1E)
     +two('Öncelik Belirlenmesi Gerekenler',oncelik,C1.concat([{h:'Öncelik',wcls:'oncsec',html:r=>`<select class="ydonc" data-id="${r.id}" title="Öncelik seç — forma yazılır, satır Teklif Hazırlığında'ya geçer"><option value=""></option>${['1','2','3'].map(o=>`<option${String(r.oncelik||'')===o?' selected':''}>${o}</option>`).join('')}</select>`}]))
     +two('Teklif Hazırlığında',hazirlik,C2)
