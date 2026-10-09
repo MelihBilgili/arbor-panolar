@@ -758,7 +758,7 @@ async function loadSatis(){
     .satis-wrap td.termuyari{color:#c00 !important;font-weight:700} /* TERMIN-UYARI-PANO */
     .satis-wrap td.ihaleal .cx{color:#1e8e3e;font-weight:700} /* IHALE-ALINDI-YESIL ihale-bold-v2 */
     .satis-wrap td.prjrev .cx{font-weight:700} .satis-wrap td.prjihale .cx{color:#0b5d2a} /* REV-PROJE-KOYU */
-    .satis-wrap table.sat td.hz1>.cx,.satis-wrap table.sat th.hz1>.cw{width:30ch}.satis-wrap table.sat td.hz2>.cx,.satis-wrap table.sat th.hz2>.cw{width:26ch}.satis-wrap table.sat td.hz3>.cx,.satis-wrap table.sat th.hz3>.cw{width:12ch}.satis-wrap table.sat td.hz4>.cx,.satis-wrap table.sat th.hz4>.cw{width:14ch}.satis-wrap table.sat td.hz5>.cx,.satis-wrap table.sat th.hz5>.cw{width:20ch}.satis-wrap table.sat td.hz6>.cx,.satis-wrap table.sat th.hz6>.cw{width:8ch}.satis-wrap table.sat td.hz7>.cx,.satis-wrap table.sat th.hz7>.cw{width:63ch}.satis-wrap table.sat td.hz8>.cx,.satis-wrap table.sat th.hz8>.cw{width:6ch}.satis-wrap table.sat td.hz9>.cx,.satis-wrap table.sat th.hz9>.cw{width:63ch}.satis-wrap table.sat td.hz10>.cx,.satis-wrap table.sat th.hz10>.cw{width:12ch} /* HZ-SABIT (09.10.2026, Melih): Teklif Hazırlığında YD1/YD2 aynı sabit sütun enleri; Talebe İlişkin Notlar 79ch→63ch (%20), Teklif Birimi Notları da 63ch; tam metin hover'da (HZ-NOT-DAR'ın yerine) */
+    .satis-wrap table.sat td.hz1>.cx{width:25.5ch}.satis-wrap table.sat td.hz2>.cx{width:22.1ch}.satis-wrap table.sat td.hz3>.cx{width:10.8ch}.satis-wrap table.sat td.hz4>.cx{width:11.2ch}.satis-wrap table.sat td.hz5>.cx{width:13.0ch}.satis-wrap table.sat td.hz6>.cx{width:7.8ch}.satis-wrap table.sat td.hz7>.cx{width:53.5ch}.satis-wrap table.sat td.hz8>.cx{width:5.7ch}.satis-wrap table.sat td.hz9>.cx{width:53.5ch}.satis-wrap table.sat td.hz10>.cx{width:3.6ch}.satis-wrap table.sat th[class^="hz"]{vertical-align:bottom}.satis-wrap table.sat th[class^="hz"]>.cw{white-space:normal;overflow:visible;overflow-wrap:break-word;font-size:10.5px;line-height:1.15} /* HZ-SABIT (09.10.2026, Melih): Teklif Hazırlığında YD1/YD2 aynı sabit sütun enleri — HZ-DAR2 (09.10.2026): enler %15/15/10/20/35/2/15/5/15/70 daraltıldı, başlıklar küçük punto ve 2-3 satır, Geciken Gün Teklif Teslim Tarihi'nin sağında */
     table.ssum td.sdlist{vertical-align:top;padding:2px 6px 6px}
     .sdi{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0;border-bottom:1px solid #eef1f4}
     .sdi-p{color:#2c3542}
@@ -848,6 +848,7 @@ function pipelineTables(ydRows, today){
     {h:'Geciken Gün',get:r=>{const g=hazGecGun(r); return g==null?'':g;},cls:r=>hazGecGun(r)!=null?'gecgun':''}
   ];
   C2.forEach((c,i)=>{ c.wcls='hz'+(i+1); }); /* HZ-SABIT (09.10.2026, Melih): Teklif Hazırlığında YD1 ve YD2 aynı sabit sütun enleri */
+  C2[9].h='Gec. Gün'; C2.splice(5,0,C2.splice(9,1)[0]); /* HZ-DAR2 (09.10.2026, Melih): Geciken Gün Teklif Teslim Tarihi'nin hemen sağında, dar başlık */
   /* Sütun genişlikleri (tk1..tk15): kullanıcının verdiği daraltma yüzdeleri, mevcut auto-genişliğe
      yakın bir taban (başlık uzunluğu + tipik içerik uzunluğu, satis_yd_akis'teki gerçek verinin
      max/ortalama karakter sayısına göre) üzerinden hesaplandı. Net Tutar (tk11) daraltılmadı, sağa hizalı. */
