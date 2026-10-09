@@ -2384,7 +2384,7 @@ async function loadSelArb(tgt){
   /* Sütun sırası: Proje · Firma · Δ önceki→son ay € · tarih sütunları (yeni→eski) */
   const basliklar=["Proje","Firma",...dates.map(dLbl),"Δ Son → Cari"];
   const rows=[];
-  firmalar.forEach(f=>{ const series=dates.map(d=>f.vals[d]==null?null:f.vals[d]); const canli=canliBy[f.sira]; const _r=[f.proje,f.firma,...series.map(fmt),delta(series,canli),canli==null?"":fmt(canli)]; _r.kx=kxVal(f.sira,f.proje); rows.push(_r); });
+  firmalar.forEach(f=>{ const series=dates.map(d=>f.vals[d]==null?null:f.vals[d]); const canli=canliBy[f.sira]; const _r=[f.proje,f.firma,...series.map(fmt),delta(series,canli),canli==null?"":fmt(canli)]; _r.kx=kxVal(f.sira,f.proje); _r.sira=f.sira; /* SELARB-CARI-261009 */ rows.push(_r); });
   const gon=dates.map(d=>ozBy[d]?ozBy[d].gonderilen:null);
   const borc=dates.map(d=>ozBy[d]?ozBy[d].borc:null);
   const topAlac=dates.map(d=>{ let sm=0,any=false; firmalar.forEach(f=>{ if(f.vals[d]!=null){sm+=f.vals[d];any=true;} }); return any?sm:null; });
@@ -2428,7 +2428,7 @@ async function loadSelArb(tgt){
     const isFoot=SA_FOOT.has(h[0]), show=isFoot||filled(h[lastIdx])||filled(h[canliIdx]);   /* SELARB-DEVIR-261001: gizleme alacak bazlı */
     if(!show) hiddenCount++;
     const mid=[]; for(let i=0;i<nd;i++) mid.push(`<td class="sa-num">${esc(h[2+i]||"")}</td>`);
-    return `<tr class="${isFoot?'sa-foot':''}${show?'':' sa-hide'}"${show?'':' style="display:none"'}>`
+    return `<tr class="${isFoot?'sa-foot':''}${show?'':' sa-hide'}"${show?'':' style="display:none"'}${(!isFoot&&h.sira!=null)?` data-sira="${h.sira}" data-proje="${esc(h[0]||"")}" title="Sağ tık: Cari hesap / Selectron faturaları"`:""}>`
       +`<td class="sa-proje"><span class="c" title="${esc(h[0]||"")}">${esc(h[0]||"")}</span></td>`
       +`<td class="sa-firma"><span class="c" title="${esc(h[1]||"")}">${esc(h[1]||"")}</span></td>`
       +KXP.map((k,i)=>`<td class="sa-kx${k[2]==="o"?" sa-kxo":""}">${esc(kxFmt(h.kx?h.kx[i]:null,i))}</td>`).join("")   /* SELARB-KONTRAT-PANO */
@@ -2468,6 +2468,87 @@ async function loadSelArb(tgt){
     +`<tr>${dateHdrs}</tr></thead><tbody>${trs}</tbody></table></div>`;
   const tg=document.getElementById("sa-toggle");
   if(tg) tg.onclick=()=>{ const on=tg.dataset.on==="1"; document.querySelectorAll("#"+tgt+" tr.sa-hide").forEach(x=>x.style.display=on?"none":""); tg.dataset.on=on?"0":"1"; tg.textContent=on?`Boş-alacak satırları göster (${hiddenCount})`:`Boş-alacak satırları gizle (${hiddenCount})`; };
+  saCariBagla(tgt);   /* SELARB-CARI-261009 */
+}
+/* SELARB-CARI-261009 (Melih): Sel-Arb satırına sağ tık → "Cari hesap" / "Selectron faturaları".
+   Kaynak view sel_arb_cari = Excel açılışı (sel_arb_cari_acilis, SEL-ARB_261006_OZ VERDUN→KINGS) + Sel-Arb devir/ceza
+   + ÖB formu (ob_situation, ob_tahsilat, ob_avenant 'Avenant geldi') + OE ihracat_fatura. Excel'e aktarılabilir. */
+let _saCariCache=null;
+function saCariBagla(tgt){
+  const body=document.getElementById(tgt); if(!body) return;
+  const tb=body.querySelector(".sa-wrap tbody"); if(!tb) return;
+  tb.addEventListener("contextmenu",e=>{
+    const tr=e.target.closest("tr[data-sira]"); if(!tr) return;
+    e.preventDefault(); saCariMenu(e.clientX,e.clientY,Number(tr.dataset.sira),tr.dataset.proje||"");
+  });
+}
+function saCariMenuKapat(){ const m=document.getElementById("sa-cmenu"); if(m) m.remove(); }
+function saCariMenu(x,y,sira,proje){
+  saCariMenuKapat();
+  const m=document.createElement("div"); m.id="sa-cmenu";
+  m.style.cssText=`position:fixed;left:${x}px;top:${y}px;z-index:9999;background:#fff;border:1px solid #c9d3de;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:12.5px;min-width:170px;padding:4px 0`;
+  m.innerHTML=`<div class="sa-cm-it" data-t="cari">Cari hesap</div><div class="sa-cm-it" data-t="sel">Selectron faturaları</div>`;
+  m.querySelectorAll(".sa-cm-it").forEach(it=>{ it.style.cssText="padding:6px 14px;cursor:pointer;white-space:nowrap";
+    it.onmouseenter=()=>it.style.background="#eef3f8"; it.onmouseleave=()=>it.style.background="";
+    it.onclick=()=>{ saCariMenuKapat(); saCariAc(it.dataset.t,sira,proje); }; });
+  document.body.appendChild(m);
+  const r=m.getBoundingClientRect(); if(r.right>innerWidth) m.style.left=(innerWidth-r.width-6)+"px"; if(r.bottom>innerHeight) m.style.top=(innerHeight-r.height-6)+"px";
+  setTimeout(()=>{ const k=ev=>{ if(!m.contains(ev.target)){ saCariMenuKapat(); document.removeEventListener("mousedown",k,true); } }; document.addEventListener("mousedown",k,true); },0);
+}
+async function saCariAc(tur,sira,proje){
+  if(!_saCariCache){ const q=await sb.from("sel_arb_cari").select("*"); if(q.error){ alert("Hata: "+q.error.message); return; } _saCariCache=q.data||[]; setTimeout(()=>{_saCariCache=null;},60000); }
+  const key=String(proje||"").trim().toLowerCase();
+  const list=_saCariCache.filter(r=>r.tablo===tur && String(r.proje_key||"").trim().toLowerCase()===key && (r.sira==null||Number(r.sira)===sira));
+  list.sort((a,b)=>(a.grp-b.grp)||(a.grp===0?(a.ord-b.ord):0)||String(a.tarih||"9999").localeCompare(String(b.tarih||"9999")));
+  const pb=(list.find(r=>r.para_birimi)||{}).para_birimi||"EUR", sym=pb==="GBP"?"£":"€";
+  const n=v=>(v==null||v==="")?null:Number(v);
+  const f2=v=>v==null?"":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const dd=t=>t?(String(t).slice(8,10)+"."+String(t).slice(5,7)+"."+String(t).slice(2,4)):"";
+  let cols, rows=[], bak=0, top={};
+  if(tur==="cari"){
+    cols=["Tarih","Vade","Situ / Belge No",`Situ (${sym})`,`Avenant - TS (${sym})`,`Ceza (${sym})`,`Tahsilat (${sym})`,`Bakiye (${sym})`,"Açıklama","Kaynak"];
+    list.forEach(r=>{ const s=n(r.situ),a=n(r.avenant),c=n(r.ceza),o=n(r.odeme); bak+=(s||0)-(c||0)-(o||0);
+      ["s","a","c","o"].forEach((k,i)=>{ const v=[s,a,c,o][i]; if(v!=null) top[k]=(top[k]||0)+v; });
+      rows.push([dd(r.tarih),dd(r.vade),r.belge_no||"",f2(s),f2(a),f2(c),f2(o),f2(bak),r.aciklama||"",r.kaynak||""]); });
+    rows.toplam=["Toplam","","",f2(top.s),f2(top.a),f2(top.c),f2(top.o),f2(bak),"",""];
+  } else {
+    cols=["Tarih","Vade","Fatura No",`Fatura Tutarı (${sym})`,`Ödeme (${sym})`,`Bakiye (${sym})`,"Açıklama","Kaynak"];
+    list.forEach(r=>{ const fv=n(r.fatura),o=n(r.odeme); bak+=(fv||0)-(o||0);
+      if(fv!=null) top.f=(top.f||0)+fv; if(o!=null) top.o=(top.o||0)+o;
+      rows.push([dd(r.tarih),dd(r.vade),r.belge_no||"",f2(fv),f2(o),f2(bak),(r.aciklama||"")+(r.para_birimi&&r.para_birimi!==pb?` (${r.para_birimi})`:""),r.kaynak||""]); });
+    rows.toplam=["Toplam","","",f2(top.f),f2(top.o),f2(bak),"",""];
+  }
+  const baslik=(tur==="cari"?"Cari hesap":"Selectron faturaları")+" — "+proje;
+  const numIdx=new Set(tur==="cari"?[3,4,5,6,7]:[3,4,5]);
+  const old=document.getElementById("sa-cmodal"); if(old) old.remove();
+  const ov=document.createElement("div"); ov.id="sa-cmodal";
+  ov.style.cssText="position:fixed;inset:0;z-index:9998;background:rgba(10,25,45,.45);display:flex;align-items:flex-start;justify-content:center;padding:4vh 2vw";
+  const td=(v,i,b)=>`<td style="padding:3px 8px;border-bottom:1px solid #eef1f5;white-space:nowrap;${numIdx.has(i)?"text-align:right;":""}${i>=cols.length-2?"white-space:normal;min-width:16ch;max-width:46ch;color:#4a5a6a;":""}${b?"font-weight:700;background:#eef3f8;":""}">${esc(v)}</td>`;
+  ov.innerHTML=`<div style="background:#fff;border-radius:8px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,.3)">
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #e3e8ee">
+      <b style="color:#16324f;font-size:14px">${esc(baslik)}</b><span style="flex:1"></span>
+      <button class="btn" id="sa-cx">Excel'e aktar</button><button class="btn" id="sa-cc" title="Kapat">✕</button></div>
+    <div style="overflow:auto;padding:0 6px 8px"><table style="border-collapse:collapse;font-size:11.5px">
+      <thead><tr>${cols.map((c,i)=>`<th style="position:sticky;top:0;background:#16324f;color:#fff;padding:4px 8px;white-space:nowrap;${numIdx.has(i)?"text-align:right":""}">${esc(c)}</th>`).join("")}</tr></thead>
+      <tbody>${rows.length?rows.map(r=>`<tr>${r.map((v,i)=>td(v,i,false)).join("")}</tr>`).join("")+`<tr>${rows.toplam.map((v,i)=>td(v,i,true)).join("")}</tr>`
+        :`<tr><td colspan="${cols.length}" style="padding:14px;color:#6b7a8a">Kayıt yok.</td></tr>`}</tbody></table></div></div>`;
+  document.body.appendChild(ov);
+  const kapat=()=>{ ov.remove(); document.removeEventListener("keydown",esk); };
+  const esk=e=>{ if(e.key==="Escape") kapat(); };
+  document.addEventListener("keydown",esk);
+  ov.onclick=e=>{ if(e.target===ov) kapat(); };
+  document.getElementById("sa-cc").onclick=kapat;
+  document.getElementById("sa-cx").onclick=()=>{
+    const q=s=>String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const html=`<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"></head><body><h3>${q(baslik)}</h3><table border="1"><tr>${cols.map(c=>`<th>${q(c)}</th>`).join("")}</tr>`
+      +rows.map(r=>`<tr>${r.map(v=>`<td>${q(v)}</td>`).join("")}</tr>`).join("")
+      +(rows.length?`<tr>${rows.toplam.map(v=>`<td><b>${q(v)}</b></td>`).join("")}</tr>`:"")+`</table></body></html>`;
+    const d=new Date(), p=k=>String(k).padStart(2,"0");
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(new Blob(["﻿"+html],{type:"application/vnd.ms-excel;charset=utf-8"}));
+    a.download=(tur==="cari"?"Cari_":"Selectron_")+String(proje).replace(/[^\w\-]+/g,"_").slice(0,40)+"_"+p(d.getDate())+p(d.getMonth()+1)+String(d.getFullYear()).slice(2)+".xls";
+    document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },1000);
+  };
 }
 /* ---------- ÖB Rapor — bağımsız üst-nav sekmesi (Takipteki İşler / ob_isler; ÖB formu yazar, owner salt-okur) ---------- */
 /* Geçmiş hafta not sütunları açık mı (Son ÖB Notları başlığına tıklanınca) */
