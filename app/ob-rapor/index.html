@@ -344,12 +344,12 @@ async function loadIsler(){
 function durumOpts(v){ return OBI_DURUM.map(d=>'<option'+(d===v?' selected':'')+'>'+esc(d)+'</option>').join(""); }
 function oncelikOpts(v){ const c=(v==null||v==="")?"-":String(v); return OBI_ONCELIK.map(d=>'<option'+(d===c?' selected':'')+'>'+esc(d)+'</option>').join(""); }
 function renderIsler(){
-  let h='<table class="itbl"><thead><tr><th>Konu</th><th title="Ağırlık panodan (MB) belirlenir">Ağırlık (min 100)</th><th>Öncelik</th><th>Durum</th><th>ÖB Notları</th><th></th></tr></thead><tbody>';
+  let h='<table class="itbl"><thead><tr><th>Konu</th><th title="Ağırlık panodan (MB) belirlenir">Ağırlık (min 100)</th><th title="Öncelik panodan (MB) belirlenir">Öncelik</th><th>Durum</th><th>ÖB Notları</th><th></th></tr></thead><tbody>';
   IROWS.forEach(r=>{
     h+='<tr data-id="'+r.id+'">'
       +'<td><input class="ic" data-f="konu" value="'+esc(r.konu)+'" placeholder="Konu"></td>'
       +'<td style="text-align:right;color:#3d4a57">'+esc(r.agirlik==null?100:Number(r.agirlik))+'</td>' /* OB-AGIRLIK: salt-okur, panodan gelir */
-      +'<td><select class="ic ionc" data-f="oncelik">'+oncelikOpts(r.oncelik)+'</select></td>'
+      +'<td class="ionc" style="text-align:center;color:#3d4a57" title="Öncelik panodan (MB) belirlenir">'+esc((r.oncelik==null||r.oncelik==="")?"-":r.oncelik)+'</td>' /* OB-ONC-PANO: salt-okur, panodan gelir */
       +'<td><select class="ic" data-f="durum">'+durumOpts(r.durum)+'</select></td>'
       +'<td><input type="text" class="ic" data-f="ob_notlari" value="'+esc(r.ob_notlari)+'" placeholder="ÖB notları..."></td>'
       +'<td><button class="idel" title="Sil">✕</button></td></tr>';
