@@ -3463,8 +3463,8 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     h+='<tr class="bhadd"><td><input class="bhin" data-c="latince" placeholder="Bitki adı (her dil)" style="width:18ch"></td><td></td><td></td><td></td><td></td><td></td><td></td>'+(notVar?'<td></td>':'')+'<td class="bhx"><button class="bhok" title="Ekle">＋</button></td></tr>';
     rows.forEach(r=>{ h+='<tr><td class="bhk" title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</td><td class="bhi">'+esc(r.isik||"")+'</td><td class="bhs">'+esc(r.soguk||"")+'</td><td class="bht2">'+esc(r.toprak||"")+'</td><td class="bhm">'+esc(r.malc||"")+'</td><td class="bhu">'+esc(r.sulama||"")+'</td><td class="bhay" contenteditable="true" spellcheck="false" title="Düzenlemek için tıkla; Enter kaydeder, Esc vazgeçer, boş bırakılırsa silinir" data-id="'+r.id+'">'+esc((isMap[r.id]||[]).join("; "))+'</td>'+(notVar?'<td>'+esc(r.notlar||"")+'</td>':'')+'<td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(nm(r))+'">✕</button></td></tr>'; });
     h+='</tbody></table></div>';
-    /* BAHCE-LEJANT (06.10.2026): tablonun altında simge lejantı; BAHCE-SIMGE-POMZA (09.10.2026) */
-    h+='<div class="bhlj"><b>Işık:</b> ☀️ tam güneş · ⛅ yarı gölge · ☁️ gölge<br><b>Toprak (kova oranı, toplam 10):</b> 🛘 besinsiz bahçe toprağı · 🍂 olgun kompost · 🌱 kapak toprağı · 🪨 pomza kırığı 2–8 mm · 🪱N dikimde N avuç solucan gübresi (pelet+leonardit) · 🍙N dikimde N avuç dolomit · ↻🍙1/3y 3 yılda bir 1 avuç<br><b>Malç (M):</b> 🪨 pomza kırığı · 🥢 5–8 cm kuru çam iğnesi</div>';
+    /* BAHCE-LEJANT (06.10.2026): tablonun altında simge lejantı; BAHCE-SIMGE-POMZA, BAHCE-MALC-POMZA-GERI (09.10.2026) */
+    h+='<div class="bhlj"><b>Işık:</b> ☀️ tam güneş · ⛅ yarı gölge · ☁️ gölge<br><b>Toprak (kova oranı, toplam 10):</b> 🛘 besinsiz bahçe toprağı · 🍂 olgun kompost · 🌱 kapak toprağı · 🪨 pomza kırığı 2–8 mm · 🪱N dikimde N avuç solucan gübresi (pelet+leonardit) · 🍙N dikimde N avuç dolomit · ↻🍙1/3y 3 yılda bir 1 avuç<br><b>Malç (M):</b> 🍪 pomza · 🥢 5–8 cm kuru çam iğnesi</div>';
   }
   body.innerHTML=h;
   /* BAHCE-EKLE-SATIR */
