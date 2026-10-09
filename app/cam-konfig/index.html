@@ -52,7 +52,7 @@
 <body>
 <header>
   <h1>Cam Konfigürasyon</h1>
-  <div class="sub">Hedef performans değerlerini giriniz; hesaplayıcı çıktılarından bu değerleri karşılayan cam konfigürasyonları ve değerleri listelenir. Boş bırakılan hedef serbesttir. Fiyat için <a href="../cam/" target="_blank">Cam Fiyatlandırma</a>.</div>
+  <div class="sub">Hedef performans değerlerini giriniz; hesaplayıcı çıktılarından bu değerleri karşılayan cam konfigürasyonları ve değerleri listelenir. Boş bırakılan hedef serbesttir. Fiyat, <a href="../cam/" target="_blank">Cam Fiyatlandırma</a> modeliyle hesaplanır (düz, 10 adet / 10 m²); satırlar fiyata göre ucuzdan pahalıya sıralıdır.</div>
 </header>
 <div class="wrap">
   <div style="display:flex;gap:10px;align-items:center;margin:0 0 8px"><span id="rolLbl"></span></div>
@@ -81,9 +81,6 @@
         <div><label for="f_ec">Extra Clear</label><select id="f_ec"><option value="">Fark etmez</option><option value="1">Olsun</option><option value="0">Olmasın</option></select></div>
         <div><label for="f_ur">Üretici</label><select id="f_ur"><option value="">Hepsi</option></select></div>
         <div><label for="f_kay">Hesaplayıcı</label><select id="f_kay"><option value="">Hepsi</option></select></div>
-        <div><label for="f_sir">Sıralama</label><select id="f_sir">
-          <option value="yakin">Hedefe en yakın</option><option value="ince">En ince</option><option value="hafif">En hafif</option>
-          <option value="ug">En düşük Ug</option><option value="lt">En yüksek LT</option><option value="g">En düşük g</option><option value="rw">En yüksek Rw</option></select></div>
       </div>
     </div>
   </div>
@@ -224,6 +221,44 @@ function camlar(k){
   return out;
 }
 function agirlik(r){ if(r.agirlik!=null) return +r.agirlik; const c=camlar(r.kombinasyon); if(!c.length) return null; return c.reduce((s,x)=>s+x.cam*2.5+x.pvb*1.07,0); }
+/* CAM-KONFIG-FIYAT (09.10.2026, Melih): fiyat = Cam Fiyatlandırma (../cam/) modeli — tek kaynak: model (DB, CAMF, GADJ_NF, KAT,
+   SEC_COAT, LISTE_SNAP) o sayfadan çalışma anında okunur, burada kopyası yok. Bağlam = Cam Fiyatlandırma varsayılanı: düz, 10 adet / 10 m².
+   Performans (LT, g, Rw+Ctr) konfigürasyonun kendi değeri; eksikse cam listesinden (CAMF katalog, perf kuralı) tamamlanır. */
+let CAMM=null;
+async function modelYukle(){
+  try{
+    const t=await (await fetch("../cam/index.html",{cache:"no-store"})).text();
+    const ln=a=>{ const i=t.indexOf(a); if(i<0) throw new Error(a); const j=t.indexOf("\n",i); return t.slice(i,j<0?t.length:j); };
+    const seg=(a,b)=>{ const i=t.indexOf(a); if(i<0) throw new Error(a); const j=t.indexOf(b,i); if(j<0) throw new Error(b); return t.slice(i,j+b.length); };
+    const code=[ln("const DB="),seg("const CAMF=(function(){","return{feats,catRow,coat,low};})();"),ln("const LISTE_SNAP="),ln("const GADJ_NF="),ln("const KAT="),ln("const SEC_COAT=")].join("\n");
+    CAMM=new Function(code+"\nreturn {DB,CAMF,LISTE_SNAP,GADJ_NF,KAT,SEC_COAT,SEC_K};")();
+    let liste=CAMM.LISTE_SNAP;
+    try{ const q=await sb.from("cam_listesi").select("sira,kombinasyon,ug,tl,rw,ctr,rw_ctr,sf,kalinlik,satis_eur").order("sira"); if(!q.error&&q.data&&q.data.length) liste=q.data; }catch(e){}
+    CAMM.CAT=liste.map(CAMM.CAMF.catRow).filter(x=>x);
+  }catch(e){ CAMM=null; console.warn("Cam fiyat modeli okunamadı",e); $("ozet").insertAdjacentHTML("beforeend",' · <span style="color:#b40000">Fiyat modeli okunamadı</span>'); }
+}
+function paneM(c){c=String(c).replace(',','.');const m=c.match(/^(\d)(\d)\.(\d)$/);return m?{mm:+m[1]+ +m[2],lam:1,pvb:+m[3]}:{mm:+c,lam:0,pvb:0};}
+function medianM(a){a=a.slice().sort((x,y)=>x-y);const n=a.length;return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):null;}
+function distM(q,C,t){const m=k=>C[k]!==q[k]?1:0,d=C.c[0]!==q.c[0]?1:0,i=C.c[C.c.length-1]!==q.c[q.c.length-1]?1:0;
+  if(t==='ug')return 100*m('lowe')+100*m('tr')+3*m('ar')+Math.abs(C.cav-q.cav)/4+0.5*m('coat')+0.3*m('solar')+0.05*Math.abs(C.tg-q.tg)/4+0.2*m('fp');
+  if(t==='tl'||t==='sf')return 100*m('lowe')+50*m('solar')+50*m('cool')+50*m('plan')+50*m('en')+5*m('coat')+3*m('sat')+1.5*m('xc')+1*m('tr')+Math.abs(C.tg-q.tg)/8+0.3*m('ac')+0.3*m('fp');
+  return 100*m('tr')+3*m('ac')+1.5*d+1.5*i+Math.abs(C.tg-q.tg)/2+0.7*Math.abs(C.nlam-q.nlam)+Math.abs(C.cav-q.cav)/6+2*m('fp')+0.1*m('lowe');}
+function perfM(q,t){let mn=1e9;const ds=[];for(const C of CAMM.CAT){if(C[t]==null)continue;const d=distM(q,C,t);ds.push([d,C[t]]);if(d<mn)mn=d;}return medianM(ds.filter(x=>x[0]<=mn+0.25).map(x=>x[1]));}
+function fiyat(r){
+  if(!CAMM) return null; if(r._fy!==undefined) return r._fy;
+  let q=null; try{ q=CAMM.CAMF.catRow({kombinasyon:r.kombinasyon,ug:r.ug,tl:r.lt,sf:r.g,rw:r.rw,ctr:r.ctr}); }catch(e){}
+  if(!q){ r._fy=null; return null; }
+  const v={tl:r.lt!=null?r.lt:perfM(q,"tl"),sf:r.g!=null?r.g:perfM(q,"sf"),rw:r._rwctr!=null?r._rwctr:perfM(q,"rw")};
+  const cl=x=>x?1:0, tp=cl(q.tp), we=q.we, M=CAMM.DB.coef, adet=10, m2=10;
+  const X={tg:q.tg,tg2:Math.pow(Math.min(q.tg,22)-14,2)/100,nlam:q.nlam,pvb4:q.pvb4,triple:q.tr,cav:q.cu,cav_dar:cl(q.cu<=12),cav_genis:cl(q.cu>=20),lowe:q.lowe,solar:q.solar,
+    satin:q.sat,temper:tp,acoustic:q.ac,extraclear:q.xc,fireproof:q.fp,argon:q.ar,we,karolaj:0,egrisel:0,l_ortm2:Math.log(Math.min(Math.max(m2/adet,0.05),4)),
+    tl:v.tl,rwctr:v.rw,sf:v.sf,l_m2:Math.log(Math.min(Math.max(m2,0.2),300)),kucuk_m2:0,kucuk_adet:0};
+  let s=CAMM.DB.ic; for(const k in M) s+=M[k]*(X[k]||0);
+  const est=Math.exp(s)*(q.solar&&CAMM.SEC_COAT[q.coat]?CAMM.SEC_K:1);
+  const flags=[q.tr,q.lowe,q.solar,q.fp,q.ac,q.sat,tp,q.xc,q.ar,we].join(''), an=CAMM.GADJ_NF[q.c.join('/')+'|'+q.cu+'|*|'+flags];
+  const k30=q.fp&&!/e[iı]\s?30|\be30\b/i.test(String(r.kombinasyon||""))?1.1:1;
+  r._fy=(an?est*Math.exp(an[0]):est)*k30*CAMM.KAT; return r._fy;
+}
 let DATA=[];
 async function load(){
   let all=[], from=0;
@@ -241,6 +276,7 @@ async function load(){
   const ky=[...new Set(DATA.map(r=>r.kaynak))].sort((a,b)=>a.localeCompare(b,"tr"));
   $("f_kay").innerHTML='<option value="">Hepsi</option>'+ky.map(u=>'<option value="'+esc(u)+'">'+esc((KAYNAK[u]||{}).e||u)+'</option>').join("");
   kaynakYaz(); calc();
+  await modelYukle(); calc();   /* CAM-KONFIG-FIYAT */
 }
 function kaynakYaz(){
   const say={}, son={}; DATA.forEach(r=>{ say[r.kaynak]=(say[r.kaynak]||0)+1; if(r.hesap_tarihi&&(!son[r.kaynak]||r.hesap_tarihi>son[r.kaynak])) son[r.kaynak]=r.hesap_tarihi; });
@@ -253,7 +289,7 @@ function hedef(){ const p=id=>num($(id).value);
   const lt=p("h_lt"), gmax=p("h_gmax"), gmin=p("h_gmin"), lr=p("h_lr");
   const fr=x=>x==null?null:(x>1?x/100:x); /* % veya oran */
   return {ug:p("h_ug"),lt:fr(lt),gmax:fr(gmax),gmin:fr(gmin),lr:fr(lr),rw:p("h_rw"),rwctr:p("h_rwctr"),sel:p("h_sel"),
-    yapi:$("f_yapi").value,kal:p("f_kal"),agr:p("f_agr"),lam:$("f_lam").value,aku:$("f_aku").value,ec:$("f_ec").value,ur:$("f_ur").value,kay:$("f_kay").value,sir:$("f_sir").value};
+    yapi:$("f_yapi").value,kal:p("f_kal"),agr:p("f_agr"),lam:$("f_lam").value,aku:$("f_aku").value,ec:$("f_ec").value,ur:$("f_ur").value,kay:$("f_kay").value};
 }
 /* Hedef kontrolü: her hedef için [karşılıyor mu, normalize açık/fazla] — eksik değer = karşılamıyor sayılır */
 const OLC={ug:0.1,lt:0.02,g:0.02,lr:0.02,rw:1,rwctr:1,sel:0.05};
@@ -286,34 +322,35 @@ function calc(){
   const hedefVar=aday.length&&aday[0]._k.n>0;
   let ok=aday.filter(r=>r._k.ok), yakin=[];
   const yak=(a,b)=>(a._k.fazla-b._k.fazla)||((a.kalinlik||99)-(b.kalinlik||99))||((a.ug||9)-(b.ug||9));
-  if(h.sir==="yakin") ok.sort(hedefVar?yak:((a,b)=>(a.ug||9)-(b.ug||9)||(b.lt||0)-(a.lt||0)));
-  else ok.sort((a,b)=>SIR[h.sir](a)-SIR[h.sir](b)||yak(a,b));
+  const fy=r=>{ const p=fiyat(r); return p==null?1e12:p; };   /* CAM-KONFIG-FIYAT: fiyata göre artan */
+  ok.sort((a,b)=>fy(a)-fy(b)||yak(a,b));
   /* aynı kombinasyon birden fazla hesaplayıcıda varsa hepsi kalır (kıyas için) */
-  if(!ok.length&&hedefVar){ yakin=aday.slice().sort((a,b)=>(a._k.ceza-b._k.ceza)||yak(a,b)).slice(0,15); }
+  if(!ok.length&&hedefVar){ yakin=aday.slice().sort((a,b)=>(a._k.ceza-b._k.ceza)||yak(a,b)).slice(0,15).sort((a,b)=>fy(a)-fy(b)); }
   const goster=ok.slice(0,60);
-  $("ozet").innerHTML='<b>'+aday.length+'</b> konfigürasyon tarandı · '+(hedefVar?'hedefleri karşılayan: <b>'+ok.length+'</b>'+(ok.length>60?' (ilk 60 gösteriliyor)':''):'hedef girilmedi — filtreye uyanlar Ug sırasıyla');
+  $("ozet").innerHTML='<b>'+aday.length+'</b> konfigürasyon tarandı · '+(hedefVar?'hedefleri karşılayan: <b>'+ok.length+'</b>'+(ok.length>60?' (ilk 60 gösteriliyor)':''):'hedef girilmedi — filtreye uyanlar');
   if(!goster.length&&!yakin.length){ $("res").innerHTML='<div class="bos">Seçilen filtrelere uyan konfigürasyon yok.</div>'; return; }
   $("res").innerHTML=(yakin.length?'<div class="uyari" style="margin:8px">Hedeflerin hepsini karşılayan konfigürasyon yok — en yakın '+yakin.length+' öneri gösteriliyor; karşılamayan değerler kırmızı.</div>':'')+tablo(goster.length?goster:yakin,h,!!yakin.length);
 }
 function tablo(rows,h,yakinMod){
+  /* CAM-KONFIG-FIYAT: sütunlar Konfigürasyon · Üretici · Kalınlık(1) · Ağırlık(0) · Ug(2) · LT(0) · LR dış(0) · G(0) · LT/g(2) · Rw+Ctr · Fiyat */
   const bad=(r,k)=>r._k.miss[k]!==undefined?' bad':'';
-  const th='<thead><tr><th>#</th><th class="l">Konfigürasyon (dıştan içe)</th><th class="l">Yapı</th><th class="l">Üretici</th><th class="l">Hesaplayıcı</th>'
-    +'<th>Kalınlık<br>mm</th><th>Ağırlık<br>kg/m²</th><th>Ug<br>W/m²K</th><th>LT<br>%</th><th>LR dış<br>%</th><th>g<br>%</th><th>LT/g</th><th>Rw (C;Ctr)<br>dB</th><th>Rw+Ctr<br>dB</th></tr></thead>';
-  const tb=rows.map((r,i)=>{ const K=KAYNAK[r.kaynak]||{e:r.kaynak,c:""};
+  const th='<thead><tr><th class="l">Konfigürasyon (dıştan içe)</th><th class="l">Üretici</th>'
+    +'<th>Kalınlık<br>mm</th><th>Ağırlık<br>kg/m²</th><th>Ug<br>W/m²K</th><th>LT<br>%</th><th>LR dış<br>%</th><th>G<br>%</th><th>LT/g</th><th>Rw+Ctr<br>dB</th><th>Fiyat<br>€/m²</th></tr></thead>';
+  const tb=rows.map(r=>{ const K=KAYNAK[r.kaynak]||{e:r.kaynak,c:""};
     const ozl=[r.lamine?"lamine":"",r.akustik?"akustik":"",r.extra_clear?"extra clear":"",r.temperli?"temperli":""].filter(Boolean).join(", ");
-    const rwt=r.rw==null?"–":(Math.round(r.rw)+(r.c!=null&&r.ctr!=null?' ('+Math.round(r.c)+';'+Math.round(r.ctr)+')':(r.ctr!=null?' (Ctr '+Math.round(r.ctr)+')':'')));
-    return '<tr class="'+(yakinMod?'yakin':'')+'"><td>'+(i+1)+'</td><td class="l komb" title="'+esc((ozl?ozl+' · ':'')+(r.notlar||''))+'">'+esc(r.kombinasyon)+'</td>'
-      +'<td class="l">'+esc(r.yapi||"–")+'</td><td class="l">'+esc(r.uretici||"–")+'</td>'
-      +'<td class="l"><span class="etk '+K.c+'">'+esc(K.e)+'</span></td>'
-      +'<td class="'+bad(r,"kal")+'">'+f2(r.kalinlik,r.kalinlik!=null&&r.kalinlik%1?2:0)+'</td>'
-      +'<td class="'+bad(r,"agr")+'">'+(r._agr==null?"–":f2(r._agr,1))+'</td>'
-      +'<td class="'+bad(r,"ug")+'">'+f2(r.ug,1)+'</td>'
+    const rwt=r.rw==null?"":(' · Rw '+Math.round(r.rw)+(r.c!=null&&r.ctr!=null?' ('+Math.round(r.c)+';'+Math.round(r.ctr)+')':''));
+    const fy=fiyat(r);
+    return '<tr class="'+(yakinMod?'yakin':'')+'"><td class="l komb" title="'+esc([(r.yapi||""),K.e,ozl,(r.notlar||"")].filter(Boolean).join(' · ')+rwt)+'">'+esc(r.kombinasyon)+'</td>'
+      +'<td class="l">'+esc(r.uretici||"–")+'</td>'
+      +'<td class="'+bad(r,"kal")+'">'+f2(r.kalinlik,1)+'</td>'
+      +'<td class="'+bad(r,"agr")+'">'+(r._agr==null?"–":f2(r._agr,0))+'</td>'
+      +'<td class="'+bad(r,"ug")+'">'+f2(r.ug,2)+'</td>'
       +'<td class="'+bad(r,"lt")+'">'+pct(r.lt)+'</td>'
       +'<td class="'+bad(r,"lr")+'">'+pct(r.lr_dis)+'</td>'
       +'<td class="'+bad(r,"gmax")+bad(r,"gmin")+'">'+pct(r.g)+'</td>'
       +'<td class="'+bad(r,"sel")+'">'+(r._sel==null?"–":f2(r._sel,2))+'</td>'
-      +'<td class="'+bad(r,"rw")+'"'+(r._rwT?' title="Yapı eşleşmesi: '+esc(r._rwT)+'"':'')+'>'+(r._rwT&&r.rw!=null?'≈':'')+rwt+'</td>'
-      +'<td class="'+bad(r,"rwctr")+'">'+(r._rwctr==null?"–":(r._rwT?'≈':'')+Math.round(r._rwctr))+'</td></tr>'; }).join("");
+      +'<td class="'+bad(r,"rw")+bad(r,"rwctr")+'"'+(r._rwT?' title="Yapı eşleşmesi: '+esc(r._rwT)+'"':'')+'>'+(r._rwctr==null?"–":(r._rwT?'≈':'')+Math.round(r._rwctr))+'</td>'
+      +'<td style="font-weight:700;color:#16324f">'+(fy==null?(CAMM?"–":"…"):f2(fy,2))+'</td></tr>'; }).join("");
   return '<table>'+th+'<tbody>'+tb+'</tbody></table>';
 }
 let _t; document.querySelectorAll(".panel input,.panel select").forEach(el=>{
