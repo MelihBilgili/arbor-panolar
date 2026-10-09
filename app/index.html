@@ -2514,10 +2514,10 @@ async function loadObrapor(tgt){
      "Son Değişim Özeti" sütunu tamamen kaldırıldı (veri alanı `degisim_ozet` duruyor). */
   let cg=`<col class="k35"><col class="kagr"><col class="kdur"><col class="konc"><col class="k100">`
     + (obWeeksOpen?haftaKeys.map(()=>`<col class="k40">`).join(""):"")
-    + `<col class="k60">`;
+    + `<col class="k60"><col class="kpuan">`; /* OB-PUAN-TK */
   let hd=`<th>Konu</th><th class="thsm" title="Ağırlık (en az 100) — panodan düzenlenir, ÖB formuna salt-okur gider"><span class="thw">Ağırlık (min 100)</span></th><th>Durum</th><th>Öncelik</th><th class="obwh" id="ob-wk" title="Geçmiş hafta notlarını aç/kapa">Son ÖB Notları <span class="ahcar">${kar}</span></th>`
     + (obWeeksOpen?haftaKeys.map(k=>`<th class="thsm" title="${dgun(weekMap[k].maxDate)}"><span class="thw">${isoWk(weekMap[k].maxDate)}. Hafta ÖB Notu</span></th>`).join(""):"")
-    + `<th>Aylık Değişim Özeti</th>`;
+    + `<th>Aylık Değişim Özeti</th><th class="thsm" title="Kapanan ayın Aylık Faaliyet tespitine göre takipteki işler puanına katkı: tamamlanan 3 × ağırlık/100, ilerleyen 0,5 × ağırlık/100, yerinde sayan 0; Rutin puana girmez"><span class="thw">Puan</span></th>`;
   let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3>`
     +`<div class="scroll"><table class="obt">`
     +`<colgroup>${cg}</colgroup>`
@@ -2525,10 +2525,10 @@ async function loadObrapor(tgt){
   iRows.forEach(r=>{
     ib+=`<tr>${cx(r.konu,"sb")}<td class="num"><input class="obagr" data-id="${r.id}" type="text" inputmode="numeric" size="1" value="${r.agirlik==null?100:Number(r.agirlik)}"></td>${cx(r.durum)}<td><select class="obonc" data-id="${r.id}">${["-","1","2","3","Rutin"].map(o=>`<option${o===((r.oncelik==null||String(r.oncelik).trim()==='')?'-':String(r.oncelik).trim())?' selected':''}>${o}</option>`).join('')}</select></td>${cx(r.ob_notlari)}`
       + (obWeeksOpen?haftaKeys.map(k=>cx((weekMap[k].notes||{})[String(r.id)])).join(""):"")
-      + `${cx(r.aylik_ozet)}</tr>`;
+      + `${cx(r.aylik_ozet)}<td class="num" style="white-space:nowrap">%%TKP_${r.id}%%</td></tr>`;
   });
-  if(!iRows.length) ib+=`<tr><td colspan="6" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
-  ib+=`</tbody></table></div>`;
+  if(!iRows.length) ib+=`<tr><td colspan="7" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
+  ib+=`</tbody></table></div>%%TKP_OZET%%`;
   /* AYLIK FAALİYET — Takipteki İşler'in hemen altı (27.08.2026): ÖB'nin kapanan aya ilişkin
      yorumu (ob_aylik_faaliyet.ob_yorum, ÖB formundan girilir) + o ayda Selectron'a yapılan
      ödemeler (sel_odeme). Dönem = cari aydan bir önceki ay. */
@@ -2607,8 +2607,8 @@ async function loadObrapor(tgt){
   const pvN=pvR.filter(inAy).length, pvAy=pvR.filter(inAy).reduce((t,r)=>t+(Number(r.tutar)||0),0); /* OB-PVR */
   ib+=`<h3 class="sec">DPGF's  -  Situations  -  Avenants - PV's de Réception <span class="muted">(${esc(afAd)} satırları mavi)</span></h3>
     <div class="obaf" style="max-width:none">
-     <div data-m="OB-DS-YAN" style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start"><div style="margin-bottom:10px;flex:1 1 380px;min-width:0"><div class="obafh">DPGF · ${esc(afAd)}: ${nf(dpAy)} €</div>${dsTbl(dpR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Correspondence",r=>esc(r.correspondence||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
-     <div style="margin-bottom:10px;flex:1 1 380px;min-width:0"><div class="obafh">Situations · ${esc(afAd)}: ${nf(stAy)} € <span class="muted" style="font-weight:400">(İptal Edildi hariç)</span></div>${dsTbl(stR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["İlerleme No",r=>esc(r.ilerleme_no||"")],["Dönem",r=>esc(r.donem||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Onay Durumu",r=>esc(r.onay_durumu||"")]])}</div>
+     <div data-m="OB-DS-YAN OB-DS-BOSLUK" style="display:flex;flex-wrap:wrap;gap:2px;align-items:flex-start"><div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">DPGF · ${esc(afAd)}: ${nf(dpAy)} €</div>${dsTbl(dpR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Correspondence",r=>esc(r.correspondence||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
+     <div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">Situations · ${esc(afAd)}: ${nf(stAy)} € <span class="muted" style="font-weight:400">(İptal Edildi hariç)</span></div>${dsTbl(stR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["İlerleme No",r=>esc(r.ilerleme_no||"")],["Dönem",r=>esc(r.donem||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Onay Durumu",r=>esc(r.onay_durumu||"")]])}</div>
      </div><div><div class="obafh">TS · ${esc(afAd)}: ${nf(avAy)} € <span class="muted" style="font-weight:400">(Avenant geldi · KDV hariç; Excel aktarımından yalnız dönüş/avenant bekleyenler listelenir)</span></div>${dsTbl(avR.filter(r=>!r.aktarim||r.durum==="Dönüş bekleniyor"||r.durum==="Onaylandı, avenant bekleniyor"/* TS-ONAY-AV */),[["Tarih",r=>ddG(r.tarih)],["No",r=>esc(r.no||"")],["Proje",r=>esc(r.proje||"")],["İçerik",r=>esc(r.icerik||"")],["Açıklama",r=>esc(r.aciklama||"")],["Tutar (€, KDV hariç)",r=>r.tutar==null?"":nf(r.tutar),1],["Durum",r=>esc(r.durum||"")]],1)}</div><!-- OB-TS-261006 -->
      <div style="margin-top:10px"><div class="obafh">PV's de Réception · ${esc(afAd)}: ${pvN} adet · ${nf(pvAy)} € <span class="muted" style="font-weight:400">(tutar = Sel-Arb kontrat)</span></div>${dsTbl(pvR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Açıklama",r=>esc(r.aciklama||"")]])}</div> <!-- OB-PVR -->
     </div>`;
@@ -2649,6 +2649,18 @@ async function loadObrapor(tgt){
   const dpN=dpR.filter(inAy).length, stN=stR.filter(r=>inAy(r)&&r.onay_durumu!=="İptal Edildi").length;
   const dpPrimE=2*dpN+dpAy/2000, stPrimE=stN+stAy/1000;
   const puan=KAL.reduce((t,k)=>t+(k[2]||0),0), eksikK=KAL.filter(k=>k[2]==null).map(k=>k[0]);
+  /* OB-PUAN-TK (09.10.2026, Melih): Performans primi puanının kırılımı Takipteki İşler tablosunda (iş bazında katkı + toplam) */
+  { const tkDur={}; if(afR){ lstR(afR.tamamlanan).forEach(k=>{ tkDur[k]="t"; }); lstR(afR.gelisme).forEach(k=>{ if(!tkDur[k]) tkDur[k]="g"; }); lstR(afR.yerinde_sayan).forEach(k=>{ if(!tkDur[k]) tkDur[k]="y"; }); }
+    const kTbl=new Set(iRows.map(r=>String(r.konu||"").trim()));
+    ib=ib.replace(/%%TKP_(\d+)%%/g,(m,id)=>{ const r=iRows.find(x=>String(x.id)===id); if(!r) return ""; const k=String(r.konu||"").trim(), ag=Number(r.agirlik)||100, d=tkDur[k];
+      if(rutK.has(k)) return `<span class="muted" title="Rutin işler puana girmez">Rutin</span>`;
+      if(d==="t") return `<span title="Tamamlandı: 3 × ${nf(ag)}/100" style="color:#0a6b3f;font-weight:600">✓ ${nf(3*ag/100)}</span>`;
+      if(d==="g") return `<span title="İlerledi: 0,5 × ${nf(ag)}/100" style="color:#1d5fa8">↗ ${nf(0.5*ag/100)}</span>`;
+      if(d==="y") return `<span class="muted" title="Yerinde saydı">— 0</span>`;
+      return `<span class="muted" title="${afR?"Aylık Faaliyet tespitinde yok":"Aylık Faaliyet tespiti yok"}">0</span>`; });
+    const disi=afR?[...lstR(afR.tamamlanan),...lstR(afR.gelisme)].filter(k=>!kTbl.has(k)):[];
+    const pv=(v,mx)=>v==null?`— / ${mx}`:`${nf(v)} / ${mx}`;
+    ib=ib.replace("%%TKP_OZET%%",`<div class="muted" style="font-size:12px;margin:4px 2px 0;line-height:1.6"><b>Puan (${esc(afAd)}) = ${nf(puan)} / ${KAL.reduce((t,k)=>t+k[1],0)}</b> → Takipteki işler ${pv(tkP,50)} <span style="opacity:.8">(${esc(tkAcik)})</span> + Zamanında güncelleme ${pv(zP,10)} <span style="opacity:.8">(ÖB Faaliyet ${zOB.p} · Sel-Arb ${zSA.p}, ortalama)</span> + MK notu ${pv(mkP,10)} + MB notu ${pv(mbP,10)}${disi.length?`<br>Tabloda karşılığı olmayan tespitler (ağırlık 100 sayıldı): ${esc(disi.join(" · "))}`:""}</div>`); }
   const pin=(id,v,w)=>`<input id="${id}" class="obpin" style="width:${w||11}ch" value="${v==null?"":nf(v)}">`;
   const mbSel=`<select id="ob-mbnot" class="obpin"><option value=""></option>${[0,1,2,3,4,5,6,7,8,9,10].map(i=>`<option${mbP===i?" selected":""}>${i}</option>`).join("")}</select> <span class="muted">Geçtiğimiz ay boyunca Özgül Bedestenci'nin performansına ilişkin notunuzu 0 ile 10 arası bir rakamla belirtiniz.</span>`;
   const acik=a=>a==="mbsel"?mbSel:a.replace("dph",pin("ob-dph",PP.dpgf_hedef)+" €").replace("sth",pin("ob-sth",PP.situation_hedef)+" €");
@@ -2688,7 +2700,7 @@ async function loadObrapor(tgt){
     table.obt{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
     table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k40{width:40ch}table.obt col.k60{width:48ch}table.obt col.k100{width:59.5ch}
     table.obt col.kagr{width:8ch}table.obt input.obagr{width:6ch;text-align:right;font:inherit;padding:1px 4px;border:1px solid #cdd6df;border-radius:4px;background:#fffdf5} /* OB-AGIRLIK */
-    table.obt col.kdur{width:12ch}table.obt col.konc{width:6ch}
+    table.obt col.kdur{width:12ch}table.obt col.konc{width:4ch}table.obt col.kpuan{width:8ch}table.obt select.obonc{width:100%;padding:0;font-size:11px;-webkit-appearance:none;appearance:none;text-align:center;text-align-last:center;border:1px solid #cdd6df;border-radius:4px;background:#fff;cursor:pointer}/* OB-ONC-DAR (09.10.2026, Melih): öncelik kutusu yarı genişlik */
     table.obt th.obwh{cursor:pointer;background:#22456b}
     table.obt th.obwh:hover{background:#2d5a8a}
     table.obt .ahcar{font-size:9px;opacity:.85}
