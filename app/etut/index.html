@@ -246,7 +246,7 @@ const grow=t=>{ t.style.height="auto"; t.style.height=(t.scrollHeight+2)+"px"; }
 function cell(c,r){
   if(c.t==="c"){ const v=r?c.f(r):null; return `<td class="n c${c.z?" z":""}">${r?fmtN(v,c.d):""}</td>`; }
   const v=r?gv(r,c.k):null, shown=c.t==="n"?fmtN(v,c.d):c.t==="d"?fmtD(v):(v==null?"":v);
-  const a=`data-k="${c.k}"${r?` data-id="${r.id}"`:' data-new="1"'}${c.sap?' data-sap="1" readonly':''} style="width:${c.w+1}ch"`; /* PSEL-260930 sap */
+  const a=`data-k="${c.k}"${r?` data-id="${r.id}"`:' data-new="1"'}${c.sap?' data-sap="1" data-sap-kaynak="yd" readonly':''} style="width:${c.w+1}ch"`; /* PSEL-260930 sap · ETUT-PGD-YD (09.10.2026): PGD seçicisi Sel-Arb + YD1/YD2 (+ pgd_ek_proje) */
   if(c.t==="m") return `<td class="m"><textarea ${a} rows="1">${esc(shown)}</textarea></td>`;
   return `<td class="${c.t==="n"||c.t==="d"?"n":""}"><input ${a} type="text"${c.t==="n"?' inputmode="decimal"':''}${c.t==="d"?' placeholder="gg/aa/yy"':''} value="${esc(shown)}"></td>`;
 }
@@ -329,7 +329,8 @@ load();
    data-sap-firma="<alan>": tek seçimde aynı satırdaki [data-f=<alan>] boşsa projenin firması yazılır. Tek kaynak kod/_psel_picker.js */
 (function(){
   if(window.__PSEL) return; window.__PSEL=1;
-  let L=null;
+  const L={}; /* PGD-YD-261001: kaynak basina onbellek; "yd" = Sel-Arb + YD1/YD2 (view yd_proje) */
+  const N=s=>String(s==null?"":s).replace(/ı/g,"i").replace(/İ/g,"i").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim(); /* mukerrer anahtari */
   const E=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
   const st=document.createElement("style");
   st.textContent=".psel-bg{position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding-top:8vh}"
@@ -341,14 +342,22 @@ load();
    +".psel button{padding:5px 12px;border-radius:5px;border:1px solid #bbb;background:#f6f6f6;cursor:pointer;font-size:12px}.psel button.ok{background:#16324f;color:#fff;border-color:#16324f}"
    +"input[data-sap]{cursor:pointer;caret-color:transparent}";
   document.head.appendChild(st);
-  async function yukle(){
-    if(L) return L;
+  async function yukle(kay){
+    kay=kay==="yd"?"yd":"sa";
+    if(L[kay]) return L[kay];
     const {data,error}=await sb.from("sel_arb_proje").select("sira,firma,proje").order("proje");
     if(error) throw error;
-    const g=new Set(); L=[];
-    (data||[]).forEach(r=>{ const k=String(r.proje).trim().toLocaleLowerCase("tr"); if(!g.has(k)){ g.add(k); L.push(r); } });
-    L.sort((a,b)=>String(a.proje).localeCompare(String(b.proje),"tr"));
-    return L;
+    const g=new Map(), out=[];
+    (data||[]).forEach(r=>{ const k=N(r.proje); if(k&&!g.has(k)){ const o={proje:String(r.proje).trim(),firma:r.firma||"",kay:"Sel-Arb"}; g.set(k,o); out.push(o); } });
+    if(kay==="yd"){
+      const y=await sb.from("yd_proje").select("proje,firma,blok");
+      if(y.error) throw y.error;
+      (y.data||[]).forEach(r=>{ const k=N(r.proje); if(!k) return; const o=g.get(k);
+        if(o){ if(o.kay!=="Sel-Arb"){ const s=new Set((o.kay+"+"+(r.blok||"")).split("+").filter(Boolean)); o.kay=[...s].sort().join("+"); } if(!o.firma&&r.firma) o.firma=r.firma; return; }
+        const n={proje:String(r.proje).trim(),firma:r.firma||"",kay:r.blok||"YD"}; g.set(k,n); out.push(n); });
+    }
+    out.sort((a,b)=>String(a.proje).localeCompare(String(b.proje),"tr"));
+    return L[kay]=out;
   }
   function yaz(inp,v){
     inp.value=v;
@@ -356,17 +365,18 @@ load();
     inp.dispatchEvent(new Event("change",{bubbles:true}));
   }
   async function ac(inp){
-    const multi=inp.getAttribute("data-sap")==="m";
+    const multi=inp.getAttribute("data-sap")==="m", kay=inp.getAttribute("data-sap-kaynak")||"";
     const bg=document.createElement("div"); bg.className="psel-bg";
-    bg.innerHTML='<div class="psel"><div class="ph">Sel-Arb projesi seç'+(multi?' (birden çok seçilebilir)':'')+'</div><input class="q" placeholder="Ara: proje veya firma…"><div class="ls">Yükleniyor…</div>'
+    bg.innerHTML='<div class="psel"><div class="ph">'+(kay==="yd"?'Proje seç (Sel-Arb · YD1/YD2)':'Sel-Arb projesi seç')+(multi?' (birden çok seçilebilir)':'')+'</div><input class="q" placeholder="Ara: proje veya firma…"><div class="ls">Yükleniyor…</div>'
       +'<div class="ft"><button class="tm">Temizle</button><button class="ip">Vazgeç</button>'+(multi?'<button class="ok">Tamam</button>':'')+'</div></div>';
     document.body.appendChild(bg);
     const q=bg.querySelector(".q"), ls=bg.querySelector(".ls"), kapat=()=>bg.remove();
     bg.addEventListener("mousedown",e=>{ if(e.target===bg) kapat(); });
     bg.querySelector(".ip").onclick=kapat;
     bg.querySelector(".tm").onclick=()=>{ kapat(); yaz(inp,""); };
-    let list; try{ list=await yukle(); }catch(e){ ls.textContent="Proje listesi okunamadı: "+(e.message||e); return; }
-    const cur=String(inp.value||"").split(/\s\+\s/).map(s=>s.trim()).filter(Boolean);
+    let list; try{ list=await yukle(kay); }catch(e){ ls.textContent="Proje listesi okunamadı: "+(e.message||e); return; }
+    const kanon=new Map(list.map(r=>[N(r.proje),r.proje]));
+    const cur=[]; String(inp.value||"").split(/\s\+\s/).map(s=>s.trim()).filter(Boolean).forEach(v=>{ const c=kanon.get(N(v))||v; if(!cur.some(x=>N(x)===N(c))) cur.push(c); }); /* mukerrer yok */
     const sec=new Set(cur);
     const bilinen=new Set(list.map(r=>r.proje));
     const disari=cur.filter(v=>!bilinen.has(v));
@@ -376,7 +386,7 @@ load();
         .filter(r=>!t||(String(r.proje)+" "+String(r.firma||"")).toLocaleLowerCase("tr").includes(t));
       ls.innerHTML=rows.length?rows.map(r=>'<label data-p="'+E(r.proje)+'" data-fr="'+E(r.firma||"")+'">'
         +(multi?'<input type="checkbox"'+(sec.has(r.proje)?' checked':'')+'>':'<input type="radio" name="psel"'+(sec.has(r.proje)?' checked':'')+'>')
-        +'<span>'+E(r.proje)+(r.yok?'<span class="yok">(Sel-Arb’de yok — eski kayıt)</span>':'<span class="fr">· '+E(r.firma||"")+'</span>')+'</span></label>').join("")
+        +'<span>'+E(r.proje)+(r.yok?'<span class="yok">('+(kay==="yd"?'listede yok':'Sel-Arb’de yok')+' — eski kayıt)</span>':'<span class="fr">· '+E(r.firma||"")+(kay==="yd"&&r.kay?' · '+E(r.kay):'')+'</span>')+'</span></label>').join("")
         :'<div style="color:#8a97a4;padding:6px">Eşleşen proje yok.</div>';
       ls.querySelectorAll("label").forEach(lb=>{
         const c=lb.querySelector("input"), p=lb.getAttribute("data-p");
