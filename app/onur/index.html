@@ -334,7 +334,8 @@ async function load(){
   const _ref=/^\d{6}$/.test(_dmg)? new Date(2000+Number(_dmg.slice(0,2)),Number(_dmg.slice(2,4))-1,Number(_dmg.slice(4,6))) : new Date();
   _ref.setHours(23,59,59,999);
   const _cut=new Date(_ref); _cut.setHours(0,0,0,0); _cut.setDate(_cut.getDate()-10);
-  ROWS=(data||[]).filter(r=>{ const dt=r.hazir_tarihi; if(!dt) return false; const d=new Date(dt); if(isNaN(d)) return false; return !(d>=_cut); });
+  /* OE-PRJ-YOK (09.10.2026, Melih): PRJ tablosu kaldırıldı — yalnız PEM satırları */
+  ROWS=(data||[]).filter(r=>String(r.tur||"").toUpperCase()==="PEM").filter(r=>{ const dt=r.hazir_tarihi; if(!dt) return false; const d=new Date(dt); if(isNaN(d)) return false; return !(d>=_cut); });
   render();
 }
 function render(){
