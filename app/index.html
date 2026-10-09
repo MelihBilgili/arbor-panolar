@@ -1047,7 +1047,7 @@ async function loadHazir(){
 async function loadAup(){
   const view=document.getElementById("view");
   /* AUP-SEVK-BLOK (29.09.2026): ikinci blok = proje durumu 8 · 8.1 (view aup_sevk_panosu); üst damga toplamları yalnız ilk blok */
-  const [{data,error},oz,sv]=await Promise.all([sb.from("aup_panosu").select("*").order("aup",{ascending:true}), sb.from("aup_ozet").select("*").order("damga",{ascending:false}).limit(2), sb.from("aup_sevk_panosu").select("*").order("aup",{ascending:true})]);
+  const [{data,error},oz,sv,yp]=await Promise.all([sb.from("aup_panosu").select("*").order("aup",{ascending:true}), sb.from("aup_ozet").select("*").order("damga",{ascending:false}).limit(2), sb.from("aup_sevk_panosu").select("*").order("aup",{ascending:true}), sb.from("santiye_form_proje").select("proje_no,donem,onemli_hususlar,updated_at").order("donem",{ascending:false}).order("updated_at",{ascending:false})]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const dk=d=>{ d=String(d||""); const i=d.indexOf(" "); return i<0?d:(d.slice(0,i)+" "+d.slice(i+1,i+4)); };
   /* Hücre deseni = Hazır PEM/PRJ panosu: her hücre tek satır, sığmayan içerik yatayda kaydırılır
@@ -1073,7 +1073,26 @@ async function loadAup(){
     </tr>`;
   };
   const rows=data.map(rowH).join("");
-  const sdata=(sv&&sv.data)||[], srows=sdata.map(rowH).join("");
+  /* AUP-SEVK-YP (09.10.2026): 2. tabloda PST-AÜP · Kayma · TUTAR yok; yerine Yükleme Planı = şantiye formundaki
+     "Yükleme Planına İlişkin Açıklama" (santiye_form_proje.onemli_hususlar; proje_no başına en yeni dolu dönem). */
+  const YPM={}; ((yp&&yp.data)||[]).forEach(f=>{ const t=String(f.onemli_hususlar||"").trim(); if(t&&!(f.proje_no in YPM)) YPM[f.proje_no]=t; });
+  const rowS=r=>{
+    const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
+    const sn=String(r.satis_santiye_notlari||""), un=String(r.uretim_notlari||""), yn=YPM[r.proje_no]||"";
+    return `<tr>
+      <td class="c kod a6"><span title="${esc(r.proje_no)}">${esc(String(r.proje_no||"").slice(-6))}</span></td>
+      <td class="c a30"><span title="${esc(pad)}">${esc(pad)}</span></td>
+      <td class="c a10"><span title="${esc(dur)}">${esc(dk(r.proje_durumu))}</span></td>
+      <td class="num">${esc(r.adet)}</td>
+      <td class="num ctr">${fdate(r.mvt)}</td>
+      <td class="num ctr">${fdate(r.aup)}</td>
+      <td class="num ctr">${fdate(r.gyt)}</td>
+      <td class="c yp"><span title="${esc(yn)}">${esc(yn)}</span></td>
+      <td class="c ss${r.satis_santiye_notlari?' snpink':''}"><span title="${esc(sn)}">${esc(sn)}</span></td>
+      <td class="c ur"><span title="${esc(un)}">${esc(un)}</span></td>
+    </tr>`;
+  };
+  const sdata=(sv&&sv.data)||[], srows=sdata.map(rowS).join("");
   const sAd=sdata.reduce((a,r)=>a+(Number(r.adet)||0),0), sTu=sdata.reduce((a,r)=>a+(Number(r.anlasma_fiyati)||0),0);
   const st=await erpStamp();
   const o0=(oz.data&&oz.data[0])||{}, o1=(oz.data&&oz.data[1])||{};
@@ -1085,7 +1104,7 @@ async function loadAup(){
     #view table.aupmain td,#view table.aupmain th{white-space:nowrap;padding:2px 6px;line-height:16px}
     #view table.aupmain td.c>span{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
     #view table.aupmain td.c>span::-webkit-scrollbar{display:none}
-    #view table.aupmain td.ss,#view table.aupmain td.ur{white-space:nowrap;vertical-align:middle}
+    #view table.aupmain td.ss,#view table.aupmain td.ur,#view table.aupmain td.yp{white-space:nowrap;vertical-align:middle}
     /* AUP-COLFIX (07.09.2026): sütun genişlikleri artık span'ın ch genişliğinden DEĞİL, colgroup'tan
        gelir. Sebep: span'a ch genişliği verilse bile Chrome hücrenin max-content'ini metnin tam
        genişliğinden hesaplıyor ve tablo, kapsayıcı genişliğine kadar orantılı yayılıyordu — bu
@@ -1104,15 +1123,17 @@ async function loadAup(){
     <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">PST</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <div class="aupsevkh">Sevke Hazır · 8 / 8.1 <span style="font-weight:400;color:#5a6b7d">· Proje: ${sdata.length} · Adet: ${money(sAd)} · Tutar: ${money(sTu)} €</span></div>
-    <table class="aup aupmain"><colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">PST</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
-    <tbody>${srows||'<tr><td colspan="12" class="c">Kayıt yok</td></tr>'}</tbody></table></div>`;
+    <table class="aup aupmain"><colgroup>${AUP_COLW_SEVK.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">PST</th><th class="yp">Yükleme Planı</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <tbody>${srows||'<tr><td colspan="10" class="c">Kayıt yok</td></tr>'}</tbody></table></div>`;
   aupFit();
 }
 /* AUP-COLW: NO · PROJE ADI · DURUM · Ad · MVT · AÜP · PST · PST-AÜP · Kayma · TUTAR € · Satış-Şantiye · Üretim
    (12px gövde yazısında 1ch ≈ 6,47px + 12px hücre dolgusu). PROJE ADI / Satış-Şantiye / Üretim
    07.09.2026'da %12 daraltıldı (30→26,4ch · 40→35,2ch · 67,5→59,4ch), DURUM 10→7,5ch. */
 const AUP_COLW=[51,183,61,34,64,64,64,32,44,57,240,396];
+/* AUP-SEVK-YP: 2. tablo NO · PROJE ADI · DURUM · Ad · MVT · AÜP · PST · Yükleme Planı · Satış-Şantiye · Üretim — son üçü 240×0,7=168px */
+const AUP_COLW_SEVK=[51,183,61,34,64,64,64,168,168,168];
 /* AUP-FIT: tablo kutusu pencerenin altına kadar uzar — sabit 82vh sınırı altta boş bant bırakıyordu. */
 function aupFit(){
   const w=document.querySelector("#view .aupwrap"); if(!w) return;
