@@ -841,7 +841,7 @@ function pipelineTables(ydRows, today){
   /* Geciken Gün = sayfa açılış tarihi − Teklif Teslim Tarihi (yalnız pozitifse kırmızı gösterilir) */
   const hazGecGun=r=>{ if(!r.teklif_teslim_tarihi) return null; const g=gunFark(today,r.teklif_teslim_tarihi); return g>0?g:null; };
   const C2=[
-    {h:'Proje',f:'proje',cls:r=>[ydRevMi(r)?'prjrev':'',String(r.ihale||'')==='Alındı'?'prjihale':''].filter(Boolean).join(' ')},  /* REV-PROJE-KOYU: Teklif Hazırlığında — revizyon kalın, ihale alındı koyu yeşil */{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
+    {h:'Proje',f:'proje',cls:r=>[ydRevMi(r)?'prjrev':'',(ydRevMi(r)&&String(r.ihale||'')==='Alındı')?'prjihale':''].filter(Boolean).join(' ')},  /* REV-PROJE-KOYU2: yeşil yalnız revizyonda */ /* REV-PROJE-KOYU: Teklif Hazırlığında — revizyon kalın, ihale alındı koyu yeşil */{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
     {h:'Teklif Teslim Tarihi',get:r=>fdate(r.teklif_teslim_tarihi),cls:r=>!r.teklif_teslim_tarihi?'eksikbos':((r.istenen_tarih&&String(r.teklif_teslim_tarihi)>String(r.istenen_tarih))?'termuyari':'')},  /* TERMIN-UYARI-PANO: teslim > istenen → kırmızı yazı */ /* TERMIN-BOS-PANO: formdaki TERMIN-BOS kuralı — Teklif Bekleniyor + tarih boş → kırmızı */
     {h:'İhale?',f:'ihale'},{h:'Talebe İlişkin Notlar',f:'talebe_iliskin_notlar'},{h:'Adet',f:'adet'},{h:'Teklif Birimi Notları',f:'teklif_birimi_notlari'},
     {h:'Geciken Gün',get:r=>{const g=hazGecGun(r); return g==null?'':g;},cls:r=>hazGecGun(r)!=null?'gecgun':''}
