@@ -304,7 +304,7 @@ async function loadPerms(){
 const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_mkprim"]; /* MAASPRIM-PERSONEL: mali_maasprim kaldırıldı (→ Personel) */
 const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_mkprim"];
 /* ÖB Faaliyet artık Mali grubunun içinde (MK Faaliyet'in yanında) */
-const TABS=[["gundem","Ana Gündem"],["aup","PRJ/PEM"],["santiye","Şantiye Onay"],["satis","Satış"],["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
+/* MENU-KISA-261010 */const TABS=[["gundem","Gündem"],["aup","PRJ/PEM"],["santiye","Şantiye"],["satis","Satış"],["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
 const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
 function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b))||a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
 function renderApp(){
