@@ -558,6 +558,8 @@ async function agOzelGun(){
       let dt=new Date(today.getFullYear(),mo-1,da); dt.setHours(0,0,0,0);
       if(dt<today){ dt=new Date(today.getFullYear()+1,mo-1,da); dt.setHours(0,0,0,0); }  /* yıllık-tekrar: sonraki oluşum */
       if(dt.getMonth()!==mo-1) continue;                 /* geçersiz tarih (ör. 29 Şub) elenir */
+      /* AG-OZELGUN-HS (11.10.2026): Takvim gibi Cts/Paz'a denk gelen tatil kayıtları gösterilmez */
+      if((dt.getDay()===0||dt.getDay()===6) && ["🇹🇷","🏭","🏫","🎓 Üni"].some(function(p){return txt.indexOf(p)===0;})) continue;
       if(dt>=today && dt<=end) items.push({dt:dt,txt:txt});
     }
     if(!items.length){ box.className=""; box.innerHTML='<div class="agog-none">🎂 Önümüzdeki 30 günde özel gün yok.</div>'; return; }
