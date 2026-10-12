@@ -352,10 +352,9 @@ function seriTablo(){
   modelYukle().then(ciz);
 })();
 /* SERI-AKTAR (12.10.2026): satıra sağ tık -> "Cam konfigürasyona aktar": Cam Konfigürasyon formu yeni sekmede açılır,
-   bu satırın camının değerleri URL ile aktarılır (Ug ≤, LT ≥, g ≤, Rw+Ctr ≥ satırın dB'si, Yapı, kalınlık ≤ üst tam sayı, PVB, akustik). */
+   bu satırın camının değerleri URL ile aktarılır — SERI-AKTAR2 (12.10.2026): yalnız Ug ≤, LT ≥, g ≤, Rw+Ctr ≥ (satırın dB'si); yapı/kalınlık/PVB/akustik aktarılmaz. */
 function aktarUrl(r){ const C=r.C, v=x=>String(x).replace(".",",");
-  const lam=(C.c.match(/\d+\.(\d+)/)||[])[1];
-  const p={kaynak:"seri",seri:r.S.s,cam:C.c,ug:v(C.ug),yapi:C.y,kal:String(Math.ceil(C.k)),lam:lam?String(Math.min(+lam,8)):"0",aku:/akustik/i.test(C.c)?"1":""};
+  const p={kaynak:"seri",seri:r.S.s,cam:C.c,ug:v(C.ug)};
   if(C.tl!=null) p.lt=String(C.tl); if(C.g!=null) p.gmax=String(Math.round(C.g*100)); if(r.db!=null) p.rwctr=String(r.db);
   return "../cam-konfig/?"+new URLSearchParams(p).toString(); }
 let _sm=null;
