@@ -18,7 +18,12 @@
   .kart{background:#fff;border:1px solid #dde6f0;border-radius:9px;padding:8px 12px 12px;margin-bottom:10px}
   .kart .tit{font-size:12.5px;font-weight:700;color:#16324f;margin-bottom:4px}
   .kart .tit span{font-weight:400;color:#8a97a4}
-  .g{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:4px 10px}
+  .g{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:4px 10px} /* SERI-AILE-SECIM: aile seçimi çiplere taşındı */
+  .aileler{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:2px 0 6px}
+  .aileler .al{font-size:11.5px;color:#4a5a6b;margin-right:2px}
+  .ach{font:inherit;font-size:12px;font-weight:600;border:1px solid #cdd8e4;background:#fff;color:#8a97a4;border-radius:14px;padding:3px 12px;cursor:pointer}
+  .ach.on{background:#16324f;border-color:#16324f;color:#fff}
+  .ach.tum{font-weight:700}
   @media(max-width:1100px){.g{grid-template-columns:repeat(4,minmax(0,1fr))}}
   @media(max-width:520px){.g{grid-template-columns:repeat(2,minmax(0,1fr))}}
   label{display:block;font-size:11.5px;color:#4a5a6b;margin:5px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -68,12 +73,12 @@
   <div style="display:flex;gap:10px;align-items:center;margin:0 0 8px"><span id="rolLbl"></span></div>
   <div class="kart">
     <div class="tit">Hedef değerler ve süzgeçler <span>(boş = serbest)</span></div>
+    <div class="aileler" id="f_aileler"><span class="al">Seri ailesi:</span></div>
     <div class="g">
       <div><label for="h_uw">Uw ≤ (W/m²K)</label><input id="h_uw" inputmode="decimal"></div>
       <div><label for="h_db">Rw+Ctr ≥ (dB)</label><input id="h_db" inputmode="decimal"></div>
       <div><label for="h_g">Solar faktör g ≤ (%)</label><input id="h_g" inputmode="decimal"></div>
       <div><label for="h_tl">Işık geçirgenliği LT ≥ (%)</label><input id="h_tl" inputmode="decimal"></div>
-      <div><label for="f_aile">Seri ailesi</label><select id="f_aile"><option value="">Hepsi</option></select></div>
       <div><label for="f_seri">Seri</label><select id="f_seri"><option value="">Hepsi</option></select></div>
       <div><label for="f_yapi">Yapı</label><select id="f_yapi"><option value="">Fark etmez</option><option>Çift</option><option>Üçlü</option></select></div>
       <div><label for="f_ahsap">Ahşap (58f Uf)</label><select id="f_ahsap"><option value="cam">Çam / Lareks</option><option value="mese">Meşe / Okaliptüs</option></select></div>
@@ -281,15 +286,15 @@ function camFiyat(C){
 }
 let SORT={k:"seri",d:1}; /* SERI-CAM-FIYAT: varsayılan seri, sonra cam fiyatı */
 const KOL=[
-  {k:"seri",t:"Seri",l:1},{k:"aile",t:"Aile",l:1},{k:"cam",t:"Konfigürasyon (dıştan içe)",l:1},{k:"fiyat",t:"Fiyat<br>€/m²"},{k:"yapi",t:"Yapı",l:1},
+  {k:"seri",t:"Seri",l:1},{k:"cam",t:"Konfigürasyon (dıştan içe)",l:1},{k:"fiyat",t:"Fiyat<br>€/m²"},{k:"yapi",t:"Yapı",l:1},
   {k:"kal",t:"Kalınlık<br>mm"},{k:"ug",t:"Ug<br>W/m²K"},{k:"uw",t:"Uw<br>W/m²K"},{k:"tl",t:"LT<br>%"},{k:"g",t:"g<br>%"},{k:"db",t:"Rw+Ctr<br>dB"},{k:"uf",t:"Uf"},{k:"psi",t:"ψg"},{k:"max",t:"Maks Cam<br>mm"}
 ];
 const deger=(r,k)=>({seri:SERI.indexOf(r.S),aile:r.S.a,cam:r.C.c,yapi:r.C.y,kal:r.C.k,ug:r.C.ug,uw:r.uw,db:r.db,g:r.C.g,tl:r.C.tl,uf:typeof r.uf==="number"?r.uf:null,psi:r.psi,max:r.S.max,fiyat:camFiyat(r.C)})[k];
 function ciz(){
   const h={uw:num($("h_uw").value),db:num($("h_db").value),g:num($("h_g").value),tl:num($("h_tl").value)};
   if(h.g!=null&&h.g>1) h.g=h.g/100;
-  const aile=$("f_aile").value, seri=$("f_seri").value, yapi=$("f_yapi").value, tah=$("f_tah").value==="1";
-  let R=satirlar().filter(r=>(!aile||r.S.a===aile)&&(!seri||r.S.s===seri)&&(!yapi||r.C.y===yapi));
+  const seri=$("f_seri").value, yapi=$("f_yapi").value, tah=$("f_tah").value==="1";
+  let R=satirlar().filter(r=>AILE_SEC.has(r.S.a)&&(!seri||r.S.s===seri)&&(!yapi||r.C.y===yapi));
   R.forEach(r=>{ const uw=(r.est&&!tah)?null:r.uw; const e={};
     if(h.uw!=null) e.uw=uw==null?1:Math.max(0,(uw-h.uw)/h.uw);
     if(h.db!=null) e.db=r.db==null?1:Math.max(0,(h.db-r.db)/h.db);
@@ -310,7 +315,7 @@ function ciz(){
   const tb=ok.map((r,i)=>{ const e=r.eks||{}; const bad=k=>e[k]>0?" bad":"";
     const uwTxt=r.uwG==null?(r.uw!=null&&r.est?'<span title="Yalnız tablo değeri seçili">('+f(r.uw,2)+')</span>':"–"):(r.est?"≈ ":"")+f(r.uwG,2);
     const ufTxt=r.uf==null?"–":(typeof r.uf==="number"?f(r.uf,2):esc(r.uf));
-    return '<tr data-i="'+i+'" class="'+(yakin?"yakin":"")+'"><td class="l seri">'+esc(r.S.s)+'</td><td class="l"><span class="etk '+esc(r.S.a)+'">'+esc(r.S.a)+'</span></td>'
+    return '<tr data-i="'+i+'" class="'+(yakin?"yakin":"")+'"><td class="l seri" title="'+esc(r.S.a)+'">'+esc(r.S.s)+'</td>'
       +'<td class="l cam">'+esc(r.C.c)+'</td><td class="fy" title="Cam Fiyatlandırma modeli: düz, 10 adet / 10 m²">'+(camFiyat(r.C)==null?(CAMM?"–":"…"):f(camFiyat(r.C),2))+'</td><td class="l">'+r.C.y+'</td>'
       +'<td class="'+(r.asim?"kal-asim":"")+'" title="'+(r.asim?"Serinin max cam kalınlığını aşıyor":"")+'">'+f(r.C.k,1)+(r.asim?" ⚠":"")+'</td>'
       +'<td>'+f(r.C.ug,2)+'</td><td class="'+(r.est?"est":"")+bad("uw")+'" title="'+(r.est?"Tahmini: aynı Ug'li referans camla hesaplanan seri Uw değeri":"")+'">'+uwTxt+'</td>'
@@ -332,15 +337,25 @@ function seriTablo(){
     +'<th>Uw · Ug 1,1 çift 24</th><th>Uw · Ug 0,7 üçlü 36</th><th>Uw · Ug 0,6 üçlü 44</th><th>Rw+Ctr aralığı</th></tr></thead><tbody>'+rows+'</tbody></table>';
   $("seriler").querySelectorAll("th").forEach(x=>x.style.cursor="default");
 }
+const AILE_SEC=new Set(); /* SERI-AILE-SECIM */
 (function init(){
   const aileler=[...new Set(SERI.map(S=>S.a))];
-  $("f_aile").insertAdjacentHTML("beforeend",aileler.map(a=>'<option>'+esc(a)+'</option>').join(""));
-  const seriDoldur=()=>{ const a=$("f_aile").value, v=$("f_seri").value;
-    $("f_seri").innerHTML='<option value="">Hepsi</option>'+SERI.filter(S=>!a||S.a===a).map(S=>'<option'+(S.s===v?" selected":"")+'>'+esc(S.s)+'</option>').join(""); };
-  seriDoldur();
-  $("f_aile").addEventListener("change",seriDoldur);
+  /* SERI-AILE-SECIM (12.10.2026): aileler üstte tıklanır çipler (çoklu seçim), varsayılan hepsi seçili; "Tümü" hepsini seçer */
+  aileler.forEach(a=>AILE_SEC.add(a));
+  const seriDoldur=()=>{ const v=$("f_seri").value, L=SERI.filter(S=>AILE_SEC.has(S.a));
+    $("f_seri").innerHTML='<option value="">Hepsi</option>'+L.map(S=>'<option'+(S.s===v?" selected":"")+'>'+esc(S.s)+'</option>').join(""); };
+  const cipCiz=()=>{ const tum=AILE_SEC.size===aileler.length;
+    $("f_aileler").innerHTML='<span class="al">Seri ailesi:</span><button type="button" class="ach tum'+(tum?" on":"")+'" data-a="">Tümü</button>'
+      +aileler.map(a=>'<button type="button" class="ach'+(AILE_SEC.has(a)?" on":"")+'" data-a="'+esc(a)+'">'+esc(a)+'</button>').join(""); };
+  $("f_aileler").addEventListener("click",e=>{ const b=e.target.closest("button.ach"); if(!b) return; const a=b.getAttribute("data-a");
+    if(!a){ aileler.forEach(x=>AILE_SEC.add(x)); }
+    else if(AILE_SEC.size===aileler.length){ AILE_SEC.clear(); AILE_SEC.add(a); }   /* hepsi seçiliyken tıklanan aile tek başına seçilir */
+    else if(AILE_SEC.has(a)){ AILE_SEC.delete(a); if(!AILE_SEC.size) aileler.forEach(x=>AILE_SEC.add(x)); }
+    else AILE_SEC.add(a);
+    cipCiz(); seriDoldur(); ciz(); });
+  cipCiz(); seriDoldur();
   ["h_uw","h_db","h_g","h_tl"].forEach(id=>$(id).addEventListener("input",ciz));
-  ["f_aile","f_seri","f_yapi","f_tah"].forEach(id=>$(id).addEventListener("change",ciz));
+  ["f_seri","f_yapi","f_tah"].forEach(id=>$(id).addEventListener("change",ciz));
   $("f_ahsap").addEventListener("change",()=>{ciz();seriTablo();});
   $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Rw+Ctr değerleri tablodaki test/hesap değerleridir; tabloda değeri olmayan seri–cam eşleşmesi listelenmez. '
     +'<b>Uw</b>: tabloda yalnız üç referans cam için verilmiştir (Ug 1,1 çift 4/16/4 · Ug 0,7 üçlü 4/12/4/12/4 · Ug 0,6 üçlü 4/16/4/16/4); diğer camlarda aynı Ug\'li referansın değeri <b>≈</b> ile gösterilir (cam kalınlığı/lamine etkisi dahil değil). '
