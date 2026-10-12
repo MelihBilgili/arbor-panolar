@@ -1080,6 +1080,8 @@ async function loadAup(){
   /* AUP-SEVK-YP (09.10.2026): 2. tabloda PST-AÜP · Kayma · TUTAR yok; yerine Yükleme Planı = şantiye formundaki
      "Yükleme Planına İlişkin Açıklama" (santiye_form_proje.onemli_hususlar; proje_no başına en yeni dolu dönem). */
   const YPM={}; ((yp&&yp.data)||[]).forEach(f=>{ const t=String(f.onemli_hususlar||"").trim(); if(t&&!(f.proje_no in YPM)) YPM[f.proje_no]=t; });
+  /* AUP-YP-TOHUM (12.10.2026): şantiye formunda açıklama yoksa, kaldırılan Hazır PEM/PRJ panosundaki OE sevk durumu (bir defalık kopya, aup_yp_tohum) gösterilir. */
+  try{ const ypt=await sb.from("aup_yp_tohum").select("proje_no,metin"); ((ypt&&ypt.data)||[]).forEach(f=>{ const t=String(f.metin||"").trim(); if(t&&!(f.proje_no in YPM)) YPM[f.proje_no]=t; }); }catch(e){}
   const rowS=r=>{
     const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
     const sn=String(r.satis_santiye_notlari||""), un=String(r.uretim_notlari||""), yn=YPM[r.proje_no]||"";
@@ -1118,6 +1120,8 @@ async function loadAup(){
     #view table.aupmain td.c>span{width:100%}
     /* MVT · AÜP · PST sütunları ortalanır (07.09.2026, Melih). */
     #view table.aupmain td.ctr,#view table.aupmain thead th.ctr{text-align:center}
+    /* AUP-SEVK-TH-SOL (12.10.2026): Yükleme Planı · Satış-Şantiye Notu · Üretim Notu başlıkları sola yaslı. */
+    #view table.aupmain thead th.yp,#view table.aupmain thead th.ss,#view table.aupmain thead th.ur{text-align:left}
     /* PST-AÜP başlığı iki satıra sarılır (fixed düzende nowrap olsaydı kırpılırdı). */
     #view table.aupmain thead th.pstd{white-space:normal;line-height:11px}
     #view .aupsevkh{font-weight:600;margin:14px 0 4px;font-size:13px}
