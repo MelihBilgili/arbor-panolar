@@ -43,6 +43,25 @@
   .res thead th.l,.res td.l{text-align:left}
   .res td{text-align:right}
   .res td.komb{font-weight:600;color:#16324f;white-space:normal;min-width:260px;max-width:460px}
+
+  /* CAM-KONFIG-DAR (12.10.2026): Yapi ve sinirlar kutulari %20 dar; tablo sutunlari sabit genislik */
+  .g3{width:80%}
+  .res table{width:721px;table-layout:fixed}
+  .res thead th{white-space:normal;box-sizing:border-box;overflow:hidden;padding-left:4px;padding-right:4px}
+  .res td:nth-child(2){white-space:normal}
+  .res td.komb{min-width:0;max-width:none}
+  .res td{overflow:hidden;text-overflow:ellipsis}
+  .res th:nth-child(1){width:272px}
+  .res th:nth-child(2){width:69px}
+  .res th:nth-child(3){width:59px}
+  .res th:nth-child(4){width:54px}
+  .res th:nth-child(5){width:58px}
+  .res th:nth-child(6){width:38px}
+  .res th:nth-child(7){width:42px}
+  .res th:nth-child(8){width:38px}
+  .res th:nth-child(9){width:48px}
+  .res th:nth-child(10){width:50px}
+  .res th:nth-child(11){width:60px}
   .res td.bad{color:#b40000;font-weight:700;background:#fff1f0}
   .res tr.sec td{background:#eef7f1}
   .res tr.yakin td.komb{color:#7a4b00}
@@ -78,7 +97,7 @@
       <div class="g3">
         <div><label for="f_yapi">Yapı</label><select id="f_yapi"><option value="">Fark etmez</option><option>Çift</option><option>Üçlü</option><option>Tek</option></select></div>
         <div><label for="f_kal">Toplam kalınlık ≤ (mm)</label><input id="f_kal" inputmode="decimal"></div>
-        <div><label for="f_lam">Lamine PVB</label><select id="f_lam"><!-- CAM-KONFIG-PVB --><option value="0">Yok</option><option value="1">0,38 mm</option><option value="2">0,76 mm</option><option value="3">1,14 mm</option><option value="4">1,52 mm</option><option value="5">1,90 mm</option><option value="6">2,28 mm</option><option value="7">2,66 mm</option><option value="8">3,04 mm</option></select></div>
+        <div><label for="f_lam">Lamine PVB</label><select id="f_lam"><!-- CAM-KONFIG-PVB --><option value="" selected>Fark etmez</option><option value="0">Yok</option><option value="1">0,38 mm</option><option value="2">0,76 mm</option><option value="3">1,14 mm</option><option value="4">1,52 mm</option><option value="5">1,90 mm</option><option value="6">2,28 mm</option><option value="7">2,66 mm</option><option value="8">3,04 mm</option></select></div>
         <div><label for="f_aku">Akustik lamine</label><select id="f_aku"><option value="">Fark etmez</option><option value="1">Olsun</option><option value="0">Olmasın</option></select></div>
         <div><label for="f_ec">Extra Clear</label><select id="f_ec"><option value="">Fark etmez</option><option value="1">Olsun</option><option value="0">Olmasın</option></select></div>
         <div><label for="f_ur">Üretici</label><select id="f_ur"><option value="">Hepsi</option></select></div>
