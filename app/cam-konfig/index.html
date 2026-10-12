@@ -480,6 +480,14 @@ async function cfAc(r){
 document.getElementById("res").addEventListener("contextmenu",e=>{ const tr=e.target.closest("tbody tr[data-i]"); if(!tr) return;
   const r=(window._ROWS||[])[+tr.getAttribute("data-i")]; if(!r) return; e.preventDefault(); cfAc(r); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") cfKapat(); });
+/* SERI-AKTAR (12.10.2026): Seri Seçim'den sağ tık > "Cam konfigürasyona aktar" — URL parametreleri hedef/sınır alanlarına yazılır */
+(function(){ try{ const u=new URLSearchParams(location.search); if(u.get("kaynak")!=="seri") return;
+  const set=(id,k)=>{ const v=u.get(k); if(v!=null&&v!==""&&$(id)) $(id).value=v; };
+  set("h_ug","ug"); set("h_lt","lt"); set("h_gmax","gmax"); set("h_rwctr","rwctr"); set("f_yapi","yapi"); set("f_kal","kal"); set("f_lam","lam"); set("f_aku","aku");
+  const b=document.createElement("div"); b.className="uyari";
+  b.innerHTML="Seri Seçim'den aktarıldı: <b>"+esc(u.get("seri")||"")+"</b> · "+esc(u.get("cam")||"")+" — hedef ve sınırlar bu camın değerleriyle dolduruldu (Rw+Ctr = pencerenin değeri).";
+  const p=document.querySelector(".panel"); if(p) p.parentNode.insertBefore(b,p);
+}catch(e){} })();
 load();
 </script>
 
