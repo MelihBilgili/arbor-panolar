@@ -29,6 +29,15 @@
   .res{overflow-x:auto;background:#fff;border:1px solid #dde6f0;border-radius:9px;margin-bottom:12px}
   .res table{border-collapse:collapse;width:100%;font-size:12px}
   .res th,.res td{border-bottom:1px solid #eef1f5;padding:3px 7px;white-space:nowrap;line-height:17px}
+  /* SERI-CAM-FIYAT: sütun enleri — başlıklar çok satırlı, sayısal sütunlar dar, cam sütunu sabit */
+  #res th,#res td{padding:3px 6px}
+  #res thead th{white-space:normal;line-height:14px;vertical-align:bottom;font-size:11.5px}
+  #res,#seriler{display:inline-block;max-width:100%;vertical-align:top}
+  #res table,#seriler table{width:auto}
+  #seriler th,#seriler td{padding:3px 8px}
+  #res td.cam{min-width:230px;max-width:320px}
+  #res td.fy{font-weight:700;color:#0a6b57}
+  #res td.uf{white-space:normal;min-width:44px;max-width:64px;font-size:11px;line-height:13px}
   .res thead th{background:#16324f;color:#fff;font-weight:600;position:sticky;top:0;z-index:1;text-align:right;cursor:pointer;user-select:none}
   .res thead th.l,.res td.l{text-align:left}
   .res td{text-align:right}
@@ -63,7 +72,7 @@
       <div><label for="f_aile">Seri ailesi</label><select id="f_aile"><option value="">Hepsi</option></select></div>
       <div><label for="f_seri">Seri</label><select id="f_seri"><option value="">Hepsi</option></select></div>
       <div><label for="f_yapi">Cam yapısı</label><select id="f_yapi"><option value="">Fark etmez</option><option>Çift</option><option>Üçlü</option></select></div>
-      <div><label for="f_ahsap">Ahşap (58f Uf)</label><select id="f_ahsap"><option value="cam">Çam / Mélèze</option><option value="mese">Meşe / Eucalyptus</option></select></div>
+      <div><label for="f_ahsap">Ahşap (58f Uf)</label><select id="f_ahsap"><option value="cam">Çam / Lareks</option><option value="mese">Meşe / Okaliptüs</option></select></div>
       <div><label for="f_tah">Tahmini Uw</label><select id="f_tah"><option value="1">Kullan (≈)</option><option value="0">Yalnız tablo değeri</option></select></div>
     </div>
   </div>
@@ -180,7 +189,7 @@ const SERI=[
   {s:"68p",a:"Klasik",max:31,uf:null,p2:0.032,p3:0.03,uw:{d:1.33}},
   {s:"MR",a:"Diğer",max:null,uf:null,p2:null,p3:null,uw:{}}
 ];
-/* 58f Uf (tablodaki not): çam/Mélèze 24 mm 1,62 · 36 mm 1,60 · üçlü 1,52; meşe/Eucalyptus 24 mm 1,92 · 36 mm 1,82 · üçlü 1,82 */
+/* 58f Uf (tablodaki not): çam/Lareks 24 mm 1,62 · 36 mm 1,60 · üçlü 1,52; meşe/Okaliptüs 24 mm 1,92 · 36 mm 1,82 · üçlü 1,82 */
 const UF58={cam:{c24:1.62,c36:1.60,u:1.52},mese:{c24:1.92,c36:1.82,u:1.82}};
 /* Camlar: ad, kalınlık (mm), g, TL (%), Ug, yapı, ref (Uw referans anahtarı: bu camın kendisi tablo 2'deki referans ise), db {seri:Rw+Ctr} */
 const CAM=[
@@ -230,12 +239,48 @@ function satirlar(){
   });
   return R;
 }
-let SORT={k:"seri",d:1};
+/* SERI-CAM-FIYAT (12.10.2026): cam fiyatı = Cam Fiyatlandırma (../cam/) modeli (cam-konfig ile aynı yol; model o sayfadan çalışma anında okunur).
+   Bağlam: düz, 10 adet / 10 m². Tablodaki "FE" Low-e, "acs." akustik; tüm camlar Argon + Warm Edge. TL/g tablodan; camın kendi Rw+Ctr'si cam listesinden (perf kuralı) — tablodaki dB pencere değeridir, fiyata girmez. */
+let CAMM=null;
+async function modelYukle(){
+  try{
+    const t=await (await fetch("../cam/index.html",{cache:"no-store"})).text();
+    const ln=a=>{ const i=t.indexOf(a); if(i<0) throw new Error(a); const j=t.indexOf("\n",i); return t.slice(i,j<0?t.length:j); };
+    const seg=(a,b)=>{ const i=t.indexOf(a); if(i<0) throw new Error(a); const j=t.indexOf(b,i); if(j<0) throw new Error(b); return t.slice(i,j+b.length); };
+    const code=[ln("const DB="),seg("const CAMF=(function(){","return{feats,catRow,coat,low};})();"),ln("const LISTE_SNAP="),ln("const GADJ_NF="),ln("const KAT="),ln("const SEC_COAT=")].join("\n");
+    CAMM=new Function(code+"\nreturn {DB,CAMF,LISTE_SNAP,GADJ_NF,KAT,SEC_COAT,SEC_K};")();
+    let liste=CAMM.LISTE_SNAP;
+    try{ const q=await ARB_ACTIVE.from("cam_listesi").select("sira,kombinasyon,ug,tl,rw,ctr,rw_ctr,sf,kalinlik,satis_eur").order("sira"); if(!q.error&&q.data&&q.data.length) liste=q.data; }catch(e){}
+    CAMM.CAT=liste.map(CAMM.CAMF.catRow).filter(x=>x);
+  }catch(e){ CAMM=null; console.warn("Cam fiyat modeli okunamadı",e); }
+}
+function medianM(a){a=a.slice().sort((x,y)=>x-y);const n=a.length;return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):null;}
+function distM(q,C,t){const m=k=>C[k]!==q[k]?1:0,d=C.c[0]!==q.c[0]?1:0,i=C.c[C.c.length-1]!==q.c[q.c.length-1]?1:0;
+  if(t==='ug')return 100*m('lowe')+100*m('tr')+3*m('ar')+Math.abs(C.cav-q.cav)/4+0.5*m('coat')+0.3*m('solar')+0.05*Math.abs(C.tg-q.tg)/4+0.2*m('fp');
+  if(t==='tl'||t==='sf')return 100*m('lowe')+50*m('solar')+50*m('cool')+50*m('plan')+50*m('en')+5*m('coat')+3*m('sat')+1.5*m('xc')+1*m('tr')+Math.abs(C.tg-q.tg)/8+0.3*m('ac')+0.3*m('fp');
+  return 100*m('tr')+3*m('ac')+1.5*d+1.5*i+Math.abs(C.tg-q.tg)/2+0.7*Math.abs(C.nlam-q.nlam)+Math.abs(C.cav-q.cav)/6+2*m('fp')+0.1*m('lowe');}
+function perfM(q,t){let mn=1e9;const ds=[];for(const C of CAMM.CAT){if(C[t]==null)continue;const d=distM(q,C,t);ds.push([d,C[t]]);if(d<mn)mn=d;}return medianM(ds.filter(x=>x[0]<=mn+0.25).map(x=>x[1]));}
+function camFiyat(C){
+  if(!CAMM) return null; if(C._fy!==undefined) return C._fy; const rwctr=null;
+  const komb=C.c.replace(/\bFE\b/g,"Low-e")+", Argon, Warmedge, Ug="+String(C.ug).replace(".",",");
+  let q=null; try{ q=CAMM.CAMF.catRow({kombinasyon:komb,ug:C.ug,tl:C.tl==null?null:C.tl/100,sf:C.g}); }catch(e){}
+  if(!q){ C._fy=null; return null; }
+  const v={tl:C.tl!=null?C.tl/100:perfM(q,"tl"),sf:C.g!=null?C.g:perfM(q,"sf"),rw:rwctr!=null?rwctr:perfM(q,"rw")};
+  const cl=x=>x?1:0, tp=cl(q.tp), we=q.we, M=CAMM.DB.coef, adet=10, m2=10;
+  const X={tg:q.tg,tg2:Math.pow(Math.min(q.tg,22)-14,2)/100,nlam:q.nlam,pvb4:q.pvb4,triple:q.tr,cav:q.cu,cav_dar:cl(q.cu<=12),cav_genis:cl(q.cu>=20),lowe:q.lowe,solar:q.solar,
+    satin:q.sat,temper:tp,acoustic:q.ac,extraclear:q.xc,fireproof:q.fp,argon:q.ar,we,karolaj:0,egrisel:0,l_ortm2:Math.log(Math.min(Math.max(m2/adet,0.05),4)),
+    tl:v.tl,rwctr:v.rw,sf:v.sf,l_m2:Math.log(Math.min(Math.max(m2,0.2),300)),kucuk_m2:0,kucuk_adet:0};
+  let s=CAMM.DB.ic; for(const k in M) s+=M[k]*(X[k]||0);
+  const est=Math.exp(s)*(q.solar&&CAMM.SEC_COAT[q.coat]?CAMM.SEC_K:1);
+  const flags=[q.tr,q.lowe,q.solar,q.fp,q.ac,q.sat,tp,q.xc,q.ar,we].join(''), an=CAMM.GADJ_NF[q.c.join('/')+'|'+q.cu+'|*|'+flags];
+  C._fy=(an?est*Math.exp(an[0]):est)*CAMM.KAT; return C._fy;
+}
+let SORT={k:"seri",d:1}; /* SERI-CAM-FIYAT: varsayılan seri, sonra cam fiyatı */
 const KOL=[
-  {k:"seri",t:"Seri",l:1},{k:"aile",t:"Aile",l:1},{k:"cam",t:"Cam konfigürasyonu",l:1},{k:"yapi",t:"Yapı",l:1},
-  {k:"kal",t:"Kalınlık mm"},{k:"ug",t:"Ug"},{k:"uw",t:"Uw"},{k:"db",t:"Rw+Ctr dB"},{k:"g",t:"g"},{k:"tl",t:"TL %"},{k:"uf",t:"Uf"},{k:"psi",t:"ψg"},{k:"max",t:"Seri max cam mm"}
+  {k:"seri",t:"Seri",l:1},{k:"aile",t:"Aile",l:1},{k:"cam",t:"Cam konfigürasyonu",l:1},{k:"fiyat",t:"Cam fiyatı<br>€/m²"},{k:"yapi",t:"Yapı",l:1},
+  {k:"kal",t:"Kalınlık<br>mm"},{k:"ug",t:"Ug"},{k:"uw",t:"Uw<br>W/m²K"},{k:"db",t:"Rw+Ctr<br>dB"},{k:"g",t:"g"},{k:"tl",t:"TL<br>%"},{k:"uf",t:"Uf"},{k:"psi",t:"ψg"},{k:"max",t:"Seri max<br>cam mm"}
 ];
-const deger=(r,k)=>({seri:SERI.indexOf(r.S),aile:r.S.a,cam:r.C.c,yapi:r.C.y,kal:r.C.k,ug:r.C.ug,uw:r.uw,db:r.db,g:r.C.g,tl:r.C.tl,uf:typeof r.uf==="number"?r.uf:null,psi:r.psi,max:r.S.max})[k];
+const deger=(r,k)=>({seri:SERI.indexOf(r.S),aile:r.S.a,cam:r.C.c,yapi:r.C.y,kal:r.C.k,ug:r.C.ug,uw:r.uw,db:r.db,g:r.C.g,tl:r.C.tl,uf:typeof r.uf==="number"?r.uf:null,psi:r.psi,max:r.S.max,fiyat:camFiyat(r.C)})[k];
 function ciz(){
   const h={uw:num($("h_uw").value),db:num($("h_db").value),g:num($("h_g").value),tl:num($("h_tl").value)};
   if(h.g!=null&&h.g>1) h.g=h.g/100;
@@ -251,7 +296,7 @@ function ciz(){
   if(!ok.length&&R.length){ yakin=true; ok=R.slice().sort((a,b)=>a.skor-b.skor).slice(0,10); }
   const s=SORT;
   if(!yakin) ok.sort((a,b)=>{ let x=deger(a,s.k),y=deger(b,s.k); if(x==null&&y==null) return 0; if(x==null) return 1; if(y==null) return -1;
-    return (typeof x==="string"?x.localeCompare(y,"tr"):x-y)*s.d || (SERI.indexOf(a.S)-SERI.indexOf(b.S)) || (a.C.k-b.C.k); });
+    return (typeof x==="string"?x.localeCompare(y,"tr"):x-y)*s.d || (SERI.indexOf(a.S)-SERI.indexOf(b.S)) || ((camFiyat(a.C)==null?1e9:camFiyat(a.C))-(camFiyat(b.C)==null?1e9:camFiyat(b.C))) || (a.C.k-b.C.k); });
   const seriSay=new Set(ok.map(r=>r.S.s)).size;
   $("ozet").innerHTML=yakin?'<div class="uyari">Hedefleri tam karşılayan kombinasyon yok — en yakın '+ok.length+' kombinasyon gösteriliyor; karşılanmayan değerler kırmızı.</div>'
     :'<b>'+ok.length+'</b> kombinasyon · <b>'+seriSay+'</b> seri';
@@ -261,11 +306,11 @@ function ciz(){
     const uwTxt=r.uwG==null?(r.uw!=null&&r.est?'<span title="Yalnız tablo değeri seçili">('+f(r.uw,2)+')</span>':"–"):(r.est?"≈ ":"")+f(r.uwG,2);
     const ufTxt=r.uf==null?"–":(typeof r.uf==="number"?f(r.uf,2):esc(r.uf));
     return '<tr class="'+(yakin?"yakin":"")+'"><td class="l seri">'+esc(r.S.s)+'</td><td class="l"><span class="etk '+esc(r.S.a)+'">'+esc(r.S.a)+'</span></td>'
-      +'<td class="l cam">'+esc(r.C.c)+'</td><td class="l">'+r.C.y+'</td>'
+      +'<td class="l cam">'+esc(r.C.c)+'</td><td class="fy" title="Cam Fiyatlandırma modeli: düz, 10 adet / 10 m²">'+(camFiyat(r.C)==null?(CAMM?"–":"…"):f(camFiyat(r.C),0))+'</td><td class="l">'+r.C.y+'</td>'
       +'<td class="'+(r.asim?"kal-asim":"")+'" title="'+(r.asim?"Serinin max cam kalınlığını aşıyor":"")+'">'+f(r.C.k,2)+(r.asim?" ⚠":"")+'</td>'
       +'<td>'+f(r.C.ug,1)+'</td><td class="'+(r.est?"est":"")+bad("uw")+'" title="'+(r.est?"Tahmini: aynı Ug'li referans camla hesaplanan seri Uw değeri":"")+'">'+uwTxt+'</td>'
       +'<td class="'+bad("db")+'">'+(r.db==null?"–":r.db)+'</td><td class="'+bad("g")+'">'+f(r.C.g,2)+'</td><td class="'+bad("tl")+'">'+(r.C.tl==null?"–":r.C.tl)+'</td>'
-      +'<td>'+ufTxt+'</td><td>'+f(r.psi,r.psi!=null&&String(r.psi).length>5?4:3)+'</td><td>'+(r.S.max==null?"–":f(r.S.max,r.S.max%1?2:0))+'</td></tr>'; }).join("");
+      +'<td class="uf">'+ufTxt+'</td><td>'+f(r.psi,r.psi!=null&&String(r.psi).length>5?4:3)+'</td><td>'+(r.S.max==null?"–":f(r.S.max,r.S.max%1?2:0))+'</td></tr>'; }).join("");
   $("res").innerHTML='<table><thead><tr>'+th+'</tr></thead><tbody>'+tb+'</tbody></table>';
   $("res").querySelectorAll("th[data-k]").forEach(t=>t.onclick=()=>{ const k=t.dataset.k; SORT=SORT.k===k?{k,d:-SORT.d}:{k,d:(k==="db"||k==="tl")?-1:1}; ciz(); });
 }
@@ -296,8 +341,10 @@ function seriTablo(){
     +'<b>Uw</b>: tabloda yalnız üç referans cam için verilmiştir (Ug 1,1 çift 4/16/4 · Ug 0,7 üçlü 4/12/4/12/4 · Ug 0,6 üçlü 4/16/4/16/4); diğer camlarda aynı Ug\'li referansın değeri <b>≈</b> ile gösterilir (cam kalınlığı/lamine etkisi dahil değil). '
     +'⚠ Kalınlık serinin max cam kalınlığını aşıyor (ör. 78s, max 40 mm). 58f max cam kalınlığı tablo 1\'de 51-52 mm (Melih Bey bilgisiyle güncellenmiş), tablo 2\'de 42 mm — formda 52 alınmıştır. '
     +'Uf: 58f\'de ahşap türüne ve cam kalınlığına göre (seçim yukarıda); 78t, 78t-a Bal.Door, 78a için tabloda üç değer vardır. '
+    +'<b>Cam fiyatı</b>: <a href="../cam/" target="_blank">Cam Fiyatlandırma</a> modeliyle (düz, 10 adet / 10 m²) €/m²; pencere fiyatı değildir. '
     +'Yangın dayanımı (E30 fire proof, PF 1/2h) için tabloda cam bilgisi henüz yok. Kaynak: <i>UW ve dB tablosu.xls</i>.';
   seriTablo(); ciz();
+  modelYukle().then(ciz);
 })();
 </script>
 </body>
