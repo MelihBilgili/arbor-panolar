@@ -220,7 +220,7 @@ const CAM=[
 ];
 const UGKEY={"1.1":"d","0.7":"t36","0.6":"t44"};
 const num=v=>{ v=String(v==null?"":v).trim().replace(",","."); return v===""||isNaN(+v)?null:+v; };
-const f=(v,d)=>v==null?"–":(+v).toFixed(d).replace(".",",");
+const f=(v,d)=>v==null?"–":(+v).toFixed(d).replace(".",","); /* SERI-BICIM (12.10.2026): kalınlık 1 hane, ψg 4 hane, max cam tam sayı */
 function ufHesap(S,C){
   if(S.uf!=="ahsap") return S.uf;
   const t=UF58[$("f_ahsap").value]; if(C.y==="Üçlü") return t.u; return C.k<30?t.c24:t.c36;
@@ -278,7 +278,7 @@ function camFiyat(C){
 let SORT={k:"seri",d:1}; /* SERI-CAM-FIYAT: varsayılan seri, sonra cam fiyatı */
 const KOL=[
   {k:"seri",t:"Seri",l:1},{k:"aile",t:"Aile",l:1},{k:"cam",t:"Cam konfigürasyonu",l:1},{k:"fiyat",t:"Cam fiyatı<br>€/m²"},{k:"yapi",t:"Yapı",l:1},
-  {k:"kal",t:"Kalınlık<br>mm"},{k:"ug",t:"Ug"},{k:"uw",t:"Uw<br>W/m²K"},{k:"db",t:"Rw+Ctr<br>dB"},{k:"g",t:"g"},{k:"tl",t:"TL<br>%"},{k:"uf",t:"Uf"},{k:"psi",t:"ψg"},{k:"max",t:"Seri max<br>cam mm"}
+  {k:"kal",t:"Kalınlık<br>mm"},{k:"ug",t:"Ug"},{k:"uw",t:"Uw<br>W/m²K"},{k:"db",t:"Rw+Ctr<br>dB"},{k:"g",t:"g"},{k:"tl",t:"TL<br>%"},{k:"uf",t:"Uf"},{k:"psi",t:"ψg"},{k:"max",t:"Maks Cam<br>mm"}
 ];
 const deger=(r,k)=>({seri:SERI.indexOf(r.S),aile:r.S.a,cam:r.C.c,yapi:r.C.y,kal:r.C.k,ug:r.C.ug,uw:r.uw,db:r.db,g:r.C.g,tl:r.C.tl,uf:typeof r.uf==="number"?r.uf:null,psi:r.psi,max:r.S.max,fiyat:camFiyat(r.C)})[k];
 function ciz(){
@@ -307,10 +307,10 @@ function ciz(){
     const ufTxt=r.uf==null?"–":(typeof r.uf==="number"?f(r.uf,2):esc(r.uf));
     return '<tr class="'+(yakin?"yakin":"")+'"><td class="l seri">'+esc(r.S.s)+'</td><td class="l"><span class="etk '+esc(r.S.a)+'">'+esc(r.S.a)+'</span></td>'
       +'<td class="l cam">'+esc(r.C.c)+'</td><td class="fy" title="Cam Fiyatlandırma modeli: düz, 10 adet / 10 m²">'+(camFiyat(r.C)==null?(CAMM?"–":"…"):f(camFiyat(r.C),0))+'</td><td class="l">'+r.C.y+'</td>'
-      +'<td class="'+(r.asim?"kal-asim":"")+'" title="'+(r.asim?"Serinin max cam kalınlığını aşıyor":"")+'">'+f(r.C.k,2)+(r.asim?" ⚠":"")+'</td>'
+      +'<td class="'+(r.asim?"kal-asim":"")+'" title="'+(r.asim?"Serinin max cam kalınlığını aşıyor":"")+'">'+f(r.C.k,1)+(r.asim?" ⚠":"")+'</td>'
       +'<td>'+f(r.C.ug,1)+'</td><td class="'+(r.est?"est":"")+bad("uw")+'" title="'+(r.est?"Tahmini: aynı Ug'li referans camla hesaplanan seri Uw değeri":"")+'">'+uwTxt+'</td>'
       +'<td class="'+bad("db")+'">'+(r.db==null?"–":r.db)+'</td><td class="'+bad("g")+'">'+f(r.C.g,2)+'</td><td class="'+bad("tl")+'">'+(r.C.tl==null?"–":r.C.tl)+'</td>'
-      +'<td class="uf">'+ufTxt+'</td><td>'+f(r.psi,r.psi!=null&&String(r.psi).length>5?4:3)+'</td><td>'+(r.S.max==null?"–":f(r.S.max,r.S.max%1?2:0))+'</td></tr>'; }).join("");
+      +'<td class="uf">'+ufTxt+'</td><td>'+f(r.psi,4)+'</td><td>'+(r.S.max==null?"–":f(r.S.max,0))+'</td></tr>'; }).join("");
   $("res").innerHTML='<table><thead><tr>'+th+'</tr></thead><tbody>'+tb+'</tbody></table>';
   $("res").querySelectorAll("th[data-k]").forEach(t=>t.onclick=()=>{ const k=t.dataset.k; SORT=SORT.k===k?{k,d:-SORT.d}:{k,d:(k==="db"||k==="tl")?-1:1}; ciz(); });
 }
@@ -319,11 +319,11 @@ function seriTablo(){
   const rows=SERI.map(S=>{ const uf=S.uf==="ahsap"?f(t.c24,2)+" / "+f(t.c36,2)+" / "+f(t.u,2)+" <span style='color:#8a97a4'>(24 / 36 mm / üçlü)</span>":(S.uf==null?"–":(typeof S.uf==="number"?f(S.uf,2):esc(S.uf)));
     const dbs=CAM.map(C=>C.db[S.s]).filter(v=>v!=null);
     return '<tr><td class="l seri">'+esc(S.s)+'</td><td class="l"><span class="etk '+esc(S.a)+'">'+esc(S.a)+'</span></td>'
-      +'<td title="'+esc(S.maxNot||"")+'">'+(S.max==null?"–":f(S.max,S.max%1?2:0))+(S.maxNot?" *":"")+'</td><td class="l">'+uf+'</td>'
-      +'<td>'+f(S.p2,S.p2&&String(S.p2).length>5?4:3)+'</td><td>'+f(S.p3,3)+'</td>'
+      +'<td title="'+esc(S.maxNot||"")+'">'+(S.max==null?"–":f(S.max,0))+(S.maxNot?" *":"")+'</td><td class="l">'+uf+'</td>'
+      +'<td>'+f(S.p2,4)+'</td><td>'+f(S.p3,4)+'</td>'
       +'<td>'+f(S.uw.d,2)+'</td><td>'+f(S.uw.t36,2)+'</td><td>'+f(S.uw.t44,2)+'</td>'
       +'<td>'+(dbs.length?Math.min(...dbs)+"–"+Math.max(...dbs):"–")+'</td></tr>'; }).join("");
-  $("seriler").innerHTML='<table><thead><tr><th class="l">Seri</th><th class="l">Aile</th><th>Max cam mm</th><th class="l">Uf</th><th>ψg çift</th><th>ψg üçlü</th>'
+  $("seriler").innerHTML='<table><thead><tr><th class="l">Seri</th><th class="l">Aile</th><th>Maks Cam mm</th><th class="l">Uf</th><th>ψg çift</th><th>ψg üçlü</th>'
     +'<th>Uw · Ug 1,1 çift 24</th><th>Uw · Ug 0,7 üçlü 36</th><th>Uw · Ug 0,6 üçlü 44</th><th>Rw+Ctr aralığı</th></tr></thead><tbody>'+rows+'</tbody></table>';
   $("seriler").querySelectorAll("th").forEach(x=>x.style.cursor="default");
 }
