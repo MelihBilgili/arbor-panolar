@@ -46,22 +46,21 @@
 
   /* CAM-KONFIG-DAR (12.10.2026): Yapi ve sinirlar kutulari %20 dar; tablo sutunlari sabit genislik */
   .g3{width:80%}
-  .res table{width:812px;table-layout:fixed} /* CAM-KONFIG-DAR2: Konfigurasyon 272->340, Uretici 69->92 (Saint-Gobain sigar) */
+  .res table{width:789px;table-layout:fixed} /* CAM-KONFIG-DAR2: Konfigurasyon 272->340, Uretici 69->92 (Saint-Gobain sigar) */
   .res thead th{white-space:normal;box-sizing:border-box;overflow:hidden;padding-left:4px;padding-right:4px}
   .res td:nth-child(2){white-space:normal}
   .res td.komb{min-width:0;max-width:none}
   .res td{overflow:hidden;text-overflow:ellipsis}
+  /* CAM-KONFIG-LRSELCIK (12.10.2026): LR dis ve LT/g sutunlari kaldirildi */
   .res th:nth-child(1){width:340px}
   .res th:nth-child(2){width:92px}
   .res th:nth-child(3){width:59px}
   .res th:nth-child(4){width:54px}
   .res th:nth-child(5){width:58px}
   .res th:nth-child(6){width:38px}
-  .res th:nth-child(7){width:42px}
-  .res th:nth-child(8){width:38px}
-  .res th:nth-child(9){width:48px}
-  .res th:nth-child(10){width:50px}
-  .res th:nth-child(11){width:60px}
+  .res th:nth-child(7){width:38px}
+  .res th:nth-child(8){width:50px}
+  .res th:nth-child(9){width:60px}
 
   /* CAM-KONFIG-SAGTIK: satira sag tik -> Cam Fiyatlandirma alternatifleri + fiyat kullanim talimati */
   #cfPop{position:fixed;inset:0;background:rgba(10,25,40,.35);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:40px 12px;overflow:auto}
@@ -392,7 +391,7 @@ function tablo(rows,h,yakinMod){
   /* CAM-KONFIG-FIYAT: sütunlar Konfigürasyon · Üretici · Kalınlık(1) · Ağırlık(0) · Ug(2) · LT(0) · LR dış(0) · G(0) · LT/g(2) · Rw+Ctr · Fiyat */
   const bad=(r,k)=>r._k.miss[k]!==undefined?' bad':'';
   /* CAM-KONFIG-SIRALA: başlığa tıklayınca o sütuna göre sırala (tekrar tıklama yönü çevirir) */
-  const TH=[["komb","Konfigürasyon (dıştan içe)","l"],["ur","Üretici","l"],["kal","Kalınlık<br>mm"],["agr","Ağırlık<br>kg/m²"],["ug","Ug<br>W/m²K"],["lt","LT<br>%"],["lr","LR dış<br>%"],["g","g<br>%"],["sel","LT/g"],["rwctr","Rw+Ctr<br>dB"],["fiyat","Fiyat<br>€/m²"]];
+  const TH=[["komb","Konfigürasyon (dıştan içe)","l"],["ur","Üretici","l"],["kal","Kalınlık<br>mm"],["agr","Ağırlık<br>kg/m²"],["ug","Ug<br>W/m²K"],["lt","LT<br>%"],["g","g<br>%"],["rwctr","Rw+Ctr<br>dB"],["fiyat","Fiyat<br>€/m²"]];
   const th='<thead><tr>'+TH.map(c=>'<th data-k="'+c[0]+'" class="'+(c[2]||'')+'" style="cursor:pointer" title="Sıralamak için tıklayın">'+c[1]+(SORT.k===c[0]?(SORT.d>0?' ▲':' ▼'):'')+'</th>').join('')+'</tr></thead>';
   window._ROWS=rows; /* CAM-KONFIG-SAGTIK */
   const tb=rows.map((r,ri)=>{ const K=KAYNAK[r.kaynak]||{e:r.kaynak,c:""};
@@ -405,9 +404,7 @@ function tablo(rows,h,yakinMod){
       +'<td class="'+bad(r,"agr")+'">'+(r._agr==null?"–":f2(r._agr,0))+'</td>'
       +'<td class="'+bad(r,"ug")+'">'+f2(r.ug,2)+'</td>'
       +'<td class="'+bad(r,"lt")+'">'+pct(r.lt)+'</td>'
-      +'<td class="'+bad(r,"lr")+'">'+pct(r.lr_dis)+'</td>'
       +'<td class="'+bad(r,"gmax")+bad(r,"gmin")+'">'+pct(r.g)+'</td>'
-      +'<td class="'+bad(r,"sel")+'">'+(r._sel==null?"–":f2(r._sel,2))+'</td>'
       +'<td class="'+bad(r,"rw")+bad(r,"rwctr")+'"'+(r._rwT?' title="Yapı eşleşmesi: '+esc(r._rwT)+'"':'')+'>'+(r._rwctr==null?"–":(r._rwT?'≈':'')+Math.round(r._rwctr))+'</td>'
       +'<td style="font-weight:700;color:#16324f">'+(fy==null?(CAMM?"–":"…"):f2(fy,2))+'</td></tr>'; }).join("");
   return '<table>'+th+'<tbody>'+tb+'</tbody></table>';
@@ -480,14 +477,6 @@ async function cfAc(r){
 document.getElementById("res").addEventListener("contextmenu",e=>{ const tr=e.target.closest("tbody tr[data-i]"); if(!tr) return;
   const r=(window._ROWS||[])[+tr.getAttribute("data-i")]; if(!r) return; e.preventDefault(); cfAc(r); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") cfKapat(); });
-/* SERI-AKTAR (12.10.2026): Seri Seçim'den sağ tık > "Cam konfigürasyona aktar" — URL parametreleri hedef/sınır alanlarına yazılır */
-(function(){ try{ const u=new URLSearchParams(location.search); if(u.get("kaynak")!=="seri") return;
-  const set=(id,k)=>{ const v=u.get(k); if(v!=null&&v!==""&&$(id)) $(id).value=v; };
-  set("h_ug","ug"); set("h_lt","lt"); set("h_gmax","gmax"); set("h_rwctr","rwctr"); set("f_yapi","yapi"); set("f_kal","kal"); set("f_lam","lam"); set("f_aku","aku");
-  const b=document.createElement("div"); b.className="uyari";
-  b.innerHTML="Seri Seçim'den aktarıldı: <b>"+esc(u.get("seri")||"")+"</b> · "+esc(u.get("cam")||"")+" — hedef ve sınırlar bu camın değerleriyle dolduruldu (Rw+Ctr = pencerenin değeri).";
-  const p=document.querySelector(".panel"); if(p) p.parentNode.insertBefore(b,p);
-}catch(e){} })();
 load();
 </script>
 
