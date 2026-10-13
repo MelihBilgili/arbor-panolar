@@ -2372,15 +2372,15 @@ async function loadSelArb(tgt){
   /* SELARB-KONTRAT-PANO (01.10.2026, Melih): Firma sağında Sel-Arb formundaki 10 sütun (salt-okur).
      Serbest = sel_arb_guncel kolonları; Avenant/Tahsilat/Yapılmış Situ = view sel_arb_ob_toplam (ÖB formu, proje adı eşlemesi). */
   /* SELARB-BASLIK-261001 (Melih): (€) başlıklar; Beklenen İlk Ödeme başlıkları iki satır, küçük punto, dar sütun */
-  const KXP=[["kontrat","Kontrat","n"],["vade_gun","Vade (gün)","g"],["avenant","TS (Avenants) (€)","o"],["ceza","Ceza (€)","n"],["dgd","DGD (€)","n"],["rg","RG (€)","n"],
+  const KXP=[["kontrat","Kontrat","n"],["para_birimi","Para Birimi","t"],["vade_gun","Vade (gün)","g"],["avenant","TS (Avenants) (€)","o"],["ceza","Ceza (€)","n"],["dgd","DGD (€)","n"],["rg","RG (€)","n"],
     ["tahsilat","Tahsilat (€)","o"],["situ","Yapılmış Situ (€)","o"],["yapilacak_situ","Yapılacak Situ (€)","n"],
     ["ilk_odeme_tarih","Beklenen İlk\nÖdeme Tarihi","d"],["ilk_odeme_tutar","Beklenen İlk\nÖdeme Tutarı (€)","n"]];
   const kxKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
   const obBy={}, obS={}; ((obt&&!obt.error&&obt.data)||[]).forEach(x=>{ obBy[kxKey(x.proje_key)]=x; obS[x.sira]=x; });   /* SELARB-DEVIR-261001 */
   const gBy={}; guncel.forEach(x=>gBy[x.sira]=x);
   const kxVal=(sira,proje)=>{ const g=gBy[sira]||{}, ob=obS[sira]||obBy[kxKey(g.proje||proje)]||{};
-    return KXP.map(([f,ad,t])=>{ const v=t==="o"?ob[f]:g[f]; return (v==null||v==="")?null:(t==="d"?v:Number(v)); }); };
-  const kxFmt=(v,i)=>v==null?"":(KXP[i][2]==="d"?(String(v).slice(8,10)+"."+String(v).slice(5,7)+"."+String(v).slice(2,4)):Math.round(v).toLocaleString("tr-TR"));
+    return KXP.map(([f,ad,t])=>{ const v=t==="o"?ob[f]:g[f]; return (v==null||v==="")?null:(t==="d"||t==="t"?v:Number(v)); }); };
+  const kxFmt=(v,i)=>v==null?"":KXP[i][2]==="t"?String(v):(KXP[i][2]==="d"?(String(v).slice(8,10)+"."+String(v).slice(5,7)+"."+String(v).slice(2,4)):Math.round(v).toLocaleString("tr-TR"));
   guncel.forEach(x=>{
     const mevcut=firmalar.find(f=>f.sira===x.sira);
     if(mevcut){ mevcut.firma=x.firma||mevcut.firma||"";   /* SELARB-MUSTERI-VADE: Müşteri = Sel-Arb formu (musteri_firma seçimi) */ mevcut.proje=(mevcut.proje&&mevcut.proje!=="—")?mevcut.proje:(x.proje||"—"); }
@@ -2423,7 +2423,7 @@ async function loadSelArb(tgt){
   const cFatDisp=(cFat==null||Math.round(cFat)===0)?null:cFat;
   rows.push(foot("Güncel Alacak Toplam (€)",topAlac,canliToplam));
   /* SELARB-KONTRAT-PANO: Güncel Alacak Toplam satırında yeni sütunların toplamı (tarih hariç) */
-  rows[rows.length-1].kx=KXP.map(([f,ad,t],i)=>{ if(t==="d"||t==="g") return null; let sm=0,any=false; rows.forEach(r=>{ if(r.kx&&r.kx[i]!=null){ sm+=r.kx[i]; any=true; } }); return any?sm:null; });
+  rows[rows.length-1].kx=KXP.map(([f,ad,t],i)=>{ if(t==="d"||t==="g"||t==="t") return null;   /* SELARB-PARA-BIRIMI */ let sm=0,any=false; rows.forEach(r=>{ if(r.kx&&r.kx[i]!=null){ sm+=r.kx[i]; any=true; } }); return any?sm:null; });
   rows.push(foot("Selectron'a Gönderilen Toplam (€)",gon,cGon));
   rows.push(foot("Selectron'a Borç (€)",borc,cBorc));
   rows.push(foot("Selectron'a Ft Edilen Toplam (€)",fatDisp,cFatDisp));
