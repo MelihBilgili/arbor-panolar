@@ -37,6 +37,7 @@
   td.saved{animation:ok 1.2s}
   @keyframes ok{from{background:#c8f0d4}to{background:transparent}}
   td.bad input,td.bad textarea{border-color:#b40000;background:#ffecec}
+  .dk-eski{margin-top:8px;font-size:12px}.dk-eski summary{cursor:pointer;color:#16324f;font-weight:600;padding:3px 0}.dk-eski table{opacity:.75}
   .puan{margin-top:8px;font-size:11.5px;color:#3a4a5a;background:#fff;border:1px solid #e3e8ee;border-radius:8px;padding:8px 12px;max-width:900px;line-height:1.6}
   .puan b{color:#16324f}
   .blk{margin:0 0 22px}
@@ -168,7 +169,7 @@ const num=v=>Number(v)||0;
 const D={hata:[],pers:[],yuk:[],mem:[],dk:[]}; const P={}; let KID={};  /* ETUT-KIDEM: etut_personel.id → kıdem (yıl), Personel panosu (maas_prim) */
 const kid=p=>KID[p.id];
 const TBL={hatalar:"etut_hata",etut:"etut_hata",icmal:"etut_personel",yuk:"etut_proje_yuk",mem:"etut_memnuniyet",dk:"etut_dk"};
-const rowsOf=id=>id==="hatalar"?D.hata.filter(r=>r.sayfa!=="etut"&&r.sayfa!=="proje") /* PROJE-HATA-YAKALAMA */:id==="etut"?D.hata.filter(r=>r.sayfa==="etut"||r.sayfa==="proje") /* ETUT-HB-PUAN: Etüt + Proje Hata Yakalama satırları */:id==="icmal"?D.pers:D[id];
+const rowsOf=id=>id==="hatalar"?D.hata.filter(r=>r.sayfa!=="etut"&&r.sayfa!=="proje") /* PROJE-HATA-YAKALAMA */:id==="etut"?D.hata.filter(r=>r.sayfa==="etut"||r.sayfa==="proje") /* ETUT-HB-PUAN: Etüt + Proje Hata Yakalama satırları */:id==="icmal"?D.pers:id==="dk"?DKG() /* ETUT-DK-BIRIK */:D[id];
 /* kişi eşleşmesi: ilk ad, metin içinde bağımsız kelime (Hatayı Yapan / Yakalayan serbest metin) */
 const ilk=p=>String(p.ad||"").trim().split(/\s+/)[0].toLocaleLowerCase("tr");
 const icerir=(txt,p)=>{ const f=ilk(p); if(!f) return false; const t=" "+String(txt||"").toLocaleLowerCase("tr")+" ";
@@ -181,9 +182,16 @@ const yakalamaPuani=p=>D.hata.filter(r=>HBR(r)&&icerir(r.yakalayan,p)).reduce((s
 const zk=r=>0.1*num(r.zorluk)+1;
 const projeYuku=p=>D.yuk.reduce((s,r)=>s+zk(r)*num((r.yuk||{})[p.kisa]),0);
 const dkT=r=>num(r.dk1)+2*num(r.dk2)+3*num(r.dk3)+5*num(r.dk4);
-const dkToplam=()=>D.dk.reduce((s,r)=>s+dkT(r),0);
+/* ETUT-DK-BIRIK (13.10.2026): DK1 satırları ERP çekimi başına birikir; yalnız son çekim (+ elle girilen) satırlar güncel ve hesaba girer, öncekiler blok altında kapalı */
+const DK_SON=()=>D.dk.reduce((m,r)=>r.erp_damga&&r.erp_damga>m?r.erp_damga:m,"");
+const DKG=()=>{ const s=DK_SON(); return D.dk.filter(r=>!r.erp_damga||r.erp_damga===s); };
+const DKE=()=>{ const s=DK_SON(); return D.dk.filter(r=>r.erp_damga&&r.erp_damga!==s).sort((a,b)=>String(b.erp_damga).localeCompare(String(a.erp_damga))||a.id-b.id); };
+function dkEskiHTML(){ const E=DKE(); if(!E.length) return "";
+  const tr=r=>`<tr><td>${esc(r.erp_damga)}</td><td>${esc(r.proje||"")}</td><td>${esc(r.part||"")}</td><td>${esc(r.kisi1||"")}</td><td>${esc(r.kisi2||"")}</td><td class="n">${fmtN(r.adet,0)}</td><td class="n">${fmtN(r.dk1,0)}</td><td class="n">${fmtN(r.dk2,0)}</td><td class="n">${fmtN(r.dk3,0)}</td><td class="n">${fmtN(r.dk4,0)}</td><td class="n">${fmtN(dkT(r),0)}</td></tr>`;
+  return `<details class="dk-eski"${window._dkEskiAcik?" open":""} ontoggle="window._dkEskiAcik=this.open"><summary>Önceki ERP çekimleri · ${E.length} kayıt (güncel İcmal hesabına girmez)</summary><div class="cl-wrap"><table><thead><tr><th>ERP</th><th>PGD</th><th>Part</th><th>Kişi 1</th><th>Kişi 2</th><th class="n">Adet</th><th class="n">dk1</th><th class="n">dk2</th><th class="n">dk3</th><th class="n">dk4</th><th class="n">dk toplam</th></tr></thead><tbody>${E.map(tr).join("")}</tbody></table></div></details>`; }
+const dkToplam=()=>DKG().reduce((s,r)=>s+dkT(r),0);
 /* ETUT-DK-KISI (13.10.2026): satırın dk toplamı Kişi 1 / Kişi 2'ye eşit paylaştırılır; kişisiz satır kimseye yazılmaz */
-const dkKisi=p=>D.dk.reduce((s,r)=>{ const K=[...new Set([r.kisi1,r.kisi2].map(x=>String(x||"").trim()).filter(Boolean))]; return s+(p.kisa&&K.indexOf(p.kisa)>=0?dkT(r)/K.length:0); },0);
+const dkKisi=p=>DKG().reduce((s,r)=>{ const K=[...new Set([r.kisi1,r.kisi2].map(x=>String(x||"").trim()).filter(Boolean))]; return s+(p.kisa&&K.indexOf(p.kisa)>=0?dkT(r)/K.length:0); },0);
 const odul=r=>num(r.pgd_tutari)*(num(r.rapidite)+num(r.pertinence))/2000;
 const nul=v=>v==null||v==="";
 function icmal(p){
@@ -214,7 +222,7 @@ const TABS=[
   grup:()=>{ const n=D.pers.filter(p=>p.kisa).length; return `<tr class="grp"><th colspan="2"></th><th colspan="${n}">Yük (%)</th><th></th><th colspan="${n}">Zorluğa göre oranlanmış proje yükü</th><th></th></tr>`; },
   foot:()=>{ const K=D.pers.filter(p=>p.kisa); return `<tr class="tf"><td><b>Toplam</b></td><td></td>${K.map(p=>`<td class="n">${fmtN(D.yuk.reduce((s,r)=>s+num((r.yuk||{})[p.kisa]),0),0)}</td>`).join("")}<td></td>${K.map(p=>`<td class="n"><b>${fmtN(projeYuku(p),0)}</b></td>`).join("")}<td></td></tr>`; },
   not:`Proje zorluğu 1 ve 5 arasında oranlanmıştır. Oranlanmış yük = (0,1 × zorluk + 1) × yük.`},
- {id:"dk",ad:"DK1",req:"proje",cols:()=>[/* ETUT-DK-TURSUZ: Tür sütunu kaldırıldı */{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},{k:"kisi1",h:"Kişi 1",t:"t",w:5,kp:"kisa"},{k:"kisi2",h:"Kişi 2",t:"t",w:5,kp:"kisa"},
+ {id:"dk",ad:"DK1",req:"proje",alt:()=>dkEskiHTML(),baslik:"",cols:()=>[/* ETUT-DK-TURSUZ: Tür sütunu kaldırıldı */{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},{k:"kisi1",h:"Kişi 1",t:"t",w:5,kp:"kisa"},{k:"kisi2",h:"Kişi 2",t:"t",w:5,kp:"kisa"},
    {k:"adet",h:"Adet",t:"n",w:4},{k:"dk1",h:"dk1",t:"n",w:4},{k:"dk2",h:"dk2",t:"n",w:4},{k:"dk3",h:"dk3",t:"n",w:4},{k:"dk4",h:"dk4",t:"n",w:4},
    {h:"dk toplam",t:"c",f:dkT,d:0},{k:"tarih",h:"Tarih",t:"d",w:8}],
   foot:()=>`<tr class="tf"><td colspan="9"><b>Toplam</b></td><td class="n"><b>${fmtN(dkToplam(),0)}</b></td><td></td><td></td></tr>`,
@@ -262,7 +270,7 @@ function blokHTML(T){
   /* ETUT-BOS-SATIR: en altta daima boş satır; zorunlu alan girilince kaydedilir */
   const nw='<tr class="cl-new">'+C.map(c=>cell(c,null)).join("")+'<td></td></tr>';
   return `<section class="blk" data-blk="${T.id}"><h2>${esc(T.ad)} <span class="say">${R.length} kayıt</span></h2>${T.baslik?`<div class="bas">${esc(T.baslik)}</div>`:""}
-    <div class="cl-wrap"><table><thead>${head}</thead><tbody>${body}${nw}</tbody>${T.foot?"<tfoot>"+T.foot()+"</tfoot>":""}</table></div>${T.not?`<div class="puan">${T.not}</div>`:""}</section>`;
+    <div class="cl-wrap"><table><thead>${head}</thead><tbody>${body}${nw}</tbody>${T.foot?"<tfoot>"+T.foot()+"</tfoot>":""}</table></div>${T.not?`<div class="puan">${T.not}</div>`:""}${T.alt?T.alt():""}</section>`;
 }
 function render(){
   const ae=document.activeElement, odak=ae&&ae.dataset&&(ae.dataset.k||ae.dataset.param)?{k:ae.dataset.k,p:ae.dataset.param,id:ae.dataset.id,nw:ae.dataset.new,b:(ae.closest("[data-blk]")||{dataset:{}}).dataset.blk}:null;
