@@ -168,7 +168,7 @@ const num=v=>Number(v)||0;
 const D={hata:[],pers:[],yuk:[],mem:[],dk:[]}; const P={}; let KID={};  /* ETUT-KIDEM: etut_personel.id → kıdem (yıl), Personel panosu (maas_prim) */
 const kid=p=>KID[p.id];
 const TBL={hatalar:"etut_hata",etut:"etut_hata",icmal:"etut_personel",yuk:"etut_proje_yuk",mem:"etut_memnuniyet",dk:"etut_dk"};
-const rowsOf=id=>id==="hatalar"?D.hata.filter(r=>r.sayfa!=="etut"&&r.sayfa!=="proje") /* PROJE-HATA-YAKALAMA */:id==="etut"?D.hata.filter(r=>r.sayfa==="etut"):id==="icmal"?D.pers:D[id];
+const rowsOf=id=>id==="hatalar"?D.hata.filter(r=>r.sayfa!=="etut"&&r.sayfa!=="proje") /* PROJE-HATA-YAKALAMA */:id==="etut"?D.hata.filter(r=>r.sayfa==="etut"||r.sayfa==="proje") /* ETUT-HB-PUAN: Etüt + Proje Hata Yakalama satırları */:id==="icmal"?D.pers:D[id];
 /* kişi eşleşmesi: ilk ad, metin içinde bağımsız kelime (Hatayı Yapan / Yakalayan serbest metin) */
 const ilk=p=>String(p.ad||"").trim().split(/\s+/)[0].toLocaleLowerCase("tr");
 const icerir=(txt,p)=>{ const f=ilk(p); if(!f) return false; const t=" "+String(txt||"").toLocaleLowerCase("tr")+" ";
@@ -203,7 +203,7 @@ const TABS=[
   baslik:"Etüt ve Proje birimlerinin ilgili dönem zarfında yaptığı tüm hatalar aşağıdaki tabloya kaydedilir.",
   not:`<b>Hata Puanı:</b><br>10 puanlık örnek hata: P522 numaralı pozda müşteri poz numarası hatalı girilmiştir. Kendi içimizde düzeltilmiştir.<br>
    100 puanlık örnek hata: HSP ölçüleri yanlıştır. Müşteri tarafından düzeltilmiştir.<br>Yapılan yeni hatalar yukarıdaki örneklerle mukayese edilerek puanlanır.`},
- {id:"etut",ad:"Hata Yakalama Puanları",req:"hata",fixed:{sayfa:"etut"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},{k:"basari_puani",h:"Başarı|Puanı",t:"n",w:5}]},
+ {id:"etut",ad:"Hata Yakalama Puanları",req:"hata",fixed:{sayfa:"etut"},cols:()=>[...HATA_COLS,/* ETUT-HB-PUAN (13.10.2026): tek düzenlenebilir sütun etut_hata.hb_puani */{k:"hb_puani",h:"Hata/Başarı|Puanı",t:"n",w:6}]},
  {id:"yuk",ad:"Proje Yükü",req:"proje",cols:()=>[{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},
    ...D.pers.filter(p=>p.kisa).map(p=>({k:"yuk."+p.kisa,h:p.kisa,t:"n",w:4,tt:p.ad})),{k:"zorluk",h:"Proje|Zorluğu",t:"n",w:5},
    ...D.pers.filter(p=>p.kisa).map(p=>({h:p.kisa,t:"c",d:0,z:1,tt:p.ad+" — zorluğa göre oranlanmış",f:r=>((r.yuk||{})[p.kisa]==null||(r.yuk||{})[p.kisa]==="")?null:zk(r)*num(r.yuk[p.kisa])}))],
