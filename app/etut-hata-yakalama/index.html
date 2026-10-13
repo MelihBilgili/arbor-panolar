@@ -197,7 +197,7 @@ const MEMK=()=>["TH",...D.pers.map(p=>p.kisa).filter(Boolean)];
 /* ===== sekme tanımları: k anahtar ("a.b" = jsonb alanı) · h başlık ("|" satır sonu) · t tür (t metin · m uzun · n sayı · d tarih · c hesap) · w ch ===== */
 const AKS_OPTS=["Hiçbirine aksetmedi","Müşteriye aksetti","Üretime aksetti","Diğer (lütfen açıklayınız)"]; /* AKSETTI-SECIM */
 const HATA_COLS=[{k:"pgd",h:"PGD",t:"t",w:20,sap:1,sapk:"yd"},{k:"part",h:"Part",t:"t",w:12},{k:"tarih",h:"Tarih",t:"d",w:8},
-  {k:"yapan",h:"Hatayı Yapan|İsim Soyisim",t:"t",w:22},{k:"yakalayan",h:"Hatayı Yakalayan|İsim Soyisim",t:"t",w:18},{k:"hata",h:"Hata",t:"m",w:46}];
+  {k:"yapan",h:"Hatayı Yapan|İsim Soyisim",t:"t",w:22,kp:"1"},{k:"yakalayan",h:"Hatayı Yakalayan|İsim Soyisim",t:"t",w:18,kp:"1"},{k:"hata",h:"Hata",t:"m",w:46}];
 const TABS=[
  {id:"hatalar",ad:"Hata Puanları",req:"hata",fixed:{sayfa:"hatalar"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},
    {k:"aksetti",h:"Müşteriye ya da Üretime|Aksetti mi?",t:"t",w:12},{k:"notlar",h:"Notlar",t:"m",w:36}],
@@ -211,7 +211,7 @@ const TABS=[
   grup:()=>{ const n=D.pers.filter(p=>p.kisa).length; return `<tr class="grp"><th colspan="2"></th><th colspan="${n}">Yük (%)</th><th></th><th colspan="${n}">Zorluğa göre oranlanmış proje yükü</th><th></th></tr>`; },
   foot:()=>{ const K=D.pers.filter(p=>p.kisa); return `<tr class="tf"><td><b>Toplam</b></td><td></td>${K.map(p=>`<td class="n">${fmtN(D.yuk.reduce((s,r)=>s+num((r.yuk||{})[p.kisa]),0),0)}</td>`).join("")}<td></td>${K.map(p=>`<td class="n"><b>${fmtN(projeYuku(p),0)}</b></td>`).join("")}<td></td></tr>`; },
   not:`Proje zorluğu 1 ve 5 arasında oranlanmıştır. Oranlanmış yük = (0,1 × zorluk + 1) × yük.`},
- {id:"dk",ad:"DK1",req:"proje",cols:()=>[/* ETUT-DK-TURSUZ: Tür sütunu kaldırıldı */{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},{k:"kisi1",h:"Kişi 1",t:"t",w:5},{k:"kisi2",h:"Kişi 2",t:"t",w:5},
+ {id:"dk",ad:"DK1",req:"proje",cols:()=>[/* ETUT-DK-TURSUZ: Tür sütunu kaldırıldı */{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},{k:"kisi1",h:"Kişi 1",t:"t",w:5,kp:"kisa"},{k:"kisi2",h:"Kişi 2",t:"t",w:5,kp:"kisa"},
    {k:"adet",h:"Adet",t:"n",w:4},{k:"dk1",h:"dk1",t:"n",w:4},{k:"dk2",h:"dk2",t:"n",w:4},{k:"dk3",h:"dk3",t:"n",w:4},{k:"dk4",h:"dk4",t:"n",w:4},
    {h:"dk toplam",t:"c",f:dkT,d:0},{k:"tarih",h:"Tarih",t:"d",w:8}],
   foot:()=>`<tr class="tf"><td colspan="9"><b>Toplam</b></td><td class="n"><b>${fmtN(dkToplam(),0)}</b></td><td></td><td></td></tr>`,
@@ -224,7 +224,7 @@ const TABS=[
   foot:()=>`<tr class="tf"><td><b>Toplam</b></td><td></td><td></td><td class="n">${fmtN(D.mem.reduce((s,r)=>s+num(r.pgd_tutari),0),0)}</td><td></td><td></td><td></td><td class="n"><b>${fmtN(D.mem.reduce((s,r)=>s+odul(r),0),0)}</b></td>${MEMK().map(k=>`<td></td><td class="n"><b>${fmtN(D.mem.reduce((s,r)=>{ const v=(r.dagilim||{})[k]; return s+((v==null||v==="")?0:num(v)*odul(r)/100); },0),0)}</b></td>`).join("")}<td></td></tr>`,
   not:"Hesaplanan Ödül = PGD Tutarı × (Rapidité + Pertinence) / 2000 · kişi € = % × Hesaplanan Ödül / 100."},
  {id:"icmal",ad:"İcmal",req:"ad",cols:()=>[
-   {k:"ad",h:"İsim Soyisim",t:"t",w:17},{k:"kisa",h:"Kısa",t:"t",w:4},{h:"Kıdem|(yıl)",t:"c",f:r=>kid(r),d:1,tt:"Personel panosundan (işe giriş tarihi)"},{k:"inisiyatif",h:"İnisiyatif|Puanı",t:"n",w:5},
+   {k:"ad",h:"İsim Soyisim",t:"t",w:17,kp:"tek"},{k:"kisa",h:"Kısa",t:"t",w:4},{h:"Kıdem|(yıl)",t:"c",f:r=>kid(r),d:1,tt:"Personel panosundan (işe giriş tarihi)"},{k:"inisiyatif",h:"İnisiyatif|Puanı",t:"n",w:5},
    {h:"Toplam|Hata Puanı",t:"c",f:r=>icmal(r).h,d:0},{h:"Toplam Hata|Yakalama Puanı",t:"c",f:r=>icmal(r).y,d:0},
    {h:"Proje|Yükü",t:"c",f:r=>icmal(r).B,d:0},{h:"Hatasızlık|Katsayısı",t:"c",f:r=>icmal(r).C,d:3},{h:"Hata Yakalama|Katsayısı",t:"c",f:r=>icmal(r).D,d:3},
    {h:"İnisiyatif|Katsayısı",t:"c",f:r=>icmal(r).E,d:3},{h:"DK1",t:"c",f:()=>dkToplam(),d:0},{k:"memnuniyet_eur",h:"Memnuniyet|Primi (€)",t:"n",w:7,d:0},
@@ -248,7 +248,7 @@ const grow=t=>{ t.style.height="auto"; t.style.height=(t.scrollHeight+2)+"px"; }
 function cell(c,r){
   if(c.t==="c"){ const v=r?c.f(r):null; return `<td class="n c${c.z?" z":""}">${r?fmtN(v,c.d):""}</td>`; }
   const v=r?gv(r,c.k):null, shown=c.t==="n"?fmtN(v,c.d):c.t==="d"?fmtD(v):(v==null?"":v);
-  const a=`data-k="${c.k}"${r?` data-id="${r.id}"`:' data-new="1"'}${c.sap?' data-sap="1" readonly':''}${c.sapk?` data-sap-kaynak="${c.sapk}"`:''} style="width:${c.w+1}ch"`; /* PSEL-260930 sap · PGD-YD-261001 sapk */
+  const a=`data-k="${c.k}"${r?` data-id="${r.id}"`:' data-new="1"'}${c.sap?' data-sap="1" readonly':''}${c.sapk?` data-sap-kaynak="${c.sapk}"`:''}${c.kp?` data-kp="${c.kp}" autocomplete="off"`:""} style="width:${c.w+1}ch"`; /* PSEL-260930 sap · PGD-YD-261001 sapk */
   if(c.t==="m") return `<td class="m"><textarea ${a} rows="1">${esc(shown)}</textarea></td>`;
   if(c.t==="s"){ /* AKSETTI-SECIM (13.10.2026): seçim listesi; "Diğer" seçilince açıklama sorulur, "Diğer: <açıklama>" kaydedilir */
     const cur=v==null?"":String(v), dg=/^Diğer/.test(cur);
@@ -315,6 +315,36 @@ async function kaydet(inp){
   render();
 }
 const W=document.getElementById("tbl");
+/* KISI-SECIM (13.10.2026): kişi alanları Personel listesinden seçilir (rpc personel_adlar); yazılan harf(ler)le başlayan kişiler listelenir; çoklu alanda kişiler " & " ile ayrılır; listede olmayan isim kaydedilmez */
+let PERS_AD=[]; sb.rpc("personel_adlar").then(r=>{ if(r&&!r.error) PERS_AD=(r.data||[]).map(x=>typeof x==="string"?x:x.ad).filter(Boolean); });
+document.head.insertAdjacentHTML("beforeend",'<style>.kp-liste{position:fixed;z-index:9999;background:#fff;border:1px solid #cdd6df;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.15);max-height:240px;overflow:auto;font-size:12.5px}.kp-liste div{padding:4px 9px;cursor:pointer;white-space:nowrap}.kp-liste div.on,.kp-liste div:hover{background:#e3edf7}</style>');
+const KP_N=s=>String(s||"").trim().toLocaleLowerCase("tr");
+const kpListe=inp=>inp.dataset.kp==="kisa"?D.pers.filter(p=>p.kisa).map(p=>({v:p.kisa,t:p.kisa+" — "+p.ad})):PERS_AD.map(a=>({v:a,t:a}));
+const kpParca=inp=>inp.dataset.kp==="1"?String(inp.value).split("&"):[String(inp.value)];
+let KPD=null,KPI=null,KPS=0;
+function kpKapat(){ if(KPD){ KPD.remove(); KPD=null; } KPI=null; }
+function kpAc(inp){
+  const P=kpParca(inp), q=KP_N(P[P.length-1]);
+  const L=q?kpListe(inp).filter(o=>KP_N(o.v).startsWith(q)||KP_N(o.t).startsWith(q)):[];
+  if(!L.length){ kpKapat(); return; }
+  if(!KPD){ KPD=document.createElement("div"); KPD.className="kp-liste"; document.body.appendChild(KPD);
+    KPD.addEventListener("mousedown",e=>{ e.preventDefault(); const d=e.target.closest("[data-v]"); if(d&&KPI) kpSec(KPI,d.dataset.v); }); }
+  KPI=inp; KPS=0;
+  KPD.innerHTML=L.slice(0,40).map((o,i)=>`<div data-v="${esc(o.v)}"${i?"":' class="on"'}>${esc(o.t)}</div>`).join("");
+  const rc=inp.getBoundingClientRect(); KPD.style.left=rc.left+"px"; KPD.style.top=(rc.bottom+1)+"px"; KPD.style.minWidth=Math.max(rc.width,180)+"px";
+}
+function kpSec(inp,v){ const P=kpParca(inp); P[P.length-1]=v; inp.value=inp.dataset.kp==="1"?P.map(s=>s.trim()).filter(Boolean).join(" & "):v; kpKapat(); inp.dispatchEvent(new Event("change",{bubbles:true})); }
+const kpHatali=inp=>{ const S=new Set(kpListe(inp).map(o=>KP_N(o.v))); return kpParca(inp).map(s=>s.trim()).filter(s=>s&&!S.has(KP_N(s))); };
+W.addEventListener("input",e=>{ const t=e.target; if(t.dataset&&t.dataset.kp) kpAc(t); });
+W.addEventListener("keydown",e=>{ if(!KPD||e.target!==KPI) return; const it=[...KPD.children];
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); it[KPS].classList.remove("on"); KPS=(KPS+(e.key==="ArrowDown"?1:it.length-1))%it.length; it[KPS].classList.add("on"); it[KPS].scrollIntoView({block:"nearest"}); }
+  else if(e.key==="Enter"||e.key==="Tab"){ e.preventDefault(); e.stopImmediatePropagation(); kpSec(KPI,it[KPS].dataset.v); }
+  else if(e.key==="Escape"){ e.preventDefault(); kpKapat(); } },true);
+W.addEventListener("focusout",e=>{ if(e.target===KPI) setTimeout(kpKapat,0); });
+window.addEventListener("scroll",e=>{ if(KPD&&e.target!==KPD) kpKapat(); },true);
+W.addEventListener("change",e=>{ const t=e.target, tr=t.closest&&t.closest("tr.cl-new");
+  const ins=tr?[...tr.querySelectorAll("[data-kp]")]:(t.dataset&&t.dataset.kp?[t]:[]);
+  for(const i of ins){ const bad=kpHatali(i); if(bad.length){ e.stopImmediatePropagation(); i.parentElement.classList.add("bad"); msg("Listeden seçiniz (Personel panosunda yok): "+bad.join(", "),"err"); return; } i.parentElement.classList.remove("bad"); } },true);
 W.addEventListener("change",e=>{ const t=e.target; /* AKSETTI-SECIM */
   if(t.tagName==="SELECT"&&t.value==="Diğer (lütfen açıklayınız)"){ const ac=prompt("Lütfen açıklayınız:"); if(!ac||!ac.trim()){ if(t.dataset.new) t.value=""; else render(); return; } t.options[t.selectedIndex].value="Diğer: "+ac.trim(); }
   if(t.matches("[data-k],[data-param]")) kaydet(t); });
