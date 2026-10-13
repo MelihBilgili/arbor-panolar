@@ -186,8 +186,8 @@ const YUK_SON=()=>D.yuk.reduce((m,r)=>r.donem&&r.donem>m?r.donem:m,"");
 const YUKG=()=>{ const s=YUK_SON(); return D.yuk.filter(r=>!r.donem||r.donem===s); };
 const YUKE=()=>{ const s=YUK_SON(); return D.yuk.filter(r=>r.donem&&r.donem!==s).sort((a,b)=>String(b.donem).localeCompare(String(a.donem))||a.id-b.id); };
 function yukEskiHTML(){ const E=YUKE(); if(!E.length) return "";
-  const tr=r=>`<tr><td>${esc(r.donem)}</td><td>${esc(r.proje||"")}</td><td>${esc(r.part||"")}</td><td>${esc(Object.entries(r.yuk||{}).map(([k,v])=>k+" "+fmtN(v,0)).join(" · "))}</td><td class="n">${fmtN(r.zorluk,0)}</td></tr>`;
-  return `<details class="dk-eski"${window._yukEskiAcik?" open":""} ontoggle="window._yukEskiAcik=this.open"><summary>Önceki aylar · ${E.length} kayıt (İcmal Proje Yükü'ne girmez, DK1 dağıtımında kullanılır)</summary><div class="cl-wrap"><table><thead><tr><th>Dönem</th><th>PGD</th><th>Part</th><th>Yük (%)</th><th class="n">Zorluk</th></tr></thead><tbody>${E.map(tr).join("")}</tbody></table></div></details>`; }
+  const tr=r=>`<tr><td>${esc(r.donem)}</td><td>${esc(r.proje||"")}</td><td>${esc(Object.entries(r.yuk||{}).map(([k,v])=>k+" "+fmtN(v,0)).join(" · "))}</td><td class="n">${fmtN(r.zorluk,0)}</td></tr>`;
+  return `<details class="dk-eski"${window._yukEskiAcik?" open":""} ontoggle="window._yukEskiAcik=this.open"><summary>Önceki aylar · ${E.length} kayıt (İcmal Proje Yükü'ne girmez, DK1 dağıtımında kullanılır)</summary><div class="cl-wrap"><table><thead><tr><th>Dönem</th><th>PGD</th><th>Yük (%)</th><th class="n">Zorluk</th></tr></thead><tbody>${E.map(tr).join("")}</tbody></table></div></details>`; }
 const projeYuku=p=>YUKG().reduce((s,r)=>s+zk(r)*num((r.yuk||{})[p.kisa]),0);
 const dkT=r=>num(r.dk1)+2*num(r.dk2)+3*num(r.dk3)+5*num(r.dk4);
 /* ETUT-DK-BIRIK (13.10.2026): DK1 satırları ERP çekimi başına birikir; yalnız son çekim (+ elle girilen) satırlar güncel ve hesaba girer, öncekiler blok altında kapalı */
@@ -227,11 +227,11 @@ const TABS=[
   not:`<b>Hata Puanı:</b><br>10 puanlık örnek hata: P522 numaralı pozda müşteri poz numarası hatalı girilmiştir. Kendi içimizde düzeltilmiştir.<br>
    100 puanlık örnek hata: HSP ölçüleri yanlıştır. Müşteri tarafından düzeltilmiştir.<br>Yapılan yeni hatalar yukarıdaki örneklerle mukayese edilerek puanlanır.`},
  {id:"etut",ad:"Hata Yakalama Puanları",req:"hata",fixed:{sayfa:"etut"},cols:()=>[...HATA_COLS,/* ETUT-HB-PUAN (13.10.2026): tek düzenlenebilir sütun etut_hata.hb_puani */{k:"hb_puani",h:"Hata/Başarı|Puanı",t:"n",w:6}]},
- {id:"yuk",ad:"Proje Yükü",req:"proje",alt:()=>yukEskiHTML(),cols:()=>[{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},
+ {id:"yuk",ad:"Proje Yükü",req:"proje",alt:()=>yukEskiHTML(),cols:()=>[/* ETUT-YUK-PARTSIZ (13.10.2026): Part sütunu yok */{k:"proje",h:"PGD",t:"t",w:24,sap:1},
    ...D.pers.filter(p=>p.kisa).map(p=>({k:"yuk."+p.kisa,h:p.kisa,t:"n",w:4,tt:p.ad})),{k:"zorluk",h:"Proje|Zorluğu",t:"n",w:5},
    ...D.pers.filter(p=>p.kisa).map(p=>({h:p.kisa,t:"c",d:0,z:1,tt:p.ad+" — zorluğa göre oranlanmış",f:r=>((r.yuk||{})[p.kisa]==null||(r.yuk||{})[p.kisa]==="")?null:zk(r)*num(r.yuk[p.kisa])}))],
-  grup:()=>{ const n=D.pers.filter(p=>p.kisa).length; return `<tr class="grp"><th colspan="2"></th><th colspan="${n}">Yük (%)</th><th></th><th colspan="${n}">Zorluğa göre oranlanmış proje yükü</th><th></th></tr>`; },
-  foot:()=>{ const K=D.pers.filter(p=>p.kisa); return `<tr class="tf"><td><b>Toplam</b></td><td></td>${K.map(p=>`<td class="n">${fmtN(YUKG().reduce((s,r)=>s+num((r.yuk||{})[p.kisa]),0),0)}</td>`).join("")}<td></td>${K.map(p=>`<td class="n"><b>${fmtN(projeYuku(p),0)}</b></td>`).join("")}<td></td></tr>`; },
+  grup:()=>{ const n=D.pers.filter(p=>p.kisa).length; return `<tr class="grp"><th></th><th colspan="${n}">Yük (%)</th><th></th><th colspan="${n}">Zorluğa göre oranlanmış proje yükü</th><th></th></tr>`; },
+  foot:()=>{ const K=D.pers.filter(p=>p.kisa); return `<tr class="tf"><td><b>Toplam</b></td>${K.map(p=>`<td class="n">${fmtN(YUKG().reduce((s,r)=>s+num((r.yuk||{})[p.kisa]),0),0)}</td>`).join("")}<td></td>${K.map(p=>`<td class="n"><b>${fmtN(projeYuku(p),0)}</b></td>`).join("")}<td></td></tr>`; },
   not:`Proje zorluğu 1 ve 5 arasında oranlanmıştır. Oranlanmış yük = (0,1 × zorluk + 1) × yük.`},
  {id:"dk",ad:"DK1",req:"proje",alt:()=>dkEskiHTML(),baslik:"",cols:()=>[/* ETUT-DK-TURSUZ: Tür sütunu kaldırıldı */{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},
    {k:"adet",h:"Adet",t:"n",w:4},{k:"dk1",h:"dk1",t:"n",w:4},{k:"dk2",h:"dk2",t:"n",w:4},{k:"dk3",h:"dk3",t:"n",w:4},{k:"dk4",h:"dk4",t:"n",w:4},
