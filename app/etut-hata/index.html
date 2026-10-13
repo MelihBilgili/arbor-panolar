@@ -132,8 +132,9 @@ function ARB_BOOT(){ (async function(){
     var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
     if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
   }
-  if(izin.indexOf(em)>=0 || em===ARB_MB){ ARB_EMAIL=em; (0,eval)(document.getElementById("arbmain").textContent); }
-  else { arbGateUI(); }
+  /* ETUT-HATA-KAPALI (13.10.2026): form kullanımdan kaldırıldı; yalnız MB açar */
+  if(em===ARB_MB){ ARB_EMAIL=em; (0,eval)(document.getElementById("arbmain").textContent); }
+  else { document.body.innerHTML='<div style="font:15px Segoe UI,system-ui,sans-serif;padding:40px;color:#16324f">Bu form kullanımdan kaldırılmıştır.</div>'; }
 })(); }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
 </script>
