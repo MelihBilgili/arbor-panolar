@@ -46,6 +46,7 @@
   td.saved{animation:ok 1.2s}
   @keyframes ok{from{background:#c8f0d4}to{background:#fffbe8}}
   td.bad input{border-color:#b40000;background:#ffecec}
+  /* SELARB-MUSTERI-VADE */ td.sa-eksik{background:#fde2ea!important} td.sa-mus input{width:20ch;font:inherit;border:1px solid #d6dee7;border-radius:4px;padding:1px 4px;background:#fff} td.sa-eksik input{background:#fff5f8} td.sa-x input[data-f=vade_gun]{width:5ch}
   /* SELARB-KONTRAT-260930 */
   td.sa-x input{width:10ch;text-align:right;font:inherit;border:1px solid #d6dee7;border-radius:4px;padding:1px 4px;background:#fff}
   td.sa-x input[type=date]{width:auto;text-align:left}
@@ -237,15 +238,17 @@ const delta=(cur,prev)=>{ if(cur==null||prev==null) return ""; const dl=Math.rou
 
 let ST={snap:[],oz:[],g:[],open:false,showEmpty:false};
 async function load(){
-  const [s,o,g,py,obt]=await Promise.all([
+  const [s,o,g,py,obt,mq]=await Promise.all([
     sb.from("sel_arb_snapshot").select("tarih,sira,firma,proje,alacak").order("tarih").order("sira"),
     sb.from("sel_arb_ozet").select("*").order("tarih"),
     sb.from("sel_arb_guncel").select("*").order("sira"),
     sb.from("pano_yayin").select("yayin_at").eq("anahtar","sel_arb_form").limit(1),
-    sb.from("sel_arb_ob_toplam").select("*")   /* SELARB-KONTRAT-260930 */
+    sb.from("sel_arb_ob_toplam").select("*"),   /* SELARB-KONTRAT-260930 */
+    sb.from("musteri_firma").select("firma")   /* SELARB-MUSTERI-VADE */
   ]);
   const e=s.error||o.error||g.error; if(e){ document.getElementById("tbl").innerHTML='<div class="msg err">Hata: '+esc(e.message)+'</div>'; return; }
   ST.snap=s.data||[]; ST.oz=o.data||[]; ST.g=g.data||[];
+  ST.mus=[...new Set(((mq&&!mq.error&&mq.data)||[]).map(x=>String(x.firma||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));   /* SELARB-MUSTERI-VADE */
   ST.ob={}; ST.obS={}; ((obt&&!obt.error&&obt.data)||[]).forEach(x=>{ ST.ob[x.proje_key]=x; ST.obS[x.sira]=x; });   /* SELARB-DEVIR-261001: satır (sira) bazlı */   /* SELARB-KONTRAT-260930 */
   const pa=(py&&!py.error&&py.data&&py.data[0])?py.data[0].yayin_at:null;
   document.getElementById("stamp").textContent="Son güncelleme: "+(pa?new Date(pa).toLocaleDateString("tr-TR",{day:"2-digit",month:"2-digit",year:"2-digit"}):"—");
@@ -255,7 +258,7 @@ async function load(){
    in = serbest (sel_arb_guncel kolonları), ro = ÖB Faaliyet formundan proje bazlı toplam (view sel_arb_ob_toplam:
    Avenant = ob_avenant, Tahsilat = ob_tahsilat, Yapılmış Situ = ob_situation 'İptal Edildi' hariç; eşleme proje adı, büyük/küçük harf duyarsız) */
 /* SELARB-BASLIK-261001 (Melih): (€) başlıklar; Beklenen İlk Ödeme başlıkları iki satır (\n → <br>), küçük punto, dar sütun */
-const KX=[["kontrat","Kontrat","in"],["avenant","Avenants (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
+const KX=[["kontrat","Kontrat","in"],["vade_gun","Vade (gün)","gn"],["avenant","TS (Avenants) (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
   ["tahsilat","Tahsilat (€)","ro"],["situ","Yapılmış Situ (€)","ro"],["yapilacak_situ","Yapılacak Situ (€)","in"],
   ["ilk_odeme_tarih","Beklenen İlk\nÖdeme Tarihi","dt"],["ilk_odeme_tutar","Beklenen İlk\nÖdeme Tutarı (€)","in"]];
 const kKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
@@ -265,7 +268,9 @@ const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" class="sa-num ${t==="ro"?"sa
 const kCells=r=>{ const ob=kOb(r); return KX.map(([f,ad,t])=>{
   if(t==="ro") return `<td class="sa-num sa-ro">${esc(fmt(ob[f]))}</td>`;
   if(t==="dt") return `<td class="sa-x"><input type="date" data-id="${r.id}" data-f="${f}" value="${esc(r[f]||"")}"></td>`;
-  return `<td class="sa-num sa-x"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" data-f="${f}" value="${esc(fmt(r[f]))}"></td>`; }).join(""); };
+  const eks=(f==="kontrat"||f==="vade_gun")&&(r[f]==null||r[f]==="")?" sa-eksik":"";   /* SELARB-MUSTERI-VADE: ilk 4 sütun eksik → pembe */
+  if(t==="gn") return `<td class="sa-num sa-x${eks}"><input size="1" type="text" inputmode="numeric" data-gn="1" data-id="${r.id}" data-f="${f}" value="${esc(r[f]==null?"":String(r[f]))}"></td>`;
+  return `<td class="sa-num sa-x${eks}"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" data-f="${f}" value="${esc(fmt(r[f]))}"></td>`; }).join(""); };
 const kDolu=r=>KX.some(([f,ad,t])=>t!=="ro"&&r[f]!=null&&r[f]!=="");
 function render(){
   /* SELARB-FORM-DOLU-SON (23.09.2026, Melih): alacak değeri olmayan (yalnız özet) tarih sütunu gösterilmez
@@ -287,7 +292,7 @@ function render(){
     const hide=bos&&!ST.showEmpty;
     return `<tr data-id="${r.id}" data-sira="${esc(r.sira)}" data-proje="${esc(r.raw.proje||"")}"${hide?' style="display:none"':''}>`
       +`<td class="sa-proje"><span class="c" title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
-      +`<td class="sa-firma"><span class="c" title="${esc(r.firma)}">${esc(r.firma)}</span></td>`
+      +`<td class="sa-mus${r.raw.firma?"":" sa-eksik"}"><input list="saMusL" class="sa-musin" data-id="${r.id}" value="${esc(r.raw.firma||"")}" title="${esc(r.raw.firma||"Müşteriler formundan seçiniz")}" placeholder="Müşteri seçiniz"></td>`   /* SELARB-MUSTERI-VADE */
       +kCells(r.raw)   /* SELARB-KONTRAT-260930 */
       +`<td class="sa-num sa-delta">${esc(delta(r.g,lv))}</td>`
       +`<td class="sa-num sa-g"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" value="${esc(fmt(r.g))}"></td>`
@@ -318,12 +323,13 @@ function render(){
   /* SELARB-FORM-ALTSIZ (23.09.2026, Melih): alt toplam satırları (Güncel Alacak Toplam … Faaliyet Kaybı) formda gösterilmez; yalnız SEL-ARB panosunda */
   void ft;
   const tgTxt=ST.open?"◂":"▸";
-  const head=`<thead><tr><th rowspan="2">Proje</th><th rowspan="2">Firma</th>${kHead()}<th rowspan="2" class="sa-num sa-dh">Δ güncel→son €</th>`
+  const head=`<thead><tr><th rowspan="2">Proje</th><th rowspan="2">Müşteri</th>${kHead()}<th rowspan="2" class="sa-num sa-dh">Δ güncel→son €</th>`
     +`<th rowspan="2" class="sa-num sa-g">Güncel Alacak (€)</th>`
     +`<th class="sa-tg" id="saTg" colspan="${ST.open?Math.max(nd,1):1}" title="Diğer ayları aç/kapat">Önceki Alacak (€) ${tgTxt}</th></tr>`
     +`<tr>${dates.map((d,i)=>`<th class="sa-num${oc(i)}">${esc(dLbl(d))}</th>`).join("")}</tr></thead>`;
   const btn=hidden?`<div class="hint"><button class="btn2" id="saEmpty">${ST.showEmpty?"Boş-alacak satırları gizle":"Boş-alacak satırları göster"} (${hidden})</button></div>`:"";
-  document.getElementById("tbl").innerHTML=btn+`<div class="sa-wrap"><table class="${ST.open?"open":""}">${head}<tbody>${nw}${tr}</tbody></table></div>`;
+  const musDl=`<datalist id="saMusL">${(ST.mus||[]).map(m=>`<option value="${esc(m)}"></option>`).join("")}</datalist>`;   /* SELARB-MUSTERI-VADE */
+  document.getElementById("tbl").innerHTML=btn+musDl+`<div class="sa-wrap"><table class="${ST.open?"open":""}">${head}<tbody>${nw}${tr}</tbody></table></div>`;
   bind();
 }
 function bind(){
@@ -348,14 +354,33 @@ function bind(){
     inp.onchange=async()=>{
       const td=inp.parentElement, id=+inp.dataset.id, f=inp.dataset.f; let v;
       if(inp.type==="date") v=inp.value||null;
+      else if(inp.dataset.gn){ const s0=inp.value.trim(); if(s0!==""&&!/^\d+$/.test(s0)){ td.classList.add("bad"); msg("Vade (gün) yalnız rakam: "+inp.value,"err"); return; } v=s0===""?null:parseInt(s0,10); }   /* SELARB-MUSTERI-VADE */
       else { v=parseTr(inp.value); if(Number.isNaN(v)){ td.classList.add("bad"); msg("Geçersiz tutar: "+inp.value,"err"); return; } }
       td.classList.remove("bad");
       const body={updated_at:new Date().toISOString()}; body[f]=v;
       const {error}=await sb.from("sel_arb_guncel").update(body).eq("id",id);
       if(error){ msg("Kaydedilemedi: "+error.message,"err"); return; }
       const r=ST.g.find(x=>x.id===id); if(r) r[f]=v;
-      if(inp.type!=="date") inp.value=fmt(v);
+      if(inp.dataset.gn) inp.value=v==null?"":String(v); else if(inp.type!=="date") inp.value=fmt(v);
+      if(f==="kontrat"||f==="vade_gun") td.classList.toggle("sa-eksik",v==null);
       td.classList.remove("saved"); void td.offsetWidth; td.classList.add("saved"); msg("Kaydedildi","ok");
+    };
+    inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } };
+    if(inp.dataset.gn) inp.oninput=()=>{ const c=inp.value.replace(/\D+/g,""); if(c!==inp.value) inp.value=c; };   /* SELARB-MUSTERI-VADE: yalnız rakam */
+  });
+  /* SELARB-MUSTERI-VADE (13.10.2026, Melih): Müşteri = Müşteriler formundan (musteri_firma) seçim; listede olmayan kaydedilmez */
+  document.querySelectorAll("input.sa-musin").forEach(inp=>{
+    const id=+inp.dataset.id, r0=ST.g.find(x=>x.id===id)||{};
+    inp.onchange=async()=>{
+      const td=inp.parentElement, raw=inp.value.trim();
+      let v=null;
+      if(raw!==""){ v=(ST.mus||[]).find(m=>m.toLocaleLowerCase("tr")===raw.toLocaleLowerCase("tr"));
+        if(!v){ td.classList.add("bad"); msg("Müşteriler formundaki listeden seçiniz: "+raw,"err"); inp.value=r0.firma||""; return; } }
+      td.classList.remove("bad");
+      const {error}=await sb.from("sel_arb_guncel").update({firma:v,updated_at:new Date().toISOString()}).eq("id",id);
+      if(error){ msg("Kaydedilemedi: "+error.message,"err"); inp.value=r0.firma||""; return; }
+      r0.firma=v; inp.value=v||""; inp.title=v||"Müşteriler formundan seçiniz";
+      td.classList.toggle("sa-eksik",!v); td.classList.remove("saved"); void td.offsetWidth; td.classList.add("saved"); msg("Kaydedildi","ok");
     };
     inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } };
   });
