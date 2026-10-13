@@ -174,12 +174,16 @@ const ilk=p=>String(p.ad||"").trim().split(/\s+/)[0].toLocaleLowerCase("tr");
 const icerir=(txt,p)=>{ const f=ilk(p); if(!f) return false; const t=" "+String(txt||"").toLocaleLowerCase("tr")+" ";
   return new RegExp("[^\\p{L}]"+f.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"[^\\p{L}]","u").test(t); };
 /* ETUT-HATA-YAKALAMA: Hata Puanı yalnız sayfa=hatalar (Yakalama satırları oraya aynalanır) */
-const hataPuani=p=>D.hata.filter(r=>r.sayfa!=="etut"&&icerir(r.yapan,p)).reduce((s,r)=>s+num(r.hata_puani),0);
-const yakalamaPuani=p=>D.hata.filter(r=>icerir(r.yakalayan,p)).reduce((s,r)=>s+num(r.basari_puani),0);
+/* ETUT-ICMAL-HB (13.10.2026): puanlar Hata Yakalama Puanları bloğundaki Hata/Başarı Puanı'ndan (Etüt + Proje Hata Yakalama satırları) */
+const HBR=r=>r.sayfa==="etut"||r.sayfa==="proje";
+const hataPuani=p=>D.hata.filter(r=>HBR(r)&&icerir(r.yapan,p)).reduce((s,r)=>s+num(r.hb_puani),0);
+const yakalamaPuani=p=>D.hata.filter(r=>HBR(r)&&icerir(r.yakalayan,p)).reduce((s,r)=>s+num(r.hb_puani),0);
 const zk=r=>0.1*num(r.zorluk)+1;
 const projeYuku=p=>D.yuk.reduce((s,r)=>s+zk(r)*num((r.yuk||{})[p.kisa]),0);
 const dkT=r=>num(r.dk1)+2*num(r.dk2)+3*num(r.dk3)+5*num(r.dk4);
 const dkToplam=()=>D.dk.reduce((s,r)=>s+dkT(r),0);
+/* ETUT-DK-KISI (13.10.2026): satırın dk toplamı Kişi 1 / Kişi 2'ye eşit paylaştırılır; kişisiz satır kimseye yazılmaz */
+const dkKisi=p=>D.dk.reduce((s,r)=>{ const K=[...new Set([r.kisi1,r.kisi2].map(x=>String(x||"").trim()).filter(Boolean))]; return s+(p.kisa&&K.indexOf(p.kisa)>=0?dkT(r)/K.length:0); },0);
 const odul=r=>num(r.pgd_tutari)*(num(r.rapidite)+num(r.pertinence))/2000;
 const nul=v=>v==null||v==="";
 function icmal(p){
@@ -190,7 +194,7 @@ function icmal(p){
   const E=nul(p.inisiyatif)?null:1-(1+Math.min(num(kid(p)),4)*P.c_inisiyatif)*(100-num(p.inisiyatif))/100;
   const F0=E==null?null:B*P.c_prim*E*C*Dk;
   /* ETUT-ICMAL2: Hesaplanan Prim = (eski Prim+DK1) + Memnuniyet Primi */
-  return {B,C,D:Dk,E,F:F0==null?null:F0+dkToplam()+num(p.memnuniyet_eur),h,y:yakalamaPuani(p)};
+  return {B,C,D:Dk,E,F:F0==null?null:F0+dkKisi(p)+num(p.memnuniyet_eur),h,y:yakalamaPuani(p)};
 }
 const MEMK=()=>["TH",...D.pers.map(p=>p.kisa).filter(Boolean)];
 
@@ -214,7 +218,7 @@ const TABS=[
    {k:"adet",h:"Adet",t:"n",w:4},{k:"dk1",h:"dk1",t:"n",w:4},{k:"dk2",h:"dk2",t:"n",w:4},{k:"dk3",h:"dk3",t:"n",w:4},{k:"dk4",h:"dk4",t:"n",w:4},
    {h:"dk toplam",t:"c",f:dkT,d:0},{k:"tarih",h:"Tarih",t:"d",w:8}],
   foot:()=>`<tr class="tf"><td colspan="9"><b>Toplam</b></td><td class="n"><b>${fmtN(dkToplam(),0)}</b></td><td></td><td></td></tr>`,
-  not:"dk toplam = dk1 × 1 + dk2 × 2 + dk3 × 3 + dk4 × 5. Toplam, İcmal'de DK1 sütunudur ve Hesaplanan Prim'e eklenir."},
+  not:"dk toplam = dk1 × 1 + dk2 × 2 + dk3 × 3 + dk4 × 5. Satırlar her ERP çekiminde DK1.xlsx'ten otomatik gelir (Kişi 1 / Kişi 2 elle seçilir). Her satırın dk toplamı Kişi 1 / Kişi 2'ye eşit paylaştırılır; kişi payı İcmal'de DK1 sütunudur ve Hesaplanan Prim'e eklenir. Kişisi boş satır kimseye yazılmaz."},
  {id:"mem",ad:"Memnuniyet",req:"proje",cols:()=>[{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},{k:"cevap_tarihi",h:"Cevap|Tarihi",t:"d",w:8},{k:"pgd_tutari",h:"ERP'deki PGD|Tutarı (€)",t:"n",w:9,d:0},
    {k:"rapidite",h:"Rapidité",t:"n",w:4},{k:"pertinence",h:"Pertin.&Qual.|Réponses",t:"n",w:5},{k:"oneriler",h:"Suggestions / Recommandations",t:"m",w:32},
    {h:"Hesaplanan|Ödül (€)",t:"c",f:odul,d:0},
@@ -226,7 +230,7 @@ const TABS=[
    {k:"ad",h:"İsim Soyisim",t:"t",w:17,kp:"tek"},{k:"kisa",h:"Kısa",t:"t",w:4,kp:"kod"},{h:"Kıdem|(yıl)",t:"c",f:r=>kid(r),d:1,tt:"Personel panosundan (işe giriş tarihi)"},{k:"inisiyatif",h:"İnisiyatif|Puanı",t:"n",w:5},
    {h:"Toplam|Hata Puanı",t:"c",f:r=>icmal(r).h,d:0},{h:"Toplam Hata|Yakalama Puanı",t:"c",f:r=>icmal(r).y,d:0},
    {h:"Proje|Yükü",t:"c",f:r=>icmal(r).B,d:0},{h:"Hatasızlık|Katsayısı",t:"c",f:r=>icmal(r).C,d:3},{h:"Hata Yakalama|Katsayısı",t:"c",f:r=>icmal(r).D,d:3},
-   {h:"İnisiyatif|Katsayısı",t:"c",f:r=>icmal(r).E,d:3},{h:"DK1",t:"c",f:()=>dkToplam(),d:0},{k:"memnuniyet_eur",h:"Memnuniyet|Primi (€)",t:"n",w:7,d:0},
+   {h:"İnisiyatif|Katsayısı",t:"c",f:r=>icmal(r).E,d:3},{h:"DK1",t:"c",f:r=>dkKisi(r),d:0},{k:"memnuniyet_eur",h:"Memnuniyet|Primi (€)",t:"n",w:7,d:0},
    {h:"Hesaplanan|Prim (TL)",t:"c",f:r=>icmal(r).F,d:0},{k:"th_oneri",h:"TH Öneri|(TL)",t:"n",w:7,d:0,tt:"Personel panosunda son ayın Yol-Yemek Dahil Prim (TL) sütununa yazılır"}],
   foot:()=>{ const S=k=>fmtN(D.pers.reduce((s,r)=>s+num(r[k]),0),0), SF=k=>fmtN(D.pers.reduce((s,r)=>s+num(icmal(r)[k]),0),0), pi=k=>`<input class="prm" data-param="${k}" value="${esc(fmtN(P[k]))}" style="width:6ch">`;
     return `<tr class="tf"><td colspan="2"><b>Çarpan / Toplam</b></td><td></td><td></td><td></td><td></td><td></td><td class="n">${pi("c_hatasizlik")}</td><td class="n">${pi("c_yakalama")}</td><td class="n">${pi("c_inisiyatif")}</td><td class="n" title="Proje Yükü çarpanı">${pi("c_prim")}</td><td class="n">${S("memnuniyet_eur")}</td><td class="n">${SF("F")}</td><td class="n">${S("th_oneri")}</td><td></td></tr>`; },
@@ -236,7 +240,7 @@ const TABS=[
    <b>İnisiyatif Katsayısı:</b> Hatalar sayfasında ilgili kişiye ait İnisiyatif Puanı ve kişinin kıdemi dikkate alınarak belirlenir.<br>
    <b>İnisiyatif Puanı:</b> Şefine sormaya ihtiyaç duymadan, doğru şekilde inisiyatif kullanan, müşteriye sormak yerine müşteriyi yönlendirebilen kişiye, 0-100 arasında puan yazılır.<br>
    <b>Memnuniyet Prim Yüzdeleri:</b> TH: 100 / projede emeği geçen kişi sayısı şeklinde hesaplanır. Personel: TH'dan kalan yüzde emeği geçen personele emekleri oranında dağıtılır. Örn. bir projede TH, BT ve MN çalışmışsa TH %33'tür; kalan %67 BT ile MN arasında TH tarafından emek payına göre dağıtılır.<br>
-   <span class="hint">Kıdem = Personel panosu (işe giriş tarihinden). Toplam Hata Puanı = Etüt-Proje Hataları formunda (Etüt Hata Yakalama satırları dahil) Hatayı Yapan'da adı geçen satırların Hata Puanı · Toplam Hata Yakalama Puanı = Hatayı Yakalayan'da adı geçen satırların Başarı Puanı (ilk ad ile eşleşir) · Hesaplanan Prim = Proje Yükü × çarpan × katsayılar + DK1 + Memnuniyet Primi · TH Öneri, Personel panosunda son ayın Yol-Yemek Dahil Prim (TL) değeri olur.</span>`}
+   <span class="hint">Kıdem = Personel panosu (işe giriş tarihinden). Toplam Hata Puanı = Hata Yakalama Puanları bloğunda (Etüt + Proje Hata Yakalama satırları) Hatayı Yapan'da adı geçen satırların Hata/Başarı Puanı · Toplam Hata Yakalama Puanı = aynı blokta Hatayı Yakalayan'da adı geçen satırların Hata/Başarı Puanı (ilk ad ile eşleşir) · DK1 = kişinin DK1 bloğundaki payı · Hesaplanan Prim = Proje Yükü × çarpan × katsayılar + DK1 + Memnuniyet Primi · TH Öneri, Personel panosunda son ayın Yol-Yemek Dahil Prim (TL) değeri olur.</span>`}
 ];
 /* ETUT-PROJE-HATALAR (29.09.2026): Hata Puanları bloğu Etüt-Proje Hataları formuna taşındı; etut_hata (sayfa=hatalar) İcmal hesabında kullanılmaya devam eder */
 TABS.splice(TABS.findIndex(t=>t.id==="hatalar"),1);
