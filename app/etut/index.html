@@ -208,7 +208,7 @@ const MEMK=()=>["TH",...D.pers.map(p=>p.kisa).filter(Boolean)];
 
 /* ===== sekme tanımları: k anahtar ("a.b" = jsonb alanı) · h başlık ("|" satır sonu) · t tür (t metin · m uzun · n sayı · d tarih · c hesap) · w ch ===== */
 const HATA_COLS=[{k:"pgd",h:"PGD",t:"t",w:20,sap:1},{k:"part",h:"Part",t:"t",w:12},{k:"tarih",h:"Tarih",t:"d",w:8},
-  {k:"yapan",h:"Hatayı Yapan|İsim Soyisim",t:"t",w:22,kp:"1"},{k:"yakalayan",h:"Hatayı Yakalayan|İsim Soyisim",t:"t",w:18,kp:"1"},{k:"hata",h:"Hata",t:"m",w:46}];
+  {k:"yapan",h:"Hatayı Yapan|İsim Soyisim",t:"t",w:22,kp:"1"},{k:"yakalayan",h:"Hatayı Yakalayan|İsim Soyisim",t:"t",w:18,kp:"1"},{k:"hata",h:"Hata",t:"t",w:69,tek:1 /* ETUT-HATA-TEKSATIR (13.10.2026): 46→69ch, tek satır, tam metin hover'da */}];
 const TABS=[
  {id:"hatalar",ad:"Hata Puanları",req:"hata",fixed:{sayfa:"hatalar"},cols:()=>[...HATA_COLS,{k:"hata_puani",h:"Hata|Puanı",t:"n",w:5},
    {k:"aksetti",h:"Müşteriye ya da Üretime|Aksetti mi?",t:"t",w:12},{k:"notlar",h:"Notlar",t:"m",w:36}],
@@ -258,7 +258,7 @@ const grow=t=>{ t.style.height="auto"; t.style.height=(t.scrollHeight+2)+"px"; }
 function cell(c,r){
   if(c.t==="c"){ const v=r?c.f(r):null; return `<td class="n c${c.z?" z":""}">${r?fmtN(v,c.d):""}</td>`; }
   const v=r?gv(r,c.k):null, shown=c.t==="n"?fmtN(v,c.d):c.t==="d"?fmtD(v):(v==null?"":v);
-  const a=`data-k="${c.k}"${r?` data-id="${r.id}"`:' data-new="1"'}${c.sap?' data-sap="1" data-sap-kaynak="yd" readonly':''}${c.kp?` data-kp="${c.kp}" autocomplete="off"`:""} style="width:${c.w+1}ch"`; /* PSEL-260930 sap · ETUT-PGD-YD (09.10.2026): PGD seçicisi Sel-Arb + YD1/YD2 (+ pgd_ek_proje) */
+  const a=`data-k="${c.k}"${r?` data-id="${r.id}"`:' data-new="1"'}${c.tek&&shown?` title="${esc(shown)}"`:""}${c.sap?' data-sap="1" data-sap-kaynak="yd" readonly':''}${c.kp?` data-kp="${c.kp}" autocomplete="off"`:""} style="width:${c.w+1}ch"`; /* PSEL-260930 sap · ETUT-PGD-YD (09.10.2026): PGD seçicisi Sel-Arb + YD1/YD2 (+ pgd_ek_proje) */
   if(c.t==="m") return `<td class="m"><textarea ${a} rows="1">${esc(shown)}</textarea></td>`;
   return `<td class="${c.t==="n"||c.t==="d"?"n":""}"><input ${a} type="text"${c.t==="n"?' inputmode="decimal"':''}${c.t==="d"?' placeholder="gg/aa/yy"':''} value="${esc(shown)}"></td>`;
 }
