@@ -195,6 +195,7 @@ function icmal(p){
 const MEMK=()=>["TH",...D.pers.map(p=>p.kisa).filter(Boolean)];
 
 /* ===== sekme tanımları: k anahtar ("a.b" = jsonb alanı) · h başlık ("|" satır sonu) · t tür (t metin · m uzun · n sayı · d tarih · c hesap) · w ch ===== */
+const AKS_OPTS=["Hiçbirine aksetmedi","Müşteriye aksetti","Üretime aksetti","Diğer (lütfen açıklayınız)"]; /* AKSETTI-SECIM */
 const HATA_COLS=[{k:"pgd",h:"PGD",t:"t",w:20,sap:1,sapk:"yd"},{k:"part",h:"Part",t:"t",w:12},{k:"tarih",h:"Tarih",t:"d",w:8},
   {k:"yapan",h:"Hatayı Yapan|İsim Soyisim",t:"t",w:22},{k:"yakalayan",h:"Hatayı Yakalayan|İsim Soyisim",t:"t",w:18},{k:"hata",h:"Hata",t:"m",w:46}];
 const TABS=[
@@ -203,7 +204,7 @@ const TABS=[
   baslik:"Etüt ve Proje birimlerinin ilgili dönem zarfında yaptığı tüm hatalar aşağıdaki tabloya kaydedilir.",
   not:`<b>Hata Puanı:</b><br>10 puanlık örnek hata: P522 numaralı pozda müşteri poz numarası hatalı girilmiştir. Kendi içimizde düzeltilmiştir.<br>
    100 puanlık örnek hata: HSP ölçüleri yanlıştır. Müşteri tarafından düzeltilmiştir.<br>Yapılan yeni hatalar yukarıdaki örneklerle mukayese edilerek puanlanır.`},
- {id:"etut",ad:"Hata Yakalama",req:"hata",fixed:{sayfa:"etut"},cols:()=>[/* ETUT-YAKALAMA-PUANSIZ (06.10.2026): Hata/Başarı Puanı Etüt-Proje Hataları'nda girilir */...HATA_COLS,/* ETUT-YAKALAMA-AKSETTI (13.10.2026) */{k:"aksetti",h:"Müşteriye ya da Üretime|Aksetti mi?",t:"t",w:12}]},
+ {id:"etut",ad:"Hata Yakalama",req:"hata",fixed:{sayfa:"etut"},cols:()=>[/* ETUT-YAKALAMA-PUANSIZ (06.10.2026): Hata/Başarı Puanı Etüt-Proje Hataları'nda girilir */...HATA_COLS,/* ETUT-YAKALAMA-AKSETTI (13.10.2026) */{k:"aksetti",h:"Müşteriye ya da Üretime|Aksetti mi?",t:"s",w:18,o:AKS_OPTS}]},
  {id:"yuk",ad:"Proje Yükü",req:"proje",cols:()=>[{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},
    ...D.pers.filter(p=>p.kisa).map(p=>({k:"yuk."+p.kisa,h:p.kisa,t:"n",w:4,tt:p.ad})),{k:"zorluk",h:"Proje|Zorluğu",t:"n",w:5},
    ...D.pers.filter(p=>p.kisa).map(p=>({h:p.kisa,t:"c",d:0,z:1,tt:p.ad+" — zorluğa göre oranlanmış",f:r=>((r.yuk||{})[p.kisa]==null||(r.yuk||{})[p.kisa]==="")?null:zk(r)*num(r.yuk[p.kisa])}))],
@@ -249,6 +250,11 @@ function cell(c,r){
   const v=r?gv(r,c.k):null, shown=c.t==="n"?fmtN(v,c.d):c.t==="d"?fmtD(v):(v==null?"":v);
   const a=`data-k="${c.k}"${r?` data-id="${r.id}"`:' data-new="1"'}${c.sap?' data-sap="1" readonly':''}${c.sapk?` data-sap-kaynak="${c.sapk}"`:''} style="width:${c.w+1}ch"`; /* PSEL-260930 sap · PGD-YD-261001 sapk */
   if(c.t==="m") return `<td class="m"><textarea ${a} rows="1">${esc(shown)}</textarea></td>`;
+  if(c.t==="s"){ /* AKSETTI-SECIM (13.10.2026): seçim listesi; "Diğer" seçilince açıklama sorulur, "Diğer: <açıklama>" kaydedilir */
+    const cur=v==null?"":String(v), dg=/^Diğer/.test(cur);
+    let op='<option value=""></option>'+c.o.map(x=>/^Diğer/.test(x)&&dg?`<option value="${esc(cur)}" selected>${esc(cur)}</option>`:`<option value="${esc(x)}"${x===cur?" selected":""}>${esc(x)}</option>`).join("");
+    if(cur&&!dg&&c.o.indexOf(cur)<0) op+=`<option value="${esc(cur)}" selected>${esc(cur)}</option>`;
+    return `<td><select ${a} title="${esc(cur)}">${op}</select></td>`; }
   return `<td class="${c.t==="n"||c.t==="d"?"n":""}"><input ${a} type="text"${c.t==="n"?' inputmode="decimal"':''}${c.t==="d"?' placeholder="gg/aa/yy"':''} value="${esc(shown)}"></td>`;
 }
 /* ETUT-TEK-SAYFA: sekme yok; bloklar alt alta (Hata Puanları · Hata Yakalama Puanları · Proje Yükü · DK1 · Memnuniyet · İcmal) */
@@ -309,7 +315,9 @@ async function kaydet(inp){
   render();
 }
 const W=document.getElementById("tbl");
-W.addEventListener("change",e=>{ if(e.target.matches("[data-k],[data-param]")) kaydet(e.target); });
+W.addEventListener("change",e=>{ const t=e.target; /* AKSETTI-SECIM */
+  if(t.tagName==="SELECT"&&t.value==="Diğer (lütfen açıklayınız)"){ const ac=prompt("Lütfen açıklayınız:"); if(!ac||!ac.trim()){ if(t.dataset.new) t.value=""; else render(); return; } t.options[t.selectedIndex].value="Diğer: "+ac.trim(); }
+  if(t.matches("[data-k],[data-param]")) kaydet(t); });
 W.addEventListener("input",e=>{ if(e.target.tagName==="TEXTAREA") grow(e.target); });
 W.addEventListener("keydown",e=>{ if(e.key==="Enter"&&!e.shiftKey&&e.target.matches("[data-k],[data-param]")){ e.preventDefault(); e.target.blur(); } });
 W.addEventListener("click",async e=>{ const d=e.target.closest("[data-del]"); if(!d) return;
