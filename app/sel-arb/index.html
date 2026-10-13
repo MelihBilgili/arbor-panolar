@@ -46,7 +46,7 @@
   td.saved{animation:ok 1.2s}
   @keyframes ok{from{background:#c8f0d4}to{background:#fffbe8}}
   td.bad input{border-color:#b40000;background:#ffecec}
-  /* SELARB-MUSTERI-VADE */ td.sa-eksik{background:#fde2ea!important} td.sa-mus input{width:20ch;font:inherit;border:1px solid #d6dee7;border-radius:4px;padding:1px 4px;background:#fff} td.sa-eksik input{background:#fff5f8} td.sa-x input[data-f=vade_gun]{width:5ch}
+  /* SELARB-MUSTERI-VADE */ td.sa-eksik{background:#fde2ea!important} td.sa-mus input{width:20ch;font:inherit;border:1px solid #d6dee7;border-radius:4px;padding:1px 4px;background:#fff} td.sa-eksik input{background:#fff5f8} td.sa-x input[data-f=vade_gun]{width:5ch} /* SELARB-PARA-BIRIMI */ td.sa-x select.sa-pb{font:inherit;font-size:11px;border:1px solid #d6dee7;border-radius:4px;padding:0 2px;background:#fff}
   /* SELARB-KONTRAT-260930 */
   td.sa-x input{width:10ch;text-align:right;font:inherit;border:1px solid #d6dee7;border-radius:4px;padding:1px 4px;background:#fff}
   td.sa-x input[type=date]{width:auto;text-align:left}
@@ -258,7 +258,7 @@ async function load(){
    in = serbest (sel_arb_guncel kolonları), ro = ÖB Faaliyet formundan proje bazlı toplam (view sel_arb_ob_toplam:
    Avenant = ob_avenant, Tahsilat = ob_tahsilat, Yapılmış Situ = ob_situation 'İptal Edildi' hariç; eşleme proje adı, büyük/küçük harf duyarsız) */
 /* SELARB-BASLIK-261001 (Melih): (€) başlıklar; Beklenen İlk Ödeme başlıkları iki satır (\n → <br>), küçük punto, dar sütun */
-const KX=[["kontrat","Kontrat","in"],["vade_gun","Vade (gün)","gn"],["avenant","TS (Avenants) (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
+const KX=[["kontrat","Kontrat","in"],["para_birimi","Para Birimi","pb"],["vade_gun","Vade (gün)","gn"],["avenant","TS (Avenants) (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
   ["tahsilat","Tahsilat (€)","ro"],["situ","Yapılmış Situ (€)","ro"],["yapilacak_situ","Yapılacak Situ (€)","in"],
   ["ilk_odeme_tarih","Beklenen İlk\nÖdeme Tarihi","dt"],["ilk_odeme_tutar","Beklenen İlk\nÖdeme Tutarı (€)","in"]];
 const kKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
@@ -269,6 +269,7 @@ const kCells=r=>{ const ob=kOb(r); return KX.map(([f,ad,t])=>{
   if(t==="ro") return `<td class="sa-num sa-ro">${esc(fmt(ob[f]))}</td>`;
   if(t==="dt") return `<td class="sa-x"><input type="date" data-id="${r.id}" data-f="${f}" value="${esc(r[f]||"")}"></td>`;
   const eks=(f==="kontrat"||f==="vade_gun")&&(r[f]==null||r[f]==="")?" sa-eksik":"";   /* SELARB-MUSTERI-VADE: ilk 4 sütun eksik → pembe */
+  if(t==="pb") return `<td class="sa-x"><select class="sa-pb" data-id="${r.id}" data-f="${f}">${["","EUR","GBP","USD"].map(o=>`<option value="${o}"${(r[f]||"")===o?" selected":""}>${o||"—"}</option>`).join("")}</select></td>`;   /* SELARB-PARA-BIRIMI */
   if(t==="gn") return `<td class="sa-num sa-x${eks}"><input size="1" type="text" inputmode="numeric" data-gn="1" data-id="${r.id}" data-f="${f}" value="${esc(r[f]==null?"":String(r[f]))}"></td>`;
   return `<td class="sa-num sa-x${eks}"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" data-f="${f}" value="${esc(fmt(r[f]))}"></td>`; }).join(""); };
 const kDolu=r=>KX.some(([f,ad,t])=>t!=="ro"&&r[f]!=null&&r[f]!=="");
@@ -369,6 +370,15 @@ function bind(){
     if(inp.dataset.gn) inp.oninput=()=>{ const c=inp.value.replace(/\D+/g,""); if(c!==inp.value) inp.value=c; };   /* SELARB-MUSTERI-VADE: yalnız rakam */
   });
   /* SELARB-MUSTERI-VADE (13.10.2026, Melih): Müşteri = Müşteriler formundan (musteri_firma) seçim; listede olmayan kaydedilmez */
+  /* SELARB-PARA-BIRIMI (13.10.2026, Melih): Kontrat sağında para birimi seçimi */
+  document.querySelectorAll("select.sa-pb").forEach(sl=>{
+    sl.onchange=async()=>{
+      const td=sl.parentElement, id=+sl.dataset.id, v=sl.value||null, r0=ST.g.find(x=>x.id===id)||{};
+      const {error}=await sb.from("sel_arb_guncel").update({para_birimi:v,updated_at:new Date().toISOString()}).eq("id",id);
+      if(error){ msg("Kaydedilemedi: "+error.message,"err"); sl.value=r0.para_birimi||""; return; }
+      r0.para_birimi=v; td.classList.remove("saved"); void td.offsetWidth; td.classList.add("saved"); msg("Kaydedildi","ok");
+    };
+  });
   document.querySelectorAll("input.sa-musin").forEach(inp=>{
     const id=+inp.dataset.id, r0=ST.g.find(x=>x.id===id)||{};
     inp.onchange=async()=>{
