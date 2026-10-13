@@ -1494,7 +1494,8 @@ async function loadRef(){
       return `<td class="ped${c.cls?" "+c.cls:""}" data-k="__${c.f}" ${dk}>${dash}</td>`; }
     if(c.t==="kidem") return `<td class="num">${m?txt(kidemOf(m)):dash}</td>`;
     if(c.t==="avg") return `<td class="num pavg">${m?fmtN(avgOf(m.id)):dash}</td>`;
-    if(c.t==="frm"){ const L=R.kod?KF[R.kod]:null; return `<td class="pfrm">${(L&&L.length)?L.map(f=>'<span class="frm'+(f.ok?" ok":" yok")+'" title="'+esc(f.title)+'">'+esc(f.ad)+'</span>').join(" · "):dash}</td>`; }
+    if(c.t==="frm"){ const L=R.kod?KF[R.kod]:null; /* PRS-FRM-TEK (13.10.2026): tek satır, hover'da tüm formlar + ayrıntı */
+      return (L&&L.length)?`<td class="pfrm" title="${esc(L.map(f=>f.title).join("\n"))}">${L.map(f=>'<span class="frm'+(f.ok?" ok":" yok")+'">'+esc(f.ad)+'</span>').join(" · ")}</td>`:`<td class="pfrm">${dash}</td>`; }
     if(c.t==="bld"){ const L=R.kod?BLD[R.kod]:null; return `<td class="pbld">${(L&&L.length)?L.map(esc).join(" · "):dash}</td>`; }   /* MAIL-BILDIRIM-KONU */
     if(c.t==="del") return `<td><button class="kdel pdel" ${dk} title="Sil">✕</button></td>`;
     if(c.t==="ay"){ const v=m?AY[m.id+"|"+c.f.slice(3)]:null; return `<td class="num ped${c.hid?" phid":""}" data-k="${c.f}" ${dk}${hide}>${fmtN(v)}</td>`; }
@@ -1522,7 +1523,7 @@ async function loadRef(){
      .kitbl th.num,.kitbl td.num{text-align:right}
      .kitbl th.pavg{background:#0f4a74;cursor:pointer;user-select:none} .kitbl td.pavg{background:#f3f7fb;font-weight:600;color:#16324f}
      .kitbl th.phid{background:#245b85} .kitbl td.phid{background:#f7fafd}
-     .kitbl th.pfrm{background:#334e68} .kitbl td.pfrm{white-space:normal;font-size:9.5px;line-height:10px;max-width:14ch}
+     .kitbl th.pfrm{background:#334e68} .kitbl td.pfrm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:9.5px;line-height:10px;width:28ch;max-width:28ch} /* PRS-FRM-TEK: 14→28ch, tek satır */
      .kitbl th.pbld{background:#334e68} .kitbl td.pbld{white-space:normal;font-size:9.5px;line-height:10px;max-width:14ch} /* MAIL-BILDIRIM-KONU */
      .kitbl .frm.ok{color:#1c2733;font-weight:600} .kitbl .frm.yok{color:#b40000;font-weight:600}
      .kitbl td.pnot{white-space:normal;font-size:9.5px;line-height:9.5px;min-width:29.5ch;max-width:37.5ch} /* MAASPRIM-SATIR-NOT · PERSONEL-ED %33 dar */
