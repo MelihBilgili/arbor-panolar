@@ -285,7 +285,7 @@ async function load(){
     q("etut_personel","sira"),q("etut_proje_yuk"),q("etut_memnuniyet"),q("etut_dk"),sb.from("etut_param").select("*"),sb.rpc("etut_kidem")]);
   const err=[h,p,y,m,d,pr].find(x=>x.error);
   if(err){ document.getElementById("tbl").innerHTML='<div class="msg err">Hata: '+esc(err.error.message)+'</div>'; return; }
-  D.hata=h.data; D.pers=p.data; D.yuk=y.data; D.mem=m.data; D.dk=d.data; (pr.data||[]).forEach(r=>P[r.anahtar]=Number(r.deger));
+  D.hata=h.data; D.pers=p.data; D.yuk=y.data; D.mem=m.data; D.dk=(d.data||[]).filter(r=>!r.yurt_ici) /* ETUT-DK-YD (13.10.2026): yurt içi projeler DK1'e girmez */; (pr.data||[]).forEach(r=>P[r.anahtar]=Number(r.deger));
   KID={}; ((kd&&!kd.error)?(kd.data||[]):[]).forEach(r=>{ if(r.kidem!=null) KID[r.id]=Number(r.kidem); });
   render();
 }
