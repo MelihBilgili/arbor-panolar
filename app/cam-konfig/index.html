@@ -26,7 +26,7 @@
   @media(max-width:520px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
   /* CAM-KONFIG-SATIR: kartlar alt alta, alanlar tek satir */
   .panel{grid-template-columns:1fr}
-  .g4{grid-template-columns:repeat(7,minmax(0,1fr))}.g3{grid-template-columns:repeat(8,minmax(0,1fr))}
+  .g4{grid-template-columns:repeat(7,minmax(0,1fr))}.g3{grid-template-columns:repeat(9,minmax(0,1fr))}/* LAM-KONUM */
   .g4 label,.g3 label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   @media(max-width:1100px){.g4,.g3{grid-template-columns:repeat(4,minmax(0,1fr))}}
   @media(max-width:520px){.g4,.g3{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -124,6 +124,7 @@
         <div><label for="f_yapi">Yapı</label><select id="f_yapi"><option value="">Fark etmez</option><option>Çift</option><option>Üçlü</option><option>Tek</option></select></div>
         <div><label for="f_kal">Toplam kalınlık ≤ (mm)</label><input id="f_kal" inputmode="decimal"></div>
         <div><label for="f_lam">Lamine PVB</label><select id="f_lam"><!-- CAM-KONFIG-PVB --><option value="" selected>Fark etmez</option><option value="0">Yok</option><option value="1">0,38 mm</option><option value="2">0,76 mm</option><option value="3">1,14 mm</option><option value="4">1,52 mm</option><option value="5">1,90 mm</option><option value="6">2,28 mm</option><option value="7">2,66 mm</option><option value="8">3,04 mm</option></select></div>
+        <div><label for="f_lpoz" title="Lamine camın konumu: iç = düşmeye karşı koruma, dış = darbe/hırsızlık">Lamine konumu</label><select id="f_lpoz"><!-- LAM-KONUM --><option value="" selected>Fark etmez</option><option value="dis">Dış</option><option value="ic">İç</option><option value="iki">İki tarafta</option></select></div>
         <div><label for="f_aku">Akustik lamine</label><select id="f_aku"><option value="">Fark etmez</option><option value="1">Olsun</option><option value="0">Olmasın</option></select></div>
         <div><label for="f_ec">Extra Clear</label><select id="f_ec"><option value="">Fark etmez</option><option value="1">Olsun</option><option value="0">Olmasın</option></select></div>
         <div><label for="f_ur">Üretici</label><select id="f_ur"><option value="">Hepsi</option></select></div>
@@ -336,7 +337,7 @@ function hedef(){ const p=id=>num($(id).value);
   const lt=p("h_lt"), gmax=p("h_gmax"), gmin=p("h_gmin"), lr=null /* CAM-KONFIG-LRSEL */;
   const fr=x=>x==null?null:(x>1?x/100:x); /* % veya oran */
   return {ug:p("h_ug"),lt:fr(lt),gmax:fr(gmax),gmin:fr(gmin),lr:fr(lr),rw:null /* CAM-KONFIG-RWAGR */,rwctr:p("h_rwctr"),sel:null /* CAM-KONFIG-LRSEL */,
-    yapi:$("f_yapi").value,kal:p("f_kal"),agr:null /* CAM-KONFIG-RWAGR */,lam:$("f_lam").value,aku:$("f_aku").value,ec:$("f_ec").value,ur:$("f_ur").value,kay:$("f_kay").value};
+    yapi:$("f_yapi").value,kal:p("f_kal"),agr:null /* CAM-KONFIG-RWAGR */,lam:$("f_lam").value,lpoz:$("f_lpoz").value /* LAM-KONUM */,aku:$("f_aku").value,ec:$("f_ec").value,ur:$("f_ur").value,kay:$("f_kay").value};
 }
 /* Hedef kontrolü: her hedef için [karşılıyor mu, normalize açık/fazla] — eksik değer = karşılamıyor sayılır */
 const OLC={ug:0.1,lt:0.02,g:0.02,lr:0.02,rw:1,rwctr:1,sel:0.05};
@@ -357,6 +358,9 @@ function filtre(r,h){
   if(h.lam!==""){ /* CAM-KONFIG-PVB: Yok = laminesiz; k = 0,38×k mm PVB ara katmanlı cam içerir */
     const pk=camlar(r.kombinasyon).map(x=>Math.round(x.pvb/0.38)).filter(x=>x>0);
     if(h.lam==="0"){ if(r.lamine||pk.length) return false; } else if(!pk.includes(+h.lam)) return false; }
+  if(h.lpoz){ const c=camlar(r.kombinasyon); /* LAM-KONUM: ilk cam = dış, son cam = iç; tek camda ikisi */
+    const d=c.length&&c[0].pvb>0, i=c.length&&c[c.length-1].pvb>0, p=d&&i?"iki":d?"dis":i?"ic":"";
+    if(p!==h.lpoz) return false; }
   if(h.aku!==""&&(!!r.akustik)!==(h.aku==="1")) return false;
   if(h.ec!==""&&(!!r.extra_clear)!==(h.ec==="1")) return false;
   if(h.ur&&r.uretici!==h.ur) return false;
