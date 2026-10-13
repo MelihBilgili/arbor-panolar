@@ -170,7 +170,7 @@ const num=v=>Number(v)||0;
 const D={hata:[],pers:[],yuk:[],mem:[],dk:[]}; const P={}; let KID={};  /* ETUT-KIDEM: etut_personel.id → kıdem (yıl), Personel panosu (maas_prim) */
 const kid=p=>KID[p.id];
 const TBL={hatalar:"etut_hata",etut:"etut_hata",icmal:"etut_personel",yuk:"etut_proje_yuk",mem:"etut_memnuniyet",dk:"etut_dk"};
-const rowsOf=id=>id==="hatalar"?D.hata.filter(r=>r.sayfa!=="etut"&&r.sayfa!=="proje") /* PROJE-HATA-YAKALAMA */:id==="etut"?D.hata.filter(r=>r.sayfa==="etut"||r.sayfa==="proje") /* ETUT-HB-PUAN: Etüt + Proje Hata Yakalama satırları */:id==="icmal"?D.pers:id==="dk"?DKG() /* ETUT-DK-BIRIK */:D[id];
+const rowsOf=id=>id==="hatalar"?D.hata.filter(r=>r.sayfa!=="etut"&&r.sayfa!=="proje") /* PROJE-HATA-YAKALAMA */:id==="etut"?D.hata.filter(r=>r.sayfa==="etut"||r.sayfa==="proje") /* ETUT-HB-PUAN: Etüt + Proje Hata Yakalama satırları */:id==="icmal"?D.pers:id==="dk"?DKG() /* ETUT-DK-BIRIK */:id==="yuk"?YUKG() /* ETUT-YUK-DONEM */:D[id];
 /* kişi eşleşmesi: ilk ad, metin içinde bağımsız kelime (Hatayı Yapan / Yakalayan serbest metin) */
 const ilk=p=>String(p.ad||"").trim().split(/\s+/)[0].toLocaleLowerCase("tr");
 const icerir=(txt,p)=>{ const f=ilk(p); if(!f) return false; const t=" "+String(txt||"").toLocaleLowerCase("tr")+" ";
@@ -181,7 +181,14 @@ const HBR=r=>r.sayfa==="etut"||r.sayfa==="proje";
 const hataPuani=p=>D.hata.filter(r=>HBR(r)&&icerir(r.yapan,p)).reduce((s,r)=>s+num(r.hb_puani),0);
 const yakalamaPuani=p=>D.hata.filter(r=>HBR(r)&&icerir(r.yakalayan,p)).reduce((s,r)=>s+num(r.hb_puani),0);
 const zk=r=>0.1*num(r.zorluk)+1;
-const projeYuku=p=>D.yuk.reduce((s,r)=>s+zk(r)*num((r.yuk||{})[p.kisa]),0);
+/* ETUT-YUK-DONEM (13.10.2026): Proje Yükü satırları aya bağlı (donem YYYY-AA); yalnız son dönem açık ve İcmal'e girer, önceki aylar blok altında kapalı. DK1 dağıtımı kapalı satırlara da bakar */
+const YUK_SON=()=>D.yuk.reduce((m,r)=>r.donem&&r.donem>m?r.donem:m,"");
+const YUKG=()=>{ const s=YUK_SON(); return D.yuk.filter(r=>!r.donem||r.donem===s); };
+const YUKE=()=>{ const s=YUK_SON(); return D.yuk.filter(r=>r.donem&&r.donem!==s).sort((a,b)=>String(b.donem).localeCompare(String(a.donem))||a.id-b.id); };
+function yukEskiHTML(){ const E=YUKE(); if(!E.length) return "";
+  const tr=r=>`<tr><td>${esc(r.donem)}</td><td>${esc(r.proje||"")}</td><td>${esc(r.part||"")}</td><td>${esc(Object.entries(r.yuk||{}).map(([k,v])=>k+" "+fmtN(v,0)).join(" · "))}</td><td class="n">${fmtN(r.zorluk,0)}</td></tr>`;
+  return `<details class="dk-eski"${window._yukEskiAcik?" open":""} ontoggle="window._yukEskiAcik=this.open"><summary>Önceki aylar · ${E.length} kayıt (İcmal Proje Yükü'ne girmez, DK1 dağıtımında kullanılır)</summary><div class="cl-wrap"><table><thead><tr><th>Dönem</th><th>PGD</th><th>Part</th><th>Yük (%)</th><th class="n">Zorluk</th></tr></thead><tbody>${E.map(tr).join("")}</tbody></table></div></details>`; }
+const projeYuku=p=>YUKG().reduce((s,r)=>s+zk(r)*num((r.yuk||{})[p.kisa]),0);
 const dkT=r=>num(r.dk1)+2*num(r.dk2)+3*num(r.dk3)+5*num(r.dk4);
 /* ETUT-DK-BIRIK (13.10.2026): DK1 satırları ERP çekimi başına birikir; yalnız son çekim (+ elle girilen) satırlar güncel ve hesaba girer, öncekiler blok altında kapalı */
 const DK_SON=()=>D.dk.reduce((m,r)=>r.erp_damga&&r.erp_damga>m?r.erp_damga:m,"");
@@ -194,7 +201,7 @@ const dkToplam=()=>DKG().reduce((s,r)=>s+dkT(r),0);
 /* ETUT-DK-KISI (13.10.2026): satırın dk toplamı Kişi 1 / Kişi 2'ye eşit paylaştırılır; kişisiz satır kimseye yazılmaz */
 /* ETUT-DK-YUK (13.10.2026): DK1 satırının dk toplamı Proje Yükü'ndeki aynı PGD satırının Yük (%) oranlarıyla kişilere dağıtılır (Kişi 1/2 kullanılmaz). PGD eşleşmesi harf/aksan/noktalama bağımsız; part eşleşirse o satır, yoksa partsız satır, yoksa o PGD'nin bütün satırları */
 const etNorm=x=>String(x||"").toLocaleLowerCase("tr").replace(/ı/g,"i").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]/g,"");
-const yukEsle=r=>{ const n=etNorm(r.proje), pt=etNorm(r.part), Y=D.yuk.filter(y=>etNorm(y.proje)===n); const Yp=Y.filter(y=>pt&&etNorm(y.part)===pt), Y0=Y.filter(y=>!etNorm(y.part)); return Yp.length?Yp:Y0.length?Y0:Y; };
+const yukEsle=r=>{ const n=etNorm(r.proje), pt=etNorm(r.part), Y1=D.yuk.filter(y=>etNorm(y.proje)===n), dn=Y1.reduce((m,y)=>String(y.donem||"")>m?String(y.donem||""):m,""), Y=Y1.filter(y=>String(y.donem||"")===dn) /* ETUT-YUK-DONEM: o PGD'nin en yeni ayı (kapalı aylar dahil) */; const Yp=Y.filter(y=>pt&&etNorm(y.part)===pt), Y0=Y.filter(y=>!etNorm(y.part)); return Yp.length?Yp:Y0.length?Y0:Y; };
 const dkKisi=p=>DKG().reduce((s,r)=>{ if(!p.kisa) return s; let top=0,pay=0; yukEsle(r).forEach(y=>Object.entries(y.yuk||{}).forEach(([k,v])=>{ const n=num(v); top+=n; if(k===p.kisa) pay+=n; })); return s+(top>0?dkT(r)*pay/top:0); },0);
 const odul=r=>num(r.pgd_tutari)*(num(r.rapidite)+num(r.pertinence))/2000;
 const nul=v=>v==null||v==="";
@@ -220,11 +227,11 @@ const TABS=[
   not:`<b>Hata Puanı:</b><br>10 puanlık örnek hata: P522 numaralı pozda müşteri poz numarası hatalı girilmiştir. Kendi içimizde düzeltilmiştir.<br>
    100 puanlık örnek hata: HSP ölçüleri yanlıştır. Müşteri tarafından düzeltilmiştir.<br>Yapılan yeni hatalar yukarıdaki örneklerle mukayese edilerek puanlanır.`},
  {id:"etut",ad:"Hata Yakalama Puanları",req:"hata",fixed:{sayfa:"etut"},cols:()=>[...HATA_COLS,/* ETUT-HB-PUAN (13.10.2026): tek düzenlenebilir sütun etut_hata.hb_puani */{k:"hb_puani",h:"Hata/Başarı|Puanı",t:"n",w:6}]},
- {id:"yuk",ad:"Proje Yükü",req:"proje",cols:()=>[{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},
+ {id:"yuk",ad:"Proje Yükü",req:"proje",alt:()=>yukEskiHTML(),cols:()=>[{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},
    ...D.pers.filter(p=>p.kisa).map(p=>({k:"yuk."+p.kisa,h:p.kisa,t:"n",w:4,tt:p.ad})),{k:"zorluk",h:"Proje|Zorluğu",t:"n",w:5},
    ...D.pers.filter(p=>p.kisa).map(p=>({h:p.kisa,t:"c",d:0,z:1,tt:p.ad+" — zorluğa göre oranlanmış",f:r=>((r.yuk||{})[p.kisa]==null||(r.yuk||{})[p.kisa]==="")?null:zk(r)*num(r.yuk[p.kisa])}))],
   grup:()=>{ const n=D.pers.filter(p=>p.kisa).length; return `<tr class="grp"><th colspan="2"></th><th colspan="${n}">Yük (%)</th><th></th><th colspan="${n}">Zorluğa göre oranlanmış proje yükü</th><th></th></tr>`; },
-  foot:()=>{ const K=D.pers.filter(p=>p.kisa); return `<tr class="tf"><td><b>Toplam</b></td><td></td>${K.map(p=>`<td class="n">${fmtN(D.yuk.reduce((s,r)=>s+num((r.yuk||{})[p.kisa]),0),0)}</td>`).join("")}<td></td>${K.map(p=>`<td class="n"><b>${fmtN(projeYuku(p),0)}</b></td>`).join("")}<td></td></tr>`; },
+  foot:()=>{ const K=D.pers.filter(p=>p.kisa); return `<tr class="tf"><td><b>Toplam</b></td><td></td>${K.map(p=>`<td class="n">${fmtN(YUKG().reduce((s,r)=>s+num((r.yuk||{})[p.kisa]),0),0)}</td>`).join("")}<td></td>${K.map(p=>`<td class="n"><b>${fmtN(projeYuku(p),0)}</b></td>`).join("")}<td></td></tr>`; },
   not:`Proje zorluğu 1 ve 5 arasında oranlanmıştır. Oranlanmış yük = (0,1 × zorluk + 1) × yük.`},
  {id:"dk",ad:"DK1",req:"proje",alt:()=>dkEskiHTML(),baslik:"",cols:()=>[/* ETUT-DK-TURSUZ: Tür sütunu kaldırıldı */{k:"proje",h:"PGD",t:"t",w:24,sap:1},{k:"part",h:"Part",t:"t",w:12},
    {k:"adet",h:"Adet",t:"n",w:4},{k:"dk1",h:"dk1",t:"n",w:4},{k:"dk2",h:"dk2",t:"n",w:4},{k:"dk3",h:"dk3",t:"n",w:4},{k:"dk4",h:"dk4",t:"n",w:4},
@@ -325,7 +332,7 @@ async function kaydet(inp){
   const {error}=await sb.from(tb).update(upd).eq("id",id);
   if(error){ msg("Kaydedilemedi: "+error.message,"err"); return; }
   Object.assign(r,upd); const bagYok=c.k==="th_oneri"&&!r.maas_prim_id; msg(bagYok?"Kaydedildi — Personel panosunda eşleşen kişi yok, prim oraya yazılmadı":"Kaydedildi",bagYok?"err":"ok");
-  if(c.k==="ad"){ const x=await sb.from("etut_personel").select("maas_prim_id").eq("id",id).single(); if(x.data) r.maas_prim_id=x.data.maas_prim_id; await kidemYukle(); }
+  if(c.k==="ad"){ const x=await sb.from("etut_personel").select("maas_prim_id,kisa").eq("id",id).single(); if(x.data){ r.maas_prim_id=x.data.maas_prim_id; r.kisa=x.data.kisa; } /* ETUT-KISA-OTO: kısaltma Personel kodundan (DB tetikleyici) */ await kidemYukle(); }
   render();
 }
 const W=document.getElementById("tbl");
