@@ -223,7 +223,7 @@ const TABS=[
   foot:()=>`<tr class="tf"><td><b>Toplam</b></td><td></td><td></td><td class="n">${fmtN(D.mem.reduce((s,r)=>s+num(r.pgd_tutari),0),0)}</td><td></td><td></td><td></td><td class="n"><b>${fmtN(D.mem.reduce((s,r)=>s+odul(r),0),0)}</b></td>${MEMK().map(k=>`<td></td><td class="n"><b>${fmtN(D.mem.reduce((s,r)=>{ const v=(r.dagilim||{})[k]; return s+((v==null||v==="")?0:num(v)*odul(r)/100); },0),0)}</b></td>`).join("")}<td></td></tr>`,
   not:"Hesaplanan Ödül = PGD Tutarı × (Rapidité + Pertinence) / 2000 · kişi € = % × Hesaplanan Ödül / 100."},
  {id:"icmal",ad:"İcmal",req:"ad",cols:()=>[
-   {k:"ad",h:"İsim Soyisim",t:"t",w:17,kp:"tek"},{k:"kisa",h:"Kısa",t:"t",w:4},{h:"Kıdem|(yıl)",t:"c",f:r=>kid(r),d:1,tt:"Personel panosundan (işe giriş tarihi)"},{k:"inisiyatif",h:"İnisiyatif|Puanı",t:"n",w:5},
+   {k:"ad",h:"İsim Soyisim",t:"t",w:17,kp:"tek"},{k:"kisa",h:"Kısa",t:"t",w:4,kp:"kod"},{h:"Kıdem|(yıl)",t:"c",f:r=>kid(r),d:1,tt:"Personel panosundan (işe giriş tarihi)"},{k:"inisiyatif",h:"İnisiyatif|Puanı",t:"n",w:5},
    {h:"Toplam|Hata Puanı",t:"c",f:r=>icmal(r).h,d:0},{h:"Toplam Hata|Yakalama Puanı",t:"c",f:r=>icmal(r).y,d:0},
    {h:"Proje|Yükü",t:"c",f:r=>icmal(r).B,d:0},{h:"Hatasızlık|Katsayısı",t:"c",f:r=>icmal(r).C,d:3},{h:"Hata Yakalama|Katsayısı",t:"c",f:r=>icmal(r).D,d:3},
    {h:"İnisiyatif|Katsayısı",t:"c",f:r=>icmal(r).E,d:3},{h:"DK1",t:"c",f:()=>dkToplam(),d:0},{k:"memnuniyet_eur",h:"Memnuniyet|Primi (€)",t:"n",w:7,d:0},
@@ -313,27 +313,29 @@ async function kaydet(inp){
 }
 const W=document.getElementById("tbl");
 /* KISI-SECIM (13.10.2026): kişi alanları Personel listesinden seçilir (rpc personel_adlar); yazılan harf(ler)le başlayan kişiler listelenir; çoklu alanda kişiler " & " ile ayrılır; listede olmayan isim kaydedilmez */
-let PERS_AD=[]; sb.rpc("personel_adlar").then(r=>{ if(r&&!r.error) PERS_AD=(r.data||[]).map(x=>typeof x==="string"?x:x.ad).filter(Boolean); });
-document.head.insertAdjacentHTML("beforeend",'<style>.kp-liste{position:fixed;z-index:9999;background:#fff;border:1px solid #cdd6df;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.15);max-height:240px;overflow:auto;font-size:12.5px}.kp-liste div{padding:4px 9px;cursor:pointer;white-space:nowrap}.kp-liste div.on,.kp-liste div:hover{background:#e3edf7}</style>');
+let PERS_AD=[], PERS_KOD=[]; sb.rpc("personel_kodlar").then(r=>{ if(r&&!r.error) PERS_KOD=r.data||[]; }); /* ETUT-KISA-PERSONEL: İcmal Kısa = Personel kodu */
+ sb.rpc("personel_adlar").then(r=>{ if(r&&!r.error) PERS_AD=(r.data||[]).map(x=>typeof x==="string"?x:x.ad).filter(Boolean); });
+document.head.insertAdjacentHTML("beforeend",'<style>.kp-liste{position:fixed;z-index:9999;background:#fff;border:1px solid #cdd6df;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.15);max-height:240px;overflow:auto;font-size:12.5px}.kp-liste div{padding:4px 9px;cursor:pointer;white-space:nowrap}.kp-liste div.on,.kp-liste div:hover{background:#e3edf7}.kp-ipucu{margin:0;padding:5px 9px;font-size:11.5px;color:#6b4e00;background:#fff7e0;border-bottom:1px solid #ecdcae;white-space:normal;max-width:320px}</style>');
 const KP_N=s=>String(s||"").trim().toLocaleLowerCase("tr");
-const kpListe=inp=>inp.dataset.kp==="kisa"?D.pers.filter(p=>p.kisa).map(p=>({v:p.kisa,t:p.kisa+" — "+p.ad})):PERS_AD.map(a=>({v:a,t:a}));
+const kpListe=inp=>inp.dataset.kp==="kod"?PERS_KOD.map(x=>({v:x.kod,t:x.kod+" — "+x.ad})):inp.dataset.kp==="kisa"?D.pers.filter(p=>p.kisa).map(p=>({v:p.kisa,t:p.kisa+" — "+p.ad})):PERS_AD.map(a=>({v:a,t:a}));
 const kpParca=inp=>inp.dataset.kp==="1"?String(inp.value).split("&"):[String(inp.value)];
 let KPD=null,KPI=null,KPS=0;
 function kpKapat(){ if(KPD){ KPD.remove(); KPD=null; } KPI=null; }
 function kpAc(inp){
   const P=kpParca(inp), q=KP_N(P[P.length-1]);
   const L=q?kpListe(inp).filter(o=>KP_N(o.v).startsWith(q)||KP_N(o.t).startsWith(q)):[];
-  if(!L.length){ kpKapat(); return; }
+  const ipucu=inp.dataset.kp==="1"; /* KISI-IPUCU (13.10.2026): çoklu alanda yazmaya başlayınca & ipucu */
+  if(!L.length&&!ipucu){ kpKapat(); return; }
   if(!KPD){ KPD=document.createElement("div"); KPD.className="kp-liste"; document.body.appendChild(KPD);
     KPD.addEventListener("mousedown",e=>{ e.preventDefault(); const d=e.target.closest("[data-v]"); if(d&&KPI) kpSec(KPI,d.dataset.v); }); }
   KPI=inp; KPS=0;
-  KPD.innerHTML=L.slice(0,40).map((o,i)=>`<div data-v="${esc(o.v)}"${i?"":' class="on"'}>${esc(o.t)}</div>`).join("");
+  KPD.innerHTML=(ipucu?'<p class="kp-ipucu">Birden çok kişi: kişiyi seçtikten sonra <b>&amp;</b> yazıp sonraki kişinin ilk harfini yazın.</p>':"")+L.slice(0,40).map((o,i)=>`<div data-v="${esc(o.v)}"${i?"":' class="on"'}>${esc(o.t)}</div>`).join("");
   const rc=inp.getBoundingClientRect(); KPD.style.left=rc.left+"px"; KPD.style.top=(rc.bottom+1)+"px"; KPD.style.minWidth=Math.max(rc.width,180)+"px";
 }
 function kpSec(inp,v){ const P=kpParca(inp); P[P.length-1]=v; inp.value=inp.dataset.kp==="1"?P.map(s=>s.trim()).filter(Boolean).join(" & "):v; kpKapat(); inp.dispatchEvent(new Event("change",{bubbles:true})); }
 const kpHatali=inp=>{ const S=new Set(kpListe(inp).map(o=>KP_N(o.v))); return kpParca(inp).map(s=>s.trim()).filter(s=>s&&!S.has(KP_N(s))); };
 W.addEventListener("input",e=>{ const t=e.target; if(t.dataset&&t.dataset.kp) kpAc(t); });
-W.addEventListener("keydown",e=>{ if(!KPD||e.target!==KPI) return; const it=[...KPD.children];
+W.addEventListener("keydown",e=>{ if(!KPD||e.target!==KPI) return; const it=[...KPD.querySelectorAll("[data-v]")]; if(!it.length){ if(e.key==="Escape") kpKapat(); return; }
   if(e.key==="ArrowDown"||e.key==="ArrowUp"){ e.preventDefault(); it[KPS].classList.remove("on"); KPS=(KPS+(e.key==="ArrowDown"?1:it.length-1))%it.length; it[KPS].classList.add("on"); it[KPS].scrollIntoView({block:"nearest"}); }
   else if(e.key==="Enter"||e.key==="Tab"){ e.preventDefault(); e.stopImmediatePropagation(); kpSec(KPI,it[KPS].dataset.v); }
   else if(e.key==="Escape"){ e.preventDefault(); kpKapat(); } },true);
