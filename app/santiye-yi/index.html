@@ -288,7 +288,7 @@ async function yukle(){
 function sevkHazir(r){ return /^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").trim()); }
 function sevkTablo(rs){
   return '<div class="sevk"><h3>Sevke Hazır Projeler</h3><table><thead><tr>'
-    +'<th>Proje</th><th class="n">Adet</th><th class="n">AÜP</th><th class="n">PST</th><th style="width:40%">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
+    /* SANTIYE-SEVK-ADBASLIK */ +'<th>Proje</th><th class="n">Proje Toplamı (Ad)</th><th class="n">AÜP</th><th class="n">PST</th><th style="width:40%">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
     +rs.map(r=>'<tr><td>'+esc(r.proje_adi||"—")+'</td><td class="n">'+esc(r.adet==null?"—":r.adet)+'</td>'
       +'<td class="n">'+fd(r.aup)+'</td><td class="n"><input type="date" class="pstg" id="pstg_'+r.id+'" value="'+esc(r.pst_santiye?String(r.pst_santiye).slice(0,10):"")+'"></td>'  /* SEVK-PST-GIRIS (2026-10-05): boş başlar, şantiye girer → pst_santiye */
       +'<td><textarea id="hus_'+r.id+'" data-id="'+r.id+'">'+esc(r.onemli_hususlar||"")+'</textarea></td></tr>').join("")
