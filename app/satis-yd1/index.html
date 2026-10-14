@@ -1162,9 +1162,10 @@ async function tkSaveNote(key,val){
 /* DURUM-SAGTIK (08.10.2026, Melih): Durum sütunundan elle seçim kaldırıldı. Satıra sağ tıklayınca menü:
    Revizyon · Muhtemel · Kazandık · Üretimde · Kaybettik · Müşteri İşi Alamadı · İptal · Sil.
    Şartı tutmayan seçenek soluk ve tıklanamaz (neden title'da). Geçiş saveRow ile yapılır (aynı şart/kopya kuralları). */
-const CTX_SEC=[["Revizyon","Revizyon İstendi"],["Muhtemel","Muhtemel"],["Kazandık","Kazandık"],["Üretimde","Üretimde"],["Kaybettik","Kaybettik"],["Müşteri İşi Alamadı","Müşteri İşi Alamadı"],["İptal","İptal"],["Sil","__sil"]];
+const CTX_SEC=[["Yeniden Aç","__ac"],["Revizyon","Revizyon İstendi"],["Muhtemel","Muhtemel"],["Kazandık","Kazandık"],["Üretimde","Üretimde"],["Kaybettik","Kaybettik"],["Müşteri İşi Alamadı","Müşteri İşi Alamadı"],["İptal","İptal"],["Sil","__sil"]];
 function ctxNeden(r,v){
   if(v==="__sil") return "";
+  if(v==="__ac") return r.durum==="İptal"?"":"Yalnız İptal satırı yeniden açılır"; /* IPTAL-GERI-AL */
   if(r.durum===v) return "Satır zaten bu durumda";
   if(v==="İptal") return "";
   if(v==="Revizyon İstendi"){
@@ -1181,6 +1182,17 @@ function ctxNeden(r,v){
   if(["Teklif Teslim Edildi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"].indexOf(r.durum)<0) return "Teklif teslim edilmeden seçilemez";
   if(v==="Müşteri İşi Alamadı" && String(r.ihale||"")!=="Alınmadı") return "İhale? sütunu \"Alınmadı\" olmalı";
   return "";
+}
+/* IPTAL-GERI-AL (14.10.2026, Melih): İptal satırı sağ tık → "Yeniden Aç": zorunlu not (takip notlarına), durum dolu sütunlara göre
+   yeniden hesaplanır (computeAutoTier; ilgili kartı eksikse Teklif İncelendi), en çok Teklif Teslim Edildi. */
+async function iptalGeriAl(r){
+  if(!r||r.durum!=="İptal") return;
+  if(!(await ctxNedenNotu(r,"Yeniden Açıldı"))) return;
+  const tmp=Object.assign({},r,{durum:null}); const t=Math.min(computeAutoTier(tmp),4);
+  const yeni=t>0?DURUM_OPTS[t-1]:null;
+  const {error}=await sb.from("satis_yd_akis").update({durum:yeni}).eq("id",r.id);
+  if(error){ setMsg("Yeniden açılamadı: "+error.message,false); return; }
+  r.durum=yeni; render(); setMsg("Yeniden açıldı: "+(yeni||"durum boş"),true);
 }
 function ctxKapat(){ const m=document.getElementById("ctx-menu"); if(m) m.remove(); }
 /* DURUM-SAGTIK2: Kaybettik / İptal için zorunlu neden notu; takip notlarına (Görevli: Hiç Kimse) eklenir — TAKIP-NOT-YASAK'tan muaf */
@@ -1217,11 +1229,12 @@ async function ctxNedenNotu(r,v){
 function ctxAc(i,x,y){
   ctxKapat(); const r=ROWS[i]; if(!r||!r.id) return;
   const m=document.createElement("div"); m.id="ctx-menu";
-  m.innerHTML=CTX_SEC.map(([et,v])=>{ const n=ctxNeden(r,v); return '<button type="button" data-v="'+esc(v)+'" class="'+(n?'off':'')+(v==="__sil"?' ctx-sil':'')+'"'+(n?' title="'+esc(n)+'"':'')+'>'+esc(et)+'</button>'; }).join('');
+  m.innerHTML=CTX_SEC.filter(([et,v])=>v!=="__ac"||r.durum==="İptal").map(([et,v])=>{ const n=ctxNeden(r,v); return '<button type="button" data-v="'+esc(v)+'" class="'+(n?'off':'')+(v==="__sil"?' ctx-sil':'')+'"'+(n?' title="'+esc(n)+'"':'')+'>'+esc(et)+'</button>'; }).join('');
   document.body.appendChild(m);
   const w=m.offsetWidth,h=m.offsetHeight; m.style.left=Math.max(4,Math.min(x,innerWidth-w-4))+"px"; m.style.top=Math.max(4,Math.min(y,innerHeight-h-4))+"px";
   m.querySelectorAll("button").forEach(b=>b.onclick=async()=>{ if(b.classList.contains("off")) return; const v=b.dataset.v; ctxKapat();
     if(v==="__sil"){ await delRow(i); return; }
+    if(v==="__ac"){ await iptalGeriAl(r); return; } /* IPTAL-GERI-AL */
     if(v==="Kaybettik"||v==="İptal"){ if(!(await ctxNedenNotu(r,v))) return; } /* DURUM-SAGTIK2 */
     await saveRow(String(i),"durum",v,{value:"",classList:{toggle(){}}});
   });
