@@ -746,6 +746,9 @@ async function loadSatis(){
   const baseSum=(kaynak,statu)=>baseRows.filter(r=>r.kaynak===kaynak&&r.yil_ay===yilAy&&r.statu===statu&&(r.para_birimi||'EUR')==='EUR').reduce((a,r)=>a+(Number(r.net_eur)||0),0);
   const hasBase = baseRows.some(r=>r.yil_ay===yilAy);
   regions.forEach(rg=>{ rg.baseM=baseSum(rg.kaynak,'Muhtemel'); rg.baseA=baseSum(rg.kaynak,'Alındı'); });
+  /* SATIS-DEGISIM-SUTUN (14.10.2026, Melih): ay başı tabanındaki proje listeleri → Değişim sütununda eklenen/çıkan projeler */
+  const baseList=(k,st)=>baseRows.filter(r=>r.kaynak===k&&r.yil_ay===yilAy&&r.statu===st);
+  regions.forEach(rg=>{ rg.bLM=baseList(rg.kaynak,'Muhtemel'); rg.bLA=baseList(rg.kaynak,'Alındı'); });
   view.innerHTML=`
     <style>.satis-wrap .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.satis-wrap .scroll th{white-space:nowrap}
     .satis-wrap table.aup thead tr:first-child th{top:0;z-index:3}
@@ -762,6 +765,7 @@ async function loadSatis(){
     .satis-wrap td.prjrev .cx{font-weight:700} .satis-wrap td.prjihale .cx{color:#0b5d2a} /* REV-PROJE-KOYU */
     .satis-wrap table.sat td.hz1>.cx{width:25.5ch}.satis-wrap table.sat td.hz2>.cx{width:18ch}.satis-wrap table.sat td.hz3>.cx{width:9ch}.satis-wrap table.sat td.hz4>.cx{width:9ch}.satis-wrap table.sat td.hz5>.cx{width:9ch}/* HZ-DAR3 (09.10.2026, Melih): Müşteri 18ch, Gelen/İstenen/Teklif Teslim Tarihi 9ch */.satis-wrap table.sat td.hz6>.cx{width:7.8ch}.satis-wrap table.sat td.hz7>.cx{width:53.5ch}.satis-wrap table.sat td.hz8>.cx{width:5.7ch}.satis-wrap table.sat td.hz9>.cx{width:53.5ch}.satis-wrap table.sat td.hz10>.cx{width:3.6ch}.satis-wrap table.sat th[class^="hz"]{vertical-align:bottom}.satis-wrap table.sat th[class^="hz"]>.cw{white-space:normal;overflow:visible;overflow-wrap:break-word;font-size:10.5px;line-height:1.15} /* HZ-SABIT (09.10.2026, Melih): Teklif Hazırlığında YD1/YD2 aynı sabit sütun enleri — HZ-DAR2 (09.10.2026): enler %15/15/10/20/35/2/15/5/15/70 daraltıldı, başlıklar küçük punto ve 2-3 satır, Geciken Gün Teklif Teslim Tarihi'nin sağında */
     table.ssum td.sdlist{vertical-align:top;padding:2px 6px 6px}
+    table.ssum th.sdeg,table.ssum td.sdeg{border-left:1px dashed #cdd8e4} .sdi.sdadd .sdi-p,.sdi.sdadd .sdi-t{color:#0a6b3f} .sdi.sdrem .sdi-p,.sdi.sdrem .sdi-t{color:#b23a2e} /* SATIS-DEGISIM-SUTUN */
     .sdi{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0;border-bottom:1px solid #eef1f4}
     .sdi-p{color:#2c3542}
     .sdi-t{color:#516072;white-space:nowrap;text-align:right}</style>
@@ -777,18 +781,25 @@ function eurDelta(v){ const r=Math.round(v); const c=r>0?'#0a6b3f':(r<0?'#b23a2e
 /* Üst özet blok: Toplam + bölge satırları (delta = canlı durum − ayın ilk iş günü tabanı, yalnız EUR);
    her bölge satırının hemen altına, aynı Muhtemel/Alınan sütunlarının içine gömülü proje listesi (proje adı + tutar, tutara göre azalan). Toplam satırının altına liste eklenmez. */
 function satisSummary(regions,hasBase){
-  const cell=(cur,base)=>`${hasBase?eurDelta(cur-base):''}${money(cur)} EUR`;
+  const cell=(cur,base)=>`${money(cur)} EUR`; /* SATIS-DEGISIM-SUTUN: değişim tutarı ayrı sütunda, parantezsiz */
+  const dCell=(cur,base)=>{ if(!hasBase) return '<span style="color:#6a7888">—</span>'; const r=Math.round(cur-base); const c=r>0?'#0a6b3f':(r<0?'#b23a2e':'#6a7888'); return `<span style="color:${c}">${r>0?'+':(r<0?'−':'')}${money(Math.abs(r))} EUR</span>`; };
+  const nk=x=>String(x||'').trim().toLocaleLowerCase('tr');
+  const diffList=(cur,base)=>{ if(!hasBase) return ''; const cS=new Set(cur.map(r=>nk(r.proje))), bS=new Set((base||[]).map(r=>nk(r.proje)));
+    const add=cur.filter(r=>!bS.has(nk(r.proje))).sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0));
+    const rem=(base||[]).filter(r=>!cS.has(nk(r.proje))).sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0));
+    return add.map(r=>`<div class="sdi sdadd"><span class="sdi-p">${esc(r.proje||"")}</span><span class="sdi-t">+${money(r.net_eur)} ${esc(r.pb||"EUR")}</span></div>`).join('')
+      +rem.map(r=>`<div class="sdi sdrem"><span class="sdi-p">${esc(r.proje||"")}</span><span class="sdi-t">−${money(r.net_eur)} ${esc(r.para_birimi||"EUR")}</span></div>`).join(''); };
   const tM=regions.reduce((a,rg)=>a+sSum(rg.cM),0), tA=regions.reduce((a,rg)=>a+sSum(rg.cA),0);
   const tbM=regions.reduce((a,rg)=>a+rg.baseM,0), tbA=regions.reduce((a,rg)=>a+rg.baseA,0);
   const itemList=arr=>arr.length?arr.slice().sort((a,b)=>(Number(b.net_eur)||0)-(Number(a.net_eur)||0))
     .map(r=>{ const ham=(r.hampb&&r.hampb!=='EUR'&&r.ham!=null)?`(${money(r.ham)} ${esc(r.hampb)}) `:'';
       return `<div class="sdi"><span class="sdi-p">${esc(r.proje||"")}</span><span class="sdi-t" title="${ham}${money(r.net_eur)} EUR">${ham}${money(r.net_eur)} ${esc(r.pb||"EUR")}</span></div>`; }).join(''):'';
-  let body=`<tr class="stot"><td>Toplam</td><td class="num">${cell(tM,tbM)}</td><td class="num">${cell(tA,tbA)}</td></tr>`;
+  let body=`<tr class="stot"><td>Toplam</td><td class="num">${cell(tM,tbM)}</td><td class="num sdeg">${dCell(tM,tbM)}</td><td class="num">${cell(tA,tbA)}</td><td class="num sdeg">${dCell(tA,tbA)}</td></tr>`;
   regions.forEach(rg=>{
-    body+=`<tr class="sreg"><td>${esc(rg.ad)}</td><td class="num">${cell(sSum(rg.cM),rg.baseM)}</td><td class="num">${cell(sSum(rg.cA),rg.baseA)}</td></tr>`;
-    body+=`<tr class="sitm"><td></td><td class="sdlist">${itemList(rg.cM)}</td><td class="sdlist">${itemList(rg.cA)}</td></tr>`;
+    body+=`<tr class="sreg"><td>${esc(rg.ad)}</td><td class="num">${cell(sSum(rg.cM),rg.baseM)}</td><td class="num sdeg">${dCell(sSum(rg.cM),rg.baseM)}</td><td class="num">${cell(sSum(rg.cA),rg.baseA)}</td><td class="num sdeg">${dCell(sSum(rg.cA),rg.baseA)}</td></tr>`;
+    body+=`<tr class="sitm"><td></td><td class="sdlist">${itemList(rg.cM)}</td><td class="sdlist sdeg">${diffList(rg.cM,rg.bLM)}</td><td class="sdlist">${itemList(rg.cA)}</td><td class="sdlist sdeg">${diffList(rg.cA,rg.bLA)}</td></tr>`;
   });
-  return `<div class="scroll" style="max-height:none;overflow-y:visible;overflow-x:auto;-webkit-overflow-scrolling:touch;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num">Alınan</th></tr></thead><tbody>${body}</tbody></table></div>`;
+  return `<div class="scroll" style="max-height:none;overflow-y:visible;overflow-x:auto;-webkit-overflow-scrolling:touch;border:0"><table class="ssum"><thead><tr><th></th><th class="num">Muhtemel</th><th class="num sdeg">Değişim</th><th class="num">Alınan</th><th class="num sdeg">Değişim</th></tr></thead><tbody>${body}</tbody></table></div>`;
 }
 /* TAKIP-GOREV-PANO (06.10.2026, Melih): Muhtemel/Alınan özetinin sağında kullanıcı bazlı bekleyen takip görevleri (YD1+YD2).
    Tanım YD formundaki TAKIP-GOREV (tkBekleyenG) ile aynı: son takip kaydının Görevli'si, Hiç Kimse hariç, kapalı durumlar hariç. */
