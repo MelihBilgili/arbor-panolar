@@ -886,7 +886,7 @@ async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muht
   const eskiNot=String(r.talebe_iliskin_notlar||"").trim();
   rec.talebe_iliskin_notlar = ntYeniDeger(eskiNot,"Revizyon");  /* YD-NOT-EKLE */ /* REV-NOT-TALEP (15.10.2026, Melih): revizyon notu Talebe İlişkin Notlar'a (önceden Teklif Birimi Notları) */
   rec.durum=rangeFilled(rec,1,6)?((ilgTam(r)&&rangeFilled(rec,8,11))?"Teklif Bekleniyor":"Teklif İncelendi"):null; /* ILG-ZORUNLU */ /* BEKLENIYOR-8-11 */ /* YD-DURUM-KURAL: öncelik 1 belli → Teklif Bekleniyor */
-  rec.son_takip_notlari=null; rec.son_takip_tarihi=null;
+  rec.son_takip_notlari=r.son_takip_notlari||null; rec.son_takip_tarihi=r.son_takip_tarihi||null; /* REV-NOT-KOPYA (15.10.2026, Melih): Talebe İlişkin, Teklif Birimi ve Takip notları revizyon kopyasına aynen geçer (takip notu Teklif Bekleniyor'da kilitli görünür, teslimden sonra açılır) */
   ILG_F.forEach(k=>{ rec[k]=r[k]||null; }); rec.ilgili_id=r.ilgili_id||null; /* YD-ILGILI: ilgili bilgisi kopyaya geçer (MUSTERI-COKLU: ilgili_id de) */
   if(kaynakId) rec.muhtemel_kaynak_id=kaynakId;
   const {data,error}=await sb.from("satis_yd_akis").insert(rec).select();
@@ -901,7 +901,7 @@ async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muht
    Kopya teslime hak kazanınca (otomatik ilerleme 4. kademe ya da elle "Teklif Teslim Edildi") "Teklif Teslim Edildi"
    yerine "Muhtemel" olur, özgün satır "Revizyon İstendi"ye geçer. Her adım iki satırın takip notlarına otomatik yazılır.
    Özgün satır silinmiş/Muhtemel'den çıkmışsa kopya bağı kopar, normal akışa döner. */
-function mrNot(r,txt){ if(tkYasak(r)) return {son_takip_notlari:null,son_takip_tarihi:null}; /* TAKIP-NOT-YASAK */ const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi); const iso=todayISO(); log.unshift({t:iso,e:ARB_EKLEYEN||"Oto",n:txt}); return {son_takip_notlari:JSON.stringify(log),son_takip_tarihi:iso}; }
+function mrNot(r,txt){ if(tkYasak(r)) return {}; /* TAKIP-NOT-YASAK */ /* REV-NOT-KOPYA: kilitli satırda mevcut (kopyalanmış) takip notları silinmez */ const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi); const iso=todayISO(); log.unshift({t:iso,e:ARB_EKLEYEN||"Oto",n:txt}); return {son_takip_notlari:JSON.stringify(log),son_takip_tarihi:iso}; }
 /* MUHTEMEL-TEK (08.10.2026, Melih): bir projede (blok+proje) tek Muhtemel satır; revizyon yalnız en güncel Muhtemel satırdan,
    revize teslim edilince aynı projedeki diğer tüm Muhtemel satırlar Revizyon İstendi'ye geçer (15GA - Petit çift Muhtemel dersi). */
 function mhAyni(a,b){ return a.blok===b.blok && String(a.proje||"").trim().toLowerCase()===String(b.proje||"").trim().toLowerCase(); }
@@ -915,8 +915,8 @@ async function muhtemelRevKopya(r){
   const k=ROWS[ROWS.length-1];
   const pk=mrNot(k,"Muhtemel satırın revizyon kopyası (özgün #"+r.id+"). Teslim edilince Muhtemel'e geçecek.");
   const po=mrNot(r,"Revizyon istendi — kısmi kopya açıldı (#"+k.id+"). Revize teklif teslim edilene kadar Muhtemel'de kalıyor.");
-  const e1=(await sb.from("satis_yd_akis").update(pk).eq("id",k.id)).error;
-  const e2=(await sb.from("satis_yd_akis").update(po).eq("id",r.id)).error;
+  const e1=Object.keys(pk).length?(await sb.from("satis_yd_akis").update(pk).eq("id",k.id)).error:null; /* REV-NOT-KOPYA: kilitli kopyada boş update yok */
+  const e2=Object.keys(po).length?(await sb.from("satis_yd_akis").update(po).eq("id",r.id)).error:null;
   if(!e1) Object.assign(k,pk);
   if(!e2) Object.assign(r,po);
   if(e1||e2){ setMsg("Kopya açıldı ama not yazılamadı: "+(e1||e2).message,false); return true; }
