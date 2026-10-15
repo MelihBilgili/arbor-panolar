@@ -878,8 +878,8 @@ async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muht
   rec.teklif_teslim_tarihi=null; /* revize teklif henüz teslim edilmedi — pano "Verilen (Ad.)" sayımı şişmesin */
   { const d=new Date(); rec.gelen_tarih=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); rec.istenen_tarih=rec.gelen_tarih; /* REV-ISTENEN-TARIH (2026-10-01, Melih): İstenen Tarih de geçiş günü */ } /* REV-GELEN-TARIH (2026-10-01, Melih): revizyon kopyasının Gelen Tarih'i = Revizyon İstendi'ye geçirildiği gün (yerel tarih) */
   rec.oncelik=1; /* revizyon her zaman en yüksek öncelik (Melih, 2026-09-18) — kolon smallint */
-  const eskiNot=String(r.teklif_birimi_notlari||"").trim();
-  rec.teklif_birimi_notlari = ntYeniDeger(eskiNot,"Revizyon");  /* YD-NOT-EKLE */
+  const eskiNot=String(r.talebe_iliskin_notlar||"").trim();
+  rec.talebe_iliskin_notlar = ntYeniDeger(eskiNot,"Revizyon");  /* YD-NOT-EKLE */ /* REV-NOT-TALEP (15.10.2026, Melih): revizyon notu Talebe İlişkin Notlar'a (önceden Teklif Birimi Notları) */
   rec.durum=rangeFilled(rec,1,6)?((ilgTam(r)&&rangeFilled(rec,8,11))?"Teklif Bekleniyor":"Teklif İncelendi"):null; /* ILG-ZORUNLU */ /* BEKLENIYOR-8-11 */ /* YD-DURUM-KURAL: öncelik 1 belli → Teklif Bekleniyor */
   rec.son_takip_notlari=null; rec.son_takip_tarihi=null;
   ILG_F.forEach(k=>{ rec[k]=r[k]||null; }); rec.ilgili_id=r.ilgili_id||null; /* YD-ILGILI: ilgili bilgisi kopyaya geçer (MUSTERI-COKLU: ilgili_id de) */
@@ -1170,7 +1170,7 @@ function ctxNeden(r,v){
   if(v==="İptal") return "";
   if(v==="Revizyon İstendi"){
     if(["Teklif Teslim Edildi","Takip Bekleniyor","Muhtemel"].indexOf(r.durum)<0) return "Revizyon yalnız Teklif Teslim Edildi, Takip Bekleniyor veya Muhtemel satırda";
-    if(!state5Ready(r)) return "1-6, 8-11 ve 13-18. sütunlar dolu olmalı";
+    if(r.durum!=="Muhtemel" && !state5Ready(r)) return "1-6, 8-11 ve 13-18. sütunlar dolu olmalı"; /* MUHTEMEL-REV-SERBEST (15.10.2026, Melih): Muhtemel satırda sütun şartı aranmaz (eski satırlarda tarih/öncelik boş) */
     if(r.durum==="Muhtemel" && ROWS.some(x=>x.muhtemel_kaynak_id===r.id)) return "Bu Muhtemel satırın açık bir revizyon kopyası var";
     if(r.durum==="Muhtemel"){ const g=mhGuncel(r); if(g && g.id!==r.id) return "Projenin güncel Muhtemel satırı #"+g.id+" — revizyon oradan açılır"; } /* MUHTEMEL-TEK */
     return "";
