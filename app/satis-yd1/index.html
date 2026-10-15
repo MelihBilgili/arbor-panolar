@@ -453,7 +453,7 @@ const REQ_F=COLS.filter(c=>c.req).map(c=>c.f);
 let ROWS=[];
 let DRAFT=null;
 let PENDING_TK={};
-function newDraftRow(){ const rec={blok:BLOK}; COLS.forEach(c=>{ rec[c.f]=""; }); rec.durum=null; rec.son_takip_notlari=null; rec.son_takip_tarihi=null; return rec; }
+function newDraftRow(){ const rec={blok:BLOK}; COLS.forEach(c=>{ rec[c.f]=""; }); rec.para_birimi="EUR"; /* PB-EUR-VARSAYILAN (15.10.2026, Melih) */ rec.durum=null; rec.son_takip_notlari=null; rec.son_takip_tarihi=null; return rec; }
 function getRow(key){ return key==="draft"?DRAFT:ROWS[+key]; }
 function colFilled(r,idx){
   if(idx>=1&&idx<=18){ const c=COLS[idx-1]; const v=r[c.f]; return v!=null && String(v).trim()!==""; }
