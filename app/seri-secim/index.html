@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Seri Seçim</title>
+<title>Ürün Konfigürasyonu</title><!-- URUN-KONFIG-AD -->
 <!-- SERI-SECIM (2026-10-09): hedef Uw / Rw+Ctr / g / TL değerlerinden pencere serisi + cam seçimi.
      Kaynak: "UW ve dB tablosu.xls" (son kaydeden Orhan Bulut, 09.10.2026) — veri sayfaya gömülü (SERI_VERI). Kullanıcı: Herkes. -->
 <style>
@@ -66,7 +66,7 @@
 </head>
 <body>
 <header>
-  <h1>Seri Seçim</h1>
+  <h1>Ürün Konfigürasyonu</h1>
   <div class="sub">Hedef ısı (Uw), ses (Rw+Ctr) ve cam değerlerini giriniz; Arbor serileri ve test edilmiş cam kombinasyonlarından bu değerleri karşılayanlar listelenir. Boş bırakılan hedef serbesttir. Başlığa tıklayarak sıralayabilirsiniz. Satıra sağ tıklayıp <b>Cam konfigürasyona aktar</b> ile camın değerlerini Cam Konfigürasyon formuna taşıyabilirsiniz.</div>
 </header>
 <div class="wrap">
@@ -134,7 +134,7 @@ function arbGateUI(){
   var opts='<option value="" disabled selected>— Rolünüzü seçiniz —</option>'
     + ARB_ROLLER.map(function(r){ return '<option value="'+r.email+'">'+r.ad+'</option>'; }).join("");
   d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:330px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
-    +'<div style="font-weight:700;font-size:16px;margin-bottom:10px">Arbor — Seri Seçim</div>'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:10px">Arbor — Ürün Konfigürasyonu</div>'
     +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:10px">Kişisel giriş kodunuzu giriniz. Rolünüz koda göre otomatik belirlenir.</div>'
     +'<input id="arb-pw" type="password" placeholder="6 haneli giriş kodu" autocomplete="off" inputmode="numeric" maxlength="6" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
     +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giriş</button>'
@@ -173,7 +173,7 @@ const $=id=>document.getElementById(id);
   if(ARB_EMAIL==="int@arbor.com.tr") return;
   const k=(window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null;
   const l=$("rolLbl");
-  l.innerHTML='<b style="color:#16324f;font-size:12.5px">Oturum: '+esc(k?k.kod+' — '+k.ad:'Seri Seçim')+'</b>';
+  l.innerHTML='<b style="color:#16324f;font-size:12.5px">Oturum: '+esc(k?k.kod+' — '+k.ad:'Ürün Konfigürasyonu')+'</b>';
   const b=document.createElement("button"); b.textContent="Çıkış"; b.className="btn2"; b.style.marginLeft="8px";
   b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); };
   l.appendChild(b);
