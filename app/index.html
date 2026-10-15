@@ -834,7 +834,7 @@ function pipeGenTbl(title, rows, cols){
     ${rows.length?`<div class="scroll"><table class="sat"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`:'<div class="hint">Satır yok.</div>'}`;
 }
 /* Yurt Dışı Satış 1+2 (satis_yd_akis) — durum bazlı 4 aşama, her biri YD1/YD2 alt-bloklarına ayrılır; Takipteki Teklifler bloklarının yerini alır */
-function ydRevMi(r){ if(!r) return false; if(r.muhtemel_kaynak_id) return true; return String(r.teklif_birimi_notlari||"").split(/\r?\n/).some(function(x){ return /^(\d{2}\/\d{2}\/\d{2} [^:]{1,15}: )?Revizyon(\s*—.*)?$/i.test(x.trim()); }); } /* REV-PROJE-KOYU (09.10.2026, Melih): revizyon kopyası = muhtemel_kaynak_id ya da "Revizyon" not satırı */
+function ydRevMi(r){ if(!r) return false; if(r.muhtemel_kaynak_id) return true; return (String(r.talebe_iliskin_notlar||"")+"\n"+String(r.teklif_birimi_notlari||"")).split(/\r?\n/).some( /* REV-NOT-TALEP (15.10.2026): revizyon notu artık Talebe İlişkin Notlar'da */function(x){ return /^(\d{2}\/\d{2}\/\d{2} [^:]{1,15}: )?Revizyon(\s*—.*)?$/i.test(x.trim()); }); } /* REV-PROJE-KOYU (09.10.2026, Melih): revizyon kopyası = muhtemel_kaynak_id ya da "Revizyon" not satırı */
 function pipelineTables(ydRows, today){
   const sorted=ydRows.slice().sort((a,b)=>String(b.gelen_tarih||'').localeCompare(String(a.gelen_tarih||'')));
   /* YD-ILG-EKSIK-PANO (08.10.2026, Melih): proje ilgilisi kartı (Ad, E-posta, Telefon) eksik "Teklif İncelendi" satırı Öncelik bloğunda değil
