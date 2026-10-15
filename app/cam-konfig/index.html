@@ -46,21 +46,23 @@
 
   /* CAM-KONFIG-DAR (12.10.2026): Yapi ve sinirlar kutulari %20 dar; tablo sutunlari sabit genislik */
   .g3{width:80%}
-  .res table{width:789px;table-layout:fixed} /* CAM-KONFIG-DAR2: Konfigurasyon 272->340, Uretici 69->92 (Saint-Gobain sigar) */
+  .res table{width:851px;table-layout:fixed} /* CAM-KONFIG-DAR2: Konfigurasyon 272->340, Uretici 69->92 (Saint-Gobain sigar) */
   .res thead th{white-space:normal;box-sizing:border-box;overflow:hidden;padding-left:4px;padding-right:4px}
-  .res td:nth-child(2){white-space:normal}
+  .res td:nth-child(3){white-space:normal} /* CAM-KONFIG-PENCAD: Uretici artik 3. sutun */
   .res td.komb{min-width:0;max-width:none}
   .res td{overflow:hidden;text-overflow:ellipsis}
   /* CAM-KONFIG-LRSELCIK (12.10.2026): LR dis ve LT/g sutunlari kaldirildi */
+  /* CAM-KONFIG-PENCAD (15.10.2026): 2. sutun Pencad (62px), tablo 789->851 */
   .res th:nth-child(1){width:340px}
-  .res th:nth-child(2){width:92px}
-  .res th:nth-child(3){width:59px}
-  .res th:nth-child(4){width:54px}
-  .res th:nth-child(5){width:58px}
-  .res th:nth-child(6){width:38px}
+  .res th:nth-child(2){width:62px}
+  .res th:nth-child(3){width:92px}
+  .res th:nth-child(4){width:59px}
+  .res th:nth-child(5){width:54px}
+  .res th:nth-child(6){width:58px}
   .res th:nth-child(7){width:38px}
-  .res th:nth-child(8){width:50px}
-  .res th:nth-child(9){width:60px}
+  .res th:nth-child(8){width:38px}
+  .res th:nth-child(9){width:50px}
+  .res th:nth-child(10){width:60px}
 
   /* CAM-KONFIG-SAGTIK: satira sag tik -> Cam Fiyatlandirma alternatifleri + fiyat kullanim talimati */
   #cfPop{position:fixed;inset:0;background:rgba(10,25,40,.35);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:40px 12px;overflow:auto}
@@ -308,6 +310,15 @@ function fiyat(r){
   r._fy=(an?est*Math.exp(an[0]):est)*k30*CAMM.KAT; return r._fy;
 }
 let DATA=[];
+/* CAM-KONFIG-PENCAD (15.10.2026): camin Cam Listesi'nde 21 ile baslayan stok kodu varsa Pencad = "Mevcut".
+   Esleme: Cam Listesi kaynakli satirda kaynak_ref "cam_listesi#<id>"; diger kaynaklarda kombinasyon adi
+   (listedeki ", Ug=..." eki atilarak, buyuk/kucuk harf ve bosluk farki yok sayilarak) birebir. */
+let PC_ID=new Set(), PC_AD=new Set();
+const pcAd=x=>String(x||"").replace(/,\s*Ug\s*=.*$/i,"").replace(/\s+/g," ").trim().toLowerCase();
+function pencad(r){ if(r._pc!==undefined) return r._pc; const m=/cam_listesi#(\d+)/.exec(r.kaynak_ref||"");
+  r._pc=(m&&PC_ID.has(+m[1]))||PC_AD.has(pcAd(r.kombinasyon)); return r._pc; }
+async function pencadYukle(){ try{ const q=await sb.from("cam_listesi").select("id,kombinasyon,stok_kodu").like("stok_kodu","21%");
+  if(!q.error&&q.data){ q.data.forEach(x=>{ PC_ID.add(+x.id); PC_AD.add(pcAd(x.kombinasyon)); }); } }catch(e){ console.warn("Pencad listesi okunamadı",e); } }
 async function load(){
   let all=[], from=0;
   for(;;){ const {data,error}=await sb.from("cam_konfig").select("*").eq("aktif",true).order("id").range(from,from+999);
@@ -323,6 +334,7 @@ async function load(){
   $("f_ur").innerHTML='<option value="">Hepsi</option>'+ur.map(u=>'<option>'+esc(u)+'</option>').join("");
   const ky=[...new Set(DATA.map(r=>r.kaynak))].sort((a,b)=>a.localeCompare(b,"tr"));
   $("f_kay").innerHTML='<option value="">Hepsi</option>'+ky.map(u=>'<option value="'+esc(u)+'">'+esc((KAYNAK[u]||{}).e||u)+'</option>').join("");
+  await pencadYukle(); /* CAM-KONFIG-PENCAD */
   kaynakYaz(); calc();
   await modelYukle(); calc();   /* CAM-KONFIG-FIYAT */
 }
@@ -371,7 +383,7 @@ const SIR={ince:r=>r.kalinlik==null?1e9:r.kalinlik, hafif:r=>r._agr==null?1e9:r.
   lt:r=>r.lt==null?1e9:-r.lt, g:r=>r.g==null?1e9:r.g, rw:r=>r.rw==null?1e9:-r.rw};
 /* CAM-KONFIG-SIRALA */
 let SORT={k:"fiyat",d:1};
-const SKEY={komb:r=>String(r.kombinasyon||""),ur:r=>String(r.uretici||""),kal:r=>r.kalinlik,agr:r=>r._agr,ug:r=>r.ug,lt:r=>r.lt,lr:r=>r.lr_dis,g:r=>r.g,sel:r=>r._sel,rwctr:r=>r._rwctr,fiyat:r=>fiyat(r)};
+const SKEY={komb:r=>String(r.kombinasyon||""),pc:r=>pencad(r)?0:1/* CAM-KONFIG-PENCAD */,ur:r=>String(r.uretici||""),kal:r=>r.kalinlik,agr:r=>r._agr,ug:r=>r.ug,lt:r=>r.lt,lr:r=>r.lr_dis,g:r=>r.g,sel:r=>r._sel,rwctr:r=>r._rwctr,fiyat:r=>fiyat(r)};
 function sirala(a){ const f=SKEY[SORT.k]; if(!f) return a; return a.sort((x,y)=>{ const p=f(x),q=f(y);
   if(p==null&&q==null) return 0; if(p==null) return 1; if(q==null) return -1;
   return (typeof p==="string"?p.localeCompare(q,"tr"):p-q)*SORT.d; }); }
@@ -395,7 +407,7 @@ function tablo(rows,h,yakinMod){
   /* CAM-KONFIG-FIYAT: sütunlar Konfigürasyon · Üretici · Kalınlık(1) · Ağırlık(0) · Ug(2) · LT(0) · LR dış(0) · G(0) · LT/g(2) · Rw+Ctr · Fiyat */
   const bad=(r,k)=>r._k.miss[k]!==undefined?' bad':'';
   /* CAM-KONFIG-SIRALA: başlığa tıklayınca o sütuna göre sırala (tekrar tıklama yönü çevirir) */
-  const TH=[["komb","Konfigürasyon (dıştan içe)","l"],["ur","Üretici","l"],["kal","Kalınlık<br>mm"],["agr","Ağırlık<br>kg/m²"],["ug","Ug<br>W/m²K"],["lt","LT<br>%"],["g","g<br>%"],["rwctr","Rw+Ctr<br>dB"],["fiyat","Fiyat<br>€/m²"]];
+  const TH=[["komb","Konfigürasyon (dıştan içe)","l"],["pc","Pencad","l"]/* CAM-KONFIG-PENCAD */,["ur","Üretici","l"],["kal","Kalınlık<br>mm"],["agr","Ağırlık<br>kg/m²"],["ug","Ug<br>W/m²K"],["lt","LT<br>%"],["g","g<br>%"],["rwctr","Rw+Ctr<br>dB"],["fiyat","Fiyat<br>€/m²"]];
   const th='<thead><tr>'+TH.map(c=>'<th data-k="'+c[0]+'" class="'+(c[2]||'')+'" style="cursor:pointer" title="Sıralamak için tıklayın">'+c[1]+(SORT.k===c[0]?(SORT.d>0?' ▲':' ▼'):'')+'</th>').join('')+'</tr></thead>';
   window._ROWS=rows; /* CAM-KONFIG-SAGTIK */
   const tb=rows.map((r,ri)=>{ const K=KAYNAK[r.kaynak]||{e:r.kaynak,c:""};
@@ -403,6 +415,7 @@ function tablo(rows,h,yakinMod){
     const rwt=r.rw==null?"":(' · Rw '+Math.round(r.rw)+(r.c!=null&&r.ctr!=null?' ('+Math.round(r.c)+';'+Math.round(r.ctr)+')':''));
     const fy=fiyat(r);
     return '<tr data-i="'+ri+'" class="'+(yakinMod?'yakin':'')+'"><td class="l komb" title="'+esc([(r.yapi||""),K.e,ozl,(r.notlar||"")].filter(Boolean).join(' · ')+rwt)+'">'+esc(String(r.kombinasyon||"").replace(/Ar90\b/g,"Ar"))/* CAM-KONFIG-AR */+'</td>'
+      +'<td class="l">'+(pencad(r)?'Mevcut':'')+'</td>'/* CAM-KONFIG-PENCAD */
       +'<td class="l"'+(/şişecam|sisecam/i.test(r.uretici||"")?' style="font-weight:700;color:#0b1f33"':'')/* CAM-KONFIG-SISECAM */+'>'+esc(r.uretici||"–")+'</td>'
       +'<td class="'+bad(r,"kal")+'">'+f2(r.kalinlik,1)+'</td>'
       +'<td class="'+bad(r,"agr")+'">'+(r._agr==null?"–":f2(r._agr,0))+'</td>'
