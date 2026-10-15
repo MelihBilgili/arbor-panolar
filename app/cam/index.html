@@ -46,7 +46,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     var mb=oku(MBK);
     if(mb&&mb.user&&String(mb.user.email||"").toLowerCase()==="int@arbor.com.tr"&&mb.refresh_token){ ac(); return; }
     var t0=oku(SK), t=await tazele(t0);
-    if(t&&t.user&&String(t.user.email||"").toLowerCase()===ROL){ if(t!==t0){ yaz(SK,t); if(window.ARB_CAM_CANLI) window.ARB_CAM_CANLI(); } ac(); return; }
+    /* CAM-SADECE-MB (15.10.2026): sayfa yalniz MB'ye acik; cam.form@ oturumu artik kapidan gecirmez (form_erisim cam/ bos). */
     ui();
   }
   function ui(){
