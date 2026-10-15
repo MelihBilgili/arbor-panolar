@@ -700,7 +700,7 @@ function rowHTML(r,key){
         else if(terminGec(r)){ uyari=" terminuyari"; ipucu=' title="İstenen Tarih, Teklif Teslim Tarihi\'nden erken — termin aşıldı"'; }
       }
       const tdc=(c.t==='num'?'net':'')+(c.f==='musteri'?'mus'+(ilgVar(r)?' ilg-var':''):''); /* YD-ILGILI */
-      return '<td class="'+tdc+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+prjCls(r,c.f,key)+'" data-f="'+c.f+'" type="text"'+ipucu+' style="width:'+c.w+'px" value="'+esc(v)+'"></td>';
+      return '<td class="'+tdc+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+prjCls(r,c.f,key)+'" data-f="'+c.f+'" type="text"'+ipucu+(alanYasak(c.f)?' readonly title="Bu alana kayıt yetkiniz yok" style="cursor:not-allowed;color:#6a7888;':' style="')+'width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
     +pairCells(r,key,bg)
     +'<td style="background:'+bgv+'"><div class="durumro'+durumWarn+'" style="width:122px" title="'+(key==="draft"?"":"Durum değiştirmek için satıra sağ tıklayın")+'">'+esc(r.durum||"")+'</div></td>' /* DURUM-SAGTIK: elle seçim yok */
@@ -816,6 +816,7 @@ async function musOnemKontrol(ad){
 function musOnemGoster(key,val){ const s=document.querySelector('#list tr[data-i="'+key+'"] select[data-f="musteri_onem_sinifi"]'); if(s){ s.value=val||""; s.classList.toggle("filled",!!val); } }
 async function saveRow(key,f,val,el){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
+  if(alanYasak(f)){ if(el) el.value=(r[f]==null?"":r[f]); setMsg("Bu alana kayıt yetkiniz yok.",false); return; } /* ALAN-YETKI */
   let v=convVal(f,val);
   if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YY biçiminde olmalı."; return; }
   let musOnem; /* MUSTERI-ONEM-OTO */
@@ -953,6 +954,9 @@ function ntYeniDeger(eski,txt){ const t=String(txt||"").replace(/\s*\r?\n\s*/g,"
 let NT_HEDEF=null;
 /* NOT-YETKI (06.10.2026, Melih): OBL Talebe İlişkin Notlar'a, MN Teklif Birimi Notları'na kayıt yapamaz (okuyabilir). */
 const NT_YASAK={talebe_iliskin_notlar:["OBL"],teklif_birimi_notlari:["MN"]};
+/* ALAN-YETKI (15.10.2026, Melih): OBL Montaj Hariç Net Tutar'ı yazamaz (okuyabilir). */
+const ALAN_YASAK={net_tutar:["OBL"]};
+function alanYasak(f){ return !!ARB_EKLEYEN && (ALAN_YASAK[f]||[]).indexOf(ARB_EKLEYEN)>=0; }
 function ntYasak(f){ return !!ARB_EKLEYEN && (NT_YASAK[f]||[]).indexOf(ARB_EKLEYEN)>=0; }
 function ntAc(key,f){
   if(ntYasak(f)){ setMsg("Bu not alanına kayıt yetkiniz yok.",false); return; } /* NOT-YETKI */
