@@ -95,7 +95,7 @@
   .res tr.yakin td.komb{color:#7a4b00}
   .etk{display:inline-block;font-size:10.5px;font-weight:600;border-radius:4px;padding:0 5px;margin-left:4px;background:#e6eef7;color:#16324f}
   .etk.calumen{background:#e3f1fb;color:#0b5a8a}.etk.guardian{background:#e8f0ff;color:#1b3f8f}.etk.sisecam{background:#fdeee6;color:#9a3a00}
-  .etk.agc{background:#e7f5ef;color:#0b6b48}.etk.vitro{background:#f1ecfa;color:#4b2d84}.etk.liste{background:#eef1f5;color:#4a5a6b}.etk.pilk{background:#fff4d6;color:#7a5600}
+  .etk.agc{background:#e7f5ef;color:#0b6b48}.etk.vitro{background:#f1ecfa;color:#4b2d84}.etk.liste{background:#eef1f5;color:#4a5a6b}.etk.pilk{background:#fff4d6;color:#7a5600}.etk.euroglas{background:#fbe9ee;color:#8a1538}/* CAM-KONFIG-EUROGLAS */
   .bos{padding:14px;color:#6b7a89}
   .kaynaklar{margin-top:14px;font-size:12px;color:#4a5a6b;line-height:1.6}
   .kaynaklar a{color:#16324f}
@@ -239,6 +239,7 @@ const KAYNAK={
   "Cam Listesi":{e:"Cam Listesi",c:"liste",u:"../cam-listesi/",t:"Cam Listesi (üretici hesaplayıcı değerleri)"},
   "Guardian Glass Selector":{e:"Guardian",c:"guardian",u:"https://www.guardianglass.com/content/dam/guardianindustriesholdings/technical-center/europe/architectural/digital-glass-selector/Guardian-Glass-Digital-Selector-EN.pdf",t:"Guardian Glass Digital Selector 2025 (Glass Analytics değerleri)"},
   "AGC Pocket Value":{e:"AGC",c:"agc",u:"https://agc-yourglass.com/sites/default/files/2025-02/Pocket_Value_AGC_02-2025_SHOWPAD_EN.pdf",t:"AGC Pocket Value 02-2025 (Glass Configurator değerleri)"},
+  "Euroglas glaCE":{e:"Euroglas",c:"euroglas",u:"https://glace.euroglas.com/dashboard",t:"Euroglas SILVERSTAR glaCE"}, /* CAM-KONFIG-EUROGLAS (15.10.2026) */
   "Saint-Gobain Kılavuz":{e:"Saint-Gobain",c:"calumen",u:"https://saint-gobain-glass.co.uk/document/commercial-product-performance-guide",t:"Saint-Gobain Commercial Product Performance Guide 2026"}
 };
 /* CAM-KONFIG-AKUSTIK: Rw'si olmayan konfigürasyona aynı cam yapısının (cam kalınlıkları + akustik ara katman; kaplama etkisiz) ölçülmüş Rw (C;Ctr) değeri ≈ ile atanır.
@@ -513,7 +514,7 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape") cfKapat(); });
   const set=(id,k)=>{ const v=u.get(k); if(v!=null&&v!==""&&$(id)) $(id).value=v; };
   set("h_ug","ug"); set("h_lt","lt"); set("h_gmax","gmax"); set("h_rwctr","rwctr");
   const b=document.createElement("div"); b.className="uyari";
-  /* URUN-KONFIG-AD */ b.innerHTML="Ürün Konfigürasyonu'ndan aktarıldı: <b>"+esc(u.get("seri")||"")+"</b> · "+esc(u.get("cam")||"")+" — Ug, LT, g ve Rw+Ctr hedefleri bu camın değerleriyle dolduruldu (Rw+Ctr = pencerenin değeri).";
+  b.innerHTML="Seri Seçim'den aktarıldı: <b>"+esc(u.get("seri")||"")+"</b> · "+esc(u.get("cam")||"")+" — Ug, LT, g ve Rw+Ctr hedefleri bu camın değerleriyle dolduruldu (Rw+Ctr = pencerenin değeri).";
   const p=document.querySelector(".panel"); if(p) p.parentNode.insertBefore(b,p);
 }catch(e){} })();
 load();
