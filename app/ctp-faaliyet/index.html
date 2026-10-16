@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CTP — Faaliyet Formu</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
+  .wrap{max-width:1120px;margin:0 auto;padding:14px 16px 70px}
+  .blk{background:#fff;border:1px solid #dde3ea;border-radius:10px;margin-bottom:16px;overflow:hidden}
+  .blk>h2{font-size:14px;margin:0;padding:10px 14px;color:#fff}
+  .blk .formula{font-size:11.5px;color:#eaf1f8;font-weight:400}
+  .b1>h2{background:#16324f}.b2>h2{background:#0a6b57}.b3>h2{background:#7a3d8f}.b4>h2{background:#b5651d}
+  .tblwrap{overflow:auto}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+  thead th{background:#eef4fb;color:#16324f;font-weight:600;font-size:11.5px;padding:7px 9px;text-align:left;white-space:nowrap;border-bottom:2px solid #d3e0ee}
+  td{border-bottom:1px solid #eef1f5;padding:5px 7px;vertical-align:top}
+  input.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:5px 7px;width:100%;background:#fff}
+  input.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
+  td.num input{text-align:right}
+  textarea.cell{min-height:32px;resize:vertical;min-width:160px}
+  .prim{text-align:right;white-space:nowrap;font-weight:700;color:#0a5745}
+  .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
+  .colp{width:1%;white-space:nowrap}
+  .blkfoot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:9px 14px;background:#fbfcfe;border-top:1px solid #eef1f5}
+  .btn{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer}
+  .btn.sec{background:#e3edf7;color:#16324f;font-weight:600;padding:7px 12px;font-size:13px}
+  .btn:disabled{opacity:.5;cursor:default}
+  .subt{font-size:12.5px;color:#5a6b7d;margin-left:auto}
+  .subt b{color:#0a5745}
+  .totbar{position:sticky;bottom:0;background:#16324f;color:#fff;border-radius:10px;padding:12px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:6px;box-shadow:0 -2px 10px rgba(0,0,0,.12)}
+  .totbar .big{font-size:18px;font-weight:800}
+  .totbar .msg{font-size:12.5px;font-weight:600;min-height:16px}
+  .totbar .msg.ok{color:#8ff0c2}.totbar .msg.err{color:#ffb4b4}
+  .hint{font-size:12px;color:#8a97a4;margin:2px 2px 14px}
+  .aybar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:0 0 14px}
+  .aybar .msg{font-size:12.5px;font-weight:600}
+  .aybar .msg.ok{color:#2e7d54}.aybar .msg.err{color:#b40000}
+  .aywarn{font-size:12px;color:#b25a00;margin-left:auto}
+  table.pivt{border-collapse:collapse;font-size:12.5px;width:auto;min-width:0}
+  table.pivt th,table.pivt td{border:1px solid #e3e9f0;padding:5px 8px;text-align:left}
+  table.pivt thead th{background:#eef4fb;color:#16324f;font-weight:600;font-size:11.5px;white-space:nowrap;vertical-align:bottom;position:static;border-bottom:2px solid #d3e0ee}
+  table.pivt th.grp{text-align:center;background:#dce7f3}
+  table.pivt th.mkg{background:#d7ece4;color:#0a5745}
+  table.pivt td{vertical-align:top}
+  table.pivt td.ssan,table.pivt th.ssan{white-space:nowrap;font-weight:700;color:#16324f}
+  table.pivt td.sdt,table.pivt th.sdt{white-space:nowrap;color:#5a6b7d}
+  table.pivt .sxc{display:block;width:42ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.pivt .sed{cursor:text;border:1px dashed #cdd6df;border-radius:5px;padding:2px 5px;min-height:20px}
+  table.pivt .sed:hover{border-color:#0a6b57;background:#f4fbf8}
+  table.pivt .sed.bos{color:#b7c6d6}
+  table.pivt .sed textarea{white-space:normal}
+  table.pivt .sxc::-webkit-scrollbar{display:none}
+
+html,body{max-width:100vw;overflow-x:hidden}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+</style>
+</head>
+<body>
+<!-- CTP-FAALIYET (16.10.2026, Melih): Giriş panosundaki Muhtemel > 500.000 tablosu (+ Not), Satış ve Etüt DK1 grafikleri ve Eğitim satırı.
+     İçerik app/giris_ust.js'ten (kaynak kod/giris_ust.js, GRUST.render bolum:"ctp"). Rol ctp.form@arbor.com.tr, giriş kişisel kodla (CTP). -->
+<header>
+  <h1>CTP — Faaliyet Formu</h1>
+  <div class="sub">Muhtemel projeler, satış ve Etüt DK1 göstergeleri, eğitim özeti. Takip notları ilgili satış formuna yazılır.</div>
+</header>
+<div class="wrap">
+  <div id="gr-ust"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../giris_ust.js?v=261016d"></script><!-- GIRIS-UST-ORTAK -->
+<script>
+/* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
+   kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
+   proje · proje_adi · musteri · firma alanlarına (fiyat_musteri_sinif'te ad) uygulanır — tek kaynak: kod/_arb_ad_yazim.js */
+(function(){
+  if(window.ARB_AD) return;
+  var AKR=("SCI SAS SARL SA SASU EURL SNC SEM SPL SPLA ZAC PEM PST MVT AÜP OE ÖB MK MB EU UK USA TR FR AŞ LTD LLC PLC GMBH AG BV NV SPA SRL "+
+    "HLM OPH OPAC EHPAD CHU CROUS RATP SNCF IDF ICF HQE BBC CA ILM FCAI CLC CBC LCB BAT BTP TRT KDV SGDB SVM LMP RBKC MTC GTM NHS PVC "+
+    "ARGE ARB YD SÖ TOKİ İBB İTÜ ODTÜ ENSA ESSEC ENS HEC IUT CFA RTE EDF GDF CCI CMA SEMIIC SAEM SPIE CPAM CAF UGC ARS KYK TMO SGK TCDD İSKİ AVM ÖSYM THY PTT MSB TBMM YTÜ MSGSÜ").split(" ");
+  var AK={}; AKR.forEach(function(w){ AK[w]=1; });
+  var KUCUK={ST:1,MR:1,DR:1,SR:1,JR:1,MRS:1,MS:1};           /* sesli harfsiz ama kısaltma sayılmayanlar → St, Mr … */
+  var TRH=/[ğĞşŞıİçÇöÖüÜ]/, SESLI=/[aeiouyàâäéèêëîïôöùûüÿıAEIOUYÀÂÄÉÈÊËÎÏÔÖÙÛÜŸİ]/, ROMA=/^(I{1,3}|IV|VI{0,3}|IX|XI{0,3}|XIV|XV)$/;
+  function up(w,tr){ return tr?w.toLocaleUpperCase("tr"):w.toUpperCase(); }
+  function lo(w,tr){ return tr?w.toLocaleLowerCase("tr"):w.toLowerCase(); }
+  var OLAGAN={};  /* karışık metinde büyük yazılsa da kısaltma sayılmayan sık kelimeler */
+  ("LE LA LES DE DU DES SUR SOUS AUX AU ET EN UN UNE THE OF AND FOR ON IN AT TO VON DER DIE DAS UND IM AM ZUM ZUR VE İLE EVİ BEY HAN KAT LOT VIA DEL DI DA LOS EL SAN SUD NORD EST OUEST").split(" ").forEach(function(w){ OLAGAN[w]=1; });
+  function kelime(w,karisik,tr){
+    if(/\d/.test(w)) return w;                                   /* rakamlı (P19, I3F, 68s) aynen */
+    var U=up(w,tr);
+    if(AK[U]) return U;
+    if(w.length===1) return U;                                   /* tek harf (Lot F, Y Blok) */
+    if(ROMA.test(U)) return U;                                   /* III. Faz */
+    if(!SESLI.test(w) && !KUCUK[U]) return U;                    /* sesli harfsiz: SVM, LMP, RBKC */
+    if(karisik && w===U && w.length<=3 && !OLAGAN[U]) return U;                /* karışık yazılmış metinde büyük yazılmış kısa kelime = kısaltma */
+    var l=lo(w,tr); return up(l.charAt(0),tr)+l.slice(1);
+  }
+  window.ARB_AD=function(s){
+    if(s==null||typeof s!=="string") return s;
+    var t=s.replace(/\s+/g," ").trim(); if(!t) return t;
+    var harf=t.replace(/[^\p{L}]/gu,""), karisik=harf!==harf.toUpperCase()&&harf!==harf.toLowerCase(), tr=TRH.test(t);  /* Türkçe harf içeren metin → tr yerel ayarı (YAPI → Yapı) */
+    return t.replace(/[\p{L}\p{M}\p{N}]+/gu,function(w){ return kelime(w,karisik,tr); });
+  };
+  var ALAN={proje:1,proje_adi:1,musteri:1,firma:1};
+  function donus(o,tablo){
+    if(Array.isArray(o)){ for(var i=0;i<o.length;i++) donus(o[i],tablo); return o; }
+    if(o&&typeof o==="object"){ for(var k in o){ if(typeof o[k]==="string"&&(ALAN[k]||(k==="ad"&&tablo==="fiyat_musteri_sinif"))) o[k]=window.ARB_AD(o[k]); } }
+    return o;
+  }
+  window.ARB_AD_DONUS=donus;
+  var of=window.fetch.bind(window);
+  window.fetch=function(u,o){
+    var url=String((u&&u.url)||u||""), m=url.match(/\/rest\/v1\/([A-Za-z0-9_]+)/), tablo=m?m[1]:null;
+    if(!tablo) return of(u,o);
+    try{ var me=((o&&o.method)||"GET").toUpperCase();
+      if(o&&typeof o.body==="string"&&/^(POST|PATCH|PUT)$/.test(me)&&tablo!=="rpc"){ o=Object.assign({},o,{body:JSON.stringify(donus(JSON.parse(o.body),tablo))}); } }catch(e){}
+    return of(u,o).then(function(r){
+      var ct=r.headers.get("content-type")||"";
+      if(!r.ok||ct.indexOf("json")<0) return r;
+      return r.clone().text().then(function(t){ if(!t) return r;
+        try{ return new Response(JSON.stringify(donus(JSON.parse(t),tablo)),{status:r.status,statusText:r.statusText,headers:r.headers}); }catch(e){ return r; } });
+    });
+  };
+})();
+</script>
+<script>
+/* ARB-KOD-GIRIS (23.09.2026): forma giris = kisisel 6 haneli kod (App > Referans > Kisiler > Sifre).
+   form-giris edge fonksiyonu kodu dogrular, yetkiyi form_erisim'den kontrol eder, rolu otomatik secer ve
+   rol hesabi icin tek kullanimlik token doner; burada verifyOtp ile oturum acilir. Rol hesaplarinin parolasi yoktur. */
+window.ARB_FORM_YOL=(function(){ var m=/\/app\/([^\/]+)\//.exec(location.pathname); return m?m[1]+"/":""; })();
+window.ARB_KOD_GIRIS=async function(cli,kod){
+  kod=String(kod==null?"":kod).replace(/\D/g,"");
+  if(kod.length!==6) return {error:{message:"Kod 6 haneli olmal\u0131d\u0131r."}};
+  try{
+    var r=await fetch("https://zehysygpqxqmrzangvuc.supabase.co/functions/v1/form-giris",{method:"POST",cache:"no-store",
+      headers:{"Content-Type":"application/json",apikey:"sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc"},
+      body:JSON.stringify({form:window.ARB_FORM_YOL,kod:kod})});
+    var j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok||!j.ok||!j.token_hash) return {error:{message:j.hata||"Kod hatal\u0131."}};
+    var v=await cli.auth.verifyOtp({token_hash:j.token_hash,type:"magiclink"});
+    if(v.error) return {error:{message:"Giri\u015f a\u00e7\u0131lamad\u0131: "+v.error.message}};
+    try{ localStorage.setItem("arb_kisi_"+window.ARB_FORM_YOL,JSON.stringify({kod:j.kisi,ad:j.ad,rol:j.rol})); }catch(e){}
+    return {error:null,data:j};
+  }catch(e){ return {error:{message:"Ba\u011flant\u0131 hatas\u0131."}}; }
+};
+window.ARB_KISI_AL=function(em){ try{ var k=JSON.parse(localStorage.getItem("arb_kisi_"+window.ARB_FORM_YOL)||"null"); return (k&&(!em||k.rol===em))?k:null; }catch(e){ return null; } };
+</script>
+<script>
+/* ===== ARBOR FORM KAPISI (2026-08-20) — anon erisim kapali, rol hesabiyla giris ===== */
+const ARB_ROLE_EMAIL = "ctp.form@arbor.com.tr";
+const ARB_STORE = "arbform_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
+const ARB_MB = "int@arbor.com.tr";
+/* panolarin varsayilan oturumu (ayni origin, varsayilan storageKey) */
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+var ARB_ACTIVE = ARB_GATE_SB;
+/* form kodu kendi createClient cagirsa bile aktif oturumlu istemci doner */
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(msg){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:310px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:3px">Arbor — Form Girisi</div>'
+    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:10px">Kişisel giriş kodunuzu giriniz. Rolünüz koda göre otomatik belirlenir.</div>'
+    +'<input id="arb-pw" type="password" placeholder="6 haneli giriş kodu" autocomplete="off" inputmode="numeric" maxlength="6" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giris</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px">'+(msg||"")+'</div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var pw=document.getElementById("arb-pw").value;
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giris yapiliyor...";
+    var r=await ARB_KOD_GIRIS(ARB_GATE_SB,pw);
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent=((r.error&&r.error.message)||"Kod hatalı."); return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  if(em!==ARB_ROLE_EMAIL){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(em===ARB_ROLE_EMAIL || em===ARB_MB){ (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script>
+/* FORM-ENGEL-IZ (2026-09-22): güncelleme düğmesi bir kontrol yüzünden durdurulursa (uyarı penceresi) form_engel'e kayıt → Formlar panosunda uyarı */
+(function(){ var FK="ctp_faaliyet", oa=window.alert.bind(window);
+  window.alert=function(m){ try{ var t=String(m==null?"":m);
+    if(/G[üu]ncelle(me)?\s+(yap[ıi]la|tamamlana)/i.test(t) && typeof ARB_ACTIVE!=="undefined" && ARB_ACTIVE)
+      ARB_ACTIVE.from("form_engel").insert({form_key:FK, mesaj:t.slice(0,600)}).then(function(){},function(){});
+  }catch(e){} return oa(m); };
+})();
+</script>
+<script type="text/plain" id="arbmain">
+const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+/* CTP-FAALIYET: not ekleyen = giriş kodunun kişisi, yoksa CTP (MB oturumunda MB) */
+if(window.GRUST) GRUST.render(document.getElementById("gr-ust"),{sb:sb,bolum:"ctp",ekleyen:()=>((window.ARB_KISI_AL&&(ARB_KISI_AL(ARB_ROLE_EMAIL)||{}).kod)||(ARB_ACTIVE===ARB_MB_SB?"MB":"CTP"))});
+else document.getElementById("gr-ust").textContent="İçerik yüklenemedi.";
+</script>
+</body>
+</html>
