@@ -447,6 +447,7 @@ async function loadGiris(){
     .gr-cards{display:flex;flex-wrap:wrap;gap:10px}
     .gr-card{border:1px solid #dfe5ec;border-radius:8px;background:#fff;padding:6px 8px 2px}
     .gr-ct{font-size:11.5px;color:#4a5a6a}.gr-cv{font-size:15px;font-weight:700;margin:1px 0 2px}
+    .gr-sa{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}.gr-sab{border:1px solid #c9d6e3;border-left:4px solid #2e6da4;border-radius:6px;background:#f6f9fc;padding:5px 12px;min-width:150px}
     .gr-svg{display:block}.gr-ax{stroke:#cfd8e2;stroke-width:1}.gr-ln{fill:none;stroke:#2e6da4;stroke-width:1.6}
     .gr-d{fill:#2e6da4}.gr-dc{fill:#e07b00}.gr-b{fill:#7aa3c9}.gr-bc{fill:#e07b00}
     .gr-yl{font-size:8.5px;fill:#7b8794;text-anchor:end}.gr-xl{font-size:8.5px;fill:#7b8794}
@@ -463,8 +464,8 @@ async function loadGiris(){
     <div id="gr-satis"></div>
     <div id="gr-trend"></div>
     <div id="gr-selarb"></div><div id="gr-selarb-tmp" style="display:none"></div>
-    <div id="gr-santiye"></div>
     <div id="gr-cari"></div>
+    <div id="gr-santiye"></div>
     <div id="gr-egitim"></div>
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
@@ -584,7 +585,8 @@ async function grSatis(){
   const KART=[["so_m","Yurt İçi muht. Prj (€)"],["yd_a","Yurt Dışı alınan Prj (€)"],["yd_m","Yurt Dışı muht. Prj (€)"],["top_a","Top.alınan Prj (€)"],["top_m","Top.muht. Prj (€)"]];
   const et=grEl("gr-trend");
   if(et) et.innerHTML=`<h3 class="sec">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3><div class="gr-cards">`
-    +KART.map(([f,ad])=>{ const c=ser[ser.length-1][f]; return `<div class="gr-card"><div class="gr-ct">${esc(ad)}</div><div class="gr-cv">${money(c)} €</div>${grSpark(ser.map(s=>({x:s.x,y:s[f]==null?null:s[f],cur:s.cur})),{zero:true})}</div>`; }).join("")
+    /* GIRIS-DUZEN2: 1. satır Yurt İçi muht. · YD alınan · YD muht.; 2. satır Top.alınan · Top.muht. · Etüt DK1 */
+    +KART.map(([f,ad],i)=>{ const c=ser[ser.length-1][f]; return (i===3?`</div><div class="gr-cards" style="margin-top:10px">`:"")+`<div class="gr-card"><div class="gr-ct">${esc(ad)}</div><div class="gr-cv">${money(c)} €</div>${grSpark(ser.map(s=>({x:s.x,y:s[f]==null?null:s[f],cur:s.cur})),{zero:true})}</div>`; }).join("")
     +(dkS?`<div class="gr-card"><div class="gr-ct">Etüt DK1 (dk)</div><div class="gr-cv">${money(dkS[dkS.length-1].y)} dk</div>${grSpark(dkS,{zero:true,birim:" dk"})}</div>`:"")
     +`</div>`;
 }
@@ -599,7 +601,7 @@ async function grSelArb(){
     const v=((tr.querySelector("td.sa-canli")||{}).textContent||"").trim();
     return lab+": "+(v?v+" €":"—"); });
   t2.remove();
-  el.innerHTML=`<h3 class="sec">Sel-Arb — Cari Ay</h3><div class="gr-l">${P.length?esc(P.join(" · ")):'<span class="gr-muted">Veri yok</span>'}</div>`;
+  el.innerHTML=P.length?`<div class="gr-sa">${P.map(x=>{ const i=x.indexOf(": "); return `<div class="gr-sab"><div class="gr-ct">${esc(x.slice(0,i))}</div><div class="gr-cv">${esc(x.slice(i+2))}</div></div>`; }).join("")}</div>`:'<div class="gr-muted">Sel-Arb verisi yok</div>';
 }
 /* 8 + 9 — Cari ay toplamları (formlardaki CARI-TOPLAM ile aynı: tarihi bu ayda olan satırlar; EUR = tutar_eur, yoksa EUR satırın tutarı) */
 async function grCari(){
