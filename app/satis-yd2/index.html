@@ -427,7 +427,7 @@ function tkGorevSay(){ const el=document.getElementById("tk-gorev-say"); if(!el)
 const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Teklif Teslim Edildi","Revizyon İstendi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı","İptal"];  /* YD-IPTAL (29.09.2026): her durumdan seçilebilir, en altta */
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
 const DURUM_BG={"Teklif İncelendi":"#eafbfa","Teklif Bekleniyor":"#e0f5e0","Revizyon İstendi":"#e8dfb8","Muhtemel":"#7ed957","Kazandık":"#4caf50","Kaybettik":"#c9c9c9","Müşteri İşi Alamadı":"#e8dfb8","Takip Bekleniyor":"#f7e8f2","Sıkı Takip Edilecek":"#ffd8a8","İptal":"#d5d5d5"};
-const DISPLAY_ORDER=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Takip Bekleniyor","Sıkı Takip Edilecek","Teklif Teslim Edildi","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı","Revizyon İstendi","İptal"];
+const DISPLAY_ORDER=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Sıkı Takip Edilecek","Takip Bekleniyor","Teklif Teslim Edildi","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı","Revizyon İstendi","İptal"];
 const DISPLAY_SIRA={}; DISPLAY_ORDER.forEach((d,i)=>DISPLAY_SIRA[d]=i+1);
 const COLS=[
  {f:'proje',h:'Proje',w:112,t:'text',req:1},
@@ -586,7 +586,7 @@ function siraTarihi(r){
 function sortROWS(){
   const tierOf=d=> d?(DISPLAY_SIRA[d]||99):0;
   ROWS.sort((a,b)=>{
-    const sa=tierOf(a.durum), sb2=tierOf(b.durum);
+    const sa=tierOf(durumGor(a)), sb2=tierOf(durumGor(b)); /* SIKI-SIRA (16.10.2026, Melih): Sıkı Takip Edilecek grubu Teklif Bekleniyor'un hemen altında */
     if(sa!==sb2) return sa-sb2;
     const da=siraTarihi(a), db=siraTarihi(b);
     if(!da&&!db) return 0; if(!da) return 1; if(!db) return -1;
