@@ -89,9 +89,10 @@ async function satis(o,elT,elG){
   const muh=ydR.filter(r=>r.durum==='Muhtemel'&&Number(r.net_tutar)>SINIR).map(r=>({e:netEur(r,k),r,t:"yd"}))
     .concat(soR.filter(r=>/^muht/i.test(r.statu||"")&&Number(r.net_eur)>SINIR).map(r=>({e:Number(r.net_eur),r,t:"so"})))
     .sort((a,b)=>(Number(b.e)||0)-(Number(a.e)||0));
+  if(o.bolum==="ctp") siki.length=0; /* CTP-FAALIYET: yalnız Muhtemel > 500.000 */
   const body=siki.map(r=>ydS(r)).join("")+muh.map((x,i)=>{ const c=(i===0&&siki.length)?"gru-ayr":""; return x.t==="yd"?ydS(x.r,c):soS(x.r,c); }).join("");
   const by={yd:{},so:{}}; ydR.forEach(r=>by.yd[r.id]=r); soR.forEach(r=>by.so[r.id]=r);
-  elT.innerHTML=`<h3 class="gru-h">Sıkı Takip Edilecekler <span class="gru-muted">(${siki.length})</span> ve Muhtemel &gt; 500.000 <span class="gru-muted">(${muh.length})</span></h3>`
+  elT.innerHTML=(o.bolum==="ctp"?`<h3 class="gru-h">Muhtemel &gt; 500.000 <span class="gru-muted">(${muh.length})</span></h3>`:`<h3 class="gru-h">Sıkı Takip Edilecekler <span class="gru-muted">(${siki.length})</span> ve Muhtemel &gt; 500.000 <span class="gru-muted">(${muh.length})</span></h3>`)
     +(body?`<div class="gru-sc"><table class="grt">${TH}<tbody>${body}</tbody></table></div>`:'<div class="gru-muted">Kayıt yok</div>');
   elT.querySelectorAll(".gru-nb").forEach(b=>b.onclick=()=>notAc(o,b.dataset.k,by[b.dataset.k][Number(b.dataset.id)],()=>satis(o,elT,elG)));
   /* grafikler: İcmal son 12 ay + Satış cari durum; Etüt DK1 */
@@ -214,11 +215,22 @@ async function cari(o,el){
   const K=[["Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar",eur(ft),"OE Faaliyet"],["Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler",eur(od),"ÖB Faaliyet"],["Yurt Dışı Birimlerin müşterilerden yaptığı Tahsilat",thT,"ÖB Faaliyet"]];
   el.innerHTML=`<div class="gru-boxes">${K.map(([a,v,kay])=>`<div class="gru-box gru-box3 gru-gr" title="${esc(ay)} · ${kay}"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${f(v)}</div></div>`).join("")}</div>`;
 }
+/* ---- Eğitim: bu ay / bu yıl (Eğitim panosu EGITIM-OZET ile aynı sayım) ---- */
+async function egitim(o,el){
+  const [{data:dok},{data:plan}]=await Promise.all([o.sb.from("egitim_dokuman_current").select("*"),o.sb.from("egitim_plan_current").select("*")]);
+  const AYL=["ocak","subat","mart","nisan","mayis","haziran","temmuz","agustos","eylul","ekim","kasim","aralik"];
+  const t=now(), YIL=String(t.getFullYear()), AYK=YIL+"-"+p2(t.getMonth()+1);
+  const gE=[]; (plan||[]).forEach(r=>AYL.forEach(a=>{ const v=r[a+"_gerceklesen"]; if(v&&String(v).slice(0,4)===YIL) gE.push(String(v)); }));
+  const yE=[]; (dok||[]).forEach(r=>{ if(r.yayim_tarihi&&String(r.yayim_tarihi).slice(0,4)===YIL) yE.push(String(r.yayim_tarihi)); if(r.revizyon_tarihi&&String(r.revizyon_tarihi).slice(0,4)===YIL) yE.push(String(r.revizyon_tarihi)); });
+  const ay=a=>a.filter(x=>x.slice(0,7)===AYK).length;
+  el.innerHTML=`<div style="padding:12px 2px 4px">Gerçekleşen eğitim: bu ay <b>${ay(gE)}</b> · bu yıl <b>${gE.length}</b> \u05C0 Yayınlanan doküman: bu ay <b>${ay(yE)}</b> · bu yıl <b>${yE.length}</b></div>`;
+}
 async function render(kap,o){
   if(!kap||!o||!o.sb) return; css(); KUR=null;
   kap.classList.add("gru");
-  kap.innerHTML='<div class="gru-t"></div><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div>';
+  kap.innerHTML='<div class="gru-t"></div><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div><div class="gru-e"></div>';
   const q=c=>kap.querySelector(c), kor=p=>Promise.resolve().then(p).catch(e=>{ try{ console.warn("GRUST:",e); }catch(_){} });
+  if(o.bolum==="ctp"){ await Promise.all([kor(()=>satis(o,q(".gru-t"),q(".gru-g"))),kor(()=>egitim(o,q(".gru-e")))]); return; } /* CTP-FAALIYET */
   await Promise.all([kor(()=>satis(o,q(".gru-t"),q(".gru-g"))),kor(()=>selArb(o,q(".gru-s"))),kor(()=>cari(o,q(".gru-c")))]);
 }
 window.GRUST={render:render};
