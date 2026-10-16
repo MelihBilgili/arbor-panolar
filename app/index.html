@@ -167,6 +167,7 @@
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="giris_ust.js?v=261016a"></script><!-- GIRIS-UST-ORTAK -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
    kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
@@ -408,27 +409,6 @@ function grNum(s){ if(s==null||s==="") return null; if(typeof s==="number") retu
 function grK(v){ if(v==null) return ""; const a=Math.abs(v); if(a>=1e6) return (v/1e6).toLocaleString("tr-TR",{maximumFractionDigits:1})+" Mn"; if(a>=1e3) return Math.round(v/1e3).toLocaleString("tr-TR")+" B"; return Math.round(v).toLocaleString("tr-TR"); }
 function grTemiz(s){ return String(s||"").replace(/[\p{Extended_Pictographic}\p{Regional_Indicator}\uFE0F\u200D\u20E3]/gu,"").replace(/\s{2,}/g," ").replace(/(\s*·\s*){2,}/g," · ").replace(/^\s*·\s*|\s*·\s*$/g,"").trim(); }
 function grBas(s){ return grTemiz(s).split(" · ")[0].replace(/\([^)]*\)/g,"").replace(/\s*\barifesi\b/gi,"").replace(/\s{2,}/g," ").replace(/[\s:]+$/,"").trim(); }
-/* Küçük grafik: pts=[{x,y,cur}] — çizgi (varsayılan) ya da çubuk (opt.bar). Nokta/çubuk title'ında tam değer. */
-function grSpark(pts,opt){
-  opt=opt||{}; const W=opt.w||244,H=opt.h||78,L=40,R=6,T=8,B=16, birim=opt.birim||" €";
-  const vs=pts.filter(p=>p.y!=null).map(p=>p.y);
-  if(!vs.length) return '<div class="gr-muted">Veri yok</div>';
-  let mn=Math.min.apply(null,vs), mx=Math.max.apply(null,vs); if(opt.bar||opt.zero) mn=Math.min(0,mn); if(mx===mn){ mx=mx+1; }
-  const n=pts.length, iw=W-L-R, X=i=>L+(n<=1?iw/2:(opt.bar?(i+.5)*iw/n:i*iw/(n-1))), Y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn));
-  const tt=p=>esc(p.x+": "+(p.y==null?"—":Math.round(p.y).toLocaleString("tr-TR")+birim));
-  let g=`<line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" class="gr-ax"/><line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" class="gr-ax"/>`
-    +`<text x="${L-3}" y="${T+7}" class="gr-yl">${esc(grK(mx))}</text><text x="${L-3}" y="${H-B}" class="gr-yl">${esc(grK(mn))}</text>`;
-  if(opt.bar){
-    const bw=Math.max(3,Math.min(18,iw/n*.6));
-    pts.forEach((p,i)=>{ if(p.y==null) return; const y=Y(p.y), y0=Y(Math.max(mn,0)); g+=`<rect x="${(X(i)-bw/2).toFixed(1)}" y="${Math.min(y,y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,Math.abs(y0-y)).toFixed(1)}" class="${p.cur?'gr-bc':'gr-b'}"><title>${tt(p)}</title></rect>`; });
-  } else {
-    let d=""; pts.forEach((p,i)=>{ if(p.y==null) return; d+=(d?"L":"M")+X(i).toFixed(1)+" "+Y(p.y).toFixed(1); });
-    g+=`<path d="${d}" class="gr-ln"/>`;
-    pts.forEach((p,i)=>{ if(p.y==null) return; g+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p.cur?3.6:2.2}" class="${p.cur?'gr-dc':'gr-d'}"><title>${tt(p)}</title></circle>`; });
-  }
-  g+=`<text x="${X(0)}" y="${H-3}" class="gr-xl" text-anchor="start">${esc(pts[0].x)}</text><text x="${X(n-1)}" y="${H-3}" class="gr-xl" text-anchor="end">${esc(pts[n-1].x)}</text>`;
-  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="gr-svg">${g}</svg>`;
-}
 async function loadGiris(){
   const view=grEl("view"); if(!view) return;
   view.innerHTML=`<style>
@@ -437,6 +417,7 @@ async function loadGiris(){
     .gr-l1{font-weight:600}
     .gr h3.sec{margin:16px 0 6px;font-size:13.5px}
     .gr-muted{color:#7b8794}
+    .gr-bxs{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 8px}.gr-bx{border:1px solid #c9d6e3;border-left:4px solid #2e6da4;border-radius:6px;background:#f6f9fc;padding:5px 12px;font-weight:600}.gr-bxh{border-left-color:#e07b00;background:#fff8ef}.gr-bxd{font-size:11px;color:#5a6b7d;font-weight:700}#gr-ozel .gr-bx{font-weight:400}
     .gr-pos{color:#0a6b3f}.gr-neg{color:#b23a2e}
     .gr .scroll{max-height:none;overflow-y:visible;overflow-x:auto}
     table.grt{border-collapse:collapse;font-size:11.5px;width:auto}
@@ -460,18 +441,15 @@ async function loadGiris(){
     .gnb td .cell,.gblk td .cell{width:100%;box-sizing:border-box;font:inherit;padding:2px 5px;border:1px solid #2e6da4;border-radius:5px}
   </style>
   <div class="gr">
-    <div class="gr-l gr-l1" id="gr-vakit"><span class="gr-muted">Vakitler yükleniyor…</span></div>
-    <div class="gr-l" id="gr-ozel"></div>
+    <div id="gr-vakit" class="gr-bxs"><span class="gr-muted">Vakitler yükleniyor…</span></div>
+    <div id="gr-ozel" class="gr-bxs"></div>
     <div id="gr-gundem"></div>
-    <div id="gr-satis"></div>
-    <div id="gr-trend"></div>
-    <div id="gr-selarb"></div><div id="gr-selarb-tmp" style="display:none"></div>
-    <div id="gr-cari"></div>
+    <div id="gr-ust"></div>
     <div id="gr-santiye"></div>
     <div id="gr-egitim"></div>
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
-  await Promise.all([kor(grVakit),kor(grOzel),kor(grGundem),kor(grSatis),kor(grSelArb),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grCari),kor(grEgitim)]);
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB"})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim)]);
 }
 /* 1 — Ezan vakitleri (Diyanet yöntemi) + gündüz ortalama sıcaklık (gün doğumu–batımı saatlik ortalaması) + yağış */
 async function grVakit(){
@@ -497,7 +475,8 @@ async function grVakit(){
     const mm=hv.daily.precipitation_sum&&hv.daily.precipitation_sum[0], pr=hv.daily.precipitation_probability_max&&hv.daily.precipitation_probability_max[0];
     P.push("Yağış "+(mm==null?"—":Number(mm).toLocaleString("tr-TR",{maximumFractionDigits:1})+" mm")+(pr==null?"":" (olasılık %"+pr+")"));
   } else P.push("Hava durumu alınamadı");
-  el.textContent=P.join(GR_SEP);
+  /* GIRIS-UST-ORTAK: iki kutu — ezan vakitleri / hava */
+  el.innerHTML=P.map(x=>'<div class="gr-bx">'+esc(x).replace(/ · /g,' · ')+'</div>').slice(0,1).join('')+(P.length>1?'<div class="gr-bx gr-bxh">'+esc(P.slice(1).join(' · '))+'</div>':'');
 }
 /* 2 — Yaklaşan özel günler (Takvim, 30 gün; seyahat yok; AG-OZELGUN-HS kuralı: hafta sonuna düşen tatil kaydı gösterilmez).
    Simgeler atılır; ardışık günlerde aynı başlık (parantez ve "arifesi" yok sayılır) "28 Eki - 29 Eki: Başlık" olarak birleşir. */
@@ -521,7 +500,8 @@ async function grOzel(){
     if(g){ g.e=x.dt; g.n++; } else G.push({b,s:x.dt,e:x.dt,n:1,t:grTemiz(x.txt)}); });
   G.sort((a,b)=>a.s-b.s);
   const d=x=>x.getDate()+" "+GR_AY[x.getMonth()];
-  el.textContent=G.map(g=>g.n>1?(d(g.s)+" - "+d(g.e)+": "+g.b):(d(g.s)+": "+g.t)).join(GR_SEP);
+  /* GIRIS-UST-ORTAK: her özel gün ayrı kutu (tarih üstte) */
+  el.innerHTML=G.map(g=>'<div class="gr-bx"><div class="gr-bxd">'+esc(g.n>1?(d(g.s)+" - "+d(g.e)):d(g.s))+'</div>'+esc(g.n>1?g.b:g.t)+'</div>').join('');
 }
 /* 3 — Gündem MB + PEM (GIRIS-PANO: Gündem'den taşındı; ✕ ve Kod/Konu düzenleme Gündem'deki gibi) */
 async function grGundem(){
@@ -538,170 +518,8 @@ async function grGundem(){
   el.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
   el.querySelectorAll(".ged").forEach(x=>x.onclick=()=>startEdit(x));
 }
-/* 4 + 5 — Satış: Sıkı Takip Edilecekler (SIKI-TAKIP kuralı, formdaki sikiMi ile aynı) · Muhtemel > 500.000 (TL/€/GBP, orijinal tutar)
-   · İcmal son 12 ay + Satış cari durum (Yurt İçi muht., Yurt Dışı alınan/muht., Toplam alınan/muht.; € — İcmal'deki YD1+YD2 birleştirmesiyle) */
-async function grSatis(){
-  const [sy,yd,sk,ic]=await Promise.all([
-    sb.from("satis_yorum").select("*").eq("kaynak","SO").eq("aktif",true),
-    sb.from("satis_yd_akis").select("*"),
-    sb.from("yd_siki_takip").select("blok,proje,musteri").eq("aktif",true), /* SIKI-AKTIF */
-    sb.from("icmal_satir").select("donem,is_total,so_alinan_eur,so_muht_eur,fa_alinan_eur,fy2_alinan_eur,fa_muht_eur,fy2_muht_eur")
-  ]);
-  const kur=await satisKur();
-  const soR=(sy&&sy.data)||[], ydR=(yd&&yd.data)||[], skR=(sk&&!sk.error&&sk.data)||[];
-  const k=s=>String(s==null?"":s).replace(/\s+/g," ").trim().toLocaleLowerCase("tr").replace(/ı/g,"i").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
-  const skSet=new Set(skR.map(x=>x.blok+"|"+k(x.proje)+"|"+k(x.musteri)));
-  const today=grNow(); today.setHours(0,0,0,0);
-  const bolge=b=>b==='YD1'?'Yurt Dışı 1':(b==='YD2'?'Yurt Dışı 2':b);
-  const tutar=r=>r.net_tutar==null||r.net_tutar===""?"":money(r.net_tutar)+" "+(r.para_birimi||"EUR");
-  const gec=r=>{ const tt=r.teklif_teslim_tarihi, tk=ydTkLatest(r).t||r.son_takip_tarihi, ref=tk?((tt&&tt>tk)?tt:tk):tt; if(!ref) return null; const g=gunFark(today,ref)-15; return g>0?g:null; };
-  const siki=ydR.filter(r=>(r.durum==="Teklif Teslim Edildi"||r.durum==="Takip Bekleniyor")&&skSet.has(r.blok+"|"+k(r.proje)+"|"+k(r.musteri)))
-    .sort((a,b)=>String(a.teklif_teslim_tarihi||'9999').localeCompare(String(b.teklif_teslim_tarihi||'9999')));
-  /* GIRIS-MUHT-FORMAT (16.10.2026, Melih): Muhtemel > 500.000 tablosu Sıkı Takip ile aynı sütunlar; Yurt İçi satırlarında takip alanları boş */
-  const GR_TH=`<thead><tr><th>Bölge</th><th>Proje</th><th>Müşteri</th><th>Teklif Teslim</th><th class="n">Net Tutar</th><th>Takip Tarihi</th><th>Takip Notu</th><th></th></tr></thead>`; /* GIRIS-TAKIP-NOT: Gec. Gün kalktı, son sütun not ekleme */
-  const ydSatir=r=>{ const l=ydTkLatest(r), g=gec(r); return `<tr><td>${esc(bolge(r.blok))}</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="w" title="${esc(r.musteri)}">${esc(r.musteri)}</td><td>${fdate(r.teklif_teslim_tarihi)}</td><td class="n">${esc(tutar(r))}</td><td>${l.t?fdate(l.t):""}</td><td class="w" title="${esc(l.n||"")}">${esc(l.n||"")}</td><td><button class="gr-nb" data-k="yd" data-id="${r.id}" title="Takip notu ekle (${esc(r.blok)} formuna yazılır)">+ Not</button></td></tr>`; };
-  const soSatir=r=>`<tr><td>Yurt İçi</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="w" title="${esc(r.musteri)}">${esc(r.musteri)}</td><td></td><td class="n">${esc(money(r.net_eur)+" EUR")}</td><td></td><td class="w" title="${esc(r.durum||"")}">${esc(r.durum||"")}</td><td><button class="gr-nb" data-k="so" data-id="${r.id}" title="Durum notu (Yurt İçi Satış formuna yazılır)">+ Not</button></td></tr>`;
-  const sikiT=siki.length?`<div class="scroll"><table class="grt">${GR_TH}<tbody>`+siki.map(ydSatir).join("")+`</tbody></table></div>`:'<div class="gr-muted">Sıkı takip edilecek teklif yok</div>';
-  const SINIR=500000;
-  const muh=ydR.filter(r=>r.durum==='Muhtemel'&&Number(r.net_tutar)>SINIR).map(r=>({e:netEur(r,kur),h:ydSatir(r)}))
-    .concat(soR.filter(r=>/^muht/i.test(r.statu||"")&&Number(r.net_eur)>SINIR).map(r=>({e:Number(r.net_eur),h:soSatir(r)})))
-    .sort((a,b)=>(Number(b.e)||0)-(Number(a.e)||0));
-  const muhT=muh.length?`<div class="scroll"><table class="grt">${GR_TH}<tbody>`+muh.map(x=>x.h).join("")+`</tbody></table></div>`:'<div class="gr-muted">500.000 üzeri muhtemel proje yok</div>';
-  const el=grEl("gr-satis");
-  /* GIRIS-SATIS-TEK: iki liste tek tabloda — önce Sıkı Takip, kalın çizgiyle ayrılıp Muhtemel > 500.000 */
-  const tekT=(siki.length||muh.length)?`<div class="scroll"><table class="grt">${GR_TH}<tbody>`+siki.map(ydSatir).join("")
-    +muh.map((x,i)=>(i===0&&siki.length)?x.h.replace("<tr>",'<tr class="gr-ayr">'):x.h).join("")+`</tbody></table></div>`:'<div class="gr-muted">Kayıt yok</div>';
-  window._grYd={}; ydR.forEach(r=>window._grYd[r.id]=r); window._grSo={}; soR.forEach(r=>window._grSo[r.id]=r);
-  if(el) el.innerHTML=`<h3 class="sec">Sıkı Takip Edilecekler <span class="gr-muted">(${siki.length})</span> ve Muhtemel &gt; 500.000 <span class="gr-muted">(${muh.length})</span></h3>${tekT}`;
-  if(el) el.querySelectorAll(".gr-nb").forEach(b=>b.onclick=()=>grNotAc(b.dataset.k,Number(b.dataset.id)));
-  /* 5 — eğilim */
-  const sum=(a,f)=>a.reduce((s,r)=>s+(Number(f(r))||0),0);
-  const cur={so_m:sum(soR.filter(r=>/^muht/i.test(r.statu||"")),r=>r.net_eur), so_a:sum(soR.filter(r=>/^al/i.test(r.statu||"")),r=>r.net_eur),
-    yd_m:sum(ydR.filter(r=>(r.blok==='YD1'||r.blok==='YD2')&&r.durum==='Muhtemel'),r=>netEur(r,kur)), yd_a:sum(ydR.filter(r=>(r.blok==='YD1'||r.blok==='YD2')&&r.durum==='Kazandık'),r=>netEur(r,kur))};
-  const icBy={}; ((ic&&ic.data)||[]).forEach(r=>{ if(!r.is_total&&/^\d{2}\.\d{2}$/.test(String(r.donem||""))) icBy[r.donem]=r; });
-  const p2=x=>String(x).padStart(2,"0"), lbl=d=>p2(d.getMonth()+1)+"."+String(d.getFullYear()).slice(2);
-  const ser=[];
-  for(let i=12;i>=1;i--){ const d=new Date(today.getFullYear(),today.getMonth()-i,1), r=icBy[lbl(d)];
-    if(!r){ ser.push({x:lbl(d)}); continue; }
-    const so_m=grNum(r.so_muht_eur), so_a=grNum(r.so_alinan_eur), fa_a=grNum(r.fa_alinan_eur), fa_m=grNum(r.fa_muht_eur), f2a=grNum(r.fy2_alinan_eur), f2m=grNum(r.fy2_muht_eur);
-    const yd_a=(fa_a==null&&f2a==null)?null:(fa_a||0)+(f2a||0), yd_m=(fa_m==null&&f2m==null)?null:(fa_m||0)+(f2m||0);
-    ser.push({x:lbl(d),so_m,so_a,yd_a,yd_m}); }
-  ser.push({x:lbl(today)+" (cari)",cur:true,so_m:cur.so_m,so_a:cur.so_a,yd_a:cur.yd_a,yd_m:cur.yd_m});
-  ser.forEach(s=>{ s.top_a=(s.so_a==null&&s.yd_a==null)?null:(s.so_a||0)+(s.yd_a||0); s.top_m=(s.so_m==null&&s.yd_m==null)?null:(s.so_m||0)+(s.yd_m||0); });
-  const dkS=await grDkSeri(today).catch(()=>null);
-  const KART=[["so_m","Yurt İçi muht. Prj (€)"],["yd_a","Yurt Dışı alınan Prj (€)"],["yd_m","Yurt Dışı muht. Prj (€)"],["top_a","Top.alınan Prj (€)"],["top_m","Top.muht. Prj (€)"]];
-  const et=grEl("gr-trend");
-  if(et) et.innerHTML=`<h3 class="sec">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3><div class="gr-cards">`
-    /* GIRIS-DUZEN2: 1. satır Yurt İçi muht. · YD alınan · YD muht.; 2. satır Top.alınan · Top.muht. · Etüt DK1 */
-    +KART.map(([f,ad],i)=>{ const c=ser[ser.length-1][f]; return (i===3?`</div><div class="gr-cards" style="margin-top:10px">`:"")+`<div class="gr-card"><div class="gr-ct">${esc(ad)}</div><div class="gr-cv">${money(c)} €</div>${grSpark(ser.map(s=>({x:s.x,y:s[f]==null?null:s[f],cur:s.cur})),{zero:true})}</div>`; }).join("")
-    +(dkS?`<div class="gr-card"><div class="gr-ct">Etüt DK1 (dk)</div><div class="gr-cv">${money(dkS[dkS.length-1].y)} dk</div>${grSpark(dkS,{zero:true,birim:" dk"})}</div>`:"")
-    +`</div>`;
-}
-/* GIRIS-TAKIP-NOT: Giriş'ten takip notu. YD (satis_yd_akis): YD formundaki tkCommitEntry ile aynı kayıt —
-   son_takip_notlari başına {t,e,g,n} (e = MB, not "MB: …"), son_takip_tarihi = bugün, Görevli zorunlu (form_erisim.kisiler, yedek liste +
-   MB + Hiç Kimse + Herkes); durum Takip Bekleniyor ise formdaki TAKIP-SORU sorulur. Yurt İçi (satis_yorum): SO formundaki "Durum" alanı
-   yeni notla değiştirilir ("GG.AA.YY MB: …"). */
-async function grNotAc(k,id){
-  const r=k==="yd"?(window._grYd||{})[id]:(window._grSo||{})[id]; if(!r) return;
-  let gor=[];
-  if(k==="yd"){ let ky=null; try{ const fe=await sb.from("form_erisim").select("kisiler").eq("yol",r.blok==="YD1"?"satis-yd1/":"satis-yd2/").maybeSingle(); if(fe&&fe.data&&Array.isArray(fe.data.kisiler)&&fe.data.kisiler.length) ky=fe.data.kisiler; }catch(e){}
-    gor=(ky||(r.blok==="YD1"?["MN","OBL","MK","KS"]:["MKB","OBL","MK","AK"])).slice(); if(gor.indexOf("MB")<0) gor.unshift("MB"); gor=gor.concat(["Hiç Kimse","Herkes"]); }
-  const ov=document.createElement("div");
-  ov.style.cssText="position:fixed;inset:0;background:rgba(10,25,45,.4);display:flex;align-items:center;justify-content:center;z-index:9999";
-  const bs="padding:6px 14px;border-radius:6px;border:1px solid #2e6da4;cursor:pointer;font:inherit;";
-  ov.innerHTML=`<div style="background:#fff;border-radius:10px;padding:16px 18px;width:min(460px,92vw);box-shadow:0 8px 30px rgba(0,0,0,.25);font-size:13px;color:#16324f">
-    <div style="font-weight:700;margin-bottom:2px">${esc(r.proje||"")}</div>
-    <div style="color:#6b7a8a;margin-bottom:10px">${esc(r.musteri||"")} · ${k==="yd"?esc(r.blok==="YD1"?"Yurt Dışı 1":"Yurt Dışı 2")+" formu, takip notu":"Yurt İçi Satış formu, Durum"}</div>
-    <textarea id="gr-nt" rows="3" style="width:100%;box-sizing:border-box;font:inherit;padding:6px;border:1px solid #c9d3de;border-radius:6px" placeholder="Not"></textarea>
-    ${k==="yd"?`<div style="margin-top:8px">Görevli: <select id="gr-ng" style="font:inherit;padding:2px 4px"><option value=""></option>${gor.map(g=>`<option>${esc(g)}</option>`).join("")}</select></div>`:""}
-    <div id="gr-nm" style="color:#b23a2e;min-height:16px;margin-top:6px"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end"><button id="gr-nx" style="${bs}background:#fff;color:#2e6da4">Vazgeç</button><button id="gr-ns" style="${bs}background:#2e6da4;color:#fff">Kaydet</button></div></div>`;
-  document.body.appendChild(ov);
-  const kapat=()=>ov.remove(), msg=t=>{ ov.querySelector("#gr-nm").textContent=t; };
-  ov.querySelector("#gr-nx").onclick=kapat; ov.onclick=e=>{ if(e.target===ov) kapat(); };
-  ov.querySelector("#gr-nt").focus();
-  ov.querySelector("#gr-ns").onclick=async()=>{
-    const txt=ov.querySelector("#gr-nt").value.trim(); if(!txt){ msg("Not yazınız."); return; }
-    const t=grNow(), p2=x=>String(x).padStart(2,"0"), iso=t.getFullYear()+"-"+p2(t.getMonth()+1)+"-"+p2(t.getDate());
-    const btn=ov.querySelector("#gr-ns"); btn.disabled=true;
-    if(k==="yd"){
-      const g=ov.querySelector("#gr-ng").value; if(!g){ msg("Görevli seçiniz."); btn.disabled=false; return; }
-      const q=await sb.from("satis_yd_akis").select("son_takip_notlari,son_takip_tarihi,durum").eq("id",id).single();
-      if(q.error){ msg(q.error.message); btn.disabled=false; return; }
-      let log=[]; const raw=q.data.son_takip_notlari;
-      if(raw){ try{ const v=JSON.parse(raw); if(Array.isArray(v)) log=v; else log=[{t:q.data.son_takip_tarihi||"",e:"",n:String(raw)}]; }catch(e){ log=[{t:q.data.son_takip_tarihi||"",e:"",n:String(raw)}]; } }
-      log.unshift({t:iso,e:"MB",g:g,n:txt.indexOf("MB:")===0?txt:"MB: "+txt});
-      const u=await sb.from("satis_yd_akis").update({son_takip_notlari:JSON.stringify(log),son_takip_tarihi:iso}).eq("id",id);
-      if(u.error){ msg(u.error.message); btn.disabled=false; return; }
-      if(q.data.durum==="Takip Bekleniyor"){
-        const kutu=ov.firstElementChild, b2="display:block;width:100%;text-align:left;padding:9px 10px;margin-bottom:8px;border:1px solid #cdd6df;border-radius:8px;cursor:pointer;font:inherit;";
-        kutu.innerHTML='<div style="font-weight:700;margin-bottom:12px">Not kaydedildi. Satır "Takip Bekleniyor" durumunda. Ne yapılsın?</div>'
-          +'<button data-s="1" style="'+b2+'background:#eaf5ee">1. Takipten çıkar (15 gün sonra kendiliğinden tekrar takibe girer)</button>'
-          +'<button data-s="2" style="'+b2+'background:#f5f7f9">2. Takip Bekleniyor durumunda kalsın</button>';
-        await new Promise(res=>kutu.querySelectorAll("button").forEach(b=>b.onclick=async()=>{ if(b.dataset.s==="1") await sb.from("satis_yd_akis").update({durum:"Teklif Teslim Edildi"}).eq("id",id); res(); }));
-      }
-    } else {
-      const not=p2(t.getDate())+"."+p2(t.getMonth()+1)+"."+String(t.getFullYear()).slice(2)+" "+(txt.indexOf("MB:")===0?txt:"MB: "+txt);
-      const u=await sb.from("satis_yorum").update({durum:not}).eq("id",id);
-      if(u.error){ msg(u.error.message); btn.disabled=false; return; }
-    }
-    kapat(); const y=window.scrollY; await grSatis(); window.scrollTo(0,y);
-  };
-}
-/* 6 — Sel-Arb ilk tablonun son 5 satırı (alt toplam satırları), "Cari Ay €" sütunu: tablo gizli kapta loadSelArb ile
-   aynen üretilip okunur (hesap tek yerde kalsın diye). */
-async function grSelArb(){
-  const tmp=grEl("gr-selarb-tmp"); if(!tmp) return;
-  await loadSelArb("gr-selarb-tmp");
-  const el=grEl("gr-selarb"), t2=grEl("gr-selarb-tmp"); if(!el||!t2) return;
-  const P=[...t2.querySelectorAll("tr.sa-foot")].slice(-5).map(tr=>{
-    const lab=(tr.querySelector(".sa-proje")||tr.cells[0]).textContent.replace(/\s*\(€\)\s*$/,"").trim();
-    const v=((tr.querySelector("td.sa-canli")||{}).textContent||"").trim();
-    return lab+": "+(v?v+" €":"—"); });
-  t2.remove();
-  el.innerHTML=P.length?`<div class="gr-sa">${P.map(x=>{ const i=x.indexOf(": "); return `<div class="gr-sab"><div class="gr-ct">${esc(x.slice(0,i))}</div><div class="gr-cv">${esc(x.slice(i+2))}</div></div>`; }).join("")}</div>`:'<div class="gr-muted">Sel-Arb verisi yok</div>';
-}
-/* 8 + 9 — Cari ay toplamları (formlardaki CARI-TOPLAM ile aynı: tarihi bu ayda olan satırlar; EUR = tutar_eur, yoksa EUR satırın tutarı) */
-async function grCari(){
-  const t=grNow(), p2=x=>String(x).padStart(2,"0"), bas=t.getFullYear()+"-"+p2(t.getMonth()+1)+"-01";
-  const nx=new Date(t.getFullYear(),t.getMonth()+1,1), son=nx.getFullYear()+"-"+p2(nx.getMonth()+1)+"-01";
-  const [ft,od,th]=await Promise.all([
-    sb.from("ihracat_fatura").select("tutar,para_birimi,tutar_eur").gte("tarih",bas).lt("tarih",son),
-    sb.from("sel_odeme").select("tutar,para_birimi,tutar_eur").gte("odeme_tarihi",bas).lt("odeme_tarihi",son),
-    sb.from("ob_tahsilat").select("tutar").gte("tarih",bas).lt("tarih",son)
-  ]);
-  const eur=q=>(q&&!q.error)?(q.data||[]).reduce((a,r)=>a+(r.tutar_eur!=null?Number(r.tutar_eur):((r.para_birimi||"EUR")==="EUR"?Number(r.tutar)||0:0)),0):null;
-  const f=v=>v==null?"—":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
-  const thT=(th&&!th.error)?(th.data||[]).reduce((a,r)=>a+(Number(r.tutar)||0),0):null;
-  const ay=GR_AYTAM[t.getMonth()]+" "+t.getFullYear();
-  const el=grEl("gr-cari"); if(!el) return;
-  /* GIRIS-CARI-SADE: başlık yok, üç ayrı satır (cari ay) */
-  el.innerHTML=`<div style="margin-top:14px"></div>`
-    +`<div class="gr-l" title="${esc(ay)} · OE Faaliyet">Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar: <b>${f(eur(ft))}</b></div>`
-    +`<div class="gr-l" title="${esc(ay)} · ÖB Faaliyet">Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler: <b>${f(eur(od))}</b></div>`
-    +`<div class="gr-l" title="${esc(ay)} · ÖB Faaliyet">Yurt Dışı Birimlerin müşterilerden yaptığı Tahsilat: <b>${f(thT)}</b></div>`;
-}
-/* 10 — Etüt DK1 aylık toplam: dk toplam = dk1 + 2·dk2 + 3·dk3 + 5·dk4 (Etüt formu); bir ayda birden çok ERP çekimi varsa o ayın SON
-   çekimi (formdaki "güncel" mantığı), elle girilen satırlar (erp_damga boş) tarih ayına eklenir; yurt içi hariç (ETUT-DK-YD). Son 12 ay + cari. */
-/* GIRIS-DK-KART: seri, Satış grafik kartlarıyla aynı x etiketleri (AA.YY, son nokta "AA.YY (cari)"); veri başlamadan önceki aylar boş */
-async function grDkSeri(today){
-  const {data,error}=await sb.from("etut_dk").select("erp_damga,tarih,created_at,dk1,dk2,dk3,dk4,yurt_ici");
-  if(error) return null;
-  const n=v=>Number(v)||0, dkT=r=>n(r.dk1)+2*n(r.dk2)+3*n(r.dk3)+5*n(r.dk4);
-  const R=(data||[]).filter(r=>!r.yurt_ici);
-  const ayOf=d=>"20"+d.slice(0,2)+"-"+d.slice(2,4);
-  const sonDamga={}; R.forEach(r=>{ if(!r.erp_damga) return; const a=ayOf(r.erp_damga); if(!sonDamga[a]||r.erp_damga>sonDamga[a]) sonDamga[a]=r.erp_damga; });
-  const ayT={};
-  R.forEach(r=>{ let a;
-    if(r.erp_damga){ a=ayOf(r.erp_damga); if(r.erp_damga!==sonDamga[a]) return; }
-    else { const d=String(r.tarih||r.created_at||""); if(!/^\d{4}-\d{2}/.test(d)) return; a=d.slice(0,7); }
-    ayT[a]=(ayT[a]||0)+dkT(r); });
-  const p2=x=>String(x).padStart(2,"0"), key=d=>d.getFullYear()+"-"+p2(d.getMonth()+1), lbl=d=>p2(d.getMonth()+1)+"."+String(d.getFullYear()).slice(2);
-  const keys=Object.keys(ayT).sort(), cur=key(today), ilk=keys.length?keys[0]:cur;
-  const out=[]; for(let i=12;i>=0;i--){ const d=new Date(today.getFullYear(),today.getMonth()-i,1), kk=key(d);
-    out.push({x:lbl(d)+(i===0?" (cari)":""),y:kk<ilk?null:(ayT[kk]||0),cur:i===0}); }
-  return out;
-}
+/* GIRIS-UST-ORTAK (16.10.2026, Melih): Sıkı Takip+Muhtemel tablosu, Satış/DK1 grafikleri, Sel-Arb ve cari ay kutuları
+   app/giris_ust.js'te (kaynak kod/giris_ust.js) — MK Faaliyet formunun üstünde de aynısı. GRUST.render. */
 /* 11 — Eğitim: bu ay / bu yıl gerçekleşen eğitim ve yayınlanan doküman (Eğitim panosu EGITIM-OZET ile aynı sayım: yeni + revize) */
 async function grEgitim(){
   const [{data:dok},{data:plan}]=await Promise.all([sb.from("egitim_dokuman_current").select("*"),sb.from("egitim_plan_current").select("*")]);
