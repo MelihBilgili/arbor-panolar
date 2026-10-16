@@ -444,6 +444,7 @@ async function loadGiris(){
     table.grt td.n,table.grt th.n{text-align:right;font-variant-numeric:tabular-nums}
     table.grt td.w{max-width:46ch;overflow:hidden;text-overflow:ellipsis}
     table.grt td.gec{color:#b23a2e;font-weight:700}
+    table.grt tr.gr-ayr td{border-top:2px solid #6f8cab}
     .gr-cards{display:flex;flex-wrap:wrap;gap:10px}
     .gr-card{border:1px solid #dfe5ec;border-radius:8px;background:#fff;padding:6px 8px 2px}
     .gr-ct{font-size:11.5px;color:#4a5a6a}.gr-cv{font-size:15px;font-weight:700;margin:1px 0 2px}
@@ -566,7 +567,10 @@ async function grSatis(){
     .sort((a,b)=>(Number(b.e)||0)-(Number(a.e)||0));
   const muhT=muh.length?`<div class="scroll"><table class="grt">${GR_TH}<tbody>`+muh.map(x=>x.h).join("")+`</tbody></table></div>`:'<div class="gr-muted">500.000 üzeri muhtemel proje yok</div>';
   const el=grEl("gr-satis");
-  if(el) el.innerHTML=`<h3 class="sec">Sıkı Takip Edilecekler <span class="gr-muted">(${siki.length})</span></h3>${sikiT}<h3 class="sec">Muhtemel &gt; 500.000 <span class="gr-muted">(${muh.length})</span></h3>${muhT}`;
+  /* GIRIS-SATIS-TEK: iki liste tek tabloda — önce Sıkı Takip, kalın çizgiyle ayrılıp Muhtemel > 500.000 */
+  const tekT=(siki.length||muh.length)?`<div class="scroll"><table class="grt">${GR_TH}<tbody>`+siki.map(ydSatir).join("")
+    +muh.map((x,i)=>(i===0&&siki.length)?x.h.replace("<tr>",'<tr class="gr-ayr">'):x.h).join("")+`</tbody></table></div>`:'<div class="gr-muted">Kayıt yok</div>';
+  if(el) el.innerHTML=`<h3 class="sec">Sıkı Takip Edilecekler <span class="gr-muted">(${siki.length})</span> ve Muhtemel &gt; 500.000 <span class="gr-muted">(${muh.length})</span></h3>${tekT}`;
   /* 5 — eğilim */
   const sum=(a,f)=>a.reduce((s,r)=>s+(Number(f(r))||0),0);
   const cur={so_m:sum(soR.filter(r=>/^muht/i.test(r.statu||"")),r=>r.net_eur), so_a:sum(soR.filter(r=>/^al/i.test(r.statu||"")),r=>r.net_eur),
