@@ -445,6 +445,7 @@ async function loadGiris(){
     table.grt td.w{max-width:46ch;overflow:hidden;text-overflow:ellipsis}
     table.grt td.gec{color:#b23a2e;font-weight:700}
     table.grt tr.gr-ayr td{border-top:2px solid #6f8cab}
+    .gr-nb{font-size:11px;padding:0 7px;border:1px solid #2e6da4;border-radius:4px;background:#fff;color:#2e6da4;cursor:pointer;line-height:16px}.gr-nb:hover{background:#eef5ff}
     .gr-cards{display:flex;flex-wrap:wrap;gap:10px}
     .gr-card{border:1px solid #dfe5ec;border-radius:8px;background:#fff;padding:6px 8px 2px}
     .gr-ct{font-size:11.5px;color:#4a5a6a}.gr-cv{font-size:15px;font-weight:700;margin:1px 0 2px}
@@ -557,9 +558,9 @@ async function grSatis(){
   const siki=ydR.filter(r=>(r.durum==="Teklif Teslim Edildi"||r.durum==="Takip Bekleniyor")&&skSet.has(r.blok+"|"+k(r.proje)+"|"+k(r.musteri)))
     .sort((a,b)=>String(a.teklif_teslim_tarihi||'9999').localeCompare(String(b.teklif_teslim_tarihi||'9999')));
   /* GIRIS-MUHT-FORMAT (16.10.2026, Melih): Muhtemel > 500.000 tablosu Sıkı Takip ile aynı sütunlar; Yurt İçi satırlarında takip alanları boş */
-  const GR_TH=`<thead><tr><th>Bölge</th><th>Proje</th><th>Müşteri</th><th>Teklif Teslim</th><th class="n">Net Tutar</th><th>Takip Tarihi</th><th>Takip Notu</th><th class="n">Gec. Gün</th></tr></thead>`;
-  const ydSatir=r=>{ const l=ydTkLatest(r), g=gec(r); return `<tr><td>${esc(bolge(r.blok))}</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="w" title="${esc(r.musteri)}">${esc(r.musteri)}</td><td>${fdate(r.teklif_teslim_tarihi)}</td><td class="n">${esc(tutar(r))}</td><td>${l.t?fdate(l.t):""}</td><td class="w" title="${esc(l.n||"")}">${esc(l.n||"")}</td><td class="n${g?' gec':''}">${g||""}</td></tr>`; };
-  const soSatir=r=>`<tr><td>Yurt İçi</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="w" title="${esc(r.musteri)}">${esc(r.musteri)}</td><td></td><td class="n">${esc(money(r.net_eur)+" EUR")}</td><td></td><td class="w" title="${esc(r.durum||"")}">${esc(r.durum||"")}</td><td class="n"></td></tr>`;
+  const GR_TH=`<thead><tr><th>Bölge</th><th>Proje</th><th>Müşteri</th><th>Teklif Teslim</th><th class="n">Net Tutar</th><th>Takip Tarihi</th><th>Takip Notu</th><th></th></tr></thead>`; /* GIRIS-TAKIP-NOT: Gec. Gün kalktı, son sütun not ekleme */
+  const ydSatir=r=>{ const l=ydTkLatest(r), g=gec(r); return `<tr><td>${esc(bolge(r.blok))}</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="w" title="${esc(r.musteri)}">${esc(r.musteri)}</td><td>${fdate(r.teklif_teslim_tarihi)}</td><td class="n">${esc(tutar(r))}</td><td>${l.t?fdate(l.t):""}</td><td class="w" title="${esc(l.n||"")}">${esc(l.n||"")}</td><td><button class="gr-nb" data-k="yd" data-id="${r.id}" title="Takip notu ekle (${esc(r.blok)} formuna yazılır)">+ Not</button></td></tr>`; };
+  const soSatir=r=>`<tr><td>Yurt İçi</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="w" title="${esc(r.musteri)}">${esc(r.musteri)}</td><td></td><td class="n">${esc(money(r.net_eur)+" EUR")}</td><td></td><td class="w" title="${esc(r.durum||"")}">${esc(r.durum||"")}</td><td><button class="gr-nb" data-k="so" data-id="${r.id}" title="Durum notu (Yurt İçi Satış formuna yazılır)">+ Not</button></td></tr>`;
   const sikiT=siki.length?`<div class="scroll"><table class="grt">${GR_TH}<tbody>`+siki.map(ydSatir).join("")+`</tbody></table></div>`:'<div class="gr-muted">Sıkı takip edilecek teklif yok</div>';
   const SINIR=500000;
   const muh=ydR.filter(r=>r.durum==='Muhtemel'&&Number(r.net_tutar)>SINIR).map(r=>({e:netEur(r,kur),h:ydSatir(r)}))
@@ -570,7 +571,9 @@ async function grSatis(){
   /* GIRIS-SATIS-TEK: iki liste tek tabloda — önce Sıkı Takip, kalın çizgiyle ayrılıp Muhtemel > 500.000 */
   const tekT=(siki.length||muh.length)?`<div class="scroll"><table class="grt">${GR_TH}<tbody>`+siki.map(ydSatir).join("")
     +muh.map((x,i)=>(i===0&&siki.length)?x.h.replace("<tr>",'<tr class="gr-ayr">'):x.h).join("")+`</tbody></table></div>`:'<div class="gr-muted">Kayıt yok</div>';
+  window._grYd={}; ydR.forEach(r=>window._grYd[r.id]=r); window._grSo={}; soR.forEach(r=>window._grSo[r.id]=r);
   if(el) el.innerHTML=`<h3 class="sec">Sıkı Takip Edilecekler <span class="gr-muted">(${siki.length})</span> ve Muhtemel &gt; 500.000 <span class="gr-muted">(${muh.length})</span></h3>${tekT}`;
+  if(el) el.querySelectorAll(".gr-nb").forEach(b=>b.onclick=()=>grNotAc(b.dataset.k,Number(b.dataset.id)));
   /* 5 — eğilim */
   const sum=(a,f)=>a.reduce((s,r)=>s+(Number(f(r))||0),0);
   const cur={so_m:sum(soR.filter(r=>/^muht/i.test(r.statu||"")),r=>r.net_eur), so_a:sum(soR.filter(r=>/^al/i.test(r.statu||"")),r=>r.net_eur),
@@ -593,6 +596,57 @@ async function grSatis(){
     +KART.map(([f,ad],i)=>{ const c=ser[ser.length-1][f]; return (i===3?`</div><div class="gr-cards" style="margin-top:10px">`:"")+`<div class="gr-card"><div class="gr-ct">${esc(ad)}</div><div class="gr-cv">${money(c)} €</div>${grSpark(ser.map(s=>({x:s.x,y:s[f]==null?null:s[f],cur:s.cur})),{zero:true})}</div>`; }).join("")
     +(dkS?`<div class="gr-card"><div class="gr-ct">Etüt DK1 (dk)</div><div class="gr-cv">${money(dkS[dkS.length-1].y)} dk</div>${grSpark(dkS,{zero:true,birim:" dk"})}</div>`:"")
     +`</div>`;
+}
+/* GIRIS-TAKIP-NOT: Giriş'ten takip notu. YD (satis_yd_akis): YD formundaki tkCommitEntry ile aynı kayıt —
+   son_takip_notlari başına {t,e,g,n} (e = MB, not "MB: …"), son_takip_tarihi = bugün, Görevli zorunlu (form_erisim.kisiler, yedek liste +
+   MB + Hiç Kimse + Herkes); durum Takip Bekleniyor ise formdaki TAKIP-SORU sorulur. Yurt İçi (satis_yorum): SO formundaki "Durum" alanı
+   yeni notla değiştirilir ("GG.AA.YY MB: …"). */
+async function grNotAc(k,id){
+  const r=k==="yd"?(window._grYd||{})[id]:(window._grSo||{})[id]; if(!r) return;
+  let gor=[];
+  if(k==="yd"){ let ky=null; try{ const fe=await sb.from("form_erisim").select("kisiler").eq("yol",r.blok==="YD1"?"satis-yd1/":"satis-yd2/").maybeSingle(); if(fe&&fe.data&&Array.isArray(fe.data.kisiler)&&fe.data.kisiler.length) ky=fe.data.kisiler; }catch(e){}
+    gor=(ky||(r.blok==="YD1"?["MN","OBL","MK","KS"]:["MKB","OBL","MK","AK"])).slice(); if(gor.indexOf("MB")<0) gor.unshift("MB"); gor=gor.concat(["Hiç Kimse","Herkes"]); }
+  const ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;background:rgba(10,25,45,.4);display:flex;align-items:center;justify-content:center;z-index:9999";
+  const bs="padding:6px 14px;border-radius:6px;border:1px solid #2e6da4;cursor:pointer;font:inherit;";
+  ov.innerHTML=`<div style="background:#fff;border-radius:10px;padding:16px 18px;width:min(460px,92vw);box-shadow:0 8px 30px rgba(0,0,0,.25);font-size:13px;color:#16324f">
+    <div style="font-weight:700;margin-bottom:2px">${esc(r.proje||"")}</div>
+    <div style="color:#6b7a8a;margin-bottom:10px">${esc(r.musteri||"")} · ${k==="yd"?esc(r.blok==="YD1"?"Yurt Dışı 1":"Yurt Dışı 2")+" formu, takip notu":"Yurt İçi Satış formu, Durum"}</div>
+    <textarea id="gr-nt" rows="3" style="width:100%;box-sizing:border-box;font:inherit;padding:6px;border:1px solid #c9d3de;border-radius:6px" placeholder="Not"></textarea>
+    ${k==="yd"?`<div style="margin-top:8px">Görevli: <select id="gr-ng" style="font:inherit;padding:2px 4px"><option value=""></option>${gor.map(g=>`<option>${esc(g)}</option>`).join("")}</select></div>`:""}
+    <div id="gr-nm" style="color:#b23a2e;min-height:16px;margin-top:6px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button id="gr-nx" style="${bs}background:#fff;color:#2e6da4">Vazgeç</button><button id="gr-ns" style="${bs}background:#2e6da4;color:#fff">Kaydet</button></div></div>`;
+  document.body.appendChild(ov);
+  const kapat=()=>ov.remove(), msg=t=>{ ov.querySelector("#gr-nm").textContent=t; };
+  ov.querySelector("#gr-nx").onclick=kapat; ov.onclick=e=>{ if(e.target===ov) kapat(); };
+  ov.querySelector("#gr-nt").focus();
+  ov.querySelector("#gr-ns").onclick=async()=>{
+    const txt=ov.querySelector("#gr-nt").value.trim(); if(!txt){ msg("Not yazınız."); return; }
+    const t=grNow(), p2=x=>String(x).padStart(2,"0"), iso=t.getFullYear()+"-"+p2(t.getMonth()+1)+"-"+p2(t.getDate());
+    const btn=ov.querySelector("#gr-ns"); btn.disabled=true;
+    if(k==="yd"){
+      const g=ov.querySelector("#gr-ng").value; if(!g){ msg("Görevli seçiniz."); btn.disabled=false; return; }
+      const q=await sb.from("satis_yd_akis").select("son_takip_notlari,son_takip_tarihi,durum").eq("id",id).single();
+      if(q.error){ msg(q.error.message); btn.disabled=false; return; }
+      let log=[]; const raw=q.data.son_takip_notlari;
+      if(raw){ try{ const v=JSON.parse(raw); if(Array.isArray(v)) log=v; else log=[{t:q.data.son_takip_tarihi||"",e:"",n:String(raw)}]; }catch(e){ log=[{t:q.data.son_takip_tarihi||"",e:"",n:String(raw)}]; } }
+      log.unshift({t:iso,e:"MB",g:g,n:txt.indexOf("MB:")===0?txt:"MB: "+txt});
+      const u=await sb.from("satis_yd_akis").update({son_takip_notlari:JSON.stringify(log),son_takip_tarihi:iso}).eq("id",id);
+      if(u.error){ msg(u.error.message); btn.disabled=false; return; }
+      if(q.data.durum==="Takip Bekleniyor"){
+        const kutu=ov.firstElementChild, b2="display:block;width:100%;text-align:left;padding:9px 10px;margin-bottom:8px;border:1px solid #cdd6df;border-radius:8px;cursor:pointer;font:inherit;";
+        kutu.innerHTML='<div style="font-weight:700;margin-bottom:12px">Not kaydedildi. Satır "Takip Bekleniyor" durumunda. Ne yapılsın?</div>'
+          +'<button data-s="1" style="'+b2+'background:#eaf5ee">1. Takipten çıkar (15 gün sonra kendiliğinden tekrar takibe girer)</button>'
+          +'<button data-s="2" style="'+b2+'background:#f5f7f9">2. Takip Bekleniyor durumunda kalsın</button>';
+        await new Promise(res=>kutu.querySelectorAll("button").forEach(b=>b.onclick=async()=>{ if(b.dataset.s==="1") await sb.from("satis_yd_akis").update({durum:"Teklif Teslim Edildi"}).eq("id",id); res(); }));
+      }
+    } else {
+      const not=p2(t.getDate())+"."+p2(t.getMonth()+1)+"."+String(t.getFullYear()).slice(2)+" "+(txt.indexOf("MB:")===0?txt:"MB: "+txt);
+      const u=await sb.from("satis_yorum").update({durum:not}).eq("id",id);
+      if(u.error){ msg(u.error.message); btn.disabled=false; return; }
+    }
+    kapat(); const y=window.scrollY; await grSatis(); window.scrollTo(0,y);
+  };
 }
 /* 6 — Sel-Arb ilk tablonun son 5 satırı (alt toplam satırları), "Cari Ay €" sütunu: tablo gizli kapta loadSelArb ile
    aynen üretilip okunur (hesap tek yerde kalsın diye). */
