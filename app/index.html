@@ -615,9 +615,11 @@ async function grCari(){
   const thT=(th&&!th.error)?(th.data||[]).reduce((a,r)=>a+(Number(r.tutar)||0),0):null;
   const ay=GR_AYTAM[t.getMonth()]+" "+t.getFullYear();
   const el=grEl("gr-cari"); if(!el) return;
-  el.innerHTML=`<h3 class="sec">Cari Ay — ${esc(ay)}</h3>`
-    +`<div class="gr-l">OE · Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar: <b>${f(eur(ft))}</b></div>`
-    +`<div class="gr-l">ÖB · Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler: <b>${f(eur(od))}</b>${GR_SEP}Tahsilat: <b>${f(thT)}</b></div>`;
+  /* GIRIS-CARI-SADE: başlık yok, üç ayrı satır (cari ay) */
+  el.innerHTML=`<div style="margin-top:14px"></div>`
+    +`<div class="gr-l" title="${esc(ay)} · OE Faaliyet">Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar: <b>${f(eur(ft))}</b></div>`
+    +`<div class="gr-l" title="${esc(ay)} · ÖB Faaliyet">Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler: <b>${f(eur(od))}</b></div>`
+    +`<div class="gr-l" title="${esc(ay)} · ÖB Faaliyet">Yurt Dışı Birimlerin müşterilerden yaptığı Tahsilat: <b>${f(thT)}</b></div>`;
 }
 /* 10 — Etüt DK1 aylık toplam: dk toplam = dk1 + 2·dk2 + 3·dk3 + 5·dk4 (Etüt formu); bir ayda birden çok ERP çekimi varsa o ayın SON
    çekimi (formdaki "güncel" mantığı), elle girilen satırlar (erp_damga boş) tarih ayına eklenir; yurt içi hariç (ETUT-DK-YD). Son 12 ay + cari. */
@@ -649,7 +651,7 @@ async function grEgitim(){
   const gE=[]; (plan||[]).forEach(r=>AYL.forEach(a=>{ const v=r[a+"_gerceklesen"]; if(v&&String(v).slice(0,4)===YIL) gE.push(String(v)); }));
   const yE=[]; (dok||[]).forEach(r=>{ if(r.yayim_tarihi&&String(r.yayim_tarihi).slice(0,4)===YIL) yE.push(String(r.yayim_tarihi)); if(r.revizyon_tarihi&&String(r.revizyon_tarihi).slice(0,4)===YIL) yE.push(String(r.revizyon_tarihi)); });
   const ay=a=>a.filter(x=>x.slice(0,7)===AY).length;
-  el.innerHTML=`<h3 class="sec">Eğitim</h3><div class="gr-l">Gerçekleşen eğitim: bu ay <b>${ay(gE)}</b> · bu yıl <b>${gE.length}</b>${GR_SEP}Yayınlanan doküman: bu ay <b>${ay(yE)}</b> · bu yıl <b>${yE.length}</b></div>`;
+  el.innerHTML=`<div class="gr-l">Gerçekleşen eğitim: bu ay <b>${ay(gE)}</b> · bu yıl <b>${gE.length}</b>${GR_SEP}Yayınlanan doküman: bu ay <b>${ay(yE)}</b> · bu yıl <b>${yE.length}</b></div>`;
 }
 /* GIRIS-PANO: Gundem ve Giris ortak PEM/PRJ blogu */
 const agPemPrjBlock=(function(){
