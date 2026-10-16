@@ -67,6 +67,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div class="sub">Aylık faaliyetler kaydedilir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak güncelleme düğmelerine basılmadıkça gönderilmez.</div>
 </header>
 <div class="wrap">
+  <div id="gr-ust" style="margin:0 0 16px"></div><!-- GIRIS-UST-ORTAK: Giriş panosundaki Sıkı Takip … cari ay bloğu -->
   <div class="aybar">
     <button class="btn" id="ayBtn">Güncelle</button>
     <span class="msg" id="ayMsg"></span>
@@ -110,6 +111,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../giris_ust.js?v=261016a"></script><!-- GIRIS-UST-ORTAK -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
    kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
@@ -574,6 +576,9 @@ loadMK().then(()=>{ BLOCKS.forEach(b=>{ if(!DATA[b.tur].length) DATA[b.tur].push
   },true);
 })();
 
+
+/* GIRIS-UST-ORTAK: üst blok (Giriş ile aynı) — not ekleyen = giriş kodunun kişisi, yoksa MK (MB oturumunda MB) */
+try{ if(window.GRUST) GRUST.render(document.getElementById("gr-ust"),{sb:sb,ekleyen:()=>((window.ARB_KISI_AL&&(ARB_KISI_AL(ARB_ROLE_EMAIL)||{}).kod)||(ARB_ACTIVE===ARB_MB_SB?"MB":"MK"))}); }catch(e){}
 </script>
 
 
