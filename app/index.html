@@ -235,7 +235,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 });
 
 const app = document.getElementById("app");
-let state = { tab:"gundem", email:"", session:null, allowed:null };
+let state = { tab:"giris", email:"", session:null, allowed:null };
 const PREFIX = { F:"Fabrika", G:"Yurtdışı / Genel", P:"PEM", S:"Şahsi", ARGE:"ARGE" };
 
 function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -289,7 +289,7 @@ async function doLogin(){
   try{ safeStorage().setItem("arbor_son_email", email); }catch(e){}
   state.session=data.session; await loadPerms(); renderApp();
 }
-async function doLogout(){ await sb.auth.signOut(); state.session=null; state.allowed=null; state.tab="gundem"; renderLogin(); }
+async function doLogout(){ await sb.auth.signOut(); state.session=null; state.allowed=null; state.tab="giris"; renderLogin(); }
 /* Kullanıcının yetkili olduğu bölümler (yetkiler tablosu, RLS ile yalnız kendi satırları). '*' = admin (hepsi). */
 async function loadPerms(){
   try{
@@ -304,7 +304,7 @@ async function loadPerms(){
 const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_mkprim"]; /* MAASPRIM-PERSONEL: mali_maasprim kaldırıldı (→ Personel) */
 const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_mkprim"];
 /* ÖB Faaliyet artık Mali grubunun içinde (MK Faaliyet'in yanında) */
-/* MENU-KISA-261010 */const TABS=[["gundem","Gündem"],["aup","PRJ/PEM"],["santiye","Şantiye"],["satis","Satış"],["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
+/* MENU-KISA-261010 */ /* GIRIS-PANO */const TABS=[["giris","Giriş"],["gundem","Gündem"],["aup","PRJ/PEM"],["santiye","Şantiye"],["satis","Satış"],["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
 const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
 function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b))||a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
 function renderApp(){
@@ -322,7 +322,8 @@ function renderApp(){
   loadView();
 }
 function loadView(){
-  if(state.tab==='gundem') loadGundem();
+  if(state.tab==='giris') loadGiris();
+  else if(state.tab==='gundem') loadGundem();
   else if(state.tab==='hazir'){ state.tab='aup'; loadAup(); }  /* PRJ-PEM-SEKME: eski sekme anahtarı */
   else if(state.tab==='santiye') loadSantiyeOnay();
   else if(state.tab==='satis') loadSatis();
@@ -391,6 +392,288 @@ function fitTitles(){
   if(app) new MutationObserver(run).observe(app,{childList:true,subtree:true});
 })();
 
+/* ---------- GIRIS-PANO (16.10.2026, Melih): "Giriş" — menünün ilk sekmesi, açılış panosu.
+   Yukarıdan aşağı: 1 İstanbul ezan vakitleri + gündüz ort. sıcaklık + yağış (aladhan.com Diyanet yöntemi 13,
+   open-meteo) · 2 yaklaşan özel günler (Takvim, 30 gün; Gündem'den taşındı) · 3 Gündem MB ve PEM satırları
+   (Gündem'den taşındı; düzenleme/✕ aynen) · 4 Sıkı Takip Edilecekler + Muhtemel > 500.000 (orijinal para birimi)
+   · 5 İcmal son 12 ay + Satış cari durum küçük grafikleri · 6 Sel-Arb ilk tablo son 5 satır Cari Ay · 7 Tıkanmış
+   Şantiyeler (loadSantiye) · 8 OE fatura cari ay toplamı · 9 ÖB Selectron'a ödemeler + tahsilat cari ay · 10 Etüt
+   DK1 aylık toplam (ayın SON ERP çekimi + elle girilenler; yurt içi hariç) · 11 Eğitim bu ay / bu yıl. Hepsi salt-okur. ---------- */
+const GR_AY=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+const GR_AYTAM=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
+const GR_SEP=" \u05C0 ";
+function grNow(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Istanbul'})); }
+function grEl(id){ return document.getElementById(id); }
+function grNum(s){ if(s==null||s==="") return null; if(typeof s==="number") return s; const v=parseFloat(String(s).replace(/\./g,"").replace(",",".")); return isFinite(v)?v:null; }
+function grK(v){ if(v==null) return ""; const a=Math.abs(v); if(a>=1e6) return (v/1e6).toLocaleString("tr-TR",{maximumFractionDigits:1})+" Mn"; if(a>=1e3) return Math.round(v/1e3).toLocaleString("tr-TR")+" B"; return Math.round(v).toLocaleString("tr-TR"); }
+function grTemiz(s){ return String(s||"").replace(/[\p{Extended_Pictographic}\p{Regional_Indicator}\uFE0F\u200D\u20E3]/gu,"").replace(/\s{2,}/g," ").replace(/(\s*·\s*){2,}/g," · ").replace(/^\s*·\s*|\s*·\s*$/g,"").trim(); }
+function grBas(s){ return grTemiz(s).split(" · ")[0].replace(/\([^)]*\)/g,"").replace(/\s*\barifesi\b/gi,"").replace(/\s{2,}/g," ").replace(/[\s:]+$/,"").trim(); }
+/* Küçük grafik: pts=[{x,y,cur}] — çizgi (varsayılan) ya da çubuk (opt.bar). Nokta/çubuk title'ında tam değer. */
+function grSpark(pts,opt){
+  opt=opt||{}; const W=opt.w||236,H=opt.h||78,L=30,R=6,T=8,B=16, birim=opt.birim||" €";
+  const vs=pts.filter(p=>p.y!=null).map(p=>p.y);
+  if(!vs.length) return '<div class="gr-muted">Veri yok</div>';
+  let mn=Math.min.apply(null,vs), mx=Math.max.apply(null,vs); if(opt.bar||opt.zero) mn=Math.min(0,mn); if(mx===mn){ mx=mx+1; }
+  const n=pts.length, iw=W-L-R, X=i=>L+(n<=1?iw/2:(opt.bar?(i+.5)*iw/n:i*iw/(n-1))), Y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn));
+  const tt=p=>esc(p.x+": "+(p.y==null?"—":Math.round(p.y).toLocaleString("tr-TR")+birim));
+  let g=`<line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" class="gr-ax"/><line x1="${L}" y1="${H-B}" x2="${W-R}" y2="${H-B}" class="gr-ax"/>`
+    +`<text x="${L-3}" y="${T+7}" class="gr-yl">${esc(grK(mx))}</text><text x="${L-3}" y="${H-B}" class="gr-yl">${esc(grK(mn))}</text>`;
+  if(opt.bar){
+    const bw=Math.max(3,Math.min(18,iw/n*.6));
+    pts.forEach((p,i)=>{ if(p.y==null) return; const y=Y(p.y), y0=Y(Math.max(mn,0)); g+=`<rect x="${(X(i)-bw/2).toFixed(1)}" y="${Math.min(y,y0).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,Math.abs(y0-y)).toFixed(1)}" class="${p.cur?'gr-bc':'gr-b'}"><title>${tt(p)}</title></rect>`; });
+  } else {
+    let d=""; pts.forEach((p,i)=>{ if(p.y==null) return; d+=(d?"L":"M")+X(i).toFixed(1)+" "+Y(p.y).toFixed(1); });
+    g+=`<path d="${d}" class="gr-ln"/>`;
+    pts.forEach((p,i)=>{ if(p.y==null) return; g+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p.cur?3.6:2.2}" class="${p.cur?'gr-dc':'gr-d'}"><title>${tt(p)}</title></circle>`; });
+  }
+  g+=`<text x="${X(0)}" y="${H-3}" class="gr-xl" text-anchor="start">${esc(pts[0].x)}</text><text x="${X(n-1)}" y="${H-3}" class="gr-xl" text-anchor="end">${esc(pts[n-1].x)}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="gr-svg">${g}</svg>`;
+}
+async function loadGiris(){
+  const view=grEl("view"); if(!view) return;
+  view.innerHTML=`<style>
+    .gr{font-size:12.5px;color:#16324f}
+    .gr-l{padding:5px 2px;border-bottom:1px solid #e6ebf1;line-height:1.5}
+    .gr-l1{font-weight:600}
+    .gr h3.sec{margin:16px 0 6px;font-size:13.5px}
+    .gr-muted{color:#7b8794}
+    .gr-pos{color:#0a6b3f}.gr-neg{color:#b23a2e}
+    .gr .scroll{max-height:none;overflow-y:visible;overflow-x:auto}
+    table.grt{border-collapse:collapse;font-size:11.5px;width:auto}
+    table.grt th,table.grt td{padding:2px 7px;border-bottom:1px solid #eef1f5;white-space:nowrap;line-height:16px;text-align:left}
+    table.grt td.n,table.grt th.n{text-align:right;font-variant-numeric:tabular-nums}
+    table.grt td.w{max-width:46ch;overflow:hidden;text-overflow:ellipsis}
+    table.grt td.gec{color:#b23a2e;font-weight:700}
+    .gr-cards{display:flex;flex-wrap:wrap;gap:10px}
+    .gr-card{border:1px solid #dfe5ec;border-radius:8px;background:#fff;padding:6px 8px 2px}
+    .gr-ct{font-size:11.5px;color:#4a5a6a}.gr-cv{font-size:15px;font-weight:700;margin:1px 0 2px}
+    .gr-svg{display:block}.gr-ax{stroke:#cfd8e2;stroke-width:1}.gr-ln{fill:none;stroke:#2e6da4;stroke-width:1.6}
+    .gr-d{fill:#2e6da4}.gr-dc{fill:#e07b00}.gr-b{fill:#7aa3c9}.gr-bc{fill:#e07b00}
+    .gr-yl{font-size:8.5px;fill:#7b8794;text-anchor:end}.gr-xl{font-size:8.5px;fill:#7b8794}
+    .gblk table{font-size:11.5px}.gblk th,.gblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.gblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.gblk .c>span::-webkit-scrollbar{display:none}.c3>span{max-width:3ch}.c5>span{max-width:5ch}.c8>span{max-width:8ch}.c15>span{max-width:15ch}.c25>span{max-width:25ch}.cdur>span{max-width:13ch}.ckon>span{max-width:32.5ch}
+    .ag-wrap .scroll{max-height:none;overflow-y:visible;overflow-x:auto;border:0;background:transparent;border-radius:0;margin:0 0 12px}
+    .gblk button.fmail{display:none}
+    .ged{cursor:text}.ged:hover{background:#eef5ff;box-shadow:inset 0 0 0 1px #cfe0f1}.saveflash{background:#e6f6ea!important;transition:background .3s}
+    .gnb td .cell,.gblk td .cell{width:100%;box-sizing:border-box;font:inherit;padding:2px 5px;border:1px solid #2e6da4;border-radius:5px}
+  </style>
+  <div class="gr">
+    <div class="gr-l gr-l1" id="gr-vakit"><span class="gr-muted">Vakitler yükleniyor…</span></div>
+    <div class="gr-l" id="gr-ozel"></div>
+    <div id="gr-gundem"></div>
+    <div id="gr-satis"></div>
+    <div id="gr-trend"></div>
+    <div id="gr-selarb"></div><div id="gr-selarb-tmp" style="display:none"></div>
+    <div id="gr-santiye"></div>
+    <div id="gr-cari"></div>
+    <div id="gr-dk"></div>
+    <div id="gr-egitim"></div>
+  </div>`;
+  const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grGundem),kor(grSatis),kor(grSelArb),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grCari),kor(grDk),kor(grEgitim)]);
+}
+/* 1 — Ezan vakitleri (Diyanet yöntemi) + gündüz ortalama sıcaklık (gün doğumu–batımı saatlik ortalaması) + yağış */
+async function grVakit(){
+  const t=grNow(), p2=x=>String(x).padStart(2,"0");
+  const iso=t.getFullYear()+"-"+p2(t.getMonth()+1)+"-"+p2(t.getDate()), dmy=p2(t.getDate())+"-"+p2(t.getMonth()+1)+"-"+t.getFullYear();
+  const j=u=>fetch(u).then(r=>r.ok?r.json():null).catch(()=>null);
+  const tr=p2(t.getDate())+"."+p2(t.getMonth()+1)+"."+t.getFullYear();
+  /* Birincil: Diyanet verisi (ezanvakti.emushaf.net, İstanbul ilçe 9541); yedek: aladhan.com Diyanet yöntemi */
+  const [dy,ez0,hv]=await Promise.all([
+    j("https://ezanvakti.emushaf.net/vakitler/9541"),
+    j("https://api.aladhan.com/v1/timingsByCity/"+dmy+"?city=Istanbul&country=Turkey&method=13"),
+    j("https://api.open-meteo.com/v1/forecast?latitude=41.0082&longitude=28.9784&hourly=temperature_2m&daily=sunrise,sunset,precipitation_sum,precipitation_probability_max&timezone=Europe%2FIstanbul&start_date="+iso+"&end_date="+iso)
+  ]);
+  const el=grEl("gr-vakit"); if(!el) return;
+  const P=["İstanbul "+t.getDate()+" "+GR_AY[t.getMonth()]];
+  const c=s=>String(s||"").slice(0,5), D=Array.isArray(dy)?dy.find(x=>x&&x.MiladiTarihKisa===tr):null, T=ez0&&ez0.data&&ez0.data.timings;
+  if(D) P.push("İmsak "+c(D.Imsak)+" · Güneş "+c(D.Gunes)+" · Öğle "+c(D.Ogle)+" · İkindi "+c(D.Ikindi)+" · Akşam "+c(D.Aksam)+" · Yatsı "+c(D.Yatsi));
+  else P.push(T?("İmsak "+c(T.Fajr)+" · Güneş "+c(T.Sunrise)+" · Öğle "+c(T.Dhuhr)+" · İkindi "+c(T.Asr)+" · Akşam "+c(T.Maghrib)+" · Yatsı "+c(T.Isha)):"Ezan vakitleri alınamadı");
+  if(hv&&hv.hourly&&hv.daily){
+    const sr=String(hv.daily.sunrise[0]||""), ss=String(hv.daily.sunset[0]||"");
+    const v=hv.hourly.time.map((x,i)=>[String(x),hv.hourly.temperature_2m[i]]).filter(a=>a[1]!=null&&(!sr||a[0]>=sr.slice(0,13))&&(!ss||a[0]<=ss)).map(a=>a[1]);
+    if(v.length) P.push("Gündüz ort. "+Math.round(v.reduce((a,b)=>a+b,0)/v.length)+" °C");
+    const mm=hv.daily.precipitation_sum&&hv.daily.precipitation_sum[0], pr=hv.daily.precipitation_probability_max&&hv.daily.precipitation_probability_max[0];
+    P.push("Yağış "+(mm==null?"—":Number(mm).toLocaleString("tr-TR",{maximumFractionDigits:1})+" mm")+(pr==null?"":" (olasılık %"+pr+")"));
+  } else P.push("Hava durumu alınamadı");
+  el.textContent=P.join(GR_SEP);
+}
+/* 2 — Yaklaşan özel günler (Takvim, 30 gün; seyahat yok; AG-OZELGUN-HS kuralı: hafta sonuna düşen tatil kaydı gösterilmez).
+   Simgeler atılır; ardışık günlerde aynı başlık (parantez ve "arifesi" yok sayılır) "28 Eki - 29 Eki: Başlık" olarak birleşir. */
+async function grOzel(){
+  const {data,error}=await sb.from("pano_ozel_html").select("html_raw").eq("bolum","ozel_takvim").single();
+  const el=grEl("gr-ozel"); if(!el) return;
+  if(error||!data||!data.html_raw){ el.remove(); return; }
+  const today=grNow(); today.setHours(0,0,0,0); const end=new Date(today); end.setDate(end.getDate()+30);
+  const re=/add\(\s*(\d{1,2})\s*,\s*(\d{1,2})\s*,\s*"([^"]*)"\s*\)/g; const it=[]; let m;
+  while((m=re.exec(data.html_raw))){
+    const mo=+m[1], da=+m[2], txt=m[3];
+    let dt=new Date(today.getFullYear(),mo-1,da); if(dt<today) dt=new Date(today.getFullYear()+1,mo-1,da);
+    if(dt.getMonth()!==mo-1) continue;
+    if((dt.getDay()===0||dt.getDay()===6) && ["🇹🇷","🏭","🏫","🎓 Üni"].some(p=>txt.indexOf(p)===0)) continue;
+    if(dt>=today&&dt<=end&&grTemiz(txt)) it.push({dt,txt});
+  }
+  if(!it.length){ el.innerHTML='<span class="gr-muted">Önümüzdeki 30 günde özel gün yok</span>'; return; }
+  it.sort((a,b)=>a.dt-b.dt);
+  const G=[];
+  it.forEach(x=>{ const b=grBas(x.txt), g=G.find(g=>g.b===b&&(x.dt-g.e)===86400000);
+    if(g){ g.e=x.dt; g.n++; } else G.push({b,s:x.dt,e:x.dt,n:1,t:grTemiz(x.txt)}); });
+  G.sort((a,b)=>a.s-b.s);
+  const d=x=>x.getDate()+" "+GR_AY[x.getMonth()];
+  el.textContent=G.map(g=>g.n>1?(d(g.s)+" - "+d(g.e)+": "+g.b):(d(g.s)+": "+g.t)).join(GR_SEP);
+}
+/* 3 — Gündem MB + PEM (GIRIS-PANO: Gündem'den taşındı; ✕ ve Kod/Konu düzenleme Gündem'deki gibi) */
+async function grGundem(){
+  const {data,error}=await sb.from("ana_gundem").select("*");
+  const el=grEl("gr-gundem"); if(!el) return;
+  if(error){ el.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const all=data||[];
+  const mb=all.filter(r=>r.kaynak_tip!=='pem'&&r.kaynak_tip!=='prj'&&r.ilgili==='MB'&&!/Öncelik/i.test(String(r.son_durum||""))).sort((a,b)=>String(a.kod).localeCompare(String(b.kod)));
+  const pem=all.filter(r=>r.kaynak_tip==='pem');
+  const mbRows=mb.map(r=>`<tr data-id="${r.id}"><td class="kod ged" data-f="kod" data-type="text">${esc(r.kod)}</td><td class="ged" data-f="konu" data-type="text">${esc(r.konu)}</td><td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
+  el.innerHTML=`<div class="ag-wrap">`
+    +(mb.length?`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody><tr class="grp"><td colspan="3">MB · ${mb.length}</td></tr>${mbRows}</tbody></table></div>`:"")
+    +agPemPrjBlock(pem,'pem')+`</div>`;
+  el.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
+  el.querySelectorAll(".ged").forEach(x=>x.onclick=()=>startEdit(x));
+}
+/* 4 + 5 — Satış: Sıkı Takip Edilecekler (SIKI-TAKIP kuralı, formdaki sikiMi ile aynı) · Muhtemel > 500.000 (TL/€/GBP, orijinal tutar)
+   · İcmal son 12 ay + Satış cari durum (Yurt İçi muht., Yurt Dışı alınan/muht., Toplam alınan/muht.; € — İcmal'deki YD1+YD2 birleştirmesiyle) */
+async function grSatis(){
+  const [sy,yd,sk,ic]=await Promise.all([
+    sb.from("satis_yorum").select("*").eq("kaynak","SO").eq("aktif",true),
+    sb.from("satis_yd_akis").select("*"),
+    sb.from("yd_siki_takip").select("blok,proje,musteri"),
+    sb.from("icmal_satir").select("donem,is_total,so_alinan_eur,so_muht_eur,fa_alinan_eur,fy2_alinan_eur,fa_muht_eur,fy2_muht_eur")
+  ]);
+  const kur=await satisKur();
+  const soR=(sy&&sy.data)||[], ydR=(yd&&yd.data)||[], skR=(sk&&!sk.error&&sk.data)||[];
+  const k=s=>String(s==null?"":s).replace(/\s+/g," ").trim().toLocaleLowerCase("tr").replace(/ı/g,"i").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const skSet=new Set(skR.map(x=>x.blok+"|"+k(x.proje)+"|"+k(x.musteri)));
+  const today=grNow(); today.setHours(0,0,0,0);
+  const bolge=b=>b==='YD1'?'Yurt Dışı 1':(b==='YD2'?'Yurt Dışı 2':b);
+  const tutar=r=>r.net_tutar==null||r.net_tutar===""?"":money(r.net_tutar)+" "+(r.para_birimi||"EUR");
+  const gec=r=>{ const tt=r.teklif_teslim_tarihi, tk=ydTkLatest(r).t||r.son_takip_tarihi, ref=tk?((tt&&tt>tk)?tt:tk):tt; if(!ref) return null; const g=gunFark(today,ref)-15; return g>0?g:null; };
+  const siki=ydR.filter(r=>(r.durum==="Teklif Teslim Edildi"||r.durum==="Takip Bekleniyor")&&skSet.has(r.blok+"|"+k(r.proje)+"|"+k(r.musteri)))
+    .sort((a,b)=>String(a.teklif_teslim_tarihi||'9999').localeCompare(String(b.teklif_teslim_tarihi||'9999')));
+  const sikiT=siki.length?`<div class="scroll"><table class="grt"><thead><tr><th>Bölge</th><th>Proje</th><th>Müşteri</th><th>Teklif Teslim</th><th class="n">Net Tutar</th><th>Takip Tarihi</th><th>Takip Notu</th><th class="n">Gec. Gün</th></tr></thead><tbody>`
+    +siki.map(r=>{ const l=ydTkLatest(r), g=gec(r); return `<tr><td>${esc(bolge(r.blok))}</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="w" title="${esc(r.musteri)}">${esc(r.musteri)}</td><td>${fdate(r.teklif_teslim_tarihi)}</td><td class="n">${esc(tutar(r))}</td><td>${l.t?fdate(l.t):""}</td><td class="w" title="${esc(l.n||"")}">${esc(l.n||"")}</td><td class="n${g?' gec':''}">${g||""}</td></tr>`; }).join("")
+    +`</tbody></table></div>`:'<div class="gr-muted">Sıkı takip edilecek teklif yok</div>';
+  const SINIR=500000;
+  const muh=ydR.filter(r=>r.durum==='Muhtemel'&&Number(r.net_tutar)>SINIR).map(r=>({b:bolge(r.blok),p:r.proje,m:r.musteri,t:tutar(r),e:netEur(r,kur)}))
+    .concat(soR.filter(r=>/^muht/i.test(r.statu||"")&&Number(r.net_eur)>SINIR).map(r=>({b:'Yurt İçi',p:r.proje,m:r.musteri,t:money(r.net_eur)+" EUR",e:Number(r.net_eur)})))
+    .sort((a,b)=>(Number(b.e)||0)-(Number(a.e)||0));
+  const muhT=muh.length?`<div class="scroll"><table class="grt"><thead><tr><th>Bölge</th><th>Proje</th><th>Müşteri</th><th class="n">Net Tutar</th><th class="n">€</th></tr></thead><tbody>`
+    +muh.map(x=>`<tr><td>${esc(x.b)}</td><td class="w" title="${esc(x.p)}">${esc(x.p)}</td><td class="w" title="${esc(x.m)}">${esc(x.m)}</td><td class="n">${esc(x.t)}</td><td class="n">${x.e==null?"":money(x.e)}</td></tr>`).join("")
+    +`<tr><td colspan="4"><b>Toplam</b></td><td class="n"><b>${money(muh.reduce((a,x)=>a+(Number(x.e)||0),0))}</b></td></tr></tbody></table></div>`:'<div class="gr-muted">500.000 üzeri muhtemel proje yok</div>';
+  const el=grEl("gr-satis");
+  if(el) el.innerHTML=`<h3 class="sec">Sıkı Takip Edilecekler <span class="gr-muted">(${siki.length})</span></h3>${sikiT}<h3 class="sec">Muhtemel &gt; 500.000 <span class="gr-muted">(${muh.length})</span></h3>${muhT}`;
+  /* 5 — eğilim */
+  const sum=(a,f)=>a.reduce((s,r)=>s+(Number(f(r))||0),0);
+  const cur={so_m:sum(soR.filter(r=>/^muht/i.test(r.statu||"")),r=>r.net_eur), so_a:sum(soR.filter(r=>/^al/i.test(r.statu||"")),r=>r.net_eur),
+    yd_m:sum(ydR.filter(r=>(r.blok==='YD1'||r.blok==='YD2')&&r.durum==='Muhtemel'),r=>netEur(r,kur)), yd_a:sum(ydR.filter(r=>(r.blok==='YD1'||r.blok==='YD2')&&r.durum==='Kazandık'),r=>netEur(r,kur))};
+  const icBy={}; ((ic&&ic.data)||[]).forEach(r=>{ if(!r.is_total&&/^\d{2}\.\d{2}$/.test(String(r.donem||""))) icBy[r.donem]=r; });
+  const p2=x=>String(x).padStart(2,"0"), lbl=d=>p2(d.getMonth()+1)+"."+String(d.getFullYear()).slice(2);
+  const ser=[];
+  for(let i=12;i>=1;i--){ const d=new Date(today.getFullYear(),today.getMonth()-i,1), r=icBy[lbl(d)];
+    if(!r){ ser.push({x:lbl(d)}); continue; }
+    const so_m=grNum(r.so_muht_eur), so_a=grNum(r.so_alinan_eur), fa_a=grNum(r.fa_alinan_eur), fa_m=grNum(r.fa_muht_eur), f2a=grNum(r.fy2_alinan_eur), f2m=grNum(r.fy2_muht_eur);
+    const yd_a=(fa_a==null&&f2a==null)?null:(fa_a||0)+(f2a||0), yd_m=(fa_m==null&&f2m==null)?null:(fa_m||0)+(f2m||0);
+    ser.push({x:lbl(d),so_m,so_a,yd_a,yd_m}); }
+  ser.push({x:lbl(today)+" (cari)",cur:true,so_m:cur.so_m,so_a:cur.so_a,yd_a:cur.yd_a,yd_m:cur.yd_m});
+  ser.forEach(s=>{ s.top_a=(s.so_a==null&&s.yd_a==null)?null:(s.so_a||0)+(s.yd_a||0); s.top_m=(s.so_m==null&&s.yd_m==null)?null:(s.so_m||0)+(s.yd_m||0); });
+  const KART=[["so_m","Yurt İçi muht. Prj (€)"],["yd_a","Yurt Dışı alınan Prj (€)"],["yd_m","Yurt Dışı muht. Prj (€)"],["top_a","Top.alınan Prj (€)"],["top_m","Top.muht. Prj (€)"]];
+  const et=grEl("gr-trend");
+  if(et) et.innerHTML=`<h3 class="sec">Satış — son 12 ay (İcmal) ve cari durum (Satış)</h3><div class="gr-cards">`
+    +KART.map(([f,ad])=>{ const c=ser[ser.length-1][f]; return `<div class="gr-card"><div class="gr-ct">${esc(ad)}</div><div class="gr-cv">${money(c)} €</div>${grSpark(ser.map(s=>({x:s.x,y:s[f]==null?null:s[f],cur:s.cur})),{zero:true})}</div>`; }).join("")
+    +`</div>`;
+}
+/* 6 — Sel-Arb ilk tablonun son 5 satırı (alt toplam satırları), "Cari Ay €" sütunu: tablo gizli kapta loadSelArb ile
+   aynen üretilip okunur (hesap tek yerde kalsın diye). */
+async function grSelArb(){
+  const tmp=grEl("gr-selarb-tmp"); if(!tmp) return;
+  await loadSelArb("gr-selarb-tmp");
+  const el=grEl("gr-selarb"), t2=grEl("gr-selarb-tmp"); if(!el||!t2) return;
+  const P=[...t2.querySelectorAll("tr.sa-foot")].slice(-5).map(tr=>{
+    const lab=(tr.querySelector(".sa-proje")||tr.cells[0]).textContent.replace(/\s*\(€\)\s*$/,"").trim();
+    const v=((tr.querySelector("td.sa-canli")||{}).textContent||"").trim();
+    return lab+": "+(v?v+" €":"—"); });
+  t2.remove();
+  el.innerHTML=`<h3 class="sec">Sel-Arb — Cari Ay</h3><div class="gr-l">${P.length?esc(P.join(" · ")):'<span class="gr-muted">Veri yok</span>'}</div>`;
+}
+/* 8 + 9 — Cari ay toplamları (formlardaki CARI-TOPLAM ile aynı: tarihi bu ayda olan satırlar; EUR = tutar_eur, yoksa EUR satırın tutarı) */
+async function grCari(){
+  const t=grNow(), p2=x=>String(x).padStart(2,"0"), bas=t.getFullYear()+"-"+p2(t.getMonth()+1)+"-01";
+  const nx=new Date(t.getFullYear(),t.getMonth()+1,1), son=nx.getFullYear()+"-"+p2(nx.getMonth()+1)+"-01";
+  const [ft,od,th]=await Promise.all([
+    sb.from("ihracat_fatura").select("tutar,para_birimi,tutar_eur").gte("tarih",bas).lt("tarih",son),
+    sb.from("sel_odeme").select("tutar,para_birimi,tutar_eur").gte("odeme_tarihi",bas).lt("odeme_tarihi",son),
+    sb.from("ob_tahsilat").select("tutar").gte("tarih",bas).lt("tarih",son)
+  ]);
+  const eur=q=>(q&&!q.error)?(q.data||[]).reduce((a,r)=>a+(r.tutar_eur!=null?Number(r.tutar_eur):((r.para_birimi||"EUR")==="EUR"?Number(r.tutar)||0:0)),0):null;
+  const f=v=>v==null?"—":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
+  const thT=(th&&!th.error)?(th.data||[]).reduce((a,r)=>a+(Number(r.tutar)||0),0):null;
+  const ay=GR_AYTAM[t.getMonth()]+" "+t.getFullYear();
+  const el=grEl("gr-cari"); if(!el) return;
+  el.innerHTML=`<h3 class="sec">Cari Ay — ${esc(ay)}</h3>`
+    +`<div class="gr-l">OE · Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar: <b>${f(eur(ft))}</b></div>`
+    +`<div class="gr-l">ÖB · Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler: <b>${f(eur(od))}</b>${GR_SEP}Tahsilat: <b>${f(thT)}</b></div>`;
+}
+/* 10 — Etüt DK1 aylık toplam: dk toplam = dk1 + 2·dk2 + 3·dk3 + 5·dk4 (Etüt formu); bir ayda birden çok ERP çekimi varsa o ayın SON
+   çekimi (formdaki "güncel" mantığı), elle girilen satırlar (erp_damga boş) tarih ayına eklenir; yurt içi hariç (ETUT-DK-YD). Son 12 ay + cari. */
+async function grDk(){
+  const {data,error}=await sb.from("etut_dk").select("erp_damga,tarih,created_at,dk1,dk2,dk3,dk4,yurt_ici");
+  const el=grEl("gr-dk"); if(!el) return;
+  if(error){ el.innerHTML=`<h3 class="sec">Etüt — DK1</h3><div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const n=v=>Number(v)||0, dkT=r=>n(r.dk1)+2*n(r.dk2)+3*n(r.dk3)+5*n(r.dk4);
+  const R=(data||[]).filter(r=>!r.yurt_ici);
+  const sonDamga={}; R.forEach(r=>{ if(!r.erp_damga) return; const a="20"+r.erp_damga.slice(0,2)+"-"+r.erp_damga.slice(2,4); if(!sonDamga[a]||r.erp_damga>sonDamga[a]) sonDamga[a]=r.erp_damga; });
+  const ayT={};
+  R.forEach(r=>{ let a;
+    if(r.erp_damga){ a="20"+r.erp_damga.slice(0,2)+"-"+r.erp_damga.slice(2,4); if(r.erp_damga!==sonDamga[a]) return; }
+    else { const d=String(r.tarih||r.created_at||""); if(!/^\d{4}-\d{2}/.test(d)) return; a=d.slice(0,7); }
+    ayT[a]=(ayT[a]||0)+dkT(r); });
+  const t=grNow(), p2=x=>String(x).padStart(2,"0"), key=d=>d.getFullYear()+"-"+p2(d.getMonth()+1);
+  const keys=Object.keys(ayT).sort(); const cur=key(t);
+  const ilk=keys.length?keys[0]:cur;
+  const pts=[]; for(let i=12;i>=0;i--){ const d=new Date(t.getFullYear(),t.getMonth()-i,1), kk=key(d); if(kk<ilk&&kk!==cur) continue;
+    pts.push({x:GR_AY[d.getMonth()]+" "+String(d.getFullYear()).slice(2),y:ayT[kk]==null?(kk<=cur?0:null):ayT[kk],cur:kk===cur}); }
+  const liste=pts.map(p=>`${esc(p.x)}: <b>${Math.round(p.y||0).toLocaleString("tr-TR")}</b>`).join(" · ");
+  el.innerHTML=`<h3 class="sec">Etüt — DK1 aylık toplam (dk)</h3><div class="gr-cards"><div class="gr-card"><div class="gr-ct">Cari ay (${esc(GR_AYTAM[t.getMonth()])})</div><div class="gr-cv">${Math.round(ayT[cur]||0).toLocaleString("tr-TR")} dk</div>${grSpark(pts,{bar:true,birim:" dk",w:Math.max(160,40+pts.length*22)})}</div></div><div class="gr-l">${liste}</div>`;
+}
+/* 11 — Eğitim: bu ay / bu yıl gerçekleşen eğitim ve yayınlanan doküman (Eğitim panosu EGITIM-OZET ile aynı sayım: yeni + revize) */
+async function grEgitim(){
+  const [{data:dok},{data:plan}]=await Promise.all([sb.from("egitim_dokuman_current").select("*"),sb.from("egitim_plan_current").select("*")]);
+  const el=grEl("gr-egitim"); if(!el) return;
+  const AYL=["ocak","subat","mart","nisan","mayis","haziran","temmuz","agustos","eylul","ekim","kasim","aralik"];
+  const t=grNow(), YIL=String(t.getFullYear()), AY=YIL+"-"+String(t.getMonth()+1).padStart(2,"0");
+  const gE=[]; (plan||[]).forEach(r=>AYL.forEach(a=>{ const v=r[a+"_gerceklesen"]; if(v&&String(v).slice(0,4)===YIL) gE.push(String(v)); }));
+  const yE=[]; (dok||[]).forEach(r=>{ if(r.yayim_tarihi&&String(r.yayim_tarihi).slice(0,4)===YIL) yE.push(String(r.yayim_tarihi)); if(r.revizyon_tarihi&&String(r.revizyon_tarihi).slice(0,4)===YIL) yE.push(String(r.revizyon_tarihi)); });
+  const ay=a=>a.filter(x=>x.slice(0,7)===AY).length;
+  el.innerHTML=`<h3 class="sec">Eğitim</h3><div class="gr-l">Gerçekleşen eğitim: bu ay <b>${ay(gE)}</b> · bu yıl <b>${gE.length}</b>${GR_SEP}Yayınlanan doküman: bu ay <b>${ay(yE)}</b> · bu yıl <b>${yE.length}</b></div>`;
+}
+/* GIRIS-PANO: Gundem ve Giris ortak PEM/PRJ blogu */
+const agPemPrjBlock=(function(){
+  const ev=(r,k)=> (r.erp&&r.erp[k]!=null)?String(r.erp[k]):"";
+  const pemPrjBlock=(rowsX,tip)=>{
+    if(!rowsX.length) return "";
+    const dcol=tip==='pem'?'termin':'aup', noteCol=tip==='pem'?'ekbilgi':'notlar';
+    const noteHd=tip==='pem'?'Ek Bilgi':'Satış/Şantiye Notları', dateHd=tip==='pem'?'Termin Tarihi':'AÜP Tarihi', kodW=tip==='pem'?'c5':'c8';
+    const sorted=[...rowsX].sort((a,b)=>(ev(a,dcol)||'99999999').localeCompare(ev(b,dcol)||'99999999'));
+    const body=sorted.map(r=>`<tr data-id="${r.id}">`
+      +`<td class="c ${kodW} ged" data-f="kod" data-type="text"><span title="${esc(r.kod)}">${esc(r.kod)}</span></td>`
+      +`<td class="c c15"><span title="${esc(ev(r,'proje'))}">${esc(ev(r,'proje'))}</span></td>`
+      +`<td class="c c25"><span title="${esc(ev(r,noteCol))}">${esc(ev(r,noteCol))}</span></td>`
+      +`<td class="c c3"><span>${esc(ev(r,'adet'))}</span></td>`
+      +`<td class="c cdur"><span title="${esc(ev(r,'durum'))}">${esc(ev(r,'durum'))}</span></td>`
+      +`<td class="c c8"><span>${fdate(ev(r,dcol))}</span></td>`
+      +`<td class="c ckon ged" data-f="konu" data-type="text"><span title="${esc(r.konu)}">${esc(r.konu)}</span></td>`
+      +`<td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
+    const title=(tip==='pem'?'PEM-':'PRJ-')+rowsX.length;
+    return `<h3 class="sec">${title}</h3><div class="scroll gblk"><table><thead><tr><th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>Durum</th><th>${dateHd}</th><th>Konu</th><th></th></tr></thead><tbody>${body}</tbody></table></div>`;
+  };
+  return pemPrjBlock;
+})();
+
 /* ---------- ANA GÜNDEM (blok = kod_prefix; İlgili = kişi; kapat = sil) ---------- */
 async function loadGundem(){
   const view=document.getElementById("view");
@@ -426,24 +709,7 @@ async function loadGundem(){
     ? `<tr data-id="${r.id}"><td class="kod ged" data-f="kod" data-type="text">${esc(r.kod)}</td><td class="ged" data-f="konu" data-type="text">${esc(r.konu)}</td><td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`
     : `<tr style="background:#fafbfd" title="ERP-türevi · salt-okur"><td class="kod" style="color:#5a6b7d">${esc(r.kod)}</td><td>${esc(r.konu)}</td><td></td></tr>`;
   const grpTable=ks=>{ let rr=""; ks.forEach(k=>{ if(!groups[k]) return; rr+=`<tr class="grp"><td colspan="3">${esc(k)} · ${groups[k].length}</td></tr>`; groups[k].forEach(r=>rr+=rowHtml(r)); }); return rr?`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${rr}</tbody></table></div>`:""; };
-  const ev=(r,k)=> (r.erp&&r.erp[k]!=null)?String(r.erp[k]):"";
-  const pemPrjBlock=(rowsX,tip)=>{
-    if(!rowsX.length) return "";
-    const dcol=tip==='pem'?'termin':'aup', noteCol=tip==='pem'?'ekbilgi':'notlar';
-    const noteHd=tip==='pem'?'Ek Bilgi':'Satış/Şantiye Notları', dateHd=tip==='pem'?'Termin Tarihi':'AÜP Tarihi', kodW=tip==='pem'?'c5':'c8';
-    const sorted=[...rowsX].sort((a,b)=>(ev(a,dcol)||'99999999').localeCompare(ev(b,dcol)||'99999999'));
-    const body=sorted.map(r=>`<tr data-id="${r.id}">`
-      +`<td class="c ${kodW} ged" data-f="kod" data-type="text"><span title="${esc(r.kod)}">${esc(r.kod)}</span></td>`
-      +`<td class="c c15"><span title="${esc(ev(r,'proje'))}">${esc(ev(r,'proje'))}</span></td>`
-      +`<td class="c c25"><span title="${esc(ev(r,noteCol))}">${esc(ev(r,noteCol))}</span></td>`
-      +`<td class="c c3"><span>${esc(ev(r,'adet'))}</span></td>`
-      +`<td class="c cdur"><span title="${esc(ev(r,'durum'))}">${esc(ev(r,'durum'))}</span></td>`
-      +`<td class="c c8"><span>${fdate(ev(r,dcol))}</span></td>`
-      +`<td class="c ckon ged" data-f="konu" data-type="text"><span title="${esc(r.konu)}">${esc(r.konu)}</span></td>`
-      +`<td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
-    const title=(tip==='pem'?'PEM-':'PRJ-')+rowsX.length;
-    return `<h3 class="sec">${title}</h3><div class="scroll gblk"><table><thead><tr><th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>Durum</th><th>${dateHd}</th><th>Konu</th><th></th></tr></thead><tbody>${body}</tbody></table></div>`;
-  };
+  const pemPrjBlock=agPemPrjBlock; /* GIRIS-PANO: PEM/PRJ blogu tek tanim (Giris de kullanir) */
   /* ARGE bloğu: kendi 4 sütunlu tablosu — No(xxxx) · Öncelik · Durum · Arge Konusu.
      Alanlar gundem_arge view'inden (arge_no/oncelik/durum/proje_adi/arge_konusu/acilis_tarihi);
      yoksa eski kod/son_durum/konu metinlerinden çözülür. Sıra: öncelik → açılış tarihi. */
@@ -475,7 +741,7 @@ async function loadGundem(){
      yazım/karakter farkı olmasın diye normalize edilerek aranır; yoksa sıra eskisi gibi kalır. */
   const agNorm=s=>String(s||"").toLocaleUpperCase("tr").replace(/Ç/g,"C").trim();
   const bahKey=keys.find(k=>agNorm(k)==="BAHCE");
-  const ustKeys=['MB'].concat(bahKey?[bahKey]:[]);
+  const ustKeys=[].concat(bahKey?[bahKey]:[]); /* GIRIS-PANO: MB grubu Giriş'te */
   const restKeys=keys.filter(k=>k!=='MB'&&k!=='ARGE'&&k!==bahKey);
   view.innerHTML=`
     <style>.gblk table{font-size:11.5px}.gblk th,.gblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.gblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.gblk .c>span::-webkit-scrollbar{display:none}.c3>span{max-width:3ch}.c5>span{max-width:5ch}.c8>span{max-width:8ch}.c10>span{max-width:10ch}.c12>span{max-width:12ch}.c15>span{max-width:15ch}.c20>span{max-width:20ch}.c25>span{max-width:25ch}.cdur>span{max-width:13ch}.ckon>span{max-width:32.5ch}
@@ -485,7 +751,7 @@ async function loadGundem(){
     .ged{cursor:text}.ged:hover{background:#eef5ff;box-shadow:inset 0 0 0 1px #cfe0f1}.saveflash{background:#e6f6ea!important;transition:background .3s}
     .gnb td .cell,.gblk td .cell{width:100%;box-sizing:border-box;font:inherit;padding:2px 5px;border:1px solid #2e6da4;border-radius:5px}
     .agog-wrap{margin:0 0 12px}.agog-h{font-size:13px;font-weight:700;color:#1b5e20;margin:0 0 6px}.agog-sub{font-weight:400;color:#8a978c;font-size:11px}.agog-t{border-collapse:collapse;width:100%;font-size:12.5px;background:#f1f8f2;border:1px solid #cfe6d2;border-radius:8px;overflow:hidden}.agog-t td{padding:5px 9px;border-bottom:1px solid #e0efe2;vertical-align:top}.agog-t tr:last-child td{border-bottom:0}.agog-d{white-space:nowrap;font-weight:600;color:#123;width:1%}.agog-x{color:#15241a}.agog-k{white-space:nowrap;text-align:right;color:#2e7d32;font-variant-numeric:tabular-nums;width:1%}.agog-none{font-size:12px;color:#8a978c;padding:6px 2px}</style>
-    <div id="ag-ozelgun" class="agog-wrap"></div>
+    <!-- GIRIS-PANO: Yaklaşan Özel Günler, MB ve PEM Giriş panosuna taşındı -->
     <div class="addbar">
       <select id="ag-ilgili" title="İlgili">${ilgSel}</select>
       <input id="ag-kod" placeholder="Kod" style="display:none;max-width:120px">
@@ -503,14 +769,12 @@ async function loadGundem(){
     </div>
     <div class="ag-wrap">
     ${grpTable(ustKeys)}
-    ${pemPrjBlock(pemRows,'pem')}
     ${pemPrjBlock(prjRows,'prj')}
     ${grpTable(restKeys)}
     ${soHtml}
     ${argeBlock(groups['ARGE'])}
     </div>`;
   view.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
-  agOzelGun();
   /* Elle girilen sütunlar (Kod, Konu) inline düzenlenebilir; ERP-türevi sütunlar salt-okur. */
   view.querySelectorAll(".ged").forEach(el=>el.onclick=()=>startEdit(el));
   const selEl=document.getElementById("ag-ilgili"), kodInp=document.getElementById("ag-kod");
@@ -643,7 +907,7 @@ async function delGundem(id){
   if(!confirm("Bu gündem maddesi kalıcı olarak silinsin mi? (kapat = sil)")) return;
   const {error}=await sb.from("ana_gundem").delete().eq("id",id);
   if(error){ alert(error.message); return; }
-  loadGundem();
+  loadView(); /* GIRIS-PANO: Giriş'ten de silinir */
 }
 function startEdit(el){
   if(el.querySelector("input,select")) return;
@@ -661,7 +925,7 @@ function startEdit(el){
     el.classList.add("saveflash"); setTimeout(()=>el.classList.remove("saveflash"),400);
   };
   inp.onblur=commit;
-  inp.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault();inp.blur();} if(e.key==='Escape'){loadGundem();} };
+  inp.onkeydown=e=>{ if(e.key==='Enter'){e.preventDefault();inp.blur();} if(e.key==='Escape'){loadView();} };
 }
 
 /* ---------- AG-SO-BLOK: SÖ (so_panosu, bölüm bloklu) — 21.09.2026 Melih: ayrı SÖ sekmesi ve EA formu
