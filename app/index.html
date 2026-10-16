@@ -542,7 +542,7 @@ async function grSatis(){
   const [sy,yd,sk,ic]=await Promise.all([
     sb.from("satis_yorum").select("*").eq("kaynak","SO").eq("aktif",true),
     sb.from("satis_yd_akis").select("*"),
-    sb.from("yd_siki_takip").select("blok,proje,musteri"),
+    sb.from("yd_siki_takip").select("blok,proje,musteri").eq("aktif",true), /* SIKI-AKTIF */
     sb.from("icmal_satir").select("donem,is_total,so_alinan_eur,so_muht_eur,fa_alinan_eur,fy2_alinan_eur,fa_muht_eur,fy2_muht_eur")
   ]);
   const kur=await satisKur();
