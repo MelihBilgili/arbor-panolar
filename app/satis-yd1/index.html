@@ -457,12 +457,14 @@ let PENDING_TK={};
    durumundayken tabloda "Sıkı Takip Edilecek" görünür; gerçek durum değişmez, tüm kurallar eski durumla işler. Sağ tık ile eklenir/çıkarılır. */
 let SIKI=[];
 function sikiKey(r){ return MUS.k(r.proje)+"|"+MUS.k(r.musteri); }
-async function sikiYukle(){ try{ const q=await sb.from("yd_siki_takip").select("id,proje,musteri").eq("blok",BLOK); SIKI=(q.data||[]).map(x=>({id:x.id,k:MUS.k(x.proje)+"|"+MUS.k(x.musteri)})); }catch(e){ SIKI=[]; } }
+let SIKI_TUM=[];
+async function sikiYukle(){ try{ const q=await sb.from("yd_siki_takip").select("id,proje,musteri,aktif").eq("blok",BLOK); SIKI_TUM=(q.data||[]).map(x=>({id:x.id,aktif:x.aktif!==false,k:MUS.k(x.proje)+"|"+MUS.k(x.musteri)})); SIKI=SIKI_TUM.filter(x=>x.aktif); }catch(e){ SIKI=[]; SIKI_TUM=[]; } } /* SIKI-AKTIF (16.10.2026): silme yok, aktif=false ile çıkarılır */
 function sikiListede(r){ return !!r && SIKI.some(x=>x.k===sikiKey(r)); }
 function sikiMi(r){ return !!r && (r.durum==="Teklif Teslim Edildi"||r.durum==="Takip Bekleniyor") && sikiListede(r); }
 function durumGor(r){ return sikiMi(r)?"Sıkı Takip Edilecek":(r.durum||""); }
 async function sikiDegis(r){
-  if(sikiListede(r)){ const x=SIKI.find(y=>y.k===sikiKey(r)); const {error}=await sb.from("yd_siki_takip").delete().eq("id",x.id); if(error){ setMsg("Değiştirilemedi: "+error.message,false); return; } }
+  if(sikiListede(r)){ const x=SIKI.find(y=>y.k===sikiKey(r)); const {error}=await sb.from("yd_siki_takip").update({aktif:false}).eq("id",x.id); /* SIKI-AKTIF */ if(error){ setMsg("Değiştirilemedi: "+error.message,false); return; } }
+  else if(SIKI_TUM.some(y=>y.k===sikiKey(r))){ const x=SIKI_TUM.find(y=>y.k===sikiKey(r)); const {error}=await sb.from("yd_siki_takip").update({aktif:true}).eq("id",x.id); if(error){ setMsg("Değiştirilemedi: "+error.message,false); return; } } /* SIKI-AKTIF */
   else { const {error}=await sb.from("yd_siki_takip").insert({blok:BLOK,proje:String(r.proje||"").trim(),musteri:String(r.musteri||"").trim(),created_by:ARB_EKLEYEN||null}); if(error){ setMsg("Değiştirilemedi: "+error.message,false); return; } }
   await sikiYukle(); render(); setMsg(sikiListede(r)?"Sıkı Takip Edilecek olarak işaretlendi":"Sıkı takipten çıkarıldı",true);
 }
