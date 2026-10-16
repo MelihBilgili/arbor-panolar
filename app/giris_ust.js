@@ -68,7 +68,7 @@ function css(){ if(document.getElementById("gru-css")) return; const st=document
 async function satis(o,elT,elG){
   const sb=o.sb;
   const [sy,yd,sk,ic,dk]=await Promise.all([
-    sb.from("satis_yorum").select("*").eq("kaynak","SO").eq("aktif",true),
+    o.grafik==="mk"?Promise.resolve({data:[]}):sb.from("satis_yorum").select("*").eq("kaynak","SO").eq("aktif",true), /* GIRIS-MK-YI: MK formunda Yurt İçi yok */
     sb.from("satis_yd_akis").select("*"),
     sb.from("yd_siki_takip").select("blok,proje,musteri"),
     sb.from("icmal_satir").select("donem,is_total,so_alinan_eur,so_muht_eur,fa_alinan_eur,fy2_alinan_eur,fa_muht_eur,fy2_muht_eur"),
