@@ -59,6 +59,7 @@
 
 html,body{max-width:100vw;overflow-x:hidden}
 table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+#mk-linkler a.mkl{display:inline-block;padding:6px 12px;border:1px solid #1f5f99;border-radius:8px;background:#fff;color:#1f5f99;font-size:13px;text-decoration:none;white-space:nowrap}#mk-linkler a.mkl:hover{background:#1f5f99;color:#fff} /* MK-LINK-DUGME */
 </style>
 </head>
 <body>
@@ -67,7 +68,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div class="sub">Aylık faaliyetler kaydedilir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak güncelleme düğmelerine basılmadıkça gönderilmez.</div>
 </header>
 <div class="wrap">
-  <div id="mk-linkler" style="margin:0 0 14px;font-size:13px;line-height:1.9"><a href="../sel-arb/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">Sel-Arb</a> <span style="color:#b7c6d6">·</span> <a href="../satis-yd1/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">Yurt Dışı Satış 1</a> <span style="color:#b7c6d6">·</span> <a href="../satis-yd2/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">Yurt Dışı Satış 2</a> <span style="color:#b7c6d6">·</span> <a href="../musteriler/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">Müşteriler</a> <span style="color:#b7c6d6">·</span> <a href="../santiye-yd1-1/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">YD Şantiye 1.1</a> <span style="color:#b7c6d6">·</span> <a href="../santiye-yd1-2/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">YD Şantiye 1.2</a> <span style="color:#b7c6d6">·</span> <a href="../santiye-yd1-3/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">YD Şantiye 1.3</a> <span style="color:#b7c6d6">·</span> <a href="../santiye-yd1-4/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">YD Şantiye 1.4</a> <span style="color:#b7c6d6">·</span> <a href="../santiye-yd2-1/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">YD Şantiye 2.1</a> <span style="color:#b7c6d6">·</span> <a href="../santiye-yd2-2/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">YD Şantiye 2.2</a> <span style="color:#b7c6d6">·</span> <a href="../cam-listesi/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">Cam Listesi</a> <span style="color:#b7c6d6">·</span> <a href="../cam-konfig/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">Cam Konfigürasyon</a> <span style="color:#b7c6d6">·</span> <a href="../teklif/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">Ürün Fiyatlandırma</a> <span style="color:#b7c6d6">·</span> <a href="../seri-secim/" target="_blank" style="color:#1f5f99;text-decoration:none;white-space:nowrap">Ürün Konfigürasyonu</a></div><!-- MK-FORM-LINKLER (16.10.2026): MK'nin yetkili oldugu formlar (form_erisim, kisiler MK + herkese acik); form eklenince guncelle -->
+  <div id="mk-linkler" style="margin:0 0 14px;display:flex;flex-wrap:wrap;gap:6px"><a href="../sel-arb/" target="_blank" class="mkl">Sel-Arb</a><a href="../satis-yd1/" target="_blank" class="mkl">Yurt Dışı Satış 1</a><a href="../satis-yd2/" target="_blank" class="mkl">Yurt Dışı Satış 2</a><a href="../musteriler/" target="_blank" class="mkl">Müşteriler</a><a href="../santiye-yd1-1/" target="_blank" class="mkl">YD Şantiye 1.1</a><a href="../santiye-yd1-2/" target="_blank" class="mkl">YD Şantiye 1.2</a><a href="../santiye-yd1-3/" target="_blank" class="mkl">YD Şantiye 1.3</a><a href="../santiye-yd1-4/" target="_blank" class="mkl">YD Şantiye 1.4</a><a href="../santiye-yd2-1/" target="_blank" class="mkl">YD Şantiye 2.1</a><a href="../santiye-yd2-2/" target="_blank" class="mkl">YD Şantiye 2.2</a><a href="../cam-listesi/" target="_blank" class="mkl">Cam Listesi</a><a href="../cam-konfig/" target="_blank" class="mkl">Cam Konfigürasyon</a><a href="../teklif/" target="_blank" class="mkl">Ürün Fiyatlandırma</a><a href="../seri-secim/" target="_blank" class="mkl">Ürün Konfigürasyonu</a></div><!-- MK-FORM-LINKLER (16.10.2026): MK'nin yetkili oldugu formlar (form_erisim, kisiler MK + herkese acik); form eklenince guncelle -->
   <div id="gr-ust" style="margin:0 0 16px"></div><!-- GIRIS-UST-ORTAK: Giriş panosundaki Sıkı Takip … cari ay bloğu -->
   <div class="aybar">
     <button class="btn" id="ayBtn">Güncelle</button>
@@ -578,6 +579,14 @@ loadMK().then(()=>{ BLOCKS.forEach(b=>{ if(!DATA[b.tur].length) DATA[b.tur].push
 })();
 
 
+/* MK-FORM-LINKLER-CANLI (16.10.2026): ust link cubugu form_erisim'den (kisiler MK veya herkes=true, sira'ya gore); okunamazsa statik liste kalir */
+try{ sb.from("form_erisim").select("yol,ad,sira,kisiler,herkes").order("sira").then(function(r){
+  var el=document.getElementById("mk-linkler"); if(!el||!r||r.error||!r.data||!r.data.length) return;
+  var L=r.data.filter(function(f){ return f.yol!=="mk-prim/" && (f.herkes || (f.kisiler||[]).indexOf("MK")>=0); });
+  if(!L.length) return;
+  var esc=function(t){ return String(t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); };
+  el.innerHTML=L.map(function(f){ return '<a href="../'+esc(f.yol)+'" target="_blank" class="mkl">'+esc(f.ad)+'</a>'; }).join('');
+}); }catch(e){}
 /* GIRIS-UST-ORTAK: üst blok (Giriş ile aynı) — not ekleyen = giriş kodunun kişisi, yoksa MK (MB oturumunda MB) */
 try{ if(window.GRUST) GRUST.render(document.getElementById("gr-ust"),{sb:sb,grafik:"mk",ekleyen:()=>((window.ARB_KISI_AL&&(ARB_KISI_AL(ARB_ROLE_EMAIL)||{}).kod)||(ARB_ACTIVE===ARB_MB_SB?"MB":"MK"))}); }catch(e){}
 </script>
