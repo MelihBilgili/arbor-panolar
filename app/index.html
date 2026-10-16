@@ -167,7 +167,7 @@
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="giris_ust.js?v=261016c"></script><!-- GIRIS-UST-ORTAK -->
+<script src="giris_ust.js?v=261016d"></script><!-- GIRIS-UST-ORTAK -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
    kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
@@ -2073,6 +2073,7 @@ async function loadFormlar(){
     {ad:"OE Faaliyet",         who:"OE",tam:"Onur Ekinci",       url:"onur/",        sik:"Her ayın ilk iş günü"},
     {ad:"ÖB Faaliyet",         who:"ÖB",tam:"Özgül Bedestenci",  url:"ob-rapor/",    sik:"Her ayın ilk iş günü"},
     {ad:"MK Faaliyet",         who:"MK",tam:"Mehmet Konak",      url:"mk-prim/",     sik:"Her ayın ilk iş günü"},
+    {ad:"CTP Faaliyet",        who:"CTP",tam:"Cenk Tolga Pınarbaşı", url:"ctp-faaliyet/", sik:"Süresiz"}, /* CTP-FAALIYET (16.10.2026) */
     /* SELARB-FORM: Güncel Alacak (€) — ÖB + MK düzenler, ay sonu pg_cron ile SEL-ARB'a sütun olur */
     {ad:"Sel-Arb",             who:"ÖB · MK",tam:"Özgül Bedestenci · Mehmet Konak",url:"sel-arb/",sik:"Her ayın ilk iş günü"},
     {ad:"Yurt İçi Satış",      who:"SO",tam:"Sinan Oran",        url:"so/",          sik:"Süresiz"},
