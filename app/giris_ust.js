@@ -119,6 +119,10 @@ async function satis(o,elT,elG){
   const kart=(ad,pts,v,b)=>`<div class="gru-card"><div class="gru-ct">${esc(ad)}</div><div class="gru-cv">${money(v)}${b}</div>${spark(pts,{birim:b})}</div>`;
   const kS=f=>ser.map(s=>({x:s.x,y:s[f]==null?null:s[f],cur:s.cur}));
   const c=f=>ser[ser.length-1][f];
+  const dkK=dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):"";
+  if(o.grafik==="mk"){ /* GIRIS-MK-GRAFIK: MK formunda yalnız YD alınan · YD muht. · Etüt DK1, tek satır */
+    elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3><div class="gru-cards">${kart("Yurt Dışı alınan Prj (€)",kS("yd_a"),c("yd_a")," €")}${kart("Yurt Dışı muht. Prj (€)",kS("yd_m"),c("yd_m")," €")}${dkK}</div>`;
+    return; }
   elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3>`
     +`<div class="gru-cards">${kart("Yurt İçi muht. Prj (€)",kS("so_m"),c("so_m")," €")}${kart("Yurt Dışı alınan Prj (€)",kS("yd_a"),c("yd_a")," €")}${kart("Yurt Dışı muht. Prj (€)",kS("yd_m"),c("yd_m")," €")}</div>`
     +`<div class="gru-cards" style="margin-top:10px">${kart("Top.alınan Prj (€)",kS("top_a"),c("top_a")," €")}${kart("Top.muht. Prj (€)",kS("top_m"),c("top_m")," €")}${dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):""}</div>`;
