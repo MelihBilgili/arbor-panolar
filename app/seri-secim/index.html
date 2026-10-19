@@ -51,7 +51,7 @@
   .res td.seri{font-weight:700;color:#16324f}
   .res td.bad{color:#b40000;font-weight:700;background:#fff1f0}
   .res td.est{color:#6b7a89}
-  /* URUN-KONFIG-LISTE (19.10.2026): sertifikadaki cam satırı koyu */ #res tr.sert td,#res tr.sert td.cam,#res tr.sert td.seri,#res tr.sert td.fy,#res tr.sert td.ah{background:#16324f;color:#fff} #res tr.sert td.bad{background:#fff1f0;color:#b40000} /* URUN-KONFIG-SERT-ETK: koyu renkli satır + tablo üstünde açıklama */ .sertlej{display:inline-block;background:#16324f;color:#fff;border-radius:4px;padding:1px 8px;margin-left:8px;font-size:12px}
+  /* URUN-KONFIG-LISTE (19.10.2026): sertifikadaki cam satırı koyu */ #res td.cam{color:#8a97a4} #res tr.sert td.cam{color:#0b1622} /* URUN-KONFIG-SERT-YAZI (19.10.2026): satır değil yalnız konfigürasyon yazısı koyu; diğer camların yazısı açık gri */ .sertlej{margin-left:10px;font-size:12px;color:#5a6b7d}.sertlej b{color:#0b1622}
   .res tr.yakin td.seri{color:#7a4b00}
   .etk{display:inline-block;font-size:10.5px;font-weight:600;border-radius:4px;padding:0 5px;background:#e6eef7;color:#16324f}
   .etk.Simplist{background:#e3f1fb;color:#0b5a8a}.etk.Flat{background:#e7f5ef;color:#0b6b48}.etk.Minima{background:#f1ecfa;color:#4b2d84}
@@ -345,7 +345,7 @@ function ciz(){
   const seriSay=new Set(ok.map(r=>r.S.s)).size;
   $("ozet").innerHTML=yakin?'<div class="uyari">Hedefleri tam karşılayan konfigürasyon yok — en yakın '+ok.length+' konfigürasyon gösteriliyor; karşılanmayan değerler kırmızı.</div>'
     :'<b>'+ok.length+'</b> konfigürasyon · <b>'+seriSay+'</b> seri';
-  $("ozet").innerHTML+='<span class="sertlej">Koyu renkli satırlar: sertifikada geçen cam</span>';
+  $("ozet").innerHTML+='<span class="sertlej"><b>Koyu renkli konfigürasyon</b>: sertifikada geçen cam</span>';
   if(!ok.length){ $("res").innerHTML='<div class="bos">Seçilen süzgeçlere uyan veri yok.</div>'; return; }
   const TAVAN=400, topN=ok.length; if(ok.length>TAVAN){ ok=ok.slice(0,TAVAN); $("ozet").innerHTML+=' · ilk '+TAVAN+' satır gösteriliyor, hedefleri daraltın'; }
   const th=KOL.map(c=>'<th data-k="'+c.k+'" class="'+(c.l?"l":"")+'">'+c.t+(s.k===c.k&&!yakin?(s.d>0?" ▲":" ▼"):"")+'</th>').join("");
