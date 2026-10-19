@@ -65,6 +65,7 @@
   .sevk td.n,.sevk th.n{text-align:right;white-space:nowrap}
   input.pstb{font:inherit;font-size:13px;width:110px;padding:5px 8px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8;margin-top:4px}
   input.pstb.miss{border-color:#c0392b;background:#fdecea}
+  input.pstg.miss{border-color:#c0392b;background:#fdecea} /* SEVK-PST-ZORUNLU */
   .sevk td input.pstg{font:inherit;font-size:12.5px;padding:3px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8}
   .sevk td textarea{width:100%;min-width:260px;font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8;resize:vertical;min-height:30px;height:30px}
   .hidden{display:none}
@@ -255,7 +256,7 @@ function msg(t,ok){ const m=document.getElementById("msg"); m.className="msg "+(
   l.appendChild(b);
 })();
 
-var SATIR = [];
+var SATIR = [], SEVK = [];  /* SEVK-PST-ZORUNLU: Sevke Hazır satırları (Güncelle kontrolü) */
 
 async function yukle(){
   const r = await sb.from("santiye_form_proje")
@@ -278,11 +279,12 @@ async function yukle(){
   const SV = SATIR.filter(sevkHazir), DG = SATIR.filter(r=>!sevkHazir(r));
   box.innerHTML = (SV.length ? sevkTablo(SV) : "") + DG.map(blok).join("");
   SV.forEach(r=>{ const pg=document.getElementById("pstg_"+r.id);
-    if(pg) pg.onchange=async()=>{ r.pst_santiye=pg.value||null; await kaydet(r.id,{pst_santiye:r.pst_santiye}); }; });
+    if(pg) pg.onchange=async()=>{ pg.classList.remove("miss"); r.pst_santiye=pg.value||null; await kaydet(r.id,{pst_santiye:r.pst_santiye}); }; });
   SV.forEach(r=>{ const hu=document.getElementById("hus_"+r.id);
     if(hu) hu.onchange=async()=>{ r.onemli_hususlar=hu.value.trim()||null; await kaydet(r.id,{onemli_hususlar:r.onemli_hususlar}); }; });
   DG.forEach(bagla);
   SATIR = DG;   /* Güncelle kontrolü yalnız soru alan projelerde */
+  SEVK = SV;    /* SEVK-PST-ZORUNLU: Sevke Hazır tablosunda PST boş satır Güncelle'yi durdurur */
 }
 
 function sevkHazir(r){ return /^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").trim()); }
@@ -411,6 +413,10 @@ async function kaydet(id,patch){
 /* GÜNCELLE — bütün bloklar cevaplanmadan (Hayır ise sebep yazılmadan) çalışmaz. */
 document.getElementById("ay_btn").onclick=async()=>{
   let ilk=null, eksik=0, eksikAd=[]; /* GUNC-HATA-UYARI */
+  /* SEVK-PST-ZORUNLU (2026-10-19, Melih): Sevke Hazır Projeler tablosunda PST seçilmemiş satır varsa güncelleme durur */
+  const sevkAd=[];
+  SEVK.forEach(r=>{ const pg=document.getElementById("pstg_"+r.id); if(!pg) return; pg.classList.remove("miss");
+    if(!r.pst_santiye){ pg.classList.add("miss"); if(!ilk) ilk=pg.closest(".sevk")||pg; sevkAd.push(((r.proje_no||"")+" "+(r.proje_adi||"")).trim()); } });
   SATIR.forEach(r=>{
     const el=document.getElementById("blk_"+r.id); el.classList.remove("miss");
     let bos=false;
@@ -424,9 +430,14 @@ document.getElementById("ay_btn").onclick=async()=>{
     });
     if(bos){ el.classList.add("miss"); eksik++; if(!ilk) ilk=el; eksikAd.push(((r.proje_no||"")+" "+(r.proje_adi||"")).trim()); }
   });
-  if(eksik){ msg(eksik+" projede MVT/PST onayı (ya da 'Hayır' sebebi) eksik.",false);
-             alert("Güncelleme yapılamadı.\n\nSebep: "+eksik+" projede MVT/PST onayı (ya da \"Hayır\" cevabının sebebi) eksik:\n\n• "+eksikAd.slice(0,15).join("\n• ")+(eksikAd.length>15?"\n• … ("+(eksikAd.length-15)+" proje daha)":"")+"\n\nKırmızı işaretli projeleri tamamlayın.");
-             if(ilk) ilk.scrollIntoView({behavior:"smooth",block:"center"}); return; }
+  if(eksik || sevkAd.length){ /* SEVK-PST-ZORUNLU: iki sebep tek uyarıda */
+    const liste=a=>"• "+a.slice(0,15).join("\n• ")+(a.length>15?"\n• … ("+(a.length-15)+" proje daha)":"");
+    const s=[];
+    if(sevkAd.length) s.push("Sevke Hazır Projeler tablosunda "+sevkAd.length+" projede PST seçilmemiş:\n\n"+liste(sevkAd));
+    if(eksik) s.push(eksik+" projede \"Eğer hazırsa hemen yüklenecek mi?\" / MVT ve \"PST’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?\" sorularından birine cevap seçilmemiş (ya da \"Hayır\" cevabının sebebi yazılmamış):\n\n"+liste(eksikAd));
+    msg((sevkAd.length?sevkAd.length+" Sevke Hazır projede PST seçilmemiş. ":"")+(eksik?eksik+" projede soru cevabı (ya da 'Hayır' sebebi) eksik.":""),false);
+    alert("Güncelleme yapılamadı.\n\nSebep:\n\n"+s.join("\n\n")+"\n\nKırmızı işaretli yerleri tamamlayın.");
+    if(ilk) ilk.scrollIntoView({behavior:"smooth",block:"center"}); return; }
   const b=document.getElementById("ay_btn"); b.disabled=true; msg("Aktarılıyor…",true);
   const {error}=await sb.from("pano_yayin").upsert({anahtar:PY_ANAHTAR,yayin_at:new Date().toISOString()},{onConflict:"anahtar"});
   b.disabled=false;
