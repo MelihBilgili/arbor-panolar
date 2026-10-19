@@ -70,7 +70,7 @@ async function satis(o,elT,elG){
   const [sy,yd,sk,ic,dk]=await Promise.all([
     o.grafik==="mk"?Promise.resolve({data:[]}):sb.from("satis_yorum").select("*").eq("kaynak","SO").eq("aktif",true), /* GIRIS-MK-YI: MK formunda Yurt İçi yok */
     sb.from("satis_yd_akis").select("*"),
-    sb.from("yd_siki_takip").select("blok,proje,musteri"),
+    sb.from("yd_siki_takip").select("blok,proje,musteri").eq("aktif",true), /* SIKI-AKTIF-GIRIS (19.10.2026): çıkarılanlar Giriş'te görünmesin */
     sb.from("icmal_satir").select("donem,is_total,so_alinan_eur,so_muht_eur,fa_alinan_eur,fy2_alinan_eur,fa_muht_eur,fy2_muht_eur"),
     sb.from("etut_dk").select("erp_damga,tarih,created_at,dk1,dk2,dk3,dk4,yurt_ici")
   ]);
