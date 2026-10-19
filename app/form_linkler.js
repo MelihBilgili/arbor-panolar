@@ -7,10 +7,17 @@
   var MB="int@arbor.com.tr", t0=Date.now();
   function yol(){ if(window.ARB_FORM_YOL) return window.ARB_FORM_YOL; var m=/\/app\/([^\/]+)\//.exec(location.pathname); return m?m[1]+"/":""; }
   function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
-  function kisiKod(em){
+  /* FLINK-KISI-YEDEK (19.10.2026): bu formda kisi kaydi yoksa (eski oturum) kod sirayla: ayni rolun kaydi -> form_erisim rol_map/varsayilan_rol'de
+     bu role tek kisi -> cihazdaki tum arb_kisi_* kayitlari tek kisiyse o; hicbiri yoksa yalniz herkes=true formlar gosterilir */
+  function kisiKod(em,rows){
     try{ if(window.ARB_KISI_AL){ var k=window.ARB_KISI_AL(em); if(k&&k.kod) return k.kod; } }catch(e){}
+    var tum={};
     try{ for(var i=0;i<localStorage.length;i++){ var key=localStorage.key(i); if(key.indexOf("arb_kisi_")!==0) continue;
-      var v=JSON.parse(localStorage.getItem(key)||"null"); if(v&&v.kod&&v.rol===em) return v.kod; } }catch(e){}
+      var v=JSON.parse(localStorage.getItem(key)||"null"); if(v&&v.kod){ if(v.rol===em) return v.kod; tum[v.kod]=1; } } }catch(e){}
+    var ad={}; (rows||[]).forEach(function(f){ var m=f.rol_map||{}; for(var c in m) if(String(m[c]).toLowerCase()===em) ad[c]=1;
+      if(String(f.varsayilan_rol||"").toLowerCase()===em&&(f.kisiler||[]).length===1) ad[f.kisiler[0]]=1; });
+    var a=Object.keys(ad); if(a.length===1) return a[0];
+    var t=Object.keys(tum); if(t.length===1) return t[0];
     return null;
   }
   function stil(){
@@ -29,11 +36,11 @@
     var s=null; try{ s=await cli.auth.getSession(); }catch(e){}
     var em=((s&&s.data&&s.data.session&&s.data.session.user&&s.data.session.user.email)||"").toLowerCase();
     if(!em){ if(Date.now()-t0<60000) setTimeout(calis,700); return; }
-    var kod=(em===MB)?"MB":kisiKod(em); if(!kod) return;
-    var r=null; try{ r=await cli.from("form_erisim").select("yol,ad,sira,kisiler,herkes").order("sira"); }catch(e){ return; }
+    var r=null; try{ r=await cli.from("form_erisim").select("yol,ad,sira,kisiler,herkes,rol_map,varsayilan_rol").order("sira"); }catch(e){ return; }
     if(!r||r.error||!r.data) return;
+    var kod=(em===MB)?"MB":kisiKod(em,r.data);
     var bu=yol();
-    var L=r.data.filter(function(f){ return f.yol===bu || kod==="MB" || f.herkes || (f.kisiler||[]).indexOf(kod)>=0; });
+    var L=r.data.filter(function(f){ return f.yol===bu || kod==="MB" || f.herkes || (kod&&(f.kisiler||[]).indexOf(kod)>=0); });
     if(L.length<2) return;
     stil();
     var d=document.createElement("div"); d.id="arb-flink";
