@@ -69,7 +69,7 @@
 <body>
 <header>
   <h1>Ürün Konfigürasyonu</h1>
-  <div class="sub">Hedef ısı (Uw), ses (Rw+Ctr) ve cam değerlerini giriniz; Arbor serileri ve test edilmiş cam kombinasyonlarından bu değerleri karşılayanlar listelenir. Boş bırakılan hedef serbesttir. Başlığa tıklayarak sıralayabilirsiniz. Satıra sağ tıklayıp <b>Cam konfigürasyona aktar</b> ile camın değerlerini Cam Konfigürasyon formuna taşıyabilirsiniz.</div>
+  <div class="sub">Hedef ısı (Uw), ses (Rw+Ctr) ve cam değerlerini giriniz; Arbor serileri ve test edilmiş cam kombinasyonlarından bu değerleri karşılayanlar listelenir. Boş bırakılan hedef serbesttir. Sonuçlar cam fiyatına göre (artan) sıralanır. Satıra sağ tıklayıp <b>Cam konfigürasyona aktar</b> ile camın değerlerini Cam Konfigürasyon formuna taşıyabilirsiniz.</div>
 </header>
 <div class="wrap">
   <div style="display:flex;gap:10px;align-items:center;margin:0 0 8px"><span id="rolLbl"></span></div>
@@ -319,7 +319,7 @@ function camFiyat(C){
   const flags=[q.tr,q.lowe,q.solar,q.fp,q.ac,q.sat,tp,q.xc,q.ar,we].join(''), an=CAMM.GADJ_NF[q.c.join('/')+'|'+q.cu+'|*|'+flags];
   C._fy=(an?est*Math.exp(an[0]):est)*CAMM.KAT; return C._fy;
 }
-let SORT={k:"seri",d:1}; /* SERI-CAM-FIYAT: varsayılan seri, sonra cam fiyatı */
+let SORT={k:"fiyat",d:1}; /* URUN-KONFIG-FIYAT-SIRA: sıralama sabit, cam fiyatı artan */
 const KOL=[
   {k:"seri",t:"Seri",l:1},{k:"cam",t:"Konfigürasyon (dıştan içe)",l:1},{k:"fiyat",t:"Cam Fiyat<br>€/m²"},{k:"yapi",t:"Yapı",l:1},
   {k:"kal",t:"Kalınlık<br>mm"},{k:"ug",t:"Ug<br>W/m²K"},{k:"uw",t:"Uw<br>W/m²K"},{k:"tl",t:"LT<br>%"},{k:"g",t:"g<br>%"},{k:"db",t:"Ürün Rw+Ctr<br>dB"},{k:"rwc",t:"Cam Rw+Ctr<br>dB"} /* URUN-KONFIG-SADE (19.10.2026): Ahşap, Uf, ψg, Maks Cam sütunları kaldırıldı; Cam Rw+Ctr eklendi */
@@ -340,15 +340,16 @@ function ciz(){
   let ok=R.filter(r=>r.ok), yakin=false;
   if(!ok.length&&R.length){ yakin=true; ok=R.slice().sort((a,b)=>a.skor-b.skor).slice(0,10); }
   const s=SORT;
-  if(!yakin) ok.sort((a,b)=>{ let x=deger(a,s.k),y=deger(b,s.k); if(x==null&&y==null) return 0; if(x==null) return 1; if(y==null) return -1;
-    return (typeof x==="string"?x.localeCompare(y,"tr"):x-y)*s.d || (SERI.indexOf(a.S)-SERI.indexOf(b.S)) || ((b.sert?1:0)-(a.sert?1:0)) || ((camFiyat(a.C)==null?1e9:camFiyat(a.C))-(camFiyat(b.C)==null?1e9:camFiyat(b.C))) || (a.C.k-b.C.k); });
+  /* URUN-KONFIG-FIYAT-SIRA (19.10.2026, Melih): her zaman cam fiyatına göre artan (en yakın sonuçlarda da); fiyatı olmayan sona; eşitlikte sertifika camı, sonra seri sırası */
+  const fy=r=>{ const v=camFiyat(r.C); return v==null?Infinity:v; };
+  ok.sort((a,b)=>(fy(a)-fy(b)||0) || ((b.sert?1:0)-(a.sert?1:0)) || (SERI.indexOf(a.S)-SERI.indexOf(b.S)) || ((a.C.k||0)-(b.C.k||0)));
   const seriSay=new Set(ok.map(r=>r.S.s)).size;
   $("ozet").innerHTML=yakin?'<div class="uyari">Hedefleri tam karşılayan konfigürasyon yok — en yakın '+ok.length+' konfigürasyon gösteriliyor; karşılanmayan değerler kırmızı.</div>'
     :'<b>'+ok.length+'</b> konfigürasyon · <b>'+seriSay+'</b> seri';
   $("ozet").innerHTML+='<span class="sertlej"><b>Koyu renkli konfigürasyon</b>: sertifikada geçen cam</span>';
   if(!ok.length){ $("res").innerHTML='<div class="bos">Seçilen süzgeçlere uyan veri yok.</div>'; return; }
   const TAVAN=400, topN=ok.length; if(ok.length>TAVAN){ ok=ok.slice(0,TAVAN); $("ozet").innerHTML+=' · ilk '+TAVAN+' satır gösteriliyor, hedefleri daraltın'; }
-  const th=KOL.map(c=>'<th data-k="'+c.k+'" class="'+(c.l?"l":"")+'">'+c.t+(s.k===c.k&&!yakin?(s.d>0?" ▲":" ▼"):"")+'</th>').join("");
+  const th=KOL.map(c=>'<th data-k="'+c.k+'" class="'+(c.l?"l":"")+'">'+c.t+(c.k==="fiyat"?" ▲":"")+'</th>').join("");
   window._SR=ok; /* SERI-AKTAR */
   const tb=ok.map((r,i)=>{ const e=r.eks||{}; const bad=k=>e[k]>0?" bad":"";
     const uwTxt=r.uwG==null?"–":(r.uwUst?"≤ ":"")+f(r.uwG,2); /* URUN-KONFIG-LISTE: Uw camın Ug'sine bağlı — tahmini değil */
@@ -360,7 +361,7 @@ function ciz(){
       +'<td class="'+bad("tl")+'">'+(r.C.tl==null?"–":r.C.tl)+'</td><td class="'+bad("g")+'">'+(r.C.g==null?"–":f(r.C.g*100,0))+'</td><td class="'+bad("db")+'" title="'+(r.dbK?esc("Sertifika camı: "+r.dbK.c+" · cam Rw+Ctr "+r.dbK.rwc+" dB (bu cam "+r.C.rwc+" dB)"+(r.dbAlt?" — alt sınır":"")):"")+'">'+(r.db==null?"–":(r.dbAlt?"≥ ":"")+r.db)+'</td>'
       +'<td>'+(r.C.rwc==null?"–":r.C.rwc)+'</td></tr>'; }).join("");
   $("res").innerHTML='<table><thead><tr>'+th+'</tr></thead><tbody>'+tb+'</tbody></table>';
-  $("res").querySelectorAll("th[data-k]").forEach(t=>t.onclick=()=>{ const k=t.dataset.k; SORT=SORT.k===k?{k,d:-SORT.d}:{k,d:(k==="db"||k==="tl")?-1:1}; ciz(); });
+  $("res").querySelectorAll("th[data-k]").forEach(t=>t.style.cursor="default"); /* URUN-KONFIG-FIYAT-SIRA: başlığa tıklayarak sıralama kapalı */
 }
 function seriTablo(){
   const u58=a=>{ const t=UF58[a]; return AHSAP_AD[a]+": "+f(t.c24,2)+" / "+f(t.c36,2)+" / "+f(t.u,2); };
