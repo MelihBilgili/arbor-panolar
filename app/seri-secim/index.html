@@ -233,11 +233,11 @@ const CAM=[
    URUN-KONFIG-EBAT (19.10.2026): ebat formdaki Ürün Genişlik/Yükseklik (varsayılan 1230 × 1480 mm). Ag, Af, lg seri tablosundaki 1230×1480 değerlerinden
    Df (kasa+kanat görünen genişlik) ve Bini (cam bindirme) ile ölçeklenir: Ag ∝ (W−2Df)(H−2Df), Af ∝ W·H − (W−2Df)(H−2Df), lg ∝ 2(W+H−4(Df−Bini)); Aw = W·H.
    Uf ve ψg (çift p2, üçlü p3) SERI'den; Uf'de birden çok değer varsa ilki. Tek cam ψg = 0. Geometrisi olmayan seri (58f, 68p, 78t-a Top/Side, MR …) "–".
-   Sw = (Sg·Ag + Sf·Af)/(Ag+Af), Sf = αf·Uf/he (αf 0,5 orta renk ahşap, he 25 W/m²K — EN ISO 52022-1 yaklaşımı); Tlw = Tlg·σ, σ = Ag/(Ag+Af). */
+   Sw = (Sg·Ag + Sf·Af)/(Ag+Af), Sf = 0 (URUN-KONFIG-SF0, Melih 19.10.2026: kasadan güneş kazancı yok sayılır; önceden αf·Uf/he = 0,5·Uf/25); Tlw = Tlg·σ, σ = Ag/(Ag+Af). */
 const UW_GEO={"68s":{ag:1.252,l:4.572,af:0.598,df:0.120,bi:0.014},"78s":{ag:1.228,l:4.572,af:0.593,df:0.120,bi:0.014},"90s":{ag:1.228,l:4.572,af:0.593,df:0.120,bi:0.014},
   "68f":{ag:1.234,l:4.540,af:0.616,df:0.124,bi:0.014},"68m":{ag:1.237,l:4.588,af:0.584,df:0.118,bi:0.014},
   "78t":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78t-a Bal.Door":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78a":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"68k":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014}};
-const SF_ALFA=0.5, SF_HE=25;
+const SF_ALFA=0, SF_HE=25; /* URUN-KONFIG-SF0: Sf = 0 */
 let UK_W=1.23, UK_H=1.48;
 function ufSayi(S){ if(typeof S.uf==="number") return S.uf; if(typeof S.uf==="string"){ const m=/(\d+[.,]\d+)/.exec(S.uf); if(m) return +m[1].replace(",","."); } return null; }
 function geo(S){ const G=UW_GEO[S.s]; if(!G) return null; const W=UK_W, H=UK_H, d=G.df, c=G.df-G.bi;
@@ -253,7 +253,7 @@ function uwHesapTip(S,C){ const G=geo(S), uf=ufSayi(S), psi=psiOf(S,C)||0;
   return "EN ISO 10077-1, "+Math.round(UK_W*1000)+"×"+Math.round(UK_H*1000)+" mm: ("+f(G.ag,3)+"×"+f(C.ug,2)+" + "+f(G.af,3)+"×"+f(uf,2)+" + "+f(G.l,3)+"×"+f(psi,4)+") / "+f(G.aw,4)+(typeof S.uf==="string"?" · Uf: "+S.uf+" (ilki)":""); }
 function swHesap(S,C){ const G=geo(S), uf=ufSayi(S); if(!G||uf==null||C.g==null) return null; const sf=SF_ALFA*uf/SF_HE; return (C.g*G.ag+sf*G.af)/(G.ag+G.af); }
 function tlwHesap(S,C){ const G=geo(S); if(!G||C.tl==null) return null; return C.tl*G.ag/(G.ag+G.af); }
-function swTip(S,C){ const G=geo(S), uf=ufSayi(S), sf=SF_ALFA*uf/SF_HE; return "Sw = (Sg·Ag + Sf·Af)/(Ag+Af) = ("+f(C.g,2)+"×"+f(G.ag,3)+" + "+f(sf,3)+"×"+f(G.af,3)+") / "+f(G.ag+G.af,3)+" · Sf = 0,5×Uf/25"; }
+function swTip(S,C){ const G=geo(S), uf=ufSayi(S), sf=SF_ALFA*uf/SF_HE; return "Sw = (Sg·Ag + Sf·Af)/(Ag+Af) = ("+f(C.g,2)+"×"+f(G.ag,3)+" + "+f(sf,3)+"×"+f(G.af,3)+") / "+f(G.ag+G.af,3)+" · Sf = 0"; }
 function tlwTip(S,C){ const G=geo(S); return "Tlw = Tlg·σ, σ = Ag/(Ag+Af) = "+f(G.ag,3)+" / "+f(G.ag+G.af,3)+" = "+f(G.ag/(G.ag+G.af),3); }
 const UGKEY={"1.1":"d","0.7":"t36","0.6":"t44"};
 const num=v=>{ v=String(v==null?"":v).trim().replace(",","."); return v===""||isNaN(+v)?null:+v; };
@@ -426,7 +426,7 @@ const AILE_SEC=new Set(); /* SERI-AILE-SECIM */
   cipCiz(); seriDoldur();
   ["h_uw","h_db","h_g","h_tl","f_gen","f_yuk"].forEach(id=>$(id).addEventListener("input",ciz)); /* URUN-KONFIG-EBAT */
   ["f_seri"].forEach(id=>$(id).addEventListener("change",ciz));
-  $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Cam Listesi\'ndeki tüm camlar değerlendirilir: <b>Uw</b> serinin aynı Ug\'li sertifika camının Uw\'si, <b>Ürün Rw+Ctr</b> o seride cam Rw+Ctr\'si aynı olan sertifika camının test değeri (aynısı yoksa cam Rw+Ctr\'si daha düşük sertifika camınınki, <b>≥</b> ile), Ug\'si sertifika camlarından düşükse Uw <b>≤</b> ile; Sg ve Tlg camın kendi değeri. <b>Hesaplanan Uw, Sw, Tlw</b> girilen ürün ebadına göre EN ISO 10077-1 ile: Uw = (Ag·Ug + Af·Uf + lg·ψg)/Aw, Sw = (Sg·Ag + Sf·Af)/(Ag+Af) (Sf = 0,5·Uf/25), Tlw = Tlg·Ag/(Ag+Af). <b>Koyu renkli konfigürasyonlar</b> sertifikada geçen camlardır, diğerleri gri. '
+  $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Cam Listesi\'ndeki tüm camlar değerlendirilir: <b>Uw</b> serinin aynı Ug\'li sertifika camının Uw\'si, <b>Ürün Rw+Ctr</b> o seride cam Rw+Ctr\'si aynı olan sertifika camının test değeri (aynısı yoksa cam Rw+Ctr\'si daha düşük sertifika camınınki, <b>≥</b> ile), Ug\'si sertifika camlarından düşükse Uw <b>≤</b> ile; Sg ve Tlg camın kendi değeri. <b>Hesaplanan Uw, Sw, Tlw</b> girilen ürün ebadına göre EN ISO 10077-1 ile: Uw = (Ag·Ug + Af·Uf + lg·ψg)/Aw, Sw = (Sg·Ag + Sf·Af)/(Ag+Af) (Sf = 0), Tlw = Tlg·Ag/(Ag+Af). <b>Koyu renkli konfigürasyonlar</b> sertifikada geçen camlardır, diğerleri gri. '
     +'<b>Uw</b>: tabloda yalnız üç referans cam için verilmiştir (Ug 1,1 çift 4/16/4 · Ug 0,7 üçlü 4/12/4/12/4 · Ug 0,6 üçlü 4/16/4/16/4); diğer camlarda aynı Ug\'li referansın değeri kullanılır. '
     +'⚠ Kalınlık serinin max cam kalınlığını aşıyor (ör. 78s, max 40 mm). 58f max cam kalınlığı tablo 1\'de 51-52 mm (Melih Bey bilgisiyle güncellenmiş), tablo 2\'de 42 mm — formda 52 alınmıştır. '
     +'Uf: 58f\'de ahşap türüne (tabloda Ahşap sütunu, iki satır) ve cam kalınlığına göre; 78t, 78t-a Bal.Door, 78a için tabloda üç değer vardır. '
