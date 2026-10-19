@@ -854,13 +854,16 @@ if(!window.__ydOncBound){ window.__ydOncBound=true;
     const y=window.scrollY; await loadSatis(); window.scrollTo(0,y);
   });
 }
+let satisSikiRows=[]; /* SATIS-SIKI-BLOK */
 async function loadSatis(){
   const view=document.getElementById("view");
-  const [sy,yd,base]=await Promise.all([
+  const [sy,yd,base,skq]=await Promise.all([
     sb.from("satis_yorum").select("*").eq("kaynak","SO").eq("aktif",true),
     sb.from("satis_yd_akis").select("*"),
-    sb.from("satis_ay_baslangic").select("*")
+    sb.from("satis_ay_baslangic").select("*"),
+    sb.from("yd_siki_takip").select("blok,proje,musteri").eq("aktif",true) /* SATIS-SIKI-BLOK */
   ]);
+  satisSikiRows=(skq&&!skq.error&&skq.data)||[];
   if(sy.error){ view.innerHTML=`<div class="load">Hata: ${esc(sy.error.message)}</div>`; return; }
   if(yd.error){ view.innerHTML=`<div class="load">Hata: ${esc(yd.error.message)}</div>`; return; }
   const soRows=sy.data||[], ydRows=yd.data||[];
@@ -1010,7 +1013,11 @@ function pipelineTables(ydRows, today){
   const oncelik=sorted.filter(r=>r.durum==='Teklif İncelendi'&&ilgTamP(r));
   const hazirlik=sorted.filter(r=>r.durum==='Teklif Bekleniyor');
   /* Takiptekiler: Teklif Teslim Tarihi'ne göre eskiden yeniye sıralanır (tarihi olmayanlar en sona) */
-  const takiptekiler=sorted.filter(r=>r.durum==='Teklif Teslim Edildi'||r.durum==='Takip Bekleniyor')
+  /* SATIS-SIKI-BLOK (19.10.2026, Melih): "Takiptekiler" yerine "Sıkı Takip Edilecekler" — yalnız yd_siki_takip (aktif) listesindeki
+     proje+müşteri ve durum Teklif Teslim Edildi / Takip Bekleniyor (YD formundaki "Sıkı Takip Edilecek" görünen durum; Giriş ile aynı eşleme) */
+  const skKn=s=>String(s==null?"":s).replace(/\s+/g," ").trim().toLocaleLowerCase("tr").replace(/ı/g,"i").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+  const skSet=new Set(satisSikiRows.map(x=>x.blok+"|"+skKn(x.proje)+"|"+skKn(x.musteri)));
+  const takiptekiler=sorted.filter(r=>(r.durum==='Teklif Teslim Edildi'||r.durum==='Takip Bekleniyor')&&skSet.has(r.blok+"|"+skKn(r.proje)+"|"+skKn(r.musteri)))
     .slice().sort((a,b)=>String(a.teklif_teslim_tarihi||'9999-99-99').localeCompare(String(b.teklif_teslim_tarihi||'9999-99-99')));
   const C1=[
     {h:'Proje',f:'proje'},{h:'Müşteri',f:'musteri'},{h:'Gelen Tarih',get:r=>fdate(r.gelen_tarih)},{h:'İstenen Tarih',get:r=>fdate(r.istenen_tarih)},
@@ -1063,7 +1070,7 @@ function pipelineTables(ydRows, today){
       const fk=c.f, mx={}; oncelik.forEach(r=>{ const L=String(r[fk]||'').length; mx[r.blok]=Math.max(mx[r.blok]||0,L); });
       return Object.assign({},c,{html:r=>{ const v=String(r[fk]||''); const w=Math.max(8,Math.ceil((mx[r.blok]||0)*0.85*ONC_K[fk])); return `<div class="cx" title="${esc(v)}" style="width:${w}ch">${esc(v)}</div>`; }}); }).map((c,i)=>Object.assign({},c,{wcls:'oc'+(i+1)})).concat([{h:'Öncelik',wcls:'oncsec',html:r=>`<select class="ydonc" data-id="${r.id}" title="Öncelik seç — forma yazılır, satır Teklif Hazırlığında'ya geçer"><option value=""></option>${['1','2','3'].map(o=>`<option${String(r.oncelik||'')===o?' selected':''}>${o}</option>`).join('')}</select>`}]))
     +two('Teklif Hazırlığında',hazirlik,C2)
-    +two('Takiptekiler',takiptekiler,C4);
+    +two('Sıkı Takip Edilecekler',takiptekiler,C4); /* SATIS-SIKI-BLOK */
 }
 /* SATIS-YILLIK-KAYNAK (2026-09-18, Melih kararı): Yıllık Teklif İstatistiği'nin TEK kaynağı canlı
    public.satis_yd_akis (blok=YD1/YD2) — eski satis_takip_stats/satis_takip_stats_2 tabloları DEĞİL.
