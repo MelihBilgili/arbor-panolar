@@ -981,7 +981,7 @@ function pipeGenTbl(title, rows, cols){
 function ydRevMi(r){ if(!r) return false; if(r.muhtemel_kaynak_id) return true; return (String(r.talebe_iliskin_notlar||"")+"\n"+String(r.teklif_birimi_notlari||"")).split(/\r?\n/).some( /* REV-NOT-TALEP (15.10.2026): revizyon notu artık Talebe İlişkin Notlar'da */function(x){ return /^(\d{2}\/\d{2}\/\d{2} [^:]{1,15}: )?Revizyon(\s*—.*)?$/i.test(x.trim()); }); } /* REV-PROJE-KOYU (09.10.2026, Melih): revizyon kopyası = muhtemel_kaynak_id ya da "Revizyon" not satırı */
 /* ONC-SUTUN-DAR (19.10.2026, Melih): Öncelik Belirlenmesi Gerekenler (YD1/YD2) 11 sütunu, ekranda ölçülen mevcut
    genişliklerinden sırasıyla şu yüzdelerde daraltılır; sığmayan başlık küçük punto + iki satır. Oranlar ONC_DAR_P'de. */
-const ONC_DAR_P=[2,3,3,5,0,15,0,15,25,35,15];
+const ONC_DAR_P=[2,3,3,14.5,0,23.5,0,23.5,25,41.5,23.5]; /* ONC-SUTUN-DAR2 (19.10.2026, Melih): 4,6,8,10,11 ayrıca %10 dar -> 1-(1-p)*0.9 */
 function oncSutDar(n){
   const tbls=[...document.querySelectorAll('.satis-wrap table.sat')].filter(t=>t.querySelector('th.oc1')&&!t.dataset.ocdar);
   let bekle=false;
