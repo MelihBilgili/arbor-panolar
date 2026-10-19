@@ -232,14 +232,14 @@ const CAM=[
 /* URUN-KONFIG-UWHESAP (19.10.2026, Melih): EN ISO 10077-1 — Uw = (Ag·Ug + Af·Uf + lg·ψg) / Aw.
    URUN-KONFIG-EBAT (19.10.2026): ebat formdaki Ürün Genişlik/Yükseklik (varsayılan 1230 × 1480 mm). Ag, Af, lg seri tablosundaki 1230×1480 değerlerinden
    Df (kasa+kanat görünen genişlik) ve Bini (cam bindirme) ile ölçeklenir: Ag ∝ (W−2Df)(H−2Df), Af ∝ W·H − (W−2Df)(H−2Df), lg ∝ 2(W+H−4(Df−Bini)); Aw = W·H.
-   Uf ve ψg (çift p2, üçlü p3) SERI'den; Uf'de birden çok değer varsa ilki. Tek cam ψg = 0. Geometrisi olmayan seri (58f, 68p, 78t-a Top/Side, MR …) "–".
+   Uf ve ψg (çift p2, üçlü p3) SERI'den; Uf'de birden çok değer varsa alanlar eşit sayılır, ortalaması (UF-ESIT). Tek cam ψg = 0. Geometrisi olmayan seri (58f, 68p, 78t-a Top/Side, MR …) "–".
    Sw = (Sg·Ag + Sf·Af)/(Ag+Af), Sf = 0 (URUN-KONFIG-SF0, Melih 19.10.2026: kasadan güneş kazancı yok sayılır; önceden αf·Uf/he = 0,5·Uf/25); Tlw = Tlg·σ, σ = Ag/(Ag+Af). */
 const UW_GEO={"68s":{ag:1.252,l:4.572,af:0.598,df:0.120,bi:0.014},"78s":{ag:1.228,l:4.572,af:0.593,df:0.120,bi:0.014},"90s":{ag:1.228,l:4.572,af:0.593,df:0.120,bi:0.014},
   "68f":{ag:1.234,l:4.540,af:0.616,df:0.124,bi:0.014},"68m":{ag:1.237,l:4.588,af:0.584,df:0.118,bi:0.014},
   "78t":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78t-a Bal.Door":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78a":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"68k":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014}};
 const SF_ALFA=0, SF_HE=25; /* URUN-KONFIG-SF0: Sf = 0 */
 let UK_W=1.23, UK_H=1.48;
-function ufSayi(S){ if(typeof S.uf==="number") return S.uf; if(typeof S.uf==="string"){ const m=/(\d+[.,]\d+)/.exec(S.uf); if(m) return +m[1].replace(",","."); } return null; }
+function ufSayi(S){ if(typeof S.uf==="number") return S.uf; if(typeof S.uf==="string"){ const a=(S.uf.match(/\d+[.,]\d+/g)||[]).map(x=>+x.replace(",",".")); if(a.length) return a.reduce((p,q)=>p+q,0)/a.length; } return null; } /* URUN-KONFIG-UF-ESIT (19.10.2026, Melih): çok Uf'li seride Af·Uf = Σ Afi·Ufi, Afi şimdilik eşit → Uf = ortalama */
 function geo(S){ const G=UW_GEO[S.s]; if(!G) return null; const W=UK_W, H=UK_H, d=G.df, c=G.df-G.bi;
   if(!(W>2*d+0.05&&H>2*d+0.05)) return null;
   const agF=(w,h)=>(w-2*d)*(h-2*d), lF=(w,h)=>2*(w+h-4*c), W0=1.23, H0=1.48;
@@ -250,7 +250,7 @@ function uwHesap(S,C){ const G=geo(S), uf=ufSayi(S); if(!G||uf==null||C.ug==null
   const psi=psiOf(S,C); if(psi==null) return null;
   return (G.ag*C.ug+G.af*uf+G.l*psi)/G.aw; }
 function uwHesapTip(S,C){ const G=geo(S), uf=ufSayi(S), psi=psiOf(S,C)||0;
-  return "EN ISO 10077-1, "+Math.round(UK_W*1000)+"×"+Math.round(UK_H*1000)+" mm: ("+f(G.ag,3)+"×"+f(C.ug,2)+" + "+f(G.af,3)+"×"+f(uf,2)+" + "+f(G.l,3)+"×"+f(psi,4)+") / "+f(G.aw,4)+(typeof S.uf==="string"?" · Uf: "+S.uf+" (ilki)":""); }
+  return "EN ISO 10077-1, "+Math.round(UK_W*1000)+"×"+Math.round(UK_H*1000)+" mm: ("+f(G.ag,3)+"×"+f(C.ug,2)+" + "+f(G.af,3)+"×"+f(uf,2)+" + "+f(G.l,3)+"×"+f(psi,4)+") / "+f(G.aw,4)+(typeof S.uf==="string"?" · Uf: "+S.uf+" (eşit alan → ortalama)":""); }
 function swHesap(S,C){ const G=geo(S), uf=ufSayi(S); if(!G||uf==null||C.g==null) return null; const sf=SF_ALFA*uf/SF_HE; return (C.g*G.ag+sf*G.af)/(G.ag+G.af); }
 function tlwHesap(S,C){ const G=geo(S); if(!G||C.tl==null) return null; return C.tl*G.ag/(G.ag+G.af); }
 function swTip(S,C){ const G=geo(S), uf=ufSayi(S), sf=SF_ALFA*uf/SF_HE; return "Sw = (Sg·Ag + Sf·Af)/(Ag+Af) = ("+f(C.g,2)+"×"+f(G.ag,3)+" + "+f(sf,3)+"×"+f(G.af,3)+") / "+f(G.ag+G.af,3)+" · Sf = 0"; }
