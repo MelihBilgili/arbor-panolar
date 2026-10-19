@@ -514,7 +514,7 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape") cfKapat(); });
   const set=(id,k)=>{ const v=u.get(k); if(v!=null&&v!==""&&$(id)) $(id).value=v; };
   set("h_ug","ug"); set("h_lt","lt"); set("h_gmax","gmax"); set("h_rwctr","rwctr");
   const b=document.createElement("div"); b.className="uyari";
-  b.innerHTML="Seri Seçim'den aktarıldı: <b>"+esc(u.get("seri")||"")+"</b> · "+esc(u.get("cam")||"")+" — Ug, LT, g ve Rw+Ctr hedefleri bu camın değerleriyle dolduruldu (Rw+Ctr = pencerenin değeri).";
+  /* URUN-KONFIG-AD + AKTAR-CAM-RWCTR (19.10.2026) */ b.innerHTML="Ürün Konfigürasyonu'ndan aktarıldı: <b>"+esc(u.get("seri")||"")+"</b> · "+esc(u.get("cam")||"")+" — Ug, LT, g ve Rw+Ctr hedefleri bu camın kendi değerleriyle dolduruldu.";
   const p=document.querySelector(".panel"); if(p) p.parentNode.insertBefore(b,p);
 }catch(e){} })();
 load();
