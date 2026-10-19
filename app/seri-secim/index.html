@@ -79,9 +79,12 @@
     <div class="g">
       <div><label for="h_uw">Uw ≤ (W/m²K)</label><input id="h_uw" inputmode="decimal"></div>
       <div><label for="h_db">Ürün Rw+Ctr ≥ (dB)</label><input id="h_db" inputmode="decimal"></div>
-      <div><label for="h_g">Solar faktör g ≤ (%)</label><input id="h_g" inputmode="decimal"></div>
-      <div><label for="h_tl">Işık geçirgenliği LT ≥ (%)</label><input id="h_tl" inputmode="decimal"></div>
+      <div><label for="h_g">Sg ≤ (%)</label><input id="h_g" inputmode="decimal"></div>
+      <div><label for="h_tl">Tlg ≥ (%)</label><input id="h_tl" inputmode="decimal"></div>
       <div><label for="f_seri">Seri</label><select id="f_seri"><option value="">Hepsi</option></select></div>
+      <!-- URUN-KONFIG-EBAT (19.10.2026): Uw/Sw/Tlw bu ebada hesaplanır -->
+      <div><label for="f_gen">Ürün Genişlik mm</label><input id="f_gen" inputmode="numeric" value="1230"></div>
+      <div><label for="f_yuk">Ürün Yükseklik mm</label><input id="f_yuk" inputmode="numeric" value="1480"></div>
     </div>
   </div>
   <div class="ozet" id="ozet"></div>
@@ -226,18 +229,32 @@ const CAM=[
   {c:"4 Low-e / 12 Ar-We / 4 / 12 Ar-We / 4 Solar Low-e",k:36,g:null,tl:null,ug:0.7,y:"Üçlü",ref:"t36",db:{}},
   {c:"4 Low-e / 16 Ar-We / 4 / 16 Ar-We / 4 Low-e",k:44,g:null,tl:null,ug:0.6,y:"Üçlü",ref:"t44",db:{}}
 ];
-/* URUN-KONFIG-UWHESAP (19.10.2026, Melih): EN ISO 10077-1 — Uw = (Ag·Ug + Af·Uf + lg·ψg) / Aw; standart pencere 1230 × 1480 mm (Aw = 1,8204 m²).
-   Ag, lg, Af seri geometri tablosundan (Df/Bini tablosu); Uf ve ψg (çift p2, üçlü p3) SERI'den. Uf'de birden çok değer varsa ilki. Tek cam ψg = 0.
-   Geometrisi olmayan seri (58f, 68p, 78t-a Top/Side, MR …) "–". */
-const UW_AW=1.23*1.48;
-const UW_GEO={"68s":{ag:1.252,l:4.572,af:0.598},"78s":{ag:1.228,l:4.572,af:0.593},"90s":{ag:1.228,l:4.572,af:0.593},"68f":{ag:1.234,l:4.540,af:0.616},"68m":{ag:1.237,l:4.588,af:0.584},
-  "78t":{ag:1.282,l:4.668,af:0.539},"78t-a Bal.Door":{ag:1.282,l:4.668,af:0.539},"78a":{ag:1.282,l:4.668,af:0.539},"68k":{ag:1.282,l:4.668,af:0.539}};
+/* URUN-KONFIG-UWHESAP (19.10.2026, Melih): EN ISO 10077-1 — Uw = (Ag·Ug + Af·Uf + lg·ψg) / Aw.
+   URUN-KONFIG-EBAT (19.10.2026): ebat formdaki Ürün Genişlik/Yükseklik (varsayılan 1230 × 1480 mm). Ag, Af, lg seri tablosundaki 1230×1480 değerlerinden
+   Df (kasa+kanat görünen genişlik) ve Bini (cam bindirme) ile ölçeklenir: Ag ∝ (W−2Df)(H−2Df), Af ∝ W·H − (W−2Df)(H−2Df), lg ∝ 2(W+H−4(Df−Bini)); Aw = W·H.
+   Uf ve ψg (çift p2, üçlü p3) SERI'den; Uf'de birden çok değer varsa ilki. Tek cam ψg = 0. Geometrisi olmayan seri (58f, 68p, 78t-a Top/Side, MR …) "–".
+   Sw = (Sg·Ag + Sf·Af)/(Ag+Af), Sf = αf·Uf/he (αf 0,5 orta renk ahşap, he 25 W/m²K — EN ISO 52022-1 yaklaşımı); Tlw = Tlg·σ, σ = Ag/(Ag+Af). */
+const UW_GEO={"68s":{ag:1.252,l:4.572,af:0.598,df:0.120,bi:0.014},"78s":{ag:1.228,l:4.572,af:0.593,df:0.120,bi:0.014},"90s":{ag:1.228,l:4.572,af:0.593,df:0.120,bi:0.014},
+  "68f":{ag:1.234,l:4.540,af:0.616,df:0.124,bi:0.014},"68m":{ag:1.237,l:4.588,af:0.584,df:0.118,bi:0.014},
+  "78t":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78t-a Bal.Door":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78a":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"68k":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014}};
+const SF_ALFA=0.5, SF_HE=25;
+let UK_W=1.23, UK_H=1.48;
 function ufSayi(S){ if(typeof S.uf==="number") return S.uf; if(typeof S.uf==="string"){ const m=/(\d+[.,]\d+)/.exec(S.uf); if(m) return +m[1].replace(",","."); } return null; }
-function uwHesap(S,C){ const G=UW_GEO[S.s], uf=ufSayi(S); if(!G||uf==null||C.ug==null) return null;
-  const psi=C.y==="Üçlü"?S.p3:C.y==="Çift"?S.p2:C.y==="Tek"?0:null; if(psi==null) return null;
-  return (G.ag*C.ug+G.af*uf+G.l*psi)/UW_AW; }
-function uwHesapTip(S,C){ const G=UW_GEO[S.s], uf=ufSayi(S), psi=C.y==="Üçlü"?S.p3:C.y==="Çift"?S.p2:0;
-  return "EN ISO 10077-1, 1230×1480 mm: ("+f(G.ag,3)+"×"+f(C.ug,2)+" + "+f(G.af,3)+"×"+f(uf,2)+" + "+f(G.l,3)+"×"+f(psi,4)+") / "+f(UW_AW,4)+(typeof S.uf==="string"?" · Uf: "+S.uf+" (ilki)":""); }
+function geo(S){ const G=UW_GEO[S.s]; if(!G) return null; const W=UK_W, H=UK_H, d=G.df, c=G.df-G.bi;
+  if(!(W>2*d+0.05&&H>2*d+0.05)) return null;
+  const agF=(w,h)=>(w-2*d)*(h-2*d), lF=(w,h)=>2*(w+h-4*c), W0=1.23, H0=1.48;
+  const ag=G.ag*agF(W,H)/agF(W0,H0), af=G.af*(W*H-agF(W,H))/(W0*H0-agF(W0,H0)), l=G.l*lF(W,H)/lF(W0,H0);
+  return {ag,af,l,aw:W*H}; }
+const psiOf=(S,C)=>C.y==="Üçlü"?S.p3:C.y==="Çift"?S.p2:C.y==="Tek"?0:null;
+function uwHesap(S,C){ const G=geo(S), uf=ufSayi(S); if(!G||uf==null||C.ug==null) return null;
+  const psi=psiOf(S,C); if(psi==null) return null;
+  return (G.ag*C.ug+G.af*uf+G.l*psi)/G.aw; }
+function uwHesapTip(S,C){ const G=geo(S), uf=ufSayi(S), psi=psiOf(S,C)||0;
+  return "EN ISO 10077-1, "+Math.round(UK_W*1000)+"×"+Math.round(UK_H*1000)+" mm: ("+f(G.ag,3)+"×"+f(C.ug,2)+" + "+f(G.af,3)+"×"+f(uf,2)+" + "+f(G.l,3)+"×"+f(psi,4)+") / "+f(G.aw,4)+(typeof S.uf==="string"?" · Uf: "+S.uf+" (ilki)":""); }
+function swHesap(S,C){ const G=geo(S), uf=ufSayi(S); if(!G||uf==null||C.g==null) return null; const sf=SF_ALFA*uf/SF_HE; return (C.g*G.ag+sf*G.af)/(G.ag+G.af); }
+function tlwHesap(S,C){ const G=geo(S); if(!G||C.tl==null) return null; return C.tl*G.ag/(G.ag+G.af); }
+function swTip(S,C){ const G=geo(S), uf=ufSayi(S), sf=SF_ALFA*uf/SF_HE; return "Sw = (Sg·Ag + Sf·Af)/(Ag+Af) = ("+f(C.g,2)+"×"+f(G.ag,3)+" + "+f(sf,3)+"×"+f(G.af,3)+") / "+f(G.ag+G.af,3)+" · Sf = 0,5×Uf/25"; }
+function tlwTip(S,C){ const G=geo(S); return "Tlw = Tlg·σ, σ = Ag/(Ag+Af) = "+f(G.ag,3)+" / "+f(G.ag+G.af,3)+" = "+f(G.ag/(G.ag+G.af),3); }
 const UGKEY={"1.1":"d","0.7":"t36","0.6":"t44"};
 const num=v=>{ v=String(v==null?"":v).trim().replace(",","."); return v===""||isNaN(+v)?null:+v; };
 const f=(v,d)=>v==null?"–":(+v).toFixed(d).replace(".",","); /* SERI-BICIM (12.10.2026): kalınlık 1 hane, ψg 4 hane, max cam tam sayı */
@@ -335,10 +352,11 @@ function camFiyat(C){
 let SORT={k:"fiyat",d:1}; /* URUN-KONFIG-FIYAT-SIRA: sıralama sabit, cam fiyatı artan */
 const KOL=[
   {k:"seri",t:"Seri",l:1},{k:"cam",t:"Konfigürasyon (dıştan içe)",l:1},{k:"fiyat",t:"Cam Fiyat<br>€/m²"},{k:"yapi",t:"Yapı",l:1},
-  {k:"kal",t:"Kalınlık<br>mm"},{k:"ug",t:"Ug<br>W/m²K"},{k:"uw",t:"Uw<br>W/m²K"},{k:"uwh",t:"Hesaplanan Uw<br>W/m²K"},{k:"tl",t:"LT<br>%"},{k:"g",t:"g<br>%"},{k:"db",t:"Ürün Rw+Ctr<br>dB"},{k:"rwc",t:"Cam Rw+Ctr<br>dB"} /* URUN-KONFIG-SADE (19.10.2026): Ahşap, Uf, ψg, Maks Cam sütunları kaldırıldı; Cam Rw+Ctr eklendi */
+  {k:"kal",t:"Kalınlık<br>mm"},{k:"ug",t:"Ug<br>W/m²K"},{k:"uw",t:"Uw<br>W/m²K"},{k:"uwh",t:"Hesaplanan Uw<br>W/m²K"},{k:"tl",t:"Tlg<br>%"},{k:"tlw",t:"Tlw<br>%"},{k:"g",t:"Sg<br>%"},{k:"sw",t:"Sw<br>%"}, /* URUN-KONFIG-SG-TLG */{k:"db",t:"Ürün Rw+Ctr<br>dB"},{k:"rwc",t:"Cam Rw+Ctr<br>dB"} /* URUN-KONFIG-SADE (19.10.2026): Ahşap, Uf, ψg, Maks Cam sütunları kaldırıldı; Cam Rw+Ctr eklendi */
 ];
 const deger=(r,k)=>({seri:SERI.indexOf(r.S),ah:r.ah?AHSAP_AD[r.ah]:null,aile:r.S.a,cam:r.C.c,yapi:r.C.y,kal:r.C.k,ug:r.C.ug,uw:r.uw,uwh:uwHesap(r.S,r.C),db:r.db,rwc:r.C.rwc,g:r.C.g,tl:r.C.tl,uf:typeof r.uf==="number"?r.uf:null,psi:r.psi,max:r.S.max,fiyat:camFiyat(r.C)})[k];
 function ciz(){
+  { const w=num($("f_gen").value), y=num($("f_yuk").value); UK_W=w>0?w/1000:1.23; UK_H=y>0?y/1000:1.48; } /* URUN-KONFIG-EBAT */
   const h={uw:num($("h_uw").value),db:num($("h_db").value),g:num($("h_g").value),tl:num($("h_tl").value)};
   if(h.g!=null&&h.g>1) h.g=h.g/100;
   const seri=$("f_seri").value; /* URUN-KONFIG-AHSAP: Yapı/Ahşap/Tahmini Uw seçimleri kaldırıldı; tahmini Uw her zaman kullanılır */
@@ -371,7 +389,7 @@ function ciz(){
       +'<td class="l cam">'+esc(r.C.c)+'</td><td class="fy" title="Cam Fiyatlandırma modeli: düz, 10 adet / 10 m²">'+(camFiyat(r.C)==null?(CAMM?"–":"…"):f(camFiyat(r.C),2))+'</td><td class="l">'+r.C.y+'</td>'
       +'<td class="'+(r.asim?"kal-asim":"")+'" title="'+(r.asim?"Serinin max cam kalınlığını aşıyor":"")+'">'+f(r.C.k,1)+(r.asim?" ⚠":"")+'</td>'
       +'<td>'+f(r.C.ug,2)+'</td><td class="'+(r.est?"est":"")+bad("uw")+'" title="'+(r.est?"Serinin "+(r.uwUst?"daha yüksek Ug'li":"aynı Ug'li")+" sertifika camının Uw'si"+(r.uwUst?" (üst sınır)":"")+"":"")+'">'+uwTxt+'</td>'+(function(){ const v=uwHesap(r.S,r.C); return '<td class="'+(v!=null&&h.uw!=null&&v>h.uw?"bad":"")+'" title="'+(v==null?"Bu seri için geometri/Uf yok":esc(uwHesapTip(r.S,r.C)))+'">'+(v==null?"–":f(v,2))+'</td>'; })()
-      +'<td class="'+bad("tl")+'">'+(r.C.tl==null?"–":r.C.tl)+'</td><td class="'+bad("g")+'">'+(r.C.g==null?"–":f(r.C.g*100,0))+'</td><td class="'+bad("db")+'" title="'+(r.dbK?esc("Sertifika camı: "+r.dbK.c+" · cam Rw+Ctr "+r.dbK.rwc+" dB (bu cam "+r.C.rwc+" dB)"+(r.dbAlt?" — alt sınır":"")):"")+'">'+(r.db==null?"–":(r.dbAlt?"≥ ":"")+r.db)+'</td>'
+      +'<td class="'+bad("tl")+'">'+(r.C.tl==null?"–":r.C.tl)+'</td>'+(function(){ const v=tlwHesap(r.S,r.C); return '<td title="'+(v==null?"":esc(tlwTip(r.S,r.C)))+'">'+(v==null?"–":f(v,0))+'</td>'; })()+'<td class="'+bad("g")+'">'+(r.C.g==null?"–":f(r.C.g*100,0))+'</td>'+(function(){ const v=swHesap(r.S,r.C); return '<td title="'+(v==null?"":esc(swTip(r.S,r.C)))+'">'+(v==null?"–":f(v*100,0))+'</td>'; })()+'<td class="'+bad("db")+'" title="'+(r.dbK?esc("Sertifika camı: "+r.dbK.c+" · cam Rw+Ctr "+r.dbK.rwc+" dB (bu cam "+r.C.rwc+" dB)"+(r.dbAlt?" — alt sınır":"")):"")+'">'+(r.db==null?"–":(r.dbAlt?"≥ ":"")+r.db)+'</td>'
       +'<td>'+(r.C.rwc==null?"–":r.C.rwc)+'</td></tr>'; }).join("");
   $("res").innerHTML='<table><thead><tr>'+th+'</tr></thead><tbody>'+tb+'</tbody></table>';
   $("res").querySelectorAll("th[data-k]").forEach(t=>t.style.cursor="default"); /* URUN-KONFIG-FIYAT-SIRA: başlığa tıklayarak sıralama kapalı */
@@ -406,9 +424,9 @@ const AILE_SEC=new Set(); /* SERI-AILE-SECIM */
     else AILE_SEC.add(a);
     cipCiz(); seriDoldur(); ciz(); });
   cipCiz(); seriDoldur();
-  ["h_uw","h_db","h_g","h_tl"].forEach(id=>$(id).addEventListener("input",ciz));
+  ["h_uw","h_db","h_g","h_tl","f_gen","f_yuk"].forEach(id=>$(id).addEventListener("input",ciz)); /* URUN-KONFIG-EBAT */
   ["f_seri"].forEach(id=>$(id).addEventListener("change",ciz));
-  $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Cam Listesi\'ndeki tüm camlar değerlendirilir: <b>Uw</b> serinin aynı Ug\'li sertifika camının Uw\'si, <b>Ürün Rw+Ctr</b> o seride cam Rw+Ctr\'si aynı olan sertifika camının test değeri (aynısı yoksa cam Rw+Ctr\'si daha düşük sertifika camınınki, <b>≥</b> ile), Ug\'si sertifika camlarından düşükse Uw <b>≤</b> ile; g ve LT camın kendi değeri. <b>Koyu renkli konfigürasyonlar</b> sertifikada geçen camlardır, diğerleri gri. '
+  $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Cam Listesi\'ndeki tüm camlar değerlendirilir: <b>Uw</b> serinin aynı Ug\'li sertifika camının Uw\'si, <b>Ürün Rw+Ctr</b> o seride cam Rw+Ctr\'si aynı olan sertifika camının test değeri (aynısı yoksa cam Rw+Ctr\'si daha düşük sertifika camınınki, <b>≥</b> ile), Ug\'si sertifika camlarından düşükse Uw <b>≤</b> ile; Sg ve Tlg camın kendi değeri. <b>Hesaplanan Uw, Sw, Tlw</b> girilen ürün ebadına göre EN ISO 10077-1 ile: Uw = (Ag·Ug + Af·Uf + lg·ψg)/Aw, Sw = (Sg·Ag + Sf·Af)/(Ag+Af) (Sf = 0,5·Uf/25), Tlw = Tlg·Ag/(Ag+Af). <b>Koyu renkli konfigürasyonlar</b> sertifikada geçen camlardır, diğerleri gri. '
     +'<b>Uw</b>: tabloda yalnız üç referans cam için verilmiştir (Ug 1,1 çift 4/16/4 · Ug 0,7 üçlü 4/12/4/12/4 · Ug 0,6 üçlü 4/16/4/16/4); diğer camlarda aynı Ug\'li referansın değeri kullanılır. '
     +'⚠ Kalınlık serinin max cam kalınlığını aşıyor (ör. 78s, max 40 mm). 58f max cam kalınlığı tablo 1\'de 51-52 mm (Melih Bey bilgisiyle güncellenmiş), tablo 2\'de 42 mm — formda 52 alınmıştır. '
     +'Uf: 58f\'de ahşap türüne (tabloda Ahşap sütunu, iki satır) ve cam kalınlığına göre; 78t, 78t-a Bal.Door, 78a için tabloda üç değer vardır. '
