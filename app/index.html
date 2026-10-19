@@ -1238,7 +1238,7 @@ async function loadHazir(el){
 async function loadAup(){
   const view=document.getElementById("view");
   /* AUP-SEVK-BLOK (29.09.2026): ikinci blok = proje durumu 8 · 8.1 (view aup_sevk_panosu); üst damga toplamları yalnız ilk blok */
-  const [{data,error},oz,sv,yp]=await Promise.all([sb.from("aup_panosu").select("*").order("aup",{ascending:true}), sb.from("aup_ozet").select("*").order("damga",{ascending:false}).limit(2), sb.from("aup_sevk_panosu").select("*").order("aup",{ascending:true}), sb.from("santiye_form_proje").select("proje_no,donem,onemli_hususlar,pst_santiye,updated_at").order("donem",{ascending:false}).order("updated_at",{ascending:false})]);
+  const [{data,error},oz,sv,yp]=await Promise.all([sb.from("aup_panosu").select("*").order("aup",{ascending:true}), sb.from("aup_ozet").select("*").order("damga",{ascending:false}).limit(2), sb.from("aup_sevk_panosu").select("*").order("aup",{ascending:true}), sb.from("santiye_form_proje").select("proje_no,donem,onemli_hususlar,pst_santiye,updated_at,proje_durumu,aup,pst,mvt_onay,mvt_sebep,pst_onay,pst_sebep").order("donem",{ascending:false}).order("updated_at",{ascending:false})]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const dk=d=>{ d=String(d||""); const i=d.indexOf(" "); return i<0?d:(d.slice(0,i)+" "+d.slice(i+1,i+4)); };
   /* Hücre deseni = Hazır PEM/PRJ panosu: her hücre tek satır, sığmayan içerik yatayda kaydırılır
@@ -1246,6 +1246,15 @@ async function loadAup(){
      kadarı görünür, gerisi kaydırılarak okunur. */
   /* SANTIYE-PST-SUTUN (19.10.2026): Şantiye PST = santiye_form_proje.pst_santiye (proje_no başına en yeni dolu dönem). */
   const PSM={}; ((yp&&yp.data)||[]).forEach(f=>{ if(f.pst_santiye&&!(f.proje_no in PSM)) PSM[f.proje_no]=f.pst_santiye; });
+  /* PRJ-SANTIYE-CEVAP (19.10.2026, Melih): ilk blokta Şantiye PST yerine şantiye formu cevapları — proje_no başına en yeni dönem satırı.
+     "Hemen yüklenecek mi?" = mvt_onay, yalnız formda bu soru soruluyorsa (7 Üretim + AÜP geçmiş; şantiye formu URETIM7-SORU ile aynı kural).
+     PST onayı = pst_onay; 7 Üretim + ERP PST boşsa formda PST girilir → "Belirlendi" (PST-BELIRLE). Hayır → kırmızı, sebep hover'da. */
+  const SCM={}; ((yp&&yp.data)||[]).forEach(f=>{ if(!(f.proje_no in SCM)) SCM[f.proje_no]=f; });
+  const scBug=(()=>{ const b=new Date(); return b.getFullYear()+"-"+String(b.getMonth()+1).padStart(2,"0")+"-"+String(b.getDate()).padStart(2,"0"); })();
+  const scU7=f=>/^7(\s|$)/.test(String(f.proje_durumu||"").trim());
+  const scCv=(o,s)=>!o?'<span class="muted">—</span>':(o==="Evet"?'<span style="color:#0a6b3f;font-weight:600">Evet</span>':'<span title="'+esc(s||"")+'" style="color:#b40000;font-weight:700">Hayır</span>');
+  const scHemen=no=>{ const f=SCM[no]; if(!f) return ""; return (scU7(f) && f.aup && String(f.aup).slice(0,10)<scBug) ? scCv(f.mvt_onay,f.mvt_sebep) : ""; };
+  const scPst=no=>{ const f=SCM[no]; if(!f) return ""; if(scU7(f) && !f.pst) return f.pst_santiye?'<span title="Şantiyenin belirlediği PST: '+fdate(f.pst_santiye)+'" style="color:#0a4f8a;font-weight:600">Belirlendi</span>':'<span class="muted">—</span>'; return scCv(f.pst_onay,f.pst_sebep); };
   const rowH=r=>{
     const ga=r.gyt_aup, ky=r.kayma;
     const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
@@ -1258,7 +1267,7 @@ async function loadAup(){
       <td class="num ctr">${fdate(r.mvt)}</td>
       <td class="num ctr">${fdate(r.aup)}</td>
       <td class="num ctr">${fdate(r.gyt)}</td>
-      <td class="num ctr">${fdate(PSM[r.proje_no])}</td>
+      <td class="ctr">${scHemen(r.proje_no)}</td><td class="ctr">${scPst(r.proje_no)}</td>
       <td class="num pstd ${ga<0?'red':''}">${ga==null?'':ga}</td>
       <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
       <td class="num">${money(r.anlasma_fiyati)}</td>
@@ -1319,7 +1328,7 @@ async function loadAup(){
     </style>
     <div class="scroll aupwrap"><table class="aup aupmain">
     <colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Şantiye PST</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd" title="Eğer hazırsa hemen yüklenecek mi? (şantiye formu)">Hazırsa hemen yüklenecek mi?</th><th class="ctr pstd" title="PST’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz? (şantiye formu)">PST talebe uygun mu?</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <div class="aupsevkh">Sevke Hazır · 8 / 8.1 <span style="font-weight:400;color:#5a6b7d">· Proje: ${sdata.length} · Adet: ${money(sAd)} · Tutar: ${money(sTu)} €</span></div>
     <table class="aup aupmain"><colgroup>${AUP_COLW_SEVK.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
@@ -1332,7 +1341,7 @@ async function loadAup(){
 /* AUP-COLW: NO · PROJE ADI · DURUM · Ad · MVT · AÜP · PST · PST-AÜP · Kayma · TUTAR € · Satış-Şantiye · Üretim
    (12px gövde yazısında 1ch ≈ 6,47px + 12px hücre dolgusu). PROJE ADI / Satış-Şantiye / Üretim
    07.09.2026'da %12 daraltıldı (30→26,4ch · 40→35,2ch · 67,5→59,4ch), DURUM 10→7,5ch. */
-const AUP_COLW=[51,183,61,34,64,64,64,64,32,44,57,240,396];  /* SANTIYE-PST-SUTUN: ERP PST sağına Şantiye PST 64px */
+const AUP_COLW=[51,183,61,34,64,64,64,78,64,32,44,57,240,396];  /* PRJ-SANTIYE-CEVAP: ERP PST sağına Hemen yükleme? 78px + PST onay 64px (Şantiye PST ilk bloktan çıktı; SANTIYE-PST-SUTUN 2. blokta sürer) */
 /* AUP-SEVK-YP: 2. tablo NO · PROJE ADI · DURUM · Ad · MVT · AÜP · PST · Yükleme Planı · Satış-Şantiye · Üretim — son üçü 240×0,7=168px */
 const AUP_COLW_SEVK=[51,183,61,34,64,64,64,64,168,168,168];  /* SANTIYE-PST-SUTUN */
 /* AUP-FIT: tablo kutusu pencerenin altına kadar uzar — sabit 82vh sınırı altta boş bant bırakıyordu. */
