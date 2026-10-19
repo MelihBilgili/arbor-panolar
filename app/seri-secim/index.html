@@ -329,7 +329,7 @@ function ciz(){
   const h={uw:num($("h_uw").value),db:num($("h_db").value),g:num($("h_g").value),tl:num($("h_tl").value)};
   if(h.g!=null&&h.g>1) h.g=h.g/100;
   const seri=$("f_seri").value; /* URUN-KONFIG-AHSAP: Yapı/Ahşap/Tahmini Uw seçimleri kaldırıldı; tahmini Uw her zaman kullanılır */
-  const genis=Object.values(h).some(v=>v!=null); /* URUN-KONFIG-LISTE */
+  const genis=true; /* URUN-KONFIG-HEP-LISTE (19.10.2026, Melih): hedef boşken de Cam Listesi'ndeki tüm camlar (sertifika dışındakiler gri) */ /* URUN-KONFIG-LISTE */
   let R=satirlar(genis).filter(r=>!r.asim /* URUN-KONFIG-SADE: kalınlığı seriye sığmayan gösterilmez */&&AILE_SEC.has(r.S.a)&&(!seri||r.S.s===seri));
   R.forEach(r=>{ const uw=r.uw; const e={};
     if(h.uw!=null) e.uw=uw==null?1:Math.max(0,(uw-h.uw)/h.uw);
@@ -395,7 +395,7 @@ const AILE_SEC=new Set(); /* SERI-AILE-SECIM */
   cipCiz(); seriDoldur();
   ["h_uw","h_db","h_g","h_tl"].forEach(id=>$(id).addEventListener("input",ciz));
   ["f_seri"].forEach(id=>$(id).addEventListener("change",ciz));
-  $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Hedef girildiğinde Cam Listesi\'ndeki tüm camlar değerlendirilir: <b>Uw</b> serinin aynı Ug\'li sertifika camının Uw\'si, <b>Ürün Rw+Ctr</b> o seride cam Rw+Ctr\'si aynı olan sertifika camının test değeri (aynısı yoksa cam Rw+Ctr\'si daha düşük sertifika camınınki, <b>≥</b> ile), Ug\'si sertifika camlarından düşükse Uw <b>≤</b> ile; g ve LT camın kendi değeri. <b>Koyu satırlar</b> sertifikadaki camlardır; hedef girilmezse yalnız onlar listelenir. '
+  $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Cam Listesi\'ndeki tüm camlar değerlendirilir: <b>Uw</b> serinin aynı Ug\'li sertifika camının Uw\'si, <b>Ürün Rw+Ctr</b> o seride cam Rw+Ctr\'si aynı olan sertifika camının test değeri (aynısı yoksa cam Rw+Ctr\'si daha düşük sertifika camınınki, <b>≥</b> ile), Ug\'si sertifika camlarından düşükse Uw <b>≤</b> ile; g ve LT camın kendi değeri. <b>Koyu renkli konfigürasyonlar</b> sertifikada geçen camlardır, diğerleri gri. '
     +'<b>Uw</b>: tabloda yalnız üç referans cam için verilmiştir (Ug 1,1 çift 4/16/4 · Ug 0,7 üçlü 4/12/4/12/4 · Ug 0,6 üçlü 4/16/4/16/4); diğer camlarda aynı Ug\'li referansın değeri kullanılır. '
     +'⚠ Kalınlık serinin max cam kalınlığını aşıyor (ör. 78s, max 40 mm). 58f max cam kalınlığı tablo 1\'de 51-52 mm (Melih Bey bilgisiyle güncellenmiş), tablo 2\'de 42 mm — formda 52 alınmıştır. '
     +'Uf: 58f\'de ahşap türüne (tabloda Ahşap sütunu, iki satır) ve cam kalınlığına göre; 78t, 78t-a Bal.Door, 78a için tabloda üç değer vardır. '
