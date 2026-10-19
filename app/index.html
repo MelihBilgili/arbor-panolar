@@ -979,6 +979,28 @@ function pipeGenTbl(title, rows, cols){
 }
 /* Yurt Dışı Satış 1+2 (satis_yd_akis) — durum bazlı 4 aşama, her biri YD1/YD2 alt-bloklarına ayrılır; Takipteki Teklifler bloklarının yerini alır */
 function ydRevMi(r){ if(!r) return false; if(r.muhtemel_kaynak_id) return true; return (String(r.talebe_iliskin_notlar||"")+"\n"+String(r.teklif_birimi_notlari||"")).split(/\r?\n/).some( /* REV-NOT-TALEP (15.10.2026): revizyon notu artık Talebe İlişkin Notlar'da */function(x){ return /^(\d{2}\/\d{2}\/\d{2} [^:]{1,15}: )?Revizyon(\s*—.*)?$/i.test(x.trim()); }); } /* REV-PROJE-KOYU (09.10.2026, Melih): revizyon kopyası = muhtemel_kaynak_id ya da "Revizyon" not satırı */
+/* ONC-SUTUN-DAR (19.10.2026, Melih): Öncelik Belirlenmesi Gerekenler (YD1/YD2) 11 sütunu, ekranda ölçülen mevcut
+   genişliklerinden sırasıyla şu yüzdelerde daraltılır; sığmayan başlık küçük punto + iki satır. Oranlar ONC_DAR_P'de. */
+const ONC_DAR_P=[2,3,3,5,0,15,0,15,25,35,15];
+function oncSutDar(n){
+  const tbls=[...document.querySelectorAll('.satis-wrap table.sat')].filter(t=>t.querySelector('th.oc1')&&!t.dataset.ocdar);
+  let bekle=false;
+  tbls.forEach(t=>{
+    const ths=ONC_DAR_P.map((p,i)=>t.querySelector('th.oc'+(i+1)));
+    const W=ths.map(th=>th?th.getBoundingClientRect().width:0);
+    if(!W[0]){ bekle=true; return; }
+    t.dataset.ocdar='1';
+    ONC_DAR_P.forEach((p,i)=>{
+      const th=ths[i]; if(!th) return; const cs=getComputedStyle(th);
+      const ic=Math.max(12,Math.floor(W[i]*(1-p/100)-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-parseFloat(cs.borderLeftWidth||0)));
+      t.querySelectorAll('td.oc'+(i+1)+'>.cx').forEach(d=>{ d.style.width=ic+'px'; });
+      const cw=th.querySelector('.cw'); if(!cw) return;
+      cw.style.width=ic+'px';
+      if(cw.scrollWidth>ic+1){ th.style.verticalAlign='bottom'; Object.assign(cw.style,{whiteSpace:'normal',overflow:'visible',overflowWrap:'break-word',fontSize:'10.5px',lineHeight:'1.15'}); }
+    });
+  });
+  if(bekle&&n<40) setTimeout(()=>oncSutDar(n+1),300);
+}
 function pipelineTables(ydRows, today){
   const sorted=ydRows.slice().sort((a,b)=>String(b.gelen_tarih||'').localeCompare(String(a.gelen_tarih||'')));
   /* YD-ILG-EKSIK-PANO (08.10.2026, Melih): proje ilgilisi kartı (Ad, E-posta, Telefon) eksik "Teklif İncelendi" satırı Öncelik bloğunda değil
@@ -1035,10 +1057,11 @@ function pipelineTables(ydRows, today){
   /* YD-EKSIK-ONEM: Eksik bloklarına Müşteri Önem Sınıfı sütunu (Müşteri'den sonra) */
   const C1E=[].concat(C1.slice(0,2),[{h:'Müşteri Önem Sınıfı',f:'musteri_onem_sinifi'}],C1.slice(2)).map(c=>{ const f=c.f||({'Gelen Tarih':'gelen_tarih','İstenen Tarih':'istenen_tarih'})[c.h];
     return EKSIK_F.includes(f)?Object.assign({},c,{cls:r=>(r.net_tutar!=null&&String(r.net_tutar).trim()!==''&&f!=='musteri')?'':(  /* TUTAR-PEMBE-SADE */((!r.durum||r.durum==='Teklif Talebi Geldi')&&(r[f]==null||String(r[f]).trim()===''))||(f==='musteri'&&!ilgTamP(r)))?'eksikbos':'' /* YD-EKSIK-BOS2 */ /* YD-ILG-EKSIK-PANO */}):c; });
+  setTimeout(()=>oncSutDar(0),0); /* ONC-SUTUN-DAR */
   return two('Eksik Kaydedilmiş Teklif Talepleri',eksik,C1E)
     +two('Öncelik Belirlenmesi Gerekenler',oncelik,C1.map(c=>{ const ONC_K={talebe_iliskin_notlar:0.5*0.65,teklif_birimi_notlari:0.65}; if(!(c.f in ONC_K)) return c; /* ONC-NOT-YARIM (19.10.2026, Melih): Öncelik Belirlenmesi Gerekenler'de Talebe İlişkin Notlar sütunu doğal genişliğinin yarısı (bloğa göre, kaydırmalı) */ /* ONC-NOT-DAR35 (19.10.2026, Melih): Talebe İlişkin Notlar ve Teklif Birimi Notları ayrıca %35 dar */
       const fk=c.f, mx={}; oncelik.forEach(r=>{ const L=String(r[fk]||'').length; mx[r.blok]=Math.max(mx[r.blok]||0,L); });
-      return Object.assign({},c,{html:r=>{ const v=String(r[fk]||''); const w=Math.max(8,Math.ceil((mx[r.blok]||0)*0.85*ONC_K[fk])); return `<div class="cx" title="${esc(v)}" style="width:${w}ch">${esc(v)}</div>`; }}); }).concat([{h:'Öncelik',wcls:'oncsec',html:r=>`<select class="ydonc" data-id="${r.id}" title="Öncelik seç — forma yazılır, satır Teklif Hazırlığında'ya geçer"><option value=""></option>${['1','2','3'].map(o=>`<option${String(r.oncelik||'')===o?' selected':''}>${o}</option>`).join('')}</select>`}]))
+      return Object.assign({},c,{html:r=>{ const v=String(r[fk]||''); const w=Math.max(8,Math.ceil((mx[r.blok]||0)*0.85*ONC_K[fk])); return `<div class="cx" title="${esc(v)}" style="width:${w}ch">${esc(v)}</div>`; }}); }).map((c,i)=>Object.assign({},c,{wcls:'oc'+(i+1)})).concat([{h:'Öncelik',wcls:'oncsec',html:r=>`<select class="ydonc" data-id="${r.id}" title="Öncelik seç — forma yazılır, satır Teklif Hazırlığında'ya geçer"><option value=""></option>${['1','2','3'].map(o=>`<option${String(r.oncelik||'')===o?' selected':''}>${o}</option>`).join('')}</select>`}]))
     +two('Teklif Hazırlığında',hazirlik,C2)
     +two('Takiptekiler',takiptekiler,C4);
 }
