@@ -247,8 +247,9 @@ async function listeKur(){
   if(!L) return;
   const nn=v=>v==null||v===""||isNaN(+v)?null:+v;
   const G=L.map(r=>{ const ug=nn(r.ug), rwc=nn(r.rw_ctr)!=null?nn(r.rw_ctr):(nn(r.rw)!=null&&nn(r.ctr)!=null?nn(r.rw)+nn(r.ctr):null);
-    const tl=nn(r.tl), k=nn(r.kalinlik), ad=String(r.kombinasyon||"").split(", Ug=")[0].trim();
-    return {c:ad,komb:r.kombinasyon,k:k>0?k:null,g:nn(r.sf),tl:tl==null?null:Math.round(tl*1000)/10,ug,y:yapiAd(ad),rwc,db:{},liste:true}; })
+    const yz=v=>v!=null&&v>1?v/100:v; /* URUN-KONFIG-YUZDE (19.10.2026): listede yüzde yazılmış g/LT (ör. 42,7) kesire çevrilir; aksi hâlde fiyat modeli 0 € verir */
+    const tl=yz(nn(r.tl)), k=nn(r.kalinlik), ad=String(r.kombinasyon||"").split(", Ug=")[0].trim();
+    return {c:ad,komb:r.kombinasyon,k:k>0?k:null,g:yz(nn(r.sf)),tl:tl==null?null:Math.round(tl*1000)/10,ug,y:yapiAd(ad),rwc,db:{},liste:true}; })
     .filter(x=>x.c&&(x.ug!=null||x.rwc!=null));
   const m1=new Map(), m2=new Map();
   G.forEach(x=>{ const a=nrmAd(x.c), b=nrmAd2(x.c); if(!m1.has(a)) m1.set(a,[]); m1.get(a).push(x); if(x.rwc!=null){ if(!m2.has(b)) m2.set(b,[]); m2.get(b).push(x); } });
