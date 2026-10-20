@@ -3661,6 +3661,7 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     .bhl i{font-weight:600;color:#2f5d3a}
     .bht{border-collapse:collapse;width:auto;font-size:12px}
     .bht th{background:#2f5d3a;color:#fff;font-weight:600;padding:3px 5px;text-align:left;white-space:nowrap}
+    /* BAHCE-SIRALA */ .bht th.bhsrt{cursor:pointer;user-select:none}.bht th.bhsrt:hover{background:#3d7549}.bht th .bhsr{font-size:9px}
     .bht td{border-bottom:1px solid #eef1f5;padding:3px 5px;vertical-align:top;line-height:1.35}
     .bht td.bhk{font-style:italic;font-weight:600;color:#2f5d3a;max-width:34vw}
     .bht td.bhi{white-space:nowrap;font-size:13px;letter-spacing:-1px}
@@ -3696,6 +3697,24 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     h+='<div class="bhlj"><b>Işık:</b> ☀️ tam güneş · ⛅ yarı gölge · ☁️ gölge<br><b>Toprak (kova oranı, toplam 10):</b> 🛘 besinsiz bahçe toprağı · 🍂 olgun kompost · 🌱 kapak toprağı · 🪨 pomza kırığı 2–8 mm · 🪱N dikimde N avuç solucan gübresi (pelet+leonardit) · 🍙N dikimde N avuç dolomit<br><b>Malç (M):</b> 🍪 pomza · 🥢 5–8 cm kuru çam iğnesi<br><b>Ekim / Mart (her yıl; malçı aralayıp üstten serp, malçı 5 cm\'ye tamamla):</b> 🍂N N avuç olgun kompost (ekim) · 🍙1/3 3 yılda bir 1 avuç dolomit (ekim) · 🪱N N avuç solucan gübresi (mart) · – ek gerekmez<br><!-- BAHCE-TASIMA --><b>Taşıma:</b> yerleşmiş bitkiyi taşımaya uygun ay(lar) · ✕ kazık köklü, yerleşmişken taşınmaz</div>';
   }
   body.innerHTML=h;
+  /* BAHCE-SIRALA (20.10.2026): başlığa basınca o sütuna göre sırala; ikinci basış ters; boşlar hep altta */
+  const bhT=body.querySelector("table.bht");
+  if(bhT){
+    const ths=[...bhT.querySelectorAll("thead th")], tb=bhT.tBodies[0];
+    const RANK={"Işık":["☀️","⛅","☁️"],"Sulama":["Az","Orta","Çok"],"Taşıma":["Eyl–Eki","Kas–Şub","Mar–Nis","Nis","✕"]};
+    const anah=(t,ad)=>{ t=(t||"").trim(); if(!t||t==="–") return null; const rk=RANK[ad]; if(rk){ const k=rk.findIndex(x=>t.startsWith(x)); if(k>=0) return k; } const m=t.replace(/[−–]/g,"-").match(/^-?\d+(?:[.,]\d+)?/); return m?parseFloat(m[0].replace(",",".")):t; };
+    const sirala=(ad,d)=>{ const i=ths.findIndex(t=>t.dataset.ad===ad); if(i<0) return;
+      const trs=[...tb.rows].filter(r=>!r.classList.contains("bhadd"));
+      trs.sort((a,b)=>{ const x=anah(a.cells[i]&&a.cells[i].textContent,ad), y=anah(b.cells[i]&&b.cells[i].textContent,ad);
+        if(x===null||y===null) return x===y?0:(x===null?1:-1);
+        const c=(typeof x==="number"&&typeof y==="number")?x-y:(typeof x==="number"?-1:(typeof y==="number"?1:String(x).localeCompare(String(y),"tr",{numeric:true})));
+        return d*c; });
+      trs.forEach(r=>tb.appendChild(r));
+      ths.forEach((t,j)=>{ const s=t.querySelector(".bhsr"); if(s) s.textContent=j===i?(d>0?" ▲":" ▼"):""; }); };
+    ths.forEach(t=>{ const ad=t.textContent.trim(); if(!ad) return; t.dataset.ad=ad; t.classList.add("bhsrt"); t.insertAdjacentHTML("beforeend",'<span class="bhsr"></span>');
+      t.onclick=()=>{ const s=state.bahceSira; const d=(s&&s.ad===ad)?-s.d:1; state.bahceSira={ad,d}; sirala(ad,d); }; });
+    if(state.bahceSira) sirala(state.bahceSira.ad,state.bahceSira.d);
+  }
   /* BAHCE-EKLE-SATIR */
   const addTr=body.querySelector(".bhadd");
   if(addTr){
