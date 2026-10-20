@@ -494,13 +494,17 @@ async function sertAc(r){
   let L; try{ L=await sertYukle(); }catch(e){ p.querySelector(".gv").innerHTML='<div class="bos">Okunamadı: '+esc(e.message||e)+'</div>'; return; }
   L=L.filter(d=>[d.seri,d.seri2,d.seri3,d.seri4].some(x=>kod.includes(String(x||"").toLowerCase())));
   /* URUN-KONFIG-SERT-CAM (20.10.2026, Melih): yalnız bu camın bu seriyle test edildiği belge(ler) */
-  { const kapi=/bal\.?door/i.test(r.S.s), dbV=r.sert?r.C.db[r.S.s]:null, uwV=(r.C.ref&&r.S.uw)?r.S.uw[r.C.ref]:null;
+  { const Kc=(!r.C.liste&&r.C.db)?r.C:CAM.find(x=>nrmAd2(x.c)===nrmAd2(r.C.c)&&x.ug===r.C.ug)||CAM.find(x=>nrmAd2(x.c)===nrmAd2(r.C.c)); /* URUN-KONFIG-SERT-CAM2 */
+    const kapi=/bal\.?door/i.test(r.S.s), dbV=(Kc&&Kc.db)?(Kc.db[r.S.s]??null):null, uwV=(Kc&&Kc.ref&&r.S.uw)?(r.S.uw[Kc.ref]??null):null;
     const nm=d=>String(d.ad||"").toLowerCase(), kapiDok=d=>/balcony|balkon|porte|door|kapı|kapi/.test(nm(d));
     const ses=d=>dbV!=null&&/(akusti|acousti|acoustique|db)/.test(nm(d))&&new RegExp("(^|[^0-9])"+dbV+"\\s*db").test(nm(d));
     const uwOf=d=>{ const m=/u[wf]\s*=\s*([0-9]+[.,][0-9]+)/.exec(nm(d)); return m?parseFloat(m[1].replace(",",".")):null; };
     const isiAday=L.filter(d=>uwV!=null&&uwOf(d)!=null&&Math.abs(uwOf(d)-uwV)<=0.035&&kapiDok(d)===kapi);
     const enY=isiAday.length?Math.min(...isiAday.map(d=>Math.abs(uwOf(d)-uwV))):null;
     L=L.filter(d=>(ses(d)&&kapiDok(d)===kapi)||isiAday.some(x=>x===d&&Math.abs(uwOf(d)-uwV)<=enY+0.0005));
+    if(!L.length&&(dbV!=null||uwV!=null)){ p.querySelector(".gv").innerHTML='<div class="bos">Bu cam bu seriyle test edilmiş ('
+      +[dbV!=null?'Ürün Rw+Ctr '+esc(dbV)+' dB':'',uwV!=null?'Uw '+String(uwV).replace(".",","):''].filter(Boolean).join(' · ')
+      +'), ancak raporu Dokümanlar\'da bulunamadı.</div>'; return; } /* URUN-KONFIG-SERT-CAM2 */
     if(!L.length){ p.querySelector(".gv").innerHTML='<div class="bos">Bu cam bu seriyle test edilmemiş; sertifikası yok.'
       +(r.dbK?'<br>Ürün Rw+Ctr değeri ('+esc(r.db)+' dB) şu sertifika camından alındı: <b>'+esc(r.dbK.c)+'</b>.':'')
       +(r.est&&r.uw!=null?'<br>Uw değeri ('+String(r.uw).replace(".",",")+') aynı Ug\'li referans camın sertifikasından.':'')+'</div>'; return; } }
