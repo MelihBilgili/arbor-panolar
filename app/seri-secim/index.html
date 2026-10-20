@@ -493,6 +493,17 @@ async function sertAc(r){
   document.body.appendChild(p);
   let L; try{ L=await sertYukle(); }catch(e){ p.querySelector(".gv").innerHTML='<div class="bos">Okunamadı: '+esc(e.message||e)+'</div>'; return; }
   L=L.filter(d=>[d.seri,d.seri2,d.seri3,d.seri4].some(x=>kod.includes(String(x||"").toLowerCase())));
+  /* URUN-KONFIG-SERT-CAM (20.10.2026, Melih): yalnız bu camın bu seriyle test edildiği belge(ler) */
+  { const kapi=/bal\.?door/i.test(r.S.s), dbV=r.sert?r.C.db[r.S.s]:null, uwV=(r.C.ref&&r.S.uw)?r.S.uw[r.C.ref]:null;
+    const nm=d=>String(d.ad||"").toLowerCase(), kapiDok=d=>/balcony|balkon|porte|door|kapı|kapi/.test(nm(d));
+    const ses=d=>dbV!=null&&/(akusti|acousti|acoustique|db)/.test(nm(d))&&new RegExp("(^|[^0-9])"+dbV+"\\s*db").test(nm(d));
+    const uwOf=d=>{ const m=/u[wf]\s*=\s*([0-9]+[.,][0-9]+)/.exec(nm(d)); return m?parseFloat(m[1].replace(",",".")):null; };
+    const isiAday=L.filter(d=>uwV!=null&&uwOf(d)!=null&&Math.abs(uwOf(d)-uwV)<=0.035&&kapiDok(d)===kapi);
+    const enY=isiAday.length?Math.min(...isiAday.map(d=>Math.abs(uwOf(d)-uwV))):null;
+    L=L.filter(d=>(ses(d)&&kapiDok(d)===kapi)||isiAday.some(x=>x===d&&Math.abs(uwOf(d)-uwV)<=enY+0.0005));
+    if(!L.length){ p.querySelector(".gv").innerHTML='<div class="bos">Bu cam bu seriyle test edilmemiş; sertifikası yok.'
+      +(r.dbK?'<br>Ürün Rw+Ctr değeri ('+esc(r.db)+' dB) şu sertifika camından alındı: <b>'+esc(r.dbK.c)+'</b>.':'')
+      +(r.est&&r.uw!=null?'<br>Uw değeri ('+String(r.uw).replace(".",",")+') aynı Ug\'li referans camın sertifikasından.':'')+'</div>'; return; } }
   if(!L.length){ p.querySelector(".gv").innerHTML='<div class="bos">Bu seri için Dokümanlar\'da sertifika yok.</div>'; return; }
   const ad=d=>String(d.ad||"").toLowerCase();
   const grup=d=>/(akusti|acousti|ac.ustique|\bdb\b|\d\s*db)/.test(ad(d))?"Ses (Rw+Ctr)":(/(uw|uf|uc|therm|termal|ısı|isi)/.test(ad(d))?"Isı (Uw)":(/(air|hava|water|su |wind|rüzgar|luft|eau|vent)/.test(ad(d))?"Hava - Su - Rüzgar":"Diğer"));
@@ -509,7 +520,7 @@ async function sertAc(r){
       return '<tr><td class="ad">'+(yil(d)?'<span class="yil" title="Bu satırın Ürün Rw+Ctr değeri">★ </span>':'')+esc(d.ad)+(gec?' <span class="gec">süresi geçmiş</span>':'')+'</td><td class="dl">'+esc(d.dil||"")+'</td>'
         +'<td class="bt">'+(d.depo_yolu?'<button type="button" class="sb" data-g="'+d.nr+'">Görüntüle</button><button type="button" class="sb" data-i="'+d.nr+'">İndir</button>'
           :'<button type="button" class="sb" data-o="'+d.nr+'" title="50 MB üstü: OneDrive klasöründen">OneDrive</button>')+'</td></tr>'; }).join("")+'</table>'; });
-  h+='<div class="bos" style="font-size:11.5px">Kaynak: <a href="../dokumanlar/" target="_blank">Dokümanlar</a> formu (tür Sertifika). ★ = satırın Ürün Rw+Ctr değerini ('+(dbS||"-")+' dB) taşıyan rapor.</div>';
+  h+='<div class="bos" style="font-size:11.5px">Yalnız bu camın bu seriyle test edildiği sertifikalar (URUN-KONFIG-SERT-CAM). Kaynak: <a href="../dokumanlar/" target="_blank">Dokümanlar</a>.</div>';
   p.querySelector(".gv").innerHTML=h;
   p.querySelector(".gv").addEventListener("click",async e=>{ const b=e.target.closest("button.sb"); if(!b) return;
     const nr=+(b.dataset.g||b.dataset.i||b.dataset.o); const d=L.find(x=>x.nr===nr); if(!d) return;
