@@ -454,13 +454,72 @@ let _sm=null;
 function smKapat(){ if(_sm){ _sm.remove(); _sm=null; } }
 $("res").addEventListener("contextmenu",e=>{ const tr=e.target.closest("tbody tr[data-i]"); if(!tr) return;
   const r=(window._SR||[])[+tr.getAttribute("data-i")]; if(!r) return; e.preventDefault(); smKapat();
-  _sm=document.createElement("div"); _sm.className="smenu"; _sm.innerHTML='<button type="button">Cam konfigürasyona aktar</button>';
+  _sm=document.createElement("div"); _sm.className="smenu"; _sm.innerHTML='<button type="button">Cam konfigürasyona aktar</button>'
+    +(sertKodlar(r).length?'<button type="button" data-sert="1">Sertifikalar ('+esc(sertKodlar(r).join(", "))+')</button>':''); /* URUN-KONFIG-SERTIFIKA */
   _sm.style.left=Math.max(4,Math.min(e.clientX,innerWidth-230))+"px"; _sm.style.top=Math.max(4,Math.min(e.clientY,innerHeight-50))+"px";
   _sm.querySelector("button").onclick=()=>{ window.open(aktarUrl(r),"_blank"); smKapat(); };
+  { const sb2=_sm.querySelector("button[data-sert]"); if(sb2) sb2.onclick=()=>{ smKapat(); sertAc(r); }; } /* URUN-KONFIG-SERTIFIKA */
   document.body.appendChild(_sm); });
 document.addEventListener("click",e=>{ if(_sm&&!_sm.contains(e.target)) smKapat(); });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") smKapat(); });
 window.addEventListener("scroll",smKapat,true);
+
+/* URUN-KONFIG-SERTIFIKA (20.10.2026, Melih): sağ tık -> "Sertifikalar": Dokümanlar formundaki (tablo dokuman, tür Sertifika)
+   bu serinin belgeleri; Görüntüle / İndir = Storage 'dokumanlar' imzalı bağlantı (1 saat); 50 MB üstü -> OneDrive paylaşım klasörü.
+   Seri eşlemesi: satırın seri adındaki kod(lar) (78t-a … -> 78t + 78a; "58f Çam / Lareks" -> 58f). Satırın Ürün Rw+Ctr / Hesaplanan-sertifika Uw değerini adında taşıyan belge ★ ile üstte. */
+const SERT_OD="https://1drv.ms/f/c/67beba4c65f73a19/IgDZFFLVqDQ9T4RgpLw9iM3FAQPNaSwzfdMuMhNSbxgMAbw?e=Gz3Hbj";
+function sertKodlar(r){ const n=String(r&&r.S&&r.S.s||""); const m=/^(\d{2})([a-z])(?:-([a-z]))?/i.exec(n); if(!m) return [];
+  const k=[m[1]+m[2].toLowerCase()]; if(m[3]) k.push(m[1]+m[3].toLowerCase()); return k; }
+let _SERT=null;
+async function sertYukle(){ if(_SERT) return _SERT;
+  const {data,error}=await ARB_ACTIVE.from("dokuman").select("nr,ana,aile,seri,seri2,seri3,seri4,ad,dil,tur,gecerlilik,dosya,depo_yolu,boyut").eq("tur","Sertifika").order("nr");
+  if(error) throw error; _SERT=data||[]; return _SERT; }
+(function(){ const st=document.createElement("style"); st.textContent=
+  "#sertpan{position:fixed;inset:0;background:rgba(15,30,50,.35);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:40px 10px}"
+ +"#sertpan .ic{background:#fff;border-radius:10px;max-width:860px;width:100%;max-height:calc(100vh - 80px);overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.25)}"
+ +"#sertpan .bas{position:sticky;top:0;background:#16324f;color:#fff;padding:9px 14px;display:flex;align-items:center;gap:10px;font-weight:700}"
+ +"#sertpan .bas span{font-weight:400;color:#c9dcf0;font-size:12px;flex:1}#sertpan .bas button{background:none;border:0;color:#fff;font-size:18px;cursor:pointer}"
+ +"#sertpan h4{margin:10px 14px 4px;font-size:12.5px;color:#16324f}#sertpan table{border-collapse:collapse;width:100%;font-size:12px}"
+ +"#sertpan td{padding:4px 14px;border-bottom:1px solid #eef1f5;vertical-align:top}#sertpan td.ad{white-space:normal}#sertpan td.dl{white-space:nowrap;color:#4a5a6b}"
+ +"#sertpan td.bt{white-space:nowrap;text-align:right}#sertpan .yil{color:#0b6b48;font-weight:700}#sertpan .gec{color:#b40000;font-size:11px}"
+ +"#sertpan button.sb{border:1px solid #cdd8e4;background:#fff;color:#16324f;border-radius:6px;padding:2px 8px;font-size:11.5px;cursor:pointer;margin-left:4px}"
+ +"#sertpan .bos{padding:14px;color:#6b7a89}";
+  document.head.appendChild(st); })();
+function sertKapat(){ const p=document.getElementById("sertpan"); if(p) p.remove(); }
+async function sertAc(r){
+  sertKapat(); const kod=sertKodlar(r); const p=document.createElement("div"); p.id="sertpan";
+  p.innerHTML='<div class="ic"><div class="bas">Sertifikalar — '+esc(kod.join(", "))+'<span>'+esc(sAd(r))+' · '+esc(r.C.c)+'</span><button type="button" title="Kapat">×</button></div><div class="gv"><div class="bos">Yükleniyor…</div></div></div>';
+  p.addEventListener("click",e=>{ if(e.target===p||e.target.closest(".bas button")) sertKapat(); });
+  document.body.appendChild(p);
+  let L; try{ L=await sertYukle(); }catch(e){ p.querySelector(".gv").innerHTML='<div class="bos">Okunamadı: '+esc(e.message||e)+'</div>'; return; }
+  L=L.filter(d=>[d.seri,d.seri2,d.seri3,d.seri4].some(x=>kod.includes(String(x||"").toLowerCase())));
+  if(!L.length){ p.querySelector(".gv").innerHTML='<div class="bos">Bu seri için Dokümanlar\'da sertifika yok.</div>'; return; }
+  const ad=d=>String(d.ad||"").toLowerCase();
+  const grup=d=>/(akusti|acousti|ac.ustique|\bdb\b|\d\s*db)/.test(ad(d))?"Ses (Rw+Ctr)":(/(uw|uf|uc|therm|termal|ısı|isi)/.test(ad(d))?"Isı (Uw)":(/(air|hava|water|su |wind|rüzgar|luft|eau|vent)/.test(ad(d))?"Hava - Su - Rüzgar":"Diğer"));
+  const dbS=r.db!=null?String(r.db):null; const uwv=(typeof uwHesap==="function"?uwHesap(r.S,r.C):null);
+  const yil=d=>{ const n=ad(d).replace(/\s+/g,""); if(dbS&&grup(d)==="Ses (Rw+Ctr)"&&new RegExp("(^|[^0-9])"+dbS+"db").test(n)) return true;
+    return false; };
+  const DIL=["Türkçe","İngilizce","Fransızca","Almanca","İtalyanca"]; const di=d=>{ const i=DIL.indexOf(d.dil); return i<0?9:i; };
+  const SIRA=["Ses (Rw+Ctr)","Isı (Uw)","Hava - Su - Rüzgar","Diğer"];
+  const by={}; L.forEach(d=>{ (by[grup(d)]=by[grup(d)]||[]).push(d); });
+  const bugun=new Date(); bugun.setHours(0,0,0,0);
+  let h=""; SIRA.filter(g=>by[g]).forEach(g=>{ const A=by[g].sort((a,b)=>((yil(b)?1:0)-(yil(a)?1:0))||String(a.ad).localeCompare(String(b.ad),"tr",{numeric:true})||di(a)-di(b));
+    h+='<h4>'+g+' <span style="font-weight:400;color:#8a97a4">('+A.length+')</span></h4><table>'+A.map(d=>{
+      const gec=d.gecerlilik&&new Date(d.gecerlilik+"T00:00:00")<bugun;
+      return '<tr><td class="ad">'+(yil(d)?'<span class="yil" title="Bu satırın Ürün Rw+Ctr değeri">★ </span>':'')+esc(d.ad)+(gec?' <span class="gec">süresi geçmiş</span>':'')+'</td><td class="dl">'+esc(d.dil||"")+'</td>'
+        +'<td class="bt">'+(d.depo_yolu?'<button type="button" class="sb" data-g="'+d.nr+'">Görüntüle</button><button type="button" class="sb" data-i="'+d.nr+'">İndir</button>'
+          :'<button type="button" class="sb" data-o="'+d.nr+'" title="50 MB üstü: OneDrive klasöründen">OneDrive</button>')+'</td></tr>'; }).join("")+'</table>'; });
+  h+='<div class="bos" style="font-size:11.5px">Kaynak: <a href="../dokumanlar/" target="_blank">Dokümanlar</a> formu (tür Sertifika). ★ = satırın Ürün Rw+Ctr değerini ('+(dbS||"-")+' dB) taşıyan rapor.</div>';
+  p.querySelector(".gv").innerHTML=h;
+  p.querySelector(".gv").addEventListener("click",async e=>{ const b=e.target.closest("button.sb"); if(!b) return;
+    const nr=+(b.dataset.g||b.dataset.i||b.dataset.o); const d=L.find(x=>x.nr===nr); if(!d) return;
+    if(b.dataset.o){ window.open(SERT_OD,"_blank","noopener"); try{ await navigator.clipboard.writeText(d.dosya); }catch(_){} return; }
+    const w=b.dataset.g?window.open("about:blank","_blank"):null;
+    const {data,error}=await ARB_ACTIVE.storage.from("dokumanlar").createSignedUrl(d.depo_yolu,3600,b.dataset.i?{download:d.dosya}:undefined);
+    if(error||!data){ if(w) w.close(); alert("Dosya açılamadı: "+((error&&error.message)||"")); return; }
+    if(w) w.location=data.signedUrl; else location.href=data.signedUrl; });
+}
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") sertKapat(); });
 </script>
 <!-- FORM-LINKLER --><script src="../form_linkler.js?v=261019"></script>
 </body>
