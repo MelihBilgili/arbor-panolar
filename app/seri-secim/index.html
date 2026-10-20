@@ -473,7 +473,10 @@ function sertKodlar(r){ const n=String(r&&r.S&&r.S.s||""); const m=/^(\d{2})([a-
 let _SERT=null;
 async function sertYukle(){ if(_SERT) return _SERT;
   const {data,error}=await ARB_ACTIVE.from("dokuman").select("nr,ana,aile,seri,seri2,seri3,seri4,ad,dil,tur,gecerlilik,dosya,depo_yolu,boyut").eq("tur","Sertifika").order("nr");
-  if(error) throw error; _SERT=data||[]; return _SERT; }
+  if(error) throw error; _SERT=data||[];
+  /* URUN-KONFIG-SERT-ESLEME (20.10.2026, Melih): açık eşleme tablosu dokuman_cam (belge nr + seri + cam + deneme notu), ör. 68s Ginger raporu 7 cam */
+  try{ const q=await ARB_ACTIVE.from("dokuman_cam").select("nr,seri,cam,tip,deger,not_"); window._DCAM=(!q.error&&q.data)?q.data:[]; }catch(e){ window._DCAM=[]; }
+  return _SERT; }
 (function(){ const st=document.createElement("style"); st.textContent=
   "#sertpan{position:fixed;inset:0;background:rgba(15,30,50,.35);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:40px 10px}"
  +"#sertpan .ic{background:#fff;border-radius:10px;max-width:860px;width:100%;max-height:calc(100vh - 80px);overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.25)}"
@@ -493,6 +496,7 @@ async function sertAc(r){
   document.body.appendChild(p);
   let L; try{ L=await sertYukle(); }catch(e){ p.querySelector(".gv").innerHTML='<div class="bos">Okunamadı: '+esc(e.message||e)+'</div>'; return; }
   L=L.filter(d=>[d.seri,d.seri2,d.seri3,d.seri4].some(x=>kod.includes(String(x||"").toLowerCase())));
+  const ESN=new Map(); (window._DCAM||[]).forEach(x=>{ if(kod.includes(String(x.seri||"").toLowerCase())&&nrmAd2(x.cam)===nrmAd2(r.C.c)) ESN.set(x.nr,x.not_||""); }); /* URUN-KONFIG-SERT-ESLEME */
   /* URUN-KONFIG-SERT-CAM (20.10.2026, Melih): yalnız bu camın bu seriyle test edildiği belge(ler) */
   { const Kc=(!r.C.liste&&r.C.db)?r.C:CAM.find(x=>nrmAd2(x.c)===nrmAd2(r.C.c)&&x.ug===r.C.ug)||CAM.find(x=>nrmAd2(x.c)===nrmAd2(r.C.c)); /* URUN-KONFIG-SERT-CAM2 */
     const kapi=/bal\.?door/i.test(r.S.s), dbV=(Kc&&Kc.db)?(Kc.db[r.S.s]??null):null, uwV=(Kc&&Kc.ref&&r.S.uw)?(r.S.uw[Kc.ref]??null):null;
@@ -501,7 +505,7 @@ async function sertAc(r){
     const uwOf=d=>{ const m=/u[wf]\s*=\s*([0-9]+[.,][0-9]+)/.exec(nm(d)); return m?parseFloat(m[1].replace(",",".")):null; };
     const isiAday=L.filter(d=>uwV!=null&&uwOf(d)!=null&&Math.abs(uwOf(d)-uwV)<=0.035&&kapiDok(d)===kapi);
     const enY=isiAday.length?Math.min(...isiAday.map(d=>Math.abs(uwOf(d)-uwV))):null;
-    L=L.filter(d=>(ses(d)&&kapiDok(d)===kapi)||isiAday.some(x=>x===d&&Math.abs(uwOf(d)-uwV)<=enY+0.0005));
+    L=L.filter(d=>ESN.has(d.nr)||(ses(d)&&kapiDok(d)===kapi)||isiAday.some(x=>x===d&&Math.abs(uwOf(d)-uwV)<=enY+0.0005));
     if(!L.length&&(dbV!=null||uwV!=null)){ p.querySelector(".gv").innerHTML='<div class="bos">Bu cam bu seriyle test edilmiş ('
       +[dbV!=null?'Ürün Rw+Ctr '+esc(dbV)+' dB':'',uwV!=null?'Uw '+String(uwV).replace(".",","):''].filter(Boolean).join(' · ')
       +'), ancak raporu Dokümanlar\'da bulunamadı.</div>'; return; } /* URUN-KONFIG-SERT-CAM2 */
@@ -521,7 +525,7 @@ async function sertAc(r){
   let h=""; SIRA.filter(g=>by[g]).forEach(g=>{ const A=by[g].sort((a,b)=>((yil(b)?1:0)-(yil(a)?1:0))||String(a.ad).localeCompare(String(b.ad),"tr",{numeric:true})||di(a)-di(b));
     h+='<h4>'+g+' <span style="font-weight:400;color:#8a97a4">('+A.length+')</span></h4><table>'+A.map(d=>{
       const gec=d.gecerlilik&&new Date(d.gecerlilik+"T00:00:00")<bugun;
-      return '<tr><td class="ad">'+(yil(d)?'<span class="yil" title="Bu satırın Ürün Rw+Ctr değeri">★ </span>':'')+esc(d.ad)+(gec?' <span class="gec">süresi geçmiş</span>':'')+'</td><td class="dl">'+esc(d.dil||"")+'</td>'
+      return '<tr><td class="ad">'+(yil(d)?'<span class="yil" title="Bu satırın Ürün Rw+Ctr değeri">★ </span>':'')+esc(d.ad)+(ESN.get(d.nr)?' <span class="yil" style="font-weight:600">· '+esc(ESN.get(d.nr))+'</span>':'')+(gec?' <span class="gec">süresi geçmiş</span>':'')+'</td><td class="dl">'+esc(d.dil||"")+'</td>'
         +'<td class="bt">'+(d.depo_yolu?'<button type="button" class="sb" data-g="'+d.nr+'">Görüntüle</button><button type="button" class="sb" data-i="'+d.nr+'">İndir</button>'
           :'<button type="button" class="sb" data-o="'+d.nr+'" title="50 MB üstü: OneDrive klasöründen">OneDrive</button>')+'</td></tr>'; }).join("")+'</table>'; });
   h+='<div class="bos" style="font-size:11.5px">Yalnız bu camın bu seriyle test edildiği sertifikalar (URUN-KONFIG-SERT-CAM). Kaynak: <a href="../dokumanlar/" target="_blank">Dokümanlar</a>.</div>';
