@@ -158,8 +158,8 @@ const sb=supabase.createClient();
   b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); };
   l.appendChild(b);
 })();
-const ANA_SIRA=["Ürün","Aksesuar","Genel"];
-const AILE_SIRA=["Simplist","Flat","Minima","Casement","Giyotin","Klasik","Epoch","Panjur","Cephe","Panel"];
+const ANA_SIRA=["Ürün","Girdi","Genel"]; /* GIRDI-AILE (20.10.2026): Aksesuar ana ayrımı Girdi oldu */
+const AILE_SIRA=["Simplist","Flat","Minima","Casement","Giyotin","Klasik","Epoch","Panjur","Cephe","Panel","Aksesuar","Cam","Ahşap","Alüminyum","Boya","Yalıtım Malz.","Diğer"];
 const DIL_SIRA=["Türkçe","İngilizce","Fransızca","Almanca","İtalyanca"];
 const TUR_SIRA=["Sertifika","Broşür","Sunum","Katalog"];
 const trc=(a,b)=>String(a).localeCompare(String(b),"tr",{numeric:true});
