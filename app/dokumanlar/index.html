@@ -32,7 +32,9 @@
   .res td.ad{white-space:normal;min-width:260px;max-width:520px}
   .res td.ad a{color:#0b5a8a;text-decoration:none;font-weight:600}
   .res td.ad a:hover{text-decoration:underline}
-  .res td.ad .od{color:#7a4b00;font-weight:600}
+  .res td.ad a.od{color:#7a4b00}  /* DOK-ONEDRIVE-LINK */
+  .res td.ad .odn{color:#7a4b00;font-size:11px;font-weight:400}
+  #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#16324f;color:#fff;padding:8px 14px;border-radius:8px;font-size:12.5px;display:none;z-index:9;max-width:90vw}
   .res td.ad .dn{display:block;color:#8a97a4;font-size:11px}
   .res tbody tr:hover td{background:#f3f7fb}
   .etk{display:inline-block;font-size:10.5px;font-weight:600;border-radius:4px;padding:0 5px;background:#eef1f5;color:#4a5a6b}
@@ -47,7 +49,7 @@
 <body>
 <header>
   <h1>Dokümanlar</h1>
-  <div class="sub">Sertifika, test raporu, broşür, sunum ve kataloglar. Ara ya da süz; doküman adına tıklayınca dosya yeni sekmede açılır. "OneDrive'da" yazanlar büyük dosyalardır (50 MB üstü), OneDrive\Arbor\ERP Docs 261020 klasöründedir. Başlığa tıklayarak sıralayabilirsiniz.</div>
+  <div class="sub">Sertifika, test raporu, broşür, sunum ve kataloglar. Ara ya da süz; doküman adına tıklayınca dosya yeni sekmede açılır.</div>
 </header>
 <div class="wrap">
   <div style="display:flex;gap:10px;align-items:center;margin:0 0 8px"><span id="rolLbl"></span></div>
@@ -66,6 +68,7 @@
   </div>
   <div class="ozet" id="ozet"></div>
   <div class="res" id="res"><div class="bos">Yükleniyor…</div></div>
+  <div id="toast"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -167,6 +170,7 @@ const tarih=d=>d?d.slice(8,10)+"."+d.slice(5,7)+"."+d.slice(0,4):"";
 const mb=b=>b==null?"":(b>=1048576?(b/1048576).toFixed(1).replace(".",",")+" MB":Math.max(1,Math.round(b/1024))+" KB");
 const norm=s=>String(s||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ı/g,"i");
 let ROWS=[], SORT={k:"nr",d:1};
+const OD_LINK="https://1drv.ms/f/c/67beba4c65f73a19/IgDZFFLVqDQ9T4RgpLw9iM3FAQPNaSwzfdMuMhNSbxgMAbw?e=Gz3Hbj"; /* DOK-ONEDRIVE-LINK: ERP Docs 261020 paylaşım klasörü */
 const F=["f_q","f_ana","f_aile","f_seri","f_dil","f_tur","f_gec","f_web"];
 function secenek(id,vals,ilk){ const el=$(id), cur=el.value; el.innerHTML='<option value="">'+(ilk||"Hepsi")+'</option>'+vals.map(v=>'<option>'+esc(v)+'</option>').join(""); if(vals.indexOf(cur)>=0) el.value=cur; }
 function uniq(rs,k){ return [...new Set(rs.map(r=>r[k]).filter(Boolean))]; }
@@ -213,7 +217,7 @@ function ciz(){
     const gc=g==null?"":(g<0?' class="gec"':(g<=90?' class="yakin"':""));
     const ser=[r.seri,r.seri2,r.seri3,r.seri4].filter(Boolean).join(", ");
     const ad=r.depo_yolu?'<a href="#" data-nr="'+r.nr+'">'+esc(r.ad)+'</a>'
-      :esc(r.ad)+' <span class="od" title="OneDrive\\Arbor\\ERP Docs 261020\\'+esc(r.dosya)+'">· OneDrive\'da</span>';
+      :'<a href="#" class="od" data-od="'+r.nr+'" title="50 MB üstü: OneDrive klasöründen indirilir">'+esc(r.ad)+'</a> <span class="odn">· OneDrive</span>'; /* DOK-ONEDRIVE-LINK */
     h+='<tr><td class="r">'+r.nr+'</td><td>'+esc(r.ana)+'</td><td>'+(r.aile?'<span class="etk '+esc(r.aile)+'">'+esc(r.aile)+'</span>':'')+'</td>'
       +'<td>'+esc(ser)+'</td><td class="ad">'+ad+'<span class="dn">'+esc(r.dosya)+(r.rev?' · Rev. '+esc(r.rev):'')+'</span></td>'
       +'<td>'+esc(r.dil)+'</td><td>'+esc(r.tur)+'</td><td'+gc+'>'+tarih(r.gecerlilik)+'</td>'
@@ -224,6 +228,13 @@ function ciz(){
 $("res").addEventListener("click",async e=>{
   const th=e.target.closest("th[data-k]");
   if(th){ const k=th.dataset.k; SORT={k,d:SORT.k===k?-SORT.d:1}; ciz(); return; }
+  /* DOK-ONEDRIVE-LINK (20.10.2026): 50 MB üstü dosya -> OneDrive paylaşım klasörü yeni sekmede; dosya adı panoya kopyalanır */
+  const o=e.target.closest("a[data-od]");
+  if(o){ e.preventDefault(); const r=ROWS.find(x=>x.nr===+o.dataset.od); if(!r) return;
+    window.open(OD_LINK,"_blank","noopener");
+    let kop=false; try{ await navigator.clipboard.writeText(r.dosya); kop=true; }catch(_){}
+    const t=$("toast"); t.textContent="OneDrive klasörü açıldı. Dosya: "+r.dosya+(kop?" (adı kopyalandı, klasörde arayabilirsiniz)":"");
+    t.style.display="block"; clearTimeout(t._h); t._h=setTimeout(()=>t.style.display="none",7000); return; }
   const a=e.target.closest("a[data-nr]"); if(!a) return;
   e.preventDefault();
   const r=ROWS.find(x=>x.nr===+a.dataset.nr); if(!r) return;
