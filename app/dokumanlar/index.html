@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dokümanlar</title>
+<!-- DOKUMANLAR-FORM (2026-10-20): Arbor sertifika / broşür / sunum / katalog arşivi.
+     Kaynak: OneDrive\Arbor\ERP Docs 261020 (1--DÖKÜMANLAR.xlsx + dosyalar) -> tablo dokuman + Storage 'dokumanlar'
+     (kod\_dokumanlar\dokuman_sync.py). 50 MB üstü dosyalar depoda yok, "OneDrive'da" görünür. Kullanıcı: Herkes (salt-okur). -->
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#c9dcf0;margin-top:3px;line-height:1.5;max-width:1100px}
+  .wrap{max-width:1500px;margin:0 auto;padding:10px 10px 40px}
+  .btn2{border:1px solid #cdd8e4;background:#fff;color:#16324f;border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer}
+  .kart{background:#fff;border:1px solid #dde6f0;border-radius:9px;padding:8px 12px 12px;margin-bottom:10px}
+  .g{display:grid;grid-template-columns:2.4fr repeat(7,minmax(0,1fr)) auto;gap:4px 10px;align-items:end}
+  @media(max-width:1100px){.g{grid-template-columns:repeat(4,minmax(0,1fr))}.g .ara{grid-column:1/-1}}
+  @media(max-width:520px){.g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  label{display:block;font-size:11.5px;color:#4a5a6b;margin:5px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  input,select{font:inherit;padding:5px 7px;border:1px solid #cdd6df;border-radius:6px;width:100%;min-width:0;background:#fff}
+  input:focus,select:focus{outline:2px solid #0a6b57;border-color:#0a6b57}
+  .ozet{font-size:12.5px;margin:4px 2px 6px;color:#16324f}
+  .res{overflow-x:auto;background:#fff;border:1px solid #dde6f0;border-radius:9px;margin-bottom:12px}
+  .res table{border-collapse:collapse;width:100%;font-size:12px}
+  .res th,.res td{border-bottom:1px solid #eef1f5;padding:3px 7px;white-space:nowrap;line-height:17px;text-align:left}
+  .res thead th{background:#16324f;color:#fff;font-weight:600;position:sticky;top:0;z-index:1;cursor:pointer;user-select:none}
+  .res td.r{text-align:right}
+  .res td.ad{white-space:normal;min-width:260px;max-width:520px}
+  .res td.ad a{color:#0b5a8a;text-decoration:none;font-weight:600}
+  .res td.ad a:hover{text-decoration:underline}
+  .res td.ad .od{color:#7a4b00;font-weight:600}
+  .res td.ad .dn{display:block;color:#8a97a4;font-size:11px}
+  .res tbody tr:hover td{background:#f3f7fb}
+  .etk{display:inline-block;font-size:10.5px;font-weight:600;border-radius:4px;padding:0 5px;background:#eef1f5;color:#4a5a6b}
+  .etk.Simplist{background:#e3f1fb;color:#0b5a8a}.etk.Flat{background:#e7f5ef;color:#0b6b48}.etk.Minima{background:#f1ecfa;color:#4b2d84}
+  .etk.Casement{background:#fdeee6;color:#9a3a00}.etk.Klasik{background:#fff4d6;color:#7a5600}.etk.Giyotin{background:#fbe9f1;color:#8a1f55}
+  .etk.Panjur{background:#e9f3f6;color:#1f5f73}
+  .web{color:#0b6b48;font-weight:700}
+  .gec{color:#b40000;font-weight:700}.yakin{color:#9a3a00;font-weight:600}
+  .bos{padding:14px;color:#6b7a89}
+</style>
+</head>
+<body>
+<header>
+  <h1>Dokümanlar</h1>
+  <div class="sub">Sertifika, test raporu, broşür, sunum ve kataloglar. Ara ya da süz; doküman adına tıklayınca dosya yeni sekmede açılır. "OneDrive'da" yazanlar büyük dosyalardır (50 MB üstü), OneDrive\Arbor\ERP Docs 261020 klasöründedir. Başlığa tıklayarak sıralayabilirsiniz.</div>
+</header>
+<div class="wrap">
+  <div style="display:flex;gap:10px;align-items:center;margin:0 0 8px"><span id="rolLbl"></span></div>
+  <div class="kart">
+    <div class="g">
+      <div class="ara"><label for="f_q">Ara (ad, dosya, seri)</label><input id="f_q" placeholder="ör. 68s akustik, FSC, PAS 24"></div>
+      <div><label for="f_ana">Ana</label><select id="f_ana"></select></div>
+      <div><label for="f_aile">Aile</label><select id="f_aile"></select></div>
+      <div><label for="f_seri">Seri</label><select id="f_seri"></select></div>
+      <div><label for="f_dil">Dil</label><select id="f_dil"></select></div>
+      <div><label for="f_tur">Tür</label><select id="f_tur"></select></div>
+      <div><label for="f_gec">Geçerlilik</label><select id="f_gec"><option value="">Hepsi</option><option value="sureli">Süreli (geçerli)</option><option value="90">90 gün içinde dolacak</option><option value="suresiz">Süresiz</option><option value="gecmis">Süresi geçmiş</option></select></div>
+      <div><label for="f_web">Web</label><select id="f_web"><option value="">Hepsi</option><option value="1">Seçili (sitede)</option><option value="0">Seçili değil</option></select></div>
+      <div><button class="btn2" id="temizle" style="margin-bottom:1px">Temizle</button></div>
+    </div>
+  </div>
+  <div class="ozet" id="ozet"></div>
+  <div class="res" id="res"><div class="bos">Yükleniyor…</div></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ARB-KOD-GIRIS (23.09.2026): forma giris = kisisel 6 haneli kod (App > Referans > Kisiler > Sifre).
+   form-giris edge fonksiyonu kodu dogrular, yetkiyi form_erisim'den kontrol eder, rolu otomatik secer ve
+   rol hesabi icin tek kullanimlik token doner; burada verifyOtp ile oturum acilir. Rol hesaplarinin parolasi yoktur. */
+window.ARB_FORM_YOL=(function(){ var m=/\/app\/([^\/]+)\//.exec(location.pathname); return m?m[1]+"/":""; })();
+window.ARB_KOD_GIRIS=async function(cli,kod){
+  kod=String(kod==null?"":kod).replace(/\D/g,"");
+  if(kod.length!==6) return {error:{message:"Kod 6 haneli olmal\u0131d\u0131r."}};
+  try{
+    var r=await fetch("https://zehysygpqxqmrzangvuc.supabase.co/functions/v1/form-giris",{method:"POST",cache:"no-store",
+      headers:{"Content-Type":"application/json",apikey:"sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc"},
+      body:JSON.stringify({form:window.ARB_FORM_YOL,kod:kod})});
+    var j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok||!j.ok||!j.token_hash) return {error:{message:j.hata||"Kod hatal\u0131."}};
+    var v=await cli.auth.verifyOtp({token_hash:j.token_hash,type:"magiclink"});
+    if(v.error) return {error:{message:"Giri\u015f a\u00e7\u0131lamad\u0131: "+v.error.message}};
+    try{ localStorage.setItem("arb_kisi_"+window.ARB_FORM_YOL,JSON.stringify({kod:j.kisi,ad:j.ad,rol:j.rol})); }catch(e){}
+    return {error:null,data:j};
+  }catch(e){ return {error:{message:"Ba\u011flant\u0131 hatas\u0131."}}; }
+};
+window.ARB_KISI_AL=function(em){ try{ var k=JSON.parse(localStorage.getItem("arb_kisi_"+window.ARB_FORM_YOL)||"null"); return (k&&(!em||k.rol===em))?k:null; }catch(e){ return null; } };
+</script>
+<script>
+/* ===== ARBOR FORM KAPISI — Herkes (cam.form rol hesabı, DOKUMANLAR-FORM) + MB geçişi ===== */
+const ARB_ROLLER = [
+  { email:"cam.form@arbor.com.tr", ad:"Cam" }
+];
+const ARB_STORE = "arbform_dokumanlar";
+const ARB_NOSTORE = (u,o)=> fetch(u, Object.assign({}, o||{}, {cache:"no-store"}));
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE},global:{fetch:ARB_NOSTORE}});
+const ARB_MB = "int@arbor.com.tr";
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{global:{fetch:ARB_NOSTORE}});
+var ARB_ACTIVE = ARB_GATE_SB;
+var ARB_EMAIL = "";
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  var opts='<option value="" disabled selected>— Rolünüzü seçiniz —</option>'
+    + ARB_ROLLER.map(function(r){ return '<option value="'+r.email+'">'+r.ad+'</option>'; }).join("");
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:330px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:10px">Arbor — Dokümanlar</div>'
+    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:10px">Kişisel giriş kodunuzu giriniz. Rolünüz koda göre otomatik belirlenir.</div>'
+    +'<input id="arb-pw" type="password" placeholder="6 haneli giriş kodu" autocomplete="off" inputmode="numeric" maxlength="6" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giriş</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px"></div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var pw=document.getElementById("arb-pw").value;
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giriş yapılıyor…";
+    var r=await ARB_KOD_GIRIS(ARB_GATE_SB,pw);
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent=((r.error&&r.error.message)||"Kod hatalı."); return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  var izin=ARB_ROLLER.map(function(r){return r.email;});
+  if(izin.indexOf(em)<0){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(izin.indexOf(em)>=0 || em===ARB_MB){ ARB_EMAIL=em; (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script type="text/plain" id="arbmain">
+/* DOKUMANLAR-FORM (20.10.2026): tablo dokuman + Storage 'dokumanlar' (imzalı bağlantı, 1 saat). Salt-okur. */
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const $=id=>document.getElementById(id);
+const sb=supabase.createClient();
+(function(){
+  if(ARB_EMAIL==="int@arbor.com.tr") return;
+  const k=(window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null;
+  const l=$("rolLbl");
+  l.innerHTML='<b style="color:#16324f;font-size:12.5px">Oturum: '+esc(k?k.kod+' - '+k.ad:'Dokümanlar')+'</b>';
+  const b=document.createElement("button"); b.textContent="Çıkış"; b.className="btn2"; b.style.marginLeft="8px";
+  b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); };
+  l.appendChild(b);
+})();
+const ANA_SIRA=["Ürün","Aksesuar","Genel"];
+const AILE_SIRA=["Simplist","Flat","Minima","Casement","Giyotin","Klasik","Epoch","Panjur","Cephe","Panel"];
+const DIL_SIRA=["Türkçe","İngilizce","Fransızca","Almanca","İtalyanca"];
+const TUR_SIRA=["Sertifika","Broşür","Sunum","Katalog"];
+const trc=(a,b)=>String(a).localeCompare(String(b),"tr",{numeric:true});
+const sirala=(arr,ref)=>arr.sort((a,b)=>{ const i=ref.indexOf(a), j=ref.indexOf(b); return (i<0?99:i)-(j<0?99:j)||trc(a,b); });
+const bugun=new Date(); bugun.setHours(0,0,0,0);
+const gun=d=>d?Math.round((new Date(d+"T00:00:00")-bugun)/864e5):null;
+const tarih=d=>d?d.slice(8,10)+"."+d.slice(5,7)+"."+d.slice(0,4):"";
+const mb=b=>b==null?"":(b>=1048576?(b/1048576).toFixed(1).replace(".",",")+" MB":Math.max(1,Math.round(b/1024))+" KB");
+const norm=s=>String(s||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ı/g,"i");
+let ROWS=[], SORT={k:"nr",d:1};
+const F=["f_q","f_ana","f_aile","f_seri","f_dil","f_tur","f_gec","f_web"];
+function secenek(id,vals,ilk){ const el=$(id), cur=el.value; el.innerHTML='<option value="">'+(ilk||"Hepsi")+'</option>'+vals.map(v=>'<option>'+esc(v)+'</option>').join(""); if(vals.indexOf(cur)>=0) el.value=cur; }
+function uniq(rs,k){ return [...new Set(rs.map(r=>r[k]).filter(Boolean))]; }
+function doldur(){
+  secenek("f_ana",sirala(uniq(ROWS,"ana"),ANA_SIRA));
+  const a=$("f_ana").value; const r1=ROWS.filter(r=>!a||r.ana===a);
+  secenek("f_aile",sirala(uniq(r1,"aile"),AILE_SIRA));
+  const al=$("f_aile").value; const r2=r1.filter(r=>!al||r.aile===al);
+  secenek("f_seri",uniq(r2,"seri").sort(trc));
+  secenek("f_dil",sirala(uniq(ROWS,"dil"),DIL_SIRA));
+  secenek("f_tur",sirala(uniq(ROWS,"tur"),TUR_SIRA));
+}
+function sakla(){ try{ const o={}; F.forEach(i=>o[i]=$(i).value); localStorage.setItem("dok_suz",JSON.stringify(o)); }catch(e){} }
+function getir(){ try{ const o=JSON.parse(localStorage.getItem("dok_suz")||"{}"); return o||{}; }catch(e){ return {}; } }
+function suz(){
+  const q=norm($("f_q").value).split(/\s+/).filter(Boolean);
+  const v={}; F.forEach(i=>v[i]=$(i).value);
+  return ROWS.filter(r=>{
+    if(v.f_ana&&r.ana!==v.f_ana) return false;
+    if(v.f_aile&&r.aile!==v.f_aile) return false;
+    if(v.f_seri&&![r.seri,r.seri2,r.seri3,r.seri4].includes(v.f_seri)) return false;
+    if(v.f_dil&&r.dil!==v.f_dil) return false;
+    if(v.f_tur&&r.tur!==v.f_tur) return false;
+    if(v.f_web&&(r.web?"1":"0")!==v.f_web) return false;
+    const g=gun(r.gecerlilik);
+    if(v.f_gec==="sureli"&&!(g!=null&&g>=0)) return false;
+    if(v.f_gec==="90"&&!(g!=null&&g>=0&&g<=90)) return false;
+    if(v.f_gec==="suresiz"&&g!=null) return false;
+    if(v.f_gec==="gecmis"&&!(g!=null&&g<0)) return false;
+    if(q.length){ const h=r._h; if(!q.every(t=>h.indexOf(t)>=0)) return false; }
+    return true;
+  });
+}
+const COLS=[["nr","Nr"],["ana","Ana"],["aile","Aile"],["seri","Seri"],["ad","Doküman"],["dil","Dil"],["tur","Tür"],["gecerlilik","Geçerlilik"],["web","Web"],["boyut","Boyut"]];
+function ciz(){
+  const rs=suz(); const k=SORT.k, d=SORT.d;
+  rs.sort((a,b)=>{ let x=a[k], y=b[k]; if(x==null||x==="") return 1; if(y==null||y==="") return -1;
+    if(typeof x==="number"||typeof x==="boolean") return ((x>y)-(x<y))*d; return trc(x,y)*d; });
+  $("ozet").textContent=rs.length+" / "+ROWS.length+" doküman";
+  if(!rs.length){ $("res").innerHTML='<div class="bos">Sonuç yok.</div>'; return; }
+  let h='<table><thead><tr>'+COLS.map(c=>'<th data-k="'+c[0]+'">'+c[1]+(SORT.k===c[0]?(d>0?" ▲":" ▼"):"")+'</th>').join("")+'</tr></thead><tbody>';
+  rs.forEach(r=>{
+    const g=gun(r.gecerlilik);
+    const gc=g==null?"":(g<0?' class="gec"':(g<=90?' class="yakin"':""));
+    const ser=[r.seri,r.seri2,r.seri3,r.seri4].filter(Boolean).join(", ");
+    const ad=r.depo_yolu?'<a href="#" data-nr="'+r.nr+'">'+esc(r.ad)+'</a>'
+      :esc(r.ad)+' <span class="od" title="OneDrive\\Arbor\\ERP Docs 261020\\'+esc(r.dosya)+'">· OneDrive\'da</span>';
+    h+='<tr><td class="r">'+r.nr+'</td><td>'+esc(r.ana)+'</td><td>'+(r.aile?'<span class="etk '+esc(r.aile)+'">'+esc(r.aile)+'</span>':'')+'</td>'
+      +'<td>'+esc(ser)+'</td><td class="ad">'+ad+'<span class="dn">'+esc(r.dosya)+(r.rev?' · Rev. '+esc(r.rev):'')+'</span></td>'
+      +'<td>'+esc(r.dil)+'</td><td>'+esc(r.tur)+'</td><td'+gc+'>'+tarih(r.gecerlilik)+'</td>'
+      +'<td>'+(r.web?'<span class="web" title="İnternet sitesinde paylaşılıyor">✓ Seçili</span>':'')+'</td><td class="r">'+mb(r.boyut)+'</td></tr>';
+  });
+  $("res").innerHTML=h+'</tbody></table>';
+}
+$("res").addEventListener("click",async e=>{
+  const th=e.target.closest("th[data-k]");
+  if(th){ const k=th.dataset.k; SORT={k,d:SORT.k===k?-SORT.d:1}; ciz(); return; }
+  const a=e.target.closest("a[data-nr]"); if(!a) return;
+  e.preventDefault();
+  const r=ROWS.find(x=>x.nr===+a.dataset.nr); if(!r) return;
+  const w=window.open("about:blank","_blank");
+  const {data,error}=await sb.storage.from("dokumanlar").createSignedUrl(r.depo_yolu,3600);
+  if(error||!data){ if(w) w.close(); alert("Dosya açılamadı: "+((error&&error.message)||"")); return; }
+  if(w) w.location=data.signedUrl; else location.href=data.signedUrl;
+});
+F.forEach(i=>$(i).addEventListener(i==="f_q"?"input":"change",()=>{ if(i==="f_ana"||i==="f_aile") doldur(); sakla(); ciz(); }));
+$("temizle").onclick=()=>{ F.forEach(i=>$(i).value=""); doldur(); sakla(); ciz(); };
+(async function(){
+  const out=[]; let from=0;
+  while(true){ const {data,error}=await sb.from("dokuman").select("*").order("nr").range(from,from+999);
+    if(error){ $("res").innerHTML='<div class="bos">Okunamadı: '+esc(error.message)+'</div>'; return; }
+    out.push(...data); if(data.length<1000) break; from+=1000; }
+  out.forEach(r=>r._h=norm([r.ad,r.dosya,r.erp_dosya_adi,r.seri,r.seri2,r.seri3,r.seri4,r.aile,r.ana,r.tur,r.dil].join(" ")));
+  ROWS=out;
+  const o=getir(); ["f_ana","f_aile"].forEach(i=>{ doldur(); if(o[i]) $(i).value=o[i]; }); doldur();
+  F.forEach(i=>{ if(o[i]!=null&&$(i).querySelector&&($(i).tagName!=="SELECT"||[...$(i).options].some(x=>x.value===o[i]))) $(i).value=o[i]; });
+  ciz();
+})();
+</script>
+</body>
+</html>
