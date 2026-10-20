@@ -56,13 +56,13 @@
 <div class="wrap">
   <div style="display:flex;gap:10px;align-items:center;margin:0 0 8px"><span id="rolLbl"></span></div>
   <div class="kart">
-    <div class="tit">1 · Dosyalar <span>(proje klasörünü seçin ya da sürükleyip bırakın: Arbor ve Müşteri alt klasörleri birlikte okunur)</span></div>
+    <div class="tit">1 · Proje <span>(yalnız OneDrive Arbor/Claude Proje klasöründeki proje klasörleri seçilebilir; Arbor ve Müşteri alt klasörleri birlikte okunur)</span></div>
     <div class="birak" id="birak">
-      <label class="btn">Proje klasörü seç<input type="file" id="inKlasor" webkitdirectory directory multiple hidden></label>
-      <label class="btn2">Dosya seç<input type="file" id="inDosya" multiple accept=".pdf,.xlsx,.xls,.xlsm" hidden></label>
-      <span class="mini">ya da klasörü buraya bırakın</span>
-      <button class="btn2" id="btnTemizle" style="margin-left:auto">Listeyi temizle</button>
+      <button class="btn" id="btnKok">Claude Proje klasörünü bağla</button>
+      <div style="min-width:320px;flex:1"><label for="f_klasor">Proje klasörü</label><select id="f_klasor" disabled><option value="">— önce Claude Proje klasörünü bağlayın —</option></select></div>
+      <button class="btn2" id="btnYenile" title="Klasör listesini yenile">↻</button>
     </div>
+    <div class="mini" id="kokDurum" style="margin:-2px 0 8px"></div>
     <div class="res" id="dosyalar"></div>
     <button class="btn" id="btnOku">Oku</button>
     <div class="durum" id="durum">Yükleniyor…</div>
@@ -773,12 +773,36 @@ function parAd(s){ s=String(s||"").trim(); if(!s) return ""; const p=s.split(/\s
 const METIN=window.SOUM_METIN;
 
 /* ---------------- olaylar ---------------- */
-$("inKlasor").onchange=e=>dosyaEkle(e.target.files); $("inDosya").onchange=e=>dosyaEkle(e.target.files);
-const dz=$("birak"); dz.ondragover=e=>{ e.preventDefault(); dz.classList.add("on"); }; dz.ondragleave=()=>dz.classList.remove("on");
-dz.ondrop=async e=>{ e.preventDefault(); dz.classList.remove("on"); const fs=[]; const it=[...(e.dataTransfer.items||[])].map(x=>x.webkitGetAsEntry&&x.webkitGetAsEntry()).filter(Boolean);
-  const gez=async(en,yol)=>{ if(en.isFile){ await new Promise(ok=>en.file(f=>{ try{ Object.defineProperty(f,"webkitRelativePath",{value:yol+f.name}); }catch(x){} fs.push(f); ok(); },ok)); } else if(en.isDirectory){ const rd=en.createReader(); let p; do{ p=await new Promise(ok=>rd.readEntries(ok,()=>ok([]))); for(const c of p) await gez(c,yol+en.name+"/"); }while(p.length); } };
-  if(it.length){ for(const en of it) await gez(en,""); dosyaEkle(fs); } else dosyaEkle(e.dataTransfer.files); };
-$("btnOku").onclick=oku; $("btnExcel").onclick=excelYap; $("btnTemizle").onclick=()=>{ S.dosya=[]; dosyaCiz(); };
+/* SOUM-KLASOR (20.10.2026, Melih): proje yalnız OneDrive Arbor/Claude Proje içinden seçilir — kök klasör bir kez bağlanır (File System Access API,
+   tanıtıcı IndexedDB'de saklanır), alt klasörler listeden seçilir; serbest dosya/klasör seçimi ve sürükle-bırak yok. */
+const KOK_AD="Claude Proje"; let KOK=null;
+const idb=(m,v)=>new Promise((ok,no)=>{ const r=indexedDB.open("arb_soum",1); r.onupgradeneeded=()=>r.result.createObjectStore("h"); r.onerror=()=>no(r.error);
+  r.onsuccess=()=>{ const tx=r.result.transaction("h",m==="get"?"readonly":"readwrite"), st=tx.objectStore("h"); const q=m==="get"?st.get("kok"):st.put(v,"kok"); q.onsuccess=()=>ok(q.result); q.onerror=()=>no(q.error); }; });
+async function kokIzin(h,iste){ const o={mode:"read"}; if(await h.queryPermission(o)==="granted") return true; if(iste&&await h.requestPermission(o)==="granted") return true; return false; }
+async function kokListe(){
+  const sel=$("f_klasor"), kd=$("kokDurum");
+  if(!KOK){ sel.disabled=true; sel.innerHTML='<option value="">— önce Claude Proje klasörünü bağlayın —</option>'; return; }
+  if(!(await kokIzin(KOK,false))){ sel.disabled=true; sel.innerHTML='<option value="">— okuma izni gerekiyor —</option>'; $("btnKok").textContent="Claude Proje klasörüne izin ver"; kd.textContent="Tarayıcı her oturumda bir kez izin ister."; return; }
+  const ad=[]; for await (const [n,h] of KOK.entries()){ if(h.kind==="directory"&&!/^[_.]/.test(n)) ad.push(n); }
+  ad.sort((a,b)=>a.localeCompare(b,"tr"));
+  sel.disabled=false; sel.innerHTML='<option value="">— proje klasörü seçiniz ('+ad.length+') —</option>'+ad.map(n=>'<option>'+esc(n)+'</option>').join("");
+  $("btnKok").textContent="Claude Proje klasörünü değiştir"; kd.textContent="Bağlı klasör: "+KOK_AD;
+}
+async function kokBagla(){
+  if(!window.showDirectoryPicker){ durum("Bu tarayıcı klasör erişimini desteklemiyor; Chrome ya da Edge kullanınız.","hata"); return; }
+  if(KOK&&!(await kokIzin(KOK,false))){ if(await kokIzin(KOK,true)){ await kokListe(); return; } }
+  let h; try{ h=await window.showDirectoryPicker({id:"claudeproje",mode:"read"}); }catch(e){ return; }
+  if(h.name!==KOK_AD){ durum('Seçilen klasör "'+esc(h.name)+'". Yalnız OneDrive Arbor içindeki <b>'+KOK_AD+'</b> klasörü bağlanabilir.',"hata"); return; }
+  KOK=h; try{ await idb("put",h); }catch(e){} await kokListe(); durum("Proje klasörünü listeden seçip <b>Oku</b>'ya basınız.");
+}
+async function klasorTopla(dir,yol,out){ for await (const [n,h] of dir.entries()){ if(h.kind==="directory") await klasorTopla(h,yol+n+"/",out);
+  else if(/\.(pdf|xlsx?|xlsm)$/i.test(n)){ const f=await h.getFile(); try{ Object.defineProperty(f,"webkitRelativePath",{value:yol+n}); }catch(x){} out.push(f); } } return out; }
+$("btnKok").onclick=kokBagla; $("btnYenile").onclick=kokListe;
+$("f_klasor").onchange=async()=>{ const n=$("f_klasor").value; S.dosya=[]; dosyaCiz(); if(!n) return;
+  try{ const d=await KOK.getDirectoryHandle(n); const fs=await klasorTopla(d,n+"/",[]); dosyaEkle(fs); durum(fs.length+" dosya bulundu. Kullanımları kontrol edip <b>Oku</b>'ya basınız."); }
+  catch(e){ durum("Klasör okunamadı: "+esc(e.message||e),"hata"); } };
+idb("get").then(h=>{ if(h&&h.name===KOK_AD){ KOK=h; } kokListe(); }).catch(()=>kokListe());
+$("btnOku").onclick=oku; $("btnExcel").onclick=excelYap;
 ["f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro"].forEach(id=>$(id).onchange=()=>{ if(id==="f_mont") S.poz.forEach(p=>{}); hesapla(); if(id==="f_proto") notDoldur(); });
 $("f_kat").oninput=()=>{ $("f_kat").dataset.elle=1; hesapla(); }; $("f_katSifirla").onclick=()=>{ delete $("f_kat").dataset.elle; hesapla(); };
 $("f_kamyon").oninput=()=>{ $("f_kamyon").dataset.elle=1; hesapla(); };
