@@ -431,6 +431,7 @@ function camBul(p){
   const k1=kodR.find(r=>nrmAd(r.kombinasyon)===ad); if(k1) return k1;
   const e=S.cam.filter(r=>nrmAd(r.kombinasyon)===ad); const e1=e.find(r=>ug&&Math.abs(nn(r.ug)-+ug.replace(",","."))<1e-9)||e[0];
   return e1||kodR[0]||null; }
+const kodAd=(k,t)=>k+(t==="SACC"?" (PF-SACC)":t==="ACC"?" (PF-ACC)":"");
 function pozYorumla(p,dp){
   const A=p.A, ac=A["Açılım"]||"", acik=A["Açıklama"]||"", m=p.metin||"";
   const ozl={sove:/HUS-KNTR|SOVE/i.test(m),bAlu:/ALU-PRF/i.test(m),bBois:/FJ-AHS-DEN/i.test(m),menfez:/\bMNF-/.test(m),esik:/Eşik|337\.106/i.test(m),panjur:/Panjur/i.test(A["Panjur"]||"")?/var/i.test(A["Panjur"]):/-PJ-/.test(m),
@@ -438,7 +439,9 @@ function pozYorumla(p,dp){
   const iki=/\bFr\./.test(ac)||/Fransız|Çift Kanat/i.test(acik);
   const ob=/Çift Açılım/i.test(ac), of=/Tek Açılım/i.test(ac)&&!ob;
   const sabit=/Alt Sabit/i.test(acik);
-  const pf=!sabit&&p.h>=2000;
+  /* SOUM-PF (20.10.2026, Melih): alt sabiti olmayan ve H > 1800 mm olan poz PF. PF tipi: alu eşikli = standart (notta "seuil PMR", ada ek yok);
+     eşiksiz = çıkışı olmayan (dışta korkuluk/küpeşte, ahşap profil) "(PF-SACC)"; denizlikli ve teras/balkona çıkışlı "(PF-ACC)". */
+  const pf=!sabit&&p.h>1800;
   const akustik=/Akustik/i.test(A.Cam||"");
   let t=AILE(p.seri)+" "+agacFr(A["Ağaç Türü"])+". "+(pf?"PF":"Fenêtre")+" "+(iki?"2 vantaux":"1 vantail")+" "+(ob?"OB":of?"OF":"");
   const ek=[]; if(sabit) ek.push("allège fixe"); if(ozl.esik) ek.push("seuil PMR");
@@ -447,7 +450,8 @@ function pozYorumla(p,dp){
   const sat=[s]; if(ozl.sove) sat.push("Tapée Bois"); if(ozl.bAlu) sat.push("Bavette Alu"); if(ozl.bBois) sat.push("Bavette Bois"); if(ozl.menfez) sat.push("MORTAISE");
   const cam=camBul(p), u=urunDeger(p.seri,cam);
   let facade=""; if(dp){ const ps=nrmTxt(dp.pose); facade=/^tunnel/.test(ps)?"Tunnel au nu intérieur":/applique int/.test(ps)?"App. Int.":/applique ext/.test(ps)?"App. Ext.":/feuillure/.test(ps)?"Feuillure":String(dp.pose).split("\n")[0].slice(0,28); }
-  return {no:p.no,kod:p.kod+(pf&&!ozl.esik?" (PF-SACC)":""),kodPdf:p.kod,L:p.w,H:p.h,F:p.adet,seri:p.seri,brut:p.fiyat,facade,camPdf:A.Cam||"",camFr:camFr(A.Cam),cam,
+  let pfTip=""; if(pf){ if(ozl.esik) pfTip="STD"; else { const dt=nrmTxt(dp?[dp.comp,dp.div,dp.pose,dp.rep].join(" "):""); pfTip=(ozl.bAlu||ozl.bBois)&&/balcon|terrasse|girondin/.test(dt)?"ACC":"SACC"; } }
+  return {no:p.no,kod:kodAd(p.kod,pfTip),pfTip,kodPdf:p.kod,L:p.w,H:p.h,F:p.adet,seri:p.seri,brut:p.fiyat,facade,camPdf:A.Cam||"",camFr:camFr(A.Cam),cam,
     ug:u.ug,rw:u.rw,rwAlt:u.rwAlt,uw:u.uw,sg:u.sg,tl:u.tl,rwc:u.rwc,notSat:sat,ozl,ob,of,iki,pf,akustik,dp,bbox:p.bbox,agac:A["Ağaç Türü"]||""};
 }
 function dpEsle(pozlar,dpgf){
@@ -519,14 +523,14 @@ async function baslikDoldur(){
 }
 
 /* ---------------- poz tablosu ---------------- */
-const KOL=[["no","No",0],["img","Vue",0],["facade","Facade",1],["kod","Repère",1],["L","L",0],["H","H",0],["F","Unité",0],["seri","Seri",0],["camFr","Vitrage (iç)",1],
+const KOL=[["no","No",0],["img","Vue",0],["facade","Facade",1],["pfTip","PF tipi",1],["kod","Repère",1],["L","L",0],["H","H",0],["F","Unité",0],["seri","Seri",0],["camFr","Vitrage (iç)",1],
   ["ug","Ug",1],["rw","Rw+Ctr",1],["uw","Uw",1],["sg","Sg",1],["tl","Tl %",1],["brut","Brüt €",0],["Q","Prix unitaire",0],["R","Prix total",0],["notlar","Notes",1],["uyg","DPGF",0]];
 function pozCiz(){
   const el=$("pozlar");
   el.innerHTML='<table><thead><tr>'+KOL.map(k=>'<th'+(/camFr|notlar|facade|kod|uyg/.test(k[0])?' class="l"':'')+'>'+k[1]+'</th>').join("")+'</tr></thead><tbody>'+S.poz.map((p,i)=>'<tr data-i="'+i+'">'+KOL.map(k=>hucre(p,k,i)).join("")+'</tr>').join("")+'</tbody></table>';
   el.querySelectorAll("[data-k]").forEach(inp=>{ inp.onchange=()=>{ const p=S.poz[+inp.closest("tr").dataset.i], k=inp.dataset.k; let v=inp.value;
     if(["ug","uw","sg","rw","tl"].includes(k)){ v=v.trim()===""?null:+v.replace(",","."); if(k==="rw") p.rwAlt=false; }
-    if(k==="notlar"){ p.notElle=v; } else p[k]=v; hesapla(); }; });
+    if(k==="notlar"){ p.notElle=v; } else if(k==="pfTip"){ p.pfTip=v; if(!p.kodElle) p.kod=kodAd(p.kodPdf,v); pozCiz(); } else { if(k==="kod") p.kodElle=1; p[k]=v; } hesapla(); }; });
 }
 function hucre(p,k,i){
   const v=p[k[0]];
@@ -534,6 +538,7 @@ function hucre(p,k,i){
   if(k[0]==="notlar") return '<td class="l"><textarea data-k="notlar" rows="5">'+esc(notMetin(p))+'</textarea></td>';
   if(k[0]==="camFr") return '<td class="l"><textarea data-k="camFr" rows="3">'+esc(p.camFr)+'</textarea><div class="mini">'+esc(p.camPdf)+(p.cam&&p.cam.stok_kodu?' · '+esc(p.cam.stok_kodu):'')+'</div></td>';
   if(k[0]==="Q") return '<td class="num" id="q'+i+'">–</td>'; if(k[0]==="R") return '<td class="num" id="r'+i+'">–</td>';
+  if(k[0]==="pfTip") return '<td class="l">'+(p.pf?'<select data-k="pfTip">'+[["STD","Standart (alu eşik)"],["SACC","SACC (çıkışsız)"],["ACC","ACC (teras/balkon)"]].map(o=>'<option value="'+o[0]+'"'+(o[0]===p.pfTip?' selected':'')+'>'+o[1]+'</option>').join("")+'</select>':'–')+'</td>';
   if(k[0]==="brut") return '<td class="num">'+fN(p.brut,2)+'</td>';
   if(k[0]==="uyg") return '<td class="l mini" id="u'+i+'">'+uygun(p)+'</td>';
   if(k[2]){ const d=["ug","uw","sg"].includes(k[0])?2:0; const val=v==null?"":(typeof v==="number"?frN(v,d):v);
