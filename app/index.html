@@ -2848,23 +2848,23 @@ async function loadObrapor(tgt){
   const caY=_d.getFullYear(), caM=_d.getMonth()+1, caDon=caY+"-"+String(caM).padStart(2,"0"), caAd=AY_AD[caM-1]+" "+caY, caSon=new Date(Date.UTC(caY,caM,0)).toISOString().slice(0,10);
   const inCa=r=>r.tarih&&String(r.tarih)>=caDon+"-01"&&String(r.tarih)<=caSon; /* OB-IKI-AY */
   const iki=(a,b)=>`Son ay ${esc(afAd)}: ${a} · Cari ay ${esc(caAd)}: ${b}`; /* OB-IKI-AY */
-  const odCq=await sb.from("sel_odeme").select("tutar_eur").gte("odeme_tarihi",caDon+"-01").lte("odeme_tarihi",caSon); /* OB-IKI-AY */
-  const selEurCa=((odCq&&!odCq.error)?(odCq.data||[]):[]).reduce((t,r)=>t+(Number(r.tutar_eur)||0),0);
   const [afq,odq]=await Promise.all([
     sb.from("ob_aylik_faaliyet").select("*").eq("donem",afDon).limit(1),
-    sb.from("sel_odeme").select("*").gte("odeme_tarihi",afDon+"-01").lte("odeme_tarihi",afSon).order("odeme_tarihi")
+    sb.from("sel_odeme").select("*").order("odeme_tarihi",{ascending:false}) /* OB-TUM-AY (21.10.2026): tüm aylar, 6 satırlık kaydırmalı pencere */
   ]);
   const afR=(afq&&!afq.error&&afq.data&&afq.data[0])?afq.data[0]:null;
-  const odR=(odq&&!odq.error)?(odq.data||[]):[];
+  const odAll=(odq&&!odq.error)?(odq.data||[]):[]; /* OB-TUM-AY */
+  const odAyMi=r=>{ const d=String(r.odeme_tarihi||"").slice(0,10); return d>=afDon+"-01"&&d<=afSon; };
+  const odR=odAll.filter(odAyMi);
+  const selEurCa=odAll.filter(r=>{ const d=String(r.odeme_tarihi||"").slice(0,10); return d>=caDon+"-01"&&d<=caSon; }).reduce((t,r)=>t+(Number(r.tutar_eur)||0),0); /* OB-IKI-AY */
   const nf=v=>{ const n=Number(v); return isFinite(n)?n.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}):esc(v); };
   const topl={}; odR.forEach(r=>{ const pb=r.para_birimi||"EUR"; topl[pb]=(topl[pb]||0)+(Number(r.tutar)||0); });
   let odTbl;
-  if(odR.length){
-    odTbl=`<div class="scroll"><table class="obod"><thead><tr><th>Yurt Dışı Birim</th><th>Ödeme Tarihi</th><th>Gönderen Banka</th><th class="num">Tutar</th><th>Para Birimi</th></tr></thead><tbody>`
-      + odR.map(r=>`<tr><td>${esc(r.yd_birim)}</td><td>${esc(dgun(String(r.odeme_tarihi)))}</td><td>${esc(r.gonderen_banka)}</td><td class="num">${nf(r.tutar)}</td><td>${esc(r.para_birimi)}</td></tr>`).join("")
-      + `<tr class="itot"><td colspan="3">TOPLAM</td><td class="num">${Object.keys(topl).map(k=>nf(topl[k])+" "+k).join(" · ")}</td><td></td></tr>`
+  if(odAll.length){
+    odTbl=`<div class="scroll ob6"><table class="obod"><thead><tr><th>Yurt Dışı Birim</th><th>Ödeme Tarihi</th><th>Gönderen Banka</th><th class="num">Tutar</th><th>Para Birimi</th></tr></thead><tbody>`
+      + odAll.map(r=>`<tr${odAyMi(r)?' style="background:#f3f8ff"':''}><td>${esc(r.yd_birim)}</td><td>${esc(dgun(String(r.odeme_tarihi)))}</td><td>${esc(r.gonderen_banka)}</td><td class="num">${nf(r.tutar)}</td><td>${esc(r.para_birimi)}</td></tr>`).join("")
       + `</tbody></table></div>`;
-  } else odTbl=`<div class="muted" style="font-size:12px;margin:2px">${esc(afAd)} ayında kayıtlı ödeme yok.</div>`;
+  } else odTbl=`<div class="muted" style="font-size:12px;margin:2px">Kayıtlı ödeme yok.</div>`;
   /* OB-BLOK (2026-09-18): "Aylık Faaliyet" bloğunda artık yalnız ÖB'nin yorum METNİ var
      (başlık satırı ve "— (ÖB formundan girilir)" yer tutucusu kaldırıldı; yorum yoksa blok hiç
      basılmaz). Selectron ödemeleri buradan ÇIKARILIP kendi bağımsız bloğu yapıldı. */
@@ -2878,12 +2878,12 @@ async function loadObrapor(tgt){
       +(afR.faaliyet?`<div class="obafe"${afIki?' style="margin-top:8px"':''}>Claude özeti</div><div class="obafy">${esc(afR.faaliyet)}</div>`:"")
       +`</div>`;
   }
-  ib+=`<h3 class="sec">Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler <span class="muted">(${esc(afAd)})</span></h3>
+  ib+=`<h3 class="sec">Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler <span class="muted">(${esc(afAd)} satırları mavi)</span></h3>
     <div class="obaf">${odTbl}</div>`;
   /* DEVLET-DESTEK (2026-09-24, Melih): Selectron ödemeleri primi 1/10.000 (tutar_eur toplamı) + Devlet Destek
      Başvuruları bloğu (devlet_destek, ÖB formundan). İade primi = sonuç tarihi kapanan aya düşen iade toplamı × 1/100 (DD-PRIM-1YUZDE 02.10.2026; önce 5/1000). */
   const selEur=odR.reduce((t,r)=>t+(Number(r.tutar_eur)||0),0);
-  ib+=`<div class="muted" style="font-size:12px;margin:4px 2px 0">Ödeme toplamı — ${iki(nf(selEur)+" €",nf(selEurCa)+" €")} · ÖB primi (1/10.000, son ay): <b>${nf(selEur/10000)} €</b></div>`; /* OB-IKI-AY */
+  ib+=`<div class="muted" style="font-size:12px;margin:4px 2px 0">Ödeme toplamı — ${iki(nf(selEur)+" €",nf(selEurCa)+" €")} · ÖB primi (1/10.000) — ${iki("<b>"+nf(selEur/10000)+" €</b>","<b>"+nf(selEurCa/10000)+" €</b>")}</div>`; /* OB-IKI-AY */ /* OB-PRIM-CARI */
   const ddq=await sb.from("devlet_destek").select("*").order("son_basvuru",{ascending:false,nullsFirst:true}).order("id",{ascending:false}); /* DD-SIRA */
   const ddR=(ddq&&!ddq.error)?(ddq.data||[]):[];
   const ddBug=new Date().toISOString().slice(0,10), dd30=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
@@ -2898,7 +2898,7 @@ async function loadObrapor(tgt){
   let ddTbl=`<div class="scroll"><table class="obod"><thead><tr><th>Test</th><th>Proje</th><th>Test Tarihi</th><th class="num">Test Tutarı</th><th>Son Başvuru</th><th>Başvuru</th><th>Durum</th><th>Sonuç</th><th class="num">İade (₺)</th><th>Açıklama</th></tr></thead><tbody>`
     + (ddq&&ddq.error?`<tr><td colspan="10" style="color:#b40000">Okunamadı: ${esc(ddq.error.message)}</td></tr>`:ddR.length?ddYeni.concat(ddEski).map((r,i)=>(i===ddYeni.length&&ddEski.length?`<tr class="dd-ac"><td colspan="10" style="cursor:pointer;color:#3d4a57;font-size:12px;background:#f3f6f9">${window._ddAcik?"▾":"▸"} ${esc(afAd)} öncesi sonuçlanan ${ddEski.length} kayıt</td></tr>`:"")+`<tr${ddEskiMi(r)?' class="dd-eski"'+(window._ddAcik?'':' style="display:none"'):''}><td>${esc(r.test||"")}</td><td>${esc(r.proje||"")}</td><td>${esc(r.test_tarihi||"")}</td><td class="num">${r.test_tutari==null?"":nf(r.test_tutari)+" "+esc(r.test_pb||"")}</td><td${ddRenk(r)}>${ddG(r.son_basvuru)}</td><td>${ddG(r.basvuru_tarihi)}</td><td>${esc(r.durum||"")}</td><td>${ddG(r.sonuc_tarihi)}</td><td class="num">${r.iade_tutari==null?"":nf(r.iade_tutari)}</td><td>${esc(r.aciklama||"")}</td></tr>`).join(""):`<tr><td colspan="10" class="muted">Kayıt yok.</td></tr>`)
     + `</tbody></table></div>`
-    + `<div class="muted" style="font-size:12px;margin:4px 2px 0">İade toplamı — ${iki(nf(ddAyTop)+" ₺",nf(ddCaTop)+" ₺")} · ÖB primi (1/100, son ay): <b>${nf(ddAyTop*0.01)} ₺</b> · ${ddYil} yılı iade toplamı ${nf(ddYilTop)} ₺</div>`;
+    + `<div class="muted" style="font-size:12px;margin:4px 2px 0">İade toplamı — ${iki(nf(ddAyTop)+" ₺",nf(ddCaTop)+" ₺")} · ÖB primi (1/100) — ${iki("<b>"+nf(ddAyTop*0.01)+" ₺</b>","<b>"+nf(ddCaTop*0.01)+" ₺</b>")} · ${ddYil} yılı iade toplamı ${nf(ddYilTop)} ₺</div>`;
   ib+=`<h3 class="sec">Devlet Destek Başvuruları <span class="muted">(${ddR.length})</span></h3>
     <div class="obaf" style="max-width:none">${ddTbl}</div>`;
   /* ===== OB-DPGF + OB-PRIM (2026-09-24, Melih; OB-PRIM2 güncel): DPGF's - Situations - Avenants bloğu (ob_dpgf/ob_situation/ob_avenant,
@@ -2921,7 +2921,7 @@ async function loadObrapor(tgt){
   const dpR=(dpq&&!dpq.error)?(dpq.data||[]):[], stR=(stq&&!stq.error)?(stq.data||[]):[];
   const inAy=r=>r.tarih&&String(r.tarih)>=afDon+"-01"&&String(r.tarih)<=afSon;
   const dsEski=r=>!!(r.tarih&&String(r.tarih)<afDon+"-01"); /* TS-ESKI-KAPALI (09.10.2026, Melih): kap=1 tabloda kapanan aydan önceki tarihli satırlar kapalı, tıklayınca açılır */
-  const dsTbl=(R,cols,kap)=>`<div class="scroll"><table class="obod"><thead><tr>${cols.map(c=>`<th${c[2]?' class="num"':''}>${c[0]}</th>`).join("")}</tr></thead><tbody>`
+  const dsTbl=(R,cols,kap)=>`<div class="scroll ob6"><table class="obod"><thead><tr>${cols.map(c=>`<th${c[2]?' class="num"':''}>${c[0]}</th>`).join("")}</tr></thead><tbody>`
     +(R.length?(kap?R.filter(r=>!dsEski(r)).concat(R.filter(dsEski)):R).map((r,i,A)=>(kap&&dsEski(r)&&(i===0||!dsEski(A[i-1]))?`<tr class="ts-ac"><td colspan="${cols.length}" style="cursor:pointer;color:#3d4a57;font-size:12px;background:#f3f6f9">${window._tsAcik?"▾":"▸"} ${esc(afAd)} öncesi tarihli ${R.filter(dsEski).length} kayıt</td></tr>`:"")+`<tr${inAy(r)?' style="background:#f3f8ff"':(kap&&dsEski(r)?' class="ts-eski"'+(window._tsAcik?'':' style="display:none"'):'')}>${cols.map(c=>`<td${c[2]?' class="num"':''}>${c[1](r)}</td>`).join("")}</tr>`).join(""):`<tr><td colspan="${cols.length}" class="muted">Kayıt yok.</td></tr>`)
     +`</tbody></table></div>`;
   const dpAy=dpR.filter(inAy).reduce((t,r)=>t+(Number(r.tutar)||0),0);
@@ -2940,8 +2940,8 @@ async function loadObrapor(tgt){
     <div class="obaf" style="max-width:none">
      <div data-m="OB-DS-YAN OB-DS-BOSLUK" style="display:flex;flex-wrap:wrap;gap:2px;align-items:flex-start"><div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">DPGF · ${iki(nf(dpAy)+" €",nf(dpCa)+" €")}</div>${dsTbl(dpR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Correspondence",r=>esc(r.correspondence||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
      <div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">Situations · ${iki(nf(stAy)+" €",nf(stCa)+" €")} <span class="muted" style="font-weight:400">(İptal Edildi hariç)</span></div>${dsTbl(stR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["İlerleme No",r=>esc(r.ilerleme_no||"")],["Dönem",r=>esc(r.donem||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Onay Durumu",r=>esc(r.onay_durumu||"")]])}</div>
-     </div><div><div class="obafh">TS · ${iki(nf(avAy)+" €",nf(avCa)+" €")}${(avEksi||avEksiCa)?` · <span style="color:#b23a2e">Eksi TS Toplamı — ${iki(nf(avEksi)+" €",nf(avEksiCa)+" €")}</span>`:""} <span class="muted" style="font-weight:400">(Avenant geldi · KDV hariç; eksi tutarlar toplama ve prime girmez; Excel aktarımından yalnız dönüş/avenant bekleyenler listelenir)</span></div>${dsTbl(avR.filter(r=>!r.aktarim||r.durum==="Dönüş bekleniyor"||r.durum==="Onaylandı, avenant bekleniyor"/* TS-ONAY-AV */),[["Tarih",r=>ddG(r.tarih)],["No",r=>esc(r.no||"")],["Proje",r=>esc(r.proje||"")],["İçerik",r=>esc(r.icerik||"")],["Açıklama",r=>esc(r.aciklama||"")],["Tutar (€, KDV hariç)",r=>r.tutar==null?"":nf(r.tutar),1],["Durum",r=>esc(r.durum||"")]],1)}</div><!-- OB-TS-261006 -->
-     <div style="margin-top:10px"><div class="obafh">PV's de Réception · ${iki(pvN+" adet · "+nf(pvAy)+" €",pvNCa+" adet · "+nf(pvCa)+" €")} <span class="muted" style="font-weight:400">(tutar = Sel-Arb kontrat)</span></div>${dsTbl(pvR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Açıklama",r=>esc(r.aciklama||"")]])}</div> <!-- OB-PVR -->
+     <div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">PV's de Réception · ${iki(pvN+" adet · "+nf(pvAy)+" €",pvNCa+" adet · "+nf(pvCa)+" €")} <span class="muted" style="font-weight:400">(tutar = Sel-Arb kontrat)</span></div>${dsTbl(pvR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Açıklama",r=>esc(r.aciklama||"")]])}</div> <!-- OB-PVR --> <!-- OB-PVR-YAN -->
+     </div><div><div class="obafh">TS · ${iki(nf(avAy)+" €",nf(avCa)+" €")}${(avEksi||avEksiCa)?` · <span style="color:#b23a2e">Eksi TS Toplamı — ${iki(nf(avEksi)+" €",nf(avEksiCa)+" €")}</span>`:""} <span class="muted" style="font-weight:400">(Avenant geldi · KDV hariç; eksi tutarlar toplama ve prime girmez; Excel aktarımından yalnız dönüş/avenant bekleyenler listelenir)</span></div>${dsTbl(avR.filter(r=>!r.aktarim||r.durum==="Dönüş bekleniyor"||r.durum==="Onaylandı, avenant bekleniyor"/* TS-ONAY-AV */),[["Tarih",r=>ddG(r.tarih)],["No",r=>esc(r.no||"")],["Proje",r=>esc(r.proje||"")],["İçerik",r=>esc(r.icerik||"")],["Açıklama",r=>esc(r.aciklama||"")],["Tutar (€, KDV hariç)",r=>r.tutar==null?"":nf(r.tutar),1],["Durum",r=>esc(r.durum||"")]])}</div><!-- OB-TS-261006 --><!-- OB-TUM-AY: eski aylar kapalı değil, 6 satırlık pencerede -->
     </div>`;
   /* --- puanlar --- */
   const PA=(paq&&!paq.error&&paq.data&&paq.data[0])||{};
@@ -3000,33 +3000,33 @@ async function loadObrapor(tgt){
   const selPrimE=selEur/10000, ddPrimTL=ddAyTop*0.01, eurTL=kurOB&&kurOB.TL>0?kurOB.TL:null;
   const avPrimE=avAy*0.005;
   const pvPrimE=2*pvN+pvAy/1000; /* OB-PVR: adet × 2 € + kontrat toplamı / 1000 */
+  /* OB-PRIM-CARI (21.10.2026, Melih): ek primler cari ay için de; performans primi (puan) yalnız son ay */
+  const dpNCa=dpR.filter(inCa).length, stNCa=stR.filter(r=>inCa(r)&&r.onay_durumu!=="İptal Edildi").length;
+  const cP={sel:selEurCa/10000,dp:2*dpNCa+dpCa/2000,st:stNCa+stCa/1000,av:avCa*0.005,pv:2*pvNCa+pvCa/1000,dd:ddCaTop*0.01};
+  const topCaTL=cP.dd+(eurTL?(cP.sel+cP.dp+cP.st+cP.av+cP.pv)*eurTL:0);
+  const eC=v=>`${nf(v)} €${eurTL?` (${nf(v*eurTL)} ₺)`:""}`;
   const topTL=(perfTL||0)+ddPrimTL+(eurTL?(selPrimE+avPrimE+dpPrimE+stPrimE+pvPrimE)*eurTL:0);
   ib+=`<h3 class="sec">ÖB Performans Primi <span class="muted">(${esc(afAd)})</span></h3>
-    <div class="obaf" style="max-width:none"><div class="scroll"><table class="obod"><thead><tr><th>Kriter</th><th>Ölçüm</th><th class="num">Puan</th><th class="num">En çok</th></tr></thead><tbody>`
+    <div class="obaf" style="max-width:none"><div data-m="OB-PRIM-YAN" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start"><div class="scroll"><table class="obod" id="ob-pt1"><thead><tr><th>Kriter</th><th>Ölçüm</th><th class="num">Puan</th><th class="num">En çok</th></tr></thead><tbody>`
     + KAL.map(k=>`<tr><td>${esc(k[0])}</td><td>${k[3]==="mbsel"||/dph|sth/.test(k[3])?acik(k[3]):esc(k[3])}</td><td class="num">${k[2]==null?"—":nf(k[2])}</td><td class="num">${k[1]}</td></tr>`).join("")
     + `<tr class="itot"><td colspan="2">TOPLAM PUAN${eksikK.length?` <span class="muted" style="font-weight:400">(eksik: ${esc(eksikK.join(", "))})</span>`:""}</td><td class="num">${nf(puan)}</td><td class="num">${PTAVAN}</td></tr>`
     + `</tbody></table></div>
-    <div class="scroll" style="margin-top:8px"><table class="obod"><tbody>
-     <tr><td>Performans primi = taban ${pin("ob-taban",taban,12)} ₺ × ${nf(puan)} / ${PTAVAN}</td><td class="num">${perfTL==null?"— (taban girilmedi)":nf(perfTL)+" ₺"}</td></tr>
-     <tr><td>Selectron ödemeleri primi = ${nf(selEur)} € × 1/10.000</td><td class="num">${nf(selPrimE)} €${eurTL?` (${nf(selPrimE*eurTL)} ₺)`:""}</td></tr>
-     <tr><td>DPGF primi = ${dpN} adet × 2 € + ${nf(dpAy)} € / 2000</td><td class="num">${nf(dpPrimE)} €${eurTL?` (${nf(dpPrimE*eurTL)} ₺)`:""}</td></tr>
-     <tr><td>Situation primi = ${stN} adet × 1 € + ${nf(stAy)} € / 1000 <span class="muted">(İptal Edildi hariç)</span></td><td class="num">${nf(stPrimE)} €${eurTL?` (${nf(stPrimE*eurTL)} ₺)`:""}</td></tr>
-     <tr><td>TS primi (Avenant geldi) = ${nf(avAy)} € × 5/1000</td><td class="num">${nf(avPrimE)} €${eurTL?` (${nf(avPrimE*eurTL)} ₺)`:""}</td></tr>
-     <tr><td>PV's de Réception primi = ${pvN} adet × 2 € + ${nf(pvAy)} € / 1000</td><td class="num">${nf(pvPrimE)} €${eurTL?` (${nf(pvPrimE*eurTL)} ₺)`:""}</td></tr>
-     <tr><td>Devlet destek primi = ${nf(ddAyTop)} ₺ × 1/100</td><td class="num">${nf(ddPrimTL)} ₺</td></tr>
-     <tr class="itot"><td>TOPLAM PRİM${eurTL?` <span class="muted" style="font-weight:400">(1 € = ${nf(eurTL)} ₺)</span>`:" (€ kısmı hariç — kur alınamadı)"}</td><td class="num">${nf(topTL)} ₺</td></tr>
-    </tbody></table></div><span class="msg" id="ob-prim-msg"></span></div>`;
+    <div class="scroll"><table class="obod"><thead><tr><th>Kalem (son ay formülü)</th><th class="num">Son ay ${esc(afAd)}</th><th class="num">Cari ay ${esc(caAd)}</th></tr></thead><tbody>
+     <tr><td>Performans primi = taban ${pin("ob-taban",taban,12)} ₺ × ${nf(puan)} / ${PTAVAN}</td><td class="num">${perfTL==null?"— (taban girilmedi)":nf(perfTL)+" ₺"}</td><td class="num muted" title="Puan ay kapanınca hesaplanır">—</td></tr>
+     <tr><td>Selectron ödemeleri primi = ${nf(selEur)} € × 1/10.000</td><td class="num">${nf(selPrimE)} €${eurTL?` (${nf(selPrimE*eurTL)} ₺)`:""}</td><td class="num" title="${nf(selEurCa)} € × 1/10.000">${eC(cP.sel)}</td></tr>
+     <tr><td>DPGF primi = ${dpN} adet × 2 € + ${nf(dpAy)} € / 2000</td><td class="num">${nf(dpPrimE)} €${eurTL?` (${nf(dpPrimE*eurTL)} ₺)`:""}</td><td class="num" title="${dpNCa} adet × 2 € + ${nf(dpCa)} € / 2000">${eC(cP.dp)}</td></tr>
+     <tr><td>Situation primi = ${stN} adet × 1 € + ${nf(stAy)} € / 1000 <span class="muted">(İptal Edildi hariç)</span></td><td class="num">${nf(stPrimE)} €${eurTL?` (${nf(stPrimE*eurTL)} ₺)`:""}</td><td class="num" title="${stNCa} adet × 1 € + ${nf(stCa)} € / 1000">${eC(cP.st)}</td></tr>
+     <tr><td>TS primi (Avenant geldi) = ${nf(avAy)} € × 5/1000</td><td class="num">${nf(avPrimE)} €${eurTL?` (${nf(avPrimE*eurTL)} ₺)`:""}</td><td class="num" title="${nf(avCa)} € × 5/1000">${eC(cP.av)}</td></tr>
+     <tr><td>PV's de Réception primi = ${pvN} adet × 2 € + ${nf(pvAy)} € / 1000</td><td class="num">${nf(pvPrimE)} €${eurTL?` (${nf(pvPrimE*eurTL)} ₺)`:""}</td><td class="num" title="${pvNCa} adet × 2 € + ${nf(pvCa)} € / 1000">${eC(cP.pv)}</td></tr>
+     <tr><td>Devlet destek primi = ${nf(ddAyTop)} ₺ × 1/100</td><td class="num">${nf(ddPrimTL)} ₺</td><td class="num" title="${nf(ddCaTop)} ₺ × 1/100">${nf(cP.dd)} ₺</td></tr>
+     <tr class="itot"><td>TOPLAM PRİM${eurTL?` <span class="muted" style="font-weight:400">(1 € = ${nf(eurTL)} ₺)</span>`:" (€ kısmı hariç — kur alınamadı)"}</td><td class="num">${nf(topTL)} ₺</td><td class="num" title="Performans primi hariç">${nf(topCaTL)} ₺</td></tr>
+    </tbody></table></div></div><span class="msg" id="ob-prim-msg"></span></div>`; /* OB-PRIM-YAN OB-PRIM-CARI */
   try{ sb.from("ob_prim_ay").upsert({donem:afDon,toplam_puan:Math.round(puan*100)/100,updated_at:new Date().toISOString(),
     puan_detay:{kalemler:KAL.map(k=>({kriter:k[0],en_cok:k[1],puan:k[2]==null?null:Math.round(k[2]*100)/100})),dpgf_eur:dpAy,situation_eur:stAy,dpgf_adet:dpN,situation_adet:stN,dpgf_prim_eur:dpPrimE,situation_prim_eur:stPrimE,
       selectron_eur:selEur,selectron_prim_eur:selPrimE,avenant_eur:avAy,avenant_prim_eur:avPrimE,pvr_adet:pvN,pvr_eur:pvAy,pvr_prim_eur:pvPrimE,iade_tl:ddAyTop,iade_prim_tl:ddPrimTL,taban_tl:taban,performans_prim_tl:perfTL,kur_eur_tl:eurTL,toplam_prim_tl:topTL}},
     {onConflict:"donem"}).then(()=>{},()=>{}); }catch(e){}
   window._obPrimTgt=tgt; window._obPrimDon=afDon;
-  /* Panonun altında serbest metin kutusu → ÖB'ye anında mail (pano-mesaj-mail, alıcı form_takip'ten) */
-  ib+=`<div class="obmail">
-    <div class="obmh">ÖB'ye Mail Gönder</div>
-    <textarea id="ob-mail-tx" placeholder="Özgül Bedestenci'ye iletilecek mesaj…"></textarea>
-    <div class="obmr"><button class="btn" id="ob-mail-btn">Mail Gönder</button><span class="msg" id="ob-mail-msg"></span></div>
-  </div>`;
+  /* OB-MAIL-KALDIR (21.10.2026, Melih): ÖB'ye Mail Gönder bloğu kaldırıldı (işleyici if(mb) ile no-op kaldı; edge pano-mesaj-mail duruyor) */
   view.innerHTML=`<style>
     table.obt{width:1px;table-layout:fixed;border-collapse:collapse;font-size:12px;background:#fff}
     table.obt col.k20{width:20ch}table.obt col.k35{width:35ch}table.obt col.k40{width:40ch}table.obt col.k60{width:48ch}table.obt col.k100{width:59.5ch}
@@ -3049,6 +3049,7 @@ async function loadObrapor(tgt){
     table.obod thead th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px}
     table.obod tr.itot td{background:#f4f7fb;font-weight:700}
     table.obod td.num,table.obod th.num{text-align:right}
+    .scroll.ob6{max-height:152px;overflow:auto} .scroll.ob6 thead th{position:sticky;top:0;z-index:1} /* OB-TUM-AY: 6 satırlık pencere */
     .obpin{font:inherit;font-size:12px;padding:1px 5px;border:1px solid #cdd6df;border-radius:5px;background:#fffdf5;text-align:right}
     .obmail{margin-top:12px;background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 12px;max-width:900px}
     .obmail .obmh{font-size:12.5px;font-weight:700;color:#16324f;margin-bottom:6px}
@@ -3082,6 +3083,15 @@ async function loadObrapor(tgt){
     const {error}=await sb.from("ob_isler").insert({konu,oncelik:document.getElementById("ob-yeni-onc").value,agirlik:agr,durum:"Henüz çalışılmadı",ob_notlari:"",arsiv:false});
     if(error){ ybtn.disabled=false; mEl.textContent="Hata: "+error.message; } else loadObrapor(tgt); };
   const yk=document.getElementById("ob-yeni-konu"); if(yk) yk.onkeydown=e=>{ if(e.key==="Enter"&&ybtn) ybtn.click(); };
+  /* OB-TUM-AY: pencere tam 6 satır (thead + ilk 6 satır); OB-PT1-DAR: Performans Primi ilk tablonun 1. ve 2. sütunu yarı genişlik. Sekme gizliyse ölçüm 0 → 300ms × 40 */
+  let _obOlcN=0; const _obOlc=()=>{ const t1=view.querySelector("#ob-pt1"); if(!view.isConnected) return;
+    if(!t1||!t1.offsetWidth){ if(++_obOlcN<40) setTimeout(_obOlc,300); return; }
+    view.querySelectorAll(".scroll.ob6").forEach(el=>{ const th=el.querySelector("thead"), rs=el.querySelectorAll("tbody tr"); if(!th||rs.length<=6) return;
+      const h=th.offsetHeight+[...rs].slice(0,6).reduce((t,r)=>t+r.offsetHeight,0); if(h>0) el.style.maxHeight=(h+2)+"px"; });
+    if(!t1.dataset.dar){ t1.dataset.dar=1; const hr=t1.tHead.rows[0]; [0,1].forEach(c=>{ const w=Math.round(hr.cells[c].getBoundingClientRect().width/2);
+      hr.cells[c].style.cssText+=`;width:${w}px;max-width:${w}px;white-space:normal`;
+      [...t1.tBodies[0].rows].forEach(r=>{ const td=r.cells[c]; if(td&&!(td.colSpan>1)&&!(c===1&&r.cells[0].colSpan>1)) td.style.cssText+=`;max-width:${w}px;white-space:normal`; }); }); } };
+  _obOlc();
   const wh=document.getElementById("ob-wk");
   if(wh) wh.onclick=()=>{ obWeeksOpen=!obWeeksOpen; loadObrapor(tgt); };
   const mb=document.getElementById("ob-mail-btn");
