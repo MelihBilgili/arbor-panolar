@@ -422,20 +422,34 @@ function sevkEksik(){
    (1) "Önceki" ile aynıysa ya da (2) geçmiş bir ay adı (son 6 ay: ör. Ekim'de "Eylül", "Eylülün son haftası")
    veya bugünden eski bir tarih (GG.AA.YY / GG/AA/YYYY) içeriyorsa hücre kırmızı, GÜNCELLE çalışmaz. */
 const AYLAR_TR=["ocak","şubat","mart","nisan","mayıs","haziran","temmuz","ağustos","eylül","ekim","kasım","aralık"];
-function sevkEski(r){
-  const g=String(r.onur_guncel||"").trim(); if(!g) return "";
-  const nz=t=>String(t||"").trim().replace(/\s+/g," ").toLocaleLowerCase("tr");
-  if(r.onur_onceki && nz(g)===nz(r.onur_onceki)) return "önceki ayın bilgisiyle aynı";
-  const t=nz(g), now=new Date(), c=now.getMonth()+1;
-  for(let i=0;i<12;i++){
-    const re=new RegExp("(^|[^a-zçğıöşü])"+AYLAR_TR[i]);
-    if(re.test(t)){ const d=(c-(i+1)+12)%12; if(d>=1&&d<=6) return "geçmiş ay ("+AYLAR_TR[i].charAt(0).toLocaleUpperCase("tr")+AYLAR_TR[i].slice(1)+")"; }
+/* GECMIS-GELECEK (21.10.2026, Melih): metin önceki ayla aynı olabilir; engellenen, geçmişe ait bir zamanı
+   (son 6 ayın ay adı, bugünden eski tarih, "geçen hafta/ay") GELECEKTE olacakmış gibi anlatan cümledir.
+   Cümlede geçmiş zaman eki (edildi, yapılmıştı…) varsa ve gelecek/beklenti ifadesi (öngörülüyor, edilecek,
+   bekleniyor, -ebilir, olması…) yoksa izin verilir. Cümlede fiil yoksa ("Eylül sonu sevk") gelecek sayılır. */
+function gecmisGelecek(metin){
+  const t=String(metin||"").replace(/\s+/g," ").toLocaleLowerCase("tr").trim(); if(!t) return "";
+  const AY=["ocak","şubat","mart","nisan","mayıs","haziran","temmuz","ağustos","eylül","ekim","kasım","aralık"];
+  const c=new Date().getMonth()+1, bug=new Date(); bug.setHours(0,0,0,0);
+  const GEL=/(öngör|bekleniyor(?!du)|beklenmekte(?!ydi)|beklenecek|planlan(?!dı|mıştı)|hedefle|tahmin|düşünülüyor|düşünülmekte|muhtemel|olası|[a-zçğıöşü](ecek|acak|eceğ|acağ)|[a-zçğıöşü](ebil|abil)(ir|ecek|eceğ)|olması|edilmesi|yapılması|gönderilmesi|yüklenmesi|gelmesi|gitmesi|bitmesi|tamamlanması|kalkması)/;
+  const GEC=/[a-zçğıöşü]{2,}(d[ıiuü]|t[ıiuü])(k|m|n|lar|ler|r)?(?=[\s,]|$)|[a-zçğıöşü]m[ıiuü]ş/;
+  const cumleler=t.split(/[!?;\n]+|\.(?!\d)/);
+  for(const s0 of cumleler){
+    const s=s0.trim(); if(!s) continue;
+    let ref="";
+    for(let i=0;i<12&&!ref;i++){ if(new RegExp("(^|[^a-zçğıöşü])"+AY[i]).test(s)){ const d=(c-(i+1)+12)%12; if(d>=1&&d<=6) ref=AY[i].charAt(0).toLocaleUpperCase("tr")+AY[i].slice(1); } }
+    if(!ref){ const rx=/(\d{1,2})[./](\d{1,2})[./](\d{2,4})/g; let m; while((m=rx.exec(s))){ let y=Number(m[3]); if(y<100) y+=2000; const dt=new Date(y,Number(m[2])-1,Number(m[1])); if(!isNaN(dt)&&dt<bug){ ref=m[0]; break; } } }
+    if(!ref){ const g=s.match(/geçen (hafta|ay)|geçtiğimiz (hafta|ay)/); if(g) ref=g[0]; }
+    if(!ref) continue;
+    /* Yan cümleler (virgül, ama/ancak/fakat): zamanın geçtiği yan cümleden itibaren fiil taşıyan ilk yan cümleye bakılır. */
+    const yan=s.replace(/şimdi|kendi|henüz/g," ").split(/,| ama | ancak | fakat | ve /);
+    const k=yan.findIndex(y=>y.indexOf(ref.toLocaleLowerCase("tr"))>-1||/geçen|geçtiğimiz|\d/.test(y));
+    let hk="";
+    for(let q=Math.max(k,0);q<yan.length;q++){ const y=yan[q]; if(GEL.test(y)){ hk="gel"; break; } if(GEC.test(y)){ hk="gec"; break; } }
+    if(hk!=="gec") return "geçmiş zaman ("+ref+") gelecekte olacakmış gibi yazılmış";
   }
-  const bug=new Date(); bug.setHours(0,0,0,0);
-  const rx=/(\d{1,2})[./](\d{1,2})[./](\d{2,4})/g; let m;
-  while((m=rx.exec(t))){ let y=Number(m[3]); if(y<100) y+=2000; const dt=new Date(y,Number(m[2])-1,Number(m[1])); if(!isNaN(dt)&&dt<bug) return "geçmiş tarih ("+m[0]+")"; }
   return "";
 }
+function sevkEski(r){ return gecmisGelecek(r.onur_guncel); }
 function sevkEskiListe(){
   const l=[];
   ROWS.forEach((r,i)=>{ const n=sevkEski(r); if(!n) return; l.push(r.tur+" "+r.no+" — "+n);
@@ -455,7 +469,7 @@ $("ay_btn").onclick=async()=>{
   }
   const _so=sevkEskiListe(); /* SEVK-ESKI-BILGI */
   if(_so.length){
-    alert("Güncelleme yapılamadı — "+_so.length+" satırda sevk durumu güncel değil.\n\nGeçmişe ait bilgi (geçmiş ay/tarih ya da önceki ayla aynı metin) güncel sevk durumu olarak kabul edilmez. Kırmızı hücrelere bugünkü durumu yazın:\n\n• "+_so.slice(0,15).join("\n• ")+(_so.length>15?"\n• … ("+(_so.length-15)+" satır daha)":""));
+    alert("Güncelleme yapılamadı — "+_so.length+" satırda sevk durumu güncel değil.\n\nGeçmişe ait bir zaman (geçmiş ay/tarih) gelecekte olacakmış gibi yazılamaz; kırmızı hücrelere bugünkü durumu yazın:\n\n• "+_so.slice(0,15).join("\n• ")+(_so.length>15?"\n• … ("+(_so.length-15)+" satır daha)":""));
     fmsg("ay_msg",_so.length+" satırda güncel olmayan sevk durumu — kırmızı hücreleri düzeltin.",false);
     const ilk=document.querySelector("#list .ed.miss"); if(ilk) ilk.scrollIntoView({block:"center"});
     return;
@@ -669,6 +683,9 @@ loadFt(); load();
 
 
 
+
+<!-- FORM-LINKLER --><script src="../form_linkler.js?v=261019"></script>
+
 <!-- ARBOR-DRAGSCROLL -->
 <style>
   /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
@@ -716,7 +733,6 @@ loadFt(); load();
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
-<!-- FORM-LINKLER --><script src="../form_linkler.js?v=261019"></script>
 </body>
 </ht<!-- ARB-EXCEL-BTN -->
 <script>
