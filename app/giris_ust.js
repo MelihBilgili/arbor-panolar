@@ -50,6 +50,7 @@ const CSS=`
 .gru table.grt thead th{background:#16324f;color:#fff;font-weight:600;font-size:11px;position:static;border-bottom:0}
 .gru table.grt td.n,.gru table.grt th.n{text-align:right;font-variant-numeric:tabular-nums}
 .gru table.grt td.w{max-width:46ch;overflow:hidden;text-overflow:ellipsis}
+.gru table.grt td.w2{max-width:92ch;overflow:hidden;text-overflow:ellipsis} /* GIRIS-BOLGE-YOK (21.10.2026): Bölge sütunu kalktı, Takip Notu iki kat geniş */
 .gru table.grt tr.gru-ayr td{border-top:2px solid #6f8cab}
 .gru-nb{font-size:11px;padding:0 7px;border:1px solid #2e6da4;border-radius:4px;background:#fff;color:#2e6da4;cursor:pointer;line-height:16px}.gru-nb:hover{background:#eef5ff}
 .gru-cards{display:flex;flex-wrap:wrap;gap:10px}
@@ -82,9 +83,9 @@ async function satis(o,elT,elG){
   const tutar=r=>r.net_tutar==null||r.net_tutar===""?"":money(r.net_tutar)+" "+(r.para_birimi||"EUR");
   const siki=ydR.filter(r=>(r.durum==="Teklif Teslim Edildi"||r.durum==="Takip Bekleniyor")&&skSet.has(r.blok+"|"+kn(r.proje)+"|"+kn(r.musteri)))
     .sort((a,b)=>String(a.teklif_teslim_tarihi||'9999').localeCompare(String(b.teklif_teslim_tarihi||'9999')));
-  const TH=`<thead><tr><th>Bölge</th><th>Proje</th><th>Müşteri</th><th>Teklif Teslim</th><th class="n">Net Tutar</th><th>Takip Tarihi</th><th>Görevli</th><th>Takip Notu</th><th></th></tr></thead>`;
-  const ydS=(r,c)=>{ const l=tkSon(r); return `<tr${c?' class="'+c+'"':''}><td>${esc(bolge(r.blok))}</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="w" title="${esc(r.musteri)}">${esc(r.musteri)}</td><td>${fdate(r.teklif_teslim_tarihi)}</td><td class="n">${esc(tutar(r))}</td><td>${l.t?fdate(l.t):""}</td><td>${esc(l.g||"")}</td><td class="w" title="${esc(l.n||"")}">${esc(l.n||"")}</td><td><button class="gru-nb" data-k="yd" data-id="${r.id}" title="Takip notu ekle (${esc(r.blok)} formuna yazılır)">+ Not</button></td></tr>`; };
-  const soS=(r,c)=>`<tr${c?' class="'+c+'"':''}><td>Yurt İçi</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="w" title="${esc(r.musteri)}">${esc(r.musteri)}</td><td></td><td class="n">${esc(money(r.net_eur)+" EUR")}</td><td></td><td></td><td class="w" title="${esc(r.durum||"")}">${esc(r.durum||"")}</td><td><button class="gru-nb" data-k="so" data-id="${r.id}" title="Durum notu (Yurt İçi Satış formuna yazılır)">+ Not</button></td></tr>`;
+  const TH=`<thead><tr><th>Proje</th><th>Müşteri</th><th>Teklif Teslim</th><th class="n">Net Tutar</th><th>Takip Tarihi</th><th>Görevli</th><th>Takip Notu</th><th></th></tr></thead>`;
+  const ydS=(r,c)=>{ const l=tkSon(r); return `<tr${c?' class="'+c+'"':''}><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="w" title="${esc(r.musteri)}">${esc(r.musteri)}</td><td>${fdate(r.teklif_teslim_tarihi)}</td><td class="n">${esc(tutar(r))}</td><td>${l.t?fdate(l.t):""}</td><td>${esc(l.g||"")}</td><td class="w2" title="${esc(l.n||"")}">${esc(l.n||"")}</td><td><button class="gru-nb" data-k="yd" data-id="${r.id}" title="Takip notu ekle (${esc(r.blok)} formuna yazılır)">+ Not</button></td></tr>`; };
+  const soS=(r,c)=>`<tr${c?' class="'+c+'"':''}><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="w" title="${esc(r.musteri)}">${esc(r.musteri)}</td><td></td><td class="n">${esc(money(r.net_eur)+" EUR")}</td><td></td><td></td><td class="w2" title="${esc(r.durum||"")}">${esc(r.durum||"")}</td><td><button class="gru-nb" data-k="so" data-id="${r.id}" title="Durum notu (Yurt İçi Satış formuna yazılır)">+ Not</button></td></tr>`;
   const SINIR=500000;
   const muh=ydR.filter(r=>r.durum==='Muhtemel'&&Number(r.net_tutar)>SINIR).map(r=>({e:netEur(r,k),r,t:"yd"}))
     .concat(soR.filter(r=>/^muht/i.test(r.statu||"")&&Number(r.net_eur)>SINIR).map(r=>({e:Number(r.net_eur),r,t:"so"})))
