@@ -359,6 +359,7 @@ function render(){
   html+='</tbody></table>';
   const list=$("list"); list.innerHTML=html;
   list.querySelectorAll(".ed").forEach(el=>el.onclick=()=>edit(el));
+  if(typeof sevkEskiListe==="function") sevkEskiListe(); /* SEVK-ESKI-BILGI: açılışta eski bilgiler kırmızı */
 }
 function edit(el){
   if(el.querySelector("input")) return;
@@ -374,6 +375,7 @@ function edit(el){
     if(error){ msg.className="msg err"; msg.textContent=error.message; el.textContent=cur||"+ durum"; return; }
     r.onur_guncel=val; msg.className="msg ok"; msg.textContent="Kaydedildi ("+r.tur+" "+r.no+")"; setTimeout(()=>msg.textContent="",1500);
     el.className="ed "+(val?"":"empty"); el.textContent=val||"+ durum"; el.classList.add("saveflash"); setTimeout(()=>el.classList.remove("saveflash"),400);
+    { const _n=(typeof sevkEski==="function")?sevkEski(r):""; if(_n){ el.classList.add("miss"); msg.className="msg err"; msg.textContent="Kaydedildi ama güncel değil ("+_n+") — bugünkü sevk durumunu yazın, yoksa GÜNCELLE çalışmaz."; } } /* SEVK-ESKI-BILGI */
   };
   inp.onblur=commit;
   inp.onkeydown=e=>{ if(e.key==="Enter"){e.preventDefault();inp.blur();} if(e.key==="Escape"){el.className="ed "+(cur?"":"empty");el.textContent=cur||"+ durum";} };
@@ -416,6 +418,31 @@ function sevkEksik(){
   return eksik;
 }
 
+/* SEVK-ESKI-BILGI (21.10.2026, Melih): geçmişe ait bilgi güncel sayılmaz. Güncel sevk durumu
+   (1) "Önceki" ile aynıysa ya da (2) geçmiş bir ay adı (son 6 ay: ör. Ekim'de "Eylül", "Eylülün son haftası")
+   veya bugünden eski bir tarih (GG.AA.YY / GG/AA/YYYY) içeriyorsa hücre kırmızı, GÜNCELLE çalışmaz. */
+const AYLAR_TR=["ocak","şubat","mart","nisan","mayıs","haziran","temmuz","ağustos","eylül","ekim","kasım","aralık"];
+function sevkEski(r){
+  const g=String(r.onur_guncel||"").trim(); if(!g) return "";
+  const nz=t=>String(t||"").trim().replace(/\s+/g," ").toLocaleLowerCase("tr");
+  if(r.onur_onceki && nz(g)===nz(r.onur_onceki)) return "önceki ayın bilgisiyle aynı";
+  const t=nz(g), now=new Date(), c=now.getMonth()+1;
+  for(let i=0;i<12;i++){
+    const re=new RegExp("(^|[^a-zçğıöşü])"+AYLAR_TR[i]);
+    if(re.test(t)){ const d=(c-(i+1)+12)%12; if(d>=1&&d<=6) return "geçmiş ay ("+AYLAR_TR[i].charAt(0).toLocaleUpperCase("tr")+AYLAR_TR[i].slice(1)+")"; }
+  }
+  const bug=new Date(); bug.setHours(0,0,0,0);
+  const rx=/(\d{1,2})[./](\d{1,2})[./](\d{2,4})/g; let m;
+  while((m=rx.exec(t))){ let y=Number(m[3]); if(y<100) y+=2000; const dt=new Date(y,Number(m[2])-1,Number(m[1])); if(!isNaN(dt)&&dt<bug) return "geçmiş tarih ("+m[0]+")"; }
+  return "";
+}
+function sevkEskiListe(){
+  const l=[];
+  ROWS.forEach((r,i)=>{ const n=sevkEski(r); if(!n) return; l.push(r.tur+" "+r.no+" — "+n);
+    const el=document.querySelector('#list .ed[data-i="'+i+'"]'); if(el) el.classList.add("miss"); });
+  return l;
+}
+
 /* ---------- GÜNCELLE ---------- */
 $("ay_btn").onclick=async()=>{
   if(!onayKapi()) return;
@@ -423,6 +450,13 @@ $("ay_btn").onclick=async()=>{
   if(_se.length){
     alert("Güncelleme yapılamadı — "+_se.length+" satırda sevk durumu girilmemiş ya da anlamlı değil.\n\nKırmızı işaretli hücreleri doldurun:\n\n• "+_se.slice(0,15).join("\n• ")+(_se.length>15?"\n• … ("+(_se.length-15)+" satır daha)":""));
     fmsg("ay_msg",_se.length+" satırda sevk durumu eksik — kırmızı hücreleri doldurun.",false);
+    const ilk=document.querySelector("#list .ed.miss"); if(ilk) ilk.scrollIntoView({block:"center"});
+    return;
+  }
+  const _so=sevkEskiListe(); /* SEVK-ESKI-BILGI */
+  if(_so.length){
+    alert("Güncelleme yapılamadı — "+_so.length+" satırda sevk durumu güncel değil.\n\nGeçmişe ait bilgi (geçmiş ay/tarih ya da önceki ayla aynı metin) güncel sevk durumu olarak kabul edilmez. Kırmızı hücrelere bugünkü durumu yazın:\n\n• "+_so.slice(0,15).join("\n• ")+(_so.length>15?"\n• … ("+(_so.length-15)+" satır daha)":""));
+    fmsg("ay_msg",_so.length+" satırda güncel olmayan sevk durumu — kırmızı hücreleri düzeltin.",false);
     const ilk=document.querySelector("#list .ed.miss"); if(ilk) ilk.scrollIntoView({block:"center"});
     return;
   }
