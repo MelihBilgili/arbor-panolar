@@ -271,6 +271,8 @@ async function yukle(){
   }
   /* Yalnız EN YENİ dönem gösterilir (geçmiş dönemler veritabanında kalır). */
   const donem = SATIR[0].donem;
+  /* SEVK-ESKI-BILGI-SANT: proje başına bir önceki dönemin satırı (aynı metin kontrolü) */
+  SANT_ONC={}; SATIR.forEach(x=>{ if(x.donem<donem && !(x.proje_no in SANT_ONC)) SANT_ONC[x.proje_no]=x; });
   SATIR = SATIR.filter(x=>x.donem===donem);
   const d0 = SATIR[0].erp_tarih;
   document.getElementById("erpStamp").textContent =
@@ -285,6 +287,7 @@ async function yukle(){
   DG.forEach(bagla);
   SATIR = DG;   /* Güncelle kontrolü yalnız soru alan projelerde */
   SEVK = SV;    /* SEVK-PST-ZORUNLU: Sevke Hazır tablosunda PST boş satır Güncelle'yi durdurur */
+  santEskiTara(); /* SEVK-ESKI-BILGI-SANT: açılışta eski bilgiler kırmızı */
 }
 
 function sevkHazir(r){ return /^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").trim()); }
@@ -410,6 +413,50 @@ async function kaydet(id,patch){
   if(error) msg("Kaydedilemedi: "+error.message,false);
 }
 
+/* SEVK-ESKI-BILGI-SANT (21.10.2026, Melih): geçmişe ait bilgi güncel sayılmaz (OE formundaki SEVK-ESKI-BILGI ile aynı kural).
+   "Hayır" sebebi ve Yükleme Planına İlişkin Açıklama metinleri (1) bir önceki dönemdeki metinle aynıysa ya da
+   (2) geçmiş bir ay adı (son 6 ay; ör. Ekim'de "Eylül sonu") veya bugünden eski bir tarih (GG.AA.YY / GG/AA/YYYY)
+   içeriyorsa kutu kırmızı olur ve Güncelle çalışmaz. */
+var SANT_ONC={};
+const AYLAR_TR=["ocak","şubat","mart","nisan","mayıs","haziran","temmuz","ağustos","eylül","ekim","kasım","aralık"];
+function eskiNeden(metin,onceki){
+  const nz=t=>String(t||"").trim().replace(/\s+/g," ").toLocaleLowerCase("tr");
+  const t=nz(metin); if(!t) return "";
+  if(onceki && t===nz(onceki)) return "önceki ayın bilgisiyle aynı";
+  const c=new Date().getMonth()+1;
+  for(let i=0;i<12;i++){
+    if(new RegExp("(^|[^a-zçğıöşü])"+AYLAR_TR[i]).test(t)){ const d=(c-(i+1)+12)%12; if(d>=1&&d<=6) return "geçmiş ay ("+AYLAR_TR[i].charAt(0).toLocaleUpperCase("tr")+AYLAR_TR[i].slice(1)+")"; }
+  }
+  const bug=new Date(); bug.setHours(0,0,0,0);
+  const rx=/(\d{1,2})[./](\d{1,2})[./](\d{2,4})/g; let m;
+  while((m=rx.exec(t))){ let y=Number(m[3]); if(y<100) y+=2000; const dt=new Date(y,Number(m[2])-1,Number(m[1])); if(!isNaN(dt)&&dt<bug) return "geçmiş tarih ("+m[0]+")"; }
+  return "";
+}
+/* Kontrol edilen kutular: [eleman id, satır, alan] */
+function santEskiAlanlar(){
+  const l=[];
+  SEVK.forEach(r=>l.push(["hus_"+r.id,r,"onemli_hususlar","Yükleme planı açıklaması"]));
+  SATIR.forEach(r=>{
+    l.push(["hus_"+r.id,r,"onemli_hususlar","Önemli hususlar"]);
+    ["mvt","pst"].forEach(a=>{ if(r[a+"_onay"]==="Hayır") l.push(["seb_"+a+"_"+r.id,r,a+"_sebep",a.toUpperCase()+" sebebi"]); });
+  });
+  return l;
+}
+function santEskiTara(){
+  const out=[];
+  santEskiAlanlar().forEach(([id,r,alan,ad])=>{
+    const el=document.getElementById(id); if(el) el.classList.remove("eski");
+    const o=SANT_ONC[r.proje_no], n=eskiNeden(r[alan], o&&o[alan]);
+    if(!n) return;
+    if(el) el.classList.add("eski");
+    out.push({el:el, ad:((r.proje_no||"")+" "+(r.proje_adi||"")).trim()+" — "+ad+": "+n});
+  });
+  return out;
+}
+document.head.insertAdjacentHTML("beforeend","<style>textarea.eski{border-color:#c62828!important;background:#fff2f2!important}</style>");
+document.addEventListener("change",e=>{ const t=e.target; if(!t||t.tagName!=="TEXTAREA") return;
+  setTimeout(()=>{ const l=santEskiTara().filter(x=>x.el===t); if(l.length) msg("Kaydedildi ama güncel değil ("+l[0].ad.split(": ").pop()+") — bugünkü durumu yazın, yoksa Güncelle çalışmaz.",false); },0); });
+
 /* GÜNCELLE — bütün bloklar cevaplanmadan (Hayır ise sebep yazılmadan) çalışmaz. */
 document.getElementById("ay_btn").onclick=async()=>{
   let ilk=null, eksik=0, eksikAd=[]; /* GUNC-HATA-UYARI */
@@ -438,6 +485,11 @@ document.getElementById("ay_btn").onclick=async()=>{
     msg((sevkAd.length?sevkAd.length+" Sevke Hazır projede PST seçilmemiş. ":"")+(eksik?eksik+" projede soru cevabı (ya da 'Hayır' sebebi) eksik.":""),false);
     alert("Güncelleme yapılamadı.\n\nSebep:\n\n"+s.join("\n\n")+"\n\nKırmızı işaretli yerleri tamamlayın.");
     if(ilk) ilk.scrollIntoView({behavior:"smooth",block:"center"}); return; }
+  { const es=santEskiTara(); /* SEVK-ESKI-BILGI-SANT */
+    if(es.length){ const ad=es.map(x=>x.ad);
+      msg(es.length+" açıklama güncel değil — kırmızı kutuları düzeltin.",false);
+      alert("Güncelleme yapılamadı — "+es.length+" açıklama güncel değil.\n\nGeçmişe ait bilgi (geçmiş ay/tarih ya da önceki ayla aynı metin) kabul edilmez. Kırmızı kutulara bugünkü durumu yazın:\n\n• "+ad.slice(0,15).join("\n• ")+(ad.length>15?"\n• … ("+(ad.length-15)+" daha)":""));
+      if(es[0].el) es[0].el.scrollIntoView({behavior:"smooth",block:"center"}); return; } }
   const b=document.getElementById("ay_btn"); b.disabled=true; msg("Aktarılıyor…",true);
   const {error}=await sb.from("pano_yayin").upsert({anahtar:PY_ANAHTAR,yayin_at:new Date().toISOString()},{onConflict:"anahtar"});
   b.disabled=false;
