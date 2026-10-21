@@ -552,9 +552,7 @@ async function maybeFlagTakipBekleniyor(r){
   if(!eski) return false;
   /* TAKIP-OTO-NOT (2026-09-25, Melih): otomatik Takip Bekleniyor'a çevrilen satıra çevrim günü tarihli,
      Görevli MK notu eklenir. Aynı kural pg_cron arb_yd_takip_oto (07:30 İstanbul) ile sunucuda da çalışır. */
-  const iso=todayISO();
-  const log2=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi); log2.unshift({t:iso,e:"MB",g:"MK",n:"MB: görevli ve görev belirlenecek"});
-  const upd={durum:"Takip Bekleniyor", son_takip_notlari:JSON.stringify(log2), son_takip_tarihi:iso};
+  const upd={durum:"Takip Bekleniyor"}; /* TAKIP-OTO-NOTSUZ (21.10.2026, Melih): otomatik not eklenmez, yalnız durum değişir (sunucuda da aynı) */
   if(r.id){
     const {error}=await sb.from("satis_yd_akis").update(upd).eq("id",r.id).eq("durum","Teklif Teslim Edildi");
     if(error) return false;
