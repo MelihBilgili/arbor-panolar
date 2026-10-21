@@ -2835,7 +2835,8 @@ async function loadObrapor(tgt){
       + `${cx(r.aylik_ozet)}<td class="num" style="white-space:nowrap">%%TKP_${r.id}%%</td></tr>`;
   });
   if(!iRows.length) ib+=`<tr><td colspan="7" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
-  ib+=`</tbody></table></div>%%TKP_OZET%%`;
+  /* OB-YENI-SATIR (21.10.2026, Melih): Takipteki İşler'e panodan yeni satır → ob_isler.insert (Konu + Öncelik + Ağırlık; Durum varsayılan) */
+  ib+=`</tbody></table></div><div class="obyeni" style="display:flex;gap:6px;align-items:center;margin:6px 2px 2px;flex-wrap:wrap"><input id="ob-yeni-konu" type="text" placeholder="Yeni iş — konu" style="flex:1;min-width:220px;padding:4px 6px"><select id="ob-yeni-onc">${["-","1","2","3","Rutin"].map(o=>`<option>${o}</option>`).join('')}</select><input id="ob-yeni-agr" type="text" inputmode="numeric" size="3" value="100" title="Ağırlık (en az 100)"><button id="ob-yeni-btn" type="button" style="padding:4px 12px;cursor:pointer">+ Satır Ekle</button><span id="ob-yeni-msg" class="muted" style="font-size:12px"></span></div>%%TKP_OZET%%`;
   /* AYLIK FAALİYET — Takipteki İşler'in hemen altı (27.08.2026): ÖB'nin kapanan aya ilişkin
      yorumu (ob_aylik_faaliyet.ob_yorum, ÖB formundan girilir) + o ayda Selectron'a yapılan
      ödemeler (sel_odeme). Dönem = cari aydan bir önceki ay. */
@@ -3056,6 +3057,16 @@ async function loadObrapor(tgt){
   view.querySelectorAll("select.obonc").forEach(el=>{ el.onchange=async()=>{
     const {error}=await sb.from("ob_isler").update({oncelik:el.value}).eq("id",+el.dataset.id);
     if(error){ el.style.background="#ffe5e5"; el.title="Hata: "+error.message; } else loadObrapor(tgt); }; });
+  /* OB-YENI-SATIR */
+  const ybtn=document.getElementById("ob-yeni-btn");
+  if(ybtn) ybtn.onclick=async()=>{
+    const kEl=document.getElementById("ob-yeni-konu"), mEl=document.getElementById("ob-yeni-msg");
+    const konu=(kEl.value||"").trim(); if(!konu){ mEl.textContent="Önce konuyu yazın."; kEl.focus(); return; }
+    let agr=parseFloat(String(document.getElementById("ob-yeni-agr").value).replace(",",".")); if(isNaN(agr)||agr<100) agr=100;
+    ybtn.disabled=true; mEl.textContent="Ekleniyor…";
+    const {error}=await sb.from("ob_isler").insert({konu,oncelik:document.getElementById("ob-yeni-onc").value,agirlik:agr,durum:"Henüz çalışılmadı",ob_notlari:"",arsiv:false});
+    if(error){ ybtn.disabled=false; mEl.textContent="Hata: "+error.message; } else loadObrapor(tgt); };
+  const yk=document.getElementById("ob-yeni-konu"); if(yk) yk.onkeydown=e=>{ if(e.key==="Enter"&&ybtn) ybtn.click(); };
   const wh=document.getElementById("ob-wk");
   if(wh) wh.onclick=()=>{ obWeeksOpen=!obWeeksOpen; loadObrapor(tgt); };
   const mb=document.getElementById("ob-mail-btn");
