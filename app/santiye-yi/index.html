@@ -419,19 +419,34 @@ async function kaydet(id,patch){
    içeriyorsa kutu kırmızı olur ve Güncelle çalışmaz. */
 var SANT_ONC={};
 const AYLAR_TR=["ocak","şubat","mart","nisan","mayıs","haziran","temmuz","ağustos","eylül","ekim","kasım","aralık"];
-function eskiNeden(metin,onceki){
-  const nz=t=>String(t||"").trim().replace(/\s+/g," ").toLocaleLowerCase("tr");
-  const t=nz(metin); if(!t) return "";
-  if(onceki && t===nz(onceki)) return "önceki ayın bilgisiyle aynı";
-  const c=new Date().getMonth()+1;
-  for(let i=0;i<12;i++){
-    if(new RegExp("(^|[^a-zçğıöşü])"+AYLAR_TR[i]).test(t)){ const d=(c-(i+1)+12)%12; if(d>=1&&d<=6) return "geçmiş ay ("+AYLAR_TR[i].charAt(0).toLocaleUpperCase("tr")+AYLAR_TR[i].slice(1)+")"; }
+/* GECMIS-GELECEK (21.10.2026, Melih): metin önceki ayla aynı olabilir; engellenen, geçmişe ait bir zamanı
+   (son 6 ayın ay adı, bugünden eski tarih, "geçen hafta/ay") GELECEKTE olacakmış gibi anlatan cümledir.
+   Cümlede geçmiş zaman eki (edildi, yapılmıştı…) varsa ve gelecek/beklenti ifadesi (öngörülüyor, edilecek,
+   bekleniyor, -ebilir, olması…) yoksa izin verilir. Cümlede fiil yoksa ("Eylül sonu sevk") gelecek sayılır. */
+function gecmisGelecek(metin){
+  const t=String(metin||"").replace(/\s+/g," ").toLocaleLowerCase("tr").trim(); if(!t) return "";
+  const AY=["ocak","şubat","mart","nisan","mayıs","haziran","temmuz","ağustos","eylül","ekim","kasım","aralık"];
+  const c=new Date().getMonth()+1, bug=new Date(); bug.setHours(0,0,0,0);
+  const GEL=/(öngör|bekleniyor(?!du)|beklenmekte(?!ydi)|beklenecek|planlan(?!dı|mıştı)|hedefle|tahmin|düşünülüyor|düşünülmekte|muhtemel|olası|[a-zçğıöşü](ecek|acak|eceğ|acağ)|[a-zçğıöşü](ebil|abil)(ir|ecek|eceğ)|olması|edilmesi|yapılması|gönderilmesi|yüklenmesi|gelmesi|gitmesi|bitmesi|tamamlanması|kalkması)/;
+  const GEC=/[a-zçğıöşü]{2,}(d[ıiuü]|t[ıiuü])(k|m|n|lar|ler|r)?(?=[\s,]|$)|[a-zçğıöşü]m[ıiuü]ş/;
+  const cumleler=t.split(/[!?;\n]+|\.(?!\d)/);
+  for(const s0 of cumleler){
+    const s=s0.trim(); if(!s) continue;
+    let ref="";
+    for(let i=0;i<12&&!ref;i++){ if(new RegExp("(^|[^a-zçğıöşü])"+AY[i]).test(s)){ const d=(c-(i+1)+12)%12; if(d>=1&&d<=6) ref=AY[i].charAt(0).toLocaleUpperCase("tr")+AY[i].slice(1); } }
+    if(!ref){ const rx=/(\d{1,2})[./](\d{1,2})[./](\d{2,4})/g; let m; while((m=rx.exec(s))){ let y=Number(m[3]); if(y<100) y+=2000; const dt=new Date(y,Number(m[2])-1,Number(m[1])); if(!isNaN(dt)&&dt<bug){ ref=m[0]; break; } } }
+    if(!ref){ const g=s.match(/geçen (hafta|ay)|geçtiğimiz (hafta|ay)/); if(g) ref=g[0]; }
+    if(!ref) continue;
+    /* Yan cümleler (virgül, ama/ancak/fakat): zamanın geçtiği yan cümleden itibaren fiil taşıyan ilk yan cümleye bakılır. */
+    const yan=s.replace(/şimdi|kendi|henüz/g," ").split(/,| ama | ancak | fakat | ve /);
+    const k=yan.findIndex(y=>y.indexOf(ref.toLocaleLowerCase("tr"))>-1||/geçen|geçtiğimiz|\d/.test(y));
+    let hk="";
+    for(let q=Math.max(k,0);q<yan.length;q++){ const y=yan[q]; if(GEL.test(y)){ hk="gel"; break; } if(GEC.test(y)){ hk="gec"; break; } }
+    if(hk!=="gec") return "geçmiş zaman ("+ref+") gelecekte olacakmış gibi yazılmış";
   }
-  const bug=new Date(); bug.setHours(0,0,0,0);
-  const rx=/(\d{1,2})[./](\d{1,2})[./](\d{2,4})/g; let m;
-  while((m=rx.exec(t))){ let y=Number(m[3]); if(y<100) y+=2000; const dt=new Date(y,Number(m[2])-1,Number(m[1])); if(!isNaN(dt)&&dt<bug) return "geçmiş tarih ("+m[0]+")"; }
   return "";
 }
+function eskiNeden(metin,onceki){ return gecmisGelecek(metin); }
 /* Kontrol edilen kutular: [eleman id, satır, alan] */
 function santEskiAlanlar(){
   const l=[];
@@ -488,7 +503,7 @@ document.getElementById("ay_btn").onclick=async()=>{
   { const es=santEskiTara(); /* SEVK-ESKI-BILGI-SANT */
     if(es.length){ const ad=es.map(x=>x.ad);
       msg(es.length+" açıklama güncel değil — kırmızı kutuları düzeltin.",false);
-      alert("Güncelleme yapılamadı — "+es.length+" açıklama güncel değil.\n\nGeçmişe ait bilgi (geçmiş ay/tarih ya da önceki ayla aynı metin) kabul edilmez. Kırmızı kutulara bugünkü durumu yazın:\n\n• "+ad.slice(0,15).join("\n• ")+(ad.length>15?"\n• … ("+(ad.length-15)+" daha)":""));
+      alert("Güncelleme yapılamadı — "+es.length+" açıklama güncel değil.\n\nGeçmişe ait bir zaman (geçmiş ay/tarih) gelecekte olacakmış gibi yazılamaz; kırmızı kutulara bugünkü durumu yazın:\n\n• "+ad.slice(0,15).join("\n• ")+(ad.length>15?"\n• … ("+(ad.length-15)+" daha)":""));
       if(es[0].el) es[0].el.scrollIntoView({behavior:"smooth",block:"center"}); return; } }
   const b=document.getElementById("ay_btn"); b.disabled=true; msg("Aktarılıyor…",true);
   const {error}=await sb.from("pano_yayin").upsert({anahtar:PY_ANAHTAR,yayin_at:new Date().toISOString()},{onConflict:"anahtar"});
@@ -519,6 +534,10 @@ yukle();
 
 
 
+
+
+
+<!-- FORM-LINKLER --><script src="../form_linkler.js?v=261019"></script>
 
 
 <!-- ARBOR-DRAGSCROLL -->
@@ -568,9 +587,8 @@ yukle();
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
-<!-- FORM-LINKLER --><script src="../form_linkler.js?v=261019"></script>
 </body>
-</html<!-- ARB-EXCEL-BTN -->
+</html><!-- ARB-EXCEL-BTN -->
 <script>
 /* ARB-EXCEL-BTN (EXCEL-MAIL, 06.10.2026) — TEK KAYNAK: kod/_excel_btn.js, sayfalara kod/_excel_btn_inject.py ile girer.
    Her gorunur tablonun ust sagina "Excel" dugmesi (sayfa duzenine dokunmayan, position:fixed katman).
@@ -583,8 +601,7 @@ yukle();
   var st = document.createElement("style");
   st.textContent = ".arb-xl-btn{position:fixed;z-index:40;font:600 10.5px/1 system-ui,'Segoe UI',Arial,sans-serif;padding:3px 7px;" +
     "border:1px solid #1d6f42;color:#1d6f42;background:#fff;border-radius:5px;cursor:pointer;opacity:.8;display:none;white-space:nowrap}" +
-    ".arb-xl-btn:hover{opacity:1;background:#1d6f42;color:#fff}.arb-xl-btn.koyu{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}.arb-xl-btn.koyu:hover{background:rgba(255,255,255,.18);color:#fff}" + /* XL-ZEMIN */
-    ".arb-xl-btn[disabled]{opacity:.55;cursor:wait}@media print{.arb-xl-btn{display:none!important}}";
+    ".arb-xl-btn:hover{opacity:1;background:#1d6f42;color:#fff}.arb-xl-btn[disabled]{opacity:.55;cursor:wait}@media print{.arb-xl-btn{display:none!important}}";
   document.head.appendChild(st);
   var BTN = []; // {t, b}
 
@@ -628,39 +645,6 @@ yukle();
     }
     return false;
   }
-  function zeminKoyu(x, y) { /* XL-ZEMIN: dugmenin altindaki gercek arka plan koyu mu */
-    var es = document.elementsFromPoint(x, y), e = null;
-    for (var j = 0; j < es.length; j++) if (!(es[j].classList && es[j].classList.contains("arb-xl-btn"))) { e = es[j]; break; }
-    while (e && e.nodeType === 1) {
-      var m = (getComputedStyle(e).backgroundColor || "").match(/[\d.]+/g);
-      if (m && m.length >= 3 && (m.length < 4 || +m[3] > 0.3)) return (0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]) / 255 < 0.5;
-      e = e.parentElement;
-    }
-    return false;
-  }
-  function metinKutulari(tr) { /* satirdaki yazilarin ekran kutulari */
-    var out = [], w = document.createTreeWalker(tr, NodeFilter.SHOW_TEXT, null), n, rg = document.createRange();
-    while ((n = w.nextNode())) {
-      if (!n.nodeValue.trim()) continue;
-      rg.selectNodeContents(n); var rs = rg.getClientRects();
-      for (var k = 0; k < rs.length; k++) if (rs[k].width > 0) out.push(rs[k]);
-    }
-    return out;
-  }
-  function cakisir(ks, x, y, w, h) {
-    for (var k = 0; k < ks.length; k++) { var r = ks[k]; if (x < r.right + 4 && x + w > r.left - 4 && y < r.bottom && y + h > r.top) return true; }
-    return false;
-  }
-  function sabitUst(x, y, t) { /* XL-ZEMIN: tablonun ustu sabit menu/sekme cubugu mu (tabloyu icermeyen nav/header/fixed/sticky) */
-    var es = document.elementsFromPoint(x, y), e = null;
-    for (var j = 0; j < es.length; j++) if (!(es[j].classList && es[j].classList.contains("arb-xl-btn"))) { e = es[j]; break; }
-    for (var u = e; u && u.nodeType === 1 && u !== document.body; u = u.parentElement) {
-      if (u.contains(t)) return false;
-      var ps = getComputedStyle(u).position;
-      if (ps === "fixed" || ps === "sticky" || /^(NAV|HEADER)$/.test(u.tagName) || u.getAttribute("role") === "navigation") return true;
-    }
-    return false;
-  }
   function yerlestir() {
     for (var i = 0; i < BTN.length; i++) {
       var t = BTN[i].t, b = BTN[i].b, goster = false;
@@ -673,15 +657,7 @@ yukle();
           if (goster) {
             var bw = b.offsetWidth || 44, bh = b.offsetHeight || 18;
             var bx = g.right - bw, by = rc.top - bh - 2;
-            if (by < 0 || dolu(bx, by, bw, bh) || sabitUst(bx + bw / 2, by + bh / 2, t)) { /* ustte bos yer yoksa: ilk satirda yazi ve dugme olmayan en sagdaki yer */
-              var tr0 = null; for (var q = 0; q < t.rows.length; q++) if (t.rows[q].getClientRects().length) { tr0 = t.rows[q]; break; }
-              var rr = tr0 ? tr0.getBoundingClientRect() : rc;
-              by = Math.max(rr.top, 0) + Math.max(1, (Math.min(rr.height, 40) - bh) / 2);
-              var ks = tr0 ? metinKutulari(tr0) : [], x0 = bx - 4;
-              while (x0 > rc.left + 4 && (cakisir(ks, x0, by, bw, bh) || dolu(x0, by, bw, bh))) x0 -= 6;
-              bx = x0 > rc.left + 4 ? x0 : bx - 4;
-            }
-            b.classList.toggle("koyu", zeminKoyu(bx + bw / 2, by + bh / 2));
+            if (by < 0 || dolu(bx, by, bw, bh)) by = Math.max(rc.top, 0) + 2; /* ustte bos yer yoksa tablonun ust sag kosesine */
             b.style.left = Math.round(bx) + "px"; b.style.top = Math.round(by) + "px";
           }
         }
@@ -856,4 +832,4 @@ yukle();
 })();
 </script>
 <!-- /ARB-EXCEL-BTN -->
->
+
