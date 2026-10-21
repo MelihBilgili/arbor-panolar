@@ -2844,6 +2844,12 @@ async function loadObrapor(tgt){
   const _d=new Date(), _y=(_d.getMonth()===0)?_d.getFullYear()-1:_d.getFullYear(), _m=(_d.getMonth()===0)?12:_d.getMonth();
   const afDon=_y+"-"+String(_m).padStart(2,"0"), afAd=AY_AD[_m-1]+" "+_y;
   const afSon=new Date(Date.UTC(_y,_m,0)).toISOString().slice(0,10);
+  /* OB-IKI-AY (21.10.2026, Melih): toplamlar son ay (kapanan) + cari ay olarak iki ayrı yazılır; prim/puan yalnız son ay */
+  const caY=_d.getFullYear(), caM=_d.getMonth()+1, caDon=caY+"-"+String(caM).padStart(2,"0"), caAd=AY_AD[caM-1]+" "+caY, caSon=new Date(Date.UTC(caY,caM,0)).toISOString().slice(0,10);
+  const inCa=r=>r.tarih&&String(r.tarih)>=caDon+"-01"&&String(r.tarih)<=caSon; /* OB-IKI-AY */
+  const iki=(a,b)=>`Son ay ${esc(afAd)}: ${a} · Cari ay ${esc(caAd)}: ${b}`; /* OB-IKI-AY */
+  const odCq=await sb.from("sel_odeme").select("tutar_eur").gte("odeme_tarihi",caDon+"-01").lte("odeme_tarihi",caSon); /* OB-IKI-AY */
+  const selEurCa=((odCq&&!odCq.error)?(odCq.data||[]):[]).reduce((t,r)=>t+(Number(r.tutar_eur)||0),0);
   const [afq,odq]=await Promise.all([
     sb.from("ob_aylik_faaliyet").select("*").eq("donem",afDon).limit(1),
     sb.from("sel_odeme").select("*").gte("odeme_tarihi",afDon+"-01").lte("odeme_tarihi",afSon).order("odeme_tarihi")
@@ -2877,7 +2883,7 @@ async function loadObrapor(tgt){
   /* DEVLET-DESTEK (2026-09-24, Melih): Selectron ödemeleri primi 1/10.000 (tutar_eur toplamı) + Devlet Destek
      Başvuruları bloğu (devlet_destek, ÖB formundan). İade primi = sonuç tarihi kapanan aya düşen iade toplamı × 1/100 (DD-PRIM-1YUZDE 02.10.2026; önce 5/1000). */
   const selEur=odR.reduce((t,r)=>t+(Number(r.tutar_eur)||0),0);
-  if(odR.length) ib+=`<div class="muted" style="font-size:12px;margin:4px 2px 0">Ödeme toplamı ${nf(selEur)} € · ÖB primi (1/10.000): <b>${nf(selEur/10000)} €</b></div>`;
+  ib+=`<div class="muted" style="font-size:12px;margin:4px 2px 0">Ödeme toplamı — ${iki(nf(selEur)+" €",nf(selEurCa)+" €")} · ÖB primi (1/10.000, son ay): <b>${nf(selEur/10000)} €</b></div>`; /* OB-IKI-AY */
   const ddq=await sb.from("devlet_destek").select("*").order("son_basvuru",{ascending:false,nullsFirst:true}).order("id",{ascending:false}); /* DD-SIRA */
   const ddR=(ddq&&!ddq.error)?(ddq.data||[]):[];
   const ddBug=new Date().toISOString().slice(0,10), dd30=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
@@ -2885,13 +2891,14 @@ async function loadObrapor(tgt){
   const ddRenk=r=>(r.durum!=="Yapılacak"||!r.son_basvuru)?"":(r.son_basvuru<ddBug?' style="background:#fde2e2"':(r.son_basvuru<=dd30?' style="background:#fff4cc"':""));
   const ddAy=ddR.filter(r=>r.sonuc_tarihi&&String(r.sonuc_tarihi)>=afDon+"-01"&&String(r.sonuc_tarihi)<=afSon);
   const ddAyTop=ddAy.reduce((t,r)=>t+(Number(r.iade_tutari)||0),0);
+  const ddCaTop=ddR.filter(r=>r.sonuc_tarihi&&String(r.sonuc_tarihi)>=caDon+"-01"&&String(r.sonuc_tarihi)<=caSon).reduce((t,r)=>t+(Number(r.iade_tutari)||0),0); /* OB-IKI-AY */
   const ddYil=String(_y), ddYilTop=ddR.filter(r=>String(r.sonuc_tarihi||"").slice(0,4)===ddYil).reduce((t,r)=>t+(Number(r.iade_tutari)||0),0);
   const ddEskiMi=r=>!!(r.sonuc_tarihi&&String(r.sonuc_tarihi)<afDon+"-01"); /* DD-ESKI-KAPALI (09.10.2026, Melih): sonuç tarihi kapanan aydan önceki satırlar kapalı, tıklayınca açılır */
   const ddYeni=ddR.filter(r=>!ddEskiMi(r)), ddEski=ddR.filter(ddEskiMi);
   let ddTbl=`<div class="scroll"><table class="obod"><thead><tr><th>Test</th><th>Proje</th><th>Test Tarihi</th><th class="num">Test Tutarı</th><th>Son Başvuru</th><th>Başvuru</th><th>Durum</th><th>Sonuç</th><th class="num">İade (₺)</th><th>Açıklama</th></tr></thead><tbody>`
     + (ddq&&ddq.error?`<tr><td colspan="10" style="color:#b40000">Okunamadı: ${esc(ddq.error.message)}</td></tr>`:ddR.length?ddYeni.concat(ddEski).map((r,i)=>(i===ddYeni.length&&ddEski.length?`<tr class="dd-ac"><td colspan="10" style="cursor:pointer;color:#3d4a57;font-size:12px;background:#f3f6f9">${window._ddAcik?"▾":"▸"} ${esc(afAd)} öncesi sonuçlanan ${ddEski.length} kayıt</td></tr>`:"")+`<tr${ddEskiMi(r)?' class="dd-eski"'+(window._ddAcik?'':' style="display:none"'):''}><td>${esc(r.test||"")}</td><td>${esc(r.proje||"")}</td><td>${esc(r.test_tarihi||"")}</td><td class="num">${r.test_tutari==null?"":nf(r.test_tutari)+" "+esc(r.test_pb||"")}</td><td${ddRenk(r)}>${ddG(r.son_basvuru)}</td><td>${ddG(r.basvuru_tarihi)}</td><td>${esc(r.durum||"")}</td><td>${ddG(r.sonuc_tarihi)}</td><td class="num">${r.iade_tutari==null?"":nf(r.iade_tutari)}</td><td>${esc(r.aciklama||"")}</td></tr>`).join(""):`<tr><td colspan="10" class="muted">Kayıt yok.</td></tr>`)
     + `</tbody></table></div>`
-    + `<div class="muted" style="font-size:12px;margin:4px 2px 0">${esc(afAd)} iade toplamı ${nf(ddAyTop)} ₺ · ÖB primi (1/100): <b>${nf(ddAyTop*0.01)} ₺</b> · ${ddYil} yılı iade toplamı ${nf(ddYilTop)} ₺</div>`;
+    + `<div class="muted" style="font-size:12px;margin:4px 2px 0">İade toplamı — ${iki(nf(ddAyTop)+" ₺",nf(ddCaTop)+" ₺")} · ÖB primi (1/100, son ay): <b>${nf(ddAyTop*0.01)} ₺</b> · ${ddYil} yılı iade toplamı ${nf(ddYilTop)} ₺</div>`;
   ib+=`<h3 class="sec">Devlet Destek Başvuruları <span class="muted">(${ddR.length})</span></h3>
     <div class="obaf" style="max-width:none">${ddTbl}</div>`;
   /* ===== OB-DPGF + OB-PRIM (2026-09-24, Melih; OB-PRIM2 güncel): DPGF's - Situations - Avenants bloğu (ob_dpgf/ob_situation/ob_avenant,
@@ -2923,12 +2930,18 @@ async function loadObrapor(tgt){
   const avAy=avR.filter(r=>inAy(r)&&r.durum==="Avenant geldi"&&!r.aktarim).reduce( /* OB-TS-261006 */(t,r)=>t+Math.max(Number(r.tutar)||0,0),0);
   const avEksi=avR.filter(r=>inAy(r)&&r.durum==="Avenant geldi"&&!r.aktarim).reduce((t,r)=>t+Math.min(Number(r.tutar)||0,0),0); /* TS-EKSI-AYRI */
   const pvN=pvR.filter(inAy).length, pvAy=pvR.filter(inAy).reduce((t,r)=>t+(Number(r.tutar)||0),0); /* OB-PVR */
+  /* OB-IKI-AY: cari ay toplamları (aynı kurallar) */
+  const dpCa=dpR.filter(inCa).reduce((t,r)=>t+(Number(r.tutar)||0),0);
+  const stCa=stR.filter(r=>inCa(r)&&r.onay_durumu!=="İptal Edildi").reduce((t,r)=>t+(Number(r.tutar)||0),0);
+  const avCaR=avR.filter(r=>inCa(r)&&r.durum==="Avenant geldi"&&!r.aktarim);
+  const avCa=avCaR.reduce((t,r)=>t+Math.max(Number(r.tutar)||0,0),0), avEksiCa=avCaR.reduce((t,r)=>t+Math.min(Number(r.tutar)||0,0),0);
+  const pvNCa=pvR.filter(inCa).length, pvCa=pvR.filter(inCa).reduce((t,r)=>t+(Number(r.tutar)||0),0);
   ib+=`<h3 class="sec">DPGF's  -  Situations  -  Avenants - PV's de Réception <span class="muted">(${esc(afAd)} satırları mavi)</span></h3>
     <div class="obaf" style="max-width:none">
-     <div data-m="OB-DS-YAN OB-DS-BOSLUK" style="display:flex;flex-wrap:wrap;gap:2px;align-items:flex-start"><div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">DPGF · ${esc(afAd)}: ${nf(dpAy)} €</div>${dsTbl(dpR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Correspondence",r=>esc(r.correspondence||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
-     <div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">Situations · ${esc(afAd)}: ${nf(stAy)} € <span class="muted" style="font-weight:400">(İptal Edildi hariç)</span></div>${dsTbl(stR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["İlerleme No",r=>esc(r.ilerleme_no||"")],["Dönem",r=>esc(r.donem||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Onay Durumu",r=>esc(r.onay_durumu||"")]])}</div>
-     </div><div><div class="obafh">TS · ${esc(afAd)}: ${nf(avAy)} €${avEksi?` · <span style="color:#b23a2e">Eksi TS Toplamı: ${nf(avEksi)} €</span>`:""} <span class="muted" style="font-weight:400">(Avenant geldi · KDV hariç; eksi tutarlar toplama ve prime girmez; Excel aktarımından yalnız dönüş/avenant bekleyenler listelenir)</span></div>${dsTbl(avR.filter(r=>!r.aktarim||r.durum==="Dönüş bekleniyor"||r.durum==="Onaylandı, avenant bekleniyor"/* TS-ONAY-AV */),[["Tarih",r=>ddG(r.tarih)],["No",r=>esc(r.no||"")],["Proje",r=>esc(r.proje||"")],["İçerik",r=>esc(r.icerik||"")],["Açıklama",r=>esc(r.aciklama||"")],["Tutar (€, KDV hariç)",r=>r.tutar==null?"":nf(r.tutar),1],["Durum",r=>esc(r.durum||"")]],1)}</div><!-- OB-TS-261006 -->
-     <div style="margin-top:10px"><div class="obafh">PV's de Réception · ${esc(afAd)}: ${pvN} adet · ${nf(pvAy)} € <span class="muted" style="font-weight:400">(tutar = Sel-Arb kontrat)</span></div>${dsTbl(pvR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Açıklama",r=>esc(r.aciklama||"")]])}</div> <!-- OB-PVR -->
+     <div data-m="OB-DS-YAN OB-DS-BOSLUK" style="display:flex;flex-wrap:wrap;gap:2px;align-items:flex-start"><div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">DPGF · ${iki(nf(dpAy)+" €",nf(dpCa)+" €")}</div>${dsTbl(dpR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Correspondence",r=>esc(r.correspondence||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
+     <div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">Situations · ${iki(nf(stAy)+" €",nf(stCa)+" €")} <span class="muted" style="font-weight:400">(İptal Edildi hariç)</span></div>${dsTbl(stR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["İlerleme No",r=>esc(r.ilerleme_no||"")],["Dönem",r=>esc(r.donem||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Onay Durumu",r=>esc(r.onay_durumu||"")]])}</div>
+     </div><div><div class="obafh">TS · ${iki(nf(avAy)+" €",nf(avCa)+" €")}${(avEksi||avEksiCa)?` · <span style="color:#b23a2e">Eksi TS Toplamı — ${iki(nf(avEksi)+" €",nf(avEksiCa)+" €")}</span>`:""} <span class="muted" style="font-weight:400">(Avenant geldi · KDV hariç; eksi tutarlar toplama ve prime girmez; Excel aktarımından yalnız dönüş/avenant bekleyenler listelenir)</span></div>${dsTbl(avR.filter(r=>!r.aktarim||r.durum==="Dönüş bekleniyor"||r.durum==="Onaylandı, avenant bekleniyor"/* TS-ONAY-AV */),[["Tarih",r=>ddG(r.tarih)],["No",r=>esc(r.no||"")],["Proje",r=>esc(r.proje||"")],["İçerik",r=>esc(r.icerik||"")],["Açıklama",r=>esc(r.aciklama||"")],["Tutar (€, KDV hariç)",r=>r.tutar==null?"":nf(r.tutar),1],["Durum",r=>esc(r.durum||"")]],1)}</div><!-- OB-TS-261006 -->
+     <div style="margin-top:10px"><div class="obafh">PV's de Réception · ${iki(pvN+" adet · "+nf(pvAy)+" €",pvNCa+" adet · "+nf(pvCa)+" €")} <span class="muted" style="font-weight:400">(tutar = Sel-Arb kontrat)</span></div>${dsTbl(pvR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Açıklama",r=>esc(r.aciklama||"")]])}</div> <!-- OB-PVR -->
     </div>`;
   /* --- puanlar --- */
   const PA=(paq&&!paq.error&&paq.data&&paq.data[0])||{};
