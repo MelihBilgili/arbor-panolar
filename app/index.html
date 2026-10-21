@@ -447,9 +447,10 @@ async function loadGiris(){
     <div id="gr-ust"></div>
     <div id="gr-santiye"></div>
     <div id="gr-egitim"></div>
+    <div id="gr-not" style="margin-top:16px"></div><!-- GIRIS-NOT -->
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
-  await Promise.all([kor(grVakit),kor(grOzel),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB"})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim)]);
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB"})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
 }
 /* 1 — Ezan vakitleri (Diyanet yöntemi) + gündüz ortalama sıcaklık (gün doğumu–batımı saatlik ortalaması) + yağış */
 async function grVakit(){
@@ -553,6 +554,30 @@ const agPemPrjBlock=(function(){
   };
   return pemPrjBlock;
 })();
+
+/* GIRIS-NOT (21.10.2026, Melih): en altta serbest not penceresi — 40 satır görünür, fazlası kaydırılır.
+   Kaynak public.giris_not (tek satır id=1, yalnız int@). Yazdıkça 0,8 sn sonra ve odaktan çıkınca kaydedilir;
+   5 dk'lık pano tazelemesi pencere odaktayken ya da kaydedilmemiş değişiklik varken atlanır. */
+async function grNot(){
+  const el=grEl("gr-not"); if(!el) return;
+  const {data,error}=await sb.from("giris_not").select("metin,updated_at").eq("id",1).maybeSingle();
+  if(error){ el.innerHTML='<div class="gr-muted">Not okunamadı: '+esc(error.message)+'</div>'; return; }
+  el.innerHTML='<h3 class="sec">Notlar <span class="gr-muted" id="gr-not-d" style="font-weight:400;font-size:11px"></span></h3>'
+    +'<textarea id="gr-not-ta" rows="40" spellcheck="false" style="width:100%;box-sizing:border-box;font:13px/1.45 Consolas,\'Segoe UI\',monospace;padding:8px 10px;border:1px solid #c9d6e3;border-radius:8px;background:#fffef8;color:#16324f;resize:vertical;overflow-y:auto"></textarea>';
+  const ta=grEl("gr-not-ta"), d=grEl("gr-not-d");
+  ta.value=(data&&data.metin)||"";
+  const dmg=t=>t?" · son kayıt "+dOnly(t)+" "+new Date(t).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}):"";
+  d.textContent=dmg(data&&data.updated_at);
+  let tm=null, son=ta.value;
+  const kaydet=async()=>{ clearTimeout(tm); tm=null; const v=ta.value; if(v===son) return;
+    d.textContent=" · kaydediliyor…";
+    const now=new Date().toISOString();
+    const {error:e}=await sb.from("giris_not").upsert({id:1,metin:v,updated_at:now});
+    if(e){ d.textContent=" · KAYDEDİLEMEDİ: "+e.message; d.style.color="#b23a2e"; return; }
+    son=v; window._grNotKirli=false; d.style.color=""; d.textContent=dmg(now); };
+  ta.oninput=()=>{ window._grNotKirli=true; clearTimeout(tm); tm=setTimeout(kaydet,800); };
+  ta.onblur=kaydet;
+}
 
 /* ---------- ANA GÜNDEM (blok = kod_prefix; İlgili = kişi; kapat = sil) ---------- */
 async function loadGundem(){
@@ -3809,7 +3834,7 @@ async function boot(){
 }
 sb.auth.onAuthStateChange((_ev,s)=>{ if(!s){ state.session=null; renderLogin(); } });
 boot();
-setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return;
+setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; if(window._grNotKirli||(document.activeElement&&document.activeElement.id==="gr-not-ta")) return; /* GIRIS-NOT */
   if(state.tab==='mali' && state.maliBolum==='ob_rapor' && Date.now()-(window._obYuklendi||0)<590000) return; /* OB-YENILE-10DK (09.10.2026, Melih): ÖB Faaliyet 10 dakikada bir */
   loadView(); }, 300000);
 </script>
