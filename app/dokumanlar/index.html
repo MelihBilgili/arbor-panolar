@@ -66,6 +66,11 @@
   #ykKutu .hata{color:#b40000;font-size:12px;margin-top:6px}
   #ykKutu input.eksik,#ykKutu select.eksik{border-color:#b40000;outline:1px solid #b40000}
   #ykKutu .bekle{padding:22px 4px;text-align:center;color:#16324f}
+  /* DOK-SIL (22.10.2026) */
+  #sagMenu{position:fixed;display:none;z-index:30;background:#fff;border:1px solid #cdd8e4;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:4px;min-width:180px;max-width:340px}
+  #sagMenu .mb{font-size:11px;color:#6b7a89;padding:4px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #sagMenu button{display:block;width:100%;text-align:left;border:0;background:none;padding:6px 8px;font:inherit;font-size:12.5px;color:#b40000;cursor:pointer;border-radius:5px}
+  #sagMenu button:hover{background:#fdecec}
 </style>
 </head>
 <body>
@@ -122,7 +127,8 @@ window.ARB_KISI_AL=function(em){ try{ var k=JSON.parse(localStorage.getItem("arb
 <script>
 /* ===== ARBOR FORM KAPISI — Herkes (cam.form rol hesabı, DOKUMANLAR-FORM) + MB geçişi ===== */
 const ARB_ROLLER = [
-  { email:"cam.form@arbor.com.tr", ad:"Cam" }
+  { email:"cam.form@arbor.com.tr", ad:"Cam" },
+  { email:"ob.form@arbor.com.tr", ad:"ÖB" } /* DOK-SIL */
 ];
 const ARB_STORE = "arbform_dokumanlar";
 const ARB_NOSTORE = (u,o)=> fetch(u, Object.assign({}, o||{}, {cache:"no-store"}));
@@ -236,7 +242,7 @@ function ciz(){
   const rs=suz(); const k=SORT.k, d=SORT.d;
   rs.sort((a,b)=>{ let x=a[k], y=b[k]; if(x==null||x==="") return 1; if(y==null||y==="") return -1;
     if(typeof x==="number"||typeof x==="boolean") return ((x>y)-(x<y))*d; return trc(x,y)*d; });
-  $("ozet").textContent=rs.length+" / "+ROWS.length+" doküman";
+  $("ozet").textContent=rs.length+" / "+ROWS.length+" doküman"+(["int@arbor.com.tr","ob.form@arbor.com.tr"].includes(ARB_EMAIL)?" · silmek için satıra sağ tıklayın":""); /* DOK-SIL */
   if(!rs.length){ $("res").innerHTML='<div class="bos">Sonuç yok.</div>'; return; }
   let h='<table><thead><tr>'+COLS.map(c=>'<th data-k="'+c[0]+'">'+c[1]+(SORT.k===c[0]?(d>0?" ▲":" ▼"):"")+'</th>').join("")+'</tr></thead><tbody>';
   rs.forEach(r=>{
@@ -245,7 +251,7 @@ function ciz(){
     const ser=[r.seri,r.seri2,r.seri3,r.seri4].filter(Boolean).join(", ");
     const ad=r.depo_yolu?'<a href="#" data-nr="'+r.nr+'">'+esc(r.ad)+'</a>'
       :'<a href="#" class="od" data-od="'+r.nr+'" title="50 MB üstü: OneDrive klasöründen indirilir">'+esc(r.ad)+'</a> <span class="odn">· OneDrive</span>'; /* DOK-ONEDRIVE-LINK */
-    h+='<tr><td class="r">'+r.nr+'</td><td>'+esc(r.ana)+'</td><td>'+(r.aile?'<span class="etk '+esc(r.aile)+'">'+esc(r.aile)+'</span>':'')+'</td>'
+    h+='<tr data-r="'+r.nr+'"><td class="r">'+r.nr+'</td><td>'+esc(r.ana)+'</td><td>'+(r.aile?'<span class="etk '+esc(r.aile)+'">'+esc(r.aile)+'</span>':'')+'</td>'
       +'<td>'+esc(ser)+'</td><td class="ad">'+ad+'<span class="dn">'+esc(r.dosya)+(r.rev?' · Rev. '+esc(r.rev):'')+'</span></td>'
       +'<td>'+esc(r.dil)+'</td><td>'+esc(r.tur)+'</td><td'+gc+'>'+tarih(r.gecerlilik)+'</td>'
       +'<td>'+(r.web?'<span class="web" title="İnternet sitesinde paylaşılıyor">✓ Seçili</span>':'')+'</td><td class="r">'+mb(r.boyut)+'</td></tr>';
@@ -374,10 +380,33 @@ async function ykKaydet(){
     await yukle();
   }catch(e){ b.disabled=false; b.textContent="Onayla ve OneDrive'a kaydet"; $("y_hata").textContent="Kaydedilemedi: "+e.message; }
 }
-
+/* DOK-SIL (22.10.2026): satıra sağ tık -> Sil; yalnız MB (int@) ve ÖB (ob.form@). Edge dokuman-ekle islem:'sil' */
+const SILEBILIR=["int@arbor.com.tr","ob.form@arbor.com.tr"].includes(ARB_EMAIL);
+const sagMenu=document.createElement("div"); sagMenu.id="sagMenu"; document.body.appendChild(sagMenu);
+function menuKapat(){ sagMenu.style.display="none"; }
+document.addEventListener("click",menuKapat); document.addEventListener("scroll",menuKapat,true); window.addEventListener("blur",menuKapat);
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") menuKapat(); });
+$("res").addEventListener("contextmenu",e=>{
+  if(!SILEBILIR) return;
+  const tr=e.target.closest("tr[data-r]"); if(!tr) return;
+  e.preventDefault();
+  const r=ROWS.find(x=>x.nr===+tr.dataset.r); if(!r) return;
+  sagMenu.innerHTML='<div class="mb">Nr '+r.nr+' · '+esc(r.ad)+'</div><button type="button" id="sagSil">🗑 Sil</button>';
+  sagMenu.style.display="block";
+  const w=sagMenu.offsetWidth, h=sagMenu.offsetHeight;
+  sagMenu.style.left=Math.max(4,Math.min(e.clientX,innerWidth-w-8))+"px"; sagMenu.style.top=Math.max(4,Math.min(e.clientY,innerHeight-h-8))+"px";
+  $("sagSil").onclick=async ev=>{ ev.stopPropagation(); menuKapat();
+    if(!confirm("Bu doküman silinsin mi?\n\nNr "+r.nr+" · "+r.ad+"\n"+(r.dosya||"")+"\n\nListeden ve döküm dosyasından kaldırılır; dosya OneDrive'da _yedek_261020 klasörüne taşınır.")) return;
+    try{
+      const j=await fn({islem:"sil",nr:r.nr});
+      ROWS=ROWS.filter(x=>x.nr!==r.nr); doldur(); ciz();
+      toast("Silindi: Nr "+r.nr+(j.onedrive==="kuyrukta"?" — OneDrive ve döküm listesi birkaç saniye içinde güncellenir.":" — OneDrive güncellenemedi ("+j.onedrive+")."),9000);
+    }catch(err){ alert("Silinemedi: "+err.message); }
+  };
+});
 </script>
 <!-- FORM-LINKLER --><script src="../form_linkler.js?v=261019"></script>
-</bo<!-- ARB-EXCEL-BTN -->
+<!-- ARB-EXCEL-BTN -->
 <script>
 /* ARB-EXCEL-BTN (EXCEL-MAIL, 06.10.2026) — TEK KAYNAK: kod/_excel_btn.js, sayfalara kod/_excel_btn_inject.py ile girer.
    Her gorunur tablonun ust sagina "Excel" dugmesi (sayfa duzenine dokunmayan, position:fixed katman).
@@ -663,5 +692,5 @@ async function ykKaydet(){
 })();
 </script>
 <!-- /ARB-EXCEL-BTN -->
-dy>
+</body>
 </html>
