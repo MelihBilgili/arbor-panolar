@@ -271,9 +271,10 @@ function ufHesap(S,C,ah){
 let LISTE=[];
 const nrmAd=x=>String(x||"").split(", Ug=")[0].toLowerCase().replace(/akustik/g,"acoustic").replace(/ar we/g,"ar-we").replace(/\s+/g,"");
 const nrmAd2=x=>nrmAd(x).replace(/low-e/g,"").replace(/n\(\d+\/\d+\)/g,"");
-const yapiAd=c=>{ const n=String(c).split("/").length; return n===3?"Çift":n===5?"Üçlü":n===1?"Tek":"–"; };
+const parSil=c=>String(c||"").replace(/\([^)]*\)/g,""); /* URUN-KONFIG-PARANTEZ (22.10.2026): N(80/64) gibi parantez içi katman sayılmaz */
+const yapiAd=c=>{ const n=parSil(c).split("/").length; return n===3?"Çift":n===5?"Üçlü":n===1?"Tek":"–"; };
 /* URUN-KONFIG-KAL-TAHMIN (19.10.2026): kalınlık addan — '44.2' = 4+4 mm cam + 2×0,38 PVB; '1010.2' = 10+10; '810.2' = 8+10; boşluk sayısı (16 Ar-We) aynen. Seriye sığma (r.asim) kontrolü için. */
-function kalTahmin(ad){ let t=0; const P=String(ad||"").split(", Ug=")[0].split("/"); if(P.length<1) return null;
+function kalTahmin(ad){ let t=0; const P=parSil(String(ad||"").split(", Ug=")[0]).split("/"); /* URUN-KONFIG-PARANTEZ */ if(P.length<1) return null;
   for(const p of P){ const m=/^\s*(\d+)(?:\.(\d+))?/.exec(p); if(!m) return null; const a=m[1], n=m[2];
     if(n==null){ t+=+a; continue; }
     const g=a.length===2?[+a[0],+a[1]]:a.length===3?[+a[0],+a.slice(1)]:a.length===4?[+a.slice(0,2),+a.slice(2)]:null; if(!g) return null;
