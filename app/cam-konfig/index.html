@@ -131,6 +131,7 @@
         <div><label for="f_tmp">Temper</label><select id="f_tmp"><!-- TEMPER-KONUM --><option value="0" selected>Yok</option><option value="1">Var</option></select></div>
         <div><label for="f_tpoz" title="Temperli camın konumu">Temper konumu</label><select id="f_tpoz" disabled><option value="" selected>Fark etmez</option><option value="dis">Dış</option><option value="ic">İç</option><option value="iki">İki tarafta</option></select></div>
         <div><label for="f_ec">Extra Clear</label><select id="f_ec"><option value="">Fark etmez</option><option value="1">Olsun</option><option value="0">Olmasın</option></select></div>
+        <div><label for="f_sat" title="Satine / Satinovo / SatinDeco / Kumlu / Buzlu / Frosted">Satine cam</label><select id="f_sat"><option value="">Fark etmez</option><option value="1">Olsun</option><option value="0">Olmasın</option></select></div><!-- CAM-KONFIG-SATINE (22.10.2026) -->
         <div><label for="f_ur">Üretici</label><select id="f_ur"><option value="">Hepsi</option></select></div>
         <div><label for="f_kay">Hesaplayıcı</label><select id="f_kay"><option value="">Hepsi</option></select></div>
       </div>
@@ -359,7 +360,7 @@ function hedef(){ const p=id=>num($(id).value);
   const lt=p("h_lt"), gmax=p("h_gmax"), gmin=p("h_gmin"), lr=null /* CAM-KONFIG-LRSEL */;
   const fr=x=>x==null?null:(x>1?x/100:x); /* % veya oran */
   return {ug:p("h_ug"),lt:fr(lt),gmax:fr(gmax),gmin:fr(gmin),lr:fr(lr),rw:null /* CAM-KONFIG-RWAGR */,rwctr:p("h_rwctr"),sel:null /* CAM-KONFIG-LRSEL */,
-    yapi:$("f_yapi").value,kal:p("f_kal"),agr:null /* CAM-KONFIG-RWAGR */,lam:$("f_lam").value,lpoz:$("f_lpoz").value /* LAM-KONUM */,tmp:$("f_tmp").value,tpoz:$("f_tmp").value==="1"?$("f_tpoz").value:"" /* TEMPER-KONUM */,aku:$("f_aku").value,ec:$("f_ec").value,ur:$("f_ur").value,kay:$("f_kay").value};
+    yapi:$("f_yapi").value,kal:p("f_kal"),agr:null /* CAM-KONFIG-RWAGR */,lam:$("f_lam").value,lpoz:$("f_lpoz").value /* LAM-KONUM */,tmp:$("f_tmp").value,tpoz:$("f_tmp").value==="1"?$("f_tpoz").value:"" /* TEMPER-KONUM */,aku:$("f_aku").value,ec:$("f_ec").value,sat:$("f_sat").value /* CAM-KONFIG-SATINE */,ur:$("f_ur").value,kay:$("f_kay").value};
 }
 /* Hedef kontrolü: her hedef için [karşılıyor mu, normalize açık/fazla] — eksik değer = karşılamıyor sayılır */
 const OLC={ug:0.1,lt:0.02,g:0.02,lr:0.02,rw:1,rwctr:1,sel:0.05};
@@ -388,6 +389,7 @@ function filtre(r,h){
     if(h.tpoz&&tp.p!==h.tpoz) return false; }
   if(h.aku!==""&&(!!r.akustik)!==(h.aku==="1")) return false;
   if(h.ec!==""&&(!!r.extra_clear)!==(h.ec==="1")) return false;
+  if(h.sat!==""&&/satin|kumlu|buzlu|frost/i.test(String(r.kombinasyon||""))!==(h.sat==="1")) return false; /* CAM-KONFIG-SATINE: Satine/Satinovo/SatinDeco/Kumlu/Buzlu/Frosted */
   if(h.ur&&r.uretici!==h.ur) return false;
   if(h.kay&&r.kaynak!==h.kay) return false;
   return true;
