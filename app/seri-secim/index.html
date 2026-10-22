@@ -81,11 +81,16 @@
       <div><label for="h_db">Ürün Rw+Ctr ≥ (dB)</label><input id="h_db" inputmode="decimal"></div>
       <div><label for="h_g">Sg ≤ (%)</label><input id="h_g" inputmode="decimal"></div>
       <div><label for="h_tl">Tlg ≥ (%)</label><input id="h_tl" inputmode="decimal"></div>
-      <div><label for="f_sat" title="Satine / Satinovo / SatinDeco / Kumlu / Buzlu / Frosted">Satine cam</label><select id="f_sat"><option value="">Fark etmez</option><option value="1">Olsun</option><option value="0">Olmasın</option></select></div><!-- URUN-KONFIG-SATINE (22.10.2026) -->
+      <div><label for="f_sat" title="Satine / Satinovo / SatinDeco / Kumlu / Buzlu / Frosted">Satin</label><select id="f_sat"><option value="">Fark etmez</option><option value="1">Var</option><option value="0">Yok</option></select></div><!-- URUN-KONFIG-SATINE (22.10.2026) -->
       <div><label for="f_seri">Seri</label><select id="f_seri"><option value="">Hepsi</option></select></div>
       <!-- URUN-KONFIG-EBAT (19.10.2026): Uw/Sw/Tlw bu ebada hesaplanır -->
       <div><label for="f_gen">Ürün Genişlik mm</label><input id="f_gen" inputmode="numeric" value="1230"></div>
       <div><label for="f_yuk">Ürün Yükseklik mm</label><input id="f_yuk" inputmode="numeric" value="1480"></div>
+      <!-- URUN-KONFIG-SECIMLER (22.10.2026) -->
+      <div><label for="f_yng">Yangın Dayanımı</label><select id="f_yng"><option value="">Fark etmez</option><option value="30">EI30</option><option value="60">EI60</option></select></div>
+      <div><label for="f_guv">Güvenlik Sınıfı</label><select id="f_guv"><option value="">Fark etmez</option><option value="rc2n">RC2N</option><option value="rc2">CR2 / RC2</option><option value="rc3">CR 3 / RC3</option></select></div>
+      <div><label for="f_tmp">Temper</label><select id="f_tmp"><option value="">Fark etmez</option><option value="1">Var</option><option value="0">Yok</option></select></div>
+      <div><label for="f_dog">Doğrama Tipi</label><select id="f_dog"><option value="pencere">Pencere</option><option value="kapi">Kapı</option></select></div>
     </div>
   </div>
   <div class="ozet" id="ozet"></div>
@@ -274,6 +279,25 @@ const nrmAd2=x=>nrmAd(x).replace(/low-e/g,"").replace(/n\(\d+\/\d+\)/g,"");
 const parSil=c=>String(c||"").replace(/\([^)]*\)/g,""); /* URUN-KONFIG-PARANTEZ (22.10.2026): N(80/64) gibi parantez içi katman sayılmaz */
 const yapiAd=c=>{ const n=parSil(c).split("/").length; return n===3?"Çift":n===5?"Üçlü":n===1?"Tek":"–"; };
 /* URUN-KONFIG-KAL-TAHMIN (19.10.2026): kalınlık addan — '44.2' = 4+4 mm cam + 2×0,38 PVB; '1010.2' = 10+10; '810.2' = 8+10; boşluk sayısı (16 Ar-We) aynen. Seriye sığma (r.asim) kontrolü için. */
+/* URUN-KONFIG-SECIMLER (22.10.2026, Melih): cam katmanları addan — çift sayılı parçalar cam ('44.2' = 4+4 mm cam, 2×0,38 PVB, lamine), tek sayılı parçalar boşluk; ilk cam dış, son cam iç. */
+function camKat(C){ if(C._P!==undefined) return C._P; const P=[]; const pr=parSil(String(C.komb||C.c||"").split(", Ug=")[0]).split("/");
+  for(let i=0;i<pr.length;i+=2){ const m=/^\s*(\d+)(?:\.(\d+))?/.exec(pr[i]); if(!m){ C._P=null; return null; } const a=m[1], n=m[2];
+    if(n==null){ P.push({cam:+a,pvb:0,lam:false}); continue; }
+    const g=a.length===2?[+a[0],+a[1]]:a.length===3?[+a[0],+a.slice(1)]:a.length===4?[+a.slice(0,2),+a.slice(2)]:null; if(!g){ C._P=null; return null; }
+    P.push({cam:g[0]+g[1],pvb:0.38*(+n),lam:true}); }
+  C._P=P; return P; }
+function ekSecim(){ return {alan:UK_W*UK_H, yng:$("f_yng").value, guv:$("f_guv").value, tmp:$("f_tmp").value, dog:$("f_dog").value}; }
+/* Kurallar: ürün alanı > 2,6 m² → her cam ≥ 6 mm (lamine: iki camın toplamı); EI30 → adında EI30 ya da EI60, EI60 → EI60; CR2/RC2 → en az bir lamine ≥ 0,76 mm PVB;
+   Temper Var → adında temper, Yok → temper yok; Kapı ya da Bal.Door serisi → iç ve dış cam lamine. RC2N cam kısıtı yok; CR3/RC3 sertifika yok (liste boş, uyarı). */
+function ekUygun(r,ek){ const C=r.C, ad=String(C.komb||C.c||""), P=camKat(C);
+  if(ek.alan>2.6+1e-9&&!(P&&P.length&&P.every(p=>p.cam>=6))) return false;
+  if(ek.yng==="30"&&!/EI\s*(30|60)/i.test(ad)) return false;
+  if(ek.yng==="60"&&!/EI\s*60/i.test(ad)) return false;
+  if(ek.guv==="rc2"&&!(P&&P.some(p=>p.pvb>=0.76-1e-9))) return false;
+  if(ek.tmp==="1"&&!/temper/i.test(ad)) return false;
+  if(ek.tmp==="0"&&/temper/i.test(ad)) return false;
+  if((ek.dog==="kapi"||/Bal\.Door/i.test(r.S.s))&&!(P&&P.length&&P[0].lam&&P[P.length-1].lam)) return false;
+  return true; }
 function kalTahmin(ad){ let t=0; const P=parSil(String(ad||"").split(", Ug=")[0]).split("/"); /* URUN-KONFIG-PARANTEZ */ if(P.length<1) return null;
   for(const p of P){ const m=/^\s*(\d+)(?:\.(\d+))?/.exec(p); if(!m) return null; const a=m[1], n=m[2];
     if(n==null){ t+=+a; continue; }
@@ -372,6 +396,10 @@ function ciz(){
   const seri=$("f_seri").value, satF=$("f_sat").value; const satMi=C=>/satin|kumlu|buzlu|frost/i.test(String(C.komb||C.c||"")); /* URUN-KONFIG-SATINE */ /* URUN-KONFIG-AHSAP: Yapı/Ahşap/Tahmini Uw seçimleri kaldırıldı; tahmini Uw her zaman kullanılır */
   const genis=true; /* URUN-KONFIG-HEP-LISTE (19.10.2026, Melih): hedef boşken de Cam Listesi'ndeki tüm camlar (sertifika dışındakiler gri) */ /* URUN-KONFIG-LISTE */
   let R=satirlar(genis).filter(r=>!r.asim /* URUN-KONFIG-SADE: kalınlığı seriye sığmayan gösterilmez */&&AILE_SEC.has(r.S.a)&&(!seri||sAd(r)===seri)&&(satF===""||satMi(r.C)===(satF==="1")));
+  const ek=ekSecim(); /* URUN-KONFIG-SECIMLER */
+  if(ek.guv==="rc3"){ $("ozet").innerHTML='<div class="uyari">CR 3 / RC3 güvenlik sınıfı için sertifikamız yok.</div>'; $("res").innerHTML=""; window._SR=[]; return; }
+  R=R.filter(r=>ekUygun(r,ek));
+  if(satF==="1"){ h.uw=null; h.tl=null; } /* URUN-KONFIG-SECIMLER: Satin Var → Uw, Ug, Tlg dikkate alınmaz */
   R.forEach(r=>{ const uwh=uwHesap(r.S,r.C), uw=uwh!=null?uwh:r.uw; const e={}; /* URUN-KONFIG-UWH-SUZ: Uw hedefi Hesaplanan Uw'ye göre (yoksa sertifika Uw'si) */
     if(h.uw!=null) e.uw=uw==null?1:Math.max(0,(uw-h.uw)/h.uw);
     if(h.db!=null) e.db=r.db==null?1:Math.max(0,(h.db-r.db)/h.db);
@@ -435,8 +463,8 @@ const AILE_SEC=new Set(); /* SERI-AILE-SECIM */
     cipCiz(); seriDoldur(); ciz(); });
   cipCiz(); seriDoldur();
   ["h_uw","h_db","h_g","h_tl","f_gen","f_yuk"].forEach(id=>$(id).addEventListener("input",ciz)); /* URUN-KONFIG-EBAT */
-  ["f_seri","f_sat"].forEach(id=>$(id).addEventListener("change",ciz)); /* URUN-KONFIG-SATINE */
-  $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Cam Listesi\'ndeki tüm camlar değerlendirilir: <b>Uw</b> serinin aynı Ug\'li sertifika camının Uw\'si, <b>Ürün Rw+Ctr</b> o seride cam Rw+Ctr\'si aynı olan sertifika camının test değeri (aynısı yoksa cam Rw+Ctr\'si daha düşük sertifika camınınki, <b>≥</b> ile), Ug\'si sertifika camlarından düşükse Uw <b>≤</b> ile; Sg ve Tlg camın kendi değeri. <b>Hesaplanan Uw, Sw, Tlw</b> girilen ürün ebadına göre EN ISO 10077-1 ile: Uw = (Ag·Ug + Af·Uf + lg·ψg)/Aw, Sw = (Sg·Ag + Sf·Af)/(Ag+Af) (Sf = 0), Tlw = Tlg·Ag/(Ag+Af). Uw hedefi Hesaplanan Uw\'ye göre süzülür (yoksa sertifika Uw\'si); Hesaplanan Uw\'si olan serilerde sertifika değeri olmayan camlar da listelenir. <b>Koyu renkli konfigürasyonlar</b> sertifikada geçen camlardır, diğerleri gri. '
+  ["f_seri","f_sat","f_yng","f_guv","f_tmp","f_dog"].forEach(id=>$(id).addEventListener("change",ciz)); /* URUN-KONFIG-SATINE */
+  $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Cam Listesi\'ndeki tüm camlar değerlendirilir: <b>Uw</b> serinin aynı Ug\'li sertifika camının Uw\'si, <b>Ürün Rw+Ctr</b> o seride cam Rw+Ctr\'si aynı olan sertifika camının test değeri (aynısı yoksa cam Rw+Ctr\'si daha düşük sertifika camınınki, <b>≥</b> ile), Ug\'si sertifika camlarından düşükse Uw <b>≤</b> ile; Sg ve Tlg camın kendi değeri. <b>Hesaplanan Uw, Sw, Tlw</b> girilen ürün ebadına göre EN ISO 10077-1 ile: Uw = (Ag·Ug + Af·Uf + lg·ψg)/Aw, Sw = (Sg·Ag + Sf·Af)/(Ag+Af) (Sf = 0), Tlw = Tlg·Ag/(Ag+Af). <b>Seçimler:</b> ürün alanı 2,6 m²\'yi geçerse yalnız her camı en az 6 mm olanlar; EI30 → EI30 ve EI60 camlar, EI60 → EI60; CR2 / RC2 → en az 0,76 mm lamine; CR 3 / RC3 sertifikamız yok; Temper Var/Yok; Kapı ve Bal.Door serileri → iç ve dış cam lamine; Satin Var → Uw, Ug ve Tlg hedefleri dikkate alınmaz. Uw hedefi Hesaplanan Uw\'ye göre süzülür (yoksa sertifika Uw\'si); Hesaplanan Uw\'si olan serilerde sertifika değeri olmayan camlar da listelenir. <b>Koyu renkli konfigürasyonlar</b> sertifikada geçen camlardır, diğerleri gri. '
     +'<b>Uw</b>: tabloda yalnız üç referans cam için verilmiştir (Ug 1,1 çift 4/16/4 · Ug 0,7 üçlü 4/12/4/12/4 · Ug 0,6 üçlü 4/16/4/16/4); diğer camlarda aynı Ug\'li referansın değeri kullanılır. '
     +'⚠ Kalınlık serinin max cam kalınlığını aşıyor (ör. 78s, max 40 mm). 58f max cam kalınlığı tablo 1\'de 51-52 mm (Melih Bey bilgisiyle güncellenmiş), tablo 2\'de 42 mm — formda 52 alınmıştır. '
     +'Uf: 58f\'de ahşap türüne (tabloda Ahşap sütunu, iki satır) ve cam kalınlığına göre; 78t, 78t-a Bal.Door, 78a için tabloda üç değer vardır. '
