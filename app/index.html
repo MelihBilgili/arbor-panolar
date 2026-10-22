@@ -417,6 +417,7 @@ async function loadGiris(){
     .gr-l1{font-weight:600}
     .gr h3.sec{margin:16px 0 6px;font-size:13.5px}
     .gr-muted{color:#7b8794}
+    .gr-onc{font:inherit;font-weight:700;font-size:12.5px;padding:5px 14px;border-radius:6px;cursor:pointer;background:#fff;color:#8a97a4;border:1px solid #c9d6e3}.gr-onc.gr-onc-var{background:#c62828;color:#fff;border-color:#c62828}
     .gr-bxs{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 8px}.gr-bx{border:1px solid #c9d6e3;border-left:4px solid #2e6da4;border-radius:6px;background:#f6f9fc;padding:5px 12px;font-weight:600}.gr-bxh{border-left-color:#e07b00;background:#fff8ef}.gr-bxd{font-size:11px;color:#5a6b7d;font-weight:700}#gr-ozel .gr-bx{font-weight:400}
     .gr-pos{color:#0a6b3f}.gr-neg{color:#b23a2e}
     .gr .scroll{max-height:none;overflow-y:visible;overflow-x:auto}
@@ -442,7 +443,7 @@ async function loadGiris(){
   </style>
   <div class="gr">
     <div id="gr-vakit" class="gr-bxs"><span class="gr-muted">Vakitler yükleniyor…</span></div>
-    <div id="gr-ozel" class="gr-bxs"></div>
+    <div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin:2px 0 8px"><button id="gr-onc" class="gr-onc">Öncelik Belirle</button><div id="gr-ozel" class="gr-bxs" style="margin:0"></div></div><!-- GIRIS-ONCELIK-BTN -->
     <div id="gr-gundem"></div>
     <div id="gr-ust"></div>
     <div id="gr-santiye"></div>
@@ -450,7 +451,7 @@ async function loadGiris(){
     <div id="gr-not" style="margin-top:16px"></div><!-- GIRIS-NOT -->
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
-  await Promise.all([kor(grVakit),kor(grOzel),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB"})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB"})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
 }
 /* 1 — Ezan vakitleri (Diyanet yöntemi) + gündüz ortalama sıcaklık (gün doğumu–batımı saatlik ortalaması) + yağış */
 async function grVakit(){
@@ -579,6 +580,19 @@ async function grNot(){
   ta.onblur=kaydet;
 }
 
+/* GIRIS-ONCELIK-BTN (22.10.2026, Melih): takvim kutularının solunda "Öncelik Belirle" düğmesi; basınca Satış panosu açılır
+   ve "Öncelik Belirlenmesi Gerekenler" bloğuna kaydırılır. Satış'taki o blokta satır varsa kırmızı zemin/beyaz yazı, yoksa beyaz/gri.
+   Sayım pipelineTables ile aynı: durum='Teklif İncelendi' ve ilgili kartı (Ad, E-posta, Telefon) tam. */
+async function grOnc(){
+  const b=grEl("gr-onc"); if(!b) return;
+  b.onclick=()=>{ state.tab="satis"; renderApp();
+    let n=0; const t=setInterval(()=>{ n++; const h=[...document.querySelectorAll("#view h3.sec")].find(x=>/^Öncelik Belirlenmesi Gerekenler/.test(x.textContent));
+      if(h){ clearInterval(t); h.scrollIntoView({block:"start"}); } else if(n>40) clearInterval(t); },150); };
+  const {data,error}=await sb.from("satis_yd_akis").select("ilgili_ad,ilgili_mail,ilgili_tel").eq("durum","Teklif İncelendi");
+  const say=error?0:(data||[]).filter(r=>["ilgili_ad","ilgili_mail","ilgili_tel"].every(k=>String(r[k]||"").trim())).length;
+  b.classList.toggle("gr-onc-var",say>0);
+  b.title=say?(say+" teklifte öncelik belirlenmesi gerekiyor"):"Öncelik belirlenecek teklif yok";
+}
 /* ---------- ANA GÜNDEM (blok = kod_prefix; İlgili = kişi; kapat = sil) ---------- */
 async function loadGundem(){
   const view=document.getElementById("view");
