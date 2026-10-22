@@ -475,7 +475,7 @@ async function grVakit(){
     const v=hv.hourly.time.map((x,i)=>[String(x),hv.hourly.temperature_2m[i]]).filter(a=>a[1]!=null&&(!sr||a[0]>=sr.slice(0,13))&&(!ss||a[0]<=ss)).map(a=>a[1]);
     if(v.length) P.push("Gündüz ort. "+Math.round(v.reduce((a,b)=>a+b,0)/v.length)+" °C");
     const mm=hv.daily.precipitation_sum&&hv.daily.precipitation_sum[0], pr=hv.daily.precipitation_probability_max&&hv.daily.precipitation_probability_max[0];
-    P.push("Yağış "+(mm==null?"—":Number(mm).toLocaleString("tr-TR",{maximumFractionDigits:1})+" mm")+(pr==null?"":" (olasılık %"+pr+")"));
+    P.push("Yağış "+(mm==null?"—":Number(mm).toLocaleString("tr-TR",{maximumFractionDigits:1})+" mm")); /* GIRIS-OLASILIK-YOK: yağış olasılığı yazılmaz */
   } else P.push("Hava durumu alınamadı");
   /* GIRIS-UST-ORTAK: iki kutu — ezan vakitleri / hava */
   el.innerHTML=P.map(x=>'<div class="gr-bx">'+esc(x).replace(/ · /g,' · ')+'</div>').slice(0,1).join('')+(P.length>1?'<div class="gr-bx gr-bxh">'+esc(P.slice(1).join(' · '))+'</div>':'');
