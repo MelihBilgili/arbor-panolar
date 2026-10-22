@@ -2868,6 +2868,8 @@ async function loadObrapor(tgt){
     +`<div class="scroll"><table class="obt">`
     +`<colgroup>${cg}</colgroup>`
     +`<thead><tr>${hd}</tr></thead><tbody>`;
+  /* OB-YENI-UST (22.10.2026, Melih): yeni iş satırı tablonun en üstünde boş satır; Konu + Ağırlık düzenlenir, Enter/odak çıkışında ob_isler.insert */
+  ib+=`<tr class="obyrow"><td><input id="ob-yeni-konu" class="obyk" type="text" placeholder="+ Yeni iş (konu yazıp Enter)"></td><td class="num"><input id="ob-yeni-agr" class="obya" type="text" inputmode="numeric" size="1" value="100" title="Ağırlık (en az 100)"></td><td colspan="${5+(obWeeksOpen?haftaKeys.length:0)}"><span id="ob-yeni-msg" class="muted" style="font-size:11px"></span></td></tr>`;
   iRows.forEach(r=>{
     ib+=`<tr>${cx(r.konu,"sb")}<td class="num"><input class="obagr" data-id="${r.id}" type="text" inputmode="numeric" size="1" value="${r.agirlik==null?100:Number(r.agirlik)}"></td>${cx(r.durum)}<td><select class="obonc" data-id="${r.id}">${["-","1","2","3","Rutin"].map(o=>`<option${o===((r.oncelik==null||String(r.oncelik).trim()==='')?'-':String(r.oncelik).trim())?' selected':''}>${o}</option>`).join('')}</select></td>${cx(r.ob_notlari)}`
       + (obWeeksOpen?haftaKeys.map(k=>cx((weekMap[k].notes||{})[String(r.id)])).join(""):"")
@@ -2875,7 +2877,7 @@ async function loadObrapor(tgt){
   });
   if(!iRows.length) ib+=`<tr><td colspan="7" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
   /* OB-YENI-SATIR (21.10.2026, Melih): Takipteki İşler'e panodan yeni satır → ob_isler.insert (Konu + Öncelik + Ağırlık; Durum varsayılan) */
-  ib+=`</tbody></table></div><div class="obyeni" style="display:flex;gap:6px;align-items:center;margin:6px 2px 2px;flex-wrap:wrap"><input id="ob-yeni-konu" type="text" placeholder="Yeni iş — konu" style="flex:1;min-width:220px;padding:4px 6px"><select id="ob-yeni-onc">${["-","1","2","3","Rutin"].map(o=>`<option>${o}</option>`).join('')}</select><input id="ob-yeni-agr" type="text" inputmode="numeric" size="3" value="100" title="Ağırlık (en az 100)"><button id="ob-yeni-btn" type="button" style="padding:4px 12px;cursor:pointer">+ Satır Ekle</button><span id="ob-yeni-msg" class="muted" style="font-size:12px"></span></div>%%TKP_OZET%%`;
+  ib+=`</tbody></table></div>%%TKP_OZET%%`; /* OB-YENI-UST: alttaki yeni iş kutuları kaldırıldı */
   /* AYLIK FAALİYET — Takipteki İşler'in hemen altı (27.08.2026): ÖB'nin kapanan aya ilişkin
      yorumu (ob_aylik_faaliyet.ob_yorum, ÖB formundan girilir) + o ayda Selectron'a yapılan
      ödemeler (sel_odeme). Dönem = cari aydan bir önceki ay. */
@@ -2917,12 +2919,19 @@ async function loadObrapor(tgt){
       +(afR.faaliyet?`<div class="obafe"${afIki?' style="margin-top:8px"':''}>Claude özeti</div><div class="obafy">${esc(afR.faaliyet)}</div>`:"")
       +`</div>`;
   }
+  /* OB-SEL-KUTU (22.10.2026, Melih): ödeme/prim toplamları tablonun sağında 5 kutu */
+  const _selE=f=>odAll.filter(r=>f(String(r.odeme_tarihi||"").slice(0,10))).reduce((t,r)=>t+(Number(r.tutar_eur)||0),0);
+  const selSonE=_selE(d=>d>=afDon+"-01"&&d<=afSon), selCaE=_selE(d=>d>=caDon+"-01"&&d<=caSon), selYilE=_selE(d=>d.slice(0,4)===String(caY));
+  const kut=(b,v,alt)=>`<div class="obkut"><div class="obkb">${b}</div><div class="obkv">${v}</div><div class="obka">${alt}</div></div>`;
   ib+=`<h3 class="sec">Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler <span class="muted">(${esc(afAd)} satırları mavi)</span></h3>
-    <div class="obaf">${odTbl}</div>`;
+    <div class="obaf" style="max-width:none"><div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">${odTbl}<div class="obkutlar">`
+    +kut("Cari Ay Toplam Ödeme",nf(selCaE)+" €",esc(caAd))+kut("Son Ay Toplam Ödeme",nf(selSonE)+" €",esc(afAd))+kut("Cari Yıl Toplam Ödeme",nf(selYilE)+" €",String(caY))
+    +kut("Cari Ay Prim",nf(selCaE/10000)+" €","1/10.000 · "+esc(caAd))+kut("Son Ay Prim",nf(selSonE/10000)+" €","1/10.000 · "+esc(afAd))
+    +`</div></div></div>`;
   /* DEVLET-DESTEK (2026-09-24, Melih): Selectron ödemeleri primi 1/10.000 (tutar_eur toplamı) + Devlet Destek
      Başvuruları bloğu (devlet_destek, ÖB formundan). İade primi = sonuç tarihi kapanan aya düşen iade toplamı × 1/100 (DD-PRIM-1YUZDE 02.10.2026; önce 5/1000). */
   const selEur=odR.reduce((t,r)=>t+(Number(r.tutar_eur)||0),0);
-  ib+=`<div class="muted" style="font-size:12px;margin:4px 2px 0">Ödeme toplamı — ${iki(nf(selEur)+" €",nf(selEurCa)+" €")} · ÖB primi (1/10.000) — ${iki("<b>"+nf(selEur/10000)+" €</b>","<b>"+nf(selEurCa/10000)+" €</b>")}</div>`; /* OB-IKI-AY */ /* OB-PRIM-CARI */
+  /* OB-IKI-AY / OB-PRIM-CARI: Selectron toplam/prim satırı → OB-SEL-KUTU kutularına taşındı */
   const ddq=await sb.from("devlet_destek").select("*").order("son_basvuru",{ascending:false,nullsFirst:true}).order("id",{ascending:false}); /* DD-SIRA */
   const ddR=(ddq&&!ddq.error)?(ddq.data||[]):[];
   const ddBug=new Date().toISOString().slice(0,10), dd30=new Date(Date.now()+30*86400000).toISOString().slice(0,10);
@@ -2977,7 +2986,7 @@ async function loadObrapor(tgt){
   const pvNCa=pvR.filter(inCa).length, pvCa=pvR.filter(inCa).reduce((t,r)=>t+(Number(r.tutar)||0),0);
   ib+=`<h3 class="sec">DPGF's  -  Situations  -  Avenants - PV's de Réception <span class="muted">(${esc(afAd)} satırları mavi)</span></h3>
     <div class="obaf" style="max-width:none">
-     <div data-m="OB-DS-YAN OB-DS-BOSLUK" style="display:flex;flex-wrap:wrap;gap:2px;align-items:flex-start"><div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">DPGF · ${iki(nf(dpAy)+" €",nf(dpCa)+" €")}</div>${dsTbl(dpR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Correspondence",r=>esc(r.correspondence||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
+     <div data-m="OB-DS-YAN OB-DS-BOSLUK OB-PVR-YAN2" class="obds3" style="display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-start;overflow-x:auto"><div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">DPGF · ${iki(nf(dpAy)+" €",nf(dpCa)+" €")}</div>${dsTbl(dpR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Correspondence",r=>esc(r.correspondence||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1]])}</div>
      <div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">Situations · ${iki(nf(stAy)+" €",nf(stCa)+" €")} <span class="muted" style="font-weight:400">(İptal Edildi hariç)</span></div>${dsTbl(stR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["İlerleme No",r=>esc(r.ilerleme_no||"")],["Dönem",r=>esc(r.donem||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Onay Durumu",r=>esc(r.onay_durumu||"")]])}</div>
      <div style="margin-bottom:10px;flex:0 1 auto;min-width:0"><div class="obafh">PV's de Réception · ${iki(pvN+" adet · "+nf(pvAy)+" €",pvNCa+" adet · "+nf(pvCa)+" €")} <span class="muted" style="font-weight:400">(tutar = Sel-Arb kontrat)</span></div>${dsTbl(pvR,[["Tarih",r=>ddG(r.tarih)],["Proje",r=>esc(r.proje||"")],["Tutar (€)",r=>r.tutar==null?"":nf(r.tutar),1],["Açıklama",r=>esc(r.aciklama||"")]])}</div> <!-- OB-PVR --> <!-- OB-PVR-YAN -->
      </div><div><div class="obafh">TS · ${iki(nf(avAy)+" €",nf(avCa)+" €")}${(avEksi||avEksiCa)?` · <span style="color:#b23a2e">Eksi TS Toplamı — ${iki(nf(avEksi)+" €",nf(avEksiCa)+" €")}</span>`:""} <span class="muted" style="font-weight:400">(Avenant geldi · KDV hariç; eksi tutarlar toplama ve prime girmez; Excel aktarımından yalnız dönüş/avenant bekleyenler listelenir)</span></div>${dsTbl(avR.filter(r=>!r.aktarim||r.durum==="Dönüş bekleniyor"||r.durum==="Onaylandı, avenant bekleniyor"/* TS-ONAY-AV */),[["Tarih",r=>ddG(r.tarih)],["No",r=>esc(r.no||"")],["Proje",r=>esc(r.proje||"")],["İçerik",r=>esc(r.icerik||"")],["Açıklama",r=>esc(r.aciklama||"")],["Tutar (€, KDV hariç)",r=>r.tutar==null?"":nf(r.tutar),1],["Durum",r=>esc(r.durum||"")]])}</div><!-- OB-TS-261006 --><!-- OB-TUM-AY: eski aylar kapalı değil, 6 satırlık pencerede -->
@@ -3088,6 +3097,9 @@ async function loadObrapor(tgt){
     table.obod thead th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px}
     table.obod tr.itot td{background:#f4f7fb;font-weight:700}
     table.obod td.num,table.obod th.num{text-align:right}
+    .obds3>div{flex:0 0 auto!important;width:min-content} .obds3 .obafh{white-space:normal} /* OB-PVR-YAN2 (22.10.2026): DPGF · Situations · PV's de Réception tek sırada, başlıklar tablo genişliğinde sarar */
+    table.obt tr.obyrow td{background:#fffdf5} table.obt input.obya{width:6ch;text-align:right;font:inherit;padding:1px 4px;border:1px solid #cdd6df;border-radius:4px;background:#fff} table.obt input.obyk{width:100%;box-sizing:border-box;font:inherit;font-weight:700;color:#16324f;padding:1px 4px;border:1px solid #cdd6df;border-radius:4px;background:#fff} /* OB-YENI-UST */
+    .obkutlar{display:grid;grid-template-columns:repeat(3,minmax(150px,auto));gap:8px} .obkut{border:1px solid #dde3ea;border-radius:8px;padding:6px 10px;background:#f8fafc} .obkb{font-size:11px;color:#5a6b7d;font-weight:600} .obkv{font-size:15px;font-weight:700;color:#16324f;margin-top:2px} .obka{font-size:10.5px;color:#8593a3} /* OB-SEL-KUTU */
     .scroll.ob6{max-height:152px;overflow:auto} .scroll.ob6 thead th{position:sticky;top:0;z-index:1} /* OB-TUM-AY: 6 satırlık pencere */
     .obpin{font:inherit;font-size:12px;padding:1px 5px;border:1px solid #cdd6df;border-radius:5px;background:#fffdf5;text-align:right}
     .obmail{margin-top:12px;background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:10px 12px;max-width:900px}
@@ -3112,16 +3124,18 @@ async function loadObrapor(tgt){
   view.querySelectorAll("select.obonc").forEach(el=>{ el.onchange=async()=>{
     const {error}=await sb.from("ob_isler").update({oncelik:el.value}).eq("id",+el.dataset.id);
     if(error){ el.style.background="#ffe5e5"; el.title="Hata: "+error.message; } else loadObrapor(tgt); }; });
-  /* OB-YENI-SATIR */
-  const ybtn=document.getElementById("ob-yeni-btn");
-  if(ybtn) ybtn.onclick=async()=>{
-    const kEl=document.getElementById("ob-yeni-konu"), mEl=document.getElementById("ob-yeni-msg");
+  /* OB-YENI-SATIR / OB-YENI-UST: üst boş satırdan ekleme */
+  let _obEkl=false; const ybtn={disabled:false,click:()=>_obYeni()};
+  const _obYeni=async()=>{ if(_obEkl) return;
+    const kEl=document.getElementById("ob-yeni-konu"), mEl=document.getElementById("ob-yeni-msg"); if(!kEl) return;
+    if(!(kEl.value||"").trim()) return; _obEkl=true;
     const konu=(kEl.value||"").trim(); if(!konu){ mEl.textContent="Önce konuyu yazın."; kEl.focus(); return; }
     let agr=parseFloat(String(document.getElementById("ob-yeni-agr").value).replace(",",".")); if(isNaN(agr)||agr<100) agr=100;
     ybtn.disabled=true; mEl.textContent="Ekleniyor…";
-    const {error}=await sb.from("ob_isler").insert({konu,oncelik:document.getElementById("ob-yeni-onc").value,agirlik:agr,durum:"Henüz çalışılmadı",ob_notlari:"",arsiv:false});
-    if(error){ ybtn.disabled=false; mEl.textContent="Hata: "+error.message; } else loadObrapor(tgt); };
-  const yk=document.getElementById("ob-yeni-konu"); if(yk) yk.onkeydown=e=>{ if(e.key==="Enter"&&ybtn) ybtn.click(); };
+    const {error}=await sb.from("ob_isler").insert({konu,oncelik:"-",agirlik:agr,durum:"Henüz çalışılmadı",ob_notlari:"",arsiv:false});
+    if(error){ _obEkl=false; mEl.textContent="Hata: "+error.message; } else loadObrapor(tgt); };
+  const yk=document.getElementById("ob-yeni-konu"); if(yk){ yk.onkeydown=e=>{ if(e.key==="Enter") _obYeni(); }; yk.onblur=()=>setTimeout(()=>{ const ya=document.getElementById("ob-yeni-agr"); if(document.activeElement!==ya) _obYeni(); },150); }
+  const yag=document.getElementById("ob-yeni-agr"); if(yag){ yag.onkeydown=e=>{ if(e.key==="Enter") _obYeni(); }; yag.onblur=()=>setTimeout(()=>{ if(document.activeElement!==yk) _obYeni(); },150); }
   /* OB-TUM-AY: pencere tam 6 satır (thead + ilk 6 satır); OB-PT1-DAR: Performans Primi ilk tablonun 1. ve 2. sütunu yarı genişlik. Sekme gizliyse ölçüm 0 → 300ms × 40 */
   let _obOlcN=0; const _obOlc=()=>{ const t1=view.querySelector("#ob-pt1"); if(!view.isConnected) return;
     if(!t1||!t1.offsetWidth){ if(++_obOlcN<40) setTimeout(_obOlc,300); return; }
