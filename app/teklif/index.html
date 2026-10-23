@@ -80,8 +80,8 @@ td.note{color:#52617a;font-size:12.5px;}
   <h1>Fiyatlandırma Kuralları</h1>
   <span class="upd" id="stamp">Son Güncelleme: —</span>
   <div class="region">
-    <button data-r="fr" class="active">Fransa</button>
-    <button data-r="du">Diğer</button>
+    <button data-r="fr" class="active">Yurt Dışı 1</button>
+    <button data-r="du">Yurt Dışı 2</button><!-- FIYAT-YD12 -->
   </div>
 </header>
 
@@ -234,7 +234,7 @@ const sb = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const $=id=>document.getElementById(id);
 
-let REGION='fr';           // varsayılan açılış = Fransa
+let REGION='fr';           // varsayılan açılış = Yurt Dışı 1 (fr=YD1, du=YD2; FIYAT-YD12)
 let P={};                  // fiyat_parametre (anahtar -> satır)
 let MS=[];                 // müşteri sınıf listesi (sinif: 1 FR1 · 2 FR2 · 3 UK1 · 4 UK2 · 5 DE1 · 6 DE2)
 let TT=[];                 // fiyat_termin — MVT hafta tablosu (panodan)
@@ -354,8 +354,9 @@ function renderGenel(){
 
   // Termin tablosu tamamen panodan (fiyat_termin) — boş hücre = gri (uygulanmaz)
   const cell=v=> (v==null||String(v).trim()==="") ? '<td class="c na"></td>' : `<td class="c val">${esc(v)}</td>`;
-  $('terminBody').innerHTML = TT.length
-    ? TT.map(r=>`<tr><td>${esc(r.aralik||"")}</td>${cell(r.ic_68)}${cell(r.numune)}${cell(r.std_disi)}</tr>`).join("")
+  const TTB=TT.filter(r=>(r.bolge||'yd1')===(REGION==='fr'?'yd1':'yd2')); /* FIYAT-YD12-TERMIN: termin bölgeye göre */
+  $('terminBody').innerHTML = TTB.length
+    ? TTB.map(r=>`<tr><td>${esc(r.aralik||"")}</td>${cell(r.ic_68)}${cell(r.numune)}${cell(r.std_disi)}</tr>`).join("")
     : '<tr><td colspan="4">—</td></tr>';
   $('tnot1').textContent=val('termin_not1')||"";
   $('tnot2').textContent=val('termin_not2')||"";
