@@ -64,6 +64,31 @@
   .smenu{position:fixed;z-index:60;background:#fff;border:1px solid #cdd8e4;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:4px;min-width:210px}
   .smenu button{display:block;width:100%;text-align:left;background:none;border:0;padding:7px 12px;font:inherit;color:#16324f;cursor:pointer;border-radius:6px}
   .smenu button:hover{background:#eef4fa}
+  /* URUN-KONFIG-CAMFIYAT */
+  #cfPop{position:fixed;inset:0;background:rgba(10,25,40,.35);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:40px 12px;overflow:auto}
+  #cfPop .cfk{background:#16324f;color:#fff;border-radius:12px;padding:14px 16px;width:min(700px,100%); /* CAM-KONFIG-POPDAR */box-shadow:0 10px 40px rgba(0,0,0,.35);font-size:13px}
+  #cfPop .cfh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px}
+  #cfPop .cfh b{font-size:14px}#cfPop .cfx{background:none;border:0;color:#cfe0f0;font-size:20px;cursor:pointer;line-height:1}
+  #cfPop .lbl{font-size:11.5px;color:#cfe0f0;text-transform:uppercase;letter-spacing:.5px}
+  #cfPop .line{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid rgba(255,255,255,.15);font-size:13px}
+  #cfPop .line.yk{align-items:flex-start;gap:14px}#cfPop .yl{text-align:left}#cfPop .yr{text-align:right}
+  #cfPop .ll,#cfPop .yp,#cfPop .lv{color:#cfe0f0}#cfPop .yp,#cfPop .lv{font-size:12.5px}#cfPop .yp{margin-bottom:6px}#cfPop .yr b{color:#fff}
+  #cfPop .no{color:#ffb3a7}#cfPop .hdfw{color:#ffb3a7;font-size:12.5px;font-weight:600;margin:4px 0}
+  #cfPop .cfbtn{margin-top:10px;background:#2e7d54;color:#fff;border:0;border-radius:7px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer}
+  #cfPop .cft{margin-top:10px;border-top:1px solid rgba(255,255,255,.25);padding-top:10px}
+  #cfPop .cfrow{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+  #cfPop .cfrow label{color:#cfe0f0;font-size:12px;margin:0 0 3px}
+  #cfPop .cfrow select,#cfPop .cfrow input{width:130px;color:#16324f}
+  #cfPop .cfrow input:disabled{background:#c9d3dd}
+  #cfPop .refdif{font-size:20px;font-weight:800;padding:2px 12px;border-radius:8px;color:#cfe0f0;min-width:70px;text-align:center}
+  #cfPop .refdif.rok{color:#1f6b45;background:#e7f5ec}#cfPop .refdif.rbad{color:#fff;background:#c0392b}
+  #cfPop .pencadok{color:#7be0a6;font-weight:800;font-size:15px}
+  #cfPop .unitrow{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:10px}
+  #cfPop .big{font-size:30px;font-weight:800}#cfPop .big.faded{opacity:.14}
+  #cfPop .bfwarn{display:inline-block;margin-top:4px;background:#c0392b;color:#fff;font-weight:800;font-size:13px;border-radius:6px;padding:3px 10px}
+  #cfPop .bfhint{font-size:12px;color:#cfe0f0;margin-top:2px}
+  #cfPop .badge{display:inline-block;background:#2e7d54;border-radius:6px;padding:1px 8px;font-size:11px;font-weight:700;margin-left:6px}#cfPop .badge.est{background:#b8863a}
+  #cfPop .komb{text-align:right;font-size:13px;max-width:60%}#cfPop .komb .pv{color:#cfe0f0;font-size:12px;margin-top:3px}
 </style>
 </head>
 <body>
@@ -484,18 +509,75 @@ function aktarUrl(r){ const C=r.C, v=x=>String(x).replace(".",",");
   /* AKTAR-CAM-RWCTR (19.10.2026): Rw+Ctr hedefi camın kendi Rw+Ctr'si (C.rwc); ürün (pencere) değeri Cam Konfigürasyon'da cam değeriyle kıyaslanınca aynı cam eleniyordu */
   if(C.tl!=null) p.lt=String(C.tl); if(C.g!=null) p.gmax=String(Math.round(C.g*100)); if(C.rwc!=null) p.rwctr=String(C.rwc);
   return "../cam-konfig/?"+new URLSearchParams(p).toString(); }
+/* URUN-KONFIG-CAMFIYAT (23.10.2026, Melih): sağ tık -> "Cam fiyatı ve talimat": Cam Konfigürasyon'daki CAM-KONFIG-SAGTIK penceresi burada da açılır (aynı model: gizli iframe'de ../cam/). */
+let CFW=null, CFP=null;
+function cfYukle(){ if(CFP) return CFP;
+  CFP=new Promise((ok,no)=>{ const f=document.createElement("iframe");
+    f.style.cssText="position:absolute;left:-9999px;top:0;width:1200px;height:800px;visibility:hidden"; f.src="../cam/index.html";
+    f.onload=()=>{ try{ const w=f.contentWindow, sp=w.Storage.prototype.setItem;
+        w.Storage.prototype.setItem=function(k,v){ if(k==="arb_cam_form_v1") return; return sp.call(this,k,v); };
+        if(window._LST){ w.__L=window._LST; try{ w.eval("CAT=buildCat(window.__L)"); }catch(e){} }
+        CFW=w; ok(w); }catch(e){ no(e); } };
+    f.onerror=no; document.body.appendChild(f); });
+  return CFP; }
+function cfIsle(w,r0){ const C0=r0.C, r={kombinasyon:C0.komb||C0.c,ug:C0.ug,lt:C0.tl==null?null:C0.tl/100,g:C0.g,_rwctr:C0.rwc}; const d=w.document, $w=id=>d.getElementById(id);
+  const q=CAMM&&CAMM.CAMF.catRow({kombinasyon:r.kombinasyon,ug:r.ug,tl:r.lt,sf:r.g});
+  if(!q) return false;
+  const sel=(id,v)=>{ const e=$w(id); if(!e) return; v=String(v); if(![...e.options].some(o=>o.value===v)){ const o=d.createElement("option"); o.value=v; o.textContent=v; e.appendChild(o); } e.value=v; };
+  const chk=(id,v)=>{ const e=$w(id); if(e) e.checked=!!v; };
+  const tr=q.tr?1:0; sel("yapi",tr?"uclu":"cift"); sel("dis",q.c[0]); sel("ic",q.c[q.c.length-1]); if(tr&&q.c.length>2) sel("orta",q.c[1]);
+  sel("cav",q.cu);
+  sel("kap",!q.lowe?"yok":(q.solar?(q.coat&&/^n\d{4}$/.test(q.coat)?"solar_"+q.coat:"solar"):"lowe"));
+  sel("form","duz"); $w("adet").value="10"; $w("m2").value="10.0";
+  chk("argon",q.ar); chk("we",q.we); chk("acoustic",q.ac); chk("temper",q.tp); chk("satin",q.sat); chk("extraclear",q.xc);
+  const e30=/e[iı]\s?30|\be30\b/i.test(String(r.kombinasyon||"")); chk("fireproof30",q.fp&&e30); chk("fireproof",q.fp&&!e30);
+  const sv=(id,v,dg)=>{ $w(id).value=v==null?"":(+v).toFixed(dg); };
+  sv("h_ug",r.ug,2); sv("h_tl",r.lt,2); sv("h_rw",r._rwctr,0); sv("h_sf",r.g,2);
+  $w("pencad").value=""; $w("ref").value="";
+  w.calc(); return true; }
+function cfAlt(w){ const o=w.document.getElementById("out"); if(!o) return "";
+  const hd=o.querySelector(".hdfw"); return (hd?hd.outerHTML:"")+[...o.querySelectorAll(".line.yk")].map(x=>x.outerHTML).join(""); }
+function cfTalimat(w){ const d=w.document, o=d.getElementById("out"), ur=o&&o.querySelector(".unitrow");
+  const ok=d.getElementById("pencadok"), rd=d.getElementById("refdif");
+  $("cfUnit").innerHTML=ur?ur.outerHTML:"";
+  $("cfDif").textContent=rd?rd.textContent:"–"; $("cfDif").className=rd?rd.className:"refdif";
+  $("cfOk").style.display=ok&&ok.style.display!=="none"?"":"none";
+  $("cfRef").disabled=$("cfPc").value!=="evet"; }
+function cfKapat(){ const p=$("cfPop"); if(p) p.remove(); }
+async function cfAc(r){
+  cfKapat();
+  const komb=esc(String(r.C.c||r.C.komb||"").replace(/Ar90\b/g,"Ar"));
+  document.body.insertAdjacentHTML("beforeend",'<div id="cfPop"><div class="cfk"><div class="cfh"><div><div class="lbl">Cam Fiyatlandırma panosunda</div><b>'+komb+'</b> · '+esc(sAd(r))+'</div><button class="cfx" title="Kapat">✕</button></div>'
+    +'<div id="cfAlt"><div class="lv">Hesaplanıyor…</div></div>'
+    +'<button class="cfbtn" id="cfBtn">Fiyat kullanım talimatı al</button>'
+    +'<div class="cft" id="cfT" style="display:none"><div class="cfrow"><div><label for="cfPc">Pencad\'de Fiyat Var mı?</label><select id="cfPc"><option value=""></option><option value="evet">Evet</option><option value="hayir">Hayır</option></select></div>'
+    +'<div><label for="cfRef">Referans Fiyat (€/m²)</label><input id="cfRef" type="number" step="0.01" min="0" disabled></div>'
+    +'<span id="cfOk" class="pencadok" style="display:none">Pencad fiyatıyla devam ediniz!</span><span style="color:#cfe0f0;align-self:center">Birim fiyata göre fark</span><span id="cfDif" class="refdif" style="align-self:center">–</span></div>'
+    +'<div id="cfUnit"></div></div></div></div>');
+  const P=$("cfPop");
+  P.addEventListener("click",e=>{ if(e.target===P||e.target.closest(".cfx")) cfKapat(); });
+  let w; try{ w=await cfYukle(); }catch(e){ $("cfAlt").innerHTML='<div class="no">Cam Fiyatlandırma sayfası açılamadı.</div>'; return; }
+  if(!$("cfPop")) return;
+  if(!cfIsle(w,r)){ $("cfAlt").innerHTML='<div class="no">Bu kombinasyon Cam Fiyatlandırma formuna işlenemedi.</div>'; $("cfBtn").style.display="none"; return; }
+  $("cfAlt").innerHTML=cfAlt(w);
+  $("cfBtn").onclick=()=>{ $("cfT").style.display=""; $("cfBtn").style.display="none"; cfTalimat(w); };
+  const gonder=()=>{ const d=w.document, pc=d.getElementById("pencad"), rf=d.getElementById("ref");
+    pc.value=$("cfPc").value; if(pc.value!=="evet") $("cfRef").value="";
+    rf.value=$("cfRef").value; rf.dispatchEvent(new w.Event("input",{bubbles:true})); w.refUpd(); cfTalimat(w); };
+  $("cfPc").addEventListener("change",gonder); $("cfRef").addEventListener("input",gonder);
+}
 let _sm=null;
 function smKapat(){ if(_sm){ _sm.remove(); _sm=null; } }
 $("res").addEventListener("contextmenu",e=>{ const tr=e.target.closest("tbody tr[data-i]"); if(!tr) return;
   const r=(window._SR||[])[+tr.getAttribute("data-i")]; if(!r) return; e.preventDefault(); smKapat();
-  _sm=document.createElement("div"); _sm.className="smenu"; _sm.innerHTML='<button type="button">Cam konfigürasyona aktar</button>'
+  _sm=document.createElement("div"); _sm.className="smenu"; _sm.innerHTML='<button type="button" data-cf="1">Cam fiyatı ve talimat</button><button type="button" data-ak="1">Cam konfigürasyona aktar</button>'
     +(sertKodlar(r).length?'<button type="button" data-sert="1">Sertifikalar ('+esc(sertKodlar(r).join(", "))+')</button>':''); /* URUN-KONFIG-SERTIFIKA */
-  _sm.style.left=Math.max(4,Math.min(e.clientX,innerWidth-230))+"px"; _sm.style.top=Math.max(4,Math.min(e.clientY,innerHeight-50))+"px";
-  _sm.querySelector("button").onclick=()=>{ window.open(aktarUrl(r),"_blank"); smKapat(); };
+  _sm.style.left=Math.max(4,Math.min(e.clientX,innerWidth-230))+"px"; _sm.style.top=Math.max(4,Math.min(e.clientY,innerHeight-90))+"px";
+  _sm.querySelector("button[data-ak]").onclick=()=>{ window.open(aktarUrl(r),"_blank"); smKapat(); }; _sm.querySelector("button[data-cf]").onclick=()=>{ smKapat(); cfAc(r); }; /* URUN-KONFIG-CAMFIYAT */
   { const sb2=_sm.querySelector("button[data-sert]"); if(sb2) sb2.onclick=()=>{ smKapat(); sertAc(r); }; } /* URUN-KONFIG-SERTIFIKA */
   document.body.appendChild(_sm); });
 document.addEventListener("click",e=>{ if(_sm&&!_sm.contains(e.target)) smKapat(); });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape") smKapat(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ smKapat(); cfKapat(); } });
 window.addEventListener("scroll",smKapat,true);
 
 /* URUN-KONFIG-SERTIFIKA (20.10.2026, Melih): sağ tık -> "Sertifikalar": Dokümanlar formundaki (tablo dokuman, tür Sertifika)
