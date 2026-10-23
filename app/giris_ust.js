@@ -40,6 +40,21 @@ function spark(pts,opt){
   g+=`<text x="${X(0)}" y="${H-3}" class="gru-xl" text-anchor="start">${esc(pts[0].x)}</text><text x="${X(n-1)}" y="${H-3}" class="gru-xl" text-anchor="end">${esc(pts[n-1].x)}</text>`;
   return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="gru-svg">${g}</svg>`;
 }
+/* GIRIS-GRAFIK-KUTU (23.10.2026, Melih): Giriş'te Sel-Arb ve cari ay kutularına grafik — Sel-Arb: ay sonu donmuş değerler
+   (sel_arb_ozet + sel_arb_snapshot, alacaklı tarihler) + Cari nokta (turuncu) çizgi; cari ay kutuları: son 12 ay aylık toplam çubuk (bu ay turuncu).
+   Yalnız o.grafik=true (Giriş); MK Faaliyet / CTP eski kutular. */
+function bars(pts,opt){
+  opt=opt||{}; const W=244,H=78,L=40,R=6,T=8,B=16, birim=opt.birim||" €";
+  const vs=pts.map(p=>p.y||0); if(!pts.length||!vs.some(v=>v)) return '<div class="gru-muted">Veri yok</div>';
+  let mn=Math.min(0,Math.min.apply(null,vs)), mx=Math.max.apply(null,vs); if(mx===mn) mx=mn+1;
+  const n=pts.length, iw=W-L-R, bw=iw/n, Y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn));
+  let g=`<line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" class="gru-ax"/><line x1="${L}" y1="${Y(0)}" x2="${W-R}" y2="${Y(0)}" class="gru-ax"/>`
+    +`<text x="${L-3}" y="${T+7}" class="gru-yl">${esc(kK(mx))}</text><text x="${L-3}" y="${H-B}" class="gru-yl">${esc(kK(mn))}</text>`;
+  pts.forEach((p,i)=>{ const v=p.y||0, y0=Y(0), y1=Y(v), x=L+i*bw+bw*0.15;
+    g+=`<rect x="${x.toFixed(1)}" y="${Math.min(y0,y1).toFixed(1)}" width="${(bw*0.7).toFixed(1)}" height="${Math.max(0.8,Math.abs(y1-y0)).toFixed(1)}" class="${p.cur?'gru-dc':'gru-b'}"><title>${esc(p.x+": "+Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0})+birim)}</title></rect>`; });
+  g+=`<text x="${L}" y="${H-3}" class="gru-xl" text-anchor="start">${esc(pts[0].x)}</text><text x="${W-R}" y="${H-3}" class="gru-xl" text-anchor="end">${esc(pts[n-1].x)}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="gru-svg">${g}</svg>`;
+}
 const CSS=`
 .gru{font-size:12.5px;color:#16324f}
 .gru h3.gru-h{margin:16px 0 6px;font-size:13.5px;font-weight:700;color:#16324f}
@@ -57,7 +72,7 @@ const CSS=`
 .gru-card{border:1px solid #dfe5ec;border-radius:8px;background:#fff;padding:6px 8px 2px}
 .gru-ct{font-size:11.5px;color:#4a5a6a}.gru-cv{font-size:15px;font-weight:700;margin:1px 0 2px;color:#16324f}
 .gru-svg{display:block}.gru-ax{stroke:#cfd8e2;stroke-width:1}.gru-ln{fill:none;stroke:#2e6da4;stroke-width:1.6}
-.gru-d{fill:#2e6da4}.gru-dc{fill:#e07b00}
+.gru-d{fill:#2e6da4}.gru-dc{fill:#e07b00}.gru-b{fill:#7aa3c9}
 .gru-yl{font-size:8.5px;fill:#7b8794;text-anchor:end}.gru-xl{font-size:8.5px;fill:#7b8794}
 .gru-boxes{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
 .gru-box{border:1px solid #c9d6e3;border-left:4px solid #2e6da4;border-radius:6px;background:#f6f9fc;padding:5px 12px;min-width:150px}
@@ -178,7 +193,7 @@ async function notAc(o,k,r,yenile){
 async function selArb(o,el){
   const sb=o.sb;
   const [s,oz,g,od,ih,ak]=await Promise.all([
-    sb.from("sel_arb_snapshot").select("sira,firma,proje"),
+    sb.from("sel_arb_snapshot").select("sira,firma,proje,tarih,alacak"),
     sb.from("sel_arb_ozet").select("*").order("tarih"),
     sb.from("sel_arb_guncel").select("sira,firma,proje,alacak").order("sira"),
     sb.from("sel_odeme").select("tutar_eur").is("islendi_tarih",null),
@@ -199,6 +214,13 @@ async function selArb(o,el){
   const kayip=borc==null?null:borc-((gon||0)+(alacak||0)+(fat||0));
   const fatD=(fat==null||Math.round(fat)===0)?null:fat;
   const K=[["Güncel Alacak Toplam",alacak],["Selectron'a Gönderilen Toplam",gon],["Selectron'a Borç",borc],["Selectron'a Ft Edilen Toplam",fatD],["Arbor SAS Faaliyet Kaybı Toplam",kayip]];
+  if(o.grafik){ /* GIRIS-GRAFIK-KUTU */
+    const aT={}; (s.data||[]).forEach(x=>{ if(x.alacak!=null) aT[x.tarih]=(aT[x.tarih]||0)+Number(x.alacak); });
+    const ozs=(oz.data||[]).filter(x=>aT[x.tarih]!=null), dl=t=>t.slice(8,10)+"."+t.slice(5,7)+"."+t.slice(2,4);
+    const H=ozs.map(x=>{ const a=aT[x.tarih], gg=nz(x.gonderilen), b=nz(x.borc), f=nz(x.fatura_edilen);
+      return {x:dl(x.tarih),v:[a,gg,b,(f==null||Math.round(f)===0)?null:f,b==null?null:b-((gg||0)+(a||0)+(f||0))]}; });
+    el.innerHTML=`<div class="gru-boxes">${K.map(([a,v],i)=>`<div class="gru-box"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${v==null?"—":money(v)+" €"}</div>${spark(H.map(h=>({x:h.x,y:h.v[i]})).concat([{x:"Cari",y:v,cur:true}]))}</div>`).join("")}</div>`;
+    return; }
   el.innerHTML=`<div class="gru-boxes">${K.map(([a,v])=>`<div class="gru-box"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${v==null?"—":money(v)+" €"}</div></div>`).join("")}</div>`;
 }
 /* ---- Cari ay: OE faturaları · ÖB ödemeleri · ÖB tahsilat (üç kutu yan yana) ---- */
@@ -213,8 +235,21 @@ async function cari(o,el){
   const f=v=>v==null?"—":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
   const thT=(th&&!th.error)?(th.data||[]).reduce((a,r)=>a+(Number(r.tutar)||0),0):null;
   const ay=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"][t.getMonth()]+" "+t.getFullYear();
+  let G=null;
+  if(o.grafik){ /* GIRIS-GRAFIK-KUTU: son 12 ay aylık toplam */
+    const b12=new Date(t.getFullYear(),t.getMonth()-11,1), bs=b12.getFullYear()+"-"+p2(b12.getMonth()+1)+"-01";
+    const [f2,o2,t2]=await Promise.all([
+      sb.from("ihracat_fatura").select("tarih,tutar,para_birimi,tutar_eur").gte("tarih",bs).lt("tarih",sn),
+      sb.from("sel_odeme").select("odeme_tarihi,tutar,para_birimi,tutar_eur").gte("odeme_tarihi",bs).lt("odeme_tarihi",sn),
+      sb.from("ob_tahsilat").select("tarih,tutar").gte("tarih",bs).lt("tarih",sn)]);
+    const ays=[]; for(let i=0;i<12;i++){ const d=new Date(b12.getFullYear(),b12.getMonth()+i,1); ays.push(d.getFullYear()+"-"+p2(d.getMonth()+1)); }
+    const ser=(q,k,fn)=>{ const m={}; ((q&&!q.error&&q.data)||[]).forEach(r=>{ const a=String(r[k]||"").slice(0,7); m[a]=(m[a]||0)+fn(r); });
+      return ays.map((a,i)=>({x:AY[+a.slice(5)-1]+" "+a.slice(2,4),y:m[a]||0,cur:i===11})); };
+    const ev=r=>r.tutar_eur!=null?Number(r.tutar_eur)||0:((r.para_birimi||"EUR")==="EUR"?Number(r.tutar)||0:0);
+    G=[ser(f2,"tarih",ev),ser(o2,"odeme_tarihi",ev),ser(t2,"tarih",r=>Number(r.tutar)||0)];
+  }
   const K=[["Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar",eur(ft),"OE Faaliyet"],["Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler",eur(od),"ÖB Faaliyet"],["Yurt Dışı Birimlerin müşterilerden yaptığı Tahsilat",thT,"ÖB Faaliyet"]];
-  el.innerHTML=`<div class="gru-boxes">${K.map(([a,v,kay])=>`<div class="gru-box gru-box3 gru-gr" title="${esc(ay)} · ${kay}"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${f(v)}</div></div>`).join("")}</div>`;
+  el.innerHTML=`<div class="gru-boxes">${K.map(([a,v,kay])=>`<div class="gru-box gru-box3 gru-gr" title="${esc(ay)} · ${kay}"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${f(v)}</div>${G?bars(G[K.findIndex(k=>k[0]===a)]):""}</div>`).join("")}</div>`;
 }
 /* ---- Eğitim: bu ay / bu yıl (Eğitim panosu EGITIM-OZET ile aynı sayım) ---- */
 async function egitim(o,el){
