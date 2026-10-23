@@ -167,7 +167,7 @@
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="giris_ust.js?v=261022a"></script><!-- GIRIS-UST-ORTAK -->
+<script src="giris_ust.js?v=261023a"></script><!-- GIRIS-UST-ORTAK -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
    kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
@@ -451,7 +451,7 @@ async function loadGiris(){
     <div id="gr-not" style="margin-top:16px"></div><!-- GIRIS-NOT -->
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
-  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB"})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
 }
 /* 1 — Ezan vakitleri (Diyanet yöntemi) + gündüz ortalama sıcaklık (gün doğumu–batımı saatlik ortalaması) + yağış */
 async function grVakit(){
