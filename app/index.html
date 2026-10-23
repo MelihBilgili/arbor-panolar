@@ -3201,20 +3201,25 @@ async function loadFiyat(target){
     +`<td class="fc">${ec("fiyat_parametre",r.id,"baslik",r.baslik)}</td>`
     +`<td class="fc">${ec("fiyat_parametre",r.id,"fransa_deger",r.fransa_deger)}</td>`
     +`<td class="fc">${ec("fiyat_parametre",r.id,"diger_deger",r.diger_deger)}</td></tr>`).join("");
-  const pTbl=`<h3 class="sec">Parametreler</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Parametre</th><th>Fransa</th><th>Diğer</th></tr></thead><tbody>${pRows}</tbody></table></div>`;
+  const pTbl=`<h3 class="sec">Parametreler</h3><div class="scroll"><table class="ftbl"><thead><tr><th>Parametre</th><th>Yurt Dışı 1</th><th>Yurt Dışı 2</th><!-- FIYAT-YD12 --></tr></thead><tbody>${pRows}</tbody></table></div>`;
   /* B) Termin — MVT hafta tablosu (form bunu birebir okur; boş numune hücresi = gri/uygulanmaz) */
-  let tRows=T.map(r=>`<tr data-id="${r.id}">`
+  /* FIYAT-YD12-TERMIN: Yurt Dışı 1 / Yurt Dışı 2 terminleri ayrı (fiyat_termin.bolge yd1/yd2) */
+  const tBlok=(bo,lbl)=>{
+    const TB=T.filter(r=>(r.bolge||"yd1")===bo);
+    const tRows=TB.map(r=>`<tr data-id="${r.id}">`
     +`<td class="fc">${ec("fiyat_termin",r.id,"aralik",r.aralik)}</td>`
     +`<td class="fc">${ec("fiyat_termin",r.id,"ic_68",r.ic_68)}</td>`
     +`<td class="fc">${ec("fiyat_termin",r.id,"numune",r.numune)}</td>`
     +`<td class="fc">${ec("fiyat_termin",r.id,"std_disi",r.std_disi)}</td>`
     +`<td><button class="fdel" data-t="fiyat_termin" data-id="${r.id}" title="Sil">✕</button></td></tr>`).join("");
-  const tTbl=`<h3 class="sec">Termin — MVT (hafta)</h3><div class="scroll"><table class="ftbl"><thead><tr>`
+    return `<h3 class="sec">Termin — MVT (hafta) · ${lbl}</h3><div class="scroll"><table class="ftbl"><thead><tr>`
     +`<th>Projedeki Ürün ya da Cephedeki Cam</th><th>68p, 78t veya 78a İçeren Projeler</th>`
     +`<th>İçermeyen · Hızlandırmak için Standart (4/16/4) Cam Kullanılabilen Numuneler</th>`
     +`<th>İçermeyen · Standart (4/16/4) Dışı Cam Kullanılan Projeler</th><th></th></tr></thead><tbody>${tRows}`
-    +`<tr class="faddrow"><td><input id="ft-aralik" placeholder="1–4 adet"></td><td><input id="ft-ic" placeholder="6"></td><td><input id="ft-nu" placeholder="(boş)"></td><td><input id="ft-sd" placeholder="4"></td><td><button class="btn" id="ft-add">Ekle</button></td></tr>`
+    +`<tr class="faddrow"><td><input id="ft-aralik-${bo}" placeholder="1–4 adet"></td><td><input id="ft-ic-${bo}" placeholder="6"></td><td><input id="ft-nu-${bo}" placeholder="(boş)"></td><td><input id="ft-sd-${bo}" placeholder="4"></td><td><button class="btn" id="ft-add-${bo}">Ekle</button></td></tr>`
     +`</tbody></table></div>`;
+  };
+  const tTbl=tBlok("yd1","Yurt Dışı 1")+tBlok("yd2","Yurt Dışı 2");
   // A) Ahşap
   let aRows=A.map(r=>`<tr data-id="${r.id}">`
     +`<td class="fc">${ec("fiyat_ahsap",r.id,"ad",r.ad)}</td>`
@@ -3275,12 +3280,13 @@ async function loadFiyat(target){
     const rec={ad,durum:document.getElementById("fa-durum").value.trim()||null,aciklama:document.getElementById("fa-ac").value.trim()||null,sira:(A.length?Math.max(...A.map(x=>x.sira||0))+1:1)};
     const {error}=await sb.from("fiyat_ahsap").insert(rec); if(error){alert(error.message);return;} loadFiyat();
   };
-  document.getElementById("ft-add").onclick=async()=>{
-    const ar=document.getElementById("ft-aralik").value.trim(); if(!ar){alert("Aralık gir (ör. 1–4 adet).");return;}
-    const g=id=>{ const v=document.getElementById(id).value.trim(); return v||null; };
-    const rec={aralik:ar,ic_68:g("ft-ic"),numune:g("ft-nu"),std_disi:g("ft-sd"),sira:(T.length?Math.max(...T.map(x=>x.sira||0))+1:1)};
+  ["yd1","yd2"].forEach(bo=>{ document.getElementById("ft-add-"+bo).onclick=async()=>{ /* FIYAT-YD12-TERMIN */
+    const ar=document.getElementById("ft-aralik-"+bo).value.trim(); if(!ar){alert("Aralık gir (ör. 1–4 adet).");return;}
+    const g=id=>{ const v=document.getElementById(id+"-"+bo).value.trim(); return v||null; };
+    const TB=T.filter(x=>(x.bolge||"yd1")===bo);
+    const rec={bolge:bo,aralik:ar,ic_68:g("ft-ic"),numune:g("ft-nu"),std_disi:g("ft-sd"),sira:(TB.length?Math.max(...TB.map(x=>x.sira||0))+1:1)};
     const {error}=await sb.from("fiyat_termin").insert(rec); if(error){alert(error.message);return;} loadFiyat();
-  };
+  }; });
   SINIFLAR.map(s=>s[0]).forEach(sn=>{ document.getElementById("fm"+sn+"-add").onclick=async()=>{
     const ad=document.getElementById("fm"+sn+"-ad").value.trim(); if(!ad){alert("Müşteriler listesinden şirket seçin (listede yoksa önce Müşteriler formuna ekleyin).");return;}
     const rec={ad,sinif:sn,sira:(M.length?Math.max(...M.map(x=>x.sira||0))+1:1)};
@@ -3337,8 +3343,8 @@ function fiyDiffListe(onc,yeni,cfg){
 function fiyBildirimMetni(onceki,simdi){
   const o=fiySnapNorm(onceki);
   const d=[]
-    .concat(fiyDiffListe(o.parametre,simdi.parametre,{on:"",ad:r=>r.baslik,alan:[["fransa_deger","Fransa"],["diger_deger","Diğer"]]}))
-    .concat(fiyDiffListe(o.termin,simdi.termin,{on:"Termin (MVT) · ",ad:r=>r.aralik,alan:[["ic_68","68p/78t/78a içeren"],["numune","Numune"],["std_disi","Std. dışı cam"]]}))
+    .concat(fiyDiffListe(o.parametre,simdi.parametre,{on:"",ad:r=>r.baslik,alan:[["fransa_deger","Yurt Dışı 1"],["diger_deger","Yurt Dışı 2"]]}))
+    .concat(fiyDiffListe(o.termin,simdi.termin,{on:"Termin (MVT) · ",ad:r=>((r.bolge||"yd1")==="yd2"?"Yurt Dışı 2 · ":"Yurt Dışı 1 · ")+r.aralik,alan:[["ic_68","68p/78t/78a içeren"],["numune","Numune"],["std_disi","Std. dışı cam"]]}))
     .concat(fiyDiffListe(o.ahsap,simdi.ahsap,{on:"Ahşap · ",ad:r=>r.ad,alan:[["durum","Durum"],["aciklama","Açıklama"]]}))
     .concat(fiyDiffListe(o.sinif,simdi.sinif,{on:"Müşteri sınıfı · ",ad:r=>`${FIY_SINIF_AD[r.sinif]||("Sınıf "+r.sinif)} · ${r.ad}`,alan:[]}));
   const kiyas=Array.isArray(o.parametre)||Array.isArray(o.termin)||Array.isArray(o.ahsap)||Array.isArray(o.sinif);
