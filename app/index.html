@@ -506,8 +506,57 @@ async function grOzel(){
   el.innerHTML=G.map(g=>'<div class="gr-bx"><div class="gr-bxd">'+esc(g.n>1?(d(g.s)+" - "+d(g.e)):d(g.s))+'</div>'+esc(g.n>1?g.b:g.t)+'</div>').join('');
 }
 /* 3 — Gündem MB + PEM (GIRIS-PANO: Gündem'den taşındı; ✕ ve Kod/Konu düzenleme Gündem'deki gibi) */
+/* PRIM-SART-GIRIS (26.10.2026, Melih): 01.11.2026'dan itibaren her gün (pano her açılışta canlı hesaplar) MB Gündem tablosunun
+   sağında: prim alan ve bu ay prim şartını yerine getiren personel. Prim alan = son 12 ayda prim > 0 ya da prim notunda "prim".
+   Şart = Personel › "Aylık Güncellenecek Formlar"daki formlarının HEPSİ bu ayın son tarihinde (ayın ilk iş günü) ya da sonra
+   güncellenmiş (FRM_FK ve canlı damgalar loadRef ile aynı). Formu olmayan prim alanlar listelenmez (şartları PRIM_SART_EK'e eklenir).
+   Sütunlar = Personel tablosunun 2 · 8 · 12 · 13. sütunları: Ad Soyad · Yol-Yemek · önceki ay prim · son 12 ay ort. prim. */
+const PRIM_SART_EK={};
+async function grPrimSart(){
+  const t0=grNow(); t0.setHours(0,0,0,0);
+  if(t0<new Date(2026,10,1)) return "";
+  const R=await Promise.all([
+    sb.from("kisiler").select("kod,tam_ad,aktif"),
+    sb.from("maas_prim").select("id,kisi,kisi_kod,yol_yemek,prim_notu"),
+    sb.from("maas_prim_ay").select("kisi_id,yil,ay,tutar"),
+    sb.from("pano_yayin").select("anahtar,yayin_at"),
+    sb.from("form_takip").select("form_key,gunc_sikligi,son_guncelleme"),
+    sb.from("mk_ay_islendi").select("*").order("id",{ascending:false}).limit(1),
+    sb.from("form_erisim").select("yol,ad,sira,kisiler,herkes")]);
+  const D=r=>(r&&!r.error)?(r.data||[]):[];
+  const [K,MP,AYR,PY,FT,MKA,FE]=R.map(D);
+  const AY={}; AYR.forEach(x=>{ AY[x.kisi_id+"|"+x.yil+"-"+x.ay]=x.tutar; });
+  let PM=t0.getMonth(), PYr=t0.getFullYear(); if(PM===0){PM=12;PYr--;}
+  const back=(y,m,n)=>{ let mm=m-n, yy=y; while(mm<=0){mm+=12;yy--;} return {y:yy,m:mm}; };
+  const PREV12=[]; for(let i=1;i<=12;i++) PREV12.push(back(PYr,PM,i));
+  const avgOf=id=>{ let s=0,n=0; PREV12.forEach(p=>{ const v=AY[id+"|"+p.y+"-"+p.m]; if(v!=null&&v!==""){ s+=Number(v); n++; } }); return n?Math.round(s/n):null; };
+  const son12=id=>{ for(let i=0;i<12;i++){ const p=back(PYr,PM,i); if(Number(AY[id+"|"+p.y+"-"+p.m])>0) return true; } return false; };
+  const FRM_FK={"sel-arb/":"sel_arb_form","onur/":"onur_sevk","ob-rapor/":"ob_rapor","mk-prim/":"mk_prim","ahsap/":"ahsap",
+    "santiye-yi/":"santiye_yi","santiye-yd1-1/":"santiye_yd1_1","santiye-yd1-2/":"santiye_yd1_2","santiye-yd1-3/":"santiye_yd1_3",
+    "santiye-yd1-4/":"santiye_yd1_4","santiye-yd2-1/":"santiye_yd2_1","santiye-yd2-2/":"santiye_yd2_2"};
+  const frmD=s=>{ if(!s) return null; const p=String(s).slice(0,10).split("-"); return new Date(+p[0],+p[1]-1,+p[2]); };
+  const due=new Date(t0.getFullYear(),t0.getMonth(),1); while(due.getDay()===0||due.getDay()===6) due.setDate(due.getDate()+1);
+  const ftBy={}; FT.forEach(r=>ftBy[r.form_key]=r); const pyBy={}; PY.forEach(r=>pyBy[r.anahtar]=r.yayin_at);
+  const mk0=MKA[0], mkAt=mk0?(mk0.updated_at||mk0.created_at||null):null;
+  const KF={};
+  FE.forEach(r=>{ const key=FRM_FK[r.yol]; if(!key||r.herkes) return; const t=ftBy[key]; if(!t||!/ay/i.test(t.gunc_sikligi||"")) return;
+    const canli= key==="mk_prim"?mkAt : key==="onur_sevk"?pyBy.oe_sevk : pyBy[key];
+    const a=frmD(t.son_guncelleme), b=frmD(canli), s=(a&&b)?(a>b?a:b):(a||b);
+    (r.kisiler||[]).forEach(kd=>{ (KF[kd]=KF[kd]||[]).push(!!(s&&s>=due)); }); });
+  const kBy={}; K.forEach(r=>kBy[r.kod]=r);
+  const L=MP.filter(m=>m.kisi_kod&&kBy[m.kisi_kod]&&kBy[m.kisi_kod].aktif!==false)
+    .filter(m=>son12(m.id)||/prim/i.test(String(m.prim_notu||"")))
+    .filter(m=>{ const f=KF[m.kisi_kod]||[], ek=PRIM_SART_EK[m.kisi_kod]; if(!f.length&&!ek) return false;
+      return f.every(Boolean)&&(!ek||ek({t0,due})); })
+    .map(m=>({ad:kBy[m.kisi_kod].tam_ad||m.kisi, yy:m.yol_yemek, pa:AY[m.id+"|"+PYr+"-"+PM], av:avgOf(m.id)}))
+    .sort((a,b)=>String(a.ad).localeCompare(String(b.ad),"tr"));
+  const n=v=>(v==null||v==="")?'<span class="gr-muted">—</span>':Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0});
+  const rows=L.length?L.map(x=>`<tr><td>${esc(x.ad)}</td><td class="n">${n(x.yy)}</td><td class="n">${n(x.pa)}</td><td class="n">${n(x.av)}</td></tr>`).join("")
+    :`<tr><td colspan="4" class="gr-muted">Bu ay şartı sağlayan henüz yok</td></tr>`;
+  return `<div class="scroll"><table class="grt"><thead><tr><th>Prim şartını sağlayan · ${esc(GR_AYTAM[t0.getMonth()]+" "+t0.getFullYear())}</th><th class="n">Yol-Yemek (TL)</th><th class="n">${esc(GR_AYTAM[PM-1]+" "+PYr)} Prim (TL)</th><th class="n">Son 12 Ay Ort. Prim (TL)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
 async function grGundem(){
-  const {data,error}=await sb.from("ana_gundem").select("*");
+  const [{data,error},primH]=await Promise.all([sb.from("ana_gundem").select("*"),grPrimSart().catch(()=>"")]); /* PRIM-SART-GIRIS */
   const el=grEl("gr-gundem"); if(!el) return;
   if(error){ el.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const all=data||[];
@@ -515,7 +564,7 @@ async function grGundem(){
   const pem=all.filter(r=>r.kaynak_tip==='pem');
   const mbRows=mb.map(r=>`<tr data-id="${r.id}"><td class="kod ged" data-f="kod" data-type="text">${esc(r.kod)}</td><td class="ged" data-f="konu" data-type="text">${esc(r.konu)}</td><td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
   el.innerHTML=`<div class="ag-wrap">`
-    +(mb.length?`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${mbRows}</tbody></table></div>`:"")
+    +((mb.length||primH)?`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">`+(mb.length?`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${mbRows}</tbody></table></div>`:"")+(primH||"")+`</div>`:"")
     +agPemPrjBlock(pem,'pem')+`</div>`;
   el.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
   el.querySelectorAll(".ged").forEach(x=>x.onclick=()=>startEdit(x));
