@@ -345,7 +345,7 @@ function durumOpts(v){ return OBI_DURUM.map(d=>'<option'+(d===v?' selected':'')+
 function oncelikOpts(v){ const c=(v==null||v==="")?"-":String(v); return OBI_ONCELIK.map(d=>'<option'+(d===c?' selected':'')+'>'+esc(d)+'</option>').join(""); }
 function renderIsler(){
   let h='<table class="itbl"><thead><tr><th>Konu</th><th title="Ağırlık panodan (MB) belirlenir">Ağırlık (min 100)</th><th title="Öncelik panodan (MB) belirlenir">Öncelik</th><th>Durum</th><th>ÖB Notları</th><th></th></tr></thead><tbody>';
-  IROWS.forEach(r=>{
+  IROWS.filter(r=>!r.arsiv).forEach(r=>{ /* OB-TAMAM-KAPAT (26.10.2026, Melih): kapanan (arsiv) işler formda görünmez */
     h+='<tr data-id="'+r.id+'">'
       +'<td><input class="ic" data-f="konu" value="'+esc(r.konu)+'" placeholder="Konu"></td>'
       +'<td style="text-align:right;color:#3d4a57">'+esc(r.agirlik==null?100:Number(r.agirlik))+'</td>' /* OB-AGIRLIK: salt-okur, panodan gelir */
