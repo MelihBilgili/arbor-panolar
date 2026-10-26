@@ -136,7 +136,7 @@ const ROL = ARB_EMAIL==="eu.form@arbor.com.tr"?"EU":"MB";
 const msg=(t,c)=>{ const m=document.getElementById("msg"); m.textContent=t||""; m.className="msg"+(c?" "+c:""); };
 /* CAM-LISTE-V2: sütunlar: anahtar, başlık ("|" = satır sonu), tür (t metin · n sayı · d tarih), genişlik (ch), [ondalık hane] */
 const COLS=[["stok_kodu","Stok Kodu","t",8],["kombinasyon","Cam Kombinasyonu","t",46],
-  ["ug","Ug","n",4,1],["tl","Tlg","n",4],["rw_ctr","Rw+Ctr","n",4],["sf","Sg","n",5] /* URUN-KONFIG-SG-TLG */,["kalinlik","Kalınlık (mm)","n",6,1],
+  ["ug","Ug","n",4,1],["tl","Tlg","n",4],["rw_ctr","Rw+Ctr","n",4],["sf","Sfg","n",5] /* URUN-KONFIG-SG-TLG */,["kalinlik","Kalınlık (mm)","n",6,1], /* NOTASYON-SFG-TLG (26.10.2026): Sfw/Sfg pencere/cam solar faktörü, Tlw/Tlg pencere/cam ışık geçirimi; Sff kasa */
   ["uretici","Üretici","t",10],["tedarik_puani","Tedarik|Puanı","n",2],["aciklama","Açıklama","t",10],["alis_eur","Alış Fiyatı (€)","n",7,0],
   ["fiyat_tarihi","Fiyat Belirlenme|Tarihi","d",8],["satis_eur","Satış Fiyatı (€)","n",7,0],["risk_puani","Risk|Puanı","n",2]];
 const fmtN=(v,d)=>(v==null||v==="")?"":Number(v).toLocaleString("tr-TR",d==null?{maximumFractionDigits:3}:{minimumFractionDigits:d,maximumFractionDigits:d});
