@@ -17,7 +17,7 @@
   .wrap{max-width:1500px;margin:0 auto;padding:10px 10px 40px}
   .btn2{border:1px solid #cdd8e4;background:#fff;color:#16324f;border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer}
   .kart{background:#fff;border:1px solid #dde6f0;border-radius:9px;padding:8px 12px 12px;margin-bottom:10px}
-  .g{display:grid;grid-template-columns:2.4fr repeat(7,minmax(0,1fr)) auto;gap:4px 10px;align-items:end}
+  .g{display:grid;grid-template-columns:2.2fr repeat(8,minmax(0,1fr)) auto;gap:4px 10px;align-items:end}
   @media(max-width:1100px){.g{grid-template-columns:repeat(4,minmax(0,1fr))}.g .ara{grid-column:1/-1}}
   @media(max-width:520px){.g{grid-template-columns:repeat(2,minmax(0,1fr))}}
   label{display:block;font-size:11.5px;color:#4a5a6b;margin:5px 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -91,6 +91,7 @@
       <div><label for="f_seri">Seri</label><select id="f_seri"></select></div>
       <div><label for="f_dil">Dil</label><select id="f_dil"></select></div>
       <div><label for="f_tur">Tür</label><select id="f_tur"></select></div>
+      <div><label for="f_alt">Alt kategori</label><select id="f_alt"></select></div>
       <div><label for="f_gec">Geçerlilik</label><select id="f_gec"><option value="">Hepsi</option><option value="sureli">Süreli (geçerli)</option><option value="90">90 gün içinde dolacak</option><option value="suresiz">Süresiz</option><option value="gecmis">Süresi geçmiş</option></select></div>
       <div><label for="f_web">Web</label><select id="f_web"><option value="">Hepsi</option><option value="1">Seçili (sitede)</option><option value="0">Seçili değil</option></select></div>
       <div><button class="btn2" id="temizle" style="margin-bottom:1px">Temizle</button></div>
@@ -194,7 +195,8 @@ const sb=supabase.createClient();
 const ANA_SIRA=["Ürün","Girdi","Genel"]; /* GIRDI-AILE (20.10.2026): Aksesuar ana ayrımı Girdi oldu */
 const AILE_SIRA=["Simplist","Flat","Minima","Casement","Giyotin","Klasik","Epoch","Panjur","Cephe","Panel","Aksesuar","Cam","Ahşap","Alüminyum","Boya","Yalıtım Malz.","Diğer"];
 const DIL_SIRA=["Türkçe","İngilizce","Fransızca","Almanca","İtalyanca"];
-const TUR_SIRA=["Sertifika","Broşür","Sunum","Katalog"];
+const TUR_SIRA=["Sertifika","Broşür-Katalog","Mevzuat-Eğitim"]; /* DOK-ALT-KATEGORI (26.10.2026) */
+const ALT_SIRA=["Akustik","Termal","Hava-Su-Rüzgar","Cam (CEKAL)","Alüminyum (Qualicoat, Qualanod)","Ahşap (FSC, PEFC)","Diğer Girdiler","Güvenlik / Mekanik","CE / Uygunluk / Performans Beyanı","Kalite Yönetim Sistemi","Teknik Değerlendirme","Yangın","Arbor Ürün Broşürü","Tedarikçi Teknik Föyü (TDS)","Kullanım Şartları / Bakım","Referans","Kurumsal Tanıtım","Talimatlar","Tedarikçi Kataloğu","Sözlük","Teknik Rehber (DTU, Cam)","EN Standartları"];
 const trc=(a,b)=>String(a).localeCompare(String(b),"tr",{numeric:true});
 const sirala=(arr,ref)=>arr.sort((a,b)=>{ const i=ref.indexOf(a), j=ref.indexOf(b); return (i<0?99:i)-(j<0?99:j)||trc(a,b); });
 const bugun=new Date(); bugun.setHours(0,0,0,0);
@@ -204,7 +206,7 @@ const mb=b=>b==null?"":(b>=1048576?(b/1048576).toFixed(1).replace(".",",")+" MB"
 const norm=s=>String(s||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ı/g,"i");
 let ROWS=[], SORT={k:"nr",d:1};
 const OD_LINK="https://1drv.ms/f/c/67beba4c65f73a19/IgDZFFLVqDQ9T4RgpLw9iM3FAQPNaSwzfdMuMhNSbxgMAbw?e=Gz3Hbj"; /* DOK-ONEDRIVE-LINK: ERP Docs 261020 paylaşım klasörü */
-const F=["f_q","f_ana","f_aile","f_seri","f_dil","f_tur","f_gec","f_web"];
+const F=["f_q","f_ana","f_aile","f_seri","f_dil","f_tur","f_alt","f_gec","f_web"];
 function secenek(id,vals,ilk){ const el=$(id), cur=el.value; el.innerHTML='<option value="">'+(ilk||"Hepsi")+'</option>'+vals.map(v=>'<option>'+esc(v)+'</option>').join(""); if(vals.indexOf(cur)>=0) el.value=cur; }
 function uniq(rs,k){ return [...new Set(rs.map(r=>r[k]).filter(Boolean))]; }
 function doldur(){
@@ -215,6 +217,7 @@ function doldur(){
   secenek("f_seri",uniq(r2,"seri").sort(trc));
   secenek("f_dil",sirala(uniq(ROWS,"dil"),DIL_SIRA));
   secenek("f_tur",sirala(uniq(ROWS,"tur"),TUR_SIRA));
+  const tu=$("f_tur").value; secenek("f_alt",sirala(uniq(ROWS.filter(r=>!tu||r.tur===tu),"alt_kategori"),ALT_SIRA));
 }
 function sakla(){ try{ const o={}; F.forEach(i=>o[i]=$(i).value); localStorage.setItem("dok_suz",JSON.stringify(o)); }catch(e){} }
 function getir(){ try{ const o=JSON.parse(localStorage.getItem("dok_suz")||"{}"); return o||{}; }catch(e){ return {}; } }
@@ -227,6 +230,7 @@ function suz(){
     if(v.f_seri&&![r.seri,r.seri2,r.seri3,r.seri4].includes(v.f_seri)) return false;
     if(v.f_dil&&r.dil!==v.f_dil) return false;
     if(v.f_tur&&r.tur!==v.f_tur) return false;
+    if(v.f_alt&&r.alt_kategori!==v.f_alt) return false;
     if(v.f_web&&(r.web?"1":"0")!==v.f_web) return false;
     const g=gun(r.gecerlilik);
     if(v.f_gec==="sureli"&&!(g!=null&&g>=0)) return false;
@@ -237,7 +241,7 @@ function suz(){
     return true;
   });
 }
-const COLS=[["nr","Nr"],["ana","Ana"],["aile","Aile"],["seri","Seri"],["ad","Doküman"],["dil","Dil"],["tur","Tür"],["gecerlilik","Geçerlilik"],["web","Web"],["boyut","Boyut"]];
+const COLS=[["nr","Nr"],["ana","Ana"],["aile","Aile"],["seri","Seri"],["ad","Doküman"],["dil","Dil"],["tur","Tür"],["alt_kategori","Alt kategori"],["gecerlilik","Geçerlilik"],["web","Web"],["boyut","Boyut"]];
 function ciz(){
   const rs=suz(); const k=SORT.k, d=SORT.d;
   rs.sort((a,b)=>{ let x=a[k], y=b[k]; if(x==null||x==="") return 1; if(y==null||y==="") return -1;
@@ -253,7 +257,7 @@ function ciz(){
       :'<a href="#" class="od" data-od="'+r.nr+'" title="50 MB üstü: OneDrive klasöründen indirilir">'+esc(r.ad)+'</a> <span class="odn">· OneDrive</span>'; /* DOK-ONEDRIVE-LINK */
     h+='<tr data-r="'+r.nr+'"><td class="r">'+r.nr+'</td><td>'+esc(r.ana)+'</td><td>'+(r.aile?'<span class="etk '+esc(r.aile)+'">'+esc(r.aile)+'</span>':'')+'</td>'
       +'<td>'+esc(ser)+'</td><td class="ad">'+ad+'<span class="dn">'+esc(r.dosya)+(r.rev?' · Rev. '+esc(r.rev):'')+'</span></td>'
-      +'<td>'+esc(r.dil)+'</td><td>'+esc(r.tur)+'</td><td'+gc+'>'+tarih(r.gecerlilik)+'</td>'
+      +'<td>'+esc(r.dil)+'</td><td>'+esc(r.tur)+'</td><td>'+esc(r.alt_kategori)+'</td><td'+gc+'>'+tarih(r.gecerlilik)+'</td>'
       +'<td>'+(r.web?'<span class="web" title="İnternet sitesinde paylaşılıyor">✓ Seçili</span>':'')+'</td><td class="r">'+mb(r.boyut)+'</td></tr>';
   });
   $("res").innerHTML=h+'</tbody></table>';
@@ -276,14 +280,14 @@ $("res").addEventListener("click",async e=>{
   if(error||!data){ if(w) w.close(); alert("Dosya açılamadı: "+((error&&error.message)||"")); return; }
   if(w) w.location=data.signedUrl; else location.href=data.signedUrl;
 });
-F.forEach(i=>$(i).addEventListener(i==="f_q"?"input":"change",()=>{ if(i==="f_ana"||i==="f_aile") doldur(); sakla(); ciz(); }));
+F.forEach(i=>$(i).addEventListener(i==="f_q"?"input":"change",()=>{ if(i==="f_ana"||i==="f_aile"||i==="f_tur") doldur(); sakla(); ciz(); }));
 $("temizle").onclick=()=>{ F.forEach(i=>$(i).value=""); doldur(); sakla(); ciz(); };
 async function yukle(){
   const out=[]; let from=0;
   while(true){ const {data,error}=await sb.from("dokuman").select("*").order("nr").range(from,from+999);
     if(error){ $("res").innerHTML='<div class="bos">Okunamadı: '+esc(error.message)+'</div>'; return; }
     out.push(...data); if(data.length<1000) break; from+=1000; }
-  out.forEach(r=>r._h=norm([r.ad,r.dosya,r.erp_dosya_adi,r.seri,r.seri2,r.seri3,r.seri4,r.aile,r.ana,r.tur,r.dil].join(" ")));
+  out.forEach(r=>r._h=norm([r.ad,r.dosya,r.erp_dosya_adi,r.seri,r.seri2,r.seri3,r.seri4,r.aile,r.ana,r.tur,r.alt_kategori,r.dil].join(" ")));
   ROWS=out;
   const o=getir(); ["f_ana","f_aile"].forEach(i=>{ doldur(); if(o[i]) $(i).value=o[i]; }); doldur();
   F.forEach(i=>{ if(o[i]!=null&&$(i).querySelector&&($(i).tagName!=="SELECT"||[...$(i).options].some(x=>x.value===o[i]))) $(i).value=o[i]; });
@@ -344,6 +348,7 @@ function ykForm(f,d){
    +'<div><label for="y_rev">Revizyon / rapor no.</label><input id="y_rev" value="'+esc(o.rev)+'"></div>'
    +'<div><label class="zor" for="y_dil">Dil</label><select id="y_dil">'+opt(dil,o.dil)+'</select></div>'
    +'<div><label class="zor" for="y_tur">Tür</label><select id="y_tur">'+opt(tur,o.tur)+'</select></div>'
+   +'<div><label class="zor" for="y_alt">Alt kategori</label><select id="y_alt"></select></div>'
    +'<div><label class="zor" for="y_gec">Geçerlilik tarihi</label><input type="date" id="y_gec" value="'+esc(o.gecerlilik||"")+'">'
    +'<label style="display:flex;gap:6px;align-items:center;margin-top:4px;white-space:normal"><input type="checkbox" id="y_sur" style="width:auto"'+(o.gecerlilik?'':' checked')+'> Süresiz</label></div>'
    +'<div><label class="zor" for="y_web">Web</label><select id="y_web"><option'+(o.web?' selected':'')+'>Seçili</option><option'+(o.web?'':' selected')+'>Seçili değil</option></select></div>'
@@ -356,6 +361,10 @@ function ykForm(f,d){
     $("y_seriDL").innerHTML=se.map(v=>'<option value="'+esc(v)+'">').join("");
     $("y_aileL").className=a&&a!=="Genel"?"zor":""; };
   dl(); $("y_ana").onchange=dl; $("y_aile").oninput=dl;
+  const altDl=(sec2)=>{ const tu=$("y_tur").value, cur=sec2!=null?sec2:$("y_alt").value;
+    const al=sirala([...new Set([...((sec.alt||{})[tu]||[]),...uniq(ROWS.filter(r=>r.tur===tu),"alt_kategori")])],ALT_SIRA);
+    $("y_alt").innerHTML='<option value="">— seçin —</option>'+al.map(v=>'<option'+(v===cur?' selected':'')+'>'+esc(v)+'</option>').join(""); };
+  altDl(o.alt_kategori||""); $("y_tur").onchange=()=>altDl();
   $("y_sur").onchange=()=>{ if($("y_sur").checked) $("y_gec").value=""; };
   $("y_gec").oninput=()=>{ if($("y_gec").value) $("y_sur").checked=false; };
   $("y_vaz").onclick=async()=>{ if(!confirm("Yükleme iptal edilsin mi? Dosya kaydedilmeyecek.")) return;
@@ -366,11 +375,11 @@ async function ykKaydet(){
   const v=id=>$(id).value.trim();
   document.querySelectorAll("#ykKutu .eksik").forEach(x=>x.classList.remove("eksik"));
   const eks=[];
-  ["y_ad","y_ana","y_dil","y_tur","y_web"].forEach(id=>{ if(!v(id)) eks.push(id); });
+  ["y_ad","y_ana","y_dil","y_tur","y_alt","y_web"].forEach(id=>{ if(!v(id)) eks.push(id); });
   if(v("y_ana")&&v("y_ana")!=="Genel"&&!v("y_aile")) eks.push("y_aile");
   if(!v("y_gec")&&!$("y_sur").checked) eks.push("y_gec");
   if(eks.length){ eks.forEach(id=>$(id).classList.add("eksik")); $("y_hata").textContent="Kırmızı alanları doldurun (geçerlilik için tarih girin ya da Süresiz işaretleyin)."; return; }
-  const alanlar={ad:v("y_ad"),ana:v("y_ana"),aile:v("y_aile"),seri:v("y_seri"),rev:v("y_rev"),dil:v("y_dil"),tur:v("y_tur"),
+  const alanlar={ad:v("y_ad"),ana:v("y_ana"),aile:v("y_aile"),seri:v("y_seri"),rev:v("y_rev"),dil:v("y_dil"),tur:v("y_tur"),alt_kategori:v("y_alt"),
     gecerlilik:$("y_sur").checked?"":v("y_gec"),web:v("y_web")==="Seçili"};
   const b=$("y_onay"); b.disabled=true; b.textContent="Kaydediliyor…"; $("y_hata").textContent="";
   try{
