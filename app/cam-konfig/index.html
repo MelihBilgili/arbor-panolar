@@ -115,8 +115,8 @@
       <div class="g4">
         <div><label for="h_ug">Ug ≤ (W/m²K)</label><input id="h_ug" inputmode="decimal"></div>
         <div><label for="h_lt">Tlg ≥ (%)</label><input id="h_lt" inputmode="decimal"></div>
-        <div><label for="h_gmax">Sg ≤ (%)</label><input id="h_gmax" inputmode="decimal"></div>
-        <div><label for="h_gmin">Sg ≥ (%)</label><input id="h_gmin" inputmode="decimal"></div>
+        <div><label for="h_gmax">Sfg ≤ (%)</label><input id="h_gmax" inputmode="decimal"></div>
+        <div><label for="h_gmin">Sfg ≥ (%)</label><input id="h_gmin" inputmode="decimal"></div>
         <div><label for="h_rwctr">Rw+Ctr ≥ (dB)</label><input id="h_rwctr" inputmode="decimal"></div>
       </div>
     </div>
@@ -354,7 +354,7 @@ function kaynakYaz(){
   const tr=d=>d?d.slice(8,10)+"."+d.slice(5,7)+"."+d.slice(2,4):"";
   $("kaynaklar").innerHTML='<b>Hesaplayıcılar</b> — '+Object.keys(KAYNAK).map(k=>{ const K=KAYNAK[k];
     return '<a href="'+K.u+'" target="_blank" rel="noopener">'+esc(K.t)+'</a>'+(say[k]?' ('+say[k]+' konfigürasyon'+(son[k]?', '+tr(son[k]):'')+')':' (henüz veri yok)'); }).join(" · ")
-    +'<br>Değerler: Ug EN 673, Tlg/LR/Sg EN 410 (hesaplayıcının verdiği yuvarlanmış değerler); Rw (C;Ctr) EN ISO 717-1 — "≈" işaretli akustik değer, aynı cam yapısının ölçülmüş değeridir (kaplama akustiği etkilemez; üzerine gelince kaynağı görünür). Ağırlık kombinasyondan yaklaşık hesaplanır (cam 2,5 kg/m² mm).'+(say["Vitro Construct IGU"]?' Vitro değerleri NFRC koşullarındadır (U değeri EN 673 Ug\'den biraz yüksek çıkar).':'');
+    +'<br>Değerler: Ug EN 673, Tlg/LR/Sfg EN 410 (hesaplayıcının verdiği yuvarlanmış değerler); Rw (C;Ctr) EN ISO 717-1 — "≈" işaretli akustik değer, aynı cam yapısının ölçülmüş değeridir (kaplama akustiği etkilemez; üzerine gelince kaynağı görünür). Ağırlık kombinasyondan yaklaşık hesaplanır (cam 2,5 kg/m² mm).'+(say["Vitro Construct IGU"]?' Vitro değerleri NFRC koşullarındadır (U değeri EN 673 Ug\'den biraz yüksek çıkar).':'');
 }
 function hedef(){ const p=id=>num($(id).value);
   const lt=p("h_lt"), gmax=p("h_gmax"), gmin=p("h_gmin"), lr=null /* CAM-KONFIG-LRSEL */;
@@ -424,7 +424,7 @@ function tablo(rows,h,yakinMod){
   /* CAM-KONFIG-FIYAT: sütunlar Konfigürasyon · Üretici · Kalınlık(1) · Ağırlık(0) · Ug(2) · LT(0) · LR dış(0) · G(0) · LT/g(2) · Rw+Ctr · Fiyat */
   const bad=(r,k)=>r._k.miss[k]!==undefined?' bad':'';
   /* CAM-KONFIG-SIRALA: başlığa tıklayınca o sütuna göre sırala (tekrar tıklama yönü çevirir) */
-  const TH=[["komb","Konfigürasyon (dıştan içe)","l"],["pc","Pencad","l"]/* CAM-KONFIG-PENCAD */,["ur","Üretici","l"],["kal","Kalınlık<br>mm"],["agr","Ağırlık<br>kg/m²"],["ug","Ug<br>W/m²K"],["lt","Tlg<br>%"],["g","Sg<br>%"] /* URUN-KONFIG-SG-TLG (19.10.2026): LT→Tlg, g→Sg */,["rwctr","Rw+Ctr<br>dB"],["fiyat","Fiyat<br>€/m²"]];
+  const TH=[["komb","Konfigürasyon (dıştan içe)","l"],["pc","Pencad","l"]/* CAM-KONFIG-PENCAD */,["ur","Üretici","l"],["kal","Kalınlık<br>mm"],["agr","Ağırlık<br>kg/m²"],["ug","Ug<br>W/m²K"],["lt","Tlg<br>%"],["g","Sfg<br>%"] /* URUN-KONFIG-SG-TLG (19.10.2026): LT→Tlg, g→Sg */,["rwctr","Rw+Ctr<br>dB"],["fiyat","Fiyat<br>€/m²"]];
   const th='<thead><tr>'+TH.map(c=>'<th data-k="'+c[0]+'" class="'+(c[2]||'')+'" style="cursor:pointer" title="Sıralamak için tıklayın">'+c[1]+(SORT.k===c[0]?(SORT.d>0?' ▲':' ▼'):'')+'</th>').join('')+'</tr></thead>';
   window._ROWS=rows; /* CAM-KONFIG-SAGTIK */
   const tb=rows.map((r,ri)=>{ const K=KAYNAK[r.kaynak]||{e:r.kaynak,c:""};
@@ -516,7 +516,7 @@ document.addEventListener("keydown",e=>{ if(e.key==="Escape") cfKapat(); });
   const set=(id,k)=>{ const v=u.get(k); if(v!=null&&v!==""&&$(id)) $(id).value=v; };
   set("h_ug","ug"); set("h_lt","lt"); set("h_gmax","gmax"); set("h_rwctr","rwctr");
   const b=document.createElement("div"); b.className="uyari";
-  /* URUN-KONFIG-AD + AKTAR-CAM-RWCTR (19.10.2026) */ b.innerHTML="Ürün Konfigürasyonu'ndan aktarıldı: <b>"+esc(u.get("seri")||"")+"</b> · "+esc(u.get("cam")||"")+" — Ug, Tlg, Sg ve Rw+Ctr hedefleri bu camın kendi değerleriyle dolduruldu.";
+  /* URUN-KONFIG-AD + AKTAR-CAM-RWCTR (19.10.2026) */ b.innerHTML="Ürün Konfigürasyonu'ndan aktarıldı: <b>"+esc(u.get("seri")||"")+"</b> · "+esc(u.get("cam")||"")+" — Ug, Tlg, Sfg ve Rw+Ctr hedefleri bu camın kendi değerleriyle dolduruldu."; /* NOTASYON-SFG-TLG (26.10.2026): Sfw/Sfg pencere/cam solar faktörü, Tlw/Tlg pencere/cam ışık geçirimi; Sff kasa */
   const p=document.querySelector(".panel"); if(p) p.parentNode.insertBefore(b,p);
 }catch(e){} })();
 load();
