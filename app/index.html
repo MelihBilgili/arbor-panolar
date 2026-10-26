@@ -2823,7 +2823,7 @@ async function loadObrapor(tgt){
   const view=document.getElementById(tgt||"view");
   const isl=await sb.from("ob_isler").select("*").order("arsiv").order("id");
   if(isl.error){ view.innerHTML=`<div class="load">Hata: ${esc(isl.error.message)}</div>`; return; }
-  const iRows=isl.data||[];
+  const iRows=isl.data||[]; const iVis=iRows.filter(r=>!r.arsiv); /* OB-TAMAM-KAPAT (26.10.2026, Melih): kapanan (arsiv) işler listelenmez; ağırlık/puan için iRows tümü */
   /* Takipteki İşler ÖNCELİK sıralaması: 1<2<3<"-"/boş<Rutin. Bilinmeyen/boş/null → "-" grubu
      (Rutin'den önce, 3'ten sonra). Stabil: aynı öncelikte mevcut (arsiv,id) ikincil sırası korunur. */
   const _oncRank=v=>{ const s=String(v==null?"":v).trim();
@@ -2864,18 +2864,18 @@ async function loadObrapor(tgt){
   let hd=`<th>Konu</th><th class="thsm" title="Ağırlık (en az 100) — panodan düzenlenir, ÖB formuna salt-okur gider"><span class="thw">Ağırlık (min 100)</span></th><th>Durum</th><th>Öncelik</th><th class="obwh" id="ob-wk" title="Geçmiş hafta notlarını aç/kapa">Son ÖB Notları <span class="ahcar">${kar}</span></th>`
     + (obWeeksOpen?haftaKeys.map(k=>`<th class="thsm" title="${dgun(weekMap[k].maxDate)}"><span class="thw">${isoWk(weekMap[k].maxDate)}. Hafta ÖB Notu</span></th>`).join(""):"")
     + `<th>Aylık Değişim Özeti</th><th class="thsm" title="Kapanan ayın Aylık Faaliyet tespitine göre takipteki işler puanına katkı: tamamlanan 3 × ağırlık/100, ilerleyen 0,5 × ağırlık/100, yerinde sayan 0; Rutin puana girmez"><span class="thw">Puan</span></th>`;
-  let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iRows.length})</span></h3>`
+  let ib=`<h3 class="sec">Takipteki İşler <span class="muted">(${iVis.length})</span></h3>`
     +`<div class="scroll"><table class="obt">`
     +`<colgroup>${cg}</colgroup>`
     +`<thead><tr>${hd}</tr></thead><tbody>`;
   /* OB-YENI-UST (22.10.2026, Melih): yeni iş satırı tablonun en üstünde boş satır; Konu + Ağırlık düzenlenir, Enter/odak çıkışında ob_isler.insert */
   ib+=`<tr class="obyrow"><td><input id="ob-yeni-konu" class="obyk" type="text" placeholder="+ Yeni iş (konu yazıp Enter)"></td><td class="num"><input id="ob-yeni-agr" class="obya" type="text" inputmode="numeric" size="1" value="100" title="Ağırlık (en az 100)"></td><td colspan="${5+(obWeeksOpen?haftaKeys.length:0)}"><span id="ob-yeni-msg" class="muted" style="font-size:11px"></span></td></tr>`;
-  iRows.forEach(r=>{
+  iVis.forEach(r=>{
     ib+=`<tr>${cx(r.konu,"sb")}<td class="num"><input class="obagr" data-id="${r.id}" type="text" inputmode="numeric" size="1" value="${r.agirlik==null?100:Number(r.agirlik)}"></td>${cx(r.durum)}<td><select class="obonc" data-id="${r.id}">${["-","1","2","3","Rutin"].map(o=>`<option${o===((r.oncelik==null||String(r.oncelik).trim()==='')?'-':String(r.oncelik).trim())?' selected':''}>${o}</option>`).join('')}</select></td>${cx(r.ob_notlari)}`
       + (obWeeksOpen?haftaKeys.map(k=>cx((weekMap[k].notes||{})[String(r.id)])).join(""):"")
       + `${cx(r.aylik_ozet)}<td class="num" style="white-space:nowrap">%%TKP_${r.id}%%</td></tr>`;
   });
-  if(!iRows.length) ib+=`<tr><td colspan="7" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
+  if(!iVis.length) ib+=`<tr><td colspan="7" class="muted">Henüz iş yok — ÖB formundaki "Yeni İş Ekle" ile eklenir.</td></tr>`;
   /* OB-YENI-SATIR (21.10.2026, Melih): Takipteki İşler'e panodan yeni satır → ob_isler.insert (Konu + Öncelik + Ağırlık; Durum varsayılan) */
   ib+=`</tbody></table></div>%%TKP_OZET%%`; /* OB-YENI-UST: alttaki yeni iş kutuları kaldırıldı */
   /* AYLIK FAALİYET — Takipteki İşler'in hemen altı (27.08.2026): ÖB'nin kapanan aya ilişkin
