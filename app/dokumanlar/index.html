@@ -248,7 +248,7 @@ function ciz(){
   const rs=suz(); const k=SORT.k, d=SORT.d;
   rs.sort((a,b)=>{ let x=a[k], y=b[k]; if(x==null||x==="") return 1; if(y==null||y==="") return -1;
     if(typeof x==="number"||typeof x==="boolean") return ((x>y)-(x<y))*d; return trc(x,y)*d; });
-  $("ozet").textContent=rs.length+" / "+ROWS.length+" doküman"+(["int@arbor.com.tr","ob.form@arbor.com.tr"].includes(ARB_EMAIL)?" · silmek için satıra sağ tıklayın":""); /* DOK-SIL */
+  $("ozet").textContent=rs.length+" / "+ROWS.length+" doküman"+(silKisi()?" · silmek için satıra sağ tıklayın":""); /* DOK-SIL */
   if(!rs.length){ $("res").innerHTML='<div class="bos">Sonuç yok.</div>'; return; }
   let h='<table><thead><tr>'+COLS.map(c=>'<th data-k="'+c[0]+'">'+c[1]+(SORT.k===c[0]?(d>0?" ▲":" ▼"):"")+'</th>').join("")+'</tr></thead><tbody>';
   rs.forEach(r=>{
@@ -533,8 +533,9 @@ async function ykKaydet(){
     await yukle();
   }catch(e){ b.disabled=false; b.textContent="Onayla ve OneDrive'a kaydet"; $("y_hata").textContent="Kaydedilemedi: "+e.message; }
 }
-/* DOK-SIL (22.10.2026): satıra sağ tık -> Sil; yalnız MB (int@) ve ÖB (ob.form@). Edge dokuman-ekle islem:'sil' */
-const SILEBILIR=["int@arbor.com.tr","ob.form@arbor.com.tr"].includes(ARB_EMAIL);
+/* DOK-SIL (22.10.2026; 27.10.2026 DOK-SIL-EU-MB): satıra sağ tık -> Sil; yalnız MB (int@) ve EU (kişisel kodla girişte; silmeden önce kod sorulur, edge kisi_sifre ile doğrular). Edge dokuman-ekle islem:'sil' */
+function silKisi(){ if(ARB_EMAIL==="int@arbor.com.tr") return "MB"; const k=window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL); return k&&["EU","MB"].includes(k.kod)?k.kod:null; }
+const SILEBILIR=!!silKisi(); let SIL_KOD=null;
 const sagMenu=document.createElement("div"); sagMenu.id="sagMenu"; document.body.appendChild(sagMenu);
 function menuKapat(){ sagMenu.style.display="none"; }
 document.addEventListener("click",menuKapat); document.addEventListener("scroll",menuKapat,true); window.addEventListener("blur",menuKapat);
@@ -551,10 +552,11 @@ $("res").addEventListener("contextmenu",e=>{
   $("sagSil").onclick=async ev=>{ ev.stopPropagation(); menuKapat();
     if(!confirm("Bu doküman silinsin mi?\n\nNr "+r.nr+" · "+r.ad+"\n"+(r.dosya||"")+"\n\nListeden ve döküm dosyasından kaldırılır; dosya OneDrive'da _yedek_261020 klasörüne taşınır.")) return;
     try{
-      const j=await fn({islem:"sil",nr:r.nr});
+      if(ARB_EMAIL!=="int@arbor.com.tr"&&!SIL_KOD){ const g=prompt("Silmek için kişisel 6 haneli kodunuzu girin:"); if(!g) return; SIL_KOD=g.replace(/\D/g,""); }
+      const j=await fn({islem:"sil",nr:r.nr,kod:SIL_KOD});
       ROWS=ROWS.filter(x=>x.nr!==r.nr); doldur(); ciz();
       toast("Silindi: Nr "+r.nr+(j.onedrive==="kuyrukta"?" — OneDrive ve döküm listesi birkaç saniye içinde güncellenir.":" — OneDrive güncellenemedi ("+j.onedrive+")."),9000);
-    }catch(err){ alert("Silinemedi: "+err.message); }
+    }catch(err){ SIL_KOD=null; alert("Silinemedi: "+err.message); }
   };
 });
 </script>
