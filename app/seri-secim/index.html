@@ -13,6 +13,11 @@
   header{background:#16324f;color:#fff;padding:12px 16px}
   header h1{font-size:17px;margin:0;font-weight:700}
   header .sub{font-size:12px;color:#c9dcf0;margin-top:3px;line-height:1.5;max-width:1100px}
+  /* URUN-KONFIG-CAMLINK (27.10.2026) */ header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  header .hl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-left:auto}
+  header .hl a{display:inline-block;padding:6px 13px;border:1px solid #c9dcf0;border-radius:8px;color:#fff;font-size:13px;text-decoration:none;white-space:nowrap}
+  header .hl a:hover{background:#fff;color:#16324f}
+  @media print{header .hl{display:none}}
   .wrap{max-width:1400px;margin:0 auto;padding:10px 10px 40px}
   .btn2{border:1px solid #cdd8e4;background:#fff;color:#16324f;border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer}
   .kart{background:#fff;border:1px solid #dde6f0;border-radius:9px;padding:8px 12px 12px;margin-bottom:10px}
@@ -93,8 +98,9 @@
 </head>
 <body>
 <header>
-  <h1>Ürün Konfigürasyonu</h1>
+  <div><h1>Ürün Konfigürasyonu</h1>
   <div class="sub">Hedef ısı (Uw), ses (Rw+Ctr) ve cam değerlerini giriniz; Arbor serileri ve test edilmiş cam kombinasyonlarından bu değerleri karşılayanlar listelenir. Boş bırakılan hedef serbesttir. Sonuçlar cam fiyatına göre (artan) sıralanır. Satıra sağ tıklayıp <b>Cam konfigürasyona aktar</b> ile camın değerlerini Cam Konfigürasyon formuna taşıyabilirsiniz.</div>
+  <div class="hl"><!-- URUN-KONFIG-CAMLINK (27.10.2026) --><a href="../cam-konfig/" target="_blank" rel="noopener">Cam Konfigürasyon ↗</a><a href="../cam/" target="_blank" rel="noopener">Cam Fiyatlandırma ↗</a></div>
 </header>
 <div class="wrap">
   <div style="display:flex;gap:10px;align-items:center;margin:0 0 8px"><span id="rolLbl"></span></div>
