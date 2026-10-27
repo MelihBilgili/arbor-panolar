@@ -119,7 +119,7 @@
       <div><label for="f_gen">Ürün Genişlik mm</label><input id="f_gen" inputmode="numeric" value="1230"></div>
       <div><label for="f_yuk">Ürün Yükseklik mm</label><input id="f_yuk" inputmode="numeric" value="1480"></div>
       <!-- URUN-KONFIG-SECIMLER (22.10.2026) -->
-      <div><label for="f_yng">Yangın Dayanımı</label><select id="f_yng"><option value="">Fark etmez</option><option value="30">EI30</option><option value="60">EI60</option></select></div>
+      <div><label for="f_yng">Yangın Dayanımı</label><select id="f_yng"><option value="">Fark etmez</option><option value="e30">E30 / EW30</option><option value="30">EI30</option><option value="60">EI60</option></select></div>
       <div><label for="f_guv">Güvenlik Sınıfı</label><select id="f_guv"><option value="">Fark etmez</option><option value="rc2n">RC2N</option><option value="rc2">CR2 / RC2</option><option value="rc3">CR 3 / RC3</option></select></div>
       <div><label for="f_cgs" title="EN 356">Cam Güvenlik Sınıfı</label><select id="f_cgs"><option value="">Fark etmez</option><option value="p2a">P2A</option><option value="p4a">P4A</option><option value="p5a">P5A</option><option value="p6b">P6B</option></select></div><!-- URUN-KONFIG-CAM-GUV -->
       <div><label for="f_tmp">Temper</label><select id="f_tmp"><option value="">Fark etmez</option><option value="1">Var</option><option value="0">Yok</option></select></div>
@@ -324,6 +324,7 @@ function ekSecim(){ return {alan:UK_W*UK_H, yng:$("f_yng").value, guv:$("f_guv")
    Temper Var → adında temper, Yok → temper yok; Kapı ya da Bal.Door serisi → iç ve dış cam lamine. RC2N cam kısıtı yok; CR3/RC3 sertifika yok (liste boş, uyarı). */
 function ekUygun(r,ek){ const C=r.C, ad=String(C.komb||C.c||""), P=camKat(C);
   if(ek.alan>2.6+1e-9&&!(P&&P.length&&P.every(p=>p.cam>=6))) return false;
+  if(ek.yng==="e30"&&!/\b(E|EW|EI)\s*(30|45|60|90|120)\b/i.test(ad)) return false; /* URUN-KONFIG-E30 (27.10.2026): E30/EW30 -> adında E/EW/EI 30 ve üstü */
   if(ek.yng==="30"&&!/EI\s*(30|60)/i.test(ad)) return false;
   if(ek.yng==="60"&&!/EI\s*60/i.test(ad)) return false;
   if(ek.guv==="rc2"&&!(P&&P.some(p=>p.lam&&p.pvb>=2.28-1e-9))) return false; /* URUN-KONFIG-RC2-P4A (22.10.2026, Melih): CR2/RC2 → P4A, lamine ≥ 2,28 mm; RC2N kısıtsız */
@@ -538,7 +539,7 @@ function soSatir(S){ const kod=soKod(S), dog=$("f_dog").value;
   return SO_V.filter(x=>x.seri.toLowerCase()===kod.toLowerCase()&&tip.includes(x.urun_tipi)&&(!ac||!x.acilim||ac.test(x.acilim))); }
 function soSeriler(){ const seri=$("f_seri").value; return SERI.filter(S=>AILE_SEC.has(S.a)&&(!seri||seri===S.s||seri.indexOf(S.s+" ")===0)); }
 function soEle(ek){ const el=new Set(); if(!SO_OK||(!ek.yng&&!ek.guv)) return el;
-  const yRe=ek.yng==="60"?/EI\s*(60|90|120)/i:/EI\s*(30|45|60|90|120)/i;
+  const yRe=ek.yng==="60"?/EI\s*(60|90|120)/i:ek.yng==="e30"?/\b(E|EW|EI)\s*(30|45|60|90|120)\b/i:/EI\s*(30|45|60|90|120)/i;
   const gRe=ek.guv==="rc3"?/(RC|CR)\s*[3-6]/i:ek.guv==="rc2"?/(RC|CR)\s*[2-6](?!\s*N)/i:/(RC|CR)\s*[2-6]/i;
   SERI.forEach(S=>{ const R=soSatir(S).filter(x=>x.gecerli);
     if(ek.yng&&!R.some(x=>x.parametre==="Yangın"&&x.degerler.some(d=>yRe.test(d)))) el.add(S.s);
