@@ -341,7 +341,8 @@ const SO_CSS=".so-t{border-collapse:collapse;font-size:11.5px;width:100%}.so-t t
  +".so-cip{display:inline-block;border-radius:5px;padding:0 6px;margin:1px 2px;background:#eef1f5;color:#8a97a4}.so-cip.v{background:#e7f5ef;color:#0b6b48;font-weight:600}.so-cip.d{background:#fdeee6;color:#9a3a00}"
  +".so-not{font-size:11px;color:#6b7a89;margin-top:4px}.so-kay{overflow:auto;max-height:420px}";
 (function(){ const s=document.createElement("style"); s.textContent=SO_CSS; document.head.appendChild(s); })();
-/* SERT-OZET v2 (27.10.2026, Melih): Dokümanlar — özet tablosu. Satır = seri; alt satır = ürün tipi/açılım (verisi olmayan alt satır gösterilmez).
+/* SERT-OZET v3 (27.10.2026): yalnız CE/Teknik değ. verisi olan alt satır gösterilmez (değerleri aynı ürün tipinin başka alt satırına taşınır); sütunlar (ilk ikisi hariç) doğal genişliğin %70'i.
+   SERT-OZET v2 (27.10.2026, Melih): Dokümanlar — özet tablosu. Satır = seri; alt satır = ürün tipi/açılım (verisi olmayan alt satır gösterilmez).
    Sütun = alt kategori; Akustik Rw+Ctr|Rw, Termal Uw|Uf, Güvenlik PAS24|BR|RC, Mekanik Kul. kuv.|Mek. day. Hücrede tüm değerler virgülle;
    değere tıklanınca belge açılır (birden çok belge varsa liste o belgelere süzülür). Kaynak: sertifika_deger (ham) + ROWS (geçerlilik). */
 var SD=[], SD_OK=false;
@@ -392,7 +393,12 @@ function soCiz(){ const k=$("soIc"); if(!k||!SD_OK) return;
   const isl=new Set(SD.map(x=>x.nr)).size, top=ROWS.filter(r=>r.ana==="Ürün"&&r.tur==="Sertifika").length;
   let h=SO_NR?'<div class="ozet">Özet süzgeci: <b>'+SO_NR.size+'</b> belge listeleniyor <button type="button" class="btn2" id="soSuzKaldir">Süzgeci kaldır</button></div>':'';
   let gov="";
+  const PERF=SD_KOL.filter(c=>c.g!=="CE"&&c.g!=="Teknik değ."), YAN=SD_KOL.filter(c=>!PERF.includes(c));
   seriler.forEach(s=>{ const m=S.get(s);
+    /* v3: performans verisi olmayan alt satır (yalnız CE / Teknik değ.) — değerleri aynı ürün tipinin performanslı satırına taşınır, satır gösterilmez */
+    const var_=a=>PERF.some(c=>sdHucre(m.get(a),c).indexOf("so-yok")<0);
+    [...m.keys()].filter(a=>!var_(a)).forEach(a=>{ const L=m.get(a), hedef=[...m.keys()].find(b=>b!==a&&m.get(b).o[0]===L.o[0]&&var_(b));
+      if(hedef) L.forEach(x=>{ if(YAN.some(c=>c.p.includes(x.parametre))) m.get(hedef).push(x); }); m.delete(a); });
     const alt=[...m.keys()].sort((a,b)=>{ const A=m.get(a).o,B=m.get(b).o; return ix(SO_TIP,A[0])-ix(SO_TIP,B[0])||ix(SD_AC,A[1])-ix(SD_AC,B[1])||trc(a,b); })
       .map(a=>{ const hc=SD_KOL.map(c=>sdHucre(m.get(a),c)); return {a,hc}; }).filter(o=>o.hc.some(x=>x.indexOf("so-yok")<0));
     alt.forEach((o,i)=>{
@@ -404,7 +410,13 @@ function soCiz(){ const k=$("soIc"); if(!k||!SD_OK) return;
   else h+='<div class="bos">Seçime uyan ürün sertifikası verisi yok.</div>';
   h+=soGenelHtml()+'<div class="so-not">Hücrede tüm değerler; değere tıklayınca sertifika açılır (aynı değer birden çok belgedeyse belgeler aşağıda listelenir). Hücrenin üzerine gelince tüm içerik ve belge numaraları. – sertifika yok · üstü çizili: süresi dolmuş. '
     +isl+' / '+top+' ürün sertifikası okundu'+(isl<top?' (okuma sürüyor)':'')+'; yeni, değişen ya da silinen sertifika birkaç dakika içinde özete yansır.</div>';
-  k.innerHTML=h; }
+  k.innerHTML=h; sdDaralt(); }
+/* v3: ilk iki sütun hariç tüm sütunlar doğal genişliğin %70'i (tablo kapalıyken ölçülemez; açılınca yeniden çizilir) */
+function sdDaralt(){ const t=$("soIc").querySelector(".so-t2"); if(!t||!t.offsetWidth) return; const r=t.querySelector("tbody tr.so-ilk"); if(!r) return;
+  const w=[...r.cells].map(c=>c.getBoundingClientRect().width), cg=document.createElement("colgroup");
+  w.forEach((x,i)=>{ const c=document.createElement("col"); c.style.width=Math.round(i<2?x:Math.max(x*0.7,32))+"px"; cg.appendChild(c); });
+  t.insertBefore(cg,t.firstChild); t.style.tableLayout="fixed"; t.style.width=Math.round(w.reduce((a,x,i)=>a+(i<2?x:Math.max(x*0.7,32)),0))+"px"; }
+$("soKart").addEventListener("toggle",()=>{ if($("soKart").open) soCiz(); });
 async function soAc(nr){ const r=ROWS.find(x=>x.nr===nr); if(!r) return;
   if(!r.depo_yolu){ SO_NR=new Set([nr]); soCiz(); ciz(); $("res").scrollIntoView({behavior:"smooth",block:"start"}); return; }
   const w=window.open("about:blank","_blank");
@@ -419,7 +431,7 @@ $("soKart").addEventListener("click",e=>{
   SO_NR=new Set(N); soCiz(); ciz(); $("res").scrollIntoView({behavior:"smooth",block:"start"}); });
 ["f_aile","f_seri","f_ana","f_tur"].forEach(i=>$(i).addEventListener("change",()=>{ if(i==="f_tur"&&$("f_tur").value==="Sertifika") $("soKart").open=true; soCiz(); }));
 $("temizle").addEventListener("click",()=>{ SO_NR=null; soCiz(); ciz(); });
-(function(){ const s=document.createElement("style"); s.textContent=".so-t2 td{vertical-align:top}.so-t2 td.so-h{max-width:150px;overflow:hidden;text-overflow:ellipsis}"
+(function(){ const s=document.createElement("style"); s.textContent=".so-t2 td{vertical-align:top;overflow:hidden;text-overflow:ellipsis}.so-t2 td.so-h{max-width:150px}.so-t2 th{white-space:normal;overflow:hidden;padding:3px 3px}.so-t2 td{padding:3px 4px}"
   +".so-t2 th{text-align:center}.so-t2 th.so-g{border-bottom:1px solid #c9d6e3}.so-t2 tr.so-ilk td{border-top:2px solid #dde6f0}.so-t2 td.so-s{background:#f7f9fb}"
   +".so-t2 td.so-at{color:#3b4a5a}.so-v{cursor:pointer;color:#0b1622;font-weight:600}.so-v:hover{text-decoration:underline;color:#1f5f99}.so-v.so-dv{color:#9a3a00;text-decoration:line-through}";
   document.head.appendChild(s); })();
