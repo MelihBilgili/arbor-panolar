@@ -92,8 +92,8 @@
         <div class="s2"><label for="f_disi">Duvar dışı montaj</label><select id="f_disi"><option value="0">Hayır</option><option value="1">Evet</option></select></div>
         <div class="s2"><label for="f_petit">Petit porteur</label><select id="f_petit"><option value="0">Hayır</option><option value="1">Evet</option></select></div>
         <div class="s2"><label for="f_kamyon">Kamyon sayısı</label><input id="f_kamyon" inputmode="numeric"></div>
-        <div class="s4"><label for="f_ins_ad">Insertion açıklama</label><input id="f_ins_ad" placeholder="ör. Heures d'insertion (20 h)"></div>
-        <div class="s2"><label for="f_ins_tut">Insertion tutar</label><input id="f_ins_tut" inputmode="decimal"></div>
+        <div class="s2"><label for="f_ins_sure">Insertion süresi (saat) <a href="#" id="f_insSifirla" class="mini">hesapla</a></label><input id="f_ins_sure" inputmode="decimal"></div>
+        <div class="s2"><label for="f_ins_tut">Insertion tutarı</label><input id="f_ins_tut" readonly style="background:#f2f4f7"></div>
         <div class="s2"><label for="f_pror">Prorata oranı (%)</label><input id="f_pror" inputmode="decimal" value="2"></div>
         <div class="s4"><label for="f_proto">Prototip</label><select id="f_proto"><option value="">Yok</option></select></div>
         <div class="s2"><label for="f_uretim">Üretim süresi (hafta) <a href="#" id="f_uretimSifirla" class="mini">hesapla</a></label><input id="f_uretim" inputmode="numeric"></div>
@@ -674,9 +674,13 @@ function hesapla(){
     const birimEk=S.ekstra.filter(e=>e.dahil&&e.miktar).reduce((a,e)=>{ const adetPoz=ekstraPozAdet(e,p); return a+(adetPoz?(e.fiyat||0)*X2*(+e.carpan||1)*K*adetPoz:0); },0);
     const tp=pay*((montDahil?pose:0)+transport);
     proto={p,tutar:n2(p.Q)+tp+birimEk,pay,tp,birimEk}; }
-  /* SOUM-PRORATA (27.10.2026, Melih): Insertion (açıklama + tutar, teklif para biriminde) toplamın içinde; Prorata = oran × Livré sur chantier, ayrı satır */
-  const ins=+String($("f_ins_tut").value||"").replace(/\s/g,"").replace(",",".")||0, insAd=String($("f_ins_ad").value||"").trim();
-  let toplam=HT+(montDahil?pose:0)+(petit?transport:0)+(proto?proto.tutar:0)+ekL.reduce((a,x)=>a+x.tutar,0)+(vitDahil?vitTut:0)+ins;
+  /* SOUM-PRORATA (27.10.2026, Melih): Insertion süresi (saat) varsayılanı = Livré sur chantier (insertion hariç) × 0,003 × 0,1, tam saate yuvarlanır, elle değiştirilebilir;
+     Insertion tutarı = süre × 35,5 €/saat (İngilizcede × kur), toplamın içinde; Prorata = oran × Livré sur chantier, ayrı satır */
+  const taban=HT+(montDahil?pose:0)+(petit?transport:0)+(proto?proto.tutar:0)+ekL.reduce((a,x)=>a+x.tutar,0)+(vitDahil?vitTut:0);
+  const se=$("f_ins_sure"); if(!se.dataset.elle) se.value=String(Math.round(taban/K*0.003*0.1));
+  const insS=+String(se.value||"").replace(",",".")||0, ins=n2(insS*35.5*K), insAd=tt("Heures d'insertion ("+frN(insS,0)+" h)","Insertion hours ("+dN(insS,0)+" h)");
+  $("f_ins_tut").value=ins?fP(ins):"";
+  let toplam=taban+ins;
   const prO=+String($("f_pror").value||"").replace(",",".")||0, pror=prO>0?{oran:prO,tutar:toplam*prO/100}:null;
   /* opsiyonlar */
   const obAdet=S.poz.filter(p=>p.ob).reduce((a,p)=>a+(p.F||0),0);
@@ -702,7 +706,7 @@ function ozetCiz(){
   if(h.petit) sat.push([tt("Livraison en petit porteur","Delivery by small truck"),h.transport,h.kamyon+" kamyon × 2 × 1.000 €"+kx]);
   if(h.proto) sat.push([tt("PV Prototype + Transport + Pose — "+h.proto.p.kod+" (1-u)","Mock-up + transport + installation — "+refAd(h.proto.p)+" (1 u)"),h.proto.tutar,"birim fiyat "+fP(n2(h.proto.p.Q))+" + "+fN(h.proto.pay*100,2)+"% × (pose"+(h.montDahil?"":" yok")+" + transport "+fP(h.transport)+") = "+fP(h.proto.tp)+(h.proto.birimEk?" + aksesuar "+fP(h.proto.birimEk):""),"proto"]);
   h.ekL.forEach(x=>sat.push([x.ad,x.tutar,fE(x.e.tutar)+" × "+frN(h.X2,2)+(+x.e.carpan!==1?" × "+x.e.carpan:"")+kx]));
-  if(h.ins) sat.push([h.insAd||tt("Heures d'insertion","Insertion"),h.ins,"elle girilen tutar","ins"]);
+  if(h.ins) sat.push([h.insAd,h.ins,"süre × 35,5 €/saat"+kx+" (varsayılan süre = Livré sur chantier × 0,003 × 0,1)","ins"]);
   if(h.vitDahil) sat.push([tt("PV Vitrophanie ("+frN(h.vitMl,2)+" ml)","Extra: glazing manifestation ("+dN(h.vitMl,2)+" lm)"),h.vitTut,"2 × L × adet × 35 €/ml"+kx,"vitro"]);
   const op=[[tt("Option Remplacement vitrage cassé sur chantier (10 vitrages)","Option: replacement of broken glazing on site (10 units)"),h.HT*0.02,"HT × %2","cam"]];
   if(h.mv!=null) op.push([tt("Option MV Passage OB à OF ("+h.obAdet+"-u)","Option: deduction for inward opening instead of tilt & turn ("+h.obAdet+" u)"),h.mv,"(Pencad toplamı − ekstralar − OF'ye geçiş toplamı) × "+frN(h.X2,2)+" × 2"+kx]);
@@ -940,7 +944,8 @@ $("btnOku").onclick=oku; $("btnExcel").onclick=excelYap;
 function enGoster(){ $("enAlan").style.display=EN()?"":"none"; }
 ["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro","f_k_den","f_k_myuva","f_k_menfez","f_k_icden","f_k_pervaz"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto") notDoldur(); });
 $("f_revize").onchange=()=>revGoster();
-["f_ins_ad","f_ins_tut","f_pror"].forEach(id=>$(id).oninput=()=>{ hesapla(); if(id==="f_pror") notDoldur(); });
+$("f_ins_sure").oninput=()=>{ $("f_ins_sure").dataset.elle=1; hesapla(); }; $("f_insSifirla").onclick=e=>{ e.preventDefault(); delete $("f_ins_sure").dataset.elle; hesapla(); };
+$("f_pror").oninput=()=>{ hesapla(); notDoldur(); };
 $("f_kur").oninput=()=>{ $("f_kur").dataset.elle=1; hesapla(); }; $("f_kurSifirla").onclick=e=>{ e.preventDefault(); delete $("f_kur").dataset.elle; kurAl().then(hesapla); };
 $("f_uretim").oninput=()=>{ $("f_uretim").dataset.elle=1; }; $("f_uretimSifirla").onclick=e=>{ e.preventDefault(); delete $("f_uretim").dataset.elle; uretimYaz(); };
 $("f_kat").oninput=()=>{ $("f_kat").dataset.elle=1; hesapla(); }; $("f_katSifirla").onclick=()=>{ delete $("f_kat").dataset.elle; hesapla(); };
