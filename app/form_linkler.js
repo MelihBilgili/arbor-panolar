@@ -5,8 +5,8 @@
 (function(){
   if(window.__ARB_FLINK) return; window.__ARB_FLINK=1;
   var MB="int@arbor.com.tr", t0=Date.now();
-  /* FLINK-GIZLI (27.10.2026, Melih): Cam Fiyatlandirma ve Cam Konfigurasyon cubukta yok; Urun Konfigurasyonu basligindaki dugmelerden acilir (URUN-KONFIG-CAMLINK). Bulunulan form ise yine koyu gosterilir. */
-  var GIZLI={"cam/":1,"cam-konfig/":1};
+  /* FLINK-GIZLI (27.10.2026, Melih): Cam Fiyatlandirma, Cam Konfigurasyon ve Cam Listesi cubukta yok; Urun Konfigurasyonu basligindaki dugmelerden acilir (URUN-KONFIG-CAMLINK). Bulunulan form ise yine koyu gosterilir. */
+  var GIZLI={"cam/":1,"cam-konfig/":1,"cam-listesi/":1};
   function yol(){ if(window.ARB_FORM_YOL) return window.ARB_FORM_YOL; var m=/\/app\/([^\/]+)\//.exec(location.pathname); return m?m[1]+"/":""; }
   function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   /* FLINK-KISI-YEDEK (19.10.2026): bu formda kisi kaydi yoksa (eski oturum) kod sirayla: ayni rolun kaydi -> form_erisim rol_map/varsayilan_rol'de
