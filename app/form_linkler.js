@@ -5,6 +5,8 @@
 (function(){
   if(window.__ARB_FLINK) return; window.__ARB_FLINK=1;
   var MB="int@arbor.com.tr", t0=Date.now();
+  /* FLINK-GIZLI (27.10.2026, Melih): Cam Fiyatlandirma ve Cam Konfigurasyon cubukta yok; Urun Konfigurasyonu basligindaki dugmelerden acilir (URUN-KONFIG-CAMLINK). Bulunulan form ise yine koyu gosterilir. */
+  var GIZLI={"cam/":1,"cam-konfig/":1};
   function yol(){ if(window.ARB_FORM_YOL) return window.ARB_FORM_YOL; var m=/\/app\/([^\/]+)\//.exec(location.pathname); return m?m[1]+"/":""; }
   function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
   /* FLINK-KISI-YEDEK (19.10.2026): bu formda kisi kaydi yoksa (eski oturum) kod sirayla: ayni rolun kaydi -> form_erisim rol_map/varsayilan_rol'de
@@ -40,7 +42,7 @@
     if(!r||r.error||!r.data) return;
     var kod=(em===MB)?"MB":kisiKod(em,r.data);
     var bu=yol();
-    var L=r.data.filter(function(f){ return f.yol===bu || kod==="MB" || f.herkes || (kod&&(f.kisiler||[]).indexOf(kod)>=0); });
+    var L=r.data.filter(function(f){ if(f.yol!==bu&&GIZLI[f.yol]) return false; return f.yol===bu || kod==="MB" || f.herkes || (kod&&(f.kisiler||[]).indexOf(kod)>=0); });
     if(L.length<2) return;
     stil();
     var d=document.createElement("div"); d.id="arb-flink";
