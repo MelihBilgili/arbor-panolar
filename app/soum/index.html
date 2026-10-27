@@ -674,11 +674,11 @@ function hesapla(){
     const birimEk=S.ekstra.filter(e=>e.dahil&&e.miktar).reduce((a,e)=>{ const adetPoz=ekstraPozAdet(e,p); return a+(adetPoz?(e.fiyat||0)*X2*(+e.carpan||1)*K*adetPoz:0); },0);
     const tp=pay*((montDahil?pose:0)+transport);
     proto={p,tutar:n2(p.Q)+tp+birimEk,pay,tp,birimEk}; }
-  /* SOUM-PRORATA (27.10.2026, Melih): Insertion süresi (saat) varsayılanı = Livré sur chantier (insertion hariç) × 0,003 × 0,1, tam saate yuvarlanır, elle değiştirilebilir;
+  /* SOUM-PRORATA (27.10.2026, Melih): Insertion süresi (saat) varsayılanı = (Livré sur chantier (insertion hariç, €) × 0,003 × 0,1) / 35,5, 0,1 saate yuvarlanır, elle değiştirilebilir;
      Insertion tutarı = süre × 35,5 €/saat (İngilizcede × kur), toplamın içinde; Prorata = oran × Livré sur chantier, ayrı satır */
   const taban=HT+(montDahil?pose:0)+(petit?transport:0)+(proto?proto.tutar:0)+ekL.reduce((a,x)=>a+x.tutar,0)+(vitDahil?vitTut:0);
-  const se=$("f_ins_sure"); if(!se.dataset.elle) se.value=String(Math.round(taban/K*0.003*0.1));
-  const insS=+String(se.value||"").replace(",",".")||0, ins=n2(insS*35.5*K), insAd=tt("Heures d'insertion ("+frN(insS,0)+" h)","Insertion hours ("+dN(insS,0)+" h)");
+  const se=$("f_ins_sure"); if(!se.dataset.elle) se.value=frN(Math.round(taban/K*0.003*0.1/35.5*10)/10,1);
+  const insS=+String(se.value||"").replace(",",".")||0, ins=n2(insS*35.5*K), insAd=tt("Heures d'insertion ("+frN(insS,1).replace(/,0$/,"")+" h)","Insertion hours ("+dN(insS,1).replace(/\.0$/,"")+" h)");
   $("f_ins_tut").value=ins?fP(ins):"";
   let toplam=taban+ins;
   const prO=+String($("f_pror").value||"").replace(",",".")||0, pror=prO>0?{oran:prO,tutar:toplam*prO/100}:null;
@@ -706,7 +706,7 @@ function ozetCiz(){
   if(h.petit) sat.push([tt("Livraison en petit porteur","Delivery by small truck"),h.transport,h.kamyon+" kamyon × 2 × 1.000 €"+kx]);
   if(h.proto) sat.push([tt("PV Prototype + Transport + Pose — "+h.proto.p.kod+" (1-u)","Mock-up + transport + installation — "+refAd(h.proto.p)+" (1 u)"),h.proto.tutar,"birim fiyat "+fP(n2(h.proto.p.Q))+" + "+fN(h.proto.pay*100,2)+"% × (pose"+(h.montDahil?"":" yok")+" + transport "+fP(h.transport)+") = "+fP(h.proto.tp)+(h.proto.birimEk?" + aksesuar "+fP(h.proto.birimEk):""),"proto"]);
   h.ekL.forEach(x=>sat.push([x.ad,x.tutar,fE(x.e.tutar)+" × "+frN(h.X2,2)+(+x.e.carpan!==1?" × "+x.e.carpan:"")+kx]));
-  if(h.ins) sat.push([h.insAd,h.ins,"süre × 35,5 €/saat"+kx+" (varsayılan süre = Livré sur chantier × 0,003 × 0,1)","ins"]);
+  if(h.ins) sat.push([h.insAd,h.ins,"süre × 35,5 €/saat"+kx+" (varsayılan süre = Livré sur chantier × 0,003 × 0,1 / 35,5)","ins"]);
   if(h.vitDahil) sat.push([tt("PV Vitrophanie ("+frN(h.vitMl,2)+" ml)","Extra: glazing manifestation ("+dN(h.vitMl,2)+" lm)"),h.vitTut,"2 × L × adet × 35 €/ml"+kx,"vitro"]);
   const op=[[tt("Option Remplacement vitrage cassé sur chantier (10 vitrages)","Option: replacement of broken glazing on site (10 units)"),h.HT*0.02,"HT × %2","cam"]];
   if(h.mv!=null) op.push([tt("Option MV Passage OB à OF ("+h.obAdet+"-u)","Option: deduction for inward opening instead of tilt & turn ("+h.obAdet+" u)"),h.mv,"(Pencad toplamı − ekstralar − OF'ye geçiş toplamı) × "+frN(h.X2,2)+" × 2"+kx]);
