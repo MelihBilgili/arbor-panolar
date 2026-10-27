@@ -123,7 +123,7 @@
       <div><label for="f_guv">Güvenlik Sınıfı</label><select id="f_guv"><option value="">Fark etmez</option><option value="rc2n">RC2N</option><option value="rc2">CR2 / RC2</option><option value="rc3">CR 3 / RC3</option></select></div>
       <div><label for="f_cgs" title="EN 356">Cam Güvenlik Sınıfı</label><select id="f_cgs"><option value="">Fark etmez</option><option value="p2a">P2A</option><option value="p4a">P4A</option><option value="p5a">P5A</option><option value="p6b">P6B</option></select></div><!-- URUN-KONFIG-CAM-GUV -->
       <div><label for="f_tmp">Temper</label><select id="f_tmp"><option value="">Fark etmez</option><option value="1">Var</option><option value="0">Yok</option></select></div>
-      <div><label for="f_dog">Doğrama Tipi</label><select id="f_dog"><option value="pencere">Pencere</option><option value="kapi">Kapı</option></select></div>
+      <div><label for="f_dog">Doğrama Tipi</label><select id="f_dog"><option value="pencere">Pencere</option><option value="kapi">Kapı</option><option value="cephe">Cephe</option></select></div>
     </div>
   </div>
   <div class="ozet" id="ozet"></div>
@@ -533,7 +533,7 @@ const SO_CSS=".so-t{border-collapse:collapse;font-size:11.5px;width:100%}.so-t t
    Yangın / Güvenlik Sınıfı seçilince o sınıfta geçerli sertifikası olmayan seriler elenir (veri: urun_sertifika_ozet). */
 function soKod(S){ return S.s.split(" ")[0].replace(/-a$/,""); }
 function soSatir(S){ const kod=soKod(S), dog=$("f_dog").value;
-  const tip=/Bal\.Door/i.test(S.s)?["Balkon Kapısı"]:dog==="kapi"?["Balkon Kapısı","Giriş Kapısı"]:["Pencere","Sabit","Sürme"];
+  const tip=/Bal\.Door/i.test(S.s)?["Balkon Kapısı"]:dog==="kapi"?["Balkon Kapısı","Giriş Kapısı"]:dog==="cephe"?["Cephe"]:["Pencere","Sabit","Sürme"]; /* URUN-KONFIG-CEPHE (27.10.2026): Doğrama Tipi Cephe -> sertifika özeti yalnız Cephe ürünleri; cam kısıtı yok */
   const ac=/-a Top/i.test(S.s)?/top/i:/-a Side/i.test(S.s)?/side/i:null;
   return SO_V.filter(x=>x.seri.toLowerCase()===kod.toLowerCase()&&tip.includes(x.urun_tipi)&&(!ac||!x.acilim||ac.test(x.acilim))); }
 function soSeriler(){ const seri=$("f_seri").value; return SERI.filter(S=>AILE_SEC.has(S.a)&&(!seri||seri===S.s||seri.indexOf(S.s+" ")===0)); }
