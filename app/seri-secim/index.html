@@ -98,7 +98,7 @@
 </header>
 <div class="wrap">
   <div style="display:flex;gap:10px;align-items:center;margin:0 0 8px"><span id="rolLbl"></span></div>
-  <div class="kart" id="soKart"><div class="tit">Ürün sertifika özeti <span>(seçili seri ailesi, seri ve doğrama tipine göre; kaynak Dokümanlar)</span></div><div id="soIc"><div class="bos">Yükleniyor…</div></div></div><!-- SERT-OZET (26.10.2026) -->
+  <div class="kart" id="soKart"><div class="tit">Ürün sertifika özeti <span>(seçili seri ailesi ve seriye göre; değere tıklayınca sertifika açılır; kaynak Dokümanlar)</span></div><div id="soIc"><div class="bos">Yükleniyor…</div></div></div><!-- SERT-OZET (26.10.2026) -->
   <div class="kart">
     <div class="tit">Hedef değerler ve süzgeçler <span>(boş = serbest)</span></div>
     <div class="aileler" id="f_aileler"><span class="al">Seri ailesi:</span></div>
@@ -531,11 +531,6 @@ function soSatir(S){ const kod=soKod(S), dog=$("f_dog").value;
   const ac=/-a Top/i.test(S.s)?/top/i:/-a Side/i.test(S.s)?/side/i:null;
   return SO_V.filter(x=>x.seri.toLowerCase()===kod.toLowerCase()&&tip.includes(x.urun_tipi)&&(!ac||!x.acilim||ac.test(x.acilim))); }
 function soSeriler(){ const seri=$("f_seri").value; return SERI.filter(S=>AILE_SEC.has(S.a)&&(!seri||seri===S.s||seri.indexOf(S.s+" ")===0)); }
-function soCizK(){ const k=$("soIc"); if(!k||!SO_OK) return;
-  const L=soSeriler(); let h='<div class="so-kay"><table class="so-t"><thead>'+soBas('<th>Seri</th>')+'</thead><tbody>';
-  L.forEach(S=>{ const R=soSatir(S); h+='<tr><td><b>'+esc(S.s)+'</b></td>'+SO_KOL.map(c=>soHucre(R,c)).join("")+'</tr>'; });
-  k.innerHTML=h+'</tbody></table></div>'+soGenelHtml()+'<div class="so-not">Doğrama tipi '+($("f_dog").value==="kapi"?"Kapı (balkon ve giriş kapısı)":"Pencere (pencere, sabit, sürme)")
-    +' sertifikaları. Hücre: en iyi değer/sınıf; üzerine gelince tüm değerler ve belge numaraları. – sertifika yok · üstü çizili: süresi dolmuş. Konfigürasyon tablosundaki Uw, Sfg/Tlg ve Rw+Ctr değerleri cama göre aşağıda.</div>'; }
 function soEle(ek){ const el=new Set(); if(!SO_OK||(!ek.yng&&!ek.guv)) return el;
   const yRe=ek.yng==="60"?/EI\s*(60|90|120)/i:/EI\s*(30|45|60|90|120)/i;
   const gRe=ek.guv==="rc3"?/(RC|CR)\s*[3-6]/i:ek.guv==="rc2"?/(RC|CR)\s*[2-6](?!\s*N)/i:/(RC|CR)\s*[2-6]/i;
@@ -543,6 +538,101 @@ function soEle(ek){ const el=new Set(); if(!SO_OK||(!ek.yng&&!ek.guv)) return el
     if(ek.yng&&!R.some(x=>x.parametre==="Yangın"&&x.degerler.some(d=>yRe.test(d)))) el.add(S.s);
     if(ek.guv&&!R.some(x=>x.parametre==="Güvenlik"&&x.degerler.some(d=>gRe.test(d)))) el.add(S.s); });
   return el; }
+/* SERT-OZET-KONF2 (27.10.2026, Melih): Dokümanlar'daki ürün sertifika özeti (SERT-OZET v3) burada da: satır = seri, alt satır = ürün/açılım,
+   alt sütunlar, tüm değerler; değere tıklayınca belge açılır (birden çok belgede seçim listesi). Seçili seri ailesi ve seriye göre süzülür.
+   Kaynak: sertifika_deger + dokuman (ad, geçerlilik, depo_yolu). Yangın/Güvenlik eleme (soEle) urun_sertifika_ozet ile aynı kalır. */
+var DOKM=new Map();
+const sdTrc=(a,b)=>String(a).localeCompare(String(b),"tr",{numeric:true});
+const sdTarih=d=>d?d.slice(8,10)+"."+d.slice(5,7)+"."+d.slice(0,4):"";
+var SD=[], SD_OK=false;
+const SD_KOL=[
+  {g:"Akustik",b:"Rw+Ctr",p:["Rw+Ctr"],t:"db"},{g:"Akustik",b:"Rw",p:["Rw"],t:"db"},
+  {g:"Termal",b:"Uw",p:["Uw","Ud"],t:"u"},{g:"Termal",b:"Uf",p:["Uf"],t:"u"},
+  {g:"Hava-Su-Rüzgar",b:"Hava",p:["Hava"]},{g:"Hava-Su-Rüzgar",b:"Su",p:["Su"]},{g:"Hava-Su-Rüzgar",b:"Rüzgar",p:["Rüzgar"]},
+  {g:"Güvenlik",b:"PAS24",p:["Güvenlik"],f:/PAS/i},{g:"Güvenlik",b:"BR",p:["Güvenlik"],f:/^\s*(BR|FB)/i},{g:"Güvenlik",b:"RC",p:["Güvenlik"],f:/^\s*(RC|CR)\s*\d/i},
+  {g:"Mekanik",b:"Kul. kuv.",p:["Kullanma kuvveti"]},{g:"Mekanik",b:"Mek. day.",p:["Mekanik dayanım","Tekrarlı açma-kapama","Darbe","Statik"]},
+  {g:"Yangın",b:"Yangın",p:["Yangın"]},{g:"CE",b:"CE",p:["CE beyanı"],v:true},{g:"Teknik değ.",b:"Teknik değ.",p:["Belge"]}];
+const SD_ON={"Tekrarlı açma-kapama":"Tekr. ","Darbe":"Darbe ","Statik":"Statik ","Ud":"Ud "};
+async function sdYukle(cli){ const out=[]; let from=0;
+  while(true){ const q=await cli.from("sertifika_deger").select("nr,seri,urun_tipi,acilim,alt_kategori,parametre,deger").order("nr").range(from,from+999);
+    if(q.error) throw q.error; out.push(...q.data); if(q.data.length<1000) break; from+=1000; }
+  const nrs=[...new Set(out.map(x=>x.nr))], dk=[];
+  for(let i=0;i<nrs.length;i+=300){ const q=await cli.from("dokuman").select("nr,ad,gecerlilik,depo_yolu,dosya").in("nr",nrs.slice(i,i+300)); if(q.error) throw q.error; dk.push(...q.data); }
+  dk.forEach(r=>DOKM.set(r.nr,r)); SD=out; SD_OK=true; }
+function sdNorm(c,x){ let v=String(x.deger||"").trim();
+  if(c.t==="db") v=v.replace(/\s*dB\s*$/i,"");
+  else if(c.t==="u") v=v.replace(/\s*W\s*\/.*$/i,"").replace(/^(\d+)\.(\d*?)0*$/,(m,a,b)=>a+(b?","+b:",0")).replace(".",",");
+  else v=v.replace(/^(Classe?|Sınıf)\s*/i,"Sınıf ");
+  if(c.g==="Mekanik") v=v.replace(/^(\d)$/,"Sınıf $1");
+  return (SD_ON[x.parametre]||"")+v; }
+function sdGec(nr){ const r=DOKM.get(nr); return !r||!r.gecerlilik||new Date(r.gecerlilik+"T23:59:59")>=new Date(); }
+function sdHucre(L,c){
+  const M=new Map();
+  L.forEach(x=>{ if(!c.p.includes(x.parametre)) return; if(c.f&&!c.f.test(x.deger||"")) return;
+    const v=c.v?"✓":sdNorm(c,x); if(!M.has(v)) M.set(v,new Set()); M.get(v).add(x.nr); });
+  if(!M.size) return '<td class="so-yok">–</td>';
+  const sayi=v=>parseFloat(String(v).replace(/^\D+/,"").replace(",","."));
+  const K=[...M.keys()].sort((a,b)=>{ const A=sayi(a),B=sayi(b);
+    if(!isNaN(A)&&!isNaN(B)&&A!==B) return c.t==="u"?A-B:c.t==="db"?B-A:sdTrc(a,b); return sdTrc(a,b); });
+  const ad=n=>{ const r=DOKM.get(n); return n+(r?" – "+r.ad+(r.gecerlilik?" (geçerlilik "+sdTarih(r.gecerlilik)+")":""):""); };
+  const sp=K.map(v=>{ const N=[...M.get(v)].sort((a,b)=>a-b), dol=!N.some(sdGec);
+    return '<span class="so-v'+(dol?" so-dv":"")+'" data-nr="'+N.join(",")+'" title="'+esc(v+"\n"+N.map(ad).join("\n")+(dol?"\nsüresi dolmuş":""))+'">'+esc(v)+'</span>'; });
+  const tum=K.map(v=>v+"  →  belge "+[...M.get(v)].sort((a,b)=>a-b).join(", ")).join("\n");
+  return '<td class="so-h" title="'+esc(c.b+":\n"+tum)+'">'+sp.join(", ")+'</td>'; }
+function sdEtiket(t,a){ if(t==="Pencere") return a||"Pencere";
+  if(!a||a===t||(t==="Cephe"&&a==="Sabit")) return t; return t+" · "+a; }
+const SD_AC=["Tilt-Turn","Fransız","Side Hung","Top Hung","Side Swing","Top Swing","Giyotin","Sabit","Sürme",""];
+function soCizK(){ const k=$("soIc"); if(!k) return; if(!SD_OK){ return; }
+  const kodlar=new Set(soSeriler().map(S=>soKod(S).toLowerCase()));
+  const S=new Map();
+  SD.forEach(x=>{ if(!x.seri||!kodlar.has(x.seri.toLowerCase())) return;
+    if(!S.has(x.seri)) S.set(x.seri,new Map()); const m=S.get(x.seri), a=sdEtiket(x.urun_tipi,x.acilim||"");
+    if(!m.has(a)) m.set(a,Object.assign([],{o:[x.urun_tipi==="Pencere"&&x.acilim==="Sabit"?"Sabit":x.urun_tipi,x.acilim||""]})); m.get(a).push(x); });
+  const ix=(A,v)=>{ const i=A.indexOf(v); return i<0?99:i; };
+  const seriler=[...S.keys()].sort((a,b)=>ix(SO_SERI,a)-ix(SO_SERI,b)||sdTrc(a,b));
+  const PERF=SD_KOL.filter(c=>c.g!=="CE"&&c.g!=="Teknik değ."), YAN=SD_KOL.filter(c=>!PERF.includes(c));
+  let gov="", h="";
+  seriler.forEach(s=>{ const m=S.get(s);
+    const var_=a=>PERF.some(c=>sdHucre(m.get(a),c).indexOf("so-yok")<0);
+    [...m.keys()].filter(a=>!var_(a)).forEach(a=>{ const L=m.get(a), hedef=[...m.keys()].find(b=>b!==a&&m.get(b).o[0]===L.o[0]&&var_(b));
+      if(hedef) L.forEach(x=>{ if(YAN.some(c=>c.p.includes(x.parametre))) m.get(hedef).push(x); }); m.delete(a); });
+    const alt=[...m.keys()].sort((a,b)=>{ const A=m.get(a).o,B=m.get(b).o; return ix(SO_TIP,A[0])-ix(SO_TIP,B[0])||ix(SD_AC,A[1])-ix(SD_AC,B[1])||sdTrc(a,b); })
+      .map(a=>({a,hc:SD_KOL.map(c=>sdHucre(m.get(a),c))})).filter(o=>o.hc.some(x=>x.indexOf("so-yok")<0));
+    alt.forEach((o,i)=>{ gov+='<tr'+(i===0?' class="so-ilk"':'')+'>'+(i===0?'<td class="so-s" rowspan="'+alt.length+'"><b>'+esc(s)+'</b></td>':'')+'<td class="so-at">'+esc(o.a)+'</td>'+o.hc.join("")+'</tr>'; }); });
+  if(gov){ const G=[]; SD_KOL.forEach(c=>{ const l=G[G.length-1]; if(l&&l.g===c.g) l.n++; else G.push({g:c.g,n:1}); });
+    h+='<div class="so-kay"><table class="so-t so-t2"><thead><tr><th rowspan="2">Seri</th><th rowspan="2">Ürün / açılım</th>'
+      +G.map(g=>g.n>1?'<th colspan="'+g.n+'" class="so-g">'+esc(g.g)+'</th>':'<th rowspan="2">'+esc(SD_KOL.find(c=>c.g===g.g).b)+'</th>').join("")+'</tr><tr>'
+      +SD_KOL.filter(c=>G.find(g=>g.g===c.g).n>1).map(c=>'<th>'+esc(c.b)+'</th>').join("")+'</tr></thead><tbody>'+gov+'</tbody></table></div>'; }
+  else h+='<div class="bos">Seçili serilerde ürün sertifikası verisi yok.</div>';
+  k.innerHTML=h+soGenelHtml()+'<div class="so-not">Hücrede tüm değerler; değere tıklayınca sertifika açılır (aynı değer birden çok belgedeyse belge seçilir). Üzerine gelince tüm içerik ve belge numaraları. – sertifika yok · üstü çizili: süresi dolmuş. Konfigürasyon tablosundaki Uw, Sfg/Tlg ve Rw+Ctr değerleri cama göre aşağıda.</div>';
+  sdDaralt(); }
+function sdDaralt(){ const t=$("soIc").querySelector(".so-t2"); if(!t||!t.offsetWidth) return; const r=t.querySelector("tbody tr.so-ilk"); if(!r) return;
+  const w=[...r.cells].map(c=>c.getBoundingClientRect().width), cg=document.createElement("colgroup");
+  w.forEach((x,i)=>{ const c=document.createElement("col"); c.style.width=Math.round(i<2?x:Math.max(x*0.7,32))+"px"; cg.appendChild(c); });
+  t.insertBefore(cg,t.firstChild); t.style.tableLayout="fixed"; t.style.width=Math.round(w.reduce((a,x,i)=>a+(i<2?x:Math.max(x*0.7,32)),0))+"px"; }
+async function soAc(nr){ const r=DOKM.get(nr); if(!r) return;
+  if(!r.depo_yolu){ alert("Nr "+nr+" 50 MB üstü; Dokümanlar formundan OneDrive klasöründen açılır:\n"+(r.dosya||r.ad)); return; }
+  const w=window.open("about:blank","_blank");
+  const {data,error}=await ARB_ACTIVE.storage.from("dokumanlar").createSignedUrl(r.depo_yolu,3600);
+  if(error||!data){ if(w) w.close(); alert("Dosya açılamadı: "+((error&&error.message)||"")); return; }
+  if(w) w.location=data.signedUrl; else location.href=data.signedUrl; }
+const soMenu=document.createElement("div"); soMenu.id="soMenu"; document.body.appendChild(soMenu);
+document.addEventListener("click",e=>{ if(!e.target.closest("#soMenu")&&!e.target.closest("#soKart [data-nr]")) soMenu.style.display="none"; });
+$("soKart").addEventListener("click",e=>{
+  const el=e.target.closest("[data-nr]"); if(!el||!el.dataset.nr) return;
+  const N=el.dataset.nr.split(",").map(Number).filter(Boolean); if(!N.length) return;
+  if(N.length===1){ soMenu.style.display="none"; return soAc(N[0]); }
+  soMenu.innerHTML='<div class="mb">'+N.length+' belge — açmak için seçin</div>'+N.map(n=>{ const r=DOKM.get(n);
+    return '<button type="button" data-ac="'+n+'"'+(sdGec(n)?'':' class="dv"')+'>'+n+' · '+esc(r?r.ad:"")+'</button>'; }).join("");
+  soMenu.style.display="block"; const b=el.getBoundingClientRect(), w=soMenu.offsetWidth, h=soMenu.offsetHeight;
+  soMenu.style.left=Math.max(4,Math.min(b.left,innerWidth-w-8))+"px"; soMenu.style.top=Math.max(4,(b.bottom+h+8<innerHeight?b.bottom+2:b.top-h-2))+"px"; });
+soMenu.addEventListener("click",e=>{ const b=e.target.closest("button[data-ac]"); if(!b) return; soMenu.style.display="none"; soAc(+b.dataset.ac); });
+(function(){ const s=document.createElement("style"); s.textContent=".so-t2 td{vertical-align:top;overflow:hidden;text-overflow:ellipsis}.so-t2 td.so-h{max-width:150px}.so-t2 th{white-space:normal;overflow:hidden;padding:3px 3px}.so-t2 td{padding:3px 4px}"
+  +".so-t2 th{text-align:center}.so-t2 th.so-g{border-bottom:1px solid #c9d6e3}.so-t2 tr.so-ilk td{border-top:2px solid #dde6f0}.so-t2 td.so-s{background:#f7f9fb}"
+  +".so-t2 td.so-at{color:#3b4a5a}.so-v{cursor:pointer;color:#0b1622;font-weight:600}.so-v:hover{text-decoration:underline;color:#1f5f99}.so-v.so-dv{color:#9a3a00;text-decoration:line-through}.so-cip[data-nr]:not([data-nr=\"\"]){cursor:pointer}"
+  +"#soMenu{display:none;position:fixed;z-index:60;background:#fff;border:1px solid #c9d6e3;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:4px;max-width:520px;max-height:320px;overflow:auto;font-size:12px}"
+  +"#soMenu .mb{color:#6b7a89;padding:4px 8px}#soMenu button{display:block;width:100%;text-align:left;border:0;background:none;padding:5px 8px;border-radius:5px;cursor:pointer;color:#0b1622}#soMenu button:hover{background:#eef3f8}#soMenu button.dv{color:#9a3a00;text-decoration:line-through}";
+  document.head.appendChild(s); })();
 (function init(){
   const aileler=[...new Set(SERI.map(S=>S.a))];
   /* SERI-AILE-SECIM (12.10.2026): aileler üstte tıklanır çipler (çoklu seçim), varsayılan hepsi seçili; "Tümü" hepsini seçer */
@@ -569,6 +659,7 @@ function soEle(ek){ const el=new Set(); if(!SO_OK||(!ek.yng&&!ek.guv)) return el
     +'Yangın dayanımı (E30 fire proof, PF 1/2h) için tabloda cam bilgisi henüz yok. Kaynak: <i>UW ve dB tablosu.xls</i>.';
   seriTablo(); ciz();
   modelYukle().then(listeKur).then(ciz); /* URUN-KONFIG-LISTE */
+  sdYukle(ARB_ACTIVE).then(ciz).catch(e=>{ const k=$("soIc"); if(k) k.innerHTML='<div class="bos">Sertifika özeti okunamadı: '+esc(e.message||e)+'</div>'; }); /* SERT-OZET-KONF2 */
   soYukle(ARB_ACTIVE).then(ciz).catch(e=>{ const k=$("soIc"); if(k) k.innerHTML='<div class="bos">Sertifika özeti okunamadı: '+esc(e.message||e)+'</div>'; }); /* SERT-OZET */
 })();
 /* SERI-AKTAR (12.10.2026): satıra sağ tık -> "Cam konfigürasyona aktar": Cam Konfigürasyon formu yeni sekmede açılır,
