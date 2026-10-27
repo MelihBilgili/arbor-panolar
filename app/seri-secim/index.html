@@ -225,18 +225,20 @@ const SERI=[
   {s:"68s",a:"Simplist",max:31,uf:1.40,p2:0.032,p3:null,uw:{d:1.30}},
   {s:"78s",a:"Simplist",max:40,uf:1.28,p2:0.032,p3:0.03,uw:{d:1.24,t36:0.96}},
   {s:"90s",a:"Simplist",max:52,uf:1.15,p2:0.032,p3:0.03,uw:{d:1.20,t36:0.92,t44:0.85}},
-  {s:"58f",a:"Flat",max:52,maxNot:"Tablo 1'de 51-52 (Melih Bey bilgisiyle güncel); Tablo 2'de 42",uf:"ahsap",p2:0.035,p3:null,uw:{d:1.40,t36:0.97}},
+  {s:"58f",a:"Flat",max:52,maxNot:"51-52 mm (Enes Uzun, 27.10.2026)",uf:"1,4853; 1,4814; 1,5538",p2:0.035,p3:0.03,uw:{d:1.40,t36:0.97}}, /* URUN-KONFIG-EU-TERMAL (27.10.2026, Melih): 58f Uf FTI test değerleri (ahşap ayrımı kalktı) */
   {s:"68f",a:"Flat",max:52,uf:1.30,p2:0.035,p3:0.032,uw:{d:1.27,t36:0.99,t44:0.93}},
-  {s:"68f Bal.Door",a:"Flat",max:52,uf:null,p2:null,p3:null,uw:{}},
+  {s:"68f Bal.Door",a:"Flat",max:52,uf:"1,37; 1,37; 1,37; 3,627",p2:0.035,p3:0.032,uw:{d:1.36}},
   {s:"68m",a:"Minima",max:52,uf:1.20,p2:0.035,p3:0.032,uw:{d:1.22,t36:0.94,t44:0.87}},
   {s:"78t",a:"Casement",max:44,uf:"1,20; 1,38; 1,30",p2:0.0334,p3:0.032,uw:{d:1.21}},
-  {s:"78t-a Top",a:"Casement",max:44,uf:null,p2:null,p3:null,uw:{}},
-  {s:"78t-a Side",a:"Casement",max:44,uf:null,p2:null,p3:null,uw:{}},
+  {s:"78t Top Swing",a:"Casement",max:44,uf:"1,2090; 1,3850; 1,30; 1,30",p2:0.033,p3:0.032,uw:{d:1.21}},
+  {s:"78t Side Hung",a:"Casement",max:44,uf:"1,2090; 1,3850; 1,30; 1,30",p2:0.033,p3:0.032,uw:{d:1.21}},
+  {s:"78a Top Swing",a:"Casement",max:44,uf:"1,3987; 1,7407; 1,3392; 1,3392",p2:0.033,p3:0.032,uw:{d:1.28}},
+  {s:"78a Side Hung",a:"Casement",max:44,uf:"1,3906; 1,7413; 1,3424; 1,3424",p2:0.033,p3:0.032,uw:{d:1.28}},
   {s:"78t-a Bal.Door",a:"Casement",max:44,uf:"1,19; 1,30; 1,99",p2:0.0334,p3:0.032,uw:{d:1.26}},
   {s:"78a",a:"Casement",max:52.28,uf:"1,34; 1,40; 1,74",p2:0.0334,p3:0.032,uw:{d:1.28}},
   {s:"58e Kurtağızlı",a:"Klasik",max:31,uf:null,p2:null,p3:null,uw:{}},
   {s:"68k",a:"Klasik",max:44,uf:1.40,p2:0.032,p3:0.03,uw:{d:1.27,t36:0.98,t44:0.91}},
-  {s:"68p",a:"Klasik",max:31,uf:null,p2:0.032,p3:0.03,uw:{d:1.33}},
+  {s:"68p",a:"Klasik",max:31,uf:"1,1957; 2,7689; 1,2705; 1,1781; 1,1013; 1,1274; 1,1006",p2:0.032,p3:0.03,uw:{d:1.33}},
   {s:"MR",a:"Diğer",max:null,uf:null,p2:null,p3:null,uw:{}}
 ];
 /* 58f Uf (tablodaki not): çam/Lareks 24 mm 1,62 · 36 mm 1,60 · üçlü 1,52; meşe/Okaliptüs 24 mm 1,92 · 36 mm 1,82 · üçlü 1,82 */
@@ -244,8 +246,8 @@ const UF58={cam:{c24:1.62,c36:1.60,u:1.52},mese:{c24:1.92,c36:1.82,u:1.82}};
 /* Camlar: ad, kalınlık (mm), g, TL (%), Ug, yapı, ref (Uw referans anahtarı: bu camın kendisi tablo 2'deki referans ise), db {seri:Rw+Ctr} */
 const CAM=[
   {c:"4 / 16 Ar-We / 4 Low-e",k:24,g:0.61,tl:79,ug:1.1,y:"Çift",ref:"d",db:{"68s":29,"58f":30}},
-  {c:"6 / 16 Ar-We / 4 Low-e",k:26,g:0.60,tl:79,ug:1.1,y:"Çift",db:{"68s":32,"58f":32,"78t-a Top":35,"78t-a Side":34,"MR":28}},
-  {c:"44.2 / 16 Ar-We / 4 Low-e",k:28.76,g:0.55,tl:78,ug:1.1,y:"Çift",db:{"68s":32,"58f":32,"78t-a Top":36,"78t-a Side":36}},
+  {c:"6 / 16 Ar-We / 4 Low-e",k:26,g:0.60,tl:79,ug:1.1,y:"Çift",db:{"68s":32,"58f":32,"78t Top Swing":35,"78a Top Swing":35,"78t Side Hung":34,"78a Side Hung":34,"MR":28}},
+  {c:"44.2 / 16 Ar-We / 4 Low-e",k:28.76,g:0.55,tl:78,ug:1.1,y:"Çift",db:{"68s":32,"58f":32,"78t Top Swing":36,"78a Top Swing":36,"78t Side Hung":36,"78a Side Hung":36}},
   {c:"44.2 Akustik / 16 Ar-We / 4 Low-e",k:28.8,g:0.55,tl:78,ug:1.1,y:"Çift",db:{"MR":31}},
   {c:"44.6 / 16 Ar-We / 4 Low-e",k:30.28,g:0.54,tl:78,ug:1.1,y:"Çift",db:{"68s":33}},
   {c:"44.6 Akustik / 16 Ar-We / 4 Low-e",k:30.28,g:0.54,tl:78,ug:1.1,y:"Çift",db:{"58f":33,"MR":32}},
@@ -253,7 +255,7 @@ const CAM=[
   {c:"44.2 Akustik / 16 Ar-We / 6 Low-e",k:30.76,g:0.55,tl:77,ug:1.1,y:"Çift",db:{"68s":35,"78s":35,"58f":34}},
   {c:"44.2 / 16 Ar-We / 44.2 Low-e",k:33.52,g:0.55,tl:76,ug:1.1,y:"Çift",db:{"58f":34}},
   {c:"44.2 Akustik Low-e / 12 Ar-We / 6 / 12 Ar-We / 4 Low-e",k:42.76,g:0.44,tl:68,ug:0.7,y:"Üçlü",db:{"58f":36}},
-  {c:"10 / 16 Ar-We / 44.2 Low-e",k:34.76,g:0.56,tl:76,ug:1.1,y:"Çift",db:{"78t-a Top":39,"78t-a Side":39}},
+  {c:"10 / 16 Ar-We / 44.2 Low-e",k:34.76,g:0.56,tl:76,ug:1.1,y:"Çift",db:{"78t Top Swing":39,"78a Top Swing":39,"78t Side Hung":39,"78a Side Hung":39}},
   {c:"44.2 Akustik / 16 Ar-We / 44.2 Akustik Low-e",k:33.52,g:0.55,tl:76,ug:1.1,y:"Çift",db:{"78s":37,"58f":38,"MR":36}},
   {c:"66.2 Akustik / 16 Ar-We / 44.2 Akustik Low-e",k:37.52,g:0.53,tl:75,ug:1.1,y:"Çift",db:{"58f":39}},
   {c:"66.2 Akustik / 16 Ar-We / 88.2 Akustik Low-e",k:45.52,g:0.52,tl:73,ug:1.1,y:"Çift",db:{"58f":40}},
@@ -275,13 +277,23 @@ const CAM=[
    Sfw = (Sfg·Ag + Sff·Af)/(Ag+Af), Sff = 0 (URUN-KONFIG-SF0, Melih 19.10.2026: kasadan güneş kazancı yok sayılır; önceden αf·Uf/he = 0,5·Uf/25); Tlw = Tlg·σ, σ = Ag/(Ag+Af). */
 const UW_GEO={"68s":{ag:1.252,l:4.572,af:0.598,df:0.120,bi:0.014},"78s":{ag:1.228,l:4.572,af:0.593,df:0.120,bi:0.014},"90s":{ag:1.228,l:4.572,af:0.593,df:0.120,bi:0.014},
   "68f":{ag:1.234,l:4.540,af:0.616,df:0.124,bi:0.014},"68m":{ag:1.237,l:4.588,af:0.584,df:0.118,bi:0.014},
-  "78t":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78t-a Bal.Door":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78a":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"68k":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014}};
-const SF_ALFA=0, SF_HE=25; /* URUN-KONFIG-SF0: Sff = 0 */
+  "78t":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78t-a Bal.Door":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78a":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"68k":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},
+  /* URUN-KONFIG-EU-TERMAL (27.10.2026): Enes Uzun tablosu (UW ve dB, 27.10.2026). w0×h0 = hesap ölçüsü (m), afs = kesit Af'leri (uf sırasıyla). 68p Df efektif (Ag'den). */
+  "58f":{ag:1.2816,l:4.556,af:0.5386,df:0.108,bi:0.014,afs:[0.1328,0.273,0.1328]},
+  "68p":{ag:1.213,l:6.4918,af:0.6111,df:0.1233,bi:0.014,afs:[0.113,0.0891,0.186,0.0566,0.0549,0.0566,0.0549]},
+  "68f Bal.Door":{ag:1.605,l:5.068,af:0.645,df:0.124,bi:0.014,w0:1.5,h0:1.5,afs:[0.186,0.15525,0.186,0.11774]},
+  "78t Top Swing":{ag:1.6447,l:5.128,af:0.6053,df:0.108,bi:0.014,w0:1.5,h0:1.5,afs:[0.13834,0.13837,0.16431,0.16431]},
+  "78t Side Hung":{ag:1.6447,l:5.128,af:0.6053,df:0.108,bi:0.014,w0:1.5,h0:1.5,afs:[0.13834,0.13837,0.16431,0.16431]},
+  "78a Top Swing":{ag:1.3483,l:4.72,af:0.5717,df:0.11,bi:0.014,w0:1.2,h0:1.6,afs:[0.11937,0.11937,0.16649,0.16649]},
+  "78a Side Hung":{ag:1.3593,l:4.73,af:0.5607,df:0.108,bi:0.014,w0:1.2,h0:1.6,afs:[0.11981,0.11981,0.16053,0.16053]}};
+const SF_ALFA=0.4, SF_HE=25; /* URUN-KONFIG-EU-TERMAL (27.10.2026, Melih): Sff = αf·Uf/he = 0,4·Uf/25 (XP P50-777); önceden 0 */
 let UK_W=1.23, UK_H=1.48;
-function ufSayi(S){ if(typeof S.uf==="number") return S.uf; if(typeof S.uf==="string"){ const a=(S.uf.match(/\d+[.,]\d+/g)||[]).map(x=>+x.replace(",",".")); if(a.length) return a.reduce((p,q)=>p+q,0)/a.length; } return null; } /* URUN-KONFIG-UF-ESIT (19.10.2026, Melih): çok Uf'li seride Af·Uf = Σ Afi·Ufi, Afi şimdilik eşit → Uf = ortalama */
+function ufSayi(S){ if(typeof S.uf==="number") return S.uf; if(typeof S.uf==="string"){ const a=(S.uf.match(/\d+[.,]\d+/g)||[]).map(x=>+x.replace(",",".")), G0=UW_GEO[S.s];
+  if(G0&&G0.afs&&G0.afs.length===a.length){ const t=G0.afs.reduce((p,q)=>p+q,0); return a.reduce((p,u,i)=>p+u*G0.afs[i],0)/t; } /* URUN-KONFIG-EU-TERMAL: kesit alanlarıyla ağırlıklı Uf */
+  if(a.length) return a.reduce((p,q)=>p+q,0)/a.length; } return null; } /* URUN-KONFIG-UF-ESIT (19.10.2026, Melih): çok Uf'li seride Af·Uf = Σ Afi·Ufi, Afi şimdilik eşit → Uf = ortalama */
 function geo(S){ const G=UW_GEO[S.s]; if(!G) return null; const W=UK_W, H=UK_H, d=G.df, c=G.df-G.bi;
   if(!(W>2*d+0.05&&H>2*d+0.05)) return null;
-  const agF=(w,h)=>(w-2*d)*(h-2*d), lF=(w,h)=>2*(w+h-4*c), W0=1.23, H0=1.48;
+  const agF=(w,h)=>(w-2*d)*(h-2*d), lF=(w,h)=>2*(w+h-4*c), W0=G.w0||1.23, H0=G.h0||1.48; /* URUN-KONFIG-EU-TERMAL: serinin hesap ölçüsü */
   const ag=G.ag*agF(W,H)/agF(W0,H0), af=G.af*(W*H-agF(W,H))/(W0*H0-agF(W0,H0)), l=G.l*lF(W,H)/lF(W0,H0);
   return {ag,af,l,aw:W*H}; }
 const psiOf=(S,C)=>C.y==="Üçlü"?S.p3:C.y==="Çift"?S.p2:C.y==="Tek"?0:null;
@@ -289,10 +301,10 @@ function uwHesap(S,C){ const G=geo(S), uf=ufSayi(S); if(!G||uf==null||C.ug==null
   const psi=psiOf(S,C); if(psi==null) return null;
   return (G.ag*C.ug+G.af*uf+G.l*psi)/G.aw; }
 function uwHesapTip(S,C){ const G=geo(S), uf=ufSayi(S), psi=psiOf(S,C)||0;
-  return "EN ISO 10077-1, "+Math.round(UK_W*1000)+"×"+Math.round(UK_H*1000)+" mm: ("+f(G.ag,3)+"×"+f(C.ug,2)+" + "+f(G.af,3)+"×"+f(uf,2)+" + "+f(G.l,3)+"×"+f(psi,4)+") / "+f(G.aw,4)+(typeof S.uf==="string"?" · Uf: "+S.uf+" (eşit alan → ortalama)":""); }
+  return "EN ISO 10077-1, "+Math.round(UK_W*1000)+"×"+Math.round(UK_H*1000)+" mm: ("+f(G.ag,3)+"×"+f(C.ug,2)+" + "+f(G.af,3)+"×"+f(uf,2)+" + "+f(G.l,3)+"×"+f(psi,4)+") / "+f(G.aw,4)+(typeof S.uf==="string"?" · Uf: "+S.uf+(UW_GEO[S.s]&&UW_GEO[S.s].afs?" (kesit alanlarıyla ağırlıklı)":" (eşit alan → ortalama)"):""); }
 function swHesap(S,C){ const G=geo(S), uf=ufSayi(S); if(!G||uf==null||C.g==null) return null; const sf=SF_ALFA*uf/SF_HE; return (C.g*G.ag+sf*G.af)/(G.ag+G.af); }
 function tlwHesap(S,C){ const G=geo(S); if(!G||C.tl==null) return null; return C.tl*G.ag/(G.ag+G.af); }
-function swTip(S,C){ const G=geo(S), uf=ufSayi(S), sf=SF_ALFA*uf/SF_HE; return "Sfw = (Sfg·Ag + Sff·Af)/(Ag+Af) = ("+f(C.g,2)+"×"+f(G.ag,3)+" + "+f(sf,3)+"×"+f(G.af,3)+") / "+f(G.ag+G.af,3)+" · Sff = 0"; }
+function swTip(S,C){ const G=geo(S), uf=ufSayi(S), sf=SF_ALFA*uf/SF_HE; return "Sfw = (Sfg·Ag + Sff·Af)/(Ag+Af) = ("+f(C.g,2)+"×"+f(G.ag,3)+" + "+f(sf,3)+"×"+f(G.af,3)+") / "+f(G.ag+G.af,3)+" · Sff = αf·Uf/he = 0,4×"+f(uf,2)+"/25 (XP P50-777)"; }
 function tlwTip(S,C){ const G=geo(S); return "Tlw = Tlg·σ, σ = Ag/(Ag+Af) = "+f(G.ag,3)+" / "+f(G.ag+G.af,3)+" = "+f(G.ag/(G.ag+G.af),3); } /* NOTASYON-SFG-TLG (26.10.2026): Sfw/Sfg pencere/cam solar faktörü, Tlw/Tlg pencere/cam ışık geçirimi; Sff kasa */
 const UGKEY={"1.1":"d","0.7":"t36","0.6":"t44"};
 const num=v=>{ v=String(v==null?"":v).trim().replace(",","."); return v===""||isNaN(+v)?null:+v; };
@@ -535,7 +547,7 @@ const SO_CSS=".so-t{border-collapse:collapse;font-size:11.5px;width:100%}.so-t t
 function soKod(S){ return S.s.split(" ")[0].replace(/-a$/,""); }
 function soSatir(S){ const kod=soKod(S), dog=$("f_dog").value;
   const tip=/Bal\.Door/i.test(S.s)?["Balkon Kapısı"]:dog==="kapi"?["Balkon Kapısı","Giriş Kapısı"]:dog==="cephe"?["Cephe"]:["Pencere","Sabit","Sürme"]; /* URUN-KONFIG-CEPHE (27.10.2026): Doğrama Tipi Cephe -> sertifika özeti yalnız Cephe ürünleri; cam kısıtı yok */
-  const ac=/-a Top/i.test(S.s)?/top/i:/-a Side/i.test(S.s)?/side/i:null;
+  const ac=/Top/i.test(S.s)?/top/i:/Side/i.test(S.s)?/side/i:null;
   return SO_V.filter(x=>x.seri.toLowerCase()===kod.toLowerCase()&&tip.includes(x.urun_tipi)&&(!ac||!x.acilim||ac.test(x.acilim))); }
 function soSeriler(){ const seri=$("f_seri").value; return SERI.filter(S=>AILE_SEC.has(S.a)&&(!seri||seri===S.s||seri.indexOf(S.s+" ")===0)); }
 function soEle(ek){ const el=new Set(); if(!SO_OK||(!ek.yng&&!ek.guv)) return el;
@@ -658,10 +670,10 @@ soMenu.addEventListener("click",e=>{ const b=e.target.closest("button[data-ac]")
   cipCiz(); seriDoldur();
   ["h_uw","h_db","h_g","h_tl","f_gen","f_yuk"].forEach(id=>$(id).addEventListener("input",ciz)); /* URUN-KONFIG-EBAT */
   ["f_seri","f_sat","f_yng","f_guv","f_cgs","f_tmp","f_dog"].forEach(id=>$(id).addEventListener("change",ciz)); /* URUN-KONFIG-SATINE */
-  $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Cam Listesi\'ndeki tüm camlar değerlendirilir: <b>Uw</b> serinin aynı Ug\'li sertifika camının Uw\'si, <b>Ürün Rw+Ctr</b> o seride cam Rw+Ctr\'si aynı olan sertifika camının test değeri (aynısı yoksa cam Rw+Ctr\'si daha düşük sertifika camınınki, <b>≥</b> ile), Ug\'si sertifika camlarından düşükse Uw <b>≤</b> ile; Sfg ve Tlg camın kendi değeri. <b>Hesaplanan Uw, Sfw, Tlw</b> girilen ürün ebadına göre EN ISO 10077-1 ile: Uw = (Ag·Ug + Af·Uf + lg·ψg)/Aw, Sfw = (Sfg·Ag + Sff·Af)/(Ag+Af) (Sff = 0), Tlw = Tlg·Ag/(Ag+Af). <b>Seçimler:</b> ürün alanı 2,6 m²\'yi geçerse yalnız her camı en az 6 mm olanlar; EI30 → EI30 ve EI60 camlar, EI60 → EI60; CR2 / RC2 → P4A, en az 2,28 mm lamine; RC2N cam kısıtı yok; Yangın Dayanımı ve Güvenlik Sınıfı seçilince o sınıfta geçerli sertifikası olmayan seriler elenir (Ürün sertifika özeti); Cam Güvenlik Sınıfı (EN 356) P2A → lamine ≥ 0,76 mm, P4A → ≥ 2,28 mm, P5A → ≥ 3,04 mm, P6B → ≥ 3,04 mm ve lamine camın her katı ≥ 6 mm; Temper Var/Yok; Kapı ve Bal.Door serileri → iç ve dış cam lamine; Satin Var → Uw, Ug ve Tlg hedefleri dikkate alınmaz. Uw hedefi Hesaplanan Uw\'ye göre süzülür (yoksa sertifika Uw\'si); Hesaplanan Uw\'si olan serilerde sertifika değeri olmayan camlar da listelenir. <b>Koyu renkli konfigürasyonlar</b> sertifikada geçen camlardır, diğerleri gri. '
+  $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Cam Listesi\'ndeki tüm camlar değerlendirilir: <b>Uw</b> serinin aynı Ug\'li sertifika camının Uw\'si, <b>Ürün Rw+Ctr</b> o seride cam Rw+Ctr\'si aynı olan sertifika camının test değeri (aynısı yoksa cam Rw+Ctr\'si daha düşük sertifika camınınki, <b>≥</b> ile), Ug\'si sertifika camlarından düşükse Uw <b>≤</b> ile; Sfg ve Tlg camın kendi değeri. <b>Hesaplanan Uw, Sfw, Tlw</b> girilen ürün ebadına göre EN ISO 10077-1 ile: Uw = (Ag·Ug + Af·Uf + lg·ψg)/Aw, Sfw = (Sfg·Ag + Sff·Af)/(Ag+Af) (Sff = 0,4·Uf/25, XP P50-777), Tlw = Tlg·Ag/(Ag+Af). <b>Seçimler:</b> ürün alanı 2,6 m²\'yi geçerse yalnız her camı en az 6 mm olanlar; EI30 → EI30 ve EI60 camlar, EI60 → EI60; CR2 / RC2 → P4A, en az 2,28 mm lamine; RC2N cam kısıtı yok; Yangın Dayanımı ve Güvenlik Sınıfı seçilince o sınıfta geçerli sertifikası olmayan seriler elenir (Ürün sertifika özeti); Cam Güvenlik Sınıfı (EN 356) P2A → lamine ≥ 0,76 mm, P4A → ≥ 2,28 mm, P5A → ≥ 3,04 mm, P6B → ≥ 3,04 mm ve lamine camın her katı ≥ 6 mm; Temper Var/Yok; Kapı ve Bal.Door serileri → iç ve dış cam lamine; Satin Var → Uw, Ug ve Tlg hedefleri dikkate alınmaz. Uw hedefi Hesaplanan Uw\'ye göre süzülür (yoksa sertifika Uw\'si); Hesaplanan Uw\'si olan serilerde sertifika değeri olmayan camlar da listelenir. <b>Koyu renkli konfigürasyonlar</b> sertifikada geçen camlardır, diğerleri gri. '
     +'<b>Uw</b>: tabloda yalnız üç referans cam için verilmiştir (Ug 1,1 çift 4/16/4 · Ug 0,7 üçlü 4/12/4/12/4 · Ug 0,6 üçlü 4/16/4/16/4); diğer camlarda aynı Ug\'li referansın değeri kullanılır. '
-    +'⚠ Kalınlık serinin max cam kalınlığını aşıyor (ör. 78s, max 40 mm). 58f max cam kalınlığı tablo 1\'de 51-52 mm (Melih Bey bilgisiyle güncellenmiş), tablo 2\'de 42 mm — formda 52 alınmıştır. '
-    +'Uf: 58f\'de ahşap türüne (tabloda Ahşap sütunu, iki satır) ve cam kalınlığına göre; 78t, 78t-a Bal.Door, 78a için tabloda üç değer vardır. '
+    +'⚠ Kalınlık serinin max cam kalınlığını aşıyor (ör. 78s, max 40 mm). 58f max cam kalınlığı 51-52 mm (formda 52). '
+    +'Uf: 58f (FTI testi), 68p, 68f Bal.Door, 78t / 78a Top Swing ve Side Hung\'da kesit alanlarıyla ağırlıklı (Enes Uzun, 27.10.2026; Top Swing ve Bal.Door hesap ölçüsü 1500×1500, 78a 1200×1600 mm, girilen ebada ölçeklenir); 78t, 78t-a Bal.Door, 78a\'da üç değer eşit alanla. 78t Top Swing ve Side Hung tek testte, değerleri aynı. '
     +'<b>Cam fiyatı</b>: <a href="../cam/" target="_blank">Cam Fiyatlandırma</a> modeliyle (düz, 10 adet / 10 m²) €/m²; pencere fiyatı değildir. '
     +'Yangın dayanımı (E30 fire proof, PF 1/2h) için tabloda cam bilgisi henüz yok. Kaynak: <i>UW ve dB tablosu.xls</i>.';
   seriTablo(); ciz();
@@ -779,7 +791,7 @@ async function sertAc(r){
   document.body.appendChild(p);
   let L; try{ L=await sertYukle(); }catch(e){ p.querySelector(".gv").innerHTML='<div class="bos">Okunamadı: '+esc(e.message||e)+'</div>'; return; }
   L=L.filter(d=>[d.seri,d.seri2,d.seri3,d.seri4].some(x=>kod.includes(String(x||"").toLowerCase())));
-  const ESN=new Map(); (window._DCAM||[]).forEach(x=>{ if((x.seri===r.S.s||kod.includes(String(x.seri||"").toLowerCase()))&&nrmAd2(x.cam)===nrmAd2(r.C.c)) ESN.set(x.nr,x.not_||""); }); /* URUN-KONFIG-SERT-ESLEME */ /* URUN-KONFIG-SERT-ESLEME2 (20.10.2026): seri tam adla da eşleşir (78t-a Side); akustik rapor YALNIZ eşleme tablosundan — addaki dB çoğu raporda Rw, Rw+Ctr değil */
+  const ESN=new Map(); (window._DCAM||[]).forEach(x=>{ if((x.seri===r.S.s||(x.seri==="78t-a Side"&&/Side Hung/.test(r.S.s))||(x.seri==="78t-a Top"&&/Top Swing/.test(r.S.s))||kod.includes(String(x.seri||"").toLowerCase()))&&nrmAd2(x.cam)===nrmAd2(r.C.c)) ESN.set(x.nr,x.not_||""); }); /* URUN-KONFIG-SERT-ESLEME */ /* URUN-KONFIG-SERT-ESLEME2 (20.10.2026): seri tam adla da eşleşir (78t-a Side); akustik rapor YALNIZ eşleme tablosundan — addaki dB çoğu raporda Rw, Rw+Ctr değil */
   /* URUN-KONFIG-SERT-CAM (20.10.2026, Melih): yalnız bu camın bu seriyle test edildiği belge(ler) */
   { const Kc=(!r.C.liste&&r.C.db)?r.C:CAM.find(x=>nrmAd2(x.c)===nrmAd2(r.C.c)&&x.ug===r.C.ug)||CAM.find(x=>nrmAd2(x.c)===nrmAd2(r.C.c)); /* URUN-KONFIG-SERT-CAM2 */
     const kapi=/bal\.?door/i.test(r.S.s), dbV=(Kc&&Kc.db)?(Kc.db[r.S.s]??null):null, uwV=(Kc&&Kc.ref&&r.S.uw)?(r.S.uw[Kc.ref]??null):null;
