@@ -160,6 +160,7 @@
      +".mysan h4{margin:10px 0 4px;font-size:12.5px;color:#16324f}"
      +".mysan .myw{overflow-x:auto}"
      +"table.mys{border-collapse:collapse;font-size:12px;width:auto;background:#fff}"
+     +"table.mys.fx{table-layout:fixed}table.mys.fx th,table.mys.fx td{overflow:hidden;text-overflow:ellipsis}table.mys.fx td.w{max-width:none}" /* MY-HIZA */
      +"table.mys th{background:#eef4fb;color:#16324f;font-weight:600;font-size:11px;text-align:left;padding:3px 7px;white-space:nowrap;vertical-align:bottom;line-height:12px;border-bottom:2px solid #d3e0ee}"
      +"table.mys th.sm{font-size:9.5px;line-height:11px}table.mys th.ek{background:#e3edf7}"
      +"table.mys td{border-bottom:1px solid #eef1f5;padding:2px 7px;white-space:nowrap;line-height:17px;color:#1c2430}"
@@ -186,16 +187,18 @@
     var h='<div class="mysan"><h3>MY Faaliyet · Projeleriniz ve PEM\'leriniz</h3><div class="alt">Satıra sağ tıklayarak acil ya da normal takibe alma talebinde bulunabilir, ayrıntıları görebilirsiniz. Talepler MY onayından sonra geçerli olur.</div><div class="mys-msg" id="mys-msg"></div>'
       +B.map(function(b){
         var R=rows.filter(function(r){ return r.blok===b[0]; }); if(!R.length) return "";
-        var head=b[2]?'<th>PEM</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Talep Tarihi</th><th>Termin Tarihi</th>':'<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
-        return '<h4>'+esc(b[1])+'</h4><div class="myw"><table class="mys"><thead><tr>'+head+ek+'</tr></thead><tbody>'+R.map(function(r){
+        var head=b[2]?'<th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th>':'<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
+        /* MY-HIZA (28.10.2026): PEM'de Talep Tarihi 2. sütun; proje bloklarının son 6 sütunu PEM'in son 6 sütunuyla hizalı */
+        var W=[64,72,190,210,44,72,84,64,230,280]; if(!b[2]) W=[W[0],W[1]+W[2]+W[3]].concat(W.slice(4));
+        return '<h4>'+esc(b[1])+'</h4><div class="myw"><table class="mys fx" style="width:'+W.reduce(function(a,x){return a+x;},0)+'px"><colgroup>'+W.map(function(x){ return '<col style="width:'+x+'px">'; }).join('')+'</colgroup><thead><tr>'+head+ek+'</tr></thead><tbody>'+R.map(function(r){
           var ac=r.durum==="Acil";
           var ilk=b[2]
-            ? '<td title="'+esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))+'">'+esc(r.kod)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.talep_tarihi)+'</td><td>'+fd(r.tarih)+'</td>'
+            ? '<td title="'+esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'
             : '<td title="'+esc(r.no)+'">'+esc(r.kod)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>';
           var dur=esc(r.durum||"Normal")+(r.talep?' <span class="bek" title="MY onayı bekleniyor">→ '+esc(r.talep)+' (MY onayı bekliyor)</span>':'');
           return '<tr class="'+(ac?'acil':'')+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">'+ilk
             +'<td>'+(ac?fd(r.hedef):'')+'</td><td>'+(ac?sekilHtml(r):'')+'</td><td class="w" title="'+esc(r.aciklama)+'">'+(ac?esc(r.aciklama):'')+'</td>'
-            +'<td class="dur '+(ac?'acil':'')+'">'+dur+'</td></tr>';
+            +'<td class="dur '+(ac?'acil':'')+'" title="'+esc(String(r.durum||'Normal')+(r.talep?' → '+r.talep+' (MY onayı bekliyor)':''))+'">'+dur+'</td></tr>';
         }).join("")+'</tbody></table></div>';
       }).join("")+'</div>';
     el.innerHTML=h;
