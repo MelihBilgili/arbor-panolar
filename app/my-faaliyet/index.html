@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MY — Faaliyet Formu</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
+  .wrap{max-width:1120px;margin:0 auto;padding:14px 16px 70px}
+  .blk{background:#fff;border:1px solid #dde3ea;border-radius:10px;margin-bottom:16px;overflow:hidden}
+  .blk>h2{font-size:14px;margin:0;padding:10px 14px;color:#fff}
+  .blk .formula{font-size:11.5px;color:#eaf1f8;font-weight:400}
+  .b1>h2{background:#16324f}.b2>h2{background:#0a6b57}.b3>h2{background:#7a3d8f}.b4>h2{background:#b5651d}
+  .tblwrap{overflow:auto}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+  thead th{background:#eef4fb;color:#16324f;font-weight:600;font-size:11.5px;padding:7px 9px;text-align:left;white-space:nowrap;border-bottom:2px solid #d3e0ee}
+  td{border-bottom:1px solid #eef1f5;padding:5px 7px;vertical-align:top}
+  input.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:5px 7px;width:100%;background:#fff}
+  input.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
+  td.num input{text-align:right}
+  textarea.cell{min-height:32px;resize:vertical;min-width:160px}
+  .prim{text-align:right;white-space:nowrap;font-weight:700;color:#0a5745}
+  .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
+  .colp{width:1%;white-space:nowrap}
+  .blkfoot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:9px 14px;background:#fbfcfe;border-top:1px solid #eef1f5}
+  .btn{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer}
+  .btn.sec{background:#e3edf7;color:#16324f;font-weight:600;padding:7px 12px;font-size:13px}
+  .btn:disabled{opacity:.5;cursor:default}
+  .subt{font-size:12.5px;color:#5a6b7d;margin-left:auto}
+  .subt b{color:#0a5745}
+  .totbar{position:sticky;bottom:0;background:#16324f;color:#fff;border-radius:10px;padding:12px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:6px;box-shadow:0 -2px 10px rgba(0,0,0,.12)}
+  .totbar .big{font-size:18px;font-weight:800}
+  .totbar .msg{font-size:12.5px;font-weight:600;min-height:16px}
+  .totbar .msg.ok{color:#8ff0c2}.totbar .msg.err{color:#ffb4b4}
+  .hint{font-size:12px;color:#8a97a4;margin:2px 2px 14px}
+  .aybar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:0 0 14px}
+  .aybar .msg{font-size:12.5px;font-weight:600}
+  .aybar .msg.ok{color:#2e7d54}.aybar .msg.err{color:#b40000}
+  .aywarn{font-size:12px;color:#b25a00;margin-left:auto}
+  table.pivt{border-collapse:collapse;font-size:12.5px;width:auto;min-width:0}
+  table.pivt th,table.pivt td{border:1px solid #e3e9f0;padding:5px 8px;text-align:left}
+  table.pivt thead th{background:#eef4fb;color:#16324f;font-weight:600;font-size:11.5px;white-space:nowrap;vertical-align:bottom;position:static;border-bottom:2px solid #d3e0ee}
+  table.pivt th.grp{text-align:center;background:#dce7f3}
+  table.pivt th.mkg{background:#d7ece4;color:#0a5745}
+  table.pivt td{vertical-align:top}
+  table.pivt td.ssan,table.pivt th.ssan{white-space:nowrap;font-weight:700;color:#16324f}
+  table.pivt td.sdt,table.pivt th.sdt{white-space:nowrap;color:#5a6b7d}
+  table.pivt .sxc{display:block;width:42ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.pivt .sed{cursor:text;border:1px dashed #cdd6df;border-radius:5px;padding:2px 5px;min-height:20px}
+  table.pivt .sed:hover{border-color:#0a6b57;background:#f4fbf8}
+  table.pivt .sed.bos{color:#b7c6d6}
+  table.pivt .sed textarea{white-space:normal}
+  table.pivt .sxc::-webkit-scrollbar{display:none}
+
+
+  /* MY-FAALIYET */
+  .wrap{max-width:none}
+  .blk>h2{background:#16324f}
+  .blk>h2 .cnt{font-weight:400;font-size:12px;color:#cfe0f0;margin-left:6px}
+  .stamp{font-size:12px;color:#5a6b7d;margin:0 0 10px}
+  .msg{font-size:12.5px;font-weight:600;min-height:18px;margin:0 0 8px}.msg.ok{color:#2e7d54}.msg.err{color:#b40000}
+  table.myt{width:auto;min-width:0;font-size:12px;display:table}
+  table.myt thead th{font-size:11px;padding:4px 7px;vertical-align:bottom}
+  table.myt thead th.sm{font-size:9.5px;line-height:11px;font-weight:600}
+  table.myt thead th.ek{background:#e3edf7}
+  table.myt td{padding:2px 7px;white-space:nowrap;line-height:17px;vertical-align:middle}
+  table.myt td.n{text-align:right}
+  table.myt td.c>span{display:block;overflow-x:auto;scrollbar-width:none;white-space:nowrap}
+  table.myt td.c>span::-webkit-scrollbar{display:none}
+  table.myt td.w22>span{width:22ch}table.myt td.w25>span{width:25ch}table.myt td.w30>span{width:30ch}table.myt td.w40>span{width:40ch}
+  table.myt tr{cursor:context-menu}
+  table.myt tr.acil td{background:#fde4ec;border-bottom-color:#f3c6d4}
+  table.myt td.acd{cursor:pointer}table.myt td.acd:hover{box-shadow:inset 0 0 0 1px #c2185b}
+  table.myt td.dur{font-weight:600;color:#5a6b7d}table.myt td.dur.acil{color:#b0003a}
+  .ucbek{color:#9aa5b1}.ucok{color:#000}
+  .mut{color:#8a97a4}
+  .ctx{position:fixed;z-index:100001;background:#fff;border:1px solid #c9d6e3;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);min-width:190px;padding:4px 0;font-size:13px}
+  .ctxh{padding:5px 12px 6px;font-size:11px;color:#5a6b7d;border-bottom:1px solid #eef1f5;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ctxi{padding:7px 12px;cursor:pointer}.ctxi:hover{background:#eef4fb}
+  label.fl{display:block;font-size:12px;color:#5a6b7d;margin:0 0 8px}
+  label.fl textarea,label.fl input,label.fl select{display:block;width:100%;font:inherit;font-size:13px;color:#1c2430;border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;margin-top:3px;box-sizing:border-box}
+html,body{max-width:100vw;overflow-x:hidden}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+</style>
+</head>
+<body>
+<!-- MY-FAALIYET (28.10.2026, Melih): PRJ/PEM panosunun yurt dışı içeriği + Takip Durumu (Normal / Acil / İptal).
+     Rol my.form@arbor.com.tr, giriş kişisel kodla (MY, MK). Veri rpc my_faaliyet_liste / my_durum_yaz / my_ayrinti, bildirim edge my-takip.
+     Ortak betik app/my_acil.js (kaynak kod/my_acil.js) — Acil bloğu OE / MK Faaliyet ve Giriş panosunda da. -->
+<header>
+  <h1>MY — Faaliyet Formu</h1>
+  <div class="sub">Yurt dışı projeler ve PEM'lerin yükleme takibi. Satıra sağ tıklayarak acile çevirin, iptal edin veya ayrıntıları görün. Değişiklikler anında kaydedilir.</div>
+</header>
+<div class="wrap">
+  <div class="stamp" id="damga">Yükleniyor…</div>
+  <div class="msg" id="msg"></div>
+  <div id="bloklar"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../my_acil.js?v=261028a"></script><!-- MY-FAALIYET -->
+<script>
+/* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
+   kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
+   proje · proje_adi · musteri · firma alanlarına (fiyat_musteri_sinif'te ad) uygulanır — tek kaynak: kod/_arb_ad_yazim.js */
+(function(){
+  if(window.ARB_AD) return;
+  var AKR=("SCI SAS SARL SA SASU EURL SNC SEM SPL SPLA ZAC PEM PST MVT AÜP OE ÖB MK MB EU UK USA TR FR AŞ LTD LLC PLC GMBH AG BV NV SPA SRL "+
+    "HLM OPH OPAC EHPAD CHU CROUS RATP SNCF IDF ICF HQE BBC CA ILM FCAI CLC CBC LCB BAT BTP TRT KDV SGDB SVM LMP RBKC MTC GTM NHS PVC "+
+    "ARGE ARB YD SÖ TOKİ İBB İTÜ ODTÜ ENSA ESSEC ENS HEC IUT CFA RTE EDF GDF CCI CMA SEMIIC SAEM SPIE CPAM CAF UGC ARS KYK TMO SGK TCDD İSKİ AVM ÖSYM THY PTT MSB TBMM YTÜ MSGSÜ").split(" ");
+  var AK={}; AKR.forEach(function(w){ AK[w]=1; });
+  var KUCUK={ST:1,MR:1,DR:1,SR:1,JR:1,MRS:1,MS:1};           /* sesli harfsiz ama kısaltma sayılmayanlar → St, Mr … */
+  var TRH=/[ğĞşŞıİçÇöÖüÜ]/, SESLI=/[aeiouyàâäéèêëîïôöùûüÿıAEIOUYÀÂÄÉÈÊËÎÏÔÖÙÛÜŸİ]/, ROMA=/^(I{1,3}|IV|VI{0,3}|IX|XI{0,3}|XIV|XV)$/;
+  function up(w,tr){ return tr?w.toLocaleUpperCase("tr"):w.toUpperCase(); }
+  function lo(w,tr){ return tr?w.toLocaleLowerCase("tr"):w.toLowerCase(); }
+  var OLAGAN={};  /* karışık metinde büyük yazılsa da kısaltma sayılmayan sık kelimeler */
+  ("LE LA LES DE DU DES SUR SOUS AUX AU ET EN UN UNE THE OF AND FOR ON IN AT TO VON DER DIE DAS UND IM AM ZUM ZUR VE İLE EVİ BEY HAN KAT LOT VIA DEL DI DA LOS EL SAN SUD NORD EST OUEST").split(" ").forEach(function(w){ OLAGAN[w]=1; });
+  function kelime(w,karisik,tr){
+    if(/\d/.test(w)) return w;                                   /* rakamlı (P19, I3F, 68s) aynen */
+    var U=up(w,tr);
+    if(AK[U]) return U;
+    if(w.length===1) return U;                                   /* tek harf (Lot F, Y Blok) */
+    if(ROMA.test(U)) return U;                                   /* III. Faz */
+    if(!SESLI.test(w) && !KUCUK[U]) return U;                    /* sesli harfsiz: SVM, LMP, RBKC */
+    if(karisik && w===U && w.length<=3 && !OLAGAN[U]) return U;                /* karışık yazılmış metinde büyük yazılmış kısa kelime = kısaltma */
+    var l=lo(w,tr); return up(l.charAt(0),tr)+l.slice(1);
+  }
+  window.ARB_AD=function(s){
+    if(s==null||typeof s!=="string") return s;
+    var t=s.replace(/\s+/g," ").trim(); if(!t) return t;
+    var harf=t.replace(/[^\p{L}]/gu,""), karisik=harf!==harf.toUpperCase()&&harf!==harf.toLowerCase(), tr=TRH.test(t);  /* Türkçe harf içeren metin → tr yerel ayarı (YAPI → Yapı) */
+    return t.replace(/[\p{L}\p{M}\p{N}]+/gu,function(w){ return kelime(w,karisik,tr); });
+  };
+  var ALAN={proje:1,proje_adi:1,musteri:1,firma:1};
+  function donus(o,tablo){
+    if(Array.isArray(o)){ for(var i=0;i<o.length;i++) donus(o[i],tablo); return o; }
+    if(o&&typeof o==="object"){ for(var k in o){ if(typeof o[k]==="string"&&(ALAN[k]||(k==="ad"&&tablo==="fiyat_musteri_sinif"))) o[k]=window.ARB_AD(o[k]); } }
+    return o;
+  }
+  window.ARB_AD_DONUS=donus;
+  var of=window.fetch.bind(window);
+  window.fetch=function(u,o){
+    var url=String((u&&u.url)||u||""), m=url.match(/\/rest\/v1\/([A-Za-z0-9_]+)/), tablo=m?m[1]:null;
+    if(!tablo) return of(u,o);
+    try{ var me=((o&&o.method)||"GET").toUpperCase();
+      if(o&&typeof o.body==="string"&&/^(POST|PATCH|PUT)$/.test(me)&&tablo!=="rpc"){ o=Object.assign({},o,{body:JSON.stringify(donus(JSON.parse(o.body),tablo))}); } }catch(e){}
+    return of(u,o).then(function(r){
+      var ct=r.headers.get("content-type")||"";
+      if(!r.ok||ct.indexOf("json")<0) return r;
+      return r.clone().text().then(function(t){ if(!t) return r;
+        try{ return new Response(JSON.stringify(donus(JSON.parse(t),tablo)),{status:r.status,statusText:r.statusText,headers:r.headers}); }catch(e){ return r; } });
+    });
+  };
+})();
+</script>
+<script>
+/* ARB-KOD-GIRIS (23.09.2026): forma giris = kisisel 6 haneli kod (App > Referans > Kisiler > Sifre).
+   form-giris edge fonksiyonu kodu dogrular, yetkiyi form_erisim'den kontrol eder, rolu otomatik secer ve
+   rol hesabi icin tek kullanimlik token doner; burada verifyOtp ile oturum acilir. Rol hesaplarinin parolasi yoktur. */
+window.ARB_FORM_YOL=(function(){ var m=/\/app\/([^\/]+)\//.exec(location.pathname); return m?m[1]+"/":""; })();
+window.ARB_KOD_GIRIS=async function(cli,kod){
+  kod=String(kod==null?"":kod).replace(/\D/g,"");
+  if(kod.length!==6) return {error:{message:"Kod 6 haneli olmal\u0131d\u0131r."}};
+  try{
+    var r=await fetch("https://zehysygpqxqmrzangvuc.supabase.co/functions/v1/form-giris",{method:"POST",cache:"no-store",
+      headers:{"Content-Type":"application/json",apikey:"sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc"},
+      body:JSON.stringify({form:window.ARB_FORM_YOL,kod:kod})});
+    var j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok||!j.ok||!j.token_hash) return {error:{message:j.hata||"Kod hatal\u0131."}};
+    var v=await cli.auth.verifyOtp({token_hash:j.token_hash,type:"magiclink"});
+    if(v.error) return {error:{message:"Giri\u015f a\u00e7\u0131lamad\u0131: "+v.error.message}};
+    try{ localStorage.setItem("arb_kisi_"+window.ARB_FORM_YOL,JSON.stringify({kod:j.kisi,ad:j.ad,rol:j.rol})); }catch(e){}
+    return {error:null,data:j};
+  }catch(e){ return {error:{message:"Ba\u011flant\u0131 hatas\u0131."}}; }
+};
+window.ARB_KISI_AL=function(em){ try{ var k=JSON.parse(localStorage.getItem("arb_kisi_"+window.ARB_FORM_YOL)||"null"); return (k&&(!em||k.rol===em))?k:null; }catch(e){ return null; } };
+</script>
+<script>
+/* ===== ARBOR FORM KAPISI (2026-08-20) — anon erisim kapali, rol hesabiyla giris ===== */
+const ARB_ROLE_EMAIL = "my.form@arbor.com.tr";
+const ARB_STORE = "arbform_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
+const ARB_MB = "int@arbor.com.tr";
+/* panolarin varsayilan oturumu (ayni origin, varsayilan storageKey) */
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+var ARB_ACTIVE = ARB_GATE_SB;
+/* form kodu kendi createClient cagirsa bile aktif oturumlu istemci doner */
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(msg){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:310px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:3px">Arbor — Form Girisi</div>'
+    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:10px">Kişisel giriş kodunuzu giriniz. Rolünüz koda göre otomatik belirlenir.</div>'
+    +'<input id="arb-pw" type="password" placeholder="6 haneli giriş kodu" autocomplete="off" inputmode="numeric" maxlength="6" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giris</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px">'+(msg||"")+'</div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var pw=document.getElementById("arb-pw").value;
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giris yapiliyor...";
+    var r=await ARB_KOD_GIRIS(ARB_GATE_SB,pw);
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent=((r.error&&r.error.message)||"Kod hatalı."); return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  if(em!==ARB_ROLE_EMAIL){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(em===ARB_ROLE_EMAIL || em===ARB_MB){ (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script>
+/* FORM-ENGEL-IZ (2026-09-22): güncelleme düğmesi bir kontrol yüzünden durdurulursa (uyarı penceresi) form_engel'e kayıt → Formlar panosunda uyarı */
+(function(){ var FK="my_faaliyet", oa=window.alert.bind(window);
+  window.alert=function(m){ try{ var t=String(m==null?"":m);
+    if(/G[üu]ncelle(me)?\s+(yap[ıi]la|tamamlana)/i.test(t) && typeof ARB_ACTIVE!=="undefined" && ARB_ACTIVE)
+      ARB_ACTIVE.from("form_engel").insert({form_key:FK, mesaj:t.slice(0,600)}).then(function(){},function(){});
+  }catch(e){} return oa(m); };
+})();
+</script>
+<script type="text/plain" id="arbmain">
+const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+/* MY-FAALIYET: satırlar rpc my_faaliyet_liste (PRJ/PEM panosunun yurt dışı içeriği). Sıra: Acil (pembe, hedef yükleme tarihine göre) → Normal (AÜP / termin).
+   Sağ tık: Normal → Acile çevir / İptal et / Ayrıntılar · Acil → Normale çevir / İptal et / Ayrıntılar.
+   Acil satırın Hedef Yükleme / Yükleme Şekli / Açıklama hücresine tıklanınca acil bilgileri düzenlenir (mail atılmaz). */
+const esc=MYACIL.esc, fd=MYACIL.fd;
+MYACIL.stil();
+const $=id=>document.getElementById(id);
+const KISI=()=>((window.ARB_KISI_AL&&(ARB_KISI_AL(ARB_ROLE_EMAIL)||{}).kod)||(ARB_ACTIVE===ARB_MB_SB?"MB":"MY"));
+let DATA={rows:[]};
+const BLOK=[
+  {k:"prj", ad:"Projeler · 4.1 – 7.1", pem:false},
+  {k:"sevk",ad:"Sevke Hazır · 8 / 8.1", pem:false},
+  {k:"pem", ad:"PEM", pem:true}
+];
+function ekTh(){ return '<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek sm">Yükleme<br>Şekli</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>'; }
+function sekil(r){ if(!r.sekil) return ""; if(r.sekil==="Uçak") return r.ucak_onay?'<span class="ucok">Uçak</span>':'<span class="ucbek" title="MK onayı bekleniyor">Uçak</span>'; return esc(r.sekil); }
+function ekTd(r){
+  const ac=r.durum==="Acil", ed=ac?' acd':'';
+  return `<td class="c${ed}" data-ed="1">${ac?fd(r.hedef):""}</td><td class="c${ed}" data-ed="1">${ac?sekil(r):""}</td>`
+    +`<td class="c w30${ed}" data-ed="1"><span title="${esc(r.aciklama)}">${ac?esc(r.aciklama):""}</span></td>`
+    +`<td class="c dur ${ac?'acil':''}">${esc(r.durum||"Normal")}</td>`;
+}
+function ciz(){
+  const rows=DATA.rows||[];
+  const html=BLOK.map(b=>{
+    const R=rows.filter(r=>r.blok===b.k);
+    const head=b.pem
+      ? '<th>PEM</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin Tarihi</th><th>Sevk Durumu (Onur)</th>'
+      : '<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
+    const body=R.map(r=>{
+      const ilk=b.pem
+        ? `<td class="c"><span title="${esc(r.no)}">${esc(r.kod)}</span></td><td class="c w22"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
+          +`<td class="c w25"><span title="${esc(r.ekbilgi)}">${esc(r.ekbilgi)}</span></td><td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`
+          +`<td class="c w40"><span title="${esc(r.sevk_durumu)}">${esc(r.sevk_durumu)}</span></td>`
+        : `<td class="c"><span title="${esc(r.no)}">${esc(r.kod)}</span></td><td class="c w30"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
+          +`<td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`;
+      return `<tr class="${r.durum==="Acil"?'acil':''}" data-tur="${esc(r.tur)}" data-no="${esc(r.no)}">${ilk}${ekTd(r)}</tr>`;
+    }).join("");
+    return `<div class="blk"><h2>${esc(b.ad)} <span class="cnt">${R.length} satır${R.filter(r=>r.durum==="Acil").length?' · '+R.filter(r=>r.durum==="Acil").length+' acil':''}</span></h2>`
+      +`<div class="tblwrap"><table class="myt"><thead><tr>${head}${ekTh()}</tr></thead><tbody>${body||`<tr><td colspan="${b.pem?10:8}" class="mut">Kayıt yok</td></tr>`}</tbody></table></div></div>`;
+  }).join("");
+  $("bloklar").innerHTML=html;
+  $("damga").textContent="ERP: "+(DATA.damga||"—")+" · Sevk durumu (OE): "+(DATA.oe_at?fd(String(DATA.oe_at).slice(0,10)):"—")+" · Yurt dışı satırlar · Sağ tık: işlemler";
+  document.querySelectorAll("#bloklar tr[data-tur]").forEach(tr=>{
+    tr.addEventListener("contextmenu",ev=>{ ev.preventDefault(); menu(ev,satir(tr)); });
+    tr.querySelectorAll("td[data-ed]").forEach(td=>td.addEventListener("click",()=>{ const r=satir(tr); if(r&&r.durum==="Acil") acilPencere(r,true); }));
+  });
+}
+function satir(tr){ const t=tr.getAttribute("data-tur"), n=tr.getAttribute("data-no"); return (DATA.rows||[]).find(r=>r.tur===t&&r.no===n); }
+async function yukle(){
+  try{ DATA=await MYACIL.liste(sb); ciz(); }
+  catch(e){ $("bloklar").innerHTML='<div class="blk" style="padding:12px;color:#b40000">Hata: '+esc(e.message||e)+'</div>'; }
+}
+function kapatMenu(){ const m=$("myctx"); if(m) m.remove(); }
+function menu(ev,r){
+  kapatMenu(); if(!r) return;
+  const m=document.createElement("div"); m.id="myctx"; m.className="ctx";
+  const ops=r.durum==="Acil"?[["normal","Normale çevir"],["iptal","İptal et"],["ayr","Ayrıntılar"]]:[["acil","Acile çevir"],["iptal","İptal et"],["ayr","Ayrıntılar"]];
+  m.innerHTML=`<div class="ctxh">${esc(r.tur==="PEM"?"PEM "+r.kod:r.kod)} · ${esc(r.proje)}</div>`+ops.map(o=>`<div class="ctxi" data-o="${o[0]}">${o[1]}</div>`).join("");
+  document.body.appendChild(m);
+  const w=m.offsetWidth, h=m.offsetHeight;
+  m.style.left=Math.max(4,Math.min(ev.clientX,window.innerWidth-w-6))+"px";
+  m.style.top=Math.max(4,Math.min(ev.clientY,window.innerHeight-h-6))+"px";
+  m.querySelectorAll(".ctxi").forEach(i=>i.onclick=()=>{ kapatMenu(); islem(i.getAttribute("data-o"),r); });
+}
+document.addEventListener("click",e=>{ if(!e.target.closest||!e.target.closest("#myctx")) kapatMenu(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") kapatMenu(); });
+window.addEventListener("scroll",kapatMenu,true);
+function bildir(t,ok){ const m=$("msg"); m.className="msg "+(ok?"ok":"err"); m.textContent=t; if(ok) setTimeout(()=>{ if(m.textContent===t) m.textContent=""; },5000); }
+async function yaz(r,durum,ek){
+  ek=ek||{};
+  const res=await sb.rpc("my_durum_yaz",{p_tur:r.tur,p_no:r.no,p_durum:durum,p_hedef:ek.hedef||null,p_sekil:ek.sekil||null,p_aciklama:ek.aciklama||null,p_kisi:KISI(),p_proje:r.proje||null});
+  if(res.error){ bildir("Kaydedilemedi: "+res.error.message,false); return false; }
+  return true;
+}
+async function haber(islem,r){
+  try{ const {data,error}=await sb.functions.invoke("my-takip",{body:{islem,tur:r.tur,no:r.no,proje:r.proje}});
+    if(error||!data||data.ok===false) return "bildirim gönderilemedi"+(data&&data.hata?" ("+data.hata+")":"");
+    return islem==="iptal"?"OE'ye iptal maili gönderildi":"OE'ye acil maili"+(data.wa==="ok"?", MB'ye WhatsApp":"")+" gönderildi";
+  }catch(e){ return "bildirim gönderilemedi"; }
+}
+async function islem(o,r){
+  if(o==="ayr") return MYACIL.ayrinti(sb,r.tur,r.no);
+  if(o==="acil") return acilPencere(r,false);
+  if(o==="normal"){ if(await yaz(r,"Normal")){ await yukle(); bildir((r.tur==="PEM"?"PEM "+r.kod:r.kod)+" normale çevrildi",true); } return; }
+  if(o==="iptal"){
+    if(!confirm((r.tur==="PEM"?"PEM "+r.kod:r.kod)+" · "+r.proje+"\n\nİptal edilsin mi? Satır formdan çıkarılır ve OE'ye iptal maili gönderilir.")) return;
+    if(await yaz(r,"İptal")){ await yukle(); bildir((r.tur==="PEM"?"PEM "+r.kod:r.kod)+" iptal edildi · "+await haber("iptal",r),true); }
+  }
+}
+function acilPencere(r,duzenle){
+  const m=document.createElement("div"); m.className="my-modal";
+  const hd=(duzenle&&r.hedef)?String(r.hedef).slice(0,10):(r.tarih?String(r.tarih).slice(0,10):"");
+  const sk=(duzenle&&r.sekil)?r.sekil:"Kamyon";
+  m.innerHTML=`<div class="box" style="max-width:460px"><button class="x" title="Kapat">×</button>
+    <h4>${duzenle?"Acil bilgileri":"Acile çevir"} · ${esc(r.tur==="PEM"?"PEM "+r.kod:r.kod)}</h4><div class="mut" style="margin-bottom:10px">${esc(r.proje)}</div>
+    <label class="fl">Açıklama<textarea id="ma_ac" rows="3">${esc(duzenle?(r.aciklama||""):"")}</textarea></label>
+    <label class="fl">Hedef Yükleme Tarihi<input id="ma_hd" type="date" value="${esc(hd)}"></label>
+    <label class="fl">Yükleme Şekli<select id="ma_sk"><option${sk==="Kamyon"?" selected":""}>Kamyon</option><option${sk==="Uçak"?" selected":""}>Uçak</option></select></label>
+    <div class="mut" style="font-size:11.5px;margin:4px 0 10px">Uçak seçimi MK onaylayana kadar gri görünür.${duzenle?"":" Kaydedince OE'ye acil maili ve MB'ye WhatsApp gider; satır acilden çıkana kadar her iş günü tekrarlanır."}</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn sec" id="ma_vz">Vazgeç</button><button class="btn" id="ma_ok">${duzenle?"Kaydet":"Acile çevir"}</button></div></div>`;
+  document.body.appendChild(m);
+  const kapat=()=>m.remove();
+  m.addEventListener("click",e=>{ if(e.target===m||e.target.classList.contains("x")) kapat(); });
+  m.querySelector("#ma_vz").onclick=kapat;
+  m.querySelector("#ma_ok").onclick=async()=>{
+    const hedef=m.querySelector("#ma_hd").value, sekil=m.querySelector("#ma_sk").value, aciklama=m.querySelector("#ma_ac").value.trim();
+    if(!hedef){ alert("Hedef yükleme tarihini giriniz."); return; }
+    const b=m.querySelector("#ma_ok"); b.disabled=true; b.textContent="Kaydediliyor…";
+    if(!(await yaz(r,"Acil",{hedef,sekil,aciklama}))){ b.disabled=false; b.textContent=duzenle?"Kaydet":"Acile çevir"; return; }
+    kapat(); await yukle();
+    const lbl=(r.tur==="PEM"?"PEM "+r.kod:r.kod);
+    if(duzenle) bildir(lbl+" acil bilgileri kaydedildi",true);
+    else bildir(lbl+" acile çevrildi · "+await haber("acil",r),true);
+  };
+  setTimeout(()=>{ const t=m.querySelector("#ma_ac"); if(t) t.focus(); },50);
+}
+yukle();
+setInterval(()=>{ if(!document.querySelector(".my-modal")&&!$("myctx")) yukle(); },5*60*1000);
+</script>
+<!-- FORM-LINKLER --><script src="../form_linkler.js?v=261019"></script>
+</body>
+</html>
