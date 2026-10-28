@@ -109,7 +109,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div id="bloklar"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../my_acil.js?v=261028d"></script><!-- MY-FAALIYET -->
+<script src="../my_acil.js?v=261028e"></script><!-- MY-FAALIYET -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
    kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
@@ -256,7 +256,8 @@ const BLOK=[
   {k:"sevk",ad:"Sevke Hazır · 8 / 8.1", pem:false},
   {k:"pem", ad:"PEM", pem:true}
 ];
-const MYW_PEM=[64,72,190,210,44,72,84,64,230,280], MYW_PRJ=[MYW_PEM[0],MYW_PEM[1]+MYW_PEM[2]+MYW_PEM[3]].concat(MYW_PEM.slice(4)); /* MY-HIZA */
+const MYW_PEM=[64,72,133,210,44,72,84,64,230,280], MYW_PRJ=[MYW_PEM[0],MYW_PEM[1]+MYW_PEM[2]+MYW_PEM[3]].concat(MYW_PEM.slice(4)); /* MY-HIZA */
+const MYW_PRJ_AD=330; /* MY-AD-DAR (28.10.2026): Proje Adı %30 dar — PEM 190→133px, proje blokları 472→330px görünür alan (hücre hizadan dolayı geniş kalır, sağ boşluk) */
 const myCols=w=>'<colgroup>'+w.map(x=>'<col style="width:'+x+'px">').join('')+'</colgroup>', mySum=w=>w.reduce((a,b)=>a+b,0);
 function ekTh(){ return '<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek sm">Yükleme<br>Şekli</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>'; }
 function sekil(r){ if(!r.sekil) return ""; if(r.sekil==="Uçak") return r.ucak_onay?'<span class="ucok">Uçak</span>':'<span class="ucbek" title="MK onayı bekleniyor">Uçak</span>'; return esc(r.sekil); }
@@ -281,7 +282,7 @@ function ciz(){
       const ilk=b.pem
         ? /* MY-PEM-DURUM3: PEM = durumu ≤ 3 tüm yurt dışı PEM'ler; ERP durumu PEM no üzerinde */ `<td class="c"><span title="${esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))}">${esc(r.kod)}</span></td><td class="c">${fd(r.talep_tarihi)}</td><td class="c w22"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
           +`<td class="c w25"><span title="${esc(r.ekbilgi)}">${esc(r.ekbilgi)}</span></td><td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`
-        : `<td class="c"><span title="${esc(r.no)}">${esc(r.kod)}</span></td><td class="c w30"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
+        : `<td class="c"><span title="${esc(r.no)}">${esc(r.kod)}</span></td><td class="c w30" style="padding-right:${MYW_PRJ[1]-MYW_PRJ_AD+7}px"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
           +`<td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`;
       return `<tr class="${r.durum==="Acil"?'acil':''}" data-tur="${esc(r.tur)}" data-no="${esc(r.no)}">${ilk}${ekTd(r)}</tr>`;
     }).join("");
