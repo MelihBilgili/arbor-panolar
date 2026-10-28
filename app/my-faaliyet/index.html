@@ -74,6 +74,10 @@
   table.myt td.c>span::-webkit-scrollbar{display:none}
   table.myt td.w22>span{width:22ch}table.myt td.w25>span{width:25ch}table.myt td.w30>span{width:30ch}table.myt td.w40>span{width:40ch}
   table.myt tr{cursor:context-menu}
+  /* MY-HIZA (28.10.2026): PEM'de Talep Tarihi 2. sütun; proje bloklarının son 6 sütunu PEM'in son 6 sütunuyla aynı genişlikte (colgroup, table-layout:fixed) */
+  table.myt.fx{table-layout:fixed}
+  table.myt.fx th,table.myt.fx td{overflow:hidden;text-overflow:ellipsis}
+  table.myt.fx td.c>span{width:100%!important}
   table.myt tr.acil td{background:#fde4ec;border-bottom-color:#f3c6d4}
   table.myt td.acd{cursor:pointer}table.myt td.acd:hover{box-shadow:inset 0 0 0 1px #c2185b}
   table.myt td.dur{font-weight:600;color:#5a6b7d}table.myt td.dur.acil{color:#b0003a}
@@ -252,6 +256,8 @@ const BLOK=[
   {k:"sevk",ad:"Sevke Hazır · 8 / 8.1", pem:false},
   {k:"pem", ad:"PEM", pem:true}
 ];
+const MYW_PEM=[64,72,190,210,44,72,84,64,230,280], MYW_PRJ=[MYW_PEM[0],MYW_PEM[1]+MYW_PEM[2]+MYW_PEM[3]].concat(MYW_PEM.slice(4)); /* MY-HIZA */
+const myCols=w=>'<colgroup>'+w.map(x=>'<col style="width:'+x+'px">').join('')+'</colgroup>', mySum=w=>w.reduce((a,b)=>a+b,0);
 function ekTh(){ return '<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek sm">Yükleme<br>Şekli</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>'; }
 function sekil(r){ if(!r.sekil) return ""; if(r.sekil==="Uçak") return r.ucak_onay?'<span class="ucok">Uçak</span>':'<span class="ucbek" title="MK onayı bekleniyor">Uçak</span>'; return esc(r.sekil); }
 function ekTd(r){
@@ -269,18 +275,18 @@ function ciz(){
   const html=BLOK.map(b=>{
     const R=rows.filter(r=>r.blok===b.k);
     const head=b.pem
-      ? '<th>PEM</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Talep Tarihi</th><th>Termin Tarihi</th>' /* MY-PEM-TALEPTARIH: Sevk Durumu (Onur) çıktı */
+      ? '<th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th>' /* MY-PEM-TALEPTARIH: Sevk Durumu (Onur) çıktı */
       : '<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
     const body=R.map(r=>{
       const ilk=b.pem
-        ? /* MY-PEM-DURUM3: PEM = durumu ≤ 3 tüm yurt dışı PEM'ler; ERP durumu PEM no üzerinde */ `<td class="c"><span title="${esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))}">${esc(r.kod)}</span></td><td class="c w22"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
-          +`<td class="c w25"><span title="${esc(r.ekbilgi)}">${esc(r.ekbilgi)}</span></td><td class="n">${esc(r.adet)}</td><td class="c">${fd(r.talep_tarihi)}</td><td class="c">${fd(r.tarih)}</td>`
+        ? /* MY-PEM-DURUM3: PEM = durumu ≤ 3 tüm yurt dışı PEM'ler; ERP durumu PEM no üzerinde */ `<td class="c"><span title="${esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))}">${esc(r.kod)}</span></td><td class="c">${fd(r.talep_tarihi)}</td><td class="c w22"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
+          +`<td class="c w25"><span title="${esc(r.ekbilgi)}">${esc(r.ekbilgi)}</span></td><td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`
         : `<td class="c"><span title="${esc(r.no)}">${esc(r.kod)}</span></td><td class="c w30"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
           +`<td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`;
       return `<tr class="${r.durum==="Acil"?'acil':''}" data-tur="${esc(r.tur)}" data-no="${esc(r.no)}">${ilk}${ekTd(r)}</tr>`;
     }).join("");
     return `<div class="blk"><h2>${esc(b.ad)} <span class="cnt">${R.length} satır${R.filter(r=>r.durum==="Acil").length?' · '+R.filter(r=>r.durum==="Acil").length+' acil':''}</span></h2>`
-      +`<div class="tblwrap"><table class="myt"><thead><tr>${head}${ekTh()}</tr></thead><tbody>${body||`<tr><td colspan="${b.pem?10:8}" class="mut">Kayıt yok</td></tr>`}</tbody></table></div></div>`;
+      +`<div class="tblwrap"><table class="myt fx" style="width:${mySum(b.pem?MYW_PEM:MYW_PRJ)}px">${myCols(b.pem?MYW_PEM:MYW_PRJ)}<thead><tr>${head}${ekTh()}</tr></thead><tbody>${body||`<tr><td colspan="${b.pem?10:8}" class="mut">Kayıt yok</td></tr>`}</tbody></table></div></div>`;
   }).join("");
   $("bloklar").innerHTML=html;
   $("damga").textContent="ERP: "+(DATA.damga||"—")+" · Sevk durumu (OE): "+(DATA.oe_at?fd(String(DATA.oe_at).slice(0,10)):"—")+" · Yurt dışı satırlar · Sağ tık: işlemler";
