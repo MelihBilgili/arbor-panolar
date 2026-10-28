@@ -189,12 +189,13 @@
         var R=rows.filter(function(r){ return r.blok===b[0]; }); if(!R.length) return "";
         var head=b[2]?'<th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th>':'<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
         /* MY-HIZA (28.10.2026): PEM'de Talep Tarihi 2. sütun; proje bloklarının son 6 sütunu PEM'in son 6 sütunuyla hizalı */
-        var W=[64,72,190,210,44,72,84,64,230,280]; if(!b[2]) W=[W[0],W[1]+W[2]+W[3]].concat(W.slice(4));
+        var W=[64,72,133,210,44,72,84,64,230,280]; if(!b[2]) W=[W[0],W[1]+W[2]+W[3]].concat(W.slice(4)); /* MY-AD-DAR: Proje Adı %30 dar (PEM 190→133; proje 472→330 görünür, sağ boşluk) */
+        var padAd=b[2]?'':' style="padding-right:'+(W[1]-330+7)+'px"';
         return '<h4>'+esc(b[1])+'</h4><div class="myw"><table class="mys fx" style="width:'+W.reduce(function(a,x){return a+x;},0)+'px"><colgroup>'+W.map(function(x){ return '<col style="width:'+x+'px">'; }).join('')+'</colgroup><thead><tr>'+head+ek+'</tr></thead><tbody>'+R.map(function(r){
           var ac=r.durum==="Acil";
           var ilk=b[2]
             ? '<td title="'+esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'
-            : '<td title="'+esc(r.no)+'">'+esc(r.kod)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>';
+            : '<td title="'+esc(r.no)+'">'+esc(r.kod)+'</td><td class="w"'+padAd+' title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>';
           var dur=esc(r.durum||"Normal")+(r.talep?' <span class="bek" title="MY onayı bekleniyor">→ '+esc(r.talep)+' (MY onayı bekliyor)</span>':'');
           return '<tr class="'+(ac?'acil':'')+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">'+ilk
             +'<td>'+(ac?fd(r.hedef):'')+'</td><td>'+(ac?sekilHtml(r):'')+'</td><td class="w" title="'+esc(r.aciklama)+'">'+(ac?esc(r.aciklama):'')+'</td>'
