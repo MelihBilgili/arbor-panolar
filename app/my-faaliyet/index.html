@@ -78,6 +78,9 @@
   table.myt td.acd{cursor:pointer}table.myt td.acd:hover{box-shadow:inset 0 0 0 1px #c2185b}
   table.myt td.dur{font-weight:600;color:#5a6b7d}table.myt td.dur.acil{color:#b0003a}
   .ucbek{color:#9aa5b1}.ucok{color:#000}
+  button.tonay{background:#c62828;color:#fff;border:0;border-radius:5px;font:inherit;font-size:11px;font-weight:700;padding:2px 8px;cursor:pointer;margin-left:6px}
+  button.tred{background:#fff;color:#c62828;border:1px solid #c62828;border-radius:5px;font:inherit;font-size:11px;padding:1px 7px;cursor:pointer}
+  button.tonay:disabled,button.tred:disabled{opacity:.5}
   .mut{color:#8a97a4}
   .ctx{position:fixed;z-index:100001;background:#fff;border:1px solid #c9d6e3;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);min-width:190px;padding:4px 0;font-size:13px}
   .ctxh{padding:5px 12px 6px;font-size:11px;color:#5a6b7d;border-bottom:1px solid #eef1f5;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -255,20 +258,23 @@ function ekTd(r){
   const ac=r.durum==="Acil", ed=ac?' acd':'';
   return `<td class="c${ed}" data-ed="1">${ac?fd(r.hedef):""}</td><td class="c${ed}" data-ed="1">${ac?sekil(r):""}</td>`
     +`<td class="c w30${ed}" data-ed="1"><span title="${esc(r.aciklama)}">${ac?esc(r.aciklama):""}</span></td>`
-    +`<td class="c dur ${ac?'acil':''}">${esc(r.durum||"Normal")}</td>`;
+    +`<td class="c dur ${ac?'acil':''}">${esc(r.durum||"Normal")}${r.talep?talepKutu(r):''}</td>`;
+}
+/* MY-SANTIYE (28.10.2026): şantiye formundan gelen Acil/Normal talebi MY onayı bekler — kırmızı kutu, Reddet */
+function talepKutu(r){ const d=r.talep+' talebi · '+(r.talep_kisi||'')+(r.talep==='Acil'?' · hedef '+fd(r.talep_hedef)+' · '+(r.talep_sekil||''):'')+(r.talep_aciklama?' · '+r.talep_aciklama:'');
+  return ` <button class="tonay" title="${esc(d)}">${esc(r.talep)} talebini onayla</button> <button class="tred" title="${esc(d)}">Reddet</button>`;
 }
 function ciz(){
   const rows=DATA.rows||[];
   const html=BLOK.map(b=>{
     const R=rows.filter(r=>r.blok===b.k);
     const head=b.pem
-      ? '<th>PEM</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin Tarihi</th><th>Sevk Durumu (Onur)</th>'
+      ? '<th>PEM</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Talep Tarihi</th><th>Termin Tarihi</th>' /* MY-PEM-TALEPTARIH: Sevk Durumu (Onur) çıktı */
       : '<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
     const body=R.map(r=>{
       const ilk=b.pem
         ? /* MY-PEM-DURUM3: PEM = durumu ≤ 3 tüm yurt dışı PEM'ler; ERP durumu PEM no üzerinde */ `<td class="c"><span title="${esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))}">${esc(r.kod)}</span></td><td class="c w22"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
-          +`<td class="c w25"><span title="${esc(r.ekbilgi)}">${esc(r.ekbilgi)}</span></td><td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`
-          +`<td class="c w40"><span title="${esc(r.sevk_durumu)}">${esc(r.sevk_durumu)}</span></td>`
+          +`<td class="c w25"><span title="${esc(r.ekbilgi)}">${esc(r.ekbilgi)}</span></td><td class="n">${esc(r.adet)}</td><td class="c">${fd(r.talep_tarihi)}</td><td class="c">${fd(r.tarih)}</td>`
         : `<td class="c"><span title="${esc(r.no)}">${esc(r.kod)}</span></td><td class="c w30"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
           +`<td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`;
       return `<tr class="${r.durum==="Acil"?'acil':''}" data-tur="${esc(r.tur)}" data-no="${esc(r.no)}">${ilk}${ekTd(r)}</tr>`;
@@ -281,6 +287,7 @@ function ciz(){
   document.querySelectorAll("#bloklar tr[data-tur]").forEach(tr=>{
     tr.addEventListener("contextmenu",ev=>{ ev.preventDefault(); menu(ev,satir(tr)); });
     tr.querySelectorAll("td[data-ed]").forEach(td=>td.addEventListener("click",()=>{ const r=satir(tr); if(r&&r.durum==="Acil") acilPencere(r,true); }));
+    tr.querySelectorAll("button.tonay,button.tred").forEach(bt=>bt.addEventListener("click",ev=>{ ev.stopPropagation(); talepKarar(satir(tr),bt.classList.contains("tonay"),bt); }));
   });
 }
 function satir(tr){ const t=tr.getAttribute("data-tur"), n=tr.getAttribute("data-no"); return (DATA.rows||[]).find(r=>r.tur===t&&r.no===n); }
@@ -315,6 +322,15 @@ async function haber(islem,r){
     if(error||!data||data.ok===false) return "bildirim gönderilemedi"+(data&&data.hata?" ("+data.hata+")":"");
     return islem==="iptal"?"OE'ye iptal maili gönderildi":"OE'ye acil maili"+(data.wa==="ok"?", MB'ye WhatsApp":"")+" gönderildi";
   }catch(e){ return "bildirim gönderilemedi"; }
+}
+async function talepKarar(r,onay,bt){
+  if(!r) return; if(!onay&&!confirm((r.tur==="PEM"?"PEM "+r.kod:r.kod)+" · "+r.talep+" talebi reddedilsin mi?")) return;
+  bt.disabled=true;
+  const res=await sb.rpc("my_talep_karar",{p_tur:r.tur,p_no:r.no,p_onay:onay,p_kisi:KISI()});
+  if(res.error){ bt.disabled=false; bildir("Kaydedilemedi: "+res.error.message,false); return; }
+  await yukle();
+  let h=""; try{ const {data}=await sb.functions.invoke("my-takip",{body:{islem:"talep_karar",tur:r.tur,no:r.no}}); h=(data&&data.mail==="ok")?" · şantiyeye mail gönderildi":""; }catch(e){}
+  bildir((r.tur==="PEM"?"PEM "+r.kod:r.kod)+" · "+r.talep+" talebi "+(onay?"onaylandı":"reddedildi")+h,true);
 }
 async function islem(o,r){
   if(o==="ayr") return MYACIL.ayrinti(sb,r.tur,r.no);
