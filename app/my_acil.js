@@ -34,7 +34,8 @@
      +".my-modal th{background:#eef4fb;color:#16324f;font-weight:600;font-size:11px;white-space:nowrap}"
      +".my-modal td.k{color:#5a6b7d;white-space:nowrap;width:1%}"
      +".my-modal .x{float:right;border:0;background:none;font-size:20px;cursor:pointer;color:#5a6b7d;line-height:1}"
-     +".my-modal .mut{color:#8a97a4}";
+     +".my-modal .mut{color:#8a97a4}"
+     +"input.my-ack{font:inherit;font-size:12px;width:30ch;border:1px solid #d9a3b6;border-radius:4px;padding:1px 6px;background:#fff;color:#1c2430}input.my-ack:focus{outline:none;border-color:#b0003a}input.my-ack:disabled{opacity:.6}";
     document.head.appendChild(s);
   }
   async function liste(sb){
@@ -58,15 +59,16 @@
     try{ d=await liste(sb); }catch(e){ el.innerHTML=""; return; }
     var rows=(d.rows||[]).filter(function(r){ return r.durum==="Acil"; });
     if(!rows.length){ el.innerHTML=""; return; }
-    var mk=mod==="mk";
+    var mk=mod==="mk", gr=mod==="giris"; /* MY-ACIKLAMA-EKLE (28.10.2026): Giriş panosunda "Açıklama Ekle" sütunu (yalnız MB) */
     var h='<div class="myab"><h3>ACİL YÜKLEMELER · MY ('+rows.length+')</h3><div class="myw"><table class="mya"><thead><tr>'
-      +'<th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama</th></tr></thead><tbody>'
+      +'<th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama</th>'+(gr?'<th>Açıklama Ekle</th>':'')+'</tr></thead><tbody>'
       +rows.map(function(r){
         var no=r.tur==="PEM"?("PEM "+r.kod):r.kod;
         var onay=(mk&&r.sekil==="Uçak"&&!r.ucak_onay)?'<button class="my-onay" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">Uçak yüklemesini onayla</button>':'';
         return '<tr data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
           +'<td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td><td><b>'+fd(r.hedef)+'</b></td><td>'+sekilHtml(r)+'</td>'
-          +(mk?'<td>'+onay+'</td>':'')+'<td class="w" title="'+esc(r.aciklama)+'">'+esc(r.aciklama)+'</td></tr>';
+          +(mk?'<td>'+onay+'</td>':'')+'<td class="w" title="'+esc(r.aciklama)+'">'+esc(r.aciklama)+'</td>'
+          +(gr?'<td><input class="my-ack" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" placeholder="Yazıp Enter’a basın"></td>':'')+'</tr>';
       }).join("")+'</tbody></table></div></div>';
     el.innerHTML=h;
     el.querySelectorAll("tr[data-tur]").forEach(function(tr){
@@ -78,6 +80,18 @@
         ev.stopPropagation(); b.disabled=true; b.textContent="Onaylanıyor…";
         var r=await sb.rpc("my_ucak_onayla",{p_tur:b.getAttribute("data-tur"),p_no:b.getAttribute("data-no"),p_kisi:kisiKod("MK")});
         if(r.error){ b.disabled=false; b.textContent="Uçak yüklemesini onayla"; alert("Onaylanamadı: "+r.error.message); return; }
+        acilBlok(el,o);
+      });
+    });
+    el.querySelectorAll("input.my-ack").forEach(function(inp){
+      inp.addEventListener("dblclick",function(ev){ ev.stopPropagation(); });
+      inp.addEventListener("contextmenu",function(ev){ ev.stopPropagation(); });
+      inp.addEventListener("keydown",async function(ev){
+        if(ev.key!=="Enter") return; ev.preventDefault();
+        var t=inp.value.trim(); if(!t) return;
+        inp.disabled=true;
+        var r=await sb.rpc("my_aciklama_ekle",{p_tur:inp.getAttribute("data-tur"),p_no:inp.getAttribute("data-no"),p_metin:t});
+        if(r.error){ inp.disabled=false; alert("Eklenemedi: "+r.error.message); return; }
         acilBlok(el,o);
       });
     });
