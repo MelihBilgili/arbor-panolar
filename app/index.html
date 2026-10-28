@@ -168,6 +168,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="giris_ust.js?v=261023a"></script><!-- GIRIS-UST-ORTAK -->
+<script src="my_acil.js?v=261028a"></script><!-- MY-FAALIYET -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
    kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
@@ -442,6 +443,7 @@ async function loadGiris(){
     .gnb td .cell,.gblk td .cell{width:100%;box-sizing:border-box;font:inherit;padding:2px 5px;border:1px solid #2e6da4;border-radius:5px}
   </style>
   <div class="gr">
+    <div id="gr-my"></div><!-- MY-FAALIYET: Acil yüklemeler en üst blok -->
     <div id="gr-vakit" class="gr-bxs"><span class="gr-muted">Vakitler yükleniyor…</span></div>
     <div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin:2px 0 8px"><button id="gr-onc" class="gr-onc">Öncelik Belirle</button><div id="gr-ozel" class="gr-bxs" style="margin:0"></div></div><!-- GIRIS-ONCELIK-BTN -->
     <div id="gr-gundem"></div>
@@ -451,7 +453,7 @@ async function loadGiris(){
     <div id="gr-not" style="margin-top:16px"></div><!-- GIRIS-NOT -->
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
-  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot),kor(()=>window.MYACIL&&MYACIL.acilBlok(grEl("gr-my"),{sb:sb,mod:"giris"}))]);
 }
 /* 1 — Ezan vakitleri (Diyanet yöntemi) + gündüz ortalama sıcaklık (gün doğumu–batımı saatlik ortalaması) + yağış */
 async function grVakit(){
@@ -2211,6 +2213,7 @@ async function loadFormlar(){
     {ad:"OE Faaliyet",         who:"OE",tam:"Onur Ekinci",       url:"onur/",        sik:"Her ayın ilk iş günü"},
     {ad:"ÖB Faaliyet",         who:"ÖB",tam:"Özgül Bedestenci",  url:"ob-rapor/",    sik:"Her ayın ilk iş günü"},
     {ad:"MK Faaliyet",         who:"MK",tam:"Mehmet Konak",      url:"mk-prim/",     sik:"Her ayın ilk iş günü"},
+    {ad:"MY Faaliyet",         who:"MY · MK",tam:"Muhammer Yazla · Mehmet Konak", url:"my-faaliyet/", sik:"Süresiz"}, /* MY-FAALIYET (28.10.2026) */
     {ad:"CTP Faaliyet",        who:"CTP",tam:"Cenk Tolga Pınarbaşı", url:"ctp-faaliyet/", sik:"Süresiz"}, /* CTP-FAALIYET (16.10.2026) */
     /* SELARB-FORM: Güncel Alacak (€) — ÖB + MK düzenler, ay sonu pg_cron ile SEL-ARB'a sütun olur */
     {ad:"Sel-Arb",             who:"ÖB · MK",tam:"Özgül Bedestenci · Mehmet Konak",url:"sel-arb/",sik:"Her ayın ilk iş günü"},
