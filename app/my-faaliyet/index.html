@@ -266,7 +266,7 @@ function ciz(){
       : '<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
     const body=R.map(r=>{
       const ilk=b.pem
-        ? `<td class="c"><span title="${esc(r.no)}">${esc(r.kod)}</span></td><td class="c w22"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
+        ? /* MY-PEM-DURUM3: PEM = durumu ≤ 3 tüm yurt dışı PEM'ler; ERP durumu PEM no üzerinde */ `<td class="c"><span title="${esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))}">${esc(r.kod)}</span></td><td class="c w22"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
           +`<td class="c w25"><span title="${esc(r.ekbilgi)}">${esc(r.ekbilgi)}</span></td><td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`
           +`<td class="c w40"><span title="${esc(r.sevk_durumu)}">${esc(r.sevk_durumu)}</span></td>`
         : `<td class="c"><span title="${esc(r.no)}">${esc(r.kod)}</span></td><td class="c w30"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
