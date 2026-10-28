@@ -143,15 +143,131 @@
       +'<h5>ERP Bilgileri (son çekim)</h5>'+erpH
       +(d.erp_ek?'<h5>ERP · Hazır PEM/PRJ</h5>'+kv(d.erp_ek):'');
   }
-  window.MYACIL={liste:liste,acilBlok:acilBlok,ayrinti:ayrinti,fd:fd,esc:esc,stil:stil};
+  /* MY-SANTIYE (28.10.2026, Melih): şantiye formlarının en üstünde o şantiyenin MY Faaliyet satırları (MY formundaki hâliyle).
+     Sağ tık: Acile çevir / Normale çevir / Ayrıntılar. Değişiklik doğrudan uygulanmaz — talep olarak MY onayına gider
+     (rpc my_santiye_talep + edge my-takip islem "santiye_talep" → MY'ye mail; onay bekleyen talep gri görünür). */
+  function sKisi(){
+    try{ if(window.ARB_KISI_AL&&typeof ARB_ROL_EMAIL!=="undefined"){ var k=ARB_KISI_AL(ARB_ROL_EMAIL); if(k&&k.kod) return k.kod; } }catch(e){}
+    try{ if(typeof ARB_ACTIVE!=="undefined"&&typeof ARB_MB_SB!=="undefined"&&ARB_ACTIVE===ARB_MB_SB) return "MB"; }catch(e){}
+    return "";
+  }
+  function sStil(){
+    if(document.getElementById("mysan-css")) return;
+    var s=document.createElement("style"); s.id="mysan-css";
+    s.textContent=
+      ".mysan{margin:0 0 18px;font-family:'Segoe UI',system-ui,sans-serif}"
+     +".mysan h3{margin:0 0 4px;font-size:14px;color:#16324f}.mysan .alt{font-size:11.5px;color:#5a6b7d;margin:0 0 8px}"
+     +".mysan h4{margin:10px 0 4px;font-size:12.5px;color:#16324f}"
+     +".mysan .myw{overflow-x:auto}"
+     +"table.mys{border-collapse:collapse;font-size:12px;width:auto;background:#fff}"
+     +"table.mys th{background:#eef4fb;color:#16324f;font-weight:600;font-size:11px;text-align:left;padding:3px 7px;white-space:nowrap;vertical-align:bottom;line-height:12px;border-bottom:2px solid #d3e0ee}"
+     +"table.mys th.sm{font-size:9.5px;line-height:11px}table.mys th.ek{background:#e3edf7}"
+     +"table.mys td{border-bottom:1px solid #eef1f5;padding:2px 7px;white-space:nowrap;line-height:17px;color:#1c2430}"
+     +"table.mys td.n{text-align:right}table.mys td.w{max-width:30ch;overflow:hidden;text-overflow:ellipsis}"
+     +"table.mys tr{cursor:context-menu}table.mys tr.acil td{background:#fde4ec;border-bottom-color:#f3c6d4}"
+     +"table.mys td.dur{font-weight:600;color:#5a6b7d}table.mys td.dur.acil{color:#b0003a}table.mys td.dur .bek{color:#9aa5b1;font-weight:600}"
+     +".mys-ctx{position:fixed;z-index:100001;background:#fff;border:1px solid #c9d6e3;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);min-width:190px;padding:4px 0;font-size:13px;font-family:'Segoe UI',system-ui,sans-serif}"
+     +".mys-ctx .h{padding:5px 12px 6px;font-size:11px;color:#5a6b7d;border-bottom:1px solid #eef1f5;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
+     +".mys-ctx .i{padding:7px 12px;cursor:pointer}.mys-ctx .i:hover{background:#eef4fb}.mys-ctx .i.pas{color:#9aa5b1;cursor:default}.mys-ctx .i.pas:hover{background:none}"
+     +".mys-fl{display:block;font-size:12px;color:#5a6b7d;margin:0 0 8px}.mys-fl textarea,.mys-fl input,.mys-fl select{display:block;width:100%;font:inherit;font-size:13px;color:#1c2430;border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;margin-top:3px;box-sizing:border-box}"
+     +".mys-btn{border:0;border-radius:8px;padding:8px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;background:#2e7d54;color:#fff}.mys-btn.sec{background:#e3edf7;color:#16324f;font-weight:600}"
+     +".mys-msg{font-size:12.5px;font-weight:600;min-height:16px;margin:4px 0}.mys-msg.ok{color:#2e7d54}.mys-msg.err{color:#b40000}";
+    document.head.appendChild(s);
+  }
+  function sKapat(){ var m=document.getElementById("mys-ctx"); if(m) m.remove(); }
+  async function santiyeBlok(el,o){
+    if(!el) return; o=o||{}; stil(); sStil();
+    var sb=o.sb, kod=o.kod, d;
+    try{ var r0=await sb.rpc("my_santiye_liste",{p_kod:kod}); if(r0.error) throw r0.error; d=r0.data||{rows:[]}; }catch(e){ el.innerHTML=""; return; }
+    var rows=d.rows||[];
+    if(!rows.length){ el.innerHTML=""; return; }
+    var B=[["prj","Projeler · 4.1 – 7.1",false],["sevk","Sevke Hazır · 8 / 8.1",false],["pem","PEM",true]];
+    var ek='<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek sm">Yükleme<br>Şekli</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>';
+    var h='<div class="mysan"><h3>MY Faaliyet · Projeleriniz ve PEM\'leriniz</h3><div class="alt">Satıra sağ tıklayarak acil ya da normal takibe alma talebinde bulunabilir, ayrıntıları görebilirsiniz. Talepler MY onayından sonra geçerli olur.</div><div class="mys-msg" id="mys-msg"></div>'
+      +B.map(function(b){
+        var R=rows.filter(function(r){ return r.blok===b[0]; }); if(!R.length) return "";
+        var head=b[2]?'<th>PEM</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Talep Tarihi</th><th>Termin Tarihi</th>':'<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
+        return '<h4>'+esc(b[1])+'</h4><div class="myw"><table class="mys"><thead><tr>'+head+ek+'</tr></thead><tbody>'+R.map(function(r){
+          var ac=r.durum==="Acil";
+          var ilk=b[2]
+            ? '<td title="'+esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))+'">'+esc(r.kod)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.talep_tarihi)+'</td><td>'+fd(r.tarih)+'</td>'
+            : '<td title="'+esc(r.no)+'">'+esc(r.kod)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>';
+          var dur=esc(r.durum||"Normal")+(r.talep?' <span class="bek" title="MY onayı bekleniyor">→ '+esc(r.talep)+' (MY onayı bekliyor)</span>':'');
+          return '<tr class="'+(ac?'acil':'')+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">'+ilk
+            +'<td>'+(ac?fd(r.hedef):'')+'</td><td>'+(ac?sekilHtml(r):'')+'</td><td class="w" title="'+esc(r.aciklama)+'">'+(ac?esc(r.aciklama):'')+'</td>'
+            +'<td class="dur '+(ac?'acil':'')+'">'+dur+'</td></tr>';
+        }).join("")+'</tbody></table></div>';
+      }).join("")+'</div>';
+    el.innerHTML=h;
+    var bul=function(tr){ var t=tr.getAttribute("data-tur"), n=tr.getAttribute("data-no"); return rows.filter(function(r){ return r.tur===t&&r.no===n; })[0]; };
+    var msg=function(t,ok){ var m=el.querySelector("#mys-msg"); if(!m) return; m.className="mys-msg "+(ok?"ok":"err"); m.textContent=t; };
+    el.querySelectorAll("tr[data-tur]").forEach(function(tr){
+      tr.addEventListener("contextmenu",function(ev){
+        ev.preventDefault(); sKapat(); var r=bul(tr); if(!r) return;
+        var m=document.createElement("div"); m.id="mys-ctx"; m.className="mys-ctx";
+        var lbl=r.tur==="PEM"?"PEM "+r.kod:r.kod;
+        var ops=[];
+        if(r.talep) ops.push(["", r.talep+" talebi MY onayı bekliyor", true]);
+        else if(r.durum==="Acil") ops.push(["normal","Normale çevir"]);
+        else ops.push(["acil","Acile çevir"]);
+        ops.push(["ayr","Ayrıntılar"]);
+        m.innerHTML='<div class="h">'+esc(lbl)+' · '+esc(r.proje)+'</div>'+ops.map(function(x){ return '<div class="i'+(x[2]?' pas':'')+'" data-o="'+x[0]+'">'+esc(x[1])+'</div>'; }).join("");
+        document.body.appendChild(m);
+        m.style.left=Math.max(4,Math.min(ev.clientX,window.innerWidth-m.offsetWidth-6))+"px";
+        m.style.top=Math.max(4,Math.min(ev.clientY,window.innerHeight-m.offsetHeight-6))+"px";
+        m.querySelectorAll(".i[data-o]").forEach(function(i){ var op=i.getAttribute("data-o"); if(!op) return; i.onclick=function(){ sKapat();
+          if(op==="ayr") return ayrinti(sb,r.tur,r.no);
+          if(op==="acil") return sAcilPencere(sb,r,function(){ santiyeBlok(el,o); },msg);
+          if(op==="normal"){ if(!confirm(lbl+" · "+r.proje+"\n\nNormal takibe alma talebi MY'ye gönderilsin mi?")) return; sTalep(sb,r,"Normal",{},function(){ santiyeBlok(el,o); },msg); }
+        }; });
+      });
+    });
+  }
+  async function sTalep(sb,r,durum,ek,sonra,msg){
+    var res=await sb.rpc("my_santiye_talep",{p_tur:r.tur,p_no:r.no,p_durum:durum,p_hedef:ek.hedef||null,p_sekil:ek.sekil||null,p_aciklama:ek.aciklama||null,p_kisi:sKisi()||null});
+    if(res.error){ msg("Gönderilemedi: "+res.error.message,false); return false; }
+    var h=""; try{ var x=await sb.functions.invoke("my-takip",{body:{islem:"santiye_talep",tur:r.tur,no:r.no}}); h=(x&&x.data&&x.data.mail==="ok")?" · MY'ye mail gönderildi":""; }catch(e){}
+    if(sonra) await sonra();
+    msg((r.tur==="PEM"?"PEM "+r.kod:r.kod)+" · "+durum+" talebi MY onayına gönderildi"+h,true);
+    return true;
+  }
+  function sAcilPencere(sb,r,sonra,msg){
+    var m=document.createElement("div"); m.className="my-modal";
+    var hd=r.tarih?String(r.tarih).slice(0,10):"";
+    m.innerHTML='<div class="box" style="max-width:460px"><button class="x" title="Kapat">×</button>'
+      +'<h4>Acile çevirme talebi · '+esc(r.tur==="PEM"?"PEM "+r.kod:r.kod)+'</h4><div class="mut" style="margin-bottom:10px">'+esc(r.proje)+'</div>'
+      +'<label class="mys-fl">Açıklama<textarea id="ms_ac" rows="3"></textarea></label>'
+      +'<label class="mys-fl">Hedef Yükleme Tarihi<input id="ms_hd" type="date" value="'+esc(hd)+'"></label>'
+      +'<label class="mys-fl">Yükleme Şekli<select id="ms_sk"><option selected>Kamyon</option><option>Uçak</option></select></label>'
+      +'<div class="mut" style="font-size:11.5px;margin:4px 0 10px">Talep MY onayına gönderilir; onaylanınca satır acil takibe alınır.</div>'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end"><button class="mys-btn sec" id="ms_vz">Vazgeç</button><button class="mys-btn" id="ms_ok">Talebi gönder</button></div></div>';
+    document.body.appendChild(m);
+    var kapat=function(){ m.remove(); };
+    m.addEventListener("click",function(e){ if(e.target===m||e.target.classList.contains("x")) kapat(); });
+    m.querySelector("#ms_vz").onclick=kapat;
+    m.querySelector("#ms_ok").onclick=async function(){
+      var hedef=m.querySelector("#ms_hd").value, sekil=m.querySelector("#ms_sk").value, aciklama=m.querySelector("#ms_ac").value.trim();
+      if(!hedef){ alert("Hedef yükleme tarihini giriniz."); return; }
+      var b=m.querySelector("#ms_ok"); b.disabled=true; b.textContent="Gönderiliyor…";
+      var ok=await sTalep(sb,r,"Acil",{hedef:hedef,sekil:sekil,aciklama:aciklama},sonra,msg);
+      if(ok) kapat(); else { b.disabled=false; b.textContent="Talebi gönder"; }
+    };
+    setTimeout(function(){ var t=m.querySelector("#ms_ac"); if(t) t.focus(); },50);
+  }
+  document.addEventListener("click",function(e){ if(!e.target.closest||!e.target.closest("#mys-ctx")) sKapat(); });
+  document.addEventListener("keydown",function(e){ if(e.key==="Escape") sKapat(); });
+  window.MYACIL={liste:liste,acilBlok:acilBlok,santiyeBlok:santiyeBlok,ayrinti:ayrinti,fd:fd,esc:esc,stil:stil};
   /* Formlarda otomatik çizim */
   var t0=Date.now();
   async function oto(){
-    var el=document.getElementById("my-acil"); if(!el) return;
+    var el=document.getElementById("my-acil"), es=document.getElementById("my-santiye"); if(!el&&!es) return;
     var cli=(typeof ARB_ACTIVE!=="undefined")?ARB_ACTIVE:null;
     if(!cli||document.getElementById("arb-gate")){ if(Date.now()-t0<60000) setTimeout(oto,700); return; }
     var s=null; try{ s=await cli.auth.getSession(); }catch(e){}
     if(!(s&&s.data&&s.data.session)){ if(Date.now()-t0<60000) setTimeout(oto,700); return; }
+    if(es){ var skod=es.getAttribute("data-kod")||((typeof ARB_STORE!=="undefined")?String(ARB_STORE).replace(/^arbform_santiye_/,""):"");
+      if(skod){ santiyeBlok(es,{sb:cli,kod:skod}); setInterval(function(){ if(!document.querySelector(".my-modal")&&!document.getElementById("mys-ctx")) santiyeBlok(es,{sb:cli,kod:skod}); },5*60*1000); } }
+    if(!el) return;
     var mod=el.getAttribute("data-mod")||"oe";
     acilBlok(el,{sb:cli,mod:mod});
     setInterval(function(){ acilBlok(el,{sb:cli,mod:mod}); },5*60*1000);
