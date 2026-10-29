@@ -277,9 +277,8 @@ async function cari(o,el){
     G=[ser(f2,"tarih",ev),ser(o2,"odeme_tarihi",ev),ser(t2,"tarih",r=>Number(r.tutar)||0)];
   }
   const K=[["Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar",eur(ft),"OE Faaliyet"],["Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler",eur(od),"ÖB Faaliyet"],["Yurt Dışı Birimlerin müşterilerden yaptığı Tahsilat",thT,"ÖB Faaliyet"]];
-  if(G){ /* MK-GRAFIK-BIRLES / GIRIS-GRAFIK-BIRLES: faturalar + ödemeler tek grafikte, tahsilat ayrı */
-    el.innerHTML=`<div class="gru-boxes">`+mkart(ay,[{ad:"Selectron'un YD birimlerine kestiği faturalar",pts:G[0]},{ad:"YD birimlerden Selectron'a ödemeler",pts:G[1]}],[eur(ft),eur(od)],f).replace('class="gru-card gru-mk"','class="gru-box gru-box3 gru-gr gru-mk"')
-      +`<div class="gru-box gru-box3 gru-gr" title="${esc(ay)} · ÖB Faaliyet"><div class="gru-ct">${esc(K[2][0])}</div><div class="gru-cv">${f(thT)}</div>${bars(G[2])}</div></div>`;
+  if(G){ /* MK-GRAFIK-BIRLES / GIRIS-GRAFIK-BIRLES + CARI-TEK-GRAFIK (29.10.2026): faturalar + ödemeler + tahsilat tek grafikte */
+    el.innerHTML=`<div class="gru-boxes">`+mkart(ay,[{ad:"Selectron'un YD birimlerine kestiği faturalar",pts:G[0]},{ad:"YD birimlerden Selectron'a ödemeler",pts:G[1]},{ad:"YD birimlerin müşterilerden tahsilatı",pts:G[2]}],[eur(ft),eur(od),thT],f).replace('class="gru-card gru-mk"','class="gru-box gru-box3 gru-gr gru-mk"')+`</div>`;
     return; }
   el.innerHTML=`<div class="gru-boxes">${K.map(([a,v,kay])=>`<div class="gru-box gru-box3 gru-gr" title="${esc(ay)} · ${kay}"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${f(v)}</div>${G?bars(G[K.findIndex(k=>k[0]===a)]):""}</div>`).join("")}</div>`;
 }
