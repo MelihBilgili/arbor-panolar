@@ -265,7 +265,9 @@ async function render(kap,o){
   if(!kap||!o||!o.sb) return; css(); KUR=null;
   kap.classList.add("gru");
   kap.innerHTML='<div class="gru-t"></div><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div><div class="gru-e"></div>';
-  const q=c=>kap.querySelector(c), kor=p=>Promise.resolve().then(p).catch(e=>{ try{ console.warn("GRUST:",e); }catch(_){} });
+  /* MK-GRAFIK-UST (29.10.2026, Melih): o.ustKap verilirse grafikler (Satış/DK1 kartları · Sel-Arb · cari ay) o kaba, tablo kap'ta kalır */
+  const U=o.ustKap; if(U){ U.classList.add("gru"); U.innerHTML='<div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div>'; ['.gru-g','.gru-s','.gru-c'].forEach(c=>{ const x=kap.querySelector(c); if(x) x.remove(); }); }
+  const q=c=>kap.querySelector(c)||(U&&U.querySelector(c)), kor=p=>Promise.resolve().then(p).catch(e=>{ try{ console.warn("GRUST:",e); }catch(_){} });
   if(o.bolum==="ctp"){ await Promise.all([kor(()=>satis(o,q(".gru-t"),q(".gru-g"))),kor(()=>egitim(o,q(".gru-e")))]); return; } /* CTP-FAALIYET */
   await Promise.all([kor(()=>satis(o,q(".gru-t"),q(".gru-g"))),kor(()=>selArb(o,q(".gru-s"))),kor(()=>cari(o,q(".gru-c")))]);
 }
