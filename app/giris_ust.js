@@ -55,7 +55,30 @@ function bars(pts,opt){
   g+=`<text x="${L}" y="${H-3}" class="gru-xl" text-anchor="start">${esc(pts[0].x)}</text><text x="${W-R}" y="${H-3}" class="gru-xl" text-anchor="end">${esc(pts[n-1].x)}</text>`;
   return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="gru-svg">${g}</svg>`;
 }
+/* MK-GRAFIK-BIRLES (29.10.2026, Melih): MK formu ve Giriş panosunda birden çok seri tek grafikte ayrı renkli çizgilerle (GIRIS-GRAFIK-BIRLES) */
+const MRENK=["#2e6da4","#e07b00","#0a6b57","#b23a2e"];
+function multi(S,opt){
+  opt=opt||{}; const W=330,H=96,L=40,R=6,T=8,B=16, birim=opt.birim||" €";
+  const vs=[]; S.forEach(s=>s.pts.forEach(p=>{ if(p.y!=null) vs.push(p.y); }));
+  if(!vs.length) return '<div class="gru-muted">Veri yok</div>';
+  let mn=Math.min(0,Math.min.apply(null,vs)), mx=Math.max.apply(null,vs); if(mx===mn) mx=mn+1;
+  const n=Math.max.apply(null,S.map(s=>s.pts.length)), iw=W-L-R, X=i=>L+(n<=1?iw/2:i*iw/(n-1)), Y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn));
+  let g=`<line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" class="gru-ax"/><line x1="${L}" y1="${Y(Math.max(mn,0)).toFixed(1)}" x2="${W-R}" y2="${Y(Math.max(mn,0)).toFixed(1)}" class="gru-ax"/>`
+    +`<text x="${L-3}" y="${T+7}" class="gru-yl">${esc(kK(mx))}</text><text x="${L-3}" y="${H-B}" class="gru-yl">${esc(kK(mn))}</text>`;
+  S.forEach((s,k)=>{ const c=MRENK[k%MRENK.length]; let d="";
+    s.pts.forEach((p,i)=>{ if(p.y==null) return; d+=(d?"L":"M")+X(i).toFixed(1)+" "+Y(p.y).toFixed(1); });
+    g+=`<path d="${d}" fill="none" stroke="${c}" stroke-width="1.6"/>`;
+    s.pts.forEach((p,i)=>{ if(p.y==null) return; g+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p.cur?3.4:2}" fill="${c}"><title>${esc(s.ad+" · "+p.x+": "+Math.round(p.y).toLocaleString("tr-TR")+birim)}</title></circle>`; }); });
+  const P=S[0].pts; g+=`<text x="${X(0)}" y="${H-3}" class="gru-xl" text-anchor="start">${esc(P[0].x)}</text><text x="${X(n-1)}" y="${H-3}" class="gru-xl" text-anchor="end">${esc(P[P.length-1].x)}</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="gru-svg">${g}</svg>`;
+}
+function mkart(baslik,S,vals,fmt,opt){
+  return `<div class="gru-card gru-mk"><div class="gru-ct">${esc(baslik)}</div>`
+    +S.map((s,k)=>`<div class="gru-ml"><span class="gru-mn" style="background:${MRENK[k%MRENK.length]}"></span>${esc(s.ad)}: <b>${fmt(vals[k])}</b></div>`).join("")
+    +multi(S,opt)+`</div>`;
+}
 const CSS=`
+.gru-ml{font-size:11.5px;color:#4a5a6a;line-height:16px}.gru-ml b{color:#16324f}.gru-mn{display:inline-block;width:10px;height:3px;border-radius:2px;margin:0 5px 3px 0;vertical-align:middle}
 .gru{font-size:12.5px;color:#16324f}
 .gru h3.gru-h{margin:16px 0 6px;font-size:13.5px;font-weight:700;color:#16324f}
 .gru-muted{color:#7b8794;font-weight:400}
@@ -138,10 +161,10 @@ async function satis(o,elT,elG){
   const c=f=>ser[ser.length-1][f];
   const dkK=dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):"";
   if(o.grafik==="mk"){ /* GIRIS-MK-GRAFIK: MK formunda yalnız YD alınan · YD muht. · Etüt DK1, tek satır */
-    elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3><div class="gru-cards">${kart("Yurt Dışı alınan Prj (€)",kS("yd_a"),c("yd_a")," €")}${kart("Yurt Dışı muht. Prj (€)",kS("yd_m"),c("yd_m")," €")}${dkK}</div>`;
+    elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3><div class="gru-cards">${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* MK-GRAFIK-BIRLES */}${dkK}</div>`;
     return; }
   elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3>`
-    +`<div class="gru-cards">${kart("Yurt İçi alınan Prj (€)",kS("so_a"),c("so_a")," €")/* GIRIS-YI-ALINAN */}${kart("Yurt İçi muht. Prj (€)",kS("so_m"),c("so_m")," €")}${kart("Yurt Dışı alınan Prj (€)",kS("yd_a"),c("yd_a")," €")}${kart("Yurt Dışı muht. Prj (€)",kS("yd_m"),c("yd_m")," €")}</div>`
+    +`<div class="gru-cards">${kart("Yurt İçi alınan Prj (€)",kS("so_a"),c("so_a")," €")/* GIRIS-YI-ALINAN */}${kart("Yurt İçi muht. Prj (€)",kS("so_m"),c("so_m")," €")}${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* GIRIS-GRAFIK-BIRLES */}</div>`
     +`<div class="gru-cards" style="margin-top:10px">${kart("Top.alınan Prj (€)",kS("top_a"),c("top_a")," €")}${kart("Top.muht. Prj (€)",kS("top_m"),c("top_m")," €")}${dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):""}</div>`;
 }
 /* ---- Takip notu penceresi ---- */
@@ -219,7 +242,12 @@ async function selArb(o,el){
     const ozs=(oz.data||[]).filter(x=>aT[x.tarih]!=null), dl=t=>t.slice(8,10)+"."+t.slice(5,7)+"."+t.slice(2,4);
     const H=ozs.map(x=>{ const a=aT[x.tarih], gg=nz(x.gonderilen), b=nz(x.borc), f=nz(x.fatura_edilen);
       return {x:dl(x.tarih),v:[a,gg,b,(f==null||Math.round(f)===0)?null:f,b==null?null:b-((gg||0)+(a||0)+(f||0))]}; });
-    el.innerHTML=`<div class="gru-boxes">${K.map(([a,v],i)=>`<div class="gru-box"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${v==null?"—":money(v)+" €"}</div>${spark(H.map(h=>({x:h.x,y:h.v[i]})).concat([{x:"Cari",y:v,cur:true}]))}</div>`).join("")}</div>`;
+    const sP=i=>H.map(h=>({x:h.x,y:h.v[i]})).concat([{x:"Cari",y:K[i][1],cur:true}]);
+    { /* MK-GRAFIK-BIRLES / GIRIS-GRAFIK-BIRLES: Güncel Alacak ayrı, diğer 4 kutu tek grafikte (MK + Giriş) */
+      el.innerHTML=`<div class="gru-boxes"><div class="gru-box"><div class="gru-ct">${esc(K[0][0])}</div><div class="gru-cv">${K[0][1]==null?"—":money(K[0][1])+" €"}</div>${spark(sP(0))}</div>`
+        +mkart("Selectron",[1,2,3,4].map(i=>({ad:K[i][0],pts:sP(i)})),[1,2,3,4].map(i=>K[i][1]),v=>v==null?"—":money(v)+" €").replace('class="gru-card gru-mk"','class="gru-box gru-mk"')+`</div>`;
+      return; }
+    el.innerHTML=`<div class="gru-boxes">${K.map(([a,v],i)=>`<div class="gru-box"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${v==null?"—":money(v)+" €"}</div>${spark(sP(i))}</div>`).join("")}</div>`;
     return; }
   el.innerHTML=`<div class="gru-boxes">${K.map(([a,v])=>`<div class="gru-box"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${v==null?"—":money(v)+" €"}</div></div>`).join("")}</div>`;
 }
@@ -249,6 +277,10 @@ async function cari(o,el){
     G=[ser(f2,"tarih",ev),ser(o2,"odeme_tarihi",ev),ser(t2,"tarih",r=>Number(r.tutar)||0)];
   }
   const K=[["Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar",eur(ft),"OE Faaliyet"],["Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler",eur(od),"ÖB Faaliyet"],["Yurt Dışı Birimlerin müşterilerden yaptığı Tahsilat",thT,"ÖB Faaliyet"]];
+  if(G){ /* MK-GRAFIK-BIRLES / GIRIS-GRAFIK-BIRLES: faturalar + ödemeler tek grafikte, tahsilat ayrı */
+    el.innerHTML=`<div class="gru-boxes">`+mkart(ay,[{ad:"Selectron'un YD birimlerine kestiği faturalar",pts:G[0]},{ad:"YD birimlerden Selectron'a ödemeler",pts:G[1]}],[eur(ft),eur(od)],f).replace('class="gru-card gru-mk"','class="gru-box gru-box3 gru-gr gru-mk"')
+      +`<div class="gru-box gru-box3 gru-gr" title="${esc(ay)} · ÖB Faaliyet"><div class="gru-ct">${esc(K[2][0])}</div><div class="gru-cv">${f(thT)}</div>${bars(G[2])}</div></div>`;
+    return; }
   el.innerHTML=`<div class="gru-boxes">${K.map(([a,v,kay])=>`<div class="gru-box gru-box3 gru-gr" title="${esc(ay)} · ${kay}"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${f(v)}</div>${G?bars(G[K.findIndex(k=>k[0]===a)]):""}</div>`).join("")}</div>`;
 }
 /* ---- Eğitim: bu ay / bu yıl (Eğitim panosu EGITIM-OZET ile aynı sayım) ---- */
