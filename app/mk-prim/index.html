@@ -68,6 +68,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div class="sub">Aylık faaliyetler kaydedilir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak güncelleme düğmelerine basılmadıkça gönderilmez.</div>
 </header>
 <div class="wrap">
+  <div id="gr-ust-graf" style="margin:0 0 16px"></div><!-- MK-GRAFIK-UST: Giriş grafikleri 3, 4, 7–son formun en başında -->
   <div id="mk-linkler" style="margin:0 0 14px;display:flex;flex-wrap:wrap;gap:6px"><a href="../sel-arb/" target="_blank" class="mkl">Sel-Arb</a><a href="../satis-yd1/" target="_blank" class="mkl">Yurt Dışı Satış 1</a><a href="../satis-yd2/" target="_blank" class="mkl">Yurt Dışı Satış 2</a><a href="../musteriler/" target="_blank" class="mkl">Müşteriler</a><a href="../santiye-yd1-1/" target="_blank" class="mkl">YD Şantiye 1.1</a><a href="../santiye-yd1-2/" target="_blank" class="mkl">YD Şantiye 1.2</a><a href="../santiye-yd1-3/" target="_blank" class="mkl">YD Şantiye 1.3</a><a href="../santiye-yd1-4/" target="_blank" class="mkl">YD Şantiye 1.4</a><a href="../santiye-yd2-1/" target="_blank" class="mkl">YD Şantiye 2.1</a><a href="../santiye-yd2-2/" target="_blank" class="mkl">YD Şantiye 2.2</a><a href="../cam-listesi/" target="_blank" class="mkl">Cam Listesi</a><a href="../cam-konfig/" target="_blank" class="mkl">Cam Konfigürasyon</a><a href="../teklif/" target="_blank" class="mkl">Ürün Fiyatlandırma</a><a href="../seri-secim/" target="_blank" class="mkl">Ürün Konfigürasyonu</a></div><!-- MK-FORM-LINKLER (16.10.2026): MK'nin yetkili oldugu formlar (form_erisim, kisiler MK + herkese acik); form eklenince guncelle -->
   <div id="my-acil" data-mod="mk"></div><!-- MY-FAALIYET: Acil yüklemeler + Uçak onayı (app/my_acil.js) -->
   <div id="gr-ust" style="margin:0 0 16px"></div><!-- GIRIS-UST-ORTAK: Giriş panosundaki Sıkı Takip … cari ay bloğu -->
@@ -114,7 +115,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../giris_ust.js?v=261022a"></script><!-- GIRIS-UST-ORTAK -->
+<script src="../giris_ust.js?v=261029a"></script><!-- GIRIS-UST-ORTAK -->
 <script src="../my_acil.js?v=261028a"></script><!-- MY-FAALIYET -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -590,7 +591,7 @@ try{ sb.from("form_erisim").select("yol,ad,sira,kisiler,herkes").order("sira").t
   el.innerHTML=L.map(function(f){ return '<a href="../'+esc(f.yol)+'" target="_blank" class="mkl">'+esc(f.ad)+'</a>'; }).join('');
 }); }catch(e){}
 /* GIRIS-UST-ORTAK: üst blok (Giriş ile aynı) — not ekleyen = giriş kodunun kişisi, yoksa MK (MB oturumunda MB) */
-try{ if(window.GRUST) GRUST.render(document.getElementById("gr-ust"),{sb:sb,grafik:"mk",ekleyen:()=>((window.ARB_KISI_AL&&(ARB_KISI_AL(ARB_ROLE_EMAIL)||{}).kod)||(ARB_ACTIVE===ARB_MB_SB?"MB":"MK"))}); }catch(e){}
+try{ if(window.GRUST) GRUST.render(document.getElementById("gr-ust"),{sb:sb,grafik:"mk",ustKap:document.getElementById("gr-ust-graf"),ekleyen:()=>((window.ARB_KISI_AL&&(ARB_KISI_AL(ARB_ROLE_EMAIL)||{}).kod)||(ARB_ACTIVE===ARB_MB_SB?"MB":"MK"))}); }catch(e){}
 </script>
 
 
