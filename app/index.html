@@ -167,7 +167,7 @@
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="giris_ust.js?v=261102a"></script><!-- GIRIS-UST-ORTAK · GIRIS-GRAFIK-BIRLES -->
+<script src="giris_ust.js?v=261102b"></script><!-- GIRIS-UST-ORTAK · GIRIS-GRAFIK-BIRLES -->
 <script src="my_acil.js?v=261028b"></script><!-- MY-FAALIYET -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -2672,7 +2672,7 @@ async function loadSelArb(tgt){
   const nd=dates.length;
   const ozBy={}; oz.forEach(x=>ozBy[x.tarih]=x);
   const fmap=new Map();
-  snap.forEach(x=>{ const key=x.sira+"|"+(x.firma||"")+"|"+(x.proje||""); if(!fmap.has(key)) fmap.set(key,{sira:x.sira,firma:x.firma||"",proje:x.proje||"—",vals:{}}); fmap.get(key).vals[x.tarih]=x.alacak; });
+  snap.forEach(x=>{ const key=x.sira; /* SELARB-SIRA-TEK (02.11.2026): satır yalnız sıra no ile, en güncel firma/proje adı */ if(!fmap.has(key)) fmap.set(key,{sira:x.sira,firma:"",proje:"—",vals:{}}); const f=fmap.get(key); if(x.firma) f.firma=x.firma; if(x.proje) f.proje=x.proje; f.vals[x.tarih]=x.alacak; });
   const firmalar=[...fmap.values()];
   const canliBy={}; guncel.forEach(x=>{ canliBy[x.sira]=x.alacak; });
   /* SELARB-KONTRAT-PANO (01.10.2026, Melih): Firma sağında Sel-Arb formundaki 10 sütun (salt-okur).
