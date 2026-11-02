@@ -101,6 +101,7 @@
       </div>
       <div class="g" id="enAlan" style="margin-top:6px;display:none">
         <div class="s2"><label for="f_kur">Kur € → £ <a href="#" id="f_kurSifirla" class="mini">güncel</a></label><input id="f_kur" inputmode="decimal" value=""></div>
+        <div class="s2"><label for="f_pas">PAS 24 (notlarda)</label><select id="f_pas"><option value="0">Hayır</option><option value="1">Evet</option></select></div><!-- SOUM-PAS-TERMIN -->
         <div class="s2"><label for="f_k_den">Denizlik (ahşap/alu)</label><select id="f_k_den"><option value="1">Dahil</option><option value="0">Hariç</option></select></div>
         <div class="s2"><label for="f_k_myuva">Menfez yuvası</label><select id="f_k_myuva"><option value="1">Dahil</option><option value="0">Hariç</option></select></div>
         <div class="s2"><label for="f_k_menfez">Menfez (trickle vent)</label><select id="f_k_menfez"><option value="1">Dahil</option><option value="0">Hariç</option></select></div>
@@ -624,7 +625,7 @@ function ekstraKisa(e,en){ const k=String(e.kod), n=nrmTxt(e.ad);
 function notEk(p,en){ const r=[];
   (S.ekstra||[]).filter(e=>e.dahil&&ekstraPozAdet(e,p)).forEach(e=>{ const t=ekstraKisa(e,en); if(!r.includes(t)) r.push(t); });
   if(p.satine) r.push(en?"Satin glass":"Vitrage Satiné"); if(p.ei) r.push("EI"+p.ei);
-  if(en){ const ps=pas24(p); if(ps) r.push(ps+" certified"); } return r; }
+  if(en&&($("f_pas")||{}).value==="1"){ const ps=pas24(p); if(ps) r.push(ps+" certified"); } return r; } /* SOUM-PAS-TERMIN: PAS 24 notu yalnız İngilizcede "PAS 24 = Evet" ise */
 function pas24(p){ if(!S.pas||!S.pas.length) return ""; const tip=p.pf?"Balkon Kapısı":"Pencere", t=nrmTxt(p.acPdf);
   const ac=p.ob?"Tilt-Turn":/giyotin/.test(t)?"Giyotin":/ust|vasistas|top/.test(t)&&/swing|pivot|donme/.test(t)?"Top Swing":/ust|vasistas|top/.test(t)?"Top Hung":/yan|side/.test(t)?"Side Hung":p.of?"Fransız":"";
   const s=String(p.seri||"").toLowerCase(); const r=S.pas.find(x=>s.startsWith(String(x.seri).toLowerCase())&&x.urun_tipi===tip&&(!x.acilim||x.acilim===ac)); return r?r.deger:""; }
@@ -726,7 +727,7 @@ function ozetCiz(){
 /* ---------------- Proje Notu ---------------- */
 /* SOUM-PN2 (27.10.2026, Melih): Proje Notu konuları UK referans teklifinin Proje Notu ile birleştirildi (RAL, ana teklif/option ağaç, Sfw/Tlw, cam yerleri, Safety; sabit uyarı + görsel alanı). */
 const PN=[["Proje ismi","pn_proje"],["Proje adresi","pn_padres"],["Müşteri","pn_musteri"],["Firma","pn_firma"],["Revizyon Notları","pn_rev"],["Seri - taslak tipi","pn_seri"],["RAL kodu","pn_ral"],["Ağaç tipi — ana teklif","pn_agac"],["Ağaç tipi — option","pn_agac_op"],["Akustik","pn_akustik"],
-  ["Termal Değerler / AEV","pn_aev"],["Uw","pn_uw"],["Sfg","pn_sg"],["Tlg","pn_tl"],["Sfw","pn_sfw"],["Tlw","pn_tlw"],["Ug","pn_ug"],["Prorata","pn_prorata"],["Montaj Tipi","pn_pose"],["Söve / Tapée","pn_tapee"],["Eker","pn_eker"],["Pervaz / Habillage","pn_hab"],["Prototip","pn_proto"],
+  ["Termal Değerler / AEV","pn_aev"],["Uw","pn_uw"],["Sfg","pn_sg"],["Tlg","pn_tl"],["Sfw","pn_sfw"],["Tlw","pn_tlw"],["Ug","pn_ug"],["Prorata","pn_prorata"],["Termin (hafta)","pn_termin"],["Montaj Tipi","pn_pose"],["Söve / Tapée","pn_tapee"],["Eker","pn_eker"],["Pervaz / Habillage","pn_hab"],["Prototip","pn_proto"],
   ["Protection","pn_prot"],["Şantiye Temizliği / Nettoyage","pn_net"],["Camlar","pn_camlar"],["Camlar — zemin kat","pn_cam_zemin"],["Camlar — alt cam","pn_cam_alt"],["Camlar — yan sabit","pn_cam_yan"],["Camlar — WC (buzlu)","pn_cam_wc"],["Safety (PAS 24)","pn_safety"],
   ["PMR eşik","pn_pmr"],["Kanat kısıtlayıcı","pn_kk"],["Alu Denizlik / Bavette Alu","pn_balu"],["Ahşap Denizlik / Bavette Bois","pn_bbois"],["Menfez delikleri","pn_menfez"],["Panjur VR","pn_vr"]];
 const PN_UYARI="Motorlu ferme imposte fiyatlandırıldığında kontrol paneli kesinlikle fiyata dahil edilecek.";
@@ -737,6 +738,9 @@ function notDoldur(){
   const P=S.poz, has=f=>P.some(f), dp=S.dpgf?S.dpgf.sat:[];
   const mx=(k)=>{ const a=dp.map(d=>d[k]).filter(x=>x!=null); return a.length?a:null; };
   const pr=String($("f_pror").value||"").trim(); v("pn_prorata",pr?pr.replace(".",",")+" %":"");
+  /* SOUM-PAS-TERMIN (02.11.2026, Melih): Proje Notu'nda seçili bölgenin Ürün Fiyatlandırma termin süresi (uygulanan satır/sütun) + Excel'de bölgenin termin tablosu */
+  uretimYaz(); const tu=uretimHafta(), tb=$("f_bolge").value==="fr"?"Yurt Dışı 1":"Yurt Dışı 2";
+  v("pn_termin",(String($("f_uretim").value||"").trim()||(tu?tu.v:""))+" hafta üretim + 1–2 hafta teslim · "+tb+(tu?" · "+tu.sat.aralik+" · "+(tu.k68?"68p/78t/78a içeren":"Std. dışı cam"):""));
   v("pn_proje",$("f_proje").value); v("pn_padres",$("f_padres").value);
   v("pn_musteri",[$("f_ilgili").value,S.yd&&S.yd.ilgili_mail,S.yd&&S.yd.ilgili_tel].filter(Boolean).join(" · ")); v("pn_firma",$("f_firma").value);
   v("pn_seri",[...new Set(P.map(p=>p.seri))].join(", ")); v("pn_agac",[...new Set(P.map(p=>p.agac))].join(", "));
@@ -887,6 +891,9 @@ async function excelYap(){
   pn.getCell("E2").value="Müşteriye bildirilecek notlar - Mail'de eklenecek bilgiler"; pn.getCell("E2").font={bold:true,color:{argb:YESIL}};
   const uy=pn.getCell("E3"); uy.value=PN_UYARI; uy.font={bold:true,color:{argb:"FFB00020"}}; uy.alignment={wrapText:true,vertical:"top"}; uy.border=kenar;
   const pnn=String($("pn_notlar").value||"").split(/\n+/).filter(x=>x.trim()); pnn.forEach((t,k)=>{ const q=pn.getCell(k+4,5); q.value=t.trim(); q.alignment={wrapText:true,vertical:"top"}; q.border=kenar; });
+  { const T=(S.termin||[]).filter(r=>(r.bolge||"yd1")===($("f_bolge").value==="fr"?"yd1":"yd2")); let rr=PN.length+5;
+    const th=pn.getCell(rr,1); th.value="Termin (hafta) — Ürün Fiyatlandırma, "+($("f_bolge").value==="fr"?"Yurt Dışı 1":"Yurt Dışı 2"); th.font={bold:true,color:{argb:YESIL}}; rr++;
+    T.forEach(r=>{ const a=pn.getCell(rr,1), b=pn.getCell(rr,2); a.value=r.aralik||""; b.value="68p/78t/78a içeren: "+(r.ic_68||"–")+" · Numune (std. cam): "+(r.numune||"–")+" · Std. dışı cam: "+(r.std_disi||"–"); [a,b].forEach(q=>{ q.border=kenar; q.alignment={vertical:"top",wrapText:true}; }); rr++; }); }
   const gA=Math.max(pnn.length+6,12), gB=gA+22; pn.getCell(gA-1,5).value="Görsel alanı"; pn.getCell(gA-1,5).font={bold:true,color:{argb:YESIL}}; pn.mergeCells(gA,5,gB,5); pn.getCell(gA,5).border=kenar;
   /* Uw ve Sw-TLw */
   const uwS=wb.addWorksheet("Uw"), swS=wb.addWorksheet("Sfw-Tlw");
@@ -942,12 +949,12 @@ $("btnKlasor").onclick=klasorSec;
 $("inKlasor").onchange=e=>{ S.dosya=[]; const fs=[...e.target.files].filter(f=>!/(^|\/)[_.][^\/]*\//.test(f.webkitRelativePath||"")); dosyaEkle(fs); const r=(fs[0]&&fs[0].webkitRelativePath||"").split("/")[0]; $("kokDurum").textContent=r?"Seçili klasör: "+r:""; durum(fs.length+" dosya bulundu. Kullanımları kontrol edip <b>Oku</b>'ya basınız."); };
 $("btnOku").onclick=oku; $("btnExcel").onclick=excelYap;
 function enGoster(){ $("enAlan").style.display=EN()?"":"none"; }
-["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro","f_k_den","f_k_myuva","f_k_menfez","f_k_icden","f_k_pervaz"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto") notDoldur(); });
+["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro","f_k_den","f_k_myuva","f_k_menfez","f_k_icden","f_k_pervaz","f_pas"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto"||id==="f_bolge") notDoldur(); });
 $("f_revize").onchange=()=>revGoster();
 $("f_ins_sure").oninput=()=>{ $("f_ins_sure").dataset.elle=1; hesapla(); }; $("f_insSifirla").onclick=e=>{ e.preventDefault(); delete $("f_ins_sure").dataset.elle; hesapla(); };
 $("f_pror").oninput=()=>{ hesapla(); notDoldur(); };
 $("f_kur").oninput=()=>{ $("f_kur").dataset.elle=1; hesapla(); }; $("f_kurSifirla").onclick=e=>{ e.preventDefault(); delete $("f_kur").dataset.elle; kurAl().then(hesapla); };
-$("f_uretim").oninput=()=>{ $("f_uretim").dataset.elle=1; }; $("f_uretimSifirla").onclick=e=>{ e.preventDefault(); delete $("f_uretim").dataset.elle; uretimYaz(); };
+$("f_uretim").oninput=()=>{ $("f_uretim").dataset.elle=1; notDoldur(); }; $("f_uretimSifirla").onclick=e=>{ e.preventDefault(); delete $("f_uretim").dataset.elle; uretimYaz(); notDoldur(); };
 $("f_kat").oninput=()=>{ $("f_kat").dataset.elle=1; hesapla(); }; $("f_katSifirla").onclick=()=>{ delete $("f_kat").dataset.elle; hesapla(); };
 $("f_kamyon").oninput=()=>{ $("f_kamyon").dataset.elle=1; hesapla(); };
 ["f_padres","f_proje","f_ilgili","f_firma"].forEach(id=>$(id).addEventListener("change",notDoldur));
