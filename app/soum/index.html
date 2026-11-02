@@ -503,7 +503,7 @@ function pozYorumla(p,dp){
   const cam=camBul(p), u=urunDeger(p.seri,cam);
   let facade=""; if(dp){ const ps=nrmTxt(dp.pose); facade=/^tunnel/.test(ps)?"Tunnel au nu intérieur":/applique int/.test(ps)?"App. Int.":/applique ext/.test(ps)?"App. Ext.":/feuillure/.test(ps)?"Feuillure":String(dp.pose).split("\n")[0].slice(0,28); }
   let pfTip=""; if(pf){ if(ozl.esik) pfTip="STD"; else { const dt=nrmTxt(dp?[dp.comp,dp.div,dp.pose,dp.rep].join(" "):""); pfTip=(ozl.bAlu||ozl.bBois)&&/balcon|terrasse|girondin/.test(dt)?"ACC":"SACC"; } }
-  return {no:p.no,kod:kodAd(p.kod,pfTip),pfTip,kodPdf:p.kod,L:p.w,H:p.h,F:p.adet,seri:p.seri,brut:p.fiyat,facade,camPdf:A.Cam||"",camFr:camFr(A.Cam),camEn:camEn(A.Cam),rc:rcSinif(A.Cam),bina:"",acPdf:ac,satine:/satin/i.test(A.Cam||""),ei:((/\bEI\s*-?\s*(30|60)\b/i.exec(A.Cam||"")||[])[1]||""),cam,
+  return {no:p.no,kod:kodAd(p.kod,pfTip),pfTip,kodPdf:p.kod,L:p.w,H:p.h,F:p.adet,seri:p.seri,brut:p.fiyat,facade,camPdf:A.Cam||"",camFr:camFr(A.Cam),camEn:camEn(A.Cam),rc:rcSinif(A.Cam),bina:"",acPdf:ac,acikPdf:acik,satine:/satin/i.test(A.Cam||""),ei:((/\bEI\s*-?\s*(30|60)\b/i.exec(A.Cam||"")||[])[1]||""),cam,
     ug:u.ug,rw:u.rw,rwAlt:u.rwAlt,uw:u.uw,sg:u.sg,tl:u.tl,rwc:u.rwc,notSat:sat,nf,ozl,ob,of,iki,pf,akustik,dp,bbox:p.bbox,agac:A["Ağaç Türü"]||""};
 }
 function dpEsle(pozlar,dpgf){
@@ -609,12 +609,24 @@ function uygun(p){ const d=p.dp; if(!d) return S.dpgf?'<span class="kirmizi">eş
   return r.join("<br>")+'<div class="mini">'+esc(d.rep)+(d.pose?' · '+esc(d.pose.split("\n")[0]):'')+'</div>'; }
 function agacEn(a){ const t=nrmTxt(a); const tur=/cam/.test(t)?"Pine":/mese/.test(t)?"Oak":/okaliptus/.test(t)?"Eucalyptus":/lareks/.test(t)?"Larch":/meranti/.test(t)?"Meranti":/iroko/.test(t)?"Iroko":/sapelli/.test(t)?"Sapele":/accoya/.test(t)?"Accoya":String(a||"").split(/\s/)[0];
   const k=/dkd/.test(t)?"DKD":/kkk/.test(t)?"KKK":""; return (tur+" "+k).trim(); }
-function notEn(p){ const f=p.nf||{}, o=p.ozl;
-  let s=(f.aile+" "+agacEn(f.agac)+". "+(f.pf?"French door":"Window")+", "+(f.iki?"2 sashes":"1 sash")+(f.ob?", tilt & turn":f.of?", inward opening":"")).replace(/^\s+/,"");
-  const ek=[]; if(f.sabit) ek.push("fixed lower panel"); if(o.esik) ek.push("level threshold (PRM)");
-  if(ek.length) s+=", with "+ek.join(" and "); s+=".";
-  const sat=[s]; if(o.sove&&kapsam("pervaz")) sat.push("Timber trim"); if(o.bAlu&&kapsam("den")) sat.push("Aluminium sill"); if(o.bBois&&kapsam("den")) sat.push("Timber sill");
-  if(o.menfez&&kapsam("myuva")) sat.push("Trickle vent slot"+(kapsam("menfez")?" + trickle vent":"")+($("f_mont").value==="1"?" + installation":"")); return sat.concat(notEk(p,true)).join("\n"); }
+/* SOUM-NOT-EN3 (02.11.2026, Melih): İngilizce notun 1. satırı — [Arched] Aile · Ağaç (Pin/Oak/Eucalyptus + KKK/DKD) · yön (CASEMENT outward opening; SIMPLIST, FLAT inward opening; KLASIK yok) ·
+   tip (Açılım ya da Açıklama: Vasistaslı Giyotin → Sash Window Bottom sash inward tilt; Giyotin → Sash Window; Fr./Fransız/Çift Kanat → French Window; Çift Açılım → Tilt and turn window; Tek Açılım → Side Hung window)
+   + ", bottom sash fixed" (Alt Sabit) + ", upper sash fixed" (Üst Sabit); eşik ayrı satır; pozun ekstra malzemeleri en altta, stok adının İngilizcesiyle. */
+function agacEn3(a){ const t=nrmTxt(a); const tur=/cam/.test(t)?"Pin":/mese/.test(t)?"Oak":/okaliptus/.test(t)?"Eucalyptus":/lareks/.test(t)?"Larch":/meranti/.test(t)?"Meranti":/iroko/.test(t)?"Iroko":/sapelli/.test(t)?"Sapele":/accoya/.test(t)?"Accoya":String(a||"").split(/\s/)[0];
+  const k=/dkd/.test(t)?"DKD":/kkk/.test(t)?"KKK":""; return (tur+" "+k).trim(); }
+function stokEn(ad){ let s=" "+String(ad||"")+" "; [[/Paslanmaz Çelik/gi,"stainless steel"],[/Alt Boy Eker/gi,"Bottom sill extension"],[/Eker/gi,"sill extension"],[/Pencere Kolu/gi,"window handle"],[/Kapı Kolu/gi,"door handle"],[/Kolu\b/gi,"handle"],
+  [/Kanat Kısıtlayıcı/gi,"Sash restrictor"],[/Kısıtlayıcı/gi,"restrictor"],[/Menfez/gi,"trickle vent"],[/Eşik/gi,"threshold"],[/Kilit/gi,"lock"],[/Silindir/gi,"cylinder"],[/Menteşe/gi,"hinge"],[/Pervaz/gi,"architrave"],[/Denizlik/gi,"sill"],
+  [/Kapı/gi,"door"],[/Pencere/gi,"window"],[/Kanat/gi,"sash"],[/Kasa/gi,"frame"],[/Ahşap/gi,"timber"],[/Alüminyum/gi,"aluminium"],[/Beyaz/gi,"white"],[/Siyah/gi,"black"],[/Gri/gi,"grey"],[/Alt/g,"bottom"],[/Üst/g,"top"]].forEach(([r,v])=>{ s=s.replace(r,v); });
+  s=s.replace(/\s+/g," ").trim(); return s.charAt(0).toUpperCase()+s.slice(1); }
+function notEn(p){ const f=p.nf||{}, o=p.ozl, t=(p.acPdf||"")+" "+(p.acikPdf||""), n=nrmTxt(t);
+  const yon=f.aile==="CASEMENT"?"outward opening":/^(SIMPLIST|FLAT)$/.test(f.aile)?"inward opening":"";
+  const tip=/vasistasli giyotin/.test(n)?"Sash Window Bottom sash inward tilt":/giyotin/.test(n)?"Sash Window":(/\bFr\./.test(t)||/fransiz|cift kanat/.test(n))?"French Window":/cift acilim/.test(n)?"Tilt and turn window":/tek acilim/.test(n)?"Side Hung window":"";
+  let s=(/kemerli/.test(n)?"Arched ":"")+[f.aile,agacEn3(f.agac),yon,tip].filter(Boolean).join(" ");
+  if(/alt sabit/.test(n)) s+=", bottom sash fixed"; if(/ust sabit/.test(n)) s+=", upper sash fixed"; s+=".";
+  const sat=[s]; if(o.esik) sat.push("Level threshold (PRM)"); if(o.sove&&kapsam("pervaz")) sat.push("Timber trim"); if(o.bAlu&&kapsam("den")) sat.push("Aluminium sill"); if(o.bBois&&kapsam("den")) sat.push("Timber sill");
+  if(o.menfez&&kapsam("myuva")) sat.push("Trickle vent slot"+(kapsam("menfez")?" + trickle vent":"")+($("f_mont").value==="1"?" + installation":""));
+  const eks=[]; (S.ekstra||[]).filter(e=>e.dahil&&ekstraPozAdet(e,p)).forEach(e=>{ const x=stokEn(e.ad); if(!eks.includes(x)) eks.push(x); });
+  return sat.concat(notEk(p,true,true),eks).join("\n"); }
 /* SOUM-NOT2 (27.10.2026, Melih): notlara Satine cam (Vitrage Satiné / Satin glass), EI30/EI60 cam, pozun Pencad ekstra malzemeleri (dahil olanlar; Özet Extra Malzemeler
    poz bazlı olmadığından pozlara ekstraPozAdet kuralıyla dağıtılır: kol her ürün, kısıtlayıcı OF, eker alu denizlikli pencere) ve İngilizcede geçerli PAS 24 sertifikası (soum_pas24: seri × ürün tipi × açılım). */
 function ekstraKisa(e,en){ const k=String(e.kod), n=nrmTxt(e.ad);
@@ -622,8 +634,8 @@ function ekstraKisa(e,en){ const k=String(e.kod), n=nrmTxt(e.ad);
   if(/^Fa183/i.test(k)||/kisitlayici|limitor/.test(n)) return en?"Window restrictor":"Compas limiteur";
   if(/hoppe/.test(n)) return en?"Hoppe Amsterdam handle":"Poignée Hoppe Amsterdam";
   return e.ad; }
-function notEk(p,en){ const r=[];
-  (S.ekstra||[]).filter(e=>e.dahil&&ekstraPozAdet(e,p)).forEach(e=>{ const t=ekstraKisa(e,en); if(!r.includes(t)) r.push(t); });
+function notEk(p,en,ekstraYok){ const r=[];
+  if(!ekstraYok) (S.ekstra||[]).filter(e=>e.dahil&&ekstraPozAdet(e,p)).forEach(e=>{ const t=ekstraKisa(e,en); if(!r.includes(t)) r.push(t); });
   if(p.satine) r.push(en?"Satin glass":"Vitrage Satiné"); if(p.ei) r.push("EI"+p.ei);
   if(en&&($("f_pas")||{}).value==="1"){ const ps=pas24(p); if(ps) r.push(ps+" certified"); } return r; } /* SOUM-PAS-TERMIN: PAS 24 notu yalnız İngilizcede "PAS 24 = Evet" ise */
 function pas24(p){ if(!S.pas||!S.pas.length) return ""; const tip=p.pf?"Balkon Kapısı":"Pencere", t=nrmTxt(p.acPdf);
