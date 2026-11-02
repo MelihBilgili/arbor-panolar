@@ -225,7 +225,7 @@ async function selArb(o,el){
     sb.from("arbor_kesilen_fatura").select("tutar_eur").is("islendi_tarih",null)
   ]);
   if(s.error||oz.error||g.error){ el.innerHTML=""; return; }
-  const fk=new Map(); (s.data||[]).forEach(x=>{ const key=x.sira+"|"+(x.firma||"")+"|"+(x.proje||""); if(!fk.has(key)) fk.set(key,x.sira); });
+  const fk=new Map(); (s.data||[]).forEach(x=>{ if(!fk.has(x.sira)) fk.set(x.sira,x.sira); }); /* SELARB-SIRA-TEK (02.11.2026): satır yalnız sıra no ile; firma adı değişince çift sayılmaz */
   const siralar=[...fk.values()]; (g.data||[]).forEach(x=>{ if(siralar.indexOf(x.sira)<0) siralar.push(x.sira); });
   const canliBy={}; (g.data||[]).forEach(x=>{ canliBy[x.sira]=x.alacak; });
   let alacak=null; siralar.forEach(sr=>{ const v=canliBy[sr]; if(v!=null){ alacak=(alacak||0)+Number(v); } });
