@@ -20,7 +20,8 @@
   .msg.ok{color:#0a6b3f;font-weight:600}.msg.err{color:#b40000;font-weight:600}
   .hint{font-size:11.5px;color:#6b7a89;margin:2px 2px 8px}
   .sa-wrap{overflow-x:auto}
-  .sa-wrap table{border-collapse:collapse;width:auto;font-size:11.5px;background:#fff}
+  .sa-wrap table{border-collapse:collapse;width:auto;font-size:11.5px;background:#fff;zoom:.9} /* SELARB-ZOOM90 (02.11.2026): tablo %10 küçük */
+  .sa-wrap th[data-f=avenant],.sa-wrap td[data-f=avenant]{width:83px;min-width:83px;max-width:83px;box-sizing:border-box;white-space:normal} /* SELARB-TS-DAR: TS (Avenants) %30 dar */
   .sa-wrap th,.sa-wrap td{border-bottom:1px solid #eef1f5;padding:2px 6px;white-space:nowrap;line-height:17px}
   .sa-wrap thead th{background:#16324f;color:#fff;font-weight:600}
   .sa-proje>.c{width:23.33ch}.sa-firma>.c{max-width:20ch;min-width:12ch}
@@ -258,15 +259,15 @@ async function load(){
    in = serbest (sel_arb_guncel kolonları), ro = ÖB Faaliyet formundan proje bazlı toplam (view sel_arb_ob_toplam:
    Avenant = ob_avenant, Tahsilat = ob_tahsilat, Yapılmış Situ = ob_situation 'İptal Edildi' hariç; eşleme proje adı, büyük/küçük harf duyarsız) */
 /* SELARB-BASLIK-261001 (Melih): (€) başlıklar; Beklenen İlk Ödeme başlıkları iki satır (\n → <br>), küçük punto, dar sütun */
-const KX=[["kontrat","Kontrat","in"],["para_birimi","Para Birimi","pb"],["vade_gun","Vade (gün)","gn"],["avenant","TS (Avenants) (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
+const KX=[["kontrat","Kontrat","in"],["para_birimi","Para Birimi","pb"],["vade_gun","Vade (gün)","gn"],["avenant","TS\n(Avenants) (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
   ["tahsilat","Tahsilat (€)","ro"],["situ","Yapılmış Situ (€)","ro"],["yapilacak_situ","Yapılacak Situ (€)","in"],
   ["ilk_odeme_tarih","Beklenen İlk\nÖdeme Tarihi","dt"],["ilk_odeme_tutar","Beklenen İlk\nÖdeme Tutarı (€)","in"]];
 const kKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kObKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kOb=r=>{ if(ST.obS&&ST.obS[r.sira]) return ST.obS[r.sira]; const k=kKey(r.proje); if(ST.ob[k]) return ST.ob[k]; for(const x in ST.ob){ if(kObKey(x)===k) return ST.ob[x]; } return {}; };
-const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}${ad.indexOf("\n")>=0?" sa-sm":""}" title="${t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"}">${esc(ad).replace(/\n/g,"<br>")}</th>`).join("");
+const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" data-f="${f}" data-sk="k:${f}" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}${ad.indexOf("\n")>=0?" sa-sm":""}" title="${t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"}">${esc(ad).replace(/\n/g,"<br>")}</th>`).join("");
 const kCells=r=>{ const ob=kOb(r); return KX.map(([f,ad,t])=>{
-  if(t==="ro") return `<td class="sa-num sa-ro">${esc(fmt(ob[f]))}</td>`;
+  if(t==="ro") return `<td class="sa-num sa-ro" data-f="${f}">${esc(fmt(ob[f]))}</td>`;
   if(t==="dt") return `<td class="sa-x"><input type="date" data-id="${r.id}" data-f="${f}" value="${esc(r[f]||"")}"></td>`;
   const eks=(f==="kontrat"||f==="vade_gun")&&(r[f]==null||r[f]==="")?" sa-eksik":"";   /* SELARB-MUSTERI-VADE: ilk 4 sütun eksik → pembe */
   if(t==="pb") return `<td class="sa-x"><select class="sa-pb" data-id="${r.id}" data-f="${f}">${["","EUR","GBP","USD"].map(o=>`<option value="${o}"${(r[f]||"")===o?" selected":""}>${o||"—"}</option>`).join("")}</select></td>`;   /* SELARB-PARA-BIRIMI */
@@ -283,6 +284,15 @@ function render(){
   const ozBy={}; ST.oz.forEach(x=>ozBy[x.tarih]=x);
   const vals={}; ST.snap.forEach(x=>{ (vals[x.sira]=vals[x.sira]||{})[x.tarih]=x.alacak; });
   const rows=ST.g.map(r=>({id:r.id,sira:r.sira,firma:r.firma||"",proje:r.proje||"—",g:r.alacak==null?null:Number(r.alacak),v:vals[r.sira]||{},yd:r.updated_by==="YD-KAZANDIK"||r.updated_by==="ELLE"/* SELARB-ELLE-261001: elle eklenen boş satır gizlenmez */,raw:r}));
+  /* SELARB-SIRALA (02.11.2026, Melih): başlığa tıklayınca o sütuna göre sırala (tekrar tık → ters) */
+  if(ST.sort){ const {k,dir}=ST.sort, kf=KX.find(x=>"k:"+x[0]===k);
+    const val=r=>{ if(k==="proje") return r.proje; if(k==="firma") return r.raw.firma||"";
+      if(k==="g") return r.g; if(k==="d"){ const lv=r.v[last]; return (r.g==null||lv==null)?null:r.g-Number(lv); }
+      if(k.slice(0,2)==="t:") { const v=r.v[k.slice(2)]; return v==null?null:Number(v); }
+      if(kf){ const v=kf[2]==="ro"?kOb(r.raw)[kf[0]]:r.raw[kf[0]]; return (v==null||v==="")?null:(kf[2]==="dt"||kf[2]==="pb"?String(v):Number(v)); }
+      return null; };
+    rows.sort((a,b)=>{ const x=val(a), y=val(b); if(x==null&&y==null) return 0; if(x==null) return 1; if(y==null) return -1;
+      return (typeof x==="number"&&typeof y==="number"?x-y:String(x).localeCompare(String(y),"tr"))*dir; }); }
   /* Önceki sütunlar: en yeni (dates[0]) açık, diğerleri ▸ ile açılır */
   const oc=(i)=>i===0?"":" sa-old";
   let hidden=0;
@@ -324,10 +334,10 @@ function render(){
   /* SELARB-FORM-ALTSIZ (23.09.2026, Melih): alt toplam satırları (Güncel Alacak Toplam … Faaliyet Kaybı) formda gösterilmez; yalnız SEL-ARB panosunda */
   void ft;
   const tgTxt=ST.open?"◂":"▸";
-  const head=`<thead><tr><th rowspan="2">Proje</th><th rowspan="2">Müşteri</th>${kHead()}<th rowspan="2" class="sa-num sa-dh">Δ güncel→son €</th>`
-    +`<th rowspan="2" class="sa-num sa-g">Güncel Alacak (€)</th>`
+  const head=`<thead><tr><th rowspan="2" data-sk="proje">Proje</th><th rowspan="2" data-sk="firma">Müşteri</th>${kHead()}<th rowspan="2" data-sk="d" class="sa-num sa-dh">Δ güncel→son €</th>`
+    +`<th rowspan="2" data-sk="g" class="sa-num sa-g">Güncel Alacak (€)</th>`
     +`<th class="sa-tg" id="saTg" colspan="${ST.open?Math.max(nd,1):1}" title="Diğer ayları aç/kapat">Önceki Alacak (€) ${tgTxt}</th></tr>`
-    +`<tr>${dates.map((d,i)=>`<th class="sa-num${oc(i)}">${esc(dLbl(d))}</th>`).join("")}</tr></thead>`;
+    +`<tr>${dates.map((d,i)=>`<th data-sk="t:${d}" class="sa-num${oc(i)}">${esc(dLbl(d))}</th>`).join("")}</tr></thead>`;
   const btn=hidden?`<div class="hint"><button class="btn2" id="saEmpty">${ST.showEmpty?"Boş-alacak satırları gizle":"Boş-alacak satırları göster"} (${hidden})</button></div>`:"";
   const musDl=`<datalist id="saMusL">${(ST.mus||[]).map(m=>`<option value="${esc(m)}"></option>`).join("")}</datalist>`;   /* SELARB-MUSTERI-VADE */
   document.getElementById("tbl").innerHTML=btn+musDl+`<div class="sa-wrap"><table class="${ST.open?"open":""}">${head}<tbody>${nw}${tr}</tbody></table></div>`;
@@ -336,6 +346,9 @@ function render(){
 function bind(){
   saCariBagla("tbl");   /* SELARB-FORM-SAGTIK */
   const tg=document.getElementById("saTg"); if(tg) tg.onclick=()=>{ ST.open=!ST.open; render(); };
+  document.querySelectorAll("#tbl thead th[data-sk]").forEach(th=>{ th.style.cursor="pointer"; th.title=(th.title?th.title+" · ":"")+"Sıralamak için tıklayın";   /* SELARB-SIRALA */
+    if(ST.sort&&ST.sort.k===th.dataset.sk) th.insertAdjacentText("beforeend",ST.sort.dir>0?" ▲":" ▼");
+    th.onclick=()=>{ const k=th.dataset.sk; ST.sort=(ST.sort&&ST.sort.k===k)?(ST.sort.dir>0?{k,dir:-1}:null):{k,dir:1}; render(); }; });
   const be=document.getElementById("saEmpty"); if(be) be.onclick=()=>{ ST.showEmpty=!ST.showEmpty; render(); };
   document.querySelectorAll("td.sa-g input[data-id]").forEach(inp=>{
     inp.onchange=async()=>{
