@@ -239,6 +239,7 @@ const delta=(cur,prev)=>{ if(cur==null||prev==null) return ""; const dl=Math.rou
 
 let ST={snap:[],oz:[],g:[],open:false,showEmpty:false};
 async function load(){
+  try{ await sb.rpc("sel_arb_alacak_tazele"); }catch(_){}   /* SELARB-ALACAK-KAYNAK: cari kaynaklı satırlar bakiyeye eşitlenir */
   const [s,o,g,py,obt,mq]=await Promise.all([
     sb.from("sel_arb_snapshot").select("tarih,sira,firma,proje,alacak").order("tarih").order("sira"),
     sb.from("sel_arb_ozet").select("*").order("tarih"),
@@ -306,7 +307,9 @@ function render(){
       +`<td class="sa-mus${r.raw.firma?"":" sa-eksik"}"><input list="saMusL" class="sa-musin" data-id="${r.id}" value="${esc(r.raw.firma||"")}" title="${esc(r.raw.firma||"Müşteriler formundan seçiniz")}" placeholder="Müşteri seçiniz"></td>`   /* SELARB-MUSTERI-VADE */
       +kCells(r.raw)   /* SELARB-KONTRAT-260930 */
       +`<td class="sa-num sa-delta">${esc(delta(r.g,lv))}</td>`
-      +`<td class="sa-num sa-g"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" value="${esc(fmt(r.g))}"></td>`
+      +(r.raw.alacak_kaynak==="cari"   /* SELARB-ALACAK-KAYNAK: cari kaynaklı hücre salt-okur, yeşil italik */
+        ?`<td class="sa-num sa-g" title="Cari hesap bakiyesi — değiştirmek için sağ tık › Güncel alacak belirle"><input size="1" type="text" readonly data-cari="1" style="color:#0a6b57;font-style:italic;cursor:default" value="${esc(fmt(r.g))}"></td>`
+        :`<td class="sa-num sa-g" title="Manuel (maktu) — kaynak için sağ tık › Güncel alacak belirle"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" value="${esc(fmt(r.g))}"></td>`)
       +dates.map((d,i)=>`<td class="sa-num${oc(i)}">${esc(fmt(r.v[d]))}</td>`).join("")+`</tr>`;
   }).join("");
   /* En üstte daima boş satır (SELARB-BOS-SATIR) */
@@ -427,7 +430,7 @@ let _saCariCache=null;
 function saCariBagla(tgt){
   const tb=document.querySelector("#"+tgt+" .sa-wrap tbody"); if(!tb) return;
   tb.addEventListener("contextmenu",e=>{
-    if(e.target.closest("input,select,textarea")) return; const tr=e.target.closest("tr[data-sira]"); if(!tr) return;
+    if(e.target.closest("input,select,textarea")&&!e.target.closest("input[data-cari]")) return; const tr=e.target.closest("tr[data-sira]"); if(!tr) return;
     e.preventDefault(); saCariMenu(e.clientX,e.clientY,Number(tr.dataset.sira),tr.dataset.proje||"");
   });
 }
@@ -436,13 +439,48 @@ function saCariMenu(x,y,sira,proje){
   saCariMenuKapat();
   const m=document.createElement("div"); m.id="sa-cmenu";
   m.style.cssText=`position:fixed;left:${x}px;top:${y}px;z-index:9999;background:#fff;border:1px solid #c9d3de;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:12.5px;min-width:170px;padding:4px 0`;
-  m.innerHTML=`<div class="sa-cm-it" data-t="cari">Cari hesap</div><div class="sa-cm-it" data-t="sel">Selectron faturaları</div>`;
+  m.innerHTML=`<div class="sa-cm-it" data-t="ga" style="font-weight:700">Güncel alacak belirle</div><div class="sa-cm-it" data-t="cari">Cari hesap</div><div class="sa-cm-it" data-t="sel">Selectron faturaları</div>`;   /* SELARB-ALACAK-KAYNAK */
   m.querySelectorAll(".sa-cm-it").forEach(it=>{ it.style.cssText="padding:6px 14px;cursor:pointer;white-space:nowrap";
     it.onmouseenter=()=>it.style.background="#eef3f8"; it.onmouseleave=()=>it.style.background="";
-    it.onclick=()=>{ saCariMenuKapat(); saCariAc(it.dataset.t,sira,proje); }; });
+    it.onclick=()=>{ saCariMenuKapat(); if(it.dataset.t==="ga") saGaAc(sira,proje); else saCariAc(it.dataset.t,sira,proje); }; });
   document.body.appendChild(m);
   const r=m.getBoundingClientRect(); if(r.right>innerWidth) m.style.left=(innerWidth-r.width-6)+"px"; if(r.bottom>innerHeight) m.style.top=(innerHeight-r.height-6)+"px";
   setTimeout(()=>{ const k=ev=>{ if(!m.contains(ev.target)){ saCariMenuKapat(); document.removeEventListener("mousedown",k,true); } }; document.addEventListener("mousedown",k,true); },0);
+}
+/* SELARB-ALACAK-KAYNAK (02.11.2026, Melih): Güncel alacak kaynağı — Manuel (maktu, yeniden belirlenene kadar sabit) / Cari hesap (bakiye, sürekli güncel) */
+async function saGaAc(sira,proje){
+  const r=ST.g.find(x=>Number(x.sira)===Number(sira)); if(!r) return;
+  const old=document.getElementById("sa-gamodal"); if(old) old.remove();
+  const kay=r.alacak_kaynak==="cari"?"cari":"manuel";
+  const ilk=kay==="manuel"?r.alacak:(r.alacak_maktu!=null?r.alacak_maktu:r.alacak);
+  const ov=document.createElement("div"); ov.id="sa-gamodal";
+  ov.style.cssText="position:fixed;inset:0;z-index:9998;background:rgba(10,25,45,.45);display:flex;align-items:flex-start;justify-content:center;padding:12vh 16px";
+  ov.innerHTML=`<div style="background:#fff;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.3);padding:14px 16px;min-width:300px;max-width:92vw;font-size:13px;color:#16324f">
+    <div style="font-weight:700;font-size:14px;margin-bottom:2px">Güncel alacak belirle</div>
+    <div style="color:#5a6b7d;margin-bottom:10px">${esc(proje)}</div>
+    <label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="radio" name="sa-ga" value="manuel"${kay==="manuel"?" checked":""}> Manuel
+      <input id="sa-ga-t" type="text" inputmode="decimal" style="width:12ch;text-align:right;padding:3px 6px;border:1px solid #c9d6e3;border-radius:5px" value="${esc(fmt(ilk))}"> €</label>
+    <label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="radio" name="sa-ga" value="cari"${kay==="cari"?" checked":""}> Cari hesap
+      <b id="sa-ga-b" style="color:#0a6b57">…</b></label>
+    <div id="sa-ga-m" style="color:#b23a2e;min-height:16px;margin-top:4px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+      <button id="sa-ga-v" style="border:1px solid #cdd8e4;background:#fff;color:#16324f;border-radius:7px;padding:5px 12px;cursor:pointer">Vazgeç</button>
+      <button id="sa-ga-k" style="border:0;background:#16324f;color:#fff;border-radius:7px;padding:5px 14px;cursor:pointer">Kaydet</button></div></div>`;
+  document.body.appendChild(ov);
+  const kapat=()=>ov.remove();
+  ov.onclick=e=>{ if(e.target===ov) kapat(); };
+  document.getElementById("sa-ga-v").onclick=kapat;
+  const t=document.getElementById("sa-ga-t");
+  t.onfocus=()=>{ ov.querySelector('input[value="manuel"]').checked=true; };
+  sb.rpc("sel_arb_cari_bakiye",{p_sira:Number(sira)}).then(({data,error})=>{ const b=document.getElementById("sa-ga-b"); if(b) b.textContent=error?"alınamadı":(fmt(data)||"0")+" €"; });
+  document.getElementById("sa-ga-k").onclick=async()=>{
+    const k=ov.querySelector('input[name="sa-ga"]:checked').value, m=document.getElementById("sa-ga-m");
+    let n=null; if(k==="manuel"){ n=parseTr(t.value); if(Number.isNaN(n)||n==null){ m.textContent="Geçersiz tutar"; return; } }
+    const {data,error}=await sb.rpc("sel_arb_alacak_belirle",{p_sira:Number(sira),p_kaynak:k,p_tutar:n,p_kim:ROL});
+    if(error){ m.textContent="Kaydedilemedi: "+error.message; return; }
+    ST.g.filter(x=>Number(x.sira)===Number(sira)).forEach(x=>{ x.alacak_kaynak=k; x.alacak=data; if(k==="manuel") x.alacak_maktu=data; });
+    kapat(); msg("Güncel alacak "+(k==="cari"?"cari hesaptan":"manuel")+" belirlendi","ok"); render();
+  };
 }
 async function saCariAc(tur,sira,proje){
   if(!_saCariCache){ const q=await sb.from("sel_arb_cari").select("*"); if(q.error){ alert("Hata: "+q.error.message); return; } _saCariCache=q.data||[]; setTimeout(()=>{_saCariCache=null;},60000); }
