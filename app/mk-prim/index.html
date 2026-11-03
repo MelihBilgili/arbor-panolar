@@ -448,7 +448,49 @@ document.getElementById("ayBtn").onclick=async()=>{
 /* ===== Tıkanmış Şantiyeler — MK durum girişi (santiye_durum_log, kim='MK') ===== */
 function sMsg(t,ok){ const m=document.getElementById("s_msg"); m.className="msg "+(ok?"ok":"err"); m.style.color=ok?"#2e7d54":"#b40000"; m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3000); }
 const sDk=t=>t?String(t).slice(8,10)+"."+String(t).slice(5,7)+"."+String(t).slice(2,4):"";
-async function sLoadAkis(){
+async function sLoadAkis(){ /* MK-SANTIYE-OB-EKLE (03.11.2026): tüm açık şantiyeler (rpc mk_santiye_liste) + ÖB'nin yazdığı (eski dahil) + MK ekle/çıkar */
+  const [L,A]=await Promise.all([sb.rpc("mk_santiye_liste"), sb.from("santiye_durum_akis").select("*").eq("kim","MK").order("tarih",{ascending:false}).order("id",{ascending:false})]);
+  const el=document.getElementById("s_akis");
+  if(L.error){ el.innerHTML='<div class="hint">Şantiye listesi okunamadı: '+esc(L.error.message)+'</div>'; return; }
+  const mkBy={}; (A.data||[]).forEach(r=>{ if(!(r.santiye_id in mkBy)) mkBy[r.santiye_id]=r; });
+  const list=(L.data||[]).map(r=>({sid:r.id,santiye:r.santiye,musteri:r.musteri,neden:r.neden,ob:(r.ob_not?{durum:r.ob_not,tarih:r.ob_tarih}:null),mk:mkBy[r.id]||null}))
+    .sort((a,b)=>String(a.santiye||"").localeCompare(String(b.santiye||""),"tr"));
+  const dc=v=>'<div class="sxc">'+esc(v||"")+'</div>';
+  const cnt=document.getElementById("cs"); if(cnt) cnt.textContent="("+list.length+")";
+  const inp='font:inherit;font-size:12.5px;padding:5px 7px;border:1px solid #cdd6df;border-radius:6px';
+  el.innerHTML='<div class="tblwrap"><table class="pivt"><thead>'
+    +'<tr><th rowspan="2" class="ssan">Şantiye</th><th colspan="2" class="grp">ÖB</th><th colspan="2" class="grp mkg">MK</th><th rowspan="2"></th></tr>'
+    +'<tr><th class="sdt">Tarih</th><th>Durum / Gelişme</th><th class="sdt">Tarih</th><th>Durum / Gelişme</th></tr></thead><tbody>'
+    +(list.length?list.map(p=>'<tr><td class="ssan" title="'+esc([p.musteri,p.neden].filter(Boolean).join(" · "))+'">'+esc(p.santiye)+'</td>'
+      +'<td class="sdt">'+(p.ob&&p.ob.tarih?sDk(p.ob.tarih):"")+'</td><td>'+(p.ob?'<div class="sxc"><b class="skim ob">ÖB'+(p.ob.tarih?' · '+sDk(p.ob.tarih):'')+':</b> '+esc(p.ob.durum)+'</div>':dc(''))+'</td>'
+      +'<td class="sdt">'+(p.mk?sDk(p.mk.tarih):"")+'</td>'
+      +'<td><div class="sxc sed'+((p.mk&&p.mk.durum)?'':' bos')+'" data-sid="'+p.sid+'" data-txt="'+esc((p.mk&&p.mk.durum)||'')+'">'+((p.mk&&p.mk.durum)?'<b class="skim mk">MK · '+sDk(p.mk.tarih)+':</b> '+esc(p.mk.durum):"+ durum")+'</div></td>'
+      +'<td><button type="button" class="scik" data-sid="'+p.sid+'" data-ad="'+esc(p.santiye)+'" title="Listeden çıkar" style="border:0;background:none;color:#b23a2e;cursor:pointer;font-size:14px">✕</button></td></tr>').join("")
+      :'<tr><td colspan="6" class="hint">Açık tıkanmış şantiye yok.</td></tr>')
+    +'</tbody></table></div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center">'
+    +'<input id="sYeniAd" placeholder="Yeni şantiye adı" style="'+inp+';width:220px">'
+    +'<input id="sYeniMus" placeholder="Müşteri" style="'+inp+';width:170px">'
+    +'<input id="sYeniNed" placeholder="Tıkanma nedeni" style="'+inp+';width:240px">'
+    +'<button type="button" class="btn" id="sYeniBtn">+ Şantiye ekle</button></div>';
+  if(!document.getElementById("skimCss")){ const st=document.createElement("style"); st.id="skimCss"; st.textContent="b.skim{font-weight:700;margin-right:3px}b.skim.ob{color:#1f5f99}b.skim.mk{color:#0a5745}"; document.head.appendChild(st); }
+  el.querySelectorAll(".sed").forEach(d=>d.onclick=()=>sEdit(d));
+  el.querySelectorAll(".scik").forEach(b=>b.onclick=async()=>{
+    if(!confirm('"'+b.dataset.ad+'" tıkanmış şantiyeler listesinden çıkarılsın mı?')) return;
+    const {error}=await sb.rpc("mk_santiye_cikar",{p_id:parseInt(b.dataset.sid)});
+    if(error){ sMsg("Hata: "+error.message,false); return; }
+    sMsg("Şantiye listeden çıkarıldı.",true); sLoadAkis();
+  });
+  document.getElementById("sYeniBtn").onclick=async()=>{
+    const ad=document.getElementById("sYeniAd").value.trim();
+    if(!ad){ sMsg("Şantiye adını yazınız.",false); return; }
+    const {error}=await sb.rpc("mk_santiye_ekle",{p_santiye:ad,p_musteri:document.getElementById("sYeniMus").value.trim(),p_neden:document.getElementById("sYeniNed").value.trim()});
+    if(error){ sMsg("Hata: "+error.message,false); return; }
+    sMsg("Şantiye eklendi: "+ad,true); sLoadAkis();
+  };
+}
+/* MK-SANTIYE-OB-EKLE: eski sürüm, kullanılmıyor */
+async function sLoadAkis_ESKI(){
   const {data,error}=await sb.from("santiye_durum_akis").select("*").order("tarih",{ascending:false}).order("id",{ascending:false});
   const el=document.getElementById("s_akis");
   if(error){ el.innerHTML='<div class="hint">Akış okunamadı.</div>'; return; }
@@ -475,7 +517,7 @@ async function sLoadAkis(){
 }
 function sEdit(el){
   if(el.querySelector("textarea")) return;
-  const sid=parseInt(el.dataset.sid), cur=el.classList.contains("bos")?"":el.textContent;
+  const sid=parseInt(el.dataset.sid), cur=el.classList.contains("bos")?"":(el.dataset.txt||el.textContent); /* MK-SANTIYE-KIM: etiket metne girmez */
   const ta=document.createElement("textarea");
   ta.className="cell"; ta.style.minHeight="54px"; ta.style.width="100%"; ta.value=cur;
   el.innerHTML=""; el.appendChild(ta); ta.focus();
