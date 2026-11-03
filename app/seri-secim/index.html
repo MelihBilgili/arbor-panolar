@@ -229,13 +229,13 @@ const SERI=[
   {s:"68f",a:"Flat",max:52,uf:1.30,p2:0.035,p3:0.032,uw:{d:1.27,t36:0.99,t44:0.93}},
   {s:"68f Bal.Door",a:"Flat",max:52,uf:"1,37; 1,37; 1,37; 3,627",p2:0.035,p3:0.032,uw:{d:1.36}},
   {s:"68m",a:"Minima",max:52,uf:1.20,p2:0.035,p3:0.032,uw:{d:1.22,t36:0.94,t44:0.87}},
-  {s:"78t",a:"Casement",max:44,uf:"1,20; 1,38; 1,30",p2:0.0334,p3:0.032,uw:{d:1.21}},
+  {s:"78t",a:"Casement",max:44,uf:"1,2090; 1,3850; 1,30; 1,30",p2:0.033,p3:0.032,uw:{d:1.21}}, /* URUN-KONFIG-EU-AF (03.11.2026): Enes Uzun 03.11 tablosu — 78t = 78t Top Swing değerleri, 78a = 78a Side Hung değerleri, 78t-a Bal.Door kesit Af/Uf */
   {s:"78t Top Swing",a:"Casement",max:44,uf:"1,2090; 1,3850; 1,30; 1,30",p2:0.033,p3:0.032,uw:{d:1.21}},
   {s:"78t Side Hung",a:"Casement",max:44,uf:"1,2090; 1,3850; 1,30; 1,30",p2:0.033,p3:0.032,uw:{d:1.21}},
   {s:"78a Top Swing",a:"Casement",max:44,uf:"1,3987; 1,7407; 1,3392; 1,3392",p2:0.033,p3:0.032,uw:{d:1.28}},
   {s:"78a Side Hung",a:"Casement",max:44,uf:"1,3906; 1,7413; 1,3424; 1,3424",p2:0.033,p3:0.032,uw:{d:1.28}},
-  {s:"78t-a Bal.Door",a:"Casement",max:44,uf:"1,19; 1,30; 1,99",p2:0.0334,p3:0.032,uw:{d:1.26}},
-  {s:"78a",a:"Casement",max:52.28,uf:"1,34; 1,40; 1,74",p2:0.0334,p3:0.032,uw:{d:1.28}},
+  {s:"78t-a Bal.Door",a:"Casement",max:44,uf:"1,1940; 1,9980; 1,3060; 1,3060",p2:0.033,p3:0.032,uw:{d:1.26}},
+  {s:"78a",a:"Casement",max:52.28,uf:"1,3906; 1,7413; 1,3424; 1,3424",p2:0.033,p3:0.032,uw:{d:1.28}},
   {s:"58e Kurtağızlı",a:"Klasik",max:31,uf:null,p2:null,p3:null,uw:{}},
   {s:"68k",a:"Klasik",max:44,uf:1.40,p2:0.032,p3:0.03,uw:{d:1.27,t36:0.98,t44:0.91}},
   {s:"68p",a:"Klasik",max:31,uf:"1,1957; 2,7689; 1,2705; 1,1781; 1,1013; 1,1274; 1,1006",p2:0.032,p3:0.03,uw:{d:1.33}},
@@ -277,7 +277,7 @@ const CAM=[
    Sfw = (Sfg·Ag + Sff·Af)/(Ag+Af), Sff = 0 (URUN-KONFIG-SF0, Melih 19.10.2026: kasadan güneş kazancı yok sayılır; önceden αf·Uf/he = 0,5·Uf/25); Tlw = Tlg·σ, σ = Ag/(Ag+Af). */
 const UW_GEO={"68s":{ag:1.252,l:4.572,af:0.598,df:0.120,bi:0.014},"78s":{ag:1.228,l:4.572,af:0.593,df:0.120,bi:0.014},"90s":{ag:1.228,l:4.572,af:0.593,df:0.120,bi:0.014},
   "68f":{ag:1.234,l:4.540,af:0.616,df:0.124,bi:0.014},"68m":{ag:1.237,l:4.588,af:0.584,df:0.118,bi:0.014},
-  "78t":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78t-a Bal.Door":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"78a":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},"68k":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},
+  "78t":{ag:1.6447,l:5.128,af:0.6053,df:0.108,bi:0.014,w0:1.5,h0:1.5,afs:[0.13834,0.13837,0.16431,0.16431]},"78t-a Bal.Door":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014,afs:[0.1415,0.1818,0.15905,0.15905]},"78a":{ag:1.3593,l:4.73,af:0.5607,df:0.108,bi:0.014,w0:1.2,h0:1.6,afs:[0.11981,0.11981,0.16053,0.16053]},"68k":{ag:1.282,l:4.668,af:0.539,df:0.108,bi:0.014},
   /* URUN-KONFIG-EU-TERMAL (27.10.2026): Enes Uzun tablosu (UW ve dB, 27.10.2026). w0×h0 = hesap ölçüsü (m), afs = kesit Af'leri (uf sırasıyla). 68p Df efektif (Ag'den). */
   "58f":{ag:1.2816,l:4.556,af:0.5386,df:0.108,bi:0.014,afs:[0.1328,0.273,0.1328]},
   "68p":{ag:1.213,l:6.4918,af:0.6111,df:0.1233,bi:0.014,afs:[0.113,0.0891,0.186,0.0566,0.0549,0.0566,0.0549]},
@@ -673,7 +673,7 @@ soMenu.addEventListener("click",e=>{ const b=e.target.closest("button[data-ac]")
   $("notlar").innerHTML='<b>Notlar:</b> Tüm camlar Argon dolgulu, Warm Edge (WE) çıtalı. Cam Listesi\'ndeki tüm camlar değerlendirilir: <b>Uw</b> serinin aynı Ug\'li sertifika camının Uw\'si, <b>Ürün Rw+Ctr</b> o seride cam Rw+Ctr\'si aynı olan sertifika camının test değeri (aynısı yoksa cam Rw+Ctr\'si daha düşük sertifika camınınki, <b>≥</b> ile), Ug\'si sertifika camlarından düşükse Uw <b>≤</b> ile; Sfg ve Tlg camın kendi değeri. <b>Hesaplanan Uw, Sfw, Tlw</b> girilen ürün ebadına göre EN ISO 10077-1 ile: Uw = (Ag·Ug + Af·Uf + lg·ψg)/Aw, Sfw = (Sfg·Ag + Sff·Af)/(Ag+Af) (Sff = 0,4·Uf/25, XP P50-777), Tlw = Tlg·Ag/(Ag+Af). <b>Seçimler:</b> ürün alanı 2,6 m²\'yi geçerse yalnız her camı en az 6 mm olanlar; EI30 → EI30 ve EI60 camlar, EI60 → EI60; CR2 / RC2 → P4A, en az 2,28 mm lamine; RC2N cam kısıtı yok; Yangın Dayanımı ve Güvenlik Sınıfı seçilince o sınıfta geçerli sertifikası olmayan seriler elenir (Ürün sertifika özeti); Cam Güvenlik Sınıfı (EN 356) P2A → lamine ≥ 0,76 mm, P4A → ≥ 2,28 mm, P5A → ≥ 3,04 mm, P6B → ≥ 3,04 mm ve lamine camın her katı ≥ 6 mm; Temper Var/Yok; Kapı ve Bal.Door serileri → iç ve dış cam lamine; Satin Var → Uw, Ug ve Tlg hedefleri dikkate alınmaz. Uw hedefi Hesaplanan Uw\'ye göre süzülür (yoksa sertifika Uw\'si); Hesaplanan Uw\'si olan serilerde sertifika değeri olmayan camlar da listelenir. <b>Koyu renkli konfigürasyonlar</b> sertifikada geçen camlardır, diğerleri gri. '
     +'<b>Uw</b>: tabloda yalnız üç referans cam için verilmiştir (Ug 1,1 çift 4/16/4 · Ug 0,7 üçlü 4/12/4/12/4 · Ug 0,6 üçlü 4/16/4/16/4); diğer camlarda aynı Ug\'li referansın değeri kullanılır. '
     +'⚠ Kalınlık serinin max cam kalınlığını aşıyor (ör. 78s, max 40 mm). 58f max cam kalınlığı 51-52 mm (formda 52). '
-    +'Uf: 58f (FTI testi), 68p, 68f Bal.Door, 78t / 78a Top Swing ve Side Hung\'da kesit alanlarıyla ağırlıklı (Enes Uzun, 27.10.2026; Top Swing ve Bal.Door hesap ölçüsü 1500×1500, 78a 1200×1600 mm, girilen ebada ölçeklenir); 78t, 78t-a Bal.Door, 78a\'da üç değer eşit alanla. 78t Top Swing ve Side Hung tek testte, değerleri aynı. '
+    +'Uf: 58f (FTI testi), 68p, 68f Bal.Door, 78t / 78a Top Swing ve Side Hung\'da kesit alanlarıyla ağırlıklı (Enes Uzun, 27.10.2026; Top Swing ve Bal.Door hesap ölçüsü 1500×1500, 78a 1200×1600 mm, girilen ebada ölçeklenir); 78t (Top Swing değerleri), 78a (Side Hung değerleri) ve 78t-a Bal.Door\'da da kesit alanlarıyla ağırlıklı (03.11.2026). 78t Top Swing ve Side Hung tek testte, değerleri aynı. '
     +'<b>Cam fiyatı</b>: <a href="../cam/" target="_blank">Cam Fiyatlandırma</a> modeliyle (düz, 10 adet / 10 m²) €/m²; pencere fiyatı değildir. '
     +'Yangın dayanımı (E30 fire proof, PF 1/2h) için tabloda cam bilgisi henüz yok. Kaynak: <i>UW ve dB tablosu.xls</i>.';
   seriTablo(); ciz();
