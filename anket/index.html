@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ARBOR — Enquête de satisfaction client</title>
+<!-- MUSTERI-ANKET (03.11.2026, Melih): page client de l'enquête de satisfaction. Lien unique par projet (?t=token) créé dans app/memnuniyet/.
+     Lecture / envoi via la fonction edge anket-musteri (aucun accès direct à la base). Source kod/anket_musteri.html -->
+<style>
+  :root{color-scheme:light;--vert:#1f4d3a;--vert2:#2e7d54;--bord:#d9e0e6;--gris:#5a6b7d}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f3f5f4;color:#1c2430;font-size:15px;line-height:1.45}
+  header{background:var(--vert);color:#fff;padding:22px 18px 18px;text-align:center}
+  header .marque{font-size:13px;letter-spacing:.42em;opacity:.85}
+  header h1{margin:6px 0 4px;font-size:22px;letter-spacing:.04em}
+  header .sub{font-size:13.5px;opacity:.9}
+  .wrap{max-width:860px;margin:0 auto;padding:16px 14px 60px}
+  .intro{background:#fff;border:1px solid var(--bord);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+  .sec{background:#fff;border:1px solid var(--bord);border-radius:12px;margin-bottom:14px;overflow:hidden}
+  .sec h2{margin:0;font-size:15px;padding:10px 14px;background:#eef3f0;color:var(--vert);display:flex;gap:10px;align-items:center}
+  .sec h2 .no{background:var(--vert);color:#fff;border-radius:6px;padding:1px 8px;font-size:13px}
+  .in{padding:12px 14px}
+  .q{font-weight:600;margin:0 0 8px}
+  label.f{display:block;font-size:13px;color:var(--gris);margin:8px 0 3px}
+  input[type=text],input[type=email],textarea{font:inherit;width:100%;border:1px solid #c9d3dc;border-radius:8px;padding:8px 10px;background:#fff}
+  input[readonly]{background:#f4f6f8;color:#1c2430;font-weight:600}
+  textarea{min-height:70px;resize:vertical}
+  input:focus,textarea:focus{outline:none;border-color:var(--vert2)}
+  .g2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+  @media(max-width:600px){.g2{grid-template-columns:1fr}}
+  /* Matrice : une colonne par prestation, une ligne par niveau de satisfaction */
+  .mx{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.m{border-collapse:collapse;width:100%;min-width:560px;table-layout:fixed}
+  table.m col.lb{width:150px}
+  table.m th,table.m td{border:1px solid var(--bord);padding:7px 6px;text-align:center;vertical-align:middle}
+  table.m thead th{background:#f6f8f7;font-size:12.5px;font-weight:600;color:#24323f;line-height:1.3}
+  table.m thead th small{display:block;font-weight:400;color:var(--gris);font-size:11.5px;margin-top:2px}
+  table.m tbody th{text-align:left;font-size:13px;font-weight:600;background:#fbfcfb}
+  table.m td.r{cursor:pointer}
+  table.m td.r:hover{background:#f1f7f3}
+  table.m td.r input{width:19px;height:19px;accent-color:var(--vert2);cursor:pointer}
+  table.m tr.n1 th{color:#1f6b3d}table.m tr.n2 th{color:#3d7a52}table.m tr.n3 th{color:#b25a00}table.m tr.n4 th{color:#b40000}
+  table.m tr.expl th{color:#b40000;font-weight:600}
+  table.m tr.expl td{vertical-align:top;padding:5px}
+  table.m tr.expl textarea{min-height:64px;font-size:13px;padding:6px 7px}
+  table.m tr.expl textarea:disabled{background:#f4f6f8;border-style:dashed}
+  table.m tr.expl .vide{font-size:11.5px;color:#9aa7b3}
+  @media(max-width:600px){
+    .in{padding:10px 8px}
+    table.m{min-width:0}
+    table.m col.lb{width:74px}
+    table.m th,table.m td{padding:5px 3px}
+    table.m thead th{font-size:11px;hyphens:auto;word-break:break-word}
+    table.m thead th small{display:none}
+    table.m tbody th{font-size:11px}
+    table.m tr.expl textarea{font-size:12px;min-height:80px;padding:4px}
+  }
+  .opts{display:flex;flex-wrap:wrap;gap:8px}
+  .opts label{display:flex;align-items:center;gap:7px;border:1px solid #c9d3dc;border-radius:8px;padding:8px 12px;cursor:pointer;background:#fff}
+  .opts input{accent-color:var(--vert2);width:17px;height:17px}
+  .opts label:has(input:checked){border-color:var(--vert2);background:#eef7f1;font-weight:600}
+  .expl2{margin-top:8px;display:none}
+  .expl2.on{display:block}
+  .req{color:#b40000}
+  .err{outline:2px solid #e05a5a;outline-offset:2px;border-radius:6px}
+  .btn{display:block;width:100%;background:var(--vert2);color:#fff;border:0;border-radius:10px;padding:13px;font:inherit;font-weight:700;font-size:16px;cursor:pointer}
+  .btn:disabled{opacity:.55;cursor:default}
+  .msg{min-height:20px;margin:10px 2px;font-weight:600;font-size:14px}
+  .msg.err2{color:#b40000}
+  .fin{background:#fff;border:1px solid var(--bord);border-radius:12px;padding:28px 18px;text-align:center}
+  .fin h2{color:var(--vert);margin:0 0 8px}
+  footer{text-align:center;font-size:12px;color:var(--gris);margin-top:18px;letter-spacing:.2em}
+</style>
+</head>
+<body>
+<header>
+  <div class="marque">F E N Ê T R E S &nbsp; E N &nbsp; B O I S</div>
+  <h1>ENQUÊTE DE SATISFACTION CLIENT</h1>
+  <div class="sub">Votre expérience nous aide à progresser.</div>
+</header>
+<div class="wrap" id="app"><div class="intro">Chargement…</div></div>
+<footer>WWW.ARBORFENETRES.FR</footer>
+<script>
+(function(){
+  var URL_FN="https://zehysygpqxqmrzangvuc.supabase.co/functions/v1/anket-musteri";
+  var KEY="sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc";
+  var token=(new URLSearchParams(location.search).get("t")||"").trim();
+  var app=document.getElementById("app");
+  /* Ordre : 1. Études (nouveau, en premier) · 2. Qualité · 3. Délais · 4. Gestion technique et administrative.
+     (« Conditionnement et protection des produits lors du transport » supprimé.) */
+  var KRIT=[
+    {k:"etut",   t:"Phase d'études",                         s:"plans, validations techniques, échanges avec le bureau d'études"},
+    {k:"kalite", t:"Qualité des menuiseries",                s:"finitions, esthétique, conformité"},
+    {k:"sureler",t:"Respect des délais",                     s:"livraison / fabrication"},
+    {k:"yonetim",t:"Gestion technique et administrative",    s:"mails, devis, réactivité"}
+  ];
+  var NIV=[{v:"ts",t:"Très satisfait",c:"n1"},{v:"s",t:"Satisfait",c:"n2"},{v:"i",t:"Insatisfait",c:"n3"},{v:"ti",t:"Très insatisfait",c:"n4"}];
+  function esc(x){ return String(x==null?"":x).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+  function api(o){
+    return fetch(URL_FN,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",apikey:KEY},body:JSON.stringify(o)})
+      .then(function(r){ return r.json().catch(function(){ return {ok:false,hata:"Erreur de connexion."}; }); })
+      .catch(function(){ return {ok:false,hata:"Erreur de connexion. Merci de réessayer."}; });
+  }
+  function fin(titre,txt){ app.innerHTML='<div class="fin"><h2>'+esc(titre)+'</h2><div>'+txt+'</div></div>'; window.scrollTo(0,0); }
+  if(!/^[0-9a-fA-F]{24,64}$/.test(token)){ fin("Lien invalide","Merci d'utiliser le lien complet qui vous a été transmis par ARBOR."); return; }
+
+  api({t:token,islem:"oku"}).then(function(j){
+    if(!j.ok){ fin("Lien non valide",esc(j.hata||"Ce lien n'est pas valide.")); return; }
+    if(j.yanitlandi){ fin("Merci !","Cette enquête a déjà été complétée. Nous vous remercions pour votre précieuse collaboration.<br><br>L'équipe ARBOR"); return; }
+    rendu(j);
+  });
+
+  function radioOpts(nom,liste){
+    return '<div class="opts" id="o-'+nom+'">'+liste.map(function(o){
+      return '<label><input type="radio" name="'+nom+'" value="'+o[0]+'"> '+esc(o[1])+'</label>'; }).join("")+'</div>';
+  }
+  function rendu(p){
+    var h='';
+    h+='<div class="intro">Chère cliente, cher client,<br>Dans le but d\'améliorer continuellement la qualité de nos produits et de nos services, nous vous invitons à répondre à cette courte enquête. Votre avis est essentiel pour nous.</div>';
+    /* 01 */
+    h+='<div class="sec"><h2><span class="no">01</span>INFORMATIONS GÉNÉRALES</h2><div class="in g2">'
+      +'<div><label class="f">Nom du projet / chantier</label><input type="text" readonly value="'+esc(p.proje)+'"></div>'
+      +'<div><label class="f">Date de livraison</label><input type="text" id="teslim" maxlength="60" placeholder="jj/mm/aaaa"></div>'
+      +'</div></div>';
+    /* 02 matrice */
+    h+='<div class="sec"><h2><span class="no">02</span>ÉVALUATION DES PRESTATIONS</h2><div class="in">'
+      +'<div class="q">Pour chaque prestation, cochez votre niveau de satisfaction <span class="req">*</span></div>'
+      +'<div class="mx"><table class="m"><colgroup><col class="lb">'+KRIT.map(function(){return '<col>';}).join("")+'</colgroup>'
+      +'<thead><tr><th></th>'+KRIT.map(function(c){ return '<th id="h-'+c.k+'">'+esc(c.t)+'<small>'+esc(c.s)+'</small></th>'; }).join("")+'</tr></thead><tbody>';
+    NIV.forEach(function(n){
+      h+='<tr class="'+n.c+'"><th>'+esc(n.t)+'</th>'+KRIT.map(function(c){
+        return '<td class="r" data-k="'+c.k+'"><input type="radio" name="m-'+c.k+'" value="'+n.v+'" aria-label="'+esc(c.t+" — "+n.t)+'"></td>'; }).join("")+'</tr>';
+    });
+    h+='<tr class="expl"><th>Si insatisfait : merci de préciser la raison</th>'+KRIT.map(function(c){
+      return '<td><textarea id="a-'+c.k+'" disabled maxlength="2000" placeholder="—"></textarea></td>'; }).join("")+'</tr>';
+    h+='</tbody></table></div></div></div>';
+    /* 03 SAV */
+    h+='<div class="sec"><h2><span class="no">03</span>SERVICE APRÈS-VENTE (SAV) ET SUIVI</h2><div class="in">'
+      +'<div class="q">Le traitement de vos demandes de SAV ou de modifications techniques a-t-il été satisfaisant ? <span class="req">*</span></div>'
+      +radioOpts("sav",[["oui","Oui, tout à fait"],["partie","En partie"],["non","Non, pas du tout"],["na","Non applicable (pas de SAV)"]])
+      +'<div class="expl2" id="x-sav"><label class="f">Merci de préciser ce qui n\'a pas été satisfaisant <span class="req">*</span></label><textarea id="sav_aciklama" maxlength="2000"></textarea></div>'
+      +'</div></div>';
+    /* 04 Recommandation */
+    h+='<div class="sec"><h2><span class="no">04</span>RECOMMANDATION GLOBALE</h2><div class="in">'
+      +'<div class="q">Recommanderiez-vous ARBOR pour d\'autres projets de menuiserie ? <span class="req">*</span></div>'
+      +radioOpts("tavsiye",[["oui","Oui"],["non","Non"],["peut","Peut-être"]])
+      +'<div class="expl2" id="x-tavsiye"><label class="f">Merci de nous indiquer pourquoi <span class="req">*</span></label><textarea id="tavsiye_aciklama" maxlength="2000"></textarea></div>'
+      +'</div></div>';
+    /* 05 Commentaires */
+    h+='<div class="sec"><h2><span class="no">05</span>VOS COMMENTAIRES &amp; SUGGESTIONS</h2><div class="in">'
+      +'<div class="q">Avez-vous un commentaire, une suggestion, un point à améliorer ou un compliment à nous adresser ?</div>'
+      +'<textarea id="yorum" maxlength="4000" style="min-height:110px"></textarea></div></div>';
+    /* 06 Validation */
+    h+='<div class="sec"><h2><span class="no">06</span>VALIDATION</h2><div class="in g2">'
+      +'<div><label class="f">Nom et prénom <span class="req">*</span></label><input type="text" id="ad" maxlength="200" autocomplete="name"></div>'
+      +'<div><label class="f">Entreprise <span class="req">*</span></label><input type="text" id="firma" maxlength="200" autocomplete="organization" value="'+esc(p.firma||"")+'"></div>'
+      +'<div><label class="f">Fonction</label><input type="text" id="gorev" maxlength="200" autocomplete="organization-title"></div>'
+      +'<div><label class="f">E-mail</label><input type="email" id="mail" maxlength="200" autocomplete="email"></div>'
+      +'<div><label class="f">Date</label><input type="text" readonly value="'+new Date().toLocaleDateString("fr-FR")+'"></div>'
+      +'</div></div>';
+    h+='<div class="msg" id="msg"></div><button class="btn" id="go">Envoyer</button>';
+    app.innerHTML=h;
+
+    /* clic sur toute la cellule */
+    app.querySelectorAll("td.r").forEach(function(td){ td.addEventListener("click",function(e){ if(e.target.tagName!=="INPUT"){ var i=td.querySelector("input"); i.checked=true; i.dispatchEvent(new Event("change",{bubbles:true})); } }); });
+    app.addEventListener("change",function(e){
+      var n=e.target.name||"";
+      if(n.indexOf("m-")===0){ var k=n.slice(2), v=e.target.value, ta=document.getElementById("a-"+k), neg=(v==="i"||v==="ti");
+        ta.disabled=!neg; ta.placeholder=neg?"Raison (obligatoire)":"—";
+        var hh=document.getElementById("h-"+k); if(hh) hh.classList.remove("err"); if(!neg) ta.classList.remove("err");
+        if(neg) setTimeout(function(){ ta.focus(); },30); }
+      if(n==="sav"||n==="tavsiye"){ var oo=document.getElementById("o-"+n); if(oo) oo.classList.remove("err"); }
+      if(n==="sav") document.getElementById("x-sav").classList.toggle("on",e.target.value==="partie"||e.target.value==="non");
+      if(n==="tavsiye") document.getElementById("x-tavsiye").classList.toggle("on",e.target.value==="non"||e.target.value==="peut");
+      var el=e.target.closest(".err"); if(el) el.classList.remove("err");
+    });
+    document.getElementById("go").onclick=envoyer;
+  }
+  function val(n){ var i=app.querySelector('input[name="'+n+'"]:checked'); return i?i.value:""; }
+  function txt(id){ var e=document.getElementById(id); return e?e.value.trim():""; }
+  function envoyer(){
+    app.querySelectorAll(".err").forEach(function(e){ e.classList.remove("err"); });
+    var c={aciklama:{}}, bad=[];
+    KRIT.forEach(function(k){ var v=val("m-"+k.k); c[k.k]=v;
+      if(!v) bad.push(document.getElementById("h-"+k.k));
+      else if((v==="i"||v==="ti")){ var a=txt("a-"+k.k); c.aciklama[k.k]=a; if(a.length<3) bad.push(document.getElementById("a-"+k.k)); } });
+    c.sav=val("sav"); if(!c.sav) bad.push(document.getElementById("o-sav"));
+    c.sav_aciklama=txt("sav_aciklama"); if((c.sav==="partie"||c.sav==="non")&&c.sav_aciklama.length<3) bad.push(document.getElementById("sav_aciklama"));
+    c.tavsiye=val("tavsiye"); if(!c.tavsiye) bad.push(document.getElementById("o-tavsiye"));
+    c.tavsiye_aciklama=txt("tavsiye_aciklama"); if((c.tavsiye==="non"||c.tavsiye==="peut")&&c.tavsiye_aciklama.length<3) bad.push(document.getElementById("tavsiye_aciklama"));
+    c.teslim_tarihi=txt("teslim"); c.yorum=txt("yorum");
+    c.yanitlayan_ad=txt("ad"); if(c.yanitlayan_ad.length<2) bad.push(document.getElementById("ad"));
+    c.yanitlayan_firma=txt("firma"); if(c.yanitlayan_firma.length<2) bad.push(document.getElementById("firma"));
+    c.yanitlayan_gorev=txt("gorev"); c.yanitlayan_mail=txt("mail");
+    var msg=document.getElementById("msg");
+    if(bad.length){ bad.forEach(function(e){ if(e) e.classList.add("err"); }); msg.className="msg err2";
+      msg.textContent="Merci de compléter les champs obligatoires (encadrés en rouge)."; bad[0]&&bad[0].scrollIntoView({behavior:"smooth",block:"center"}); return; }
+    var b=document.getElementById("go"); b.disabled=true; msg.className="msg"; msg.textContent="Envoi en cours…";
+    api({t:token,islem:"gonder",cevap:c}).then(function(j){
+      if(j.ok){ fin("Merci pour votre précieuse collaboration !","Vos réponses ont bien été enregistrées.<br><br>L'équipe ARBOR"); return; }
+      b.disabled=false; msg.className="msg err2"; msg.textContent=j.hata||"Erreur. Merci de réessayer.";
+    });
+  }
+})();
+</script>
+</body>
+</html>
