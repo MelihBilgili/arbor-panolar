@@ -449,11 +449,11 @@ document.getElementById("ayBtn").onclick=async()=>{
 function sMsg(t,ok){ const m=document.getElementById("s_msg"); m.className="msg "+(ok?"ok":"err"); m.style.color=ok?"#2e7d54":"#b40000"; m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3000); }
 const sDk=t=>t?String(t).slice(8,10)+"."+String(t).slice(5,7)+"."+String(t).slice(2,4):"";
 async function sLoadAkis(){ /* MK-SANTIYE-OB-EKLE (03.11.2026): tüm açık şantiyeler (rpc mk_santiye_liste) + ÖB'nin yazdığı (eski dahil) + MK ekle/çıkar */
-  const [L,A]=await Promise.all([sb.rpc("mk_santiye_liste"), sb.from("santiye_durum_akis").select("*").eq("kim","MK").order("tarih",{ascending:false}).order("id",{ascending:false})]);
+  const [L,A]=await Promise.all([sb.rpc("mk_santiye_liste2"), sb.from("santiye_durum_akis").select("*").eq("kim","MK").order("tarih",{ascending:false}).order("id",{ascending:false})]);
   const el=document.getElementById("s_akis");
   if(L.error){ el.innerHTML='<div class="hint">Şantiye listesi okunamadı: '+esc(L.error.message)+'</div>'; return; }
   const mkBy={}; (A.data||[]).forEach(r=>{ if(!(r.santiye_id in mkBy)) mkBy[r.santiye_id]=r; });
-  const list=(L.data||[]).map(r=>({sid:r.id,santiye:r.santiye,musteri:r.musteri,neden:r.neden,ob:(r.ob_not?{durum:r.ob_not,tarih:r.ob_tarih}:null),mk:mkBy[r.id]||null}))
+  const list=(L.data||[]).map(r=>({sid:r.id,santiye:r.santiye,musteri:r.musteri,neden:r.neden,ob:(r.ob_not?{durum:r.ob_not,tarih:r.ob_tarih,yazan:r.ob_yazan}:null),mk:mkBy[r.id]||null}))
     .sort((a,b)=>String(a.santiye||"").localeCompare(String(b.santiye||""),"tr"));
   const dc=v=>'<div class="sxc">'+esc(v||"")+'</div>';
   const cnt=document.getElementById("cs"); if(cnt) cnt.textContent="("+list.length+")";
@@ -462,9 +462,9 @@ async function sLoadAkis(){ /* MK-SANTIYE-OB-EKLE (03.11.2026): tüm açık şan
     +'<tr><th rowspan="2" class="ssan">Şantiye</th><th colspan="2" class="grp">ÖB</th><th colspan="2" class="grp mkg">MK</th><th rowspan="2"></th></tr>'
     +'<tr><th class="sdt">Tarih</th><th>Durum / Gelişme</th><th class="sdt">Tarih</th><th>Durum / Gelişme</th></tr></thead><tbody>'
     +(list.length?list.map(p=>'<tr><td class="ssan" title="'+esc([p.musteri,p.neden].filter(Boolean).join(" · "))+'">'+esc(p.santiye)+'</td>'
-      +'<td class="sdt">'+(p.ob&&p.ob.tarih?sDk(p.ob.tarih):"")+'</td><td>'+(p.ob?'<div class="sxc"><b class="skim ob">ÖB'+(p.ob.tarih?' · '+sDk(p.ob.tarih):'')+':</b> '+esc(p.ob.durum)+'</div>':dc(''))+'</td>'
+      +'<td class="sdt">'+(p.ob&&p.ob.tarih?sDk(p.ob.tarih):"")+'</td><td>'+(p.ob?'<div class="sxc"><b class="skim ob">'+esc(p.ob.yazan||"ÖB")+(p.ob.tarih?' · '+sDk(p.ob.tarih):'')+':</b> '+esc(p.ob.durum)+'</div>':dc(''))+'</td>'
       +'<td class="sdt">'+(p.mk?sDk(p.mk.tarih):"")+'</td>'
-      +'<td><div class="sxc sed'+((p.mk&&p.mk.durum)?'':' bos')+'" data-sid="'+p.sid+'" data-txt="'+esc((p.mk&&p.mk.durum)||'')+'">'+((p.mk&&p.mk.durum)?'<b class="skim mk">MK · '+sDk(p.mk.tarih)+':</b> '+esc(p.mk.durum):"+ durum")+'</div></td>'
+      +'<td><div class="sxc sed'+((p.mk&&p.mk.durum)?'':' bos')+'" data-sid="'+p.sid+'" data-txt="'+esc((p.mk&&p.mk.durum)||'')+'">'+((p.mk&&p.mk.durum)?'<b class="skim mk">'+esc(p.mk.yazan||"MK")+' · '+sDk(p.mk.tarih)+':</b> '+esc(p.mk.durum):"+ durum")+'</div></td>'
       +'<td><button type="button" class="scik" data-sid="'+p.sid+'" data-ad="'+esc(p.santiye)+'" title="Listeden çıkar" style="border:0;background:none;color:#b23a2e;cursor:pointer;font-size:14px">✕</button></td></tr>').join("")
       :'<tr><td colspan="6" class="hint">Açık tıkanmış şantiye yok.</td></tr>')
     +'</tbody></table></div>'
@@ -527,7 +527,7 @@ function sEdit(el){
     const v=ta.value.trim();
     if(!v || v===cur){ el.className="sxc sed"+(cur?"":" bos"); el.textContent=cur||"+ durum"; return; }
     const tarih=new Date().toISOString().slice(0,10);
-    const {error}=await sb.from("santiye_durum_log").insert({santiye_id:sid,kim:"MK",durum:v,tarih});
+    const {error}=await sb.from("santiye_durum_log").insert({santiye_id:sid,kim:"MK",durum:v,tarih,yazan:(function(){ try{ if(typeof ARB_ACTIVE!=="undefined"&&ARB_ACTIVE===ARB_MB_SB) return "MB"; var k=window.ARB_KISI_AL&&ARB_KISI_AL(ARB_ROLE_EMAIL); return (k&&k.kod)||null; }catch(e){ return null; } })()}) /* SANTIYE-YAZAN */;
     if(error){ sMsg("Hata: "+error.message,false); el.className="sxc sed"+(cur?"":" bos"); el.textContent=cur||"+ durum"; return; }
     sMsg("Durum kaydedildi (MK · "+sDk(tarih)+").",true);
     try{ await sb.functions.invoke("santiye-degisim-ozet",{body:{santiye_id:sid}}); }catch(e){}
