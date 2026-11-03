@@ -2251,7 +2251,9 @@ async function loadFormlar(){
     /* SOUM-FORM (20.10.2026): Teklif Hazırlama (Soum) — Pencad raporu + DPGF/CCTP → Soum Excel'i (teklif.form rolü) - Herkes */
     {ad:"Teklif Hazırlık",     who:"Herkes",            url:"soum/",        sik:"Süresiz"}, /* SOUM-AD (20.10.2026, Melih): Formlar panosunda ad "Teklif Hazırlık" */
     /* DOKUMANLAR-FORM (20.10.2026): ERP Docs dökümü (sertifika/broşür/sunum/katalog) - arama + süzme, dosya açma - Herkes, salt-okur */
-    {ad:"Dokümanlar",          who:"Herkes",            url:"dokumanlar/",  sik:"Süresiz"}
+    {ad:"Dokümanlar",          who:"Herkes",            url:"dokumanlar/",  sik:"Süresiz"},
+    /* MUSTERI-ANKET (03.11.2026): proje seçilir → müşteriye özel anket linki (anket/?t=…); müşteri cevapları formda görünür (musteri_anket) - Herkes */
+    {ad:"Müşteri Memnuniyet Anketi", who:"Herkes",     url:"memnuniyet/",  sik:"Süresiz"}
   ];
   /* FORM-ERISIM (KOD-GIRIS 23.09.2026): Kullanıcı sütunu = form_erisim tablosu — form-giris edge fonksiyonunun
      yetki kaynağıyla aynı (kişi kodu → forma giriş + otomatik rol; herkes = Personel'deki tüm kişiler; MB her forma). */
