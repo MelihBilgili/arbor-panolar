@@ -744,7 +744,7 @@ $$("s_btn").onclick=async()=>{
   const btn=$$("s_btn"); btn.disabled=true;
   let isNew=false;
   if(sid==="__new__"){ sid=await createSantiye(); if(!sid){ btn.disabled=false; return; } isNew=true; }
-  const {error}=await sb.from("santiye_durum_log").insert({santiye_id:parseInt(sid),kim:"OB",durum,tarih});
+  const {error}=await sb.from("santiye_durum_log").insert({santiye_id:parseInt(sid),kim:"OB",durum,tarih,yazan:(function(){ try{ if(typeof ARB_ACTIVE!=="undefined"&&ARB_ACTIVE===ARB_MB_SB) return "MB"; var k=window.ARB_KISI_AL&&ARB_KISI_AL(ARB_ROLE_EMAIL); return (k&&k.kod)||null; }catch(e){ return null; } })()}) /* SANTIYE-YAZAN */;
   btn.disabled=false;
   if(error){ sMsg("Durum kaydı hatası: "+error.message,false); return; }
   sMsg((isNew?"Yeni şantiye + durum eklendi":"Durum eklendi")+" (ÖB · "+tarih+").",true);
