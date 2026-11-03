@@ -486,7 +486,7 @@ async function saCariAc(tur,sira,proje){
   if(!_saCariCache){ const q=await sb.from("sel_arb_cari").select("*"); if(q.error){ alert("Hata: "+q.error.message); return; } _saCariCache=q.data||[]; setTimeout(()=>{_saCariCache=null;},60000); }
   const key=String(proje||"").trim().toLowerCase();
   const list=_saCariCache.filter(r=>r.tablo===tur && String(r.proje_key||"").trim().toLowerCase()===key && (r.sira==null||Number(r.sira)===sira));
-  list.sort((a,b)=>(a.grp-b.grp)||(a.grp===0?(a.ord-b.ord):0)||String(a.tarih||"9999").localeCompare(String(b.tarih||"9999")));
+  list.sort((a,b)=>String(a.tarih||"9999").localeCompare(String(b.tarih||"9999"))||(a.grp-b.grp)||((a.ord||0)-(b.ord||0)));   /* SELARB-CARI-TARIH: satırlar tarihe göre */
   const pb=(list.find(r=>r.para_birimi)||{}).para_birimi||"EUR", sym=pb==="GBP"?"£":"€";
   const n=v=>(v==null||v==="")?null:Number(v);
   const f2=v=>v==null?"":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2});
