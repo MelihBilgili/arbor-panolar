@@ -335,7 +335,7 @@ async function pdfAc(file){
 const HDR=/^(\d{2,5})mm x (\d{2,5})mm/;
 /* Pencad raporu (Rapor ya da Detaylı Rapor): pozlar, açıklama alanları, fiyat/adet, malzeme listesi (Detaylı), ekstra malzemeler, toplamlar */
 function raporCoz(R){
-  const poz=[]; let cur=null, ozet=false; const ekstraSat=[]; let top=null, alan=null, adetTop=null, baslik=[];
+  const poz=[]; let cur=null, ozet=false; const ekstraSat=[]; let exAcik=false; let top=null, alan=null, adetTop=null, baslik=[];
   R.pages.forEach(P=>{
     const it=P.items.slice().sort((a,b)=>a.y-b.y||a.x-b.x);
     if(P.no===1){ baslik=it.filter(i=>i.x<200&&i.y>160&&i.y<200).map(i=>i.s); }
@@ -363,16 +363,20 @@ function raporCoz(R){
     it.forEach((i,k)=>{ if(/^Toplam Alan:/.test(i.s)){ const n=it.find(j=>Math.abs(j.y-i.y)<3&&j.x>i.x&&/m²/.test(j.s)); if(n) alan=trNum(n.s.replace("m²","")); }
       if(/^Doğrama Adeti:/.test(i.s)){ const n=it.find(j=>Math.abs(j.y-i.y)<3&&j.x>i.x&&/^\d+$/.test(j.s)); if(n) adetTop=+n.s; } });
     /* Özet Extra Malzemeler tablosu */
-    const ex=it.filter(i=>/Özet Extra Malzemeler/.test(i.s));
-    ex.forEach(e=>{ const sat=[]; let son=null;
-      it.filter(i=>i.y>e.y+2&&i.y<e.y+160).forEach(i=>{ const r=sat.find(r=>Math.abs(r.y-i.y)<3); if(r) r.c.push(i); else sat.push({y:i.y,c:[i]}); });
+    const ex=it.filter(i=>/Özet Extra Malzemeler/.test(i.s)).map(e=>e.y); /* SOUM-EKSTRA-TUM (04.11.2026, Melih Başaran): tablonun tüm satırları; € olmayan satır kesmez (bölünen kod/ad birleşir), Toplam yoksa sonraki sayfada sürer */
+    if(!ex.length&&exAcik) ex.push(-1e9); exAcik=false;
+    ex.forEach(ey=>{ const sat=[]; let son=null, bitti=false; const e={y:ey};
+      it.filter(i=>i.y>e.y+2).forEach(i=>{ const r=sat.find(r=>Math.abs(r.y-i.y)<3); if(r) r.c.push(i); else sat.push({y:i.y,c:[i]}); });
       for(const r of sat.sort((a,b)=>a.y-b.y)){ r.c.sort((a,b)=>a.x-b.x); const t=r.c.map(c=>c.s);
-        if(/^Stok No/.test(t[0])) continue; if(t.some(x=>/^Toplam/.test(x))) break;
-        const eur=r.c.filter(c=>/^€/.test(c.s)); if(eur.length<2) { if(son===null) continue; else break; }
+        if(/^Stok No/.test(t[0])) continue; if(t.some(x=>/^Toplam/.test(x))) { bitti=true; break; }
+        const eur=r.c.filter(c=>/^€/.test(c.s)); if(eur.length<2) { if(son===null) continue; if(/Özet|Extra Malzemeler/.test(t.join(" "))) { bitti=true; break; }
+          const k0=r.c[0]; if(son.kod.endsWith("-")&&k0.x<son._x+20) son.kod+=k0.s; else if(son._ax!=null&&r.c.some(c=>Math.abs(c.x-son._ax)<20)) son.ad+=" "+r.c.filter(c=>Math.abs(c.x-son._ax)<20).map(c=>c.s).join(" "); continue; }
         const kod=t[0], ad=r.c.filter(c=>c.x>r.c[0].x+20&&!/^[€\d]/.test(c.s)&&!/^(mt|Ad|m²|l|m)$/.test(c.s)).map(c=>c.s)[0]||"";
         const miktar=trNum((r.c.find(c=>/^\d+([.,]\d+)?$/.test(c.s)&&c.x>r.c[0].x+60)||{}).s);
         const birim=(r.c.find(c=>/^(mt|Ad|m²|l|m)$/.test(c.s))||{}).s||"";
-        son={kod,ad,miktar,birim,fiyat:trNum(eur[0].s),tutar:trNum(eur[eur.length-1].s)}; ekstraSat.push(son); }
+        const adC=r.c.find(c=>c.x>r.c[0].x+20&&!/^[€\d]/.test(c.s)&&!/^(mt|Ad|m²|l|m)$/.test(c.s));
+        son={kod,ad,miktar,birim,fiyat:trNum(eur[0].s),tutar:trNum(eur[eur.length-1].s)}; Object.defineProperty(son,"_x",{value:r.c[0].x,enumerable:false}); Object.defineProperty(son,"_ax",{value:adC?adC.x:null,enumerable:false}); ekstraSat.push(son); }
+      if(!bitti&&son) exAcik=true;
     });
   });
   /* pozları ayrıştır */
@@ -522,7 +526,7 @@ function camBul(p){
 const kodAd=(k,t)=>/PF-?S?ACC/i.test(k)?k:k+(t==="SACC"?" (PF-SACC)":t==="ACC"?" (PF-ACC)":""); /* SOUM-PF-AD: Pencad adında PF-ACC/PF-SACC varsa ek yazılmaz */
 function pozYorumla(p,dp){
   const A=p.A, ac=A["Açılım"]||"", acik=A["Açıklama"]||"", m=p.metin||"";
-  const ozl={sove:/HUS-KNTR|SOVE/i.test(m),bAlu:/ALU-PRF/i.test(m),bBois:/FJ-AHS-/i.test(m) /* SOUM-PF-AD: kod iki satıra bölünebiliyor (FJ-AHS- / DEN…) */,menfez:/\bMNF-/.test(m),esik:/Eşik|337\.106/i.test(m),panjur:/Panjur/i.test(A["Panjur"]||"")?/var/i.test(A["Panjur"]):/-PJ-/.test(m),
+  const ozl={sove:/HUS-KNTR|SOVE/i.test(m),bAlu:/ALU-PRF/i.test(m),bBois:/FJ-AHS-|MD-AHS-\s*DEN/i.test(m)||/ahsap denizlik/.test(nrmTxt(m)) /* SOUM-AHS-DEN (04.11.2026): stok adında Ahşap Denizlik ya da MD-AHS-DEN de ahşap denizlik */ /* SOUM-PF-AD: kod iki satıra bölünebiliyor (FJ-AHS- / DEN…) */,menfez:/\bMNF-/.test(m),esik:/Eşik|337\.106/i.test(m),panjur:/Panjur/i.test(A["Panjur"]||"")?/var/i.test(A["Panjur"]):/-PJ-/.test(m),
     motor:/motor/i.test(m)&&/-PJ-|panjur/i.test(m)};
   const iki=/\bFr\./.test(ac)||/Fransız|Çift Kanat/i.test(acik);
   const ob=/Çift Açılım/i.test(ac), of=/Tek Açılım/i.test(ac)&&!ob;
@@ -562,7 +566,7 @@ async function oku(){
     const R=await pdfAc(kaynak.f); const C=raporCoz(R); S.rapor=R;
     if(!C.poz.length) throw new Error("PDF'te poz bulunamadı ("+kaynak.f.name+").");
     let ekstra=C.ekstra, top=C.top;
-    if(d("detay")&&d("rapor")&&!ekstra.length){ const R2=await pdfAc(d("rapor").f); const C2=raporCoz(R2); ekstra=C2.ekstra; if(top==null) top=C2.top; }
+    if(d("detay")&&d("rapor")){ const R2=await pdfAc(d("rapor").f); const C2=raporCoz(R2); ekstra=ekstra.concat(C2.ekstra); if(top==null) top=C2.top; } /* SOUM-EKSTRA-TUM: Rapor'daki Özet Extra Malzemeler kodları da eklenir */
     const uniq={}; ekstra.forEach(e=>{ if(!uniq[e.kod]) uniq[e.kod]=e; }); S.ekstra=Object.values(uniq).map(e=>Object.assign(e,{carpan:/^Fa183/i.test(e.kod)?2:1,dahil:true}));
     S.ekstraTop=S.ekstra.reduce((a,e)=>a+(e.tutar||0),0); S.pdfTop=top; S.baslik=C.baslik;
     S.psi=(()=>{ const m=/Psi\s*=\s*([\d,\.]+)/i.exec(C.poz.map(p=>p.metin).join("\n")); return m?+m[1].replace(",","."):null; })();
@@ -654,7 +658,7 @@ function agacEn3(a){ const t=nrmTxt(a); const tur=/cam/.test(t)?"Pin":/mese/.tes
   const k=/dkd/.test(t)?"DKD":/kkk/.test(t)?"KKK":""; return (tur+" "+k).trim(); }
 function stokEn(ad){ if(/kap[ıi]\s*kapat[ıi]c[ıi]/i.test(ad||"")&&/gizli/i.test(ad||"")) return "Concealed door closer"; /* SOUM-OPSIYON-SEC: Kapı Kapatıcı (Gizli) ITS 96 3-6 */
   let s=" "+String(ad||"")+" "; s=s.replace(/Kap[ıi]\s*Kapat[ıi]c[ıi]/gi,"Door closer").replace(/PMR\s*KOL/gi,"PRM handle").replace(/\bZ\s*Kol\b/gi,"Z handle"); /* SOUM-POZ-OKU */ [[/Paslanmaz Çelik/gi,"stainless steel"],[/Alt Boy Eker/gi,"Bottom sill extension"],[/Eker/gi,"sill extension"],[/Pencere Kolu/gi,"window handle"],[/Kapı Kolu/gi,"door handle"],[/Kolu\b/gi,"handle"],
-  [/Kanat Kısıtlayıcı/gi,"Sash restrictor"],[/Kısıtlayıcı/gi,"restrictor"],[/Menfez/gi,"trickle vent"],[/Eşik/gi,"threshold"],[/Kilit/gi,"lock"],[/Silindir/gi,"cylinder"],[/Menteşe/gi,"hinge"],[/Pervaz/gi,"architrave"],[/Denizlik/gi,"sill"],
+  [/Kanat Kısıtlayıcı/gi,"Sash restrictor"],[/Kısıtlayıcı/gi,"restrictor"],[/Menfez/gi,"trickle vent"],[/Eşik/gi,"threshold"],[/Kilit/gi,"lock"],[/Silindir/gi,"cylinder"],[/Menteşe/gi,"hinge"],[/Söve/gi,"Window jamb"],[/Pervaz/gi,"Timber trim"],[/Denizlik/gi,"sill"],
   [/Kapı/gi,"door"],[/Pencere/gi,"window"],[/Kanat/gi,"sash"],[/Kasa/gi,"frame"],[/Ahşap/gi,"timber"],[/Alüminyum/gi,"aluminium"],[/Beyaz/gi,"white"],[/Siyah/gi,"black"],[/Gri/gi,"grey"],[/Alt/g,"bottom"],[/Üst/g,"top"]].forEach(([r,v])=>{ s=s.replace(r,v); });
   s=s.replace(/\s+/g," ").trim(); return s.charAt(0).toUpperCase()+s.slice(1); }
 function notEn(p){ const f=p.nf||{}, o=p.ozl, t=(p.acPdf||"")+" "+(p.acikPdf||""), n=nrmTxt(t);
@@ -664,10 +668,10 @@ function notEn(p){ const f=p.nf||{}, o=p.ozl, t=(p.acPdf||"")+" "+(p.acikPdf||""
   const tip=bk?(tip0?tip0.replace(/window/i,"balcony door"):"balcony door"):tip0;
   let s=(/kemerli/.test(n)?"Arched ":"")+[f.aile,agacEn3(f.agac),yon,tip].filter(Boolean).join(" ");
   if(/alt sabit/.test(n)) s+=", bottom sash fixed"; if(/ust sabit/.test(n)) s+=", upper sash fixed"; s+=".";
-  const sat=[s]; if(o.esik) sat.push("Level threshold (PRM)"); if(o.sove&&kapsam("pervaz")) sat.push("Timber trim"); if(o.bAlu&&kapsam("den")) sat.push("Aluminium sill"); if(o.bBois&&kapsam("den")) sat.push("Timber sill");
+  const sat=[s]; if(o.esik) sat.push("Level threshold (PRM)"); if(o.sove&&kapsam("pervaz")) sat.push("Window jamb"); /* SOUM-EN-SOVE (04.11.2026): Söve → Window jamb, Pervaz → Timber trim */ if(o.bAlu&&kapsam("den")) sat.push("Aluminium sill"); if(o.bBois&&kapsam("den")) sat.push("Timber sill");
   if(o.menfez&&kapsam("myuva")) sat.push("Trickle vent slot"+(kapsam("menfez")?" + trickle vent":"")+($("f_mont").value==="1"?" + installation":""));
   const eks=[]; (S.ekstra||[]).filter(e=>e.dahil&&ekstraPozda(e,p)).forEach(e=>{ const x=stokEn(e.ad); if(!eks.includes(x)) eks.push(x); });
-  return sat.concat(notEk(p,true,true),eks).join("\n"); }
+  return [...new Set(sat.concat(notEk(p,true,true),eks))].join("\n"); }
 /* SOUM-NOT2 (27.10.2026, Melih): notlara Satine cam (Vitrage Satiné / Satin glass), EI30/EI60 cam, pozun Pencad ekstra malzemeleri (dahil olanlar; Özet Extra Malzemeler
    poz bazlı olmadığından pozlara ekstraPozAdet kuralıyla dağıtılır: kol her ürün, kısıtlayıcı OF, eker alu denizlikli pencere) ve İngilizcede geçerli PAS 24 sertifikası (soum_pas24: seri × ürün tipi × açılım). */
 function ekstraKisa(e,en){ const k=String(e.kod), n=nrmTxt(e.ad);
@@ -807,7 +811,7 @@ function notDoldur(){
   v("pn_ug",[...new Set(P.map(p=>frN(p.ug,1)).filter(Boolean))].join(", "));
   v("pn_pose",[...new Set(dp.map(d=>d.pose.split("\n")[0]))].join(" · ")); v("pn_tapee",has(p=>p.ozl.sove)?"Var":"Yok"); v("pn_eker",S.ekstra.some(e=>/eker/i.test(e.ad))?"Var":"Yok");
   v("pn_proto",$("f_proto").value!==""?"Var":""); v("pn_pmr",has(p=>p.ozl.esik)?"Var ("+P.filter(p=>p.ozl.esik).map(p=>p.kod).join(", ")+")":"Yok");
-  v("pn_kk",S.ekstra.some(e=>/kısıtlayıcı|limit/i.test(e.ad))?"Var":"Yok"); v("pn_balu",has(p=>p.ozl.bAlu)?"Var":"Yok"); v("pn_bbois",has(p=>p.ozl.bBois)?"Var":"Yok"); v("pn_menfez",has(p=>p.ozl.menfez)?"Var":"Yok");
+  v("pn_kk",S.ekstra.some(e=>/kısıtlayıcı|limit/i.test(e.ad))?"Var":"Yok"); v("pn_balu",has(p=>p.ozl.bAlu)?"Var":"Yok"); v("pn_bbois",has(p=>p.ozl.bBois)||S.ekstra.some(e=>/ahsap denizlik/.test(nrmTxt(e.ad))||/AHS-?\s*DEN/i.test(e.kod))?"Var":"Yok"); v("pn_menfez",has(p=>p.ozl.menfez)?"Var":"Yok");
   v("pn_vr",has(p=>p.ozl.panjur)?"Var ("+(has(p=>p.ozl.motor)?"motorlu":"manuel")+")":"Yok");
   v("pn_camlar",[...new Set(dp.map(d=>d.vit).filter(Boolean))].join(" · "));
   document.querySelectorAll("#pnAlan input").forEach(i=>i.oninput=()=>{ i.dataset.elle=1; });
