@@ -256,7 +256,10 @@ function dist(q,C,t){const m=k=>C[k]!==q[k]?1:0,d=C.c[0]!==q.c[0]?1:0,i=C.c[C.c.
   return 100*m('tr')+3*m('ac')+1.5*d+1.5*i+Math.abs(C.tg-q.tg)/2+0.7*Math.abs(C.nlam-q.nlam)+Math.abs(C.cav-q.cav)/6+2*m('fp')+0.1*m('lowe');}
 function kalin(q){if(q.kal!=null&&!q.own)return q.kal;const P=q.c.map(pane);return P.reduce((a,p)=>a+p.mm+(p.lam?0.38*p.pvb:0),0)+q.cav*(q.c.length-1);}
 function median(a){a=a.slice().sort((x,y)=>x-y);const n=a.length;return n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2;}
-function perf(q){const r={};for(const t of ['ug','tl','rw','sf']){let mn=1e9,ds=[];for(const C of CAT){if(C[t]==null)continue;const d=dist(q,C,t);ds.push([d,C[t]]);if(d<mn)mn=d;}
+/* CAM-LISTE-KENDI (04.11.2026, Melih): kombinasyon Cam Listesi'nde birebir varsa Ug/Tlg/Rw+Ctr/Sfg o satır(lar)dan; yoksa en yakınların medyanı */
+const AYNI_K=['tr','lowe','solar','cool','plan','en','sat','xc','ac','fp','tp'];
+function ayni(q,C){return C.c.join('/')===q.c.join('/')&&C.cav===q.cav&&AYNI_K.every(k=>(C[k]||0)===(q[k]||0))&&(C.coat||'')===(q.coat||'');}
+function perf(q){const r={};for(const t of ['ug','tl','rw','sf']){const E=CAT.filter(C=>C[t]!=null&&ayni(q,C));if(E.length){r[t]=median(E.map(C=>C[t]));continue;}let mn=1e9,ds=[];for(const C of CAT){if(C[t]==null)continue;const d=dist(q,C,t);ds.push([d,C[t]]);if(d<mn)mn=d;}
   r[t]=median(ds.filter(x=>x[0]<=mn+0.25).map(x=>x[1]));}return r;}
 /* fiyat */
 function ctxUI(){const form=$('form').value,sp='',adet=+$('adet').value||0,m2=+$('m2').value||0;return{form,frm:form,sp,adet,m2,ort:adet>0&&m2>0?m2/adet:1};}
@@ -301,7 +304,7 @@ function vtxt(v,h){const c=(ok,h)=>h==null?'':(ok?' <span class="ok">✓</span>'
 function calc(){const q=own(),u=ctxUI(),h=hedef();$('ortaWrap').style.display=q.tr?'block':'none';$('avgnote').textContent=u.adet>0?('Ortalama\n'+fmt(u.ort)+' m²/adet'):'';
   const vo=perf(q);/* CAM-V9 HEDEF-BOS: gri ipucu kaldirildi, bos kutu bos gorunur */['h_ug','h_tl','h_rw','h_sf'].forEach(i=>{$(i).placeholder='';});
   const po=price(q,vo,u);let sel={q,v:vo,p:po,name:ownName(q),src:'own'};const hasH=Object.values(h).some(x=>x!=null);
-  if(hasH&&!meets(vo,h)){let best=null;
+  if(hasH&&!meets(vo,h)&&!window.__KENDI/* CAM-LISTE-KENDI: sağ tık penceresi her zaman camın kendisini fiyatlar */){let best=null;
     for(const gevsek of [0,1]){for(const C of CAT){if(C.ug==null||C.tl==null||C.rw==null||C.sf==null)continue;
       if((!gevsek&&C.tr!==q.tr)||C.sat!==q.sat||C.fp!==q.fp||C.ac<q.ac||C.xc<q.xc)continue;const v={ug:C.ug,tl:C.tl,rw:C.rw,sf:C.sf};if(!meets(v,h))continue;
       const p=price(C,v,u);if(!best||p.unit<best.p.unit)best={q:C,v,p,name:C.komb,src:'cat',yapi:gevsek&&C.tr!==q.tr};}if(best)break;}
@@ -313,7 +316,7 @@ function calc(){const q=own(),u=ctxUI(),h=hedef();$('ortaWrap').style.display=q.
   const _fk=P.key.split('|').slice(2,4).join('|'),_fl=P.key.split('|')[3];let bz=g||G.filter(r=>r.k.split('|').slice(2,4).join('|')===_fk&&Math.abs(r.tg-sel.q.tg)<=2).sort((a,b)=>b.n-a.n)[0];
   if(!bz){const cz=G.filter(r=>r.k.split('|')[3]===_fl).sort((a,b)=>Math.abs(a.tg-sel.q.tg)-Math.abs(b.tg-sel.q.tg)||b.n-a.n);bz=cz[0];}
   $('out').innerHTML='<div class="unitrow"><div><div class="lbl">Birim fiyat '+badge+'</div><div class="big">'+f2(unit*KAT,2)/* CAM-V16 BIRIM-2HANE */+' €/m²</div></div>'+
-   '<div class="komb"><div class="lbl">Fiyatlanan kombinasyon</div><b>'+/* CAM-V17 KOMB-FORMDAN: ad ve kalinlik formdaki secimlerden; fiyat hedeflerle secilen kombinasyondan */ownName(q)+' · '+f2(kalin(q),2)+' mm</b></div></div>'+
+   '<div class="komb"><div class="lbl">Fiyatlanan kombinasyon</div><b>'+/* CAM-V17 KOMB-FORMDAN; CAM-LISTE-KENDI: katalogdan başka cam fiyatlandıysa onun adı + not */(sel.src==='cat'?nmT(sel.name)+' · '+f2(kalin(sel.q),2):ownName(q)+' · '+f2(kalin(q),2))+' mm</b>'+note+'</div></div>'+
    hedefUyari(vo,h)+yakinlar(q,po,h,hasH,u);
   window._BF=unit*KAT;refUpd();
   const tgs=sel.q.tg,fk=P.key.split('|').slice(2,4).join('|');
