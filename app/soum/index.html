@@ -339,11 +339,17 @@ function raporCoz(R){
   R.pages.forEach(P=>{
     const it=P.items.slice().sort((a,b)=>a.y-b.y||a.x-b.x);
     if(P.no===1){ baslik=it.filter(i=>i.x<200&&i.y>160&&i.y<200).map(i=>i.s); }
-    const hs=it.filter(i=>i.x<200&&HDR.test(i.s)).map(h=>{ const m=HDR.exec(h.s);
+    /* SOUM-POZ-OKU (04.11.2026, Melih): ölçü başlığı iki satıra bölünmüş olabilir ("900mm x" / "1690mm(1.521 m²)"; uzun poz adlarında) → birleştirilir;
+       poz numarası başlık hücresindeki 1, 2… sayısı; poz adı birden çok satırsa birleştirilir ("F1A6P-" + "F1A7P" → "F1A6P-F1A7P"). */
+    const hdr=it.filter(i=>i.x<200&&HDR.test(i.s)).map(i=>({i,s:i.s,y2:i.y}));
+    it.filter(i=>i.x<200&&/^\d{2,5}mm x\s*$/.test(i.s)).forEach(i=>{ const n=it.find(j=>j!==i&&j.x<220&&j.y>i.y&&j.y<i.y+16&&/^\d{2,5}mm/.test(j.s)); if(n) hdr.push({i,s:i.s.trim()+" "+n.s,y2:n.y}); });
+    hdr.sort((a,b)=>a.i.y-b.i.y);
+    const hs=hdr.map(({i:h,s,y2})=>{ const m=HDR.exec(s);
       const noI=it.filter(i=>i.x<75&&/^\d{1,3}$/.test(i.s)&&i.y<=h.y+2&&i.y>=h.y-22).sort((a,b)=>b.y-a.y)[0];
-      const kodI=it.filter(i=>i.x<75&&i.y>h.y+8&&i.y<h.y+40&&!/^\d+$/.test(i.s)&&i.h>=7).sort((a,b)=>a.y-b.y)[0];
+      const kodL=it.filter(i=>i.x<75&&i.y>h.y+8&&i.y<h.y+40&&!/^\d+$/.test(i.s)&&i.h>=7).sort((a,b)=>a.y-b.y);
+      const kodI=kodL[0], kodS=kodL.reduce((a,i)=>a?(a.endsWith("-")?a+i.s:a+" "+i.s):i.s,"");
       const srI=it.find(i=>/^Arbor\//.test(i.s)&&Math.abs(i.y-h.y)<14);
-      return {no:noI?+noI.s:null,kod:kodI?kodI.s:"",w:+m[1],h:+m[2],seri:srI?srI.s.replace(/^Arbor\//,"").trim():"",hy:h.y,ky:kodI?kodI.y:h.y+26,page:P.no,items:[],blob:[]}; });
+      return {no:noI?+noI.s:null,kod:kodS,w:+m[1],h:+m[2],seri:srI?srI.s.replace(/^Arbor\//,"").trim():"",hy:h.y,hy2:y2,ky:kodI?kodI.y:h.y+26,kyAlt:kodL.length?kodL[kodL.length-1].y:h.y+26,page:P.no,items:[],blob:[]}; });
     hs.forEach(h=>poz.push(h));
     it.forEach(i=>{
       if(/^Özet( |$)/.test(i.s)) { ozet=true; }
@@ -391,10 +397,33 @@ function raporCoz(R){
     const cz=ciz.filter(i=>!ilkTablo||i.y<ilkTablo.y-4);
     const maxY=cz.length?Math.max(...cz.map(i=>i.y)):p.ky+150;
     p.bbox={page:p.page,x0:36,x1:214,y0:p.ky+6,y1:Math.min(maxY+7,(ilkTablo?ilkTablo.y-10:1e9))};
+    /* SOUM-POZ-OKU: çizim, tablo çizgileriyle çerçevelenmiş sol hücreden alınır (başlık satırının altındaki ilk yatay çizgi → sonraki yatay çizgi, sol/sağ dikey çizgilerin içi) */
+    p.cerceve={page:p.page,x0:28,x1:224,y0:Math.max(0,p.hy-24),y1:stokH?stokH.y-2:p.ky+560,ust:Math.max(p.kyAlt||0,p.hy2||p.hy)+1};
     p.metin=p.blob.join("\n");
   });
   return {poz,ekstra:ekstraSat,top,alan,adetTop,baslik};
 }
+async function cizimCerceve(R,b,olcek){ olcek=olcek||3;
+  const cv=await sayfaCiz(R,b.page,olcek); const X=Math.round(b.x0*olcek), Y=Math.round(b.y0*olcek), W=Math.round((b.x1-b.x0)*olcek), Hh=Math.round((b.y1-b.y0)*olcek);
+  if(W<20||Hh<20) return null; const d=cv.getContext("2d").getImageData(X,Y,W,Hh).data, kara=k=>d[k]<140&&d[k+1]<140&&d[k+2]<140&&Math.max(d[k],d[k+1],d[k+2])-Math.min(d[k],d[k+1],d[k+2])<40; /* yalnız gri/siyah tablo çizgisi (mavi/kırmızı ölçü çizgileri değil) */
+  const sat=[]; for(let y=0;y<Hh;y++){ let n=0; for(let x=0;x<W;x++) if(kara((y*W+x)*4)) n++; sat.push(n); } const mx=Math.max(...sat); if(mx<W*0.8) return null;
+  const yat=[]; sat.forEach((n,y)=>{ if(n>=mx*0.97) yat.push(y); }); /* tablo çizgisi = en uzun yatay çizgi boyu (ölçü çizgileri daha kısa) */
+  const gr=a=>a.reduce((g,v)=>{ const s=g[g.length-1]; if(s&&v-s[1]<=olcek*4) s[1]=v; else g.push([v,v]); return g; },[]); /* çift çizgili kenarlar tek sayılır */
+  const ust=(b.ust-b.y0)*olcek, Y1=gr(yat).filter(s=>s[0]>ust); if(Y1.length<2) return null;
+  const ya=Y1[0][1]+1, yb=Y1[1][0]-1, bh=yb-ya; if(bh<30) return null;
+  const dik=[]; for(let x=0;x<W;x++){ let n=0; for(let y=ya;y<yb;y++) if(kara((y*W+x)*4)) n++; if(n>bh*0.85) dik.push(x); }
+  const V=gr(dik); if(V.length<2) return null; let xa=V[0][1]+1, xb=V[V.length-1][0]-1; if(xb-xa<30) return null;
+  const s=3; return kirp(cv,X+xa+s,Y+ya+s,xb-xa-2*s,bh-2*s); }
+async function sayfaCiz(R,page,olcek){ if(!R._cv) R._cv={}; const key=page+"@"+olcek;
+  if(!R._cv[key]){ const pg=await R.doc.getPage(page); const vp=pg.getViewport({scale:olcek}); const cv=document.createElement("canvas"); cv.width=vp.width; cv.height=vp.height;
+    const ctx=cv.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height); await pg.render({canvasContext:ctx,viewport:vp}).promise; R._cv[key]=cv; } return R._cv[key]; }
+function kirp(cv,x,y,w,h){ w=Math.round(w); h=Math.round(h); if(w<5||h<5) return null;
+  const o=document.createElement("canvas"); o.width=w; o.height=h; o.getContext("2d").drawImage(cv,x,y,w,h,0,0,w,h);
+  const c=o.getContext("2d"), d=c.getImageData(0,0,w,h).data; let x0=w,y0=h,x1=0,y1=0;
+  for(let yy=0;yy<h;yy++) for(let xx=0;xx<w;xx++){ const k=(yy*w+xx)*4; if(d[k]<235||d[k+1]<235||d[k+2]<235){ if(xx<x0)x0=xx; if(xx>x1)x1=xx; if(yy<y0)y0=yy; if(yy>y1)y1=yy; } }
+  if(x1<=x0||y1<=y0) return null;
+  const p=6, q=document.createElement("canvas"); q.width=x1-x0+2*p; q.height=y1-y0+2*p; const qc=q.getContext("2d"); qc.fillStyle="#fff"; qc.fillRect(0,0,q.width,q.height);
+  qc.drawImage(o,x0,y0,x1-x0+1,y1-y0+1,p,p,x1-x0+1,y1-y0+1); return {url:q.toDataURL("image/png"),w:q.width,h:q.height}; }
 async function cizimAl(R,bbox,olcek){
   olcek=olcek||3; const key=bbox.page;
   if(!R._cv) R._cv={};
@@ -512,7 +541,7 @@ function pozYorumla(p,dp){
   let facade=""; if(dp){ const ps=nrmTxt(dp.pose); facade=/^tunnel/.test(ps)?"Tunnel au nu intérieur":/applique int/.test(ps)?"App. Int.":/applique ext/.test(ps)?"App. Ext.":/feuillure/.test(ps)?"Feuillure":String(dp.pose).split("\n")[0].slice(0,28); }
   let pfTip=""; if(pf){ if(ozl.esik) pfTip="STD"; else { const dt=nrmTxt(dp?[dp.comp,dp.div,dp.pose,dp.rep].join(" "):""); pfTip=(ozl.bAlu||ozl.bBois)&&/balcon|terrasse|girondin/.test(dt)?"ACC":"SACC"; } }
   return {no:p.no,kod:kodAd(p.kod,pfTip),pfTip,kodPdf:p.kod,L:p.w,H:p.h,F:p.adet,seri:p.seri,brut:p.fiyat,facade,camPdf:A.Cam||"",camFr:camFr(A.Cam),camEn:camEn(A.Cam),rc:rcSinif(A.Cam),bina:"",acPdf:ac,acikPdf:acik,kodlar:(p.items||[]).map(i=>i.s),satine:/satin/i.test(A.Cam||""),ei:((/\bEI\s*-?\s*(30|60)\b/i.exec(A.Cam||"")||[])[1]||""),cam,
-    ug:u.ug,rw:u.rw,rwAlt:u.rwAlt,uw:u.uw,sg:u.sg,tl:u.tl,rwc:u.rwc,notSat:sat,nf,ozl,ob,of,iki,pf,akustik,dp,bbox:p.bbox,agac:A["Ağaç Türü"]||""};
+    ug:u.ug,rw:u.rw,rwAlt:u.rwAlt,uw:u.uw,sg:u.sg,tl:u.tl,rwc:u.rwc,notSat:sat,nf,ozl,ob,of,iki,pf,akustik,dp,bbox:p.bbox,cerceve:p.cerceve,agac:A["Ağaç Türü"]||""};
 }
 function dpEsle(pozlar,dpgf){
   if(!dpgf) return pozlar.map(()=>null);
@@ -545,7 +574,7 @@ async function oku(){
     S.poz=C.poz.map((p,i)=>pozYorumla(p,dps[i]));
     S.ekstra.forEach(e=>{ e.pozda=S.poz.some(p=>(p.kodlar||[]).includes(e.kod)); }); /* SOUM-EKSTRA-POZDA */
     durum("Çizimler hazırlanıyor…");
-    for(const p of S.poz){ try{ p.img=await cizimAl(R,p.bbox,3); }catch(e){ p.img=null; } }
+    for(const p of S.poz){ try{ p.img=(p.cerceve&&await cizimCerceve(R,p.cerceve,3))||await cizimAl(R,p.bbox,3); }catch(e){ p.img=null; } R._cv={}; } /* sayfa görüntüsü bellekten bırakılır */
     baslikDoldur();
     pozCiz(); hesapla();
     const uy=[]; if(S.pdfTop!=null){ const t=S.poz.reduce((a,p)=>a+(p.brut||0)*(p.F||0),0)+S.ekstraTop; if(Math.abs(t-S.pdfTop)>1) uy.push("PDF toplamı ("+fE(S.pdfTop)+") ile pozların brüt toplamı ("+fE(t)+") tutmuyor."); }
@@ -624,7 +653,7 @@ function agacEn(a){ const t=nrmTxt(a); const tur=/cam/.test(t)?"Pine":/mese/.tes
 function agacEn3(a){ const t=nrmTxt(a); const tur=/cam/.test(t)?"Pin":/mese/.test(t)?"Oak":/okaliptus/.test(t)?"Eucalyptus":/lareks/.test(t)?"Larch":/meranti/.test(t)?"Meranti":/iroko/.test(t)?"Iroko":/sapelli/.test(t)?"Sapele":/accoya/.test(t)?"Accoya":String(a||"").split(/\s/)[0];
   const k=/dkd/.test(t)?"DKD":/kkk/.test(t)?"KKK":""; return (tur+" "+k).trim(); }
 function stokEn(ad){ if(/kap[ıi]\s*kapat[ıi]c[ıi]/i.test(ad||"")&&/gizli/i.test(ad||"")) return "Concealed door closer"; /* SOUM-OPSIYON-SEC: Kapı Kapatıcı (Gizli) ITS 96 3-6 */
-  let s=" "+String(ad||"")+" "; s=s.replace(/Kap[ıi]\s*Kapat[ıi]c[ıi]/gi,"Door closer"); [[/Paslanmaz Çelik/gi,"stainless steel"],[/Alt Boy Eker/gi,"Bottom sill extension"],[/Eker/gi,"sill extension"],[/Pencere Kolu/gi,"window handle"],[/Kapı Kolu/gi,"door handle"],[/Kolu\b/gi,"handle"],
+  let s=" "+String(ad||"")+" "; s=s.replace(/Kap[ıi]\s*Kapat[ıi]c[ıi]/gi,"Door closer").replace(/PMR\s*KOL/gi,"PRM handle").replace(/\bZ\s*Kol\b/gi,"Z handle"); /* SOUM-POZ-OKU */ [[/Paslanmaz Çelik/gi,"stainless steel"],[/Alt Boy Eker/gi,"Bottom sill extension"],[/Eker/gi,"sill extension"],[/Pencere Kolu/gi,"window handle"],[/Kapı Kolu/gi,"door handle"],[/Kolu\b/gi,"handle"],
   [/Kanat Kısıtlayıcı/gi,"Sash restrictor"],[/Kısıtlayıcı/gi,"restrictor"],[/Menfez/gi,"trickle vent"],[/Eşik/gi,"threshold"],[/Kilit/gi,"lock"],[/Silindir/gi,"cylinder"],[/Menteşe/gi,"hinge"],[/Pervaz/gi,"architrave"],[/Denizlik/gi,"sill"],
   [/Kapı/gi,"door"],[/Pencere/gi,"window"],[/Kanat/gi,"sash"],[/Kasa/gi,"frame"],[/Ahşap/gi,"timber"],[/Alüminyum/gi,"aluminium"],[/Beyaz/gi,"white"],[/Siyah/gi,"black"],[/Gri/gi,"grey"],[/Alt/g,"bottom"],[/Üst/g,"top"]].forEach(([r,v])=>{ s=s.replace(r,v); });
   s=s.replace(/\s+/g," ").trim(); return s.charAt(0).toUpperCase()+s.slice(1); }
