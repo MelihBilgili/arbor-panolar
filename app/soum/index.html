@@ -519,10 +519,10 @@ function camBul(p){
   const k1=kodR.find(r=>nrmAd(r.kombinasyon)===ad); if(k1) return k1;
   const e=S.cam.filter(r=>nrmAd(r.kombinasyon)===ad); const e1=e.find(r=>ug&&Math.abs(nn(r.ug)-+ug.replace(",","."))<1e-9)||e[0];
   return e1||kodR[0]||null; }
-const kodAd=(k,t)=>k+(t==="SACC"?" (PF-SACC)":t==="ACC"?" (PF-ACC)":"");
+const kodAd=(k,t)=>/PF-?S?ACC/i.test(k)?k:k+(t==="SACC"?" (PF-SACC)":t==="ACC"?" (PF-ACC)":""); /* SOUM-PF-AD: Pencad adında PF-ACC/PF-SACC varsa ek yazılmaz */
 function pozYorumla(p,dp){
   const A=p.A, ac=A["Açılım"]||"", acik=A["Açıklama"]||"", m=p.metin||"";
-  const ozl={sove:/HUS-KNTR|SOVE/i.test(m),bAlu:/ALU-PRF/i.test(m),bBois:/FJ-AHS-DEN/i.test(m),menfez:/\bMNF-/.test(m),esik:/Eşik|337\.106/i.test(m),panjur:/Panjur/i.test(A["Panjur"]||"")?/var/i.test(A["Panjur"]):/-PJ-/.test(m),
+  const ozl={sove:/HUS-KNTR|SOVE/i.test(m),bAlu:/ALU-PRF/i.test(m),bBois:/FJ-AHS-/i.test(m) /* SOUM-PF-AD: kod iki satıra bölünebiliyor (FJ-AHS- / DEN…) */,menfez:/\bMNF-/.test(m),esik:/Eşik|337\.106/i.test(m),panjur:/Panjur/i.test(A["Panjur"]||"")?/var/i.test(A["Panjur"]):/-PJ-/.test(m),
     motor:/motor/i.test(m)&&/-PJ-|panjur/i.test(m)};
   const iki=/\bFr\./.test(ac)||/Fransız|Çift Kanat/i.test(acik);
   const ob=/Çift Açılım/i.test(ac), of=/Tek Açılım/i.test(ac)&&!ob;
