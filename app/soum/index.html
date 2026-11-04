@@ -99,6 +99,14 @@
         <div class="s2"><label for="f_uretim">Üretim süresi (hafta) <a href="#" id="f_uretimSifirla" class="mini">hesapla</a></label><input id="f_uretim" inputmode="numeric"></div>
         <div class="s2"><label for="f_vitro">Vitrophanie</label><select id="f_vitro"><option value="1">Dahil</option><option value="0">Hariç</option></select></div>
       </div>
+      <div class="g" style="margin-top:6px"><!-- SOUM-OPSIYON-SEC -->
+        <div class="s2"><label for="f_op_cam">Opsiyon: Kırık cam değişimi</label><select id="f_op_cam"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
+        <div class="s2"><label for="f_op_mv">Opsiyon: OB → OF geçiş (MV)</label><select id="f_op_mv"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
+        <div class="s2"><label for="f_op_pmr">Opsiyon: PMR kol</label><select id="f_op_pmr"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
+        <div class="s2"><label for="f_op_cage">Opsiyon: Metal kasa</label><select id="f_op_cage"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
+        <div class="s2"><label for="f_op_manitou">Opsiyon: Manitou</label><select id="f_op_manitou"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
+        <div class="s2"><label for="f_op_grue">Opsiyon: Vinç ve iskele</label><select id="f_op_grue"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
+      </div>
       <div class="g" id="enAlan" style="margin-top:6px;display:none">
         <div class="s2"><label for="f_kur">Kur € → £ <a href="#" id="f_kurSifirla" class="mini">güncel</a></label><input id="f_kur" inputmode="decimal" value=""></div>
         <div class="s2"><label for="f_pas">PAS 24 (notlarda)</label><select id="f_pas"><option value="0">Hayır</option><option value="1">Evet</option></select></div><!-- SOUM-PAS-TERMIN -->
@@ -615,7 +623,8 @@ function agacEn(a){ const t=nrmTxt(a); const tur=/cam/.test(t)?"Pine":/mese/.tes
    + ", bottom sash fixed" (Alt Sabit) + ", upper sash fixed" (Üst Sabit); eşik ayrı satır; pozun ekstra malzemeleri en altta, stok adının İngilizcesiyle. */
 function agacEn3(a){ const t=nrmTxt(a); const tur=/cam/.test(t)?"Pin":/mese/.test(t)?"Oak":/okaliptus/.test(t)?"Eucalyptus":/lareks/.test(t)?"Larch":/meranti/.test(t)?"Meranti":/iroko/.test(t)?"Iroko":/sapelli/.test(t)?"Sapele":/accoya/.test(t)?"Accoya":String(a||"").split(/\s/)[0];
   const k=/dkd/.test(t)?"DKD":/kkk/.test(t)?"KKK":""; return (tur+" "+k).trim(); }
-function stokEn(ad){ let s=" "+String(ad||"")+" "; [[/Paslanmaz Çelik/gi,"stainless steel"],[/Alt Boy Eker/gi,"Bottom sill extension"],[/Eker/gi,"sill extension"],[/Pencere Kolu/gi,"window handle"],[/Kapı Kolu/gi,"door handle"],[/Kolu\b/gi,"handle"],
+function stokEn(ad){ if(/kap[ıi]\s*kapat[ıi]c[ıi]/i.test(ad||"")&&/gizli/i.test(ad||"")) return "Concealed door closer"; /* SOUM-OPSIYON-SEC: Kapı Kapatıcı (Gizli) ITS 96 3-6 */
+  let s=" "+String(ad||"")+" "; s=s.replace(/Kap[ıi]\s*Kapat[ıi]c[ıi]/gi,"Door closer"); [[/Paslanmaz Çelik/gi,"stainless steel"],[/Alt Boy Eker/gi,"Bottom sill extension"],[/Eker/gi,"sill extension"],[/Pencere Kolu/gi,"window handle"],[/Kapı Kolu/gi,"door handle"],[/Kolu\b/gi,"handle"],
   [/Kanat Kısıtlayıcı/gi,"Sash restrictor"],[/Kısıtlayıcı/gi,"restrictor"],[/Menfez/gi,"trickle vent"],[/Eşik/gi,"threshold"],[/Kilit/gi,"lock"],[/Silindir/gi,"cylinder"],[/Menteşe/gi,"hinge"],[/Pervaz/gi,"architrave"],[/Denizlik/gi,"sill"],
   [/Kapı/gi,"door"],[/Pencere/gi,"window"],[/Kanat/gi,"sash"],[/Kasa/gi,"frame"],[/Ahşap/gi,"timber"],[/Alüminyum/gi,"aluminium"],[/Beyaz/gi,"white"],[/Siyah/gi,"black"],[/Gri/gi,"grey"],[/Alt/g,"bottom"],[/Üst/g,"top"]].forEach(([r,v])=>{ s=s.replace(r,v); });
   s=s.replace(/\s+/g," ").trim(); return s.charAt(0).toUpperCase()+s.slice(1); }
@@ -682,12 +691,13 @@ function hesapla(){
   const kamyon=Math.max(1,+$("f_kamyon").value||Math.ceil(adet/50)); if(!$("f_kamyon").dataset.elle) $("f_kamyon").value=Math.ceil(adet/50);
   const transport=kamyon*2*1000*K, petit=$("f_petit").value==="1";
   /* ekstralar */
-  const ekL=S.ekstra.filter(e=>e.dahil&&!e.pozda).map(e=>({e,ad:ekstraAd(e),tutar:(e.tutar||0)*X2*(+e.carpan||1)*K}));
+  /* SOUM-OPSIYON-SEC (04.11.2026, Melih): Pencad ekstra malzemesi "Dahil" → yalnız ilgili pozların notunda, toplamda/opsiyonda satır yok; "Dahil" değil → notta yok, toplamın altında ayrı opsiyon satırı */
+  const ekL=[], ekO=S.ekstra.filter(e=>!e.dahil).map(e=>({e,ad:ekstraAd(e),tutar:(e.tutar||0)*X2*(+e.carpan||1)*K}));
   const vitDahil=$("f_vitro").value==="1", vitTut=vitMl*35*K;
   /* prototip */
   const pi=$("f_proto").value; let proto=null;
   if(pi!==""){ const p=S.poz[+pi]; const pm2=p.L*p.H/1e6; const pay=m2?pm2/m2:0;
-    const birimEk=S.ekstra.filter(e=>e.dahil&&e.miktar&&!e.pozda).reduce((a,e)=>{ const adetPoz=ekstraPozAdet(e,p); return a+(adetPoz?(e.fiyat||0)*X2*(+e.carpan||1)*K*adetPoz:0); },0);
+    const birimEk=S.ekstra.filter(e=>false).reduce((a,e)=>{ const adetPoz=ekstraPozAdet(e,p); return a+(adetPoz?(e.fiyat||0)*X2*(+e.carpan||1)*K*adetPoz:0); },0);
     const tp=pay*((montDahil?pose:0)+transport);
     proto={p,tutar:n2(p.Q)+tp+birimEk,pay,tp,birimEk}; }
   /* SOUM-PRORATA (27.10.2026, Melih): Insertion süresi (saat) varsayılanı = (Livré sur chantier (insertion hariç, €) × 0,3 × 0,1) / 35,5, 0,1 saate yuvarlanır, elle değiştirilebilir;
@@ -701,7 +711,7 @@ function hesapla(){
   /* opsiyonlar */
   const obAdet=S.poz.filter(p=>p.ob).reduce((a,p)=>a+(p.F||0),0);
   const mv=S.of&&S.pdfTop!=null&&S.of.top!=null?((S.pdfTop-S.ekstraTop)-(S.of.top-S.of.ekstra))*X2*2*K:null;
-  H={K,X2,ins,insAd,pror,HT,m2,adet,vitMl,vitTut,vitDahil,pose,birim,mf,montDahil,kamyon,transport,petit,ekL,proto,toplam,obAdet,mv,brut,brutPoz,uzak,dep};
+  H={ekO,K,X2,ins,insAd,pror,HT,m2,adet,vitMl,vitTut,vitDahil,pose,birim,mf,montDahil,kamyon,transport,petit,ekL,proto,toplam,obAdet,mv,brut,brutPoz,uzak,dep};
   ozetCiz();
 }
 const prorAd=h=>tt("Prorata ("+frN(h.pror.oran,2).replace(/,00$/,"")+" %)","Prorata ("+dN(h.pror.oran,2).replace(/\.00$/,"")+"%)");
@@ -728,15 +738,16 @@ function ozetCiz(){
   if(h.ins) sat.push([h.insAd,h.ins,"süre × 35,5 €/saat"+kx+" (varsayılan süre = Livré sur chantier × 0,3 × 0,1 / 35,5)","ins"]);
   if(h.vitDahil) sat.push([tt("PV Vitrophanie ("+frN(h.vitMl,2)+" ml)","Extra: glazing manifestation ("+dN(h.vitMl,2)+" lm)"),h.vitTut,"2 × L × adet × 35 €/ml"+kx,"vitro"]);
   const op=[[tt("Option Remplacement vitrage cassé sur chantier (10 vitrages)","Option: replacement of broken glazing on site (10 units)"),h.HT*0.02,"HT × %2","cam"]];
-  if(h.mv!=null) op.push([tt("Option MV Passage OB à OF ("+h.obAdet+"-u)","Option: deduction for inward opening instead of tilt & turn ("+h.obAdet+" u)"),h.mv,"(Pencad toplamı − ekstralar − OF'ye geçiş toplamı) × "+frN(h.X2,2)+" × 2"+kx]);
-  op.push([tt("Option Poignée PMR","Option: accessible (PRM) handle"),tt(frN(210.12*h.X2,2).replace(/\B(?=(\d{3})+(?!\d))/g,".")+" € / unité","£"+dN(210.12*h.X2*h.K,2)+" / unit"),"210,12 € × "+frN(h.X2,2)+kx]);
-  op.push([tt("Option Cage Métallique","Option: metal crate"),tt("3250 € / unité","£"+dN(3250*h.K,2)+" / unit"),"3.250 €"+kx]); op.push([tt("Option Manitou","Option: telehandler (Manitou)"),h.adet/50*2000*h.K,"adet / 50 × 2.000 €"+kx]); op.push([tt("Option Grue et échafaudage","Option: crane and scaffolding"),tt("Non Compris","Not included"),""]);
-  H.sat=sat; H.op=op;
+  (h.ekO||[]).forEach(x=>op.push([tt("Option "+x.ad,x.ad.replace(/^Extra:/,"Option:")),x.tutar,fE(x.e.tutar)+" × "+frN(h.X2,2)+(+x.e.carpan!==1?" × "+x.e.carpan:"")+kx+" (Pencad ekstra, Dahil değil)","ek"]));
+  if(h.mv!=null) op.push([tt("Option MV Passage OB à OF ("+h.obAdet+"-u)","Option: deduction for inward opening instead of tilt & turn ("+h.obAdet+" u)"),h.mv,"(Pencad toplamı − ekstralar − OF'ye geçiş toplamı) × "+frN(h.X2,2)+" × 2"+kx,"mv"]);
+  op.push([tt("Option Poignée PMR","Option: accessible (PRM) handle"),tt(frN(210.12*h.X2,2).replace(/\B(?=(\d{3})+(?!\d))/g,".")+" € / unité","£"+dN(210.12*h.X2*h.K,2)+" / unit"),"210,12 € × "+frN(h.X2,2)+kx,"pmr"]);
+  op.push([tt("Option Cage Métallique","Option: metal crate"),tt("3250 € / unité","£"+dN(3250*h.K,2)+" / unit"),"3.250 €"+kx,"cage"]); op.push([tt("Option Manitou","Option: telehandler (Manitou)"),h.adet/50*2000*h.K,"adet / 50 × 2.000 €"+kx,"manitou"]); op.push([tt("Option Grue et échafaudage","Option: crane and scaffolding"),tt("Non Compris","Not included"),"","grue"]);
+  H.sat=sat; H.op=op.filter(o=>{ const e=document.getElementById("f_op_"+o[3]); return !e||e.value==="1"; }); const op0=op; /* SOUM-OPSIYON-SEC: Hayır seçilen opsiyon Excel/PDF/özette yok */
   $("ozet").innerHTML='<table><tbody>'+sat.map(s=>'<tr><td class="l">'+esc(s[0])+'</td><td class="num b">'+fP(s[1])+'</td><td class="l mini">'+esc(s[2])+'</td></tr>').join("")
     +'<tr class="top"><td class="l">'+tt("Livré sur chantier","Delivered to site")+'</td><td class="num">'+fP(h.toplam)+'</td><td class="l mini">'+fN(h.adet,0)+' ürün · '+fN(h.m2,2)+' m² · iskonto çarpanı '+frN(h.X2,2)+'</td></tr>'
     +(h.pror?'<tr><td class="l">'+esc(prorAd(h))+'</td><td class="num b">'+fP(h.pror.tutar)+'</td><td class="l mini">Livré sur chantier × %'+frN(h.pror.oran,2)+'</td></tr>':'')
-    +op.map(s=>'<tr class="opt"><td class="l">'+esc(s[0])+'</td><td class="num">'+(typeof s[1]==="number"?fP(s[1]):esc(s[1]))+'</td><td class="l mini">'+esc(s[2])+'</td></tr>').join("")+'</tbody></table>';
-  $("ekstralar").innerHTML=S.ekstra.length?'<table><thead><tr><th>Dahil</th><th class="l">Stok</th><th class="l">Ad</th><th>Miktar</th><th>Pencad tutarı</th><th>Çarpan</th><th class="l">Offre satırı</th></tr></thead><tbody>'+S.ekstra.map((e,i)=>'<tr><td><input type="checkbox" data-ed="'+i+'"'+(e.dahil?' checked':'')+'></td><td class="l">'+esc(e.kod)+'</td><td class="l">'+esc(e.ad)+'</td><td>'+fN(e.miktar,0)+' '+esc(e.birim)+'</td><td class="num">'+fE(e.tutar)+'</td><td><input class="n" data-ec="'+i+'" value="'+esc(e.carpan)+'"></td><td class="l">'+(e.pozda?'<i>Pozun notunda (ayrı satır yok)</i>':esc(ekstraAd(e)))+'</td></tr>').join("")+'</tbody></table>':'<div class="bos">Raporda ekstra malzeme yok.</div>';
+    +H.op.map(s=>'<tr class="opt"><td class="l">'+esc(s[0])+'</td><td class="num">'+(typeof s[1]==="number"?fP(s[1]):esc(s[1]))+'</td><td class="l mini">'+esc(s[2])+'</td></tr>').join("")+'</tbody></table>';
+  $("ekstralar").innerHTML=S.ekstra.length?'<table><thead><tr><th>Dahil</th><th class="l">Stok</th><th class="l">Ad</th><th>Miktar</th><th>Pencad tutarı</th><th>Çarpan</th><th class="l">Offre satırı</th></tr></thead><tbody>'+S.ekstra.map((e,i)=>'<tr><td><input type="checkbox" data-ed="'+i+'"'+(e.dahil?' checked':'')+'></td><td class="l">'+esc(e.kod)+'</td><td class="l">'+esc(e.ad)+'</td><td>'+fN(e.miktar,0)+' '+esc(e.birim)+'</td><td class="num">'+fE(e.tutar)+'</td><td><input class="n" data-ec="'+i+'" value="'+esc(e.carpan)+'"></td><td class="l">'+(e.dahil?'<i>Pozun notunda (ayrı satır yok)</i>':esc(tt("Option "+ekstraAd(e),ekstraAd(e).replace(/^Extra:/,"Option:"))))+'</td></tr>').join("")+'</tbody></table>':'<div class="bos">Raporda ekstra malzeme yok.</div>';
   document.querySelectorAll("[data-ed]").forEach(c=>c.onchange=()=>{ S.ekstra[+c.dataset.ed].dahil=c.checked; hesapla(); });
   document.querySelectorAll("[data-ec]").forEach(c=>c.onchange=()=>{ S.ekstra[+c.dataset.ec].carpan=+c.value.replace(",",".")||1; hesapla(); });
   S.poz.forEach((p,i)=>{ const u=$("u"+i); if(u) u.innerHTML=uygun(p); });
@@ -937,7 +948,7 @@ async function excelYap(){
   [uwS,swS].forEach(sh=>{ sh.getColumn(1).width=20; for(let k=2;k<=18;k++) sh.getColumn(k).width=11; });
   const buf=await wb.xlsx.writeBuffer();
   const yy=tar.toISOString().slice(2,10).replace(/-/g,"");
-  const ad=("Soum_"+(S.baslik[1]||$("f_proje").value)+"_"+(S.baslik[0]||$("f_firma").value)+"_"+yy+(DIL()==="en"?"_EN":"")).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_")+".xlsx";
+  const ad=("Excel_"+(S.baslik[1]||$("f_proje").value)+"_"+(S.baslik[0]||$("f_firma").value)+"_"+yy+(DIL()==="en"?"_EN":"")).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_")+".xlsx";
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})); a.download=ad; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },2000);
   window._SON_EXCEL={ad,buf};
   /* müşteri adresi musteri_firma'ya (yeniden kullanım için) */
@@ -967,7 +978,7 @@ $("btnKlasor").onclick=klasorSec;
 $("inKlasor").onchange=e=>{ S.dosya=[]; const fs=[...e.target.files].filter(f=>!/(^|\/)[_.][^\/]*\//.test(f.webkitRelativePath||"")); dosyaEkle(fs); const r=(fs[0]&&fs[0].webkitRelativePath||"").split("/")[0]; $("kokDurum").textContent=r?"Seçili klasör: "+r:""; durum(fs.length+" dosya bulundu. Kullanımları kontrol edip <b>Oku</b>'ya basınız."); };
 $("btnOku").onclick=oku; $("btnExcel").onclick=excelYap;
 function enGoster(){ $("enAlan").style.display=EN()?"":"none"; }
-["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro","f_k_den","f_k_myuva","f_k_menfez","f_k_icden","f_k_pervaz","f_pas"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto"||id==="f_bolge") notDoldur(); });
+["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro","f_k_den","f_k_myuva","f_k_menfez","f_k_icden","f_k_pervaz","f_pas","f_op_cam","f_op_mv","f_op_pmr","f_op_cage","f_op_manitou","f_op_grue"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto"||id==="f_bolge") notDoldur(); });
 $("f_revize").onchange=()=>revGoster();
 $("f_ins_sure").oninput=()=>{ $("f_ins_sure").dataset.elle=1; hesapla(); }; $("f_insSifirla").onclick=e=>{ e.preventDefault(); delete $("f_ins_sure").dataset.elle; hesapla(); };
 $("f_pror").oninput=()=>{ hesapla(); notDoldur(); };
