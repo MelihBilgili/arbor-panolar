@@ -715,7 +715,7 @@ function cfIsle(w,r0){ const C0=r0.C, r={kombinasyon:C0.komb||C0.c,ug:C0.ug,lt:C
   const sv=(id,v,dg)=>{ $w(id).value=v==null?"":(+v).toFixed(dg); };
   sv("h_ug",r.ug,2); sv("h_tl",r.lt,2); sv("h_rw",r._rwctr,0); sv("h_sf",r.g,2);
   $w("pencad").value=""; $w("ref").value="";
-  w.calc(); return true; }
+  w.__KENDI=true; /* CAM-LISTE-KENDI: pencere her zaman camın kendisini fiyatlar */ w.calc(); return true; }
 function cfAlt(w){ const o=w.document.getElementById("out"); if(!o) return "";
   const hd=o.querySelector(".hdfw"); return (hd?hd.outerHTML:"")+[...o.querySelectorAll(".line.yk")].map(x=>x.outerHTML).join(""); }
 function cfTalimat(w){ const d=w.document, o=d.getElementById("out"), ur=o&&o.querySelector(".unitrow");
