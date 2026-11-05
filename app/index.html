@@ -462,10 +462,11 @@ async function grVakit(){
   const j=u=>fetch(u).then(r=>r.ok?r.json():null).catch(()=>null);
   const tr=p2(t.getDate())+"."+p2(t.getMonth()+1)+"."+t.getFullYear();
   /* Birincil: Diyanet verisi (ezanvakti.emushaf.net, İstanbul ilçe 9541); yedek: aladhan.com Diyanet yöntemi */
-  const [dy,ez0,hv]=await Promise.all([
+  const [dy,ez0,hv,hy]=await Promise.all([
     j("https://ezanvakti.emushaf.net/vakitler/9541"),
     j("https://api.aladhan.com/v1/timingsByCity/"+dmy+"?city=Istanbul&country=Turkey&method=13"),
-    j("https://api.open-meteo.com/v1/forecast?latitude=41.1324&longitude=29.0951&hourly=temperature_2m&daily=sunrise,sunset,precipitation_sum,precipitation_probability_max&timezone=Europe%2FIstanbul&start_date="+iso+"&end_date="+iso)
+    j("https://api.open-meteo.com/v1/forecast?latitude=41.1324&longitude=29.0951&hourly=temperature_2m&daily=sunrise,sunset,precipitation_sum,precipitation_probability_max&timezone=Europe%2FIstanbul&start_date="+iso+"&end_date="+iso),
+    j("https://api.open-meteo.com/v1/forecast?latitude=41.1324&longitude=29.0951&daily=precipitation_sum&models=ecmwf_ifs025,icon_seamless&timezone=Europe%2FIstanbul&start_date="+iso+"&end_date="+iso) /* GIRIS-YAGIS-IKI: ECMWF + ICON (DWD) */
   ]); /* GIRIS-HAVA-BEYKOZ: hava (sıcaklık, yağış) Beykoz koordinatlarıyla; ezan vakitleri İstanbul */
   const el=grEl("gr-vakit"); if(!el) return;
   const P=[];
@@ -477,7 +478,8 @@ async function grVakit(){
     const v=hv.hourly.time.map((x,i)=>[String(x),hv.hourly.temperature_2m[i]]).filter(a=>a[1]!=null&&(!sr||a[0]>=sr.slice(0,13))&&(!ss||a[0]<=ss)).map(a=>a[1]);
     if(v.length) P.push("Gündüz ort. "+Math.round(v.reduce((a,b)=>a+b,0)/v.length)+" °C");
     const mm=hv.daily.precipitation_sum&&hv.daily.precipitation_sum[0], pr=hv.daily.precipitation_probability_max&&hv.daily.precipitation_probability_max[0];
-    P.push("Yağış "+(mm==null?"—":Number(mm).toLocaleString("tr-TR",{maximumFractionDigits:1})+" mm")); /* GIRIS-OLASILIK-YOK: yağış olasılığı yazılmaz */
+    const fm=x=>x==null?"—":Number(x).toLocaleString("tr-TR",{maximumFractionDigits:1})+" mm", hd=hy&&hy.daily||{}, ec=hd.precipitation_sum_ecmwf_ifs025&&hd.precipitation_sum_ecmwf_ifs025[0], ic=hd.precipitation_sum_icon_seamless&&hd.precipitation_sum_icon_seamless[0];
+    P.push((ec==null&&ic==null)?"Yağış "+fm(mm):"Yağış ECMWF "+fm(ec)+" · ICON "+fm(ic)); /* GIRIS-YAGIS-IKI: iki model; ikisi de yoksa eski tek değer */ /* GIRIS-OLASILIK-YOK: yağış olasılığı yazılmaz */
   } else P.push("Hava durumu alınamadı");
   /* GIRIS-UST-ORTAK: iki kutu — ezan vakitleri / hava */
   el.innerHTML=P.map(x=>'<div class="gr-bx">'+esc(x).replace(/ · /g,' · ')+'</div>').slice(0,1).join('')+(P.length>1?'<div class="gr-bx gr-bxh">'+esc(P.slice(1).join(' · '))+'</div>':'');
