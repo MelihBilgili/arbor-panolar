@@ -126,6 +126,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <datalist id="pl"></datalist>
       <button class="btn" id="olustur">Link oluştur</button>
       <span class="firma" id="firma"></span>
+      <label class="firma" id="dil-kutu" style="display:none">Anket dili <select class="t" id="dil" style="padding:5px 8px"><option value="tr">Türkçe</option><option value="fr">Fransızca</option><option value="de">Almanca</option><option value="en">İngilizce</option></select></label>
     </div>
     <div class="hint">Link yalnız seçilen proje içindir ve bir kez doldurulabilir. Aynı projede birden çok kişiye anket gerekiyorsa her biri için ayrı link oluşturun.</div>
     <div class="linkbox" id="lb">
@@ -292,10 +293,18 @@ function ankKisi(){
   return ARB_ACTIVE===ARB_MB_SB?{kod:"MB",ad:"Melih Bilgili"}:{kod:"",ad:""};
 }
 function ankMsg(t,c){ const m=$("msg1"); m.className="msg "+(c||""); m.textContent=t||""; }
+/* MUSTERI-ANKET-DIL (05.11.2026): link ve mail metni anket diline göre (tr/fr/de/en) */
+const ANK_DIL_AD={tr:"Türkçe",fr:"Fransızca",de:"Almanca",en:"İngilizce"};
+function ankLink(r){ return ANK_URL+r.token+"&l="+(r.dil||"fr"); }
 function ankMailto(r){
-  const konu="ARBOR — Enquête de satisfaction — "+r.proje;
-  const govde="Bonjour,\n\nDans le but d'améliorer continuellement la qualité de nos produits et de nos services, nous vous remercions de bien vouloir répondre à notre courte enquête de satisfaction concernant le projet « "+r.proje+" ».\n\n"
-    +"Il s'agit d'une démarche qualité : votre avis sur l'ensemble du projet nous aide à progresser.\n\nLien de l'enquête (quelques minutes) :\n"+ANK_URL+r.token+"\n\nNous vous remercions pour votre précieuse collaboration.\n\nBien cordialement,";
+  const u=ankLink(r), p=r.proje, d=r.dil||"fr";
+  const M={
+    fr:["ARBOR — Enquête de satisfaction — "+p,"Bonjour,\n\nDans le but d'améliorer continuellement la qualité de nos produits et de nos services, nous vous remercions de bien vouloir répondre à notre courte enquête de satisfaction concernant le projet « "+p+" ».\n\nIl s'agit d'une démarche qualité : votre avis sur l'ensemble du projet nous aide à progresser.\n\nLien de l'enquête (quelques minutes) :\n"+u+"\n\nNous vous remercions pour votre précieuse collaboration.\n\nBien cordialement,"],
+    en:["ARBOR — Customer satisfaction survey — "+p,"Hello,\n\nIn order to continuously improve the quality of our products and services, we would be grateful if you could answer our short satisfaction survey about the project \u201c"+p+"\u201d.\n\nThis is part of our quality approach: your feedback on the whole project helps us improve.\n\nSurvey link (a few minutes):\n"+u+"\n\nThank you for your valuable cooperation.\n\nKind regards,"],
+    de:["ARBOR — Kundenzufriedenheitsumfrage — "+p,"Guten Tag,\n\num die Qualität unserer Produkte und Dienstleistungen kontinuierlich zu verbessern, bitten wir Sie, unsere kurze Zufriedenheitsumfrage zum Projekt \u201e"+p+"\u201c zu beantworten.\n\nDies ist Teil unseres Qualitätsmanagements: Ihre Rückmeldung zum gesamten Projekt hilft uns, besser zu werden.\n\nLink zur Umfrage (wenige Minuten):\n"+u+"\n\nVielen Dank für Ihre wertvolle Zusammenarbeit.\n\nMit freundlichen Grüßen"],
+    tr:["ARBOR — Müşteri Memnuniyet Anketi — "+p,"Merhaba,\n\nÜrün ve hizmetlerimizin kalitesini sürekli iyileştirmek amacıyla, \u00ab"+p+"\u00bb projesiyle ilgili kısa memnuniyet anketimizi yanıtlamanızı rica ederiz.\n\nBu bir kalite çalışmasıdır; projenin tamamına ilişkin görüşleriniz gelişmemize yardımcı olur.\n\nAnket bağlantısı (birkaç dakika):\n"+u+"\n\nDeğerli iş birliğiniz için teşekkür ederiz.\n\nSaygılarımızla,"]
+  };
+  const [konu,govde]=M[d]||M.fr;
   return "mailto:?subject="+encodeURIComponent(konu)+"&body="+encodeURIComponent(govde);
 }
 async function ankKopya(txt){
@@ -303,18 +312,21 @@ async function ankKopya(txt){
   catch(e){ const t=document.createElement("textarea"); t.value=txt; document.body.appendChild(t); t.select(); let ok=false; try{ ok=document.execCommand("copy"); }catch(_){} t.remove(); return ok; }
 }
 async function ankProjeler(){
-  const {data,error}=await sb.from("sel_arb_proje").select("proje,firma,sira").order("proje");
+  const {data,error}=await sb.from("anket_proje").select("proje,firma,ulke,dil").order("proje");
   if(error){ ankMsg("Proje listesi okunamadı: "+error.message,"err"); return; }
   ANK_PROJ={};
-  (data||[]).filter(r=>!/\barge\b/i.test(r.proje||"")).forEach(r=>{ if(r.proje&&!ANK_PROJ[r.proje]) ANK_PROJ[r.proje]=r.firma||""; });
-  $("pl").innerHTML=Object.keys(ANK_PROJ).sort((a,b)=>a.localeCompare(b,"tr")).map(p=>`<option value="${esc(p)}">${esc(ANK_PROJ[p])}</option>`).join("");
+  (data||[]).forEach(r=>{ if(r.proje&&!ANK_PROJ[r.proje]) ANK_PROJ[r.proje]={firma:r.firma||"",ulke:r.ulke||"",dil:r.dil||"fr"}; });
+  $("pl").innerHTML=Object.keys(ANK_PROJ).sort((a,b)=>a.localeCompare(b,"tr")).map(p=>`<option value="${esc(p)}">${esc([ANK_PROJ[p].firma,ANK_PROJ[p].ulke].filter(Boolean).join(" · "))}</option>`).join("");
 }
-$("proje").addEventListener("input",()=>{ const p=$("proje").value.trim(); $("firma").textContent=(p in ANK_PROJ)?(ANK_PROJ[p]?"Müşteri: "+ANK_PROJ[p]:""):""; });
+$("proje").addEventListener("input",()=>{ const p=$("proje").value.trim(), x=ANK_PROJ[p];
+  $("firma").textContent=x?[x.firma?"Müşteri: "+x.firma:"",x.ulke?"Ülke: "+x.ulke:""].filter(Boolean).join(" · "):"";
+  $("dil-kutu").style.display=x?"":"none"; if(x) $("dil").value=x.dil; });
 $("olustur").onclick=async()=>{
   const p=$("proje").value.trim();
   if(!(p in ANK_PROJ)){ ankMsg("Listeden bir proje seçiniz.","err"); return; }
   const k=ankKisi(); $("olustur").disabled=true; ankMsg("Link oluşturuluyor…");
-  const {data,error}=await sb.from("musteri_anket").insert({proje:p,firma:ANK_PROJ[p]||null,olusturan:k.kod||null,olusturan_ad:k.ad||null}).select("*").single();
+  const x=ANK_PROJ[p];
+  const {data,error}=await sb.from("musteri_anket").insert({proje:p,firma:x.firma||null,ulke:x.ulke||null,dil:$("dil").value||x.dil,olusturan:k.kod||null,olusturan_ad:k.ad||null}).select("*").single();
   $("olustur").disabled=false;
   if(error){ ankMsg("Link oluşturulamadı: "+error.message,"err"); return; }
   ankMsg("");
@@ -323,7 +335,7 @@ $("olustur").onclick=async()=>{
 };
 function ankGoster(r){
   $("lb").classList.add("on"); $("lb-baslik").textContent=r.proje+" — müşteri anket linki";
-  $("lb-url").value=ANK_URL+r.token;
+  $("lb-url").value=ankLink(r);
   $("lb-kopya").onclick=async()=>{ ankMsg(await ankKopya($("lb-url").value)?"Link kopyalandı.":"Kopyalanamadı; linki seçip kopyalayınız.","ok"); };
   $("lb-mail").onclick=()=>{ location.href=ankMailto(r); };
 }
@@ -353,7 +365,7 @@ function ankCiz(){
     +ANK_KRIT.map(([k,t])=>`<th>${esc(t)}</th>`).join("")+`<th>SAV</th><th>Tavsiye</th><th>Puan</th><th></th></tr></thead><tbody>`;
   rows.forEach(r=>{
     const acik=(r.aciklama&&Object.keys(r.aciklama).length)||r.sav_aciklama||r.tavsiye_aciklama||r.yorum;
-    h+=`<tr class="ana" data-id="${r.id}"><td><b>${esc(r.proje)}</b></td><td>${esc(r.firma||"")}</td><td>${esc(r.olusturan||"")}</td><td class="c">${fdt(r.created_at)}</td>`
+    h+=`<tr class="ana" data-id="${r.id}"><td><b>${esc(r.proje)}</b></td><td>${esc(r.firma||"")}<div class="firma">${esc([r.ulke,ANK_DIL_AD[r.dil]].filter(Boolean).join(" · "))}</div></td><td>${r.kaynak==="PDF"?'<span class="pill d-I" title="PDF ile toplanan eski anket">PDF</span>':esc(r.olusturan||"")}</td><td class="c">${fdt(r.created_at)}</td>`
       +`<td class="c">${ankDurum(r.durum)}</td><td class="c">${fdt(r.yanit_at)}</td><td>${esc(r.yanitlayan_ad||"")}${r.yanitlayan_firma?`<div class="firma">${esc(r.yanitlayan_firma)}</div>`:""}</td>`
       +ANK_KRIT.map(([k])=>`<td class="c">${ankPill(r[k])}${r.aciklama&&r.aciklama[k]?" 💬":""}</td>`).join("")
       +`<td class="c">${esc(r.sav||"")}${r.sav_aciklama?" 💬":""}</td><td class="c">${esc(r.tavsiye||"")}${r.tavsiye_aciklama?" 💬":""}</td>`
@@ -373,7 +385,7 @@ function ankCiz(){
 $("liste").addEventListener("click",async e=>{
   const b=e.target.closest("button");
   const bul=id=>ANK_ROWS.find(r=>String(r.id)===String(id));
-  if(b&&b.dataset.kopya){ const r=bul(b.dataset.kopya); b.textContent=(await ankKopya(ANK_URL+r.token))?"Kopyalandı ✓":"Kopyalanamadı"; setTimeout(()=>b.textContent="Linki kopyala",1800); return; }
+  if(b&&b.dataset.kopya){ const r=bul(b.dataset.kopya); b.textContent=(await ankKopya(ankLink(r)))?"Kopyalandı ✓":"Kopyalanamadı"; setTimeout(()=>b.textContent="Linki kopyala",1800); return; }
   if(b&&b.dataset.mail){ location.href=ankMailto(bul(b.dataset.mail)); return; }
   if(b&&b.dataset.iptal){ const r=bul(b.dataset.iptal);
     if(!confirm(r.proje+" için gönderilen anket linki iptal edilsin mi? Müşteri bu linkle artık formu dolduramaz.")) return;
