@@ -66,6 +66,13 @@
     <button class="btn" id="btnOku">Oku</button>
     <div class="durum" id="durum">Yükleniyor…</div>
   </div>
+  <div class="kart" id="arsivKart"><!-- SOUM-ARSIV -->
+    <div class="tit" style="cursor:pointer" id="arsivBas">▸ Teklif arşivi <span>(bu formda üretilen Excel teklifleri; tıklayınca açılır)</span></div>
+    <div id="arsivIc" style="display:none">
+      <div style="display:flex;gap:8px;align-items:center;margin:6px 0"><input id="arsivAra" placeholder="Proje, firma, ref, hazırlayan…" style="flex:1;max-width:360px"><button class="btn2" id="arsivYenile">Yenile</button><span class="mini" id="arsivDurum"></span></div>
+      <div class="res" id="arsivListe"></div>
+    </div>
+  </div>
   <div id="sonuc" style="display:none">
     <div class="kart">
       <div class="tit">2 · Teklif bilgileri</div>
@@ -985,6 +992,7 @@ async function excelYap(){
   const ad=("Excel_"+(S.baslik[1]||$("f_proje").value)+"_"+(S.baslik[0]||$("f_firma").value)+"_"+yy+(DIL()==="en"?"_EN":"")).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_")+".xlsx";
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})); a.download=ad; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },2000);
   window._SON_EXCEL={ad,buf};
+  arsivKaydet(ad,buf,tar); /* SOUM-ARSIV */
   /* müşteri adresi musteri_firma'ya (yeniden kullanım için) */
   const ma=$("f_madres").value.trim(); if(S.firma&&ma&&ma!==(S.firma.adres||"")){ try{ await SB.rpc("musteri_adres_yaz",{p_id:S.firma.id,p_adres:ma}); S.firma.adres=ma; }catch(e){} }
   durum("Excel indirildi: <b>"+esc(ad)+"</b>","ok");
@@ -1022,6 +1030,33 @@ $("f_kat").oninput=()=>{ $("f_kat").dataset.elle=1; hesapla(); }; $("f_katSifirl
 $("f_kamyon").oninput=()=>{ $("f_kamyon").dataset.elle=1; hesapla(); };
 ["f_padres","f_proje","f_ilgili","f_firma"].forEach(id=>$(id).addEventListener("change",notDoldur));
 dosyaCiz();
+/* SOUM-ARSIV (05.11.2026, Melih): indirilen her Excel teklif Supabase'e kaydedilir (tablo soum_teklif + depo soum-teklif, yol YYYY/MM/<zaman>_<dosya>);
+   formun başındaki "Teklif arşivi" bölümünde aranır ve indirilir. Kayıt başarısız olursa indirme yine yapılır, durum satırında uyarı çıkar. */
+async function arsivKaydet(ad,buf,tar){
+  try{ if(!SB.storage) return; const z=new Date(), yol=z.toISOString().slice(0,7).replace("-","/")+"/"+z.getTime()+"_"+ad;
+    const up=await SB.storage.from("soum-teklif").upload(yol,new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),{upsert:false}); if(up.error) throw up.error;
+    const k=(typeof ARB_EMAIL!=="undefined"&&window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null;
+    const rec={olusturan_kisi:k?(k.kod+" — "+k.ad):(typeof ARB_EMAIL!=="undefined"?ARB_EMAIL:""),proje:$("f_proje").value,firma:$("f_firma").value,ilgili:$("f_ilgili").value,ref:$("f_ref").value,
+      dil:DIL(),bolge:$("f_bolge").value,tarih:tar.toISOString().slice(0,10),par:$("f_par").value,hazirlayan:$("f_haz").value,revize:($("f_revize")||{}).value==="1",
+      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:EN()?"GBP":"EUR",iskonto:H.X2,dosya_adi:ad,depo_yolu:yol};
+    const r=await SB.from("soum_teklif").insert(rec); if(r.error) throw r.error;
+    $("durum").insertAdjacentHTML("beforeend",' <span class="mini">· Teklif arşivine kaydedildi.</span>'); if($("arsivIc").style.display!=="none") arsivYukle();
+  }catch(e){ console.warn("arşiv",e); $("durum").insertAdjacentHTML("beforeend",' <span class="mini" style="color:#b00020">· Arşive kaydedilemedi: '+esc(e.message||e)+'</span>'); } }
+let ARSIV=[];
+async function arsivYukle(){ $("arsivDurum").textContent="Yükleniyor…";
+  try{ const r=await SB.from("soum_teklif").select("*").order("olusturma",{ascending:false}).limit(500); if(r.error) throw r.error; ARSIV=r.data||[]; $("arsivDurum").textContent=ARSIV.length+" teklif"; arsivCiz(); }
+  catch(e){ $("arsivDurum").textContent="Arşiv okunamadı: "+(e.message||e); } }
+function arsivCiz(){ const q=nrmTxt($("arsivAra").value), L=ARSIV.filter(r=>!q||nrmTxt([r.proje,r.firma,r.ref,r.hazirlayan,r.par,r.olusturan_kisi,r.dosya_adi].join(" ")).includes(q));
+  const tf=d=>d?new Date(d).toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+  const para=(v,p)=>v==null?"":(+v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+(p==="GBP"?" £":" €");
+  $("arsivListe").innerHTML=L.length?'<table><thead><tr><th class="l">Oluşturma</th><th class="l">Proje</th><th class="l">Firma</th><th>Ref</th><th>Dil</th><th>Poz</th><th>Ürün</th><th>Livré / Delivered</th><th class="l">Hazırlayan</th><th class="l">Oluşturan</th><th></th></tr></thead><tbody>'
+    +L.map(r=>'<tr><td class="l">'+tf(r.olusturma)+'</td><td class="l">'+esc(r.proje)+(r.revize?' <span class="mini">(revize)</span>':'')+'</td><td class="l">'+esc(r.firma)+'</td><td>'+esc(r.ref)+'</td><td>'+(r.dil==="en"?"EN":"FR")+'</td><td>'+(r.poz_adet??"")+'</td><td>'+(r.urun_adet??"")+'</td><td class="num">'+para(r.toplam,r.para_birimi)+'</td><td class="l">'+esc(r.hazirlayan)+'</td><td class="l mini">'+esc(r.olusturan_kisi)+'</td><td>'+(r.depo_yolu?'<button class="btn2" data-ai="'+r.id+'">Excel</button>':'')+'</td></tr>').join("")+'</tbody></table>'
+    :'<div class="bos">'+(ARSIV.length?"Aramaya uyan teklif yok.":"Henüz kayıtlı teklif yok.")+'</div>';
+  document.querySelectorAll("[data-ai]").forEach(b=>b.onclick=async()=>{ const r=ARSIV.find(x=>String(x.id)===b.dataset.ai); if(!r) return;
+    try{ const d=await SB.storage.from("soum-teklif").download(r.depo_yolu); if(d.error) throw d.error; const a=document.createElement("a"); a.href=URL.createObjectURL(d.data); a.download=r.dosya_adi||"teklif.xlsx"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },2000); }
+    catch(e){ alert("İndirilemedi: "+(e.message||e)); } }); }
+$("arsivBas").onclick=()=>{ const ic=$("arsivIc"), ac=ic.style.display==="none"; ic.style.display=ac?"":"none"; $("arsivBas").firstChild.textContent=(ac?"▾":"▸")+" Teklif arşivi "; if(ac&&!ARSIV.length) arsivYukle(); };
+$("arsivYenile").onclick=arsivYukle; $("arsivAra").oninput=arsivCiz;
 veriYukle().then(eks=>{ durum(eks.length?"Yüklenemeyen veri: "+eks.join(", ")+".":"Proje klasörünü (ya da dosyaları) seçip <b>Oku</b>'ya basınız.",eks.length?"uyari":""); });
 
 /* ---------------- PDF (SOUM-PDF, 20.10.2026): Offre sayfasının yazdırma görünümü → tarayıcının "PDF olarak kaydet"i (vektör metin, A4) ---------------- */
