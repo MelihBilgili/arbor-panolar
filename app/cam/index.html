@@ -264,7 +264,9 @@ function perf(q){const r={};for(const t of ['ug','tl','rw','sf']){const E=CAT.fi
 /* fiyat */
 function ctxUI(){const form=$('form').value,sp='',adet=+$('adet').value||0,m2=+$('m2').value||0;return{form,frm:form,sp,adet,m2,ort:adet>0&&m2>0?m2/adet:1};}
 function price(q,v,u){const tp=cl(q.tp||$('temper').checked),we=q.we;
-  const X={tg:q.tg,tg2:Math.pow(Math.min(q.tg,22)-14,2)/100,nlam:q.nlam,pvb4:q.pvb4,triple:q.tr,cav:q.cu,cav_dar:cl(q.cu<=12),cav_genis:cl(q.cu>=20),lowe:q.lowe,solar:q.solar,
+  /* CAM-YANGIN-KALINLIK (05.11.2026, Melih): yangın camında, yangın tabakası 24 mm'den inceyse kalınlık etkisi yarıya iner (EI60 teklifleri 24–27 mm; EI30 teklifi yok) */
+  const _fm=q.fp?Math.max(0,...q.c.map(pane).filter(x=>!x.lam&&x.mm>=12).map(x=>x.mm)):0,_tg=q.fp&&_fm>0&&_fm<24?q.tg+(24-_fm)/2:q.tg;
+  const X={tg:_tg,tg2:Math.pow(Math.min(q.tg,22)-14,2)/100,nlam:q.nlam,pvb4:q.pvb4,triple:q.tr,cav:q.cu,cav_dar:cl(q.cu<=12),cav_genis:cl(q.cu>=20),lowe:q.lowe,solar:q.solar,
     satin:q.sat,temper:tp,acoustic:q.ac,extraclear:q.xc,fireproof:q.fp,argon:q.ar,we,
     karolaj:cl(u.frm==='karolaj'||u.frm==='ke'),egrisel:cl(u.frm==='egrisel'||u.frm==='ke'),l_ortm2:Math.log(Math.min(Math.max(u.ort,0.05),4)),
     tl:v.tl,rwctr:v.rw,sf:v.sf,l_m2:Math.log(Math.min(Math.max(u.m2||1,0.2),300)),kucuk_m2:cl(u.m2>0&&u.m2<2),kucuk_adet:cl(u.adet>0&&u.adet<=2)};
