@@ -664,11 +664,12 @@ function stokEn(ad){ if(/kap[ıi]\s*kapat[ıi]c[ıi]/i.test(ad||"")&&/gizli/i.te
 function notEn(p){ const f=p.nf||{}, o=p.ozl, t=(p.acPdf||"")+" "+(p.acikPdf||""), n=nrmTxt(t);
   const yon=f.aile==="CASEMENT"?"outward opening":/^(SIMPLIST|FLAT)$/.test(f.aile)?"inward opening":"";
   const bk=/balkon kapisi/.test(n); /* SOUM-NOT-EN3: Balkon Kapısı → balcony door */
-  const tip0=/vasistasli giyotin/.test(n)?"Sash Window Bottom sash inward tilt":/giyotin/.test(n)?"Sash Window":(/\bFr\./.test(t)||/fransiz|cift kanat/.test(n))?"French Window":/cift acilim/.test(n)?"Tilt and turn window":/tek acilim/.test(n)?"Side Hung window":"";
+  const vg=/vasistasli giyotin/.test(n), gy=/giyotin/.test(n); /* SOUM-EN-YON (05.11.2026, Melike Başaran): yön ayrı satırda, büyük harfle, noktasız; giyotinde yön yok; "Bottom sash inward tilt", "Bottom/Upper sash fixed" ayrı satır; 1. satır noktasız */
+  const tip0=vg?"Sash Window":gy?"Sash Window":(/\bFr\./.test(t)||/fransiz|cift kanat/.test(n))?"French Window":/cift acilim/.test(n)?"Tilt and turn window":/tek acilim/.test(n)?"Side Hung window":"";
   const tip=bk?(tip0?tip0.replace(/window/i,"balcony door"):"balcony door"):tip0;
-  let s=(/kemerli/.test(n)?"Arched ":"")+[f.aile,agacEn3(f.agac),yon,tip].filter(Boolean).join(" ");
-  if(/alt sabit/.test(n)) s+=", bottom sash fixed"; if(/ust sabit/.test(n)) s+=", upper sash fixed"; s+=".";
-  const sat=[s]; if(o.esik) sat.push("Level threshold (PRM)"); if(o.sove&&kapsam("pervaz")) sat.push("Window jamb"); /* SOUM-EN-SOVE (04.11.2026): Söve → Window jamb, Pervaz → Timber trim */ if(o.bAlu&&kapsam("den")) sat.push("Aluminium sill"); if(o.bBois&&kapsam("den")) sat.push("Timber sill");
+  const s=(/kemerli/.test(n)?"Arched ":"")+[f.aile,agacEn3(f.agac),tip].filter(Boolean).join(" ");
+  const sat=[s]; if(vg) sat.push("Bottom sash inward tilt"); if(yon&&!gy) sat.push(yon.charAt(0).toUpperCase()+yon.slice(1));
+  if(/alt sabit/.test(n)) sat.push("Bottom sash fixed"); if(/ust sabit/.test(n)) sat.push("Upper sash fixed"); if(o.esik) sat.push("Level threshold (PRM)"); if(o.sove&&kapsam("pervaz")) sat.push("Window jamb"); /* SOUM-EN-SOVE (04.11.2026): Söve → Window jamb, Pervaz → Timber trim */ if(o.bAlu&&kapsam("den")) sat.push("Aluminium sill"); if(o.bBois&&kapsam("den")) sat.push("Timber sill");
   if(o.menfez&&kapsam("myuva")) sat.push("Trickle vent slot"+(kapsam("menfez")?" + trickle vent":"")+($("f_mont").value==="1"?" + installation":""));
   const eks=[]; (S.ekstra||[]).filter(e=>e.dahil&&ekstraPozda(e,p)).forEach(e=>{ const x=stokEn(e.ad); if(!eks.includes(x)) eks.push(x); });
   return [...new Set(sat.concat(notEk(p,true,true),eks))].join("\n"); }
