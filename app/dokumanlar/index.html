@@ -290,7 +290,7 @@ async function yukle(){
     if(error){ $("res").innerHTML='<div class="bos">Okunamadı: '+esc(error.message)+'</div>'; return; }
     out.push(...data); if(data.length<1000) break; from+=1000; }
   out.forEach(r=>r._h=norm([r.ad,r.dosya,r.erp_dosya_adi,r.seri,r.seri2,r.seri3,r.seri4,r.aile,r.ana,r.tur,r.alt_kategori,r.dil].join(" ")));
-  ROWS=out;
+  ROWS=out.filter(r=>!r.arsiv); /* DOK-ESKI-ARSIV (05.11.2026, Melih): sertifika dışı yeni doküman yüklenince aynı ad+dildeki eskisi arşive alınır (trigger dok_eski_arsiv_trg) ve burada gösterilmez */
   const o=getir(); ["f_ana","f_aile"].forEach(i=>{ doldur(); if(o[i]) $(i).value=o[i]; }); doldur();
   F.forEach(i=>{ if(o[i]!=null&&$(i).querySelector&&($(i).tagName!=="SELECT"||[...$(i).options].some(x=>x.value===o[i]))) $(i).value=o[i]; });
   ciz();
