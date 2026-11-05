@@ -465,8 +465,8 @@ async function grVakit(){
   const [dy,ez0,hv]=await Promise.all([
     j("https://ezanvakti.emushaf.net/vakitler/9541"),
     j("https://api.aladhan.com/v1/timingsByCity/"+dmy+"?city=Istanbul&country=Turkey&method=13"),
-    j("https://api.open-meteo.com/v1/forecast?latitude=41.0082&longitude=28.9784&hourly=temperature_2m&daily=sunrise,sunset,precipitation_sum,precipitation_probability_max&timezone=Europe%2FIstanbul&start_date="+iso+"&end_date="+iso)
-  ]);
+    j("https://api.open-meteo.com/v1/forecast?latitude=41.1324&longitude=29.0951&hourly=temperature_2m&daily=sunrise,sunset,precipitation_sum,precipitation_probability_max&timezone=Europe%2FIstanbul&start_date="+iso+"&end_date="+iso)
+  ]); /* GIRIS-HAVA-BEYKOZ: hava (sıcaklık, yağış) Beykoz koordinatlarıyla; ezan vakitleri İstanbul */
   const el=grEl("gr-vakit"); if(!el) return;
   const P=[];
   const c=s=>String(s||"").slice(0,5), D=Array.isArray(dy)?dy.find(x=>x&&x.MiladiTarihKisa===tr):null, T=ez0&&ez0.data&&ez0.data.timings;
