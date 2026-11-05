@@ -426,7 +426,9 @@ function camFiyat(C){
   if(!q){ C._fy=null; return null; }
   const v={tl:C.tl!=null?C.tl/100:perfM(q,"tl"),sf:C.g!=null?C.g:perfM(q,"sf"),rw:rwctr!=null?rwctr:perfM(q,"rw")};
   const cl=x=>x?1:0, tp=cl(q.tp), we=q.we, M=CAMM.DB.coef, adet=10, m2=10;
-  const X={tg:q.tg,tg2:Math.pow(Math.min(q.tg,22)-14,2)/100,nlam:q.nlam,pvb4:q.pvb4,triple:q.tr,cav:q.cu,cav_dar:cl(q.cu<=12),cav_genis:cl(q.cu>=20),lowe:q.lowe,solar:q.solar,
+  /* CAM-YANGIN-KALINLIK (05.11.2026): ../cam/ price() ile aynı — yangın tabakası 24 mm'den inceyse kalınlık etkisi yarıya */
+  const _fm=q.fp?Math.max(0,...q.c.map(c=>String(c).replace(',','.')).filter(c=>!/^\d\d\.\d$/.test(c)).map(Number).filter(m=>m>=12)):0,_tg=q.fp&&_fm>0&&_fm<24?q.tg+(24-_fm)/2:q.tg;
+  const X={tg:_tg,tg2:Math.pow(Math.min(q.tg,22)-14,2)/100,nlam:q.nlam,pvb4:q.pvb4,triple:q.tr,cav:q.cu,cav_dar:cl(q.cu<=12),cav_genis:cl(q.cu>=20),lowe:q.lowe,solar:q.solar,
     satin:q.sat,temper:tp,acoustic:q.ac,extraclear:q.xc,fireproof:q.fp,argon:q.ar,we,karolaj:0,egrisel:0,l_ortm2:Math.log(Math.min(Math.max(m2/adet,0.05),4)),
     tl:v.tl,rwctr:v.rw,sf:v.sf,l_m2:Math.log(Math.min(Math.max(m2,0.2),300)),kucuk_m2:0,kucuk_adet:0};
   let s=CAMM.DB.ic; for(const k in M) s+=M[k]*(X[k]||0);
