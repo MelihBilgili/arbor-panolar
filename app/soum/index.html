@@ -117,10 +117,9 @@
       <div class="g" id="enAlan" style="margin-top:6px;display:none">
         <div class="s2"><label for="f_kur">Kur € → £ <a href="#" id="f_kurSifirla" class="mini">güncel</a></label><input id="f_kur" inputmode="decimal" value=""></div>
         <div class="s2"><label for="f_pas">PAS 24 (notlarda)</label><select id="f_pas"><option value="0">Hayır</option><option value="1">Evet</option></select></div><!-- SOUM-PAS-TERMIN -->
-        <div class="s2"><label for="f_k_den">Denizlik</label><select id="f_k_den"><option value="alu">Alüminyum dış denizlik</option><option value="ahs">Ahşap dış denizlik</option><option value="ic">İç denizlik</option><option value="0">Dahil değil</option></select></div><!-- SOUM-EN-KAPSAM2 -->
-                <div class="s2"><label for="f_k_menfez">Menfez (trickle vent)</label><select id="f_k_menfez"><option value="1">Dahil</option><option value="0">Hariç</option></select></div>
-                <div class="s2"><label for="f_k_pervaz">Pervaz / pervaz çıtası</label><select id="f_k_pervaz"><option value="ic">İç pervaz</option><option value="dis">Dış pervaz</option><option value="0">Dahil değil</option></select></div>
-        <div class="s2"><label for="f_k_sove">Söve</label><select id="f_k_sove"><option value="ic">İç söve</option><option value="dis">Dış söve</option><option value="0">Dahil değil</option></select></div>
+        <div class="s2"><label>Denizlik <span class="mini">(çoklu)</span></label><div id="f_k_den" style="max-height:110px;overflow:auto;border:1px solid #cdd6df;border-radius:6px;padding:3px 7px;background:#fff"><label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" value="alu" style="width:auto;margin-right:5px">Alüminyum dış denizlik</label><label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" value="ahs" style="width:auto;margin-right:5px">Ahşap dış denizlik</label><label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" value="ic" style="width:auto;margin-right:5px">İç denizlik</label></div></div><!-- SOUM-EN-KAPSAM2 --><!-- SOUM-KAPSAM-COK: hiçbiri işaretli değilse dahil değil -->
+                <div class="s2"><label>Pervaz / pervaz çıtası <span class="mini">(çoklu)</span></label><div id="f_k_pervaz" style="max-height:110px;overflow:auto;border:1px solid #cdd6df;border-radius:6px;padding:3px 7px;background:#fff"><label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" value="ic" style="width:auto;margin-right:5px">İç pervaz</label><label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" value="dis" style="width:auto;margin-right:5px">Dış pervaz</label></div></div>
+        <div class="s2"><label>Söve <span class="mini">(çoklu)</span></label><div id="f_k_sove" style="max-height:110px;overflow:auto;border:1px solid #cdd6df;border-radius:6px;padding:3px 7px;background:#fff"><label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" value="ic" style="width:auto;margin-right:5px">İç söve</label><label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" value="dis" style="width:auto;margin-right:5px">Dış söve</label></div></div>
       </div>
       <div class="mini" id="f_kur_h" style="margin-top:4px"></div>
       <div class="mini" id="f_kat_h" style="margin-top:6px"></div>
@@ -618,7 +617,7 @@ async function baslikDoldur(){
   const pc=(/\b(\d{5})\b/.exec($("f_padres").value)||[])[1]; if(pc) $("f_dep").value=pc.slice(0,2);
   if(S.poz.some(p=>p.facade==="App. Ext.")) $("f_disi").value="1";
   /* SOUM-UK: kapsam varsayılanları Pencad'den (denizlik, menfez yuvası, pervaz varsa dahil; menfez ve iç denizlik tahtası hariç) */
-  const hv=f=>S.poz.some(f); $("f_k_den").value=hv(p=>p.ozl.bAlu)?"alu":hv(p=>p.ozl.bBois)?"ahs":"0"; $("f_k_menfez").value="0"; $("f_k_pervaz").value="0"; $("f_k_sove").value=hv(p=>p.ozl.sove)?"ic":"0"; /* SOUM-EN-KAPSAM2 (05.11.2026, Melike Başaran): denizlik alu dış/ahşap dış/iç, pervaz iç/dış, söve iç/dış/dahil değil; menfez yuvası ve iç denizlik tahtası seçimi kalktı */
+  const hv=f=>S.poz.some(f); kSet("den",[hv(p=>p.ozl.bAlu)&&"alu",hv(p=>p.ozl.bBois)&&"ahs"]); kSet("pervaz",[]); kSet("sove",[hv(p=>p.ozl.sove)&&"ic"]); /* SOUM-KAPSAM-COK */ /* SOUM-EN-KAPSAM2 (05.11.2026, Melike Başaran): denizlik alu dış/ahşap dış/iç, pervaz iç/dış, söve iç/dış/dahil değil; menfez yuvası ve iç denizlik tahtası seçimi kalktı */
   enGoster();
   $("f_proto").innerHTML=S.poz.length?S.poz.map((p,i)=>'<label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" value="'+i+'" style="width:auto;margin-right:5px">'+p.no+' · '+esc(p.kod)+' ('+p.L+'×'+p.H+')</label>').join(""):'<span class="mini">Yok</span>'; /* SOUM-PROTO-COK */
   notDoldur();
@@ -676,7 +675,7 @@ function notEn(p){ const f=p.nf||{}, o=p.ozl, t=(p.acPdf||"")+" "+(p.acikPdf||""
   const tip=bk?(tip0?tip0.replace(/window/i,"balcony door"):"balcony door"):kp?(tip0?tip0.replace(/window/i,m=>m[0]==="W"?"Door":"door"):"Door"):tip0;
   const s=[f.aile,agacEn3(f.agac),/kemerli/.test(n)?"Arched":"",tip].filter(Boolean).join(" "); /* SOUM-EN-DUZ (05.11.2026, Melike Başaran): Arched tipten önce ("KLASIK Oak DKD Arched Sash Window"); eşik "Aluminum door threshold"; menfez "Trickle vent" */
   const sat=[s]; if(vg) sat.push("Bottom sash inward tilt"); if(yon&&!gy) sat.push(yon.charAt(0).toUpperCase()+yon.slice(1));
-  if(/alt sabit/.test(n)) sat.push("Bottom sash fixed"); if(/ust sabit/.test(n)) sat.push("Upper sash fixed"); if(o.esik) sat.push("Aluminum door threshold"); { const sv={ic:"Interior window jamb",dis:"Exterior window jamb"}[kSec("sove")], dn={alu:"Exterior Alu sill",ahs:"Exterior timber sill",ic:"Interior timber sill"}[kSec("den")], pv={ic:"Interior timber trim",dis:"Exterior Timber trim"}[kSec("pervaz")]; if(sv) sat.push(sv); if(dn) sat.push(dn); if(pv) sat.push(pv); } /* SOUM-EN-KAPSAM2: söve/denizlik/pervaz notu formdaki seçimden, tüm pozlarda */
+  if(/alt sabit/.test(n)) sat.push("Bottom sash fixed"); if(/ust sabit/.test(n)) sat.push("Upper sash fixed"); if(o.esik) sat.push("Aluminum door threshold"); { const SV={ic:"Interior window jamb",dis:"Exterior window jamb"}, DN={alu:"Exterior Alu sill",ahs:"Exterior timber sill",ic:"Interior timber sill"}, PV={ic:"Interior timber trim",dis:"Exterior Timber trim"}; kSecL("sove").forEach(v=>SV[v]&&sat.push(SV[v])); kSecL("den").forEach(v=>DN[v]&&sat.push(DN[v])); kSecL("pervaz").forEach(v=>PV[v]&&sat.push(PV[v])); } /* SOUM-KAPSAM-COK: çoklu seçim */ /* SOUM-EN-KAPSAM2: söve/denizlik/pervaz notu formdaki seçimden, tüm pozlarda */
   if(o.menfez&&kapsam("myuva")) sat.push("Trickle vent");
   const eks=[]; (S.ekstra||[]).filter(e=>e.dahil&&ekstraPozda(e,p)).forEach(e=>{ const x=stokEn(e.ad); if(!eks.includes(x)) eks.push(x); });
   return [...new Set(sat.concat(notEk(p,true,true),eks))].join("\n"); }
@@ -695,7 +694,8 @@ function pas24(p){ if(!S.pas||!S.pas.length) return ""; const tip=p.pf?"Balkon K
   const ac=p.ob?"Tilt-Turn":/giyotin/.test(t)?"Giyotin":/ust|vasistas|top/.test(t)&&/swing|pivot|donme/.test(t)?"Top Swing":/ust|vasistas|top/.test(t)?"Top Hung":/yan|side/.test(t)?"Side Hung":p.of?"Fransız":"";
   const s=String(p.seri||"").toLowerCase(); const r=S.pas.find(x=>s.startsWith(String(x.seri).toLowerCase())&&x.urun_tipi===tip&&(!x.acilim||x.acilim===ac)); return r?r.deger:""; }
 const kapsam=k=>{ const e=document.getElementById("f_k_"+k); return !e||e.value!=="0"; };
-const kSec=k=>{ const e=document.getElementById("f_k_"+k); return e?e.value:"0"; }; /* SOUM-EN-KAPSAM2 */
+const kSecL=k=>[...document.querySelectorAll("#f_k_"+k+" input:checked")].map(x=>x.value); /* SOUM-KAPSAM-COK (05.11.2026, Melike Başaran): denizlik/pervaz/söve çoklu seçim */
+const kSet=(k,L)=>document.querySelectorAll("#f_k_"+k+" input").forEach(x=>x.checked=L.includes(x.value));
 const protoSec=()=>[...document.querySelectorAll("#f_proto input:checked")].map(x=>+x.value); /* SOUM-PROTO-COK */
 const refAd=p=>EN()&&!p.kodElle?p.kodPdf:p.kod; /* İngilizcede (PF-SACC)/(PF-ACC) eki yazılmaz */
 const camMetin=p=>EN()&&!p.camElle?p.camEn:p.camFr;
@@ -809,7 +809,7 @@ function notDoldur(){
   const v=(id,x)=>{ const e=$(id); if(e&&!e.dataset.elle) e.value=x||""; };
   const P=S.poz, has=f=>P.some(f), dp=S.dpgf?S.dpgf.sat:[];
   const mx=(k)=>{ const a=dp.map(d=>d[k]).filter(x=>x!=null); return a.length?a:null; };
-  const pr=String($("f_pror").value||"").trim(); v("pn_prorata",pr?pr.replace(".",",")+" %":"");
+  const pr=String($("f_pror").value||"").trim(); v("pn_prorata",(+pr.replace(",","."))>0?pr.replace(".",",")+" %":""); /* SOUM-KAPSAM-COK: oran 0 ise Proje Notu'nda da yok */
   /* SOUM-PAS-TERMIN (02.11.2026, Melih): Proje Notu'nda seçili bölgenin Ürün Fiyatlandırma termin süresi (uygulanan satır/sütun) + Excel'de bölgenin termin tablosu */
   uretimYaz(); const tu=uretimHafta(), tb=$("f_bolge").value==="fr"?"Yurt Dışı 1":"Yurt Dışı 2";
   v("pn_termin",(String($("f_uretim").value||"").trim()||(tu?tu.v:""))+" hafta üretim + 1–2 hafta teslim · "+tb+(tu?" · "+tu.sat.aralik+" · "+(tu.k68?"68p/78t/78a içeren":"Std. dışı cam"):""));
@@ -1022,7 +1022,7 @@ $("btnKlasor").onclick=klasorSec;
 $("inKlasor").onchange=e=>{ S.dosya=[]; const fs=[...e.target.files].filter(f=>!/(^|\/)[_.][^\/]*\//.test(f.webkitRelativePath||"")); dosyaEkle(fs); const r=(fs[0]&&fs[0].webkitRelativePath||"").split("/")[0]; $("kokDurum").textContent=r?"Seçili klasör: "+r:""; durum(fs.length+" dosya bulundu. Kullanımları kontrol edip <b>Oku</b>'ya basınız."); };
 $("btnOku").onclick=oku; $("btnExcel").onclick=excelYap;
 function enGoster(){ $("enAlan").style.display=EN()?"":"none"; }
-["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro","f_k_den","f_k_menfez","f_k_pervaz","f_k_sove","f_pas","f_op_cam","f_op_mv","f_op_pmr","f_op_cage","f_op_manitou","f_op_grue"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto"||id==="f_bolge") notDoldur(); });
+["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro","f_k_den","f_k_pervaz","f_k_sove","f_pas","f_op_cam","f_op_mv","f_op_pmr","f_op_cage","f_op_manitou","f_op_grue"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto"||id==="f_bolge") notDoldur(); });
 $("f_revize").onchange=()=>revGoster();
 $("f_ins_sure").oninput=()=>{ $("f_ins_sure").dataset.elle=1; hesapla(); }; $("f_insSifirla").onclick=e=>{ e.preventDefault(); delete $("f_ins_sure").dataset.elle; hesapla(); };
 $("f_pror").oninput=()=>{ hesapla(); notDoldur(); };
@@ -1117,7 +1117,7 @@ function sartGruplar(){ const en=EN(), SR=en?window.SOUM_SART_EN:window.SOUM_SAR
     if(!en&&H&&H.ins) m=m.map(t=>t.replace(" heures d'insertion,","")); if(!en&&H&&H.pror) m=m.map(t=>t.replace(" proratas,",""));
     if(b.kapsam&&SR.kapsam){ const Kp=SR.kapsam, d=Kp.dahil_sabit.slice(), h=Kp.haric_sabit.slice(); /* SOUM-EN-KAPSAM2: denizlik/pervaz/söve seçime göre; menfez yuvası Pencad'den; iç denizlik tahtası denizlik "İç" değilse hariç */
       const sec={den:{alu:"external aluminium sills",ahs:"external timber sills",ic:"internal timber sills"},pervaz:{ic:"internal timber trims",dis:"external timber trims"},sove:{ic:"internal window jambs",dis:"external window jambs"}}, kal=Object.assign({},Kp.kalem,{sove:Kp.kalem.sove||"window jambs"});
-      Object.keys(kal).forEach(k=>{ if(sec[k]){ const x=sec[k][kSec(k)]; if(x) d.push(x); else h.push(kal[k]); } else if(k==="myuva") (S.poz.some(p=>p.ozl.menfez)?d:h).push(kal[k]); else if(k==="icden"){ if(kSec("den")!=="ic") h.push(kal[k]); } else (kapsam(k)?d:h).push(kal[k]); });
+      Object.keys(kal).forEach(k=>{ if(sec[k]){ const L=kSecL(k).map(v=>sec[k][v]).filter(Boolean); if(L.length) d.push(...L); else h.push(kal[k]); } else if(k==="myuva"||k==="menfez") (S.poz.some(p=>p.ozl.menfez)?d:h).push(kal[k]); /* SOUM-KAPSAM-COK: menfez seçimi kalktı, Pencad MNF'den */ else if(k==="icden"){ if(!kSecL("den").includes("ic")) h.push(kal[k]); } else (kapsam(k)?d:h).push(kal[k]); });
       const cap=x=>x.charAt(0).toUpperCase()+x.slice(1); m=[Kp.dahil_bas+cap(d.join(", "))+".",Kp.haric_bas+cap(h.join(", "))+"."]; }
     return {t:b.t,m}; })})).filter(g=>g.b.length); }
 function sartHtml(){ const ul=a=>'<ul>'+a.map(t=>'<li>'+esc(t)+'</li>').join("")+'</ul>';
