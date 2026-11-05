@@ -4,16 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>ARBOR — Enquête de satisfaction client</title>
-<!-- MUSTERI-ANKET (03.11.2026, Melih): page client de l'enquête de satisfaction. Lien unique par projet (?t=token) créé dans app/memnuniyet/.
-     Lecture / envoi via la fonction edge anket-musteri (aucun accès direct à la base). Source kod/anket_musteri.html -->
+<title>ARBOR</title>
+<!-- MUSTERI-ANKET (03.11.2026, Melih): müşteri memnuniyet anketi, projeye özel link (?t=token&l=dil), app/memnuniyet/ formundan oluşturulur.
+     MUSTERI-ANKET-DIL (05.11.2026): dil ülkeye göre — tr (Türkiye) · fr (Fransa) · de (Almanya) · en (diğer); dil sunucudan (musteri_anket.dil) gelir, l yalnız ilk açılış içindir.
+     Üstte ülke logosu (ARBOR + Ahşap Pencere / Fenêtres en bois / Holz Fenster / Wooden Windows), altta ülke sitesi.
+     Okuma / gönderme edge anket-musteri (veritabanına doğrudan erişim yok). Kaynak kod/anket_musteri.html -->
 <style>
-  :root{color-scheme:light;--vert:#1f4d3a;--vert2:#2e7d54;--bord:#d9e0e6;--gris:#5a6b7d}
+  :root{color-scheme:light;--vert:#086324;--vert2:#2e7d54;--bord:#d9e0e6;--gris:#5a6b7d}
   *{box-sizing:border-box}
   body{margin:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:#f3f5f4;color:#1c2430;font-size:15px;line-height:1.45}
-  header{background:var(--vert);color:#fff;padding:22px 18px 18px;text-align:center}
-  header .marque{font-size:13px;letter-spacing:.42em;opacity:.85}
-  header h1{margin:6px 0 4px;font-size:22px;letter-spacing:.04em}
+  header{background:var(--vert);color:#fff;padding:18px 18px 16px;text-align:center}
+  header svg.logo{display:block;height:100%;width:auto;margin:0 auto}
+  header h1{margin:4px 0 4px;font-size:21px;letter-spacing:.04em}
   header .sub{font-size:13.5px;opacity:.9}
   .wrap{max-width:860px;margin:0 auto;padding:16px 14px 60px}
   .intro{background:#fff;border:1px solid var(--bord);border-radius:12px;padding:14px 16px;margin-bottom:14px}
@@ -29,7 +31,7 @@
   input:focus,textarea:focus{outline:none;border-color:var(--vert2)}
   .g2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
   @media(max-width:600px){.g2{grid-template-columns:1fr}}
-  /* Matrice : une colonne par prestation, une ligne par niveau de satisfaction */
+  /* Matris: her konu bir sütun, her memnuniyet düzeyi bir satır */
   .mx{overflow-x:auto;-webkit-overflow-scrolling:touch}
   table.m{border-collapse:collapse;width:100%;min-width:560px;table-layout:fixed}
   table.m col.lb{width:150px}
@@ -45,13 +47,14 @@
   table.m tr.expl td{vertical-align:top;padding:5px}
   table.m tr.expl textarea{min-height:64px;font-size:13px;padding:6px 7px}
   table.m tr.expl textarea:disabled{background:#f4f6f8;border-style:dashed}
-  table.m tr.expl .vide{font-size:11.5px;color:#9aa7b3}
   @media(max-width:600px){
+    header svg.logo,#logo{height:50px!important}
+    header h1{font-size:17px;-webkit-hyphens:auto;hyphens:auto;overflow-wrap:break-word}
     .in{padding:10px 8px}
     table.m{min-width:0}
     table.m col.lb{width:74px}
     table.m th,table.m td{padding:5px 3px}
-    table.m thead th{font-size:11px;hyphens:auto;word-break:break-word}
+    table.m thead th{font-size:11px;-webkit-hyphens:auto;hyphens:auto;word-break:normal;overflow-wrap:break-word}
     table.m thead th small{display:none}
     table.m tbody th{font-size:11px}
     table.m tr.expl textarea{font-size:12px;min-height:80px;padding:4px}
@@ -70,104 +73,185 @@
   .msg.err2{color:#b40000}
   .fin{background:#fff;border:1px solid var(--bord);border-radius:12px;padding:28px 18px;text-align:center}
   .fin h2{color:var(--vert);margin:0 0 8px}
-  footer{text-align:center;font-size:12px;color:var(--gris);margin-top:18px;letter-spacing:.2em}
+  footer{text-align:center;font-size:12px;margin-top:18px;letter-spacing:.2em}
+  footer a{color:var(--gris);text-decoration:none}
 </style>
 </head>
 <body>
 <header>
-  <div class="marque">F E N Ê T R E S &nbsp; E N &nbsp; B O I S</div>
-  <h1>ENQUÊTE DE SATISFACTION CLIENT</h1>
-  <div class="sub">Votre expérience nous aide à progresser.</div>
+  <div id="logo" style="height:64px;margin:0 auto 10px"></div>
+  <h1 id="t-baslik"></h1>
+  <div class="sub" id="t-alt"></div>
 </header>
-<div class="wrap" id="app"><div class="intro">Chargement…</div></div>
-<footer>WWW.ARBORFENETRES.FR</footer>
+<div class="wrap" id="app"><div class="intro" id="t-yuk"></div></div>
+<footer><a id="t-site" href="#" target="_blank" rel="noopener"></a></footer>
 <script>
 (function(){
   var URL_FN="https://zehysygpqxqmrzangvuc.supabase.co/functions/v1/anket-musteri";
   var KEY="sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc";
-  var token=(new URLSearchParams(location.search).get("t")||"").trim();
+  var Q=new URLSearchParams(location.search);
+  var token=(Q.get("t")||"").trim();
   var app=document.getElementById("app");
-  /* Ordre : 1. Études (nouveau, en premier) · 2. Qualité · 3. Délais · 4. Gestion technique et administrative.
-     (« Conditionnement et protection des produits lors du transport » supprimé.) */
-  var KRIT=[
-    {k:"etut",   t:"Phase d'études",                         s:"plans, validations techniques, échanges avec le bureau d'études"},
-    {k:"kalite", t:"Qualité des menuiseries",                s:"finitions, esthétique, conformité"},
-    {k:"sureler",t:"Respect des délais",                     s:"livraison / fabrication"},
-    {k:"yonetim",t:"Gestion technique et administrative",    s:"mails, devis, réactivité"}
-  ];
-  var NIV=[{v:"ts",t:"Très satisfait",c:"n1"},{v:"s",t:"Satisfait",c:"n2"},{v:"i",t:"Insatisfait",c:"n3"},{v:"ti",t:"Très insatisfait",c:"n4"}];
+  /* Sıra: 1. Etüt (yeni, ilk) · 2. Kalite · 3. Süreler · 4. Teknik ve idari yönetim (ambalaj/koruma maddesi kaldırıldı) */
+  var KK=["etut","kalite","sureler","yonetim"];
+  var NV=["ts","s","i","ti"];
+  var T={
+   fr:{site:"WWW.FENETREENBOIS.FR",url:"https://fenetreenbois.fr/",logo:"FENÊTRES EN BOIS",tarih:"fr-FR",
+     baslik:"ENQUÊTE DE SATISFACTION CLIENT",alt:"Votre expérience nous aide à progresser.",yuk:"Chargement…",
+     intro:"Chère cliente, cher client,<br>Dans le but d'améliorer continuellement la qualité de nos produits et de nos services, nous vous invitons à répondre à cette courte enquête. Votre avis est essentiel pour nous.",
+     s1:"INFORMATIONS GÉNÉRALES",proje:"Nom du projet / chantier",teslim:"Date de livraison",tph:"jj/mm/aaaa",
+     s2:"ÉVALUATION DES PRESTATIONS",q2:"Pour chaque prestation, cochez votre niveau de satisfaction",
+     k:[["Phase d'études","plans, validations techniques, échanges avec le bureau d'études"],["Qualité des menuiseries","finitions, esthétique, conformité"],["Respect des délais","livraison / fabrication"],["Gestion technique et administrative","mails, devis, réactivité"]],
+     n:["Très satisfait","Satisfait","Insatisfait","Très insatisfait"],expl:"Si insatisfait : merci de préciser la raison",neden:"Raison (obligatoire)",
+     s3:"SERVICE APRÈS-VENTE (SAV) ET SUIVI",q3:"Le traitement de vos demandes de SAV ou de modifications techniques a-t-il été satisfaisant ?",
+     sav:["Oui, tout à fait","En partie","Non, pas du tout","Non applicable (pas de SAV)"],savx:"Merci de préciser ce qui n'a pas été satisfaisant",
+     s4:"RECOMMANDATION GLOBALE",q4:"Recommanderiez-vous ARBOR pour d'autres projets de menuiserie ?",rec:["Oui","Non","Peut-être"],recx:"Merci de nous indiquer pourquoi",
+     s5:"VOS COMMENTAIRES & SUGGESTIONS",q5:"Avez-vous un commentaire, une suggestion, un point à améliorer ou un compliment à nous adresser ?",
+     s6:"VALIDATION",ad:"Nom et prénom",firma:"Entreprise",gorev:"Fonction",mail:"E-mail",tarihL:"Date",gonder:"Envoyer",
+     gecersiz:"Lien invalide",gecersizx:"Merci d'utiliser le lien complet qui vous a été transmis par ARBOR.",olmaz:"Lien non valide",olmazx:"Ce lien n'est pas (ou plus) valide.",
+     tesekkur:"Merci !",dolu:"Cette enquête a déjà été complétée. Nous vous remercions pour votre précieuse collaboration.<br><br>L'équipe ARBOR",
+     zorunlu:"Merci de compléter les champs obligatoires (encadrés en rouge).",gidiyor:"Envoi en cours…",bitti:"Merci pour votre précieuse collaboration !",bittix:"Vos réponses ont bien été enregistrées.<br><br>L'équipe ARBOR",
+     hata:"Erreur. Merci de réessayer.",bag:"Erreur de connexion. Merci de réessayer."},
+   en:{site:"WWW.WOODENWINDOWSCOMPANY.CO.UK",url:"https://woodenwindowscompany.co.uk/",logo:"WOODEN WINDOWS",tarih:"en-GB",
+     baslik:"CUSTOMER SATISFACTION SURVEY",alt:"Your experience helps us improve.",yuk:"Loading…",
+     intro:"Dear customer,<br>In order to continuously improve the quality of our products and services, we invite you to answer this short survey. Your opinion is essential to us.",
+     s1:"GENERAL INFORMATION",proje:"Project / site name",teslim:"Delivery date",tph:"dd/mm/yyyy",
+     s2:"SERVICE EVALUATION",q2:"For each item, please tick your level of satisfaction",
+     k:[["Design phase","shop drawings, technical approvals, communication with the design office"],["Quality of the joinery","finishes, appearance, compliance"],["Meeting lead times","delivery / manufacturing"],["Technical and administrative management","emails, quotations, responsiveness"]],
+     n:["Very satisfied","Satisfied","Dissatisfied","Very dissatisfied"],expl:"If dissatisfied: please state the reason",neden:"Reason (required)",
+     s3:"AFTER-SALES SERVICE AND FOLLOW-UP",q3:"Were your after-sales or technical change requests handled satisfactorily?",
+     sav:["Yes, completely","Partly","No, not at all","Not applicable (no after-sales)"],savx:"Please specify what was not satisfactory",
+     s4:"OVERALL RECOMMENDATION",q4:"Would you recommend ARBOR for other joinery projects?",rec:["Yes","No","Maybe"],recx:"Please tell us why",
+     s5:"YOUR COMMENTS & SUGGESTIONS",q5:"Do you have a comment, a suggestion, an area for improvement or a compliment for us?",
+     s6:"VALIDATION",ad:"Full name",firma:"Company",gorev:"Position",mail:"E-mail",tarihL:"Date",gonder:"Submit",
+     gecersiz:"Invalid link",gecersizx:"Please use the complete link sent to you by ARBOR.",olmaz:"Link not valid",olmazx:"This link is not (or no longer) valid.",
+     tesekkur:"Thank you!",dolu:"This survey has already been completed. Thank you for your valuable cooperation.<br><br>The ARBOR team",
+     zorunlu:"Please complete the required fields (outlined in red).",gidiyor:"Sending…",bitti:"Thank you for your valuable cooperation!",bittix:"Your answers have been recorded.<br><br>The ARBOR team",
+     hata:"Error. Please try again.",bag:"Connection error. Please try again."},
+   de:{site:"WWW.HOLZFENSTERTUEREN.DE",url:"https://holzfenstertueren.de/",logo:"HOLZ FENSTER",tarih:"de-DE",
+     baslik:"KUNDENZUFRIEDENHEITSUMFRAGE",alt:"Ihre Erfahrung hilft uns, besser zu werden.",yuk:"Wird geladen…",
+     intro:"Sehr geehrte Kundin, sehr geehrter Kunde,<br>um die Qualität unserer Produkte und Dienstleistungen kontinuierlich zu verbessern, bitten wir Sie, an dieser kurzen Umfrage teilzunehmen. Ihre Meinung ist uns sehr wichtig.",
+     s1:"ALLGEMEINE ANGABEN",proje:"Projekt / Baustelle",teslim:"Liefertermin",tph:"TT.MM.JJJJ",
+     s2:"BEWERTUNG DER LEISTUNGEN",q2:"Bitte kreuzen Sie für jede Leistung Ihre Zufriedenheit an",
+     k:[["Planungsphase","Werkpläne, technische Freigaben, Abstimmung mit dem Planungsbüro"],["Qualität der Fenster und Türen","Verarbeitung, Optik, Konformität"],["Termintreue","Lieferung / Fertigung"],["Technische und kaufmännische Abwicklung","E-Mails, Angebote, Reaktionsfähigkeit"]],
+     n:["Sehr zufrieden","Zufrieden","Unzufrieden","Sehr unzufrieden"],expl:"Falls unzufrieden: bitte Grund angeben",neden:"Grund (Pflichtfeld)",
+     s3:"KUNDENDIENST UND BETREUUNG",q3:"Wurden Ihre Kundendienst- oder technischen Änderungsanfragen zufriedenstellend bearbeitet?",
+     sav:["Ja, voll und ganz","Teilweise","Nein, überhaupt nicht","Nicht zutreffend (kein Kundendienst)"],savx:"Bitte erläutern Sie, was nicht zufriedenstellend war",
+     s4:"GESAMTEMPFEHLUNG",q4:"Würden Sie ARBOR für weitere Fenster- und Türenprojekte empfehlen?",rec:["Ja","Nein","Vielleicht"],recx:"Bitte nennen Sie uns den Grund",
+     s5:"IHRE ANMERKUNGEN & VORSCHLÄGE",q5:"Haben Sie eine Anmerkung, einen Vorschlag, einen Verbesserungspunkt oder ein Lob für uns?",
+     s6:"BESTÄTIGUNG",ad:"Vor- und Nachname",firma:"Firma",gorev:"Funktion",mail:"E-Mail",tarihL:"Datum",gonder:"Absenden",
+     gecersiz:"Ungültiger Link",gecersizx:"Bitte verwenden Sie den vollständigen Link, den Sie von ARBOR erhalten haben.",olmaz:"Link nicht gültig",olmazx:"Dieser Link ist nicht (mehr) gültig.",
+     tesekkur:"Vielen Dank!",dolu:"Diese Umfrage wurde bereits ausgefüllt. Vielen Dank für Ihre wertvolle Zusammenarbeit.<br><br>Ihr ARBOR-Team",
+     zorunlu:"Bitte füllen Sie die Pflichtfelder aus (rot markiert).",gidiyor:"Wird gesendet…",bitti:"Vielen Dank für Ihre wertvolle Zusammenarbeit!",bittix:"Ihre Antworten wurden gespeichert.<br><br>Ihr ARBOR-Team",
+     hata:"Fehler. Bitte versuchen Sie es erneut.",bag:"Verbindungsfehler. Bitte versuchen Sie es erneut."},
+   tr:{site:"WWW.ARBOR.COM.TR",url:"https://www.arbor.com.tr/",logo:"AHŞAP PENCERE",tarih:"tr-TR",
+     baslik:"MÜŞTERİ MEMNUNİYET ANKETİ",alt:"Deneyiminiz gelişmemize yardımcı oluyor.",yuk:"Yükleniyor…",
+     intro:"Değerli müşterimiz,<br>Ürün ve hizmetlerimizin kalitesini sürekli iyileştirmek amacıyla sizi bu kısa ankete katılmaya davet ediyoruz. Görüşleriniz bizim için çok değerlidir.",
+     s1:"GENEL BİLGİLER",proje:"Proje / şantiye adı",teslim:"Teslim tarihi",tph:"gg.aa.yyyy",
+     s2:"HİZMETLERİN DEĞERLENDİRİLMESİ",q2:"Her konu için memnuniyet düzeyinizi işaretleyiniz",
+     k:[["Etüt aşamaıs","uygulama çizimleri, teknik onaylar, etüt ekibiyle iletişim"],["Doğramaların kalitesi","işçilik, görünüm, şartnameye uygunluk"],["Sürelere uyum","teslimat / üretim"],["Teknik ve idari yönetim","e-postalar, teklifler, hızlı dönüş"]],
+     n:["Çok memnunum","Memnunum","Memnun değilim","Hiç memnun değilim"],expl:"Memnun değilseniz lütfen nedenini yazınız",neden:"Neden (zorunlu)",
+     s3:"SATIŞ SONRASI HİZMET VE TAKİP",q3:"Satış sonrası hizmet veya teknik değişiklik talepleriniz tatmin edici şekilde karşılandı mı?",
+     sav:["Evet, tamamen","Kısmen","Hayır, hiç","Uygulanamaz (satış sonrası talep olmadı)"],savx:"Lütfen neyin tatmin edici olmadığını belirtiniz",
+     s4:"GENEL TAVSİYE",q4:"ARBOR'u başka doğrama projeleri için tavsiye eder misiniz?",rec:["Evet","Hayır","Belki"],recx:"Lütfen nedenini belirtiniz",
+     s5:"YORUM VE ÖNERİLERİNİZ",q5:"Bize iletmek istediğiniz bir yorum, öneri, geliştirilmesi gereken bir nokta veya teşekkür var mı?",
+     s6:"ONAY",ad:"Ad Soyad",firma:"Firma",gorev:"Görevi",mail:"E-posta",tarihL:"Tarih",gonder:"Gönder",
+     gecersiz:"Geçersiz bağlantı",gecersizx:"Lütfen ARBOR'un size gönderdiği bağlantının tamamını kullanınız.",olmaz:"Bağlantı geçerli değil",olmazx:"Bu bağlantı geçerli değil ya da artık kullanılamıyor.",
+     tesekkur:"Teşekkür ederiz!",dolu:"Bu anket daha önce doldurulmuş. Değerli iş birliğiniz için teşekkür ederiz.<br><br>ARBOR Ekibi",
+     zorunlu:"Lütfen zorunlu alanları doldurunuz (kırmızı çerçeveli).",gidiyor:"Gönderiliyor…",bitti:"Değerli iş birliğiniz için teşekkür ederiz!",bittix:"Yanıtlarınız kaydedildi.<br><br>ARBOR Ekibi",
+     hata:"Hata. Lütfen tekrar deneyiniz.",bag:"Bağlantı hatası. Lütfen tekrar deneyiniz."}
+  };
+  var L=T[(Q.get("l")||"").toLowerCase()]?(Q.get("l")||"").toLowerCase():"fr", t=T[L];
   function esc(x){ return String(x==null?"":x).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
+  function dilKur(d){
+    L=T[d]?d:L; t=T[L];
+    document.documentElement.lang=L;
+    document.title="ARBOR — "+t.baslik.charAt(0)+t.baslik.slice(1).toLocaleLowerCase(t.tarih);
+    document.getElementById("t-baslik").textContent=t.baslik;
+    document.getElementById("t-alt").textContent=t.alt;
+    var lt=document.getElementById("logo-alt"); if(lt) lt.textContent=t.logo;
+    var a=document.getElementById("t-site"); a.textContent=t.site; a.href=t.url;
+    var y=document.getElementById("t-yuk"); if(y) y.textContent=t.yuk;
+  }
+  /* Logo: anket/logo/en.svg (ARBOR ağaç + yazı) çalışma anında yeşil zemine uyarlanır — ARBOR beyaz, alt yazı ülkeye göre (t.logo) */
+  fetch("logo/en.svg").then(function(r){ return r.text(); }).then(function(x){
+    var d=new DOMParser().parseFromString(x,"image/svg+xml").documentElement; if(!d||d.nodeName!=="svg") return;
+    Array.prototype.forEach.call(d.querySelectorAll(".fil1,style,metadata"),function(e){ e.remove(); });
+    Array.prototype.forEach.call(d.querySelectorAll(".fil0"),function(e){ e.setAttribute("fill","#80BA27"); });
+    Array.prototype.forEach.call(d.querySelectorAll(".fil2"),function(e){ e.setAttribute("fill","#fff"); });
+    d.removeAttribute("width"); d.removeAttribute("height"); d.setAttribute("viewBox","0 0 5977 1900"); d.setAttribute("class","logo");
+    var tx=document.createElementNS("http://www.w3.org/2000/svg","text");
+    tx.setAttribute("id","logo-alt"); tx.setAttribute("x","2150"); tx.setAttribute("y","1800"); tx.setAttribute("textLength","3820"); tx.setAttribute("lengthAdjust","spacing");
+    tx.setAttribute("fill","#fff"); tx.setAttribute("font-family","Segoe UI,Arial,sans-serif"); tx.setAttribute("font-size","250"); tx.setAttribute("font-weight","600");
+    tx.textContent=t.logo; d.appendChild(tx);
+    var k=document.getElementById("logo"); k.innerHTML=""; k.appendChild(document.importNode(d,true));
+  }).catch(function(){ document.getElementById("logo").innerHTML='<b style="font-size:30px;letter-spacing:.05em">ARBOR</b>'; });
+  dilKur(L);
   function api(o){
     return fetch(URL_FN,{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json",apikey:KEY},body:JSON.stringify(o)})
-      .then(function(r){ return r.json().catch(function(){ return {ok:false,hata:"Erreur de connexion."}; }); })
-      .catch(function(){ return {ok:false,hata:"Erreur de connexion. Merci de réessayer."}; });
+      .then(function(r){ return r.json().catch(function(){ return {ok:false,kod:"bag"}; }); })
+      .catch(function(){ return {ok:false,kod:"bag"}; });
   }
-  function fin(titre,txt){ app.innerHTML='<div class="fin"><h2>'+esc(titre)+'</h2><div>'+txt+'</div></div>'; window.scrollTo(0,0); }
-  if(!/^[0-9a-fA-F]{24,64}$/.test(token)){ fin("Lien invalide","Merci d'utiliser le lien complet qui vous a été transmis par ARBOR."); return; }
+  function fin(baslik,txt){ app.innerHTML='<div class="fin"><h2>'+esc(baslik)+'</h2><div>'+txt+'</div></div>'; window.scrollTo(0,0); }
+  if(!/^[0-9a-fA-F]{24,64}$/.test(token)){ fin(t.gecersiz,esc(t.gecersizx)); return; }
 
   api({t:token,islem:"oku"}).then(function(j){
-    if(!j.ok){ fin("Lien non valide",esc(j.hata||"Ce lien n'est pas valide.")); return; }
-    if(j.yanitlandi){ fin("Merci !","Cette enquête a déjà été complétée. Nous vous remercions pour votre précieuse collaboration.<br><br>L'équipe ARBOR"); return; }
+    if(j.dil) dilKur(j.dil);
+    if(!j.ok){ fin(t.olmaz,esc(j.kod==="bag"?t.bag:t.olmazx)); return; }
+    if(j.yanitlandi){ fin(t.tesekkur,t.dolu); return; }
     rendu(j);
   });
 
-  function radioOpts(nom,liste){
-    return '<div class="opts" id="o-'+nom+'">'+liste.map(function(o){
-      return '<label><input type="radio" name="'+nom+'" value="'+o[0]+'"> '+esc(o[1])+'</label>'; }).join("")+'</div>';
+  function radioOpts(nom,kodlar,etiket){
+    return '<div class="opts" id="o-'+nom+'">'+kodlar.map(function(k,i){
+      return '<label><input type="radio" name="'+nom+'" value="'+k+'"> '+esc(etiket[i])+'</label>'; }).join("")+'</div>';
   }
   function rendu(p){
     var h='';
-    h+='<div class="intro">Chère cliente, cher client,<br>Dans le but d\'améliorer continuellement la qualité de nos produits et de nos services, nous vous invitons à répondre à cette courte enquête. Votre avis est essentiel pour nous.</div>';
-    /* 01 */
-    h+='<div class="sec"><h2><span class="no">01</span>INFORMATIONS GÉNÉRALES</h2><div class="in g2">'
-      +'<div><label class="f">Nom du projet / chantier</label><input type="text" readonly value="'+esc(p.proje)+'"></div>'
-      +'<div><label class="f">Date de livraison</label><input type="text" id="teslim" maxlength="60" placeholder="jj/mm/aaaa"></div>'
+    h+='<div class="intro">'+t.intro+'</div>';
+    h+='<div class="sec"><h2><span class="no">01</span>'+esc(t.s1)+'</h2><div class="in g2">'
+      +'<div><label class="f">'+esc(t.proje)+'</label><input type="text" readonly value="'+esc(p.proje)+'"></div>'
+      +'<div><label class="f">'+esc(t.teslim)+'</label><input type="text" id="teslim" maxlength="60" placeholder="'+esc(t.tph)+'"></div>'
       +'</div></div>';
-    /* 02 matrice */
-    h+='<div class="sec"><h2><span class="no">02</span>ÉVALUATION DES PRESTATIONS</h2><div class="in">'
-      +'<div class="q">Pour chaque prestation, cochez votre niveau de satisfaction <span class="req">*</span></div>'
-      +'<div class="mx"><table class="m"><colgroup><col class="lb">'+KRIT.map(function(){return '<col>';}).join("")+'</colgroup>'
-      +'<thead><tr><th></th>'+KRIT.map(function(c){ return '<th id="h-'+c.k+'">'+esc(c.t)+'<small>'+esc(c.s)+'</small></th>'; }).join("")+'</tr></thead><tbody>';
-    NIV.forEach(function(n){
-      h+='<tr class="'+n.c+'"><th>'+esc(n.t)+'</th>'+KRIT.map(function(c){
-        return '<td class="r" data-k="'+c.k+'"><input type="radio" name="m-'+c.k+'" value="'+n.v+'" aria-label="'+esc(c.t+" — "+n.t)+'"></td>'; }).join("")+'</tr>';
+    h+='<div class="sec"><h2><span class="no">02</span>'+esc(t.s2)+'</h2><div class="in">'
+      +'<div class="q">'+esc(t.q2)+' <span class="req">*</span></div>'
+      +'<div class="mx"><table class="m"><colgroup><col class="lb">'+KK.map(function(){return '<col>';}).join("")+'</colgroup>'
+      +'<thead><tr><th></th>'+KK.map(function(k,i){ return '<th id="h-'+k+'">'+esc(t.k[i][0])+'<small>'+esc(t.k[i][1])+'</small></th>'; }).join("")+'</tr></thead><tbody>';
+    NV.forEach(function(v,ni){
+      h+='<tr class="n'+(ni+1)+'"><th>'+esc(t.n[ni])+'</th>'+KK.map(function(k,i){
+        return '<td class="r" data-k="'+k+'"><input type="radio" name="m-'+k+'" value="'+v+'" aria-label="'+esc(t.k[i][0]+" — "+t.n[ni])+'"></td>'; }).join("")+'</tr>';
     });
-    h+='<tr class="expl"><th>Si insatisfait : merci de préciser la raison</th>'+KRIT.map(function(c){
-      return '<td><textarea id="a-'+c.k+'" disabled maxlength="2000" placeholder="—"></textarea></td>'; }).join("")+'</tr>';
+    h+='<tr class="expl"><th>'+esc(t.expl)+'</th>'+KK.map(function(k){
+      return '<td><textarea id="a-'+k+'" disabled maxlength="2000" placeholder="—"></textarea></td>'; }).join("")+'</tr>';
     h+='</tbody></table></div></div></div>';
-    /* 03 SAV */
-    h+='<div class="sec"><h2><span class="no">03</span>SERVICE APRÈS-VENTE (SAV) ET SUIVI</h2><div class="in">'
-      +'<div class="q">Le traitement de vos demandes de SAV ou de modifications techniques a-t-il été satisfaisant ? <span class="req">*</span></div>'
-      +radioOpts("sav",[["oui","Oui, tout à fait"],["partie","En partie"],["non","Non, pas du tout"],["na","Non applicable (pas de SAV)"]])
-      +'<div class="expl2" id="x-sav"><label class="f">Merci de préciser ce qui n\'a pas été satisfaisant <span class="req">*</span></label><textarea id="sav_aciklama" maxlength="2000"></textarea></div>'
+    h+='<div class="sec"><h2><span class="no">03</span>'+esc(t.s3)+'</h2><div class="in">'
+      +'<div class="q">'+esc(t.q3)+' <span class="req">*</span></div>'
+      +radioOpts("sav",["oui","partie","non","na"],t.sav)
+      +'<div class="expl2" id="x-sav"><label class="f">'+esc(t.savx)+' <span class="req">*</span></label><textarea id="sav_aciklama" maxlength="2000"></textarea></div>'
       +'</div></div>';
-    /* 04 Recommandation */
-    h+='<div class="sec"><h2><span class="no">04</span>RECOMMANDATION GLOBALE</h2><div class="in">'
-      +'<div class="q">Recommanderiez-vous ARBOR pour d\'autres projets de menuiserie ? <span class="req">*</span></div>'
-      +radioOpts("tavsiye",[["oui","Oui"],["non","Non"],["peut","Peut-être"]])
-      +'<div class="expl2" id="x-tavsiye"><label class="f">Merci de nous indiquer pourquoi <span class="req">*</span></label><textarea id="tavsiye_aciklama" maxlength="2000"></textarea></div>'
+    h+='<div class="sec"><h2><span class="no">04</span>'+esc(t.s4)+'</h2><div class="in">'
+      +'<div class="q">'+esc(t.q4)+' <span class="req">*</span></div>'
+      +radioOpts("tavsiye",["oui","non","peut"],t.rec)
+      +'<div class="expl2" id="x-tavsiye"><label class="f">'+esc(t.recx)+' <span class="req">*</span></label><textarea id="tavsiye_aciklama" maxlength="2000"></textarea></div>'
       +'</div></div>';
-    /* 05 Commentaires */
-    h+='<div class="sec"><h2><span class="no">05</span>VOS COMMENTAIRES &amp; SUGGESTIONS</h2><div class="in">'
-      +'<div class="q">Avez-vous un commentaire, une suggestion, un point à améliorer ou un compliment à nous adresser ?</div>'
+    h+='<div class="sec"><h2><span class="no">05</span>'+esc(t.s5)+'</h2><div class="in">'
+      +'<div class="q">'+esc(t.q5)+'</div>'
       +'<textarea id="yorum" maxlength="4000" style="min-height:110px"></textarea></div></div>';
-    /* 06 Validation */
-    h+='<div class="sec"><h2><span class="no">06</span>VALIDATION</h2><div class="in g2">'
-      +'<div><label class="f">Nom et prénom <span class="req">*</span></label><input type="text" id="ad" maxlength="200" autocomplete="name"></div>'
-      +'<div><label class="f">Entreprise <span class="req">*</span></label><input type="text" id="firma" maxlength="200" autocomplete="organization" value="'+esc(p.firma||"")+'"></div>'
-      +'<div><label class="f">Fonction</label><input type="text" id="gorev" maxlength="200" autocomplete="organization-title"></div>'
-      +'<div><label class="f">E-mail</label><input type="email" id="mail" maxlength="200" autocomplete="email"></div>'
-      +'<div><label class="f">Date</label><input type="text" readonly value="'+new Date().toLocaleDateString("fr-FR")+'"></div>'
+    h+='<div class="sec"><h2><span class="no">06</span>'+esc(t.s6)+'</h2><div class="in g2">'
+      +'<div><label class="f">'+esc(t.ad)+' <span class="req">*</span></label><input type="text" id="ad" maxlength="200" autocomplete="name"></div>'
+      +'<div><label class="f">'+esc(t.firma)+' <span class="req">*</span></label><input type="text" id="firma" maxlength="200" autocomplete="organization" value="'+esc(p.firma||"")+'"></div>'
+      +'<div><label class="f">'+esc(t.gorev)+'</label><input type="text" id="gorev" maxlength="200" autocomplete="organization-title"></div>'
+      +'<div><label class="f">'+esc(t.mail)+'</label><input type="email" id="mail" maxlength="200" autocomplete="email"></div>'
+      +'<div><label class="f">'+esc(t.tarihL)+'</label><input type="text" readonly value="'+new Date().toLocaleDateString(t.tarih)+'"></div>'
       +'</div></div>';
-    h+='<div class="msg" id="msg"></div><button class="btn" id="go">Envoyer</button>';
+    h+='<div class="msg" id="msg"></div><button class="btn" id="go">'+esc(t.gonder)+'</button>';
     app.innerHTML=h;
 
-    /* clic sur toute la cellule */
     app.querySelectorAll("td.r").forEach(function(td){ td.addEventListener("click",function(e){ if(e.target.tagName!=="INPUT"){ var i=td.querySelector("input"); i.checked=true; i.dispatchEvent(new Event("change",{bubbles:true})); } }); });
     app.addEventListener("change",function(e){
       var n=e.target.name||"";
       if(n.indexOf("m-")===0){ var k=n.slice(2), v=e.target.value, ta=document.getElementById("a-"+k), neg=(v==="i"||v==="ti");
-        ta.disabled=!neg; ta.placeholder=neg?"Raison (obligatoire)":"—";
+        ta.disabled=!neg; ta.placeholder=neg?t.neden:"—";
         var hh=document.getElementById("h-"+k); if(hh) hh.classList.remove("err"); if(!neg) ta.classList.remove("err");
         if(neg) setTimeout(function(){ ta.focus(); },30); }
       if(n==="sav"||n==="tavsiye"){ var oo=document.getElementById("o-"+n); if(oo) oo.classList.remove("err"); }
@@ -175,16 +259,16 @@
       if(n==="tavsiye") document.getElementById("x-tavsiye").classList.toggle("on",e.target.value==="non"||e.target.value==="peut");
       var el=e.target.closest(".err"); if(el) el.classList.remove("err");
     });
-    document.getElementById("go").onclick=envoyer;
+    document.getElementById("go").onclick=gonder;
   }
   function val(n){ var i=app.querySelector('input[name="'+n+'"]:checked'); return i?i.value:""; }
   function txt(id){ var e=document.getElementById(id); return e?e.value.trim():""; }
-  function envoyer(){
+  function gonder(){
     app.querySelectorAll(".err").forEach(function(e){ e.classList.remove("err"); });
     var c={aciklama:{}}, bad=[];
-    KRIT.forEach(function(k){ var v=val("m-"+k.k); c[k.k]=v;
-      if(!v) bad.push(document.getElementById("h-"+k.k));
-      else if((v==="i"||v==="ti")){ var a=txt("a-"+k.k); c.aciklama[k.k]=a; if(a.length<3) bad.push(document.getElementById("a-"+k.k)); } });
+    KK.forEach(function(k){ var v=val("m-"+k); c[k]=v;
+      if(!v) bad.push(document.getElementById("h-"+k));
+      else if(v==="i"||v==="ti"){ var a=txt("a-"+k); c.aciklama[k]=a; if(a.length<3) bad.push(document.getElementById("a-"+k)); } });
     c.sav=val("sav"); if(!c.sav) bad.push(document.getElementById("o-sav"));
     c.sav_aciklama=txt("sav_aciklama"); if((c.sav==="partie"||c.sav==="non")&&c.sav_aciklama.length<3) bad.push(document.getElementById("sav_aciklama"));
     c.tavsiye=val("tavsiye"); if(!c.tavsiye) bad.push(document.getElementById("o-tavsiye"));
@@ -195,11 +279,12 @@
     c.yanitlayan_gorev=txt("gorev"); c.yanitlayan_mail=txt("mail");
     var msg=document.getElementById("msg");
     if(bad.length){ bad.forEach(function(e){ if(e) e.classList.add("err"); }); msg.className="msg err2";
-      msg.textContent="Merci de compléter les champs obligatoires (encadrés en rouge)."; bad[0]&&bad[0].scrollIntoView({behavior:"smooth",block:"center"}); return; }
-    var b=document.getElementById("go"); b.disabled=true; msg.className="msg"; msg.textContent="Envoi en cours…";
+      msg.textContent=t.zorunlu; bad[0]&&bad[0].scrollIntoView({behavior:"smooth",block:"center"}); return; }
+    var b=document.getElementById("go"); b.disabled=true; msg.className="msg"; msg.textContent=t.gidiyor;
     api({t:token,islem:"gonder",cevap:c}).then(function(j){
-      if(j.ok){ fin("Merci pour votre précieuse collaboration !","Vos réponses ont bien été enregistrées.<br><br>L'équipe ARBOR"); return; }
-      b.disabled=false; msg.className="msg err2"; msg.textContent=j.hata||"Erreur. Merci de réessayer.";
+      if(j.ok){ fin(t.bitti,t.bittix); return; }
+      if(j.kod==="yanitlandi"){ fin(t.tesekkur,t.dolu); return; }
+      b.disabled=false; msg.className="msg err2"; msg.textContent=j.kod==="eksik"?t.zorunlu:(j.kod==="bag"?t.bag:t.hata);
     });
   }
 })();
