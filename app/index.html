@@ -513,7 +513,7 @@ async function grOzel(){
 /* PRIM-SART-GIRIS (26.10.2026, Melih): 01.11.2026'dan itibaren her gün (pano her açılışta canlı hesaplar) MB Gündem tablosunun
    sağında: prim alan ve bu ay prim şartını yerine getiren personel. Prim alan = son 12 ayda prim > 0 ya da prim notunda "prim".
    Şart = Personel › "Aylık Güncellenecek Formlar"daki formlarının HEPSİ bu ayın son tarihinde (ayın ilk iş günü) ya da sonra
-   güncellenmiş (FRM_FK ve canlı damgalar loadRef ile aynı). Formu olmayan prim alanlar listelenmez (şartları PRIM_SART_EK'e eklenir).
+   güncellenmiş (FRM_FK ve canlı damgalar loadRef ile aynı). Aylık formu olmayan prim alanlar şartı sağlamış sayılır (PRIM-SART-FORMSUZ, 06.11.2026; ek şart PRIM_SART_EK'e).
    Sütunlar = Personel tablosunun 2 · 8 · 12 · 13. sütunları: Ad Soyad · Yol-Yemek · önceki ay prim · son 12 ay ort. prim. */
 const PRIM_SART_EK={};
 async function grPrimSart(){
@@ -550,7 +550,7 @@ async function grPrimSart(){
   const kBy={}; K.forEach(r=>kBy[r.kod]=r);
   const L=MP.filter(m=>m.kisi_kod&&kBy[m.kisi_kod]&&kBy[m.kisi_kod].aktif!==false)
     .filter(m=>son12(m.id)||/prim/i.test(String(m.prim_notu||"")))
-    .filter(m=>{ const f=KF[m.kisi_kod]||[], ek=PRIM_SART_EK[m.kisi_kod]; if(!f.length&&!ek) return false;
+    .filter(m=>{ const f=KF[m.kisi_kod]||[], ek=PRIM_SART_EK[m.kisi_kod]; /* PRIM-SART-FORMSUZ: aylık formu olmayan prim alan şartı sağlamış sayılır */
       return f.every(Boolean)&&(!ek||ek({t0,due})); })
     .map(m=>({ad:kBy[m.kisi_kod].tam_ad||m.kisi, yy:m.yol_yemek, pa:AY[m.id+"|"+PYr+"-"+PM], av:avgOf(m.id)}))
     .sort((a,b)=>String(a.ad).localeCompare(String(b.ad),"tr"));
