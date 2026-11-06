@@ -422,7 +422,13 @@ async function cizimCerceve(R,b,olcek){ olcek=olcek||3;
   const ya=Y1[0][1]+1, yb=Y1[1][0]-1, bh=yb-ya; if(bh<30) return null;
   const dik=[]; for(let x=0;x<W;x++){ let n=0; for(let y=ya;y<yb;y++) if(kara((y*W+x)*4)) n++; if(n>bh*0.85) dik.push(x); }
   const V=gr(dik); if(V.length<2) return null; let xa=V[0][1]+1, xb=V[V.length-1][0]-1; if(xb-xa<30) return null;
-  const s=3; return kirp(cv,X+xa+s,Y+ya+s,xb-xa-2*s,bh-2*s); }
+  const s=3; const g=kirmiziGenislet(cv,[X+xa+s,Y+ya+s,X+xb-s,Y+yb-s],[X,Y+Math.max(0,Math.round(ust)),X+W,Y+Hh],olcek); return kirp(cv,g[0],g[1],g[2]-g[0],g[3]-g[1]); }
+/* SOUM-KIRMIZI-REF (06.11.2026): kırmızı ölçü çizgileri referans — kırpma alanı tüm kırmızı çizgileri ve ölçü yazılarını içerecek kadar genişletilir */
+function kirmiziGenislet(cv,r,a,olcek){ const ax0=Math.max(0,Math.round(a[0])), ay0=Math.max(0,Math.round(a[1])), ax1=Math.min(cv.width,Math.round(a[2])), ay1=Math.min(cv.height,Math.round(a[3])), aw=ax1-ax0, ah=ay1-ay0; if(aw<5||ah<5) return r;
+  const d=cv.getContext("2d").getImageData(ax0,ay0,aw,ah).data; let x0=1e9,y0=1e9,x1=-1,y1=-1;
+  for(let y=0;y<ah;y++) for(let x=0;x<aw;x++){ const k=(y*aw+x)*4; if(d[k]>=170&&d[k+1]<=110&&d[k+2]<=110&&d[k]-d[k+1]>=90){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } }
+  if(x1<0) return r; x0+=ax0; x1+=ax0; y0+=ay0; y1+=ay0; const m=Math.round(12*olcek), o=r.slice();
+  if(x0<r[0]) o[0]=Math.max(ax0,x0-m); if(y0<r[1]) o[1]=Math.max(ay0,y0-m); if(x1>r[2]) o[2]=Math.min(ax1,x1+m); if(y1>r[3]) o[3]=Math.min(ay1,y1+m); return o; }
 async function sayfaCiz(R,page,olcek){ if(!R._cv) R._cv={}; const key=page+"@"+olcek;
   if(!R._cv[key]){ const pg=await R.doc.getPage(page); const vp=pg.getViewport({scale:olcek}); const cv=document.createElement("canvas"); cv.width=vp.width; cv.height=vp.height;
     const ctx=cv.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height); await pg.render({canvasContext:ctx,viewport:vp}).promise; R._cv[key]=cv; } return R._cv[key]; }
@@ -438,7 +444,7 @@ async function cizimAl(R,bbox,olcek){
   if(!R._cv) R._cv={};
   if(!R._cv[key]){ const pg=await R.doc.getPage(bbox.page); const vp=pg.getViewport({scale:olcek}); const cv=document.createElement("canvas"); cv.width=vp.width; cv.height=vp.height;
     const ctx=cv.getContext("2d"); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height); await pg.render({canvasContext:ctx,viewport:vp}).promise; R._cv[key]=cv; }
-  const cv=R._cv[key]; const x=bbox.x0*olcek, y=bbox.y0*olcek, w=(bbox.x1-bbox.x0)*olcek, h=(bbox.y1-bbox.y0)*olcek;
+  const cv=R._cv[key]; const g=kirmiziGenislet(cv,[bbox.x0*olcek,bbox.y0*olcek,bbox.x1*olcek,bbox.y1*olcek],[28*olcek,bbox.y0*olcek,224*olcek,(bbox.y1+40)*olcek],olcek); const x=g[0], y=g[1], w=g[2]-g[0], h=g[3]-g[1];
   const o=document.createElement("canvas"); o.width=Math.round(w); o.height=Math.round(h); o.getContext("2d").drawImage(cv,x,y,w,h,0,0,w,h);
   /* beyaz kenarları kırp */
   const c=o.getContext("2d"), d=c.getImageData(0,0,o.width,o.height).data; let x0=o.width,y0=o.height,x1=0,y1=0;
