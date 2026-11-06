@@ -106,10 +106,12 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <div class="wrap">
   <div class="stamp" id="damga">Yükleniyor…</div>
   <div class="msg" id="msg"></div>
+  <div id="sziyaret"></div><!-- MY-SANTIYE-FOTO: şantiye ziyareti fotoğraf raporu (app/santiye_foto.js) -->
   <div id="bloklar"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../my_acil.js?v=261028e"></script><!-- MY-FAALIYET -->
+<script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
    kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
@@ -298,8 +300,12 @@ function ciz(){
   });
 }
 function satir(tr){ const t=tr.getAttribute("data-tur"), n=tr.getAttribute("data-no"); return (DATA.rows||[]).find(r=>r.tur===t&&r.no===n); }
+/* MY-SANTIYE-FOTO (06.11.2026): Şantiye Ziyareti bloğu — şantiye listesi MY satırlarındaki proje adları (+ serbest giriş); kod/no şantiye formunda gösterim için */
+function sfoto(){ if(!window.SFOTO) return; const g={};
+  (DATA.rows||[]).forEach(r=>{ if(!r.proje) return; const x=g[r.proje]=g[r.proje]||{ad:r.proje,kod:null,no:null}; if(!x.kod&&r.santiye) x.kod=r.santiye; if(!x.no&&r.tur!=="PEM") x.no=r.no; });
+  SFOTO.form($("sziyaret"),{sb,kisi:KISI,secenek:Object.values(g).sort((a,b)=>a.ad.localeCompare(b.ad,"tr"))}); }
 async function yukle(){
-  try{ DATA=await MYACIL.liste(sb); ciz(); }
+  try{ DATA=await MYACIL.liste(sb); ciz(); sfoto(); }
   catch(e){ $("bloklar").innerHTML='<div class="blk" style="padding:12px;color:#b40000">Hata: '+esc(e.message||e)+'</div>'; }
 }
 function kapatMenu(){ const m=$("myctx"); if(m) m.remove(); }
