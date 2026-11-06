@@ -113,6 +113,7 @@
         inp.disabled=true;
         var r=await sb.rpc("my_kesin_yukleme",{p_tur:inp.getAttribute("data-tur"),p_no:inp.getAttribute("data-no"),p_tarih:v});
         if(r.error){ inp.disabled=false; alert("Kaydedilemedi: "+r.error.message); return; }
+        try{ document.dispatchEvent(new CustomEvent("my-kesin",{detail:{tur:inp.getAttribute("data-tur"),no:inp.getAttribute("data-no")}})); }catch(e){} /* MY-KESIN-SEVK-OTO: boş sevk durumu sunucuda doldu, formlar tazelesin */
         acilBlok(el,o);
       });
     });
