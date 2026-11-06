@@ -35,6 +35,9 @@
      +".my-modal td.k{color:#5a6b7d;white-space:nowrap;width:1%}"
      +".my-modal .x{float:right;border:0;background:none;font-size:20px;cursor:pointer;color:#5a6b7d;line-height:1}"
      +".my-modal .mut{color:#8a97a4}"
+     +"table.mya tr.my-kz td{background:#f4a6a6;border-bottom-color:#e57373}table.mya tr.my-ks td{background:#fff;border-bottom-color:#e6eaef}" /* MY-KESIN-YUKLEME */
+     +"table.mya tr.my-grp td{background:#eef4fb;color:#16324f;font-weight:700;font-size:11.5px;padding:5px 7px;border-bottom:1px solid #d3e0ee;cursor:default}"
+     +".my-kg{color:#b40000;font-weight:700;margin-right:5px}input.my-kes{font:inherit;font-size:11.5px;border:1px solid #d9a3b6;border-radius:4px;padding:0 3px;background:#fff;color:#1c2430}input.my-kes:disabled{opacity:.6}"
      +"input.my-ack{font:inherit;font-size:12px;width:30ch;border:1px solid #d9a3b6;border-radius:4px;padding:1px 6px;background:#fff;color:#1c2430}input.my-ack:focus{outline:none;border-color:#b0003a}input.my-ack:disabled{opacity:.6}";
     document.head.appendChild(s);
   }
@@ -62,14 +65,27 @@
     var dno=function(r){ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return m?parseFloat(m[1].replace(",",".")):999; };
     rows.sort(function(a,b){ return (dno(a)-dno(b))||String(a.durum_erp||"").localeCompare(String(b.durum_erp||""),"tr")||String(a.hedef||"9999").localeCompare(String(b.hedef||"9999"))||String(a.no).localeCompare(String(b.no)); });
     if(!rows.length){ el.innerHTML=""; return; }
-    var mk=mod==="mk", gr=mod==="giris"; /* MY-ACIKLAMA-EKLE (28.10.2026): Giriş panosunda "Açıklama Ekle" sütunu (yalnız MB) */
+    var mk=mod==="mk", gr=mod==="giris";
+    /* MY-KESIN-YUKLEME (06.11.2026, Melih): Kesinleşen Yükleme Tarihi (OE girer; Giriş'te MB de). Durum 3 Sevke Hazır + boş → kırmızı satır "Yükleme tarihi gir";
+       tarih girilenler beyaz zeminle altta "Yükleneceği Kesinleşenler" grubunda (kesin tarihe göre). */
+    var kesEd=(mod==="oe"||gr);
+    var kesR=rows.filter(function(r){ return !!r.kesin; }).sort(function(a,b){ return String(a.kesin).localeCompare(String(b.kesin))||String(a.no).localeCompare(String(b.no)); });
+    var anaR=rows.filter(function(r){ return !r.kesin; });
+    var ncol=9+(mk?1:0)+(gr?1:0);
+    var kesHtml=function(r){
+      var kz=!r.kesin&&dno(r)===3;
+      if(kesEd) return (kz?'<span class="my-kg">Yükleme tarihi gir</span>':'')+'<input type="date" class="my-kes" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" value="'+esc(r.kesin?String(r.kesin).slice(0,10):"")+'">';
+      return r.kesin?'<b>'+fd(r.kesin)+'</b>':(kz?'<span class="my-kg">Yükleme tarihi gir</span>':'');
+    }; /* MY-ACIKLAMA-EKLE (28.10.2026): Giriş panosunda "Açıklama Ekle" sütunu (yalnız MB) */
     var h='<div class="myab"><h3>ACİL YÜKLEMELER · MY ('+rows.length+')</h3><div class="myw"><table class="mya"><thead><tr>'
-      +'<th>Durum</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama</th>'+(gr?'<th>Açıklama Ekle</th>':'')+'</tr></thead><tbody>'
-      +rows.map(function(r){
+      +'<th>Durum</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Kesinleşen<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama</th>'+(gr?'<th>Açıklama Ekle</th>':'')+'</tr></thead><tbody>'
+      +anaR.concat(kesR).map(function(r,i){
         var no=r.tur==="PEM"?("PEM "+r.kod):r.kod;
         var onay=(mk&&r.sekil==="Uçak"&&!r.ucak_onay)?'<button class="my-onay" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">Uçak yüklemesini onayla</button>':'';
-        return '<tr data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td><td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
-          +'<td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td><td><b>'+fd(r.hedef)+'</b></td><td>'+sekilHtml(r)+'</td>'
+        var cls=r.kesin?'my-ks':(dno(r)===3?'my-kz':'');
+        var grp=(i===anaR.length&&kesR.length)?'<tr class="my-grp"><td colspan="'+ncol+'">YÜKLENECEĞİ KESİNLEŞENLER ('+kesR.length+')</td></tr>':'';
+        return grp+'<tr class="'+cls+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td><td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
+          +'<td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td><td><b>'+fd(r.hedef)+'</b></td><td>'+kesHtml(r)+'</td><td>'+sekilHtml(r)+'</td>'
           +(mk?'<td>'+onay+'</td>':'')+'<td class="w" title="'+esc(r.aciklama)+'">'+esc(r.aciklama)+'</td>'
           +(gr?'<td><input class="my-ack" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" placeholder="Yazıp Enter’a basın"></td>':'')+'</tr>';
       }).join("")+'</tbody></table></div></div>';
@@ -83,6 +99,17 @@
         ev.stopPropagation(); b.disabled=true; b.textContent="Onaylanıyor…";
         var r=await sb.rpc("my_ucak_onayla",{p_tur:b.getAttribute("data-tur"),p_no:b.getAttribute("data-no"),p_kisi:kisiKod("MK")});
         if(r.error){ b.disabled=false; b.textContent="Uçak yüklemesini onayla"; alert("Onaylanamadı: "+r.error.message); return; }
+        acilBlok(el,o);
+      });
+    });
+    el.querySelectorAll("input.my-kes").forEach(function(inp){ /* MY-KESIN-YUKLEME */
+      inp.addEventListener("dblclick",function(ev){ ev.stopPropagation(); });
+      inp.addEventListener("contextmenu",function(ev){ ev.stopPropagation(); });
+      inp.addEventListener("change",async function(){
+        var v=inp.value||null; if(v&&!/^\d{4}-\d{2}-\d{2}$/.test(v)) return;
+        inp.disabled=true;
+        var r=await sb.rpc("my_kesin_yukleme",{p_tur:inp.getAttribute("data-tur"),p_no:inp.getAttribute("data-no"),p_tarih:v});
+        if(r.error){ inp.disabled=false; alert("Kaydedilemedi: "+r.error.message); return; }
         acilBlok(el,o);
       });
     });
