@@ -750,7 +750,7 @@ async function cfAc(r,onay){
     pc.value=$("cfPc").value; if(pc.value!=="evet") $("cfRef").value="";
     rf.value=$("cfRef").value; rf.dispatchEvent(new w.Event("input",{bubbles:true})); w.refUpd(); cfTalimat(w); cfTalepZamanla(w); };
   $("cfPc").addEventListener("change",gonder); $("cfRef").addEventListener("input",gonder);
-  if(onay){ $("cfT").style.display=""; $("cfBtn").style.display="none"; $("cfPc").value="evet"; $("cfRef").value=String(onay.pencad); gonder(); }
+  if(onay){ $("cfT").style.display=""; $("cfBtn").style.display="none"; $("cfPc").value="evet"; $("cfRef").value=onay.durum==="yenilendi"?"":String(onay.pencad); gonder(); }
 }
 /* CAM-FIYAT-ONAY (06.11.2026, Melih): talimat "Onaysız Kullanmayınız" verince Melih'e onay talebi gider (edge cam-fiyat-onay → tablo
    cam_fiyat_onay + WhatsApp). Melih App › Giriş › "Cam Fiyat Onayı Ver" ile Pencad ya da Hesaplanan fiyatı onaylar; talep edenin bandında
@@ -777,17 +777,26 @@ async function cfTalepGonder(w){
     nt.textContent=data.tekrar?(data.durum==="bekliyor"?"Bu fiyat için onay talebiniz Melih Bilgili'de bekliyor.":"Bu fiyat için onay verildi: üst banttaki “Cam Fiyat Onayınız Var” düğmesine basınız.")
       :"Onay talebi Melih Bilgili'ye iletildi. Onay gelince üst bantta “Cam Fiyat Onayınız Var” düğmesi belirir.";
     if(data.tekrar&&data.durum!=="bekliyor") cfOnayKontrol();
+    if(!data.tekrar&&data.id){ try{ await ARB_ACTIVE.rpc("cam_fiyat_onay_pencere",{p_id:data.id,p_html:cfPencereHtml()}); }catch(e){} } /* CAM-FIYAT-ONAY-PENCERE */
   }catch(e){ _cfoGiden.delete(key); nt.textContent="Onay talebi iletilemedi ("+e.message+"). Lütfen Melih Bilgili'ye bildiriniz."; }
 }
+/* CAM-FIYAT-ONAY-PENCERE (06.11.2026): talep anındaki fiyat penceresinin anlık görüntüsü (app'teki onay penceresinde aynen gösterilir) */
+function cfPencereHtml(){ const k=$("cfPop")&&$("cfPop").querySelector(".cfk"); if(!k) return "";
+  const c=k.cloneNode(true); c.querySelectorAll("#cfBtn,#cfTalepNot,#cfOnayBant,#cfOnayTamam,.cfx,script").forEach(x=>x.remove());
+  const t=c.querySelector("#cfT"); if(t) t.style.display="";
+  const sv=c.querySelector("#cfPc"); if(sv) [...sv.options].forEach(o=>{ if(o.value===$("cfPc").value) o.setAttribute("selected",""); else o.removeAttribute("selected"); });
+  const rv=c.querySelector("#cfRef"); if(rv){ rv.setAttribute("value",$("cfRef").value); rv.removeAttribute("disabled"); }
+  return c.outerHTML; }
 function cfOnayUygula(){ const o=window._CFONAY, u=$("cfUnit"); if(!o||!u) return;
   u.querySelectorAll(".bfwarn").forEach(x=>x.remove()); u.querySelectorAll(".big.faded").forEach(x=>x.classList.remove("faded"));
   let b=$("cfOnayBant"); if(!b){ b=document.createElement("div"); b.id="cfOnayBant"; b.className="cfonaybant"; $("cfT").insertBefore(b,$("cfT").firstChild); }
-  b.innerHTML=o.durum==="pencad"?("Melih Bilgili onayı: <b>Pencad fiyatını ("+cfoTr(o.pencad)+" €/m²)</b> kullanınız.")
+  b.innerHTML=o.durum==="yenilendi"?"Melih Bilgili: <b>Pencad'e yeni fiyat işlendi. Yenilenen Pencad fiyatını kullanınız.</b>":o.durum==="pencad"?("Melih Bilgili onayı: <b>Pencad fiyatını ("+cfoTr(o.pencad)+" €/m²)</b> kullanınız.")
     :("Melih Bilgili onayı: <b>Hesaplanan fiyatı ("+cfoTr(o.birim)+" €/m²)</b> kullanınız; Pencad fiyatı ("+cfoTr(o.pencad)+" €/m²) kullanılmaz.");
-  const ok=$("cfOk"); if(ok) ok.style.display=o.durum==="pencad"?"":"none"; }
+  const ok=$("cfOk"); if(ok) ok.style.display=o.durum==="pencad"?"":"none";
+  if(o.durum==="yenilendi") u.querySelectorAll(".big").forEach(x=>x.classList.add("faded")); /* CAM-FIYAT-ONAY-YENILENDI */ }
 let _cfoListe=[];
 async function cfOnayKontrol(){ const b=$("cfOnayBtn"); if(!b) return; const k=CFO_KISI();
-  try{ let q=ARB_ACTIVE.from("cam_fiyat_onay").select("id,seri,komb,cam,birim,pencad,durum,karar_at").in("durum",["pencad","hesaplanan"]).eq("goruldu",false).order("karar_at",{ascending:true});
+  try{ let q=ARB_ACTIVE.from("cam_fiyat_onay").select("id,seri,komb,cam,birim,pencad,durum,karar_at").in("durum",["pencad","hesaplanan","yenilendi"]).eq("goruldu",false).order("karar_at",{ascending:true});
     if(k.kod) q=q.eq("kisi_kod",k.kod); const {data,error}=await q; if(error) throw error; _cfoListe=data||[]; }catch(e){ _cfoListe=[]; }
   b.style.display=_cfoListe.length?"":"none"; b.textContent="Cam Fiyat Onayınız Var"+(_cfoListe.length>1?" ("+_cfoListe.length+")":""); }
 $("cfOnayBtn").onclick=()=>{ const o=_cfoListe[0]; if(!o) return;
