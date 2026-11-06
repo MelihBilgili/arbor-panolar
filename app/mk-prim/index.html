@@ -117,6 +117,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../giris_ust.js?v=261102b"></script><!-- GIRIS-UST-ORTAK -->
 <script src="../my_acil.js?v=261028a"></script><!-- MY-FAALIYET -->
+<script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
    kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
@@ -476,6 +477,7 @@ async function sLoadAkis(){ /* MK-SANTIYE-OB-EKLE (03.11.2026): tüm açık şan
     +'<button type="button" class="btn" id="sYeniBtn">+ Şantiye ekle</button></div>';
   if(!document.getElementById("skimCss")){ const st=document.createElement("style"); st.id="skimCss"; st.textContent="b.skim{font-weight:700;margin-right:3px}b.skim.ob{color:#1f5f99}b.skim.mk{color:#0a5745}"; document.head.appendChild(st); }
   el.querySelectorAll(".sed").forEach(d=>d.onclick=()=>sEdit(d));
+  if(window.SFOTO) SFOTO.mkRozet(sb,el); /* MY-SANTIYE-FOTO: MY ziyaret fotoğrafları rozeti */
   el.querySelectorAll(".scik").forEach(b=>b.onclick=async()=>{
     if(!confirm('"'+b.dataset.ad+'" tıkanmış şantiyeler listesinden çıkarılsın mı?')) return;
     const {error}=await sb.rpc("mk_santiye_cikar",{p_id:parseInt(b.dataset.sid)});
