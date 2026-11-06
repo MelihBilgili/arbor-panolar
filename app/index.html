@@ -479,7 +479,7 @@ async function grVakit(){
     if(v.length) P.push("Gündüz ort. "+Math.round(v.reduce((a,b)=>a+b,0)/v.length)+" °C");
     const mm=hv.daily.precipitation_sum&&hv.daily.precipitation_sum[0], pr=hv.daily.precipitation_probability_max&&hv.daily.precipitation_probability_max[0];
     const fm=x=>x==null?"—":Number(x).toLocaleString("tr-TR",{maximumFractionDigits:1})+" mm", hd=hy&&hy.daily||{}, ec=hd.precipitation_sum_ecmwf_ifs025&&hd.precipitation_sum_ecmwf_ifs025[0], ic=hd.precipitation_sum_icon_seamless&&hd.precipitation_sum_icon_seamless[0];
-    P.push((ec==null&&ic==null)?"Yağış "+fm(mm):"Yağış ECMWF "+fm(ec)+" · ICON "+fm(ic)); /* GIRIS-YAGIS-IKI: iki model; ikisi de yoksa eski tek değer */ /* GIRIS-OLASILIK-YOK: yağış olasılığı yazılmaz */
+    const yv=[ec,ic].filter(x=>x!=null); P.push("Yağış "+fm(yv.length?yv.reduce((s,x)=>s+Number(x),0)/yv.length:mm)); /* GIRIS-YAGIS-ORT (06.11.2026, Melih): ECMWF ve ICON ortalaması; biri yoksa diğeri, ikisi de yoksa eski tek değer */ /* GIRIS-YAGIS-IKI: iki model; ikisi de yoksa eski tek değer */ /* GIRIS-OLASILIK-YOK: yağış olasılığı yazılmaz */
   } else P.push("Hava durumu alınamadı");
   /* GIRIS-UST-ORTAK: iki kutu — ezan vakitleri / hava */
   el.innerHTML=P.map(x=>'<div class="gr-bx">'+esc(x).replace(/ · /g,' · ')+'</div>').slice(0,1).join('')+(P.length>1?'<div class="gr-bx gr-bxh">'+esc(P.slice(1).join(' · '))+'</div>':'');
