@@ -18,6 +18,8 @@
   header .hl a{display:inline-block;padding:6px 13px;border:1px solid #c9dcf0;border-radius:8px;color:#fff;font-size:13px;text-decoration:none;white-space:nowrap}
   header .hl a:hover{background:#fff;color:#16324f}
   @media print{header .hl{display:none}}
+/* CAM-FIYAT-ONAY (06.11.2026) */ header .cfonay{font:inherit;font-weight:800;font-size:13px;padding:6px 14px;border-radius:8px;border:0;background:#2e7d54;color:#fff;cursor:pointer;white-space:nowrap}header .cfonay:hover{background:#3a9466}
+#cfPop .cfonaybant{margin:0 0 10px;padding:8px 10px;border-radius:8px;background:#e7f5ec;color:#1f6b45;font-weight:600}#cfPop .cftalep{margin-top:8px;font-size:12.5px;color:#ffd58a}
   .wrap{max-width:1400px;margin:0 auto;padding:10px 10px 40px}
   .btn2{border:1px solid #cdd8e4;background:#fff;color:#16324f;border-radius:7px;padding:4px 10px;font-size:12px;cursor:pointer}
   .kart{background:#fff;border:1px solid #dde6f0;border-radius:9px;padding:8px 12px 12px;margin-bottom:10px}
@@ -100,7 +102,7 @@
 <header>
   <div><h1>Ürün Konfigürasyonu</h1>
   <div class="sub">Hedef ısı (Uw), ses (Rw+Ctr) ve cam değerlerini giriniz; Arbor serileri ve test edilmiş cam kombinasyonlarından bu değerleri karşılayanlar listelenir. Boş bırakılan hedef serbesttir. Sonuçlar cam fiyatına göre (artan) sıralanır. Satıra sağ tıklayıp <b>Cam konfigürasyona aktar</b> ile camın değerlerini Cam Konfigürasyon formuna taşıyabilirsiniz.</div>
-  <div class="hl"><!-- URUN-KONFIG-CAMLINK (27.10.2026) --><a href="../cam-konfig/" target="_blank" rel="noopener">Cam Konfigürasyon ↗</a><a href="../cam/" target="_blank" rel="noopener">Cam Fiyatlandırma ↗</a><a href="../cam-listesi/" target="_blank" rel="noopener">Cam Listesi ↗</a></div>
+  <div class="hl"><!-- URUN-KONFIG-CAMLINK-YOK + CAM-FIYAT-ONAY (06.11.2026): Cam formu linkleri kaldırıldı; onay gelince düğme belirir --><button type="button" id="cfOnayBtn" class="cfonay" style="display:none">Cam Fiyat Onayınız Var</button></div>
 </header>
 <div class="wrap">
   <div style="display:flex;gap:10px;align-items:center;margin:0 0 8px"><span id="rolLbl"></span></div>
@@ -725,10 +727,10 @@ function cfTalimat(w){ const d=w.document, o=d.getElementById("out"), ur=o&&o.qu
   $("cfUnit").innerHTML=ur?ur.outerHTML:"";
   $("cfDif").textContent=rd?rd.textContent:"–"; $("cfDif").className=rd?rd.className:"refdif";
   $("cfOk").style.display=ok&&ok.style.display!=="none"?"":"none";
-  $("cfRef").disabled=$("cfPc").value!=="evet"; }
+  $("cfRef").disabled=$("cfPc").value!=="evet"; cfOnayUygula(); }
 function cfKapat(){ const p=$("cfPop"); if(p) p.remove(); }
-async function cfAc(r){
-  cfKapat();
+async function cfAc(r,onay){
+  cfKapat(); window._CFR=r; window._CFONAY=onay||null; /* CAM-FIYAT-ONAY */
   const komb=esc(String(r.C.c||r.C.komb||"").replace(/Ar90\b/g,"Ar"));
   document.body.insertAdjacentHTML("beforeend",'<div id="cfPop"><div class="cfk"><div class="cfh"><div><div class="lbl">Cam Fiyatlandırma panosunda</div><b>'+komb+'</b> · '+esc(sAd(r))+'</div><button class="cfx" title="Kapat">✕</button></div>'
     +'<div id="cfAlt"><div class="lv">Hesaplanıyor…</div></div>'
@@ -746,9 +748,53 @@ async function cfAc(r){
   $("cfBtn").onclick=()=>{ $("cfT").style.display=""; $("cfBtn").style.display="none"; cfTalimat(w); };
   const gonder=()=>{ const d=w.document, pc=d.getElementById("pencad"), rf=d.getElementById("ref");
     pc.value=$("cfPc").value; if(pc.value!=="evet") $("cfRef").value="";
-    rf.value=$("cfRef").value; rf.dispatchEvent(new w.Event("input",{bubbles:true})); w.refUpd(); cfTalimat(w); };
+    rf.value=$("cfRef").value; rf.dispatchEvent(new w.Event("input",{bubbles:true})); w.refUpd(); cfTalimat(w); cfTalepZamanla(w); };
   $("cfPc").addEventListener("change",gonder); $("cfRef").addEventListener("input",gonder);
+  if(onay){ $("cfT").style.display=""; $("cfBtn").style.display="none"; $("cfPc").value="evet"; $("cfRef").value=String(onay.pencad); gonder(); }
 }
+/* CAM-FIYAT-ONAY (06.11.2026, Melih): talimat "Onaysız Kullanmayınız" verince Melih'e onay talebi gider (edge cam-fiyat-onay → tablo
+   cam_fiyat_onay + WhatsApp). Melih App › Giriş › "Cam Fiyat Onayı Ver" ile Pencad ya da Hesaplanan fiyatı onaylar; talep edenin bandında
+   "Cam Fiyat Onayınız Var" belirir, basınca o camın penceresi açılır ve onaya göre yönlendirir. Talep, Referans Fiyat yazımı bittikten 2,5 sn sonra gider. */
+const CFO_KISI=()=>{ if(ARB_EMAIL==="int@arbor.com.tr") return {kod:"MB",ad:"Melih Bilgili"}; const k=(window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null; return k?{kod:k.kod,ad:k.ad}:{kod:"",ad:""}; };
+const cfoTr=v=>(+v).toFixed(2).replace(".",",");
+let _cfoTm=null; const _cfoGiden=new Set();
+function cfTalepZamanla(w){ clearTimeout(_cfoTm); if(window._CFONAY) return; _cfoTm=setTimeout(()=>cfTalepGonder(w),2500); }
+async function cfTalepGonder(w){
+  const r=window._CFR; if(!$("cfPop")||!r||window._CFONAY) return;
+  const u=$("cfUnit"); if(!u||!u.querySelector(".bfwarn")) return;
+  const birim=+w._BF, pencad=parseFloat(String($("cfRef").value).replace(",","."));
+  if(!(birim>0&&pencad>0)) return;
+  const komb=String(r.C.c||r.C.komb||"").replace(/Ar90\b/g,"Ar"), seri=sAd(r), key=komb+"|"+seri+"|"+pencad;
+  if(_cfoGiden.has(key)) return; _cfoGiden.add(key);
+  const o=w.document.getElementById("out"), tx=(x,s)=>{ const e=x.querySelector(s); return e?e.textContent.trim():""; };
+  const satirlar=o?[...o.querySelectorAll(".line.yk")].map(x=>({lbl:tx(x,".ll"),fiyat:tx(x,".yp")||tx(x,".yl .lv"),deger:tx(x,".yl .lv"),komb:tx(x,".yr b")})):[];
+  const bd=u.querySelector(".badge"), k=CFO_KISI(), C=r.C;
+  const ex=$("cfTalepNot"); if(ex) ex.remove();
+  const nt=document.createElement("div"); nt.className="cftalep"; nt.id="cfTalepNot"; nt.textContent="Onay talebi Melih Bilgili'ye iletiliyor…"; $("cfT").appendChild(nt);
+  try{ const {data,error}=await ARB_ACTIVE.functions.invoke("cam-fiyat-onay",{body:{islem:"talep",kisi_kod:k.kod,kisi_ad:k.ad,seri,komb,
+      cam:{c:C.c,komb:C.komb||null,ug:C.ug,tl:C.tl,g:C.g,rwc:C.rwc},birim:Math.round(birim*100)/100,pencad,satirlar,rozet:bd?bd.textContent.trim():""}});
+    if(error||!data||!data.ok) throw new Error((data&&data.hata)||(error&&error.message)||"hata");
+    nt.textContent=data.tekrar?(data.durum==="bekliyor"?"Bu fiyat için onay talebiniz Melih Bilgili'de bekliyor.":"Bu fiyat için onay verildi: üst banttaki “Cam Fiyat Onayınız Var” düğmesine basınız.")
+      :"Onay talebi Melih Bilgili'ye iletildi. Onay gelince üst bantta “Cam Fiyat Onayınız Var” düğmesi belirir.";
+    if(data.tekrar&&data.durum!=="bekliyor") cfOnayKontrol();
+  }catch(e){ _cfoGiden.delete(key); nt.textContent="Onay talebi iletilemedi ("+e.message+"). Lütfen Melih Bilgili'ye bildiriniz."; }
+}
+function cfOnayUygula(){ const o=window._CFONAY, u=$("cfUnit"); if(!o||!u) return;
+  u.querySelectorAll(".bfwarn").forEach(x=>x.remove()); u.querySelectorAll(".big.faded").forEach(x=>x.classList.remove("faded"));
+  let b=$("cfOnayBant"); if(!b){ b=document.createElement("div"); b.id="cfOnayBant"; b.className="cfonaybant"; $("cfT").insertBefore(b,$("cfT").firstChild); }
+  b.innerHTML=o.durum==="pencad"?("Melih Bilgili onayı: <b>Pencad fiyatını ("+cfoTr(o.pencad)+" €/m²)</b> kullanınız.")
+    :("Melih Bilgili onayı: <b>Hesaplanan fiyatı ("+cfoTr(o.birim)+" €/m²)</b> kullanınız; Pencad fiyatı ("+cfoTr(o.pencad)+" €/m²) kullanılmaz.");
+  const ok=$("cfOk"); if(ok) ok.style.display=o.durum==="pencad"?"":"none"; }
+let _cfoListe=[];
+async function cfOnayKontrol(){ const b=$("cfOnayBtn"); if(!b) return; const k=CFO_KISI();
+  try{ let q=ARB_ACTIVE.from("cam_fiyat_onay").select("id,seri,komb,cam,birim,pencad,durum,karar_at").in("durum",["pencad","hesaplanan"]).eq("goruldu",false).order("karar_at",{ascending:true});
+    if(k.kod) q=q.eq("kisi_kod",k.kod); const {data,error}=await q; if(error) throw error; _cfoListe=data||[]; }catch(e){ _cfoListe=[]; }
+  b.style.display=_cfoListe.length?"":"none"; b.textContent="Cam Fiyat Onayınız Var"+(_cfoListe.length>1?" ("+_cfoListe.length+")":""); }
+$("cfOnayBtn").onclick=()=>{ const o=_cfoListe[0]; if(!o) return;
+  cfAc({C:o.cam||{c:o.komb},S:{s:o.seri,a:""},ah:null},o);
+  setTimeout(()=>{ const t=$("cfT"); if(!t||$("cfOnayTamam")) return; const bt=document.createElement("button"); bt.id="cfOnayTamam"; bt.className="cfbtn"; bt.textContent="Anladım";
+    bt.onclick=async()=>{ try{ await ARB_ACTIVE.functions.invoke("cam-fiyat-onay",{body:{islem:"goruldu",id:o.id}}); }catch(e){} cfKapat(); cfOnayKontrol(); }; t.appendChild(bt); },50); };
+cfOnayKontrol(); setInterval(cfOnayKontrol,120000);
 let _sm=null;
 function smKapat(){ if(_sm){ _sm.remove(); _sm=null; } }
 $("res").addEventListener("contextmenu",e=>{ const tr=e.target.closest("tbody tr[data-i]"); if(!tr) return;
