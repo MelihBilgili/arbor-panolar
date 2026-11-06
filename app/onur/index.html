@@ -70,8 +70,8 @@ html,body{max-width:100vw;overflow-x:hidden}
     <div class="chd"><h2 class="ftbas" onclick="document.getElementById('ftband').classList.toggle('kapali')" title="Aç / kapat">Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar <span class="cnt" id="cf"></span></h2>
       <span id="af"></span></div>
     <div class="scroll"><table id="ftt"><thead><tr>
-      <th style="width:16%">Yurt Dışı Birim</th><th style="width:13%">Fatura No</th><th style="width:9%">Tarih</th><th style="width:28%">Proje(ler)</th><th style="width:14%">Tutar</th><th style="width:12%">Para Birimi</th><th class="x"></th>
-    </tr></thead><tbody id="tf"><tr><td colspan="7">Yükleniyor…</td></tr></tbody></table></div>
+      <th style="width:24%">Yurt Dışı Birim</th><th style="width:20%">Fatura No</th><th style="width:14%">Tarih</th><th style="width:20%">Tutar</th><th style="width:16%">Para Birimi</th><!-- OE-FT-PROJE-YOK: Proje(ler) sütunu kaldırıldı (06.11.2026, Melih); ihracat_fatura.projeler verisi duruyor --><th class="x"></th>
+    </tr></thead><tbody id="tf"><tr><td colspan="6">Yükleniyor…</td></tr></tbody></table></div>
     <div class="msg" id="mf"></div>
   </div>
 
@@ -254,7 +254,7 @@ async function eurOf(tutar,pb){
 let FT=[];
 async function loadFt(){
   const {data,error}=await sb.from("ihracat_fatura").select("*").order("id",{ascending:false});
-  if(error){ $("tf").innerHTML='<tr><td colspan="7">Hata: '+esc(error.message)+'</td></tr>'; return; }
+  if(error){ $("tf").innerHTML='<tr><td colspan="6">Hata: '+esc(error.message)+'</td></tr>'; return; }
   FT=data||[]; $("cf").textContent="("+FT.length+")";
   /* OE-BOS-SATIR (21.09.2026, Melih): "Yeni Fatura Ekle" düğmesi kalktı; en üstte daima boş taslak satır
      durur (DB'de yok). İlk hücre (Yurt Dışı Birim) seçilince satır DB'ye yazılır ve üstte yeni boş satır açılır. */
@@ -262,7 +262,6 @@ async function loadFt(){
     +'<td><select data-f="yd_birim">'+opts(YDB,"")+'</select></td>'
     +'<td><input data-f="ft_no"></td>'
     +'<td><input type="date" data-f="tarih"></td>'
-    +'<td><input data-f="projeler" data-sap="m" readonly></td>'
     +'<td><input class="num" data-f="tutar"></td>'
     +'<td><select data-f="para_birimi">'+opts(PB,"EUR")+'</select></td>'
     +'<td class="x"></td></tr>';
@@ -270,7 +269,6 @@ async function loadFt(){
     +'<td><select data-f="yd_birim">'+opts(YDB,r.yd_birim)+'</select></td>'
     +'<td><input data-f="ft_no" value="'+esc(r.ft_no||"")+'"></td>'
     +'<td><input type="date" data-f="tarih" value="'+esc(r.tarih||"")+'"></td>'
-    +'<td><input data-f="projeler" data-sap="m" readonly value="'+esc(r.projeler||"")+'"></td>'
     +'<td><input class="num" data-f="tutar" value="'+esc(r.tutar==null?"":r.tutar)+'"></td>'
     +'<td><select data-f="para_birimi">'+opts(PB,r.para_birimi||"EUR")+'</select></td>'
     +'<td class="x"><button class="del" title="Sil">✕</button></td></tr>').join("");
@@ -314,7 +312,7 @@ function bosBagla(){
     const nt=document.querySelector('#tf tr[data-id="'+data.id+'"] [data-f="ft_no"]'); if(nt) nt.focus();
   };
 }
-const REQF=["yd_birim","ft_no","tarih","projeler","tutar","para_birimi"];
+const REQF=["yd_birim","ft_no","tarih","tutar","para_birimi"]; /* OE-FT-PROJE-YOK */
 function bosVar(){
   let eksik=false;
   document.querySelectorAll("#tf .miss").forEach(e=>e.classList.remove("miss"));
