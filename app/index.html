@@ -552,6 +552,7 @@ async function grPrimSart(){
     .filter(m=>son12(m.id)||/prim/i.test(String(m.prim_notu||"")))
     .filter(m=>{ const f=KF[m.kisi_kod]||[], ek=PRIM_SART_EK[m.kisi_kod]; /* PRIM-SART-FORMSUZ: aylık formu olmayan prim alan şartı sağlamış sayılır */
       return f.every(Boolean)&&(!ek||ek({t0,due})); })
+    .filter(m=>{ const v=AY[m.id+"|"+PYr+"-"+PM]; return v==null||v===""; }) /* PRIM-SART-ODENMIS-YOK: önceki ay primi dolu olan gösterilmez */
     .map(m=>({ad:kBy[m.kisi_kod].tam_ad||m.kisi, yy:m.yol_yemek, pa:AY[m.id+"|"+PYr+"-"+PM], av:avgOf(m.id)}))
     .sort((a,b)=>String(a.ad).localeCompare(String(b.ad),"tr"));
   const n=v=>(v==null||v==="")?'<span class="gr-muted">—</span>':Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0});
