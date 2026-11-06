@@ -318,7 +318,11 @@
     if(!el) return;
     var mod=el.getAttribute("data-mod")||"oe";
     acilBlok(el,{sb:cli,mod:mod});
-    setInterval(function(){ acilBlok(el,{sb:cli,mod:mod}); },5*60*1000);
+    setInterval(function(){ /* MY-ACK-KORU: yazarken yenileme yok; sayfa sürümü değiştiyse yeniden yükle */
+      if(el.querySelector("input.my-ack:focus")||[].some.call(el.querySelectorAll("input.my-ack"),function(i){return i.value.trim();})||document.querySelector(".my-modal")) return;
+      try{ var sc=document.querySelector('script[src*="my_acil.js?v="]'); var cv=sc&&(sc.getAttribute("src").match(/v=(\w+)/)||[])[1];
+        if(cv) fetch(location.pathname,{cache:"no-store"}).then(function(r){return r.text();}).then(function(t){ var m=t.match(/my_acil\.js\?v=(\w+)/); if(m&&m[1]!==cv) location.reload(); }).catch(function(){}); }catch(e){}
+      acilBlok(el,{sb:cli,mod:mod}); },5*60*1000);
   }
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",function(){ setTimeout(oto,400); }); else setTimeout(oto,400);
 })();
