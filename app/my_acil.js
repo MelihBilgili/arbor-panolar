@@ -40,7 +40,8 @@
      +"table.mya tr.my-ksbas td{cursor:pointer;user-select:none}table.mya.ks-kapali tr.my-ks{display:none}"
      +"table.mya tr.my-tbbas td{cursor:pointer;user-select:none}table.mya.tb-kapali tr.my-tb{display:none}" /* MY-TERMIN-BANT */ /* MY-KESIN-BANT */
      +".my-kg{color:#b40000;font-weight:700;margin-right:5px}input.my-kes{font:inherit;font-size:11.5px;border:1px solid #d9a3b6;border-radius:4px;padding:0 3px;background:#fff;color:#1c2430}input.my-kes:disabled{opacity:.6}"
-     +"input.my-ack{font:inherit;font-size:12px;width:30ch;border:1px solid #d9a3b6;border-radius:4px;padding:1px 6px;background:#fff;color:#1c2430}input.my-ack:focus{outline:none;border-color:#b0003a}input.my-ack:disabled{opacity:.6}";
+     +"input.my-ack{font:inherit;font-size:12px;width:30ch;border:1px solid #d9a3b6;border-radius:4px;padding:1px 6px;background:#fff;color:#1c2430}input.my-ack:focus{outline:none;border-color:#b0003a}input.my-ack:disabled{opacity:.6}"
+     +"table.mya td.w.mack{white-space:pre-line;min-width:30ch;max-width:52ch;vertical-align:top}"; /* MY-ACK-SATIR (06.11.2026, Melih/OE): açıklama kayıtları alt alta, tamamı görünür */
     document.head.appendChild(s);
   }
   async function liste(sb){
@@ -96,7 +97,7 @@
         var grp=((i===anaR.length&&tbR.length)?'<tr class="my-grp my-tbbas" title="Aç / kapat"><td colspan="'+ncol+'"><span class="my-ok">'+(el._tbAcik?'▾':'▸')+'</span> TERMİNİ BEKLENENLER ('+tbR.length+')</td></tr>':'')+((i===anaR.length+tbR.length&&kesR.length)?'<tr class="my-grp my-ksbas" title="Aç / kapat"><td colspan="'+ncol+'"><span class="my-ok">'+(el._ksAcik?'▾':'▸')+'</span> YÜKLENECEĞİ KESİNLEŞENLER ('+kesR.length+')</td></tr>':'');
         return grp+'<tr class="'+cls+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td><td>'+esc(sg(r)[0])+'</td><td>'+esc(sg(r)[1])+'</td><td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
           +'<td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td><td><b>'+fd(r.hedef)+'</b></td><td>'+kesHtml(r)+'</td><td>'+sekilHtml(r)+'</td>'
-          +(mk?'<td>'+onay+'</td>':'')+'<td class="w" title="'+esc(r.aciklama)+'">'+esc(r.aciklama)+'</td>'
+          +(mk?'<td>'+onay+'</td>':'')+'<td class="w mack" title="'+esc(r.aciklama)+'">'+esc(r.aciklama)+'</td>' /* MY-ACK-SATIR */
           +(ack?'<td><input class="my-ack" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" placeholder="Yazıp Enter’a basın"></td>':'')+'</tr>';
       }).join("")+'</tbody></table></div></div>';
     el.innerHTML=h;
