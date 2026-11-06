@@ -72,20 +72,23 @@
     var kesEd=(mod==="oe"||gr);
     var kesR=rows.filter(function(r){ return !!r.kesin; }).sort(function(a,b){ return String(a.kesin).localeCompare(String(b.kesin))||String(a.no).localeCompare(String(b.no)); });
     var anaR=rows.filter(function(r){ return !r.kesin; });
-    var ncol=9+(mk?1:0)+(gr?1:0);
+    var ncol=11+(mk?1:0)+(gr?1:0);
+    /* MY-ACIL-SORUMLU (06.11.2026, Melih): Durum'un sağında Sorumlu + Görev (yalnız PEM, ERP durum no'suna göre) */
+    var SG={"0":["Buse Hanım","Malzeme listesini yükle"],"0.1":["Onur Bey","Malzeme onayını ver"],"1":["Berat Bey","Termini gir"],"1.2":["Umut Bey","Termini gir"],"1.3":["Berat Bey · Umut Bey · Semih Bey","Termini gir"],"2":["Semih Bey","Termini gir"]};
+    var sg=function(r){ if(r.tur!=="PEM") return ["",""]; var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return (m&&SG[m[1].replace(",",".")])||["",""]; };
     var kesHtml=function(r){
       var kz=!r.kesin&&dno(r)===3;
       if(kesEd) return (kz?'<span class="my-kg">Yükleme tarihi gir</span>':'')+'<input type="date" class="my-kes" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" value="'+esc(r.kesin?String(r.kesin).slice(0,10):"")+'">';
       return r.kesin?'<b>'+fd(r.kesin)+'</b>':(kz?'<span class="my-kg">Yükleme tarihi gir</span>':'');
     }; /* MY-ACIKLAMA-EKLE (28.10.2026): Giriş panosunda "Açıklama Ekle" sütunu (yalnız MB) */
     var h='<div class="myab"><h3>ACİL YÜKLEMELER · MY ('+rows.length+')</h3><div class="myw"><table class="mya'+(el._ksAcik?'':' ks-kapali')+'"><thead><tr>'
-      +'<th>Durum</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Kesinleşen<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama</th>'+(gr?'<th>Açıklama Ekle</th>':'')+'</tr></thead><tbody>'
+      +'<th>Durum</th><th>Sorumlu</th><th>Görev</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Kesinleşen<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama</th>'+(gr?'<th>Açıklama Ekle</th>':'')+'</tr></thead><tbody>'
       +anaR.concat(kesR).map(function(r,i){
         var no=r.tur==="PEM"?("PEM "+r.kod):r.kod;
         var onay=(mk&&r.sekil==="Uçak"&&!r.ucak_onay)?'<button class="my-onay" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">Uçak yüklemesini onayla</button>':'';
         var cls=r.kesin?'my-ks':(dno(r)===3?'my-kz':'');
         var grp=(i===anaR.length&&kesR.length)?'<tr class="my-grp my-ksbas" title="Aç / kapat"><td colspan="'+ncol+'"><span class="my-ok">'+(el._ksAcik?'▾':'▸')+'</span> YÜKLENECEĞİ KESİNLEŞENLER ('+kesR.length+')</td></tr>':'';
-        return grp+'<tr class="'+cls+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td><td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
+        return grp+'<tr class="'+cls+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td><td>'+esc(sg(r)[0])+'</td><td>'+esc(sg(r)[1])+'</td><td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
           +'<td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td><td><b>'+fd(r.hedef)+'</b></td><td>'+kesHtml(r)+'</td><td>'+sekilHtml(r)+'</td>'
           +(mk?'<td>'+onay+'</td>':'')+'<td class="w" title="'+esc(r.aciklama)+'">'+esc(r.aciklama)+'</td>'
           +(gr?'<td><input class="my-ack" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" placeholder="Yazıp Enter’a basın"></td>':'')+'</tr>';
