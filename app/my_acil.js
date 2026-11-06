@@ -58,14 +58,17 @@
     var sb=o.sb, mod=o.mod||"giris", d;
     try{ d=await liste(sb); }catch(e){ el.innerHTML=""; return; }
     var rows=(d.rows||[]).filter(function(r){ return r.durum==="Acil"; });
+    /* MY-ACIL-DURUM (06.11.2026, Melih): en solda ERP durumu; sıra önce durum (ERP durum no, küçükten büyüğe), sonra hedef yükleme tarihi */
+    var dno=function(r){ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return m?parseFloat(m[1].replace(",",".")):999; };
+    rows.sort(function(a,b){ return (dno(a)-dno(b))||String(a.durum_erp||"").localeCompare(String(b.durum_erp||""),"tr")||String(a.hedef||"9999").localeCompare(String(b.hedef||"9999"))||String(a.no).localeCompare(String(b.no)); });
     if(!rows.length){ el.innerHTML=""; return; }
     var mk=mod==="mk", gr=mod==="giris"; /* MY-ACIKLAMA-EKLE (28.10.2026): Giriş panosunda "Açıklama Ekle" sütunu (yalnız MB) */
     var h='<div class="myab"><h3>ACİL YÜKLEMELER · MY ('+rows.length+')</h3><div class="myw"><table class="mya"><thead><tr>'
-      +'<th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama</th>'+(gr?'<th>Açıklama Ekle</th>':'')+'</tr></thead><tbody>'
+      +'<th>Durum</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama</th>'+(gr?'<th>Açıklama Ekle</th>':'')+'</tr></thead><tbody>'
       +rows.map(function(r){
         var no=r.tur==="PEM"?("PEM "+r.kod):r.kod;
         var onay=(mk&&r.sekil==="Uçak"&&!r.ucak_onay)?'<button class="my-onay" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">Uçak yüklemesini onayla</button>':'';
-        return '<tr data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
+        return '<tr data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td><td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
           +'<td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td><td><b>'+fd(r.hedef)+'</b></td><td>'+sekilHtml(r)+'</td>'
           +(mk?'<td>'+onay+'</td>':'')+'<td class="w" title="'+esc(r.aciklama)+'">'+esc(r.aciklama)+'</td>'
           +(gr?'<td><input class="my-ack" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" placeholder="Yazıp Enter’a basın"></td>':'')+'</tr>';
