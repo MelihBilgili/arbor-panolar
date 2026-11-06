@@ -1742,6 +1742,14 @@ async function loadRef(){
   let NOTE_H="", AVMAP={};
   { const metin=String((D(ntR)[0]||{}).metin||""); const i=metin.indexOf(AV_MARK);
     if(i<0) NOTE_H=metin; else { NOTE_H=metin.slice(0,i); let js=metin.slice(i+AV_MARK.length); const j=js.lastIndexOf(AV_END); if(j>=0) js=js.slice(0,j); try{ AVMAP=JSON.parse(js)||{}; }catch(e){ AVMAP={}; } } }
+  /* PRIM-KESINTI (06.11.2026, Melih): prim kesintileri NOTE_H içindeki KESINTI_JSON'da
+     (kisi_id → {"YYYY-M": {t:tutar, a:açıklama, u:düşüldü mü}}). O ayın primi girilince t otomatik düşülür, u=true olur. */
+  const KS_MARK="\n<!--KESINTI_JSON:"; let KSMAP={};
+  { const i=NOTE_H.indexOf(KS_MARK); if(i>=0){ const r=NOTE_H.slice(i+KS_MARK.length), j=r.indexOf("-->");
+      try{ KSMAP=JSON.parse(j>=0?r.slice(0,j):r)||{}; }catch(e){ KSMAP={}; } NOTE_H=NOTE_H.slice(0,i)+(j>=0?r.slice(j+3):""); } }
+  const noteText=()=>{ const hasK=Object.keys(KSMAP).some(x=>KSMAP[x]&&Object.keys(KSMAP[x]).length);
+    const hasA=Object.keys(AVMAP).some(x=>AVMAP[x]&&Object.keys(AVMAP[x]).length);
+    return NOTE_H+(hasK?KS_MARK+JSON.stringify(KSMAP)+"-->":"")+(hasA?AV_MARK+JSON.stringify(AVMAP)+AV_END:""); };
   /* ---- aylar: ana prim sütunu = bir önceki ay; cari ay avans daima görünür ---- */
   const _n=new Date(); let PM=_n.getMonth(), PY=_n.getFullYear(); if(PM===0){PM=12;PY--;}
   const CMm=_n.getMonth()+1, CMy=_n.getFullYear();
@@ -1830,7 +1838,11 @@ async function loadRef(){
       return (L&&L.length)?`<td class="pfrm" title="${esc(L.map(f=>f.title).join("\n"))}">${L.map(f=>'<span class="frm'+(f.ok?" ok":" yok")+'">'+esc(f.ad)+'</span>').join(" · ")}</td>`:`<td class="pfrm">${dash}</td>`; }
     if(c.t==="bld"){ const L=R.kod?BLD[R.kod]:null; return `<td class="pbld">${(L&&L.length)?L.map(esc).join(" · "):dash}</td>`; }   /* MAIL-BILDIRIM-KONU */
     if(c.t==="del") return `<td><button class="kdel pdel" ${dk} title="Sil">✕</button></td>`;
-    if(c.t==="ay"){ const v=m?AY[m.id+"|"+c.f.slice(3)]:null; return `<td class="num ped${c.hid?" phid":""}" data-k="${c.f}" ${dk}${hide}>${fmtN(v)}</td>`; }
+    if(c.t==="ay"){ const v=m?AY[m.id+"|"+c.f.slice(3)]:null; const ks=m?((KSMAP[m.id]||{})[c.f.slice(3)]||null):null;  /* PRIM-KESINTI */
+      if(ks){ const kt=Number(ks.t).toLocaleString('tr-TR',{maximumFractionDigits:0});
+        const ttl=ks.u?("Prim kesintisi "+kt+" TL düşüldü"+(ks.a?" — "+ks.a:"")):("Prim kesintisi "+kt+" TL — prim girilince otomatik düşülür"+(ks.a?" ("+ks.a+")":""));
+        return `<td class="num ped${c.hid?" phid":""}" data-k="${c.f}" ${dk}${hide} title="${esc(ttl)}">${fmtN(v)}${ks.u?' <span style="color:#b40000">*</span>':' <span style="color:#b40000;font-size:9.5px">−'+kt+'</span>'}</td>`; }
+      return `<td class="num ped${c.hid?" phid":""}" data-k="${c.f}" ${dk}${hide}>${fmtN(v)}</td>`; }
     if(c.t==="av"){ const note=m?((AVMAP[m.id]||{})[c.f.slice(4)]||""):""; return `<td class="ped pav" data-k="${c.f}" ${dk}${hide}>${note?esc(note):dash}</td>`; }
     /* t==="m" */
     const v=m?m[c.f]:null;
@@ -1910,11 +1922,15 @@ async function loadRef(){
     if(key.slice(0,4)==="avn:"){ const mk=key.slice(4); if(!AVMAP[id]) AVMAP[id]={}; if(val==="") delete AVMAP[id][mk]; else AVMAP[id][mk]=val;
       if(!Object.keys(AVMAP[id]).length) delete AVMAP[id];
       const has=Object.keys(AVMAP).some(x=>AVMAP[x]&&Object.keys(AVMAP[x]).length);
-      const {error}=await sb.from("maas_prim_not").update({metin:has?(NOTE_H+AV_MARK+JSON.stringify(AVMAP)+AV_END):NOTE_H,updated_at:now()}).eq("id",1);
+      const {error}=await sb.from("maas_prim_not").update({metin:noteText(),updated_at:now()}).eq("id",1);  /* PRIM-KESINTI: KESINTI_JSON korunur */
       if(error) throw new Error(error.message); return; }
     if(key.slice(0,3)==="ay:"){ const p=key.slice(3).split("-");
-      const {error}=await sb.from("maas_prim_ay").upsert({kisi_id:id,yil:+p[0],ay:+p[1],tutar:(val===""?null:numOf(val)),updated_at:now()},{onConflict:"kisi_id,yil,ay"});
-      if(error) throw new Error(error.message); return; }
+      const ks=(KSMAP[id]||{})[key.slice(3)]; let tut=(val===""?null:numOf(val));
+      const kes=!!(ks&&!ks.u&&tut!=null); if(kes) tut=Math.round(tut-Number(ks.t||0));   /* PRIM-KESINTI: girilen primden kesinti düşülür */
+      const {error}=await sb.from("maas_prim_ay").upsert({kisi_id:id,yil:+p[0],ay:+p[1],tutar:tut,updated_at:now()},{onConflict:"kisi_id,yil,ay"});
+      if(error) throw new Error(error.message);
+      if(kes){ ks.u=true; const r2=await sb.from("maas_prim_not").update({metin:noteText(),updated_at:now()}).eq("id",1); if(r2.error) throw new Error(r2.error.message); }
+      return; }
     const body={updated_at:now()};
     if(key==="ise_giris") body[key]=(val===""?null:dstore(val));
     else if(key==="yol_yemek"||key==="cari_yil_maas"||key==="gecen_yil_maas") body[key]=(val===""?null:numOf(val));
