@@ -98,6 +98,7 @@
     </div>
   </div>
   <details class="kart" id="soKart"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:#16324f">Ürün sertifika özeti <span style="font-weight:400;color:#8a97a4">(seri › ürün/açılım × alt kategori; değere tıklayınca sertifika açılır; Aile ve Seri süzgecine uyar)</span></summary><div id="soIc" style="margin-top:6px"><div class="bos">Yükleniyor…</div></div></details><!-- SERT-OZET (26.10.2026) -->
+  <details class="kart" id="bkKart"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:#16324f">Broşür-Katalog özeti <span style="font-weight:400;color:#8a97a4">(broşür / katalog / sunum × dil; numaraya tıklayınca doküman açılır; Ana, Aile ve Seri süzgecine uyar)</span></summary><div id="bkIc" style="margin-top:6px"><div class="bos">Yükleniyor…</div></div></details><!-- BROSUR-OZET (06.11.2026) -->
   <div class="ozet" id="ozet"></div>
   <div class="res" id="res"><div class="bos">Yükleniyor…</div></div>
   <div id="toast"></div>
@@ -437,6 +438,66 @@ $("temizle").addEventListener("click",()=>{ SO_NR=null; soCiz(); ciz(); });
   document.head.appendChild(s); })();
 (async()=>{ try{ await Promise.all([soYukle(sb),sdYukle()]); }catch(e){ $("soIc").innerHTML='<div class="bos">Özet okunamadı: '+esc(e.message||e)+'</div>'; return; }
   const bekle=()=>{ if(!ROWS.length) return setTimeout(bekle,300); if($("f_tur").value==="Sertifika") $("soKart").open=true; soCiz(); }; bekle(); })();
+/* BROSUR-OZET (06.11.2026, Melih): Broşür-Katalog özeti — Ürün sertifika özetinin altında, aynı biçimde.
+   Satır = broşür / katalog / sunum (aynı belgenin dil sürümleri tek satır), sütun = dil. Kaynak: ROWS (tur = Broşür-Katalog; tedarikçi kataloğu ve TDS hariç).
+   Dil sürümleri addan eşlenir: belge tipi (Katalog/Catalogue, Teknik Broşür/Technical Brochure/Brochure Technique/Technische Broschüre, Sunum/Presentation/Présentation/Präsentation,
+   Talimat/Instructions/Notice/Anleitung, Video) + konu (BK_ESLE sözlüğü; Arbor ve aile adı atılır). Eşleşmeyen sürüm ayrı satır olur -> BK_ESLE'ye satır eklenir. */
+const BK_ALT=["Arbor Ürün Broşürü","Kurumsal Tanıtım","Referans","Kullanım Şartları / Bakım","Talimatlar"];
+const BK_ESLE=[
+  [/conditions de garantie et instructions d'entretien/g,"garanti-bakim – notice"],[/warranty terms and product maintenance/g,"garanti-bakim"],[/urun garantisi ve bakim/g,"garanti-bakim"],
+  [/gebrauch pflege reinigung und garantie|kullanim bakim temizlik ve garanti|utilisation entretien nettoyage et garantie/g,"kullanim-garanti"],
+  [/deroulement des processus de production des menuiseries|uretim sureci/g,"surec"],[/process flow/g,"surec – presentation"],
+  [/facade cleaning and maintenance|cephe temizlik ve bakim/g,"cephe-temizlik"],
+  [/ahsap kapilar|portes en bois|wooden doors|holzturen/g,"kapi"],[/\bgriffe\b|\bkulplar\b/g,"kulp"],
+  [/timber sash windows|sash windows|giyotin pencere|fenetres a guillotine/g,"giyotin"],
+  [/timber curtain wall system 50|systeme 50|sistem 50/g,"sistem50"],[/cephe facade|facades|facade/g,"cephe"],
+  [/client references|references clients|referenzprojekte|referanslar|references|referenzen/g,"referans"],
+  [/palette metallique grutable|vincle tasinabilir metal palet/g,"palet"],[/cage en acier/g,"kafes"],[/price offer|offre de prix|fiyat teklifi/g,"teklif"]];
+const BK_TIP=[["video",/tanitim videosu|presentation video|video de presentation|videosu|video/],["katalog",/katalogu|katalog|catalogue|catalog/],
+  ["brosur",/brochure technique|technical brochure|teknik brosur|technische broschure/],["sunum",/prasentations|prasentation|presentation|sunum/],
+  ["talimat",/talimat|instructions|notice|anleitung|kilavuzu|kilavuz/]];
+const BK_TIP_AD={video:"Video",katalog:"Katalog",brosur:"Teknik broşür",sunum:"Sunum",talimat:"Talimat","":""};
+const BK_AY=/\b(ocak|subat|mart|nisan|mayis|haziran|temmuz|agustos|eylul|ekim|kasim|aralik|january|february|march|april|may|june|july|august|september|october|november|december)\b|\b(19|20)\d\d\b|print format/g;
+function bkAnah(r){
+  let n=norm(r.ad).replace(/\s+/g," ").trim(); BK_ESLE.forEach(e=>{ n=n.replace(e[0],e[1]); });
+  let tip="", konu=n; const i=n.lastIndexOf(" – "), kuyruk=i>=0?n.slice(i+3):"";
+  if(/\.(mp4|mov|avi|wmv|mkv|m4v)$/i.test(r.dosya||"")) tip="video";
+  for(const [t,re] of BK_TIP){ if(tip&&tip!==t) continue; if(i>=0&&re.test(kuyruk)){ tip=t; konu=n.slice(0,i); break; } if(re.test(n)){ tip=t; konu=n.replace(re," "); break; } }
+  if(tip==="video") BK_TIP.forEach(([t,re])=>{ konu=konu.replace(new RegExp(re.source,"g")," "); });
+  const ai=norm(r.aile||"");
+  konu=konu.replace(BK_AY," ").replace(/[–-]\s*$/,"").split(/\s+/).filter(w=>w&&w!=="arbor"&&w!=="–"&&w!=="-"&&w!==ai&&w!==ai+"s").join(" ");
+  return [r.alt_kategori,konu?"":(r.aile||r.ana||""),konu,tip].join("|"); } /* konu boşsa (ör. FLAT, ARBOR – Katalog) aile ayırır */
+function bkCiz(){ const k=$("bkIc"); if(!k||!ROWS.length) return;
+  const fa=$("f_ana").value, fl=$("f_aile").value, fs=$("f_seri").value;
+  const R=ROWS.filter(r=>r.tur==="Broşür-Katalog"&&BK_ALT.includes(r.alt_kategori)&&(!fa||r.ana===fa)&&(!fl||r.aile===fl)&&(!fs||[r.seri,r.seri2,r.seri3,r.seri4].includes(fs)));
+  if(!R.length){ k.innerHTML='<div class="bos">Seçime uyan broşür / katalog yok.</div>'; return; }
+  const G=new Map(); R.forEach(r=>{ const a=bkAnah(r); if(!G.has(a)) G.set(a,[]); G.get(a).push(r); });
+  const DL=sirala([...new Set(R.map(r=>r.dil).filter(Boolean))],DIL_SIRA);
+  const ix=(A,v)=>{ const i=A.indexOf(v); return i<0?99:i; };
+  const etk=L=>{ const b=["Türkçe","İngilizce","Fransızca","Almanca"].map(d=>L.find(r=>r.dil===d)).find(Boolean)||L[0]; return b.ad; };
+  const satir=[...G.values()].map(L=>({L,alt:L[0].alt_kategori,aile:L[0].aile||"",ad:etk(L)}))
+    .sort((a,b)=>ix(BK_ALT,a.alt)-ix(BK_ALT,b.alt)||(a.aile?1:0)-(b.aile?1:0)||ix(AILE_SIRA,a.aile)-ix(AILE_SIRA,b.aile)||trc(a.ad,b.ad));
+  let gov=""; const say={}; satir.forEach(s=>say[s.alt]=(say[s.alt]||0)+1); const ilk={};
+  satir.forEach(s=>{ const bas=!ilk[s.alt]; ilk[s.alt]=1;
+    const hc=DL.map(d=>{ const N=s.L.filter(r=>r.dil===d).sort((a,b)=>a.nr-b.nr); if(!N.length) return '<td class="so-yok">–</td>';
+      return '<td>'+N.map(r=>'<span class="so-v'+(r.web?" bk-w":"")+(r.depo_yolu?"":" bk-od")+'" data-bk="'+r.nr+'" title="'+esc(r.nr+" – "+r.ad+"\n"+r.dosya+(r.web?"\nİnternet sitesinde":"")+(r.depo_yolu?"":"\n50 MB üstü: OneDrive klasöründen"))+'">'+r.nr+'</span>').join(", ")+'</td>'; }).join("");
+    gov+='<tr'+(bas?' class="so-ilk"':'')+'>'+(bas?'<td class="so-s" rowspan="'+say[s.alt]+'"><b>'+esc(s.alt)+'</b></td>':'')+'<td class="so-at bk-ad">'+(s.aile?'<span class="etk '+esc(s.aile)+'">'+esc(s.aile)+'</span> ':'')+esc(s.ad)+'</td>'+hc+'</tr>'; });
+  k.innerHTML='<div class="so-kay"><table class="so-t so-t2 bk-t"><thead><tr><th>Alt kategori</th><th>Broşür / katalog</th>'+DL.map(d=>'<th>'+esc(d)+'</th>').join("")+'</tr></thead><tbody>'+gov+'</tbody></table></div>'
+    +'<div class="so-not">Hücrede doküman numaraları; numaraya tıklayınca doküman açılır, üzerine gelince adı. Yeşil: internet sitesinde · kahverengi: 50 MB üstü (OneDrive klasöründen) · – o dilde yok. '
+    +satir.length+' broşür / katalog, '+R.length+' doküman. Tedarikçi katalogları ve teknik föyleri listede, özette yok.</div>'; }
+$("bkKart").addEventListener("toggle",()=>{ if($("bkKart").open) bkCiz(); });
+$("bkKart").addEventListener("click",async e=>{ const el=e.target.closest("[data-bk]"); if(!el) return;
+  const r=ROWS.find(x=>x.nr===+el.dataset.bk); if(!r) return;
+  if(!r.depo_yolu){ window.open(OD_LINK,"_blank","noopener"); let kop=false; try{ await navigator.clipboard.writeText(r.dosya); kop=true; }catch(_){}
+    toast("OneDrive klasörü açıldı. Dosya: "+r.dosya+(kop?" (adı kopyalandı, klasörde arayabilirsiniz)":"")); return; }
+  const w=window.open("about:blank","_blank");
+  const {data,error}=await sb.storage.from("dokumanlar").createSignedUrl(r.depo_yolu,3600);
+  if(error||!data){ if(w) w.close(); alert("Dosya açılamadı: "+((error&&error.message)||"")); return; }
+  if(w) w.location=data.signedUrl; else location.href=data.signedUrl; });
+["f_ana","f_aile","f_seri","f_tur"].forEach(i=>$(i).addEventListener("change",()=>{ if(i==="f_tur"&&$("f_tur").value==="Broşür-Katalog") $("bkKart").open=true; bkCiz(); }));
+$("temizle").addEventListener("click",()=>bkCiz());
+(function(){ const s=document.createElement("style"); s.textContent=".bk-t{width:auto}.bk-t td.bk-ad{white-space:normal;min-width:260px;max-width:460px}.bk-t td{text-align:left}.so-v.bk-w{color:#0b6b48}.so-v.bk-od{color:#7a4b00}"; document.head.appendChild(s); })();
+(function bkBekle(){ if(!ROWS.length) return setTimeout(bkBekle,300); if($("f_tur").value==="Broşür-Katalog") $("bkKart").open=true; bkCiz(); })();
 yukle();
 /* DOK-YUKLE (22.10.2026): OneDrive düğmesi + sürükle-bırak yükleme + zorunlu ön-dolu form */
 $("odBtn").href=OD_LINK;
