@@ -68,6 +68,7 @@
     rows.sort(function(a,b){ return (dno(a)-dno(b))||String(a.durum_erp||"").localeCompare(String(b.durum_erp||""),"tr")||String(a.hedef||"9999").localeCompare(String(b.hedef||"9999"))||String(a.no).localeCompare(String(b.no)); });
     if(!rows.length){ el.innerHTML=""; return; }
     var mk=mod==="mk", gr=mod==="giris";
+    var ack=gr||mod==="oe"; /* MY-ACIKLAMA-OE (06.11.2026, Melih): Açıklama Ekle sütunu OE Faaliyet'te de (rpc my_aciklama_ekle onur.form@ → "OE" önekli) */
     /* MY-KESIN-YUKLEME (06.11.2026, Melih): Kesinleşen Yükleme Tarihi (OE girer; Giriş'te MB de). Durum 3 Sevke Hazır + boş → kırmızı satır "Yükleme tarihi gir";
        tarih girilenler beyaz zeminle altta "Yükleneceği Kesinleşenler" grubunda (kesin tarihe göre). */
     var kesEd=(mod==="oe"||gr);
@@ -77,7 +78,7 @@
     var bugun=new Date().toLocaleDateString("en-CA",{timeZone:"Europe/Istanbul"});
     var tbR=anaR.filter(function(r){ return r.tarih&&String(r.tarih).slice(0,10)>=bugun; }).sort(function(a,b){ return String(a.tarih).localeCompare(String(b.tarih))||String(a.no).localeCompare(String(b.no)); });
     anaR=anaR.filter(function(r){ return tbR.indexOf(r)<0; });
-    var ncol=11+(mk?1:0)+(gr?1:0);
+    var ncol=11+(mk?1:0)+(ack?1:0);
     /* MY-ACIL-SORUMLU (06.11.2026, Melih): Durum'un sağında Sorumlu + Görev (yalnız PEM, ERP durum no'suna göre) */
     var SG={"0":["Buse Hanım","Malzeme listesini yükle"],"0.1":["Onur Bey","Malzeme onayını ver"],"1":["Berat Bey","Termini gir"],"1.2":["Umut Bey","Termini gir"],"1.3":["Berat Bey · Umut Bey · Semih Bey","Termini gir"],"2":["Semih Bey","Termini gir"]};
     var sg=function(r){ if(r.tur!=="PEM") return ["",""]; var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return (m&&SG[m[1].replace(",",".")])||["",""]; };
@@ -87,7 +88,7 @@
       return r.kesin?'<b>'+fd(r.kesin)+'</b>':(kz?'<span class="my-kg">Yükleme tarihi gir</span>':'');
     }; /* MY-ACIKLAMA-EKLE (28.10.2026): Giriş panosunda "Açıklama Ekle" sütunu (yalnız MB) */
     var h='<div class="myab"><h3>ACİL YÜKLEMELER · MY ('+rows.length+')</h3><div class="myw"><table class="mya'+(el._ksAcik?'':' ks-kapali')+(el._tbAcik?'':' tb-kapali')+'"><thead><tr>'
-      +'<th>Durum</th><th>Sorumlu</th><th>Görev</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Kesinleşen<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama</th>'+(gr?'<th>Açıklama Ekle</th>':'')+'</tr></thead><tbody>'
+      +'<th>Durum</th><th>Sorumlu</th><th>Görev</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Kesinleşen<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama</th>'+(ack?'<th>Açıklama Ekle</th>':'')+'</tr></thead><tbody>'
       +anaR.concat(tbR,kesR).map(function(r,i){
         var no=r.tur==="PEM"?("PEM "+r.kod):r.kod;
         var onay=(mk&&r.sekil==="Uçak"&&!r.ucak_onay)?'<button class="my-onay" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">Uçak yüklemesini onayla</button>':'';
@@ -96,7 +97,7 @@
         return grp+'<tr class="'+cls+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td><td>'+esc(sg(r)[0])+'</td><td>'+esc(sg(r)[1])+'</td><td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
           +'<td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td><td><b>'+fd(r.hedef)+'</b></td><td>'+kesHtml(r)+'</td><td>'+sekilHtml(r)+'</td>'
           +(mk?'<td>'+onay+'</td>':'')+'<td class="w" title="'+esc(r.aciklama)+'">'+esc(r.aciklama)+'</td>'
-          +(gr?'<td><input class="my-ack" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" placeholder="Yazıp Enter’a basın"></td>':'')+'</tr>';
+          +(ack?'<td><input class="my-ack" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" placeholder="Yazıp Enter’a basın"></td>':'')+'</tr>';
       }).join("")+'</tbody></table></div></div>';
     el.innerHTML=h;
     /* MY-KESIN-BANT (06.11.2026, Melih): Kesinleşenler grubu açılır bant, kapalı başlar; durum yenilemelerde korunur (el._ksAcik) */
