@@ -167,7 +167,7 @@
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="giris_ust.js?v=261102b"></script><!-- GIRIS-UST-ORTAK · GIRIS-GRAFIK-BIRLES -->
+<script src="giris_ust.js?v=261109a"></script><!-- GIRIS-UST-ORTAK · GIRIS-GRAFIK-BIRLES · GIRIS-YEKSEN-15 -->
 <script src="my_acil.js?v=261106i"></script><!-- MY-FAALIYET -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -566,7 +566,12 @@ async function grGundem(){
   if(error){ el.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const all=data||[];
   const mb=all.filter(r=>r.kaynak_tip!=='pem'&&r.kaynak_tip!=='prj'&&r.ilgili==='MB'&&!/Öncelik/i.test(String(r.son_durum||""))).sort((a,b)=>String(a.kod).localeCompare(String(b.kod)));
-  const pem=all.filter(r=>r.kaynak_tip==='pem');
+  let pem=all.filter(r=>r.kaynak_tip==='pem');
+  /* GIRIS-PEM-SEVKSIZ (09.11.2026, Melih): sevk edilmiş PEM'ler Giriş'te gösterilmez — pem_snapshot'ta sevk_tarihi dolu ya da en son dolu durum "Sevk" */
+  try{ const nos=pem.map(r=>Number(r.kod)).filter(n=>n>0);
+    if(nos.length){ const {data:ps}=await sb.from("pem_snapshot").select("satir_nr,erp_yukleme_id,durum,sevk_tarihi").in("satir_nr",nos);
+      const sv={}, sd={}; (ps||[]).sort((a,b)=>b.erp_yukleme_id-a.erp_yukleme_id).forEach(x=>{ if(x.sevk_tarihi) sv[x.satir_nr]=1; if(x.durum&&!(x.satir_nr in sd)) sd[x.satir_nr]=String(x.durum); });
+      pem=pem.filter(r=>{ const n=Number(r.kod); return !(sv[n]||/sevk/i.test(sd[n]||"")); }); } }catch(e){}
   const mbRows=mb.map(r=>`<tr data-id="${r.id}"><td class="kod ged" data-f="kod" data-type="text">${esc(r.kod)}</td><td class="ged" data-f="konu" data-type="text">${esc(r.konu)}</td><td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
   el.innerHTML=`<div class="ag-wrap">`
     +((mb.length||primH)?`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">`+(mb.length?`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${mbRows}</tbody></table></div>`:"")+(primH||"")+`</div>`:"")
