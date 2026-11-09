@@ -311,11 +311,15 @@ async function ankKopya(txt){
   try{ await navigator.clipboard.writeText(txt); return true; }
   catch(e){ const t=document.createElement("textarea"); t.value=txt; document.body.appendChild(t); t.select(); let ok=false; try{ ok=document.execCommand("copy"); }catch(_){} t.remove(); return ok; }
 }
+/* ANKET-YI-EB (09.11.2026, Melih): yurt içi kullanıcı (EB) yalnız Türkiye projelerini ve anketlerini görür */
+const ANK_YI_KISI=["EB"];
+function ankYiK(){ return ANK_YI_KISI.includes(ankKisi().kod); }
 async function ankProjeler(){
   const {data,error}=await sb.from("anket_proje").select("proje,firma,ulke,dil").order("proje");
   if(error){ ankMsg("Proje listesi okunamadı: "+error.message,"err"); return; }
   ANK_PROJ={};
-  (data||[]).forEach(r=>{ if(r.proje&&!ANK_PROJ[r.proje]) ANK_PROJ[r.proje]={firma:r.firma||"",ulke:r.ulke||"",dil:r.dil||"fr"}; });
+  const yiK=ankYiK();
+  (data||[]).forEach(r=>{ if(yiK&&r.ulke!=="Türkiye") return; if(r.proje&&!ANK_PROJ[r.proje]) ANK_PROJ[r.proje]={firma:r.firma||"",ulke:r.ulke||"",dil:r.dil||"fr"}; });
   $("pl").innerHTML=Object.keys(ANK_PROJ).sort((a,b)=>a.localeCompare(b,"tr")).map(p=>`<option value="${esc(p)}">${esc([ANK_PROJ[p].firma,ANK_PROJ[p].ulke].filter(Boolean).join(" · "))}</option>`).join("");
 }
 $("proje").addEventListener("input",()=>{ const p=$("proje").value.trim(), x=ANK_PROJ[p];
@@ -344,7 +348,7 @@ function ankDurum(d){ return `<span class="pill d-${d==="Bekliyor"?"B":d==="Yan�
 async function ankYukle(){
   const {data,error}=await sb.from("musteri_anket").select("*").order("created_at",{ascending:false});
   if(error){ $("liste").textContent="Okunamadı: "+error.message; return; }
-  ANK_ROWS=data||[]; ankCiz();
+  ANK_ROWS=(data||[]).filter(r=>!ankYiK()||r.ulke==="Türkiye"); ankCiz();
 }
 function ankOzet(){
   const y=ANK_ROWS.filter(r=>r.durum==="Yanıtlandı");
