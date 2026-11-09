@@ -3003,10 +3003,10 @@ async function loadObrapor(tgt){
   const iki=(a,b)=>`Son ay ${esc(afAd)}: ${a} · Cari ay ${esc(caAd)}: ${b}`; /* OB-IKI-AY */
   const [afq,odq]=await Promise.all([
     sb.from("ob_aylik_faaliyet").select("*").eq("donem",afDon).limit(1),
-    sb.from("sel_odeme").select("*").order("odeme_tarihi",{ascending:false}) /* OB-TUM-AY (21.10.2026): tüm aylar, 6 satırlık kaydırmalı pencere */
+    sb.from("ob_tahsilat").select("*").order("tarih",{ascending:false,nullsFirst:false}).order("id",{ascending:false}) /* OB-TAHSILAT-PRIM (09.11.2026, Melih): Selectron ödemeleri yerine Tahsilat · OB-TUM-AY (21.10.2026): tüm aylar, 6 satırlık kaydırmalı pencere */
   ]);
   const afR=(afq&&!afq.error&&afq.data&&afq.data[0])?afq.data[0]:null;
-  const odAll=(odq&&!odq.error)?(odq.data||[]):[]; /* OB-TUM-AY */
+  const odAll=(odq&&!odq.error)?(odq.data||[]).map(r=>Object.assign({},r,{odeme_tarihi:r.tarih,tutar_eur:r.tutar})):[]; /* OB-TUM-AY · OB-TAHSILAT-PRIM: ob_tahsilat (€) */
   const odAyMi=r=>{ const d=String(r.odeme_tarihi||"").slice(0,10); return d>=afDon+"-01"&&d<=afSon; };
   const odR=odAll.filter(odAyMi);
   const selEurCa=odAll.filter(r=>{ const d=String(r.odeme_tarihi||"").slice(0,10); return d>=caDon+"-01"&&d<=caSon; }).reduce((t,r)=>t+(Number(r.tutar_eur)||0),0); /* OB-IKI-AY */
@@ -3014,10 +3014,10 @@ async function loadObrapor(tgt){
   const topl={}; odR.forEach(r=>{ const pb=r.para_birimi||"EUR"; topl[pb]=(topl[pb]||0)+(Number(r.tutar)||0); });
   let odTbl;
   if(odAll.length){
-    odTbl=`<div class="scroll ob6"><table class="obod"><thead><tr><th>Yurt Dışı Birim</th><th>Ödeme Tarihi</th><th>Gönderen Banka</th><th class="num">Tutar</th><th>Para Birimi</th></tr></thead><tbody>`
-      + odAll.map(r=>`<tr${odAyMi(r)?' style="background:#f3f8ff"':''}><td>${esc(r.yd_birim)}</td><td>${esc(dgun(String(r.odeme_tarihi)))}</td><td>${esc(r.gonderen_banka)}</td><td class="num">${nf(r.tutar)}</td><td>${esc(r.para_birimi)}</td></tr>`).join("")
+    odTbl=`<div class="scroll ob6"><table class="obod"><thead><tr><th>Tarih</th><th>Proje</th><th>Açıklama</th><th class="num">Tutar (€)</th></tr></thead><tbody>`
+      + odAll.map(r=>`<tr${odAyMi(r)?' style="background:#f3f8ff"':''}><td>${r.tarih?esc(dgun(String(r.tarih))):""}</td><td>${esc(r.proje)}</td><td>${esc(r.aciklama)}</td><td class="num">${nf(r.tutar)}</td></tr>`).join("")
       + `</tbody></table></div>`;
-  } else odTbl=`<div class="muted" style="font-size:12px;margin:2px">Kayıtlı ödeme yok.</div>`;
+  } else odTbl=`<div class="muted" style="font-size:12px;margin:2px">Kayıtlı tahsilat yok.</div>`;
   /* OB-BLOK (2026-09-18): "Aylık Faaliyet" bloğunda artık yalnız ÖB'nin yorum METNİ var
      (başlık satırı ve "— (ÖB formundan girilir)" yer tutucusu kaldırıldı; yorum yoksa blok hiç
      basılmaz). Selectron ödemeleri buradan ÇIKARILIP kendi bağımsız bloğu yapıldı. */
@@ -3035,9 +3035,9 @@ async function loadObrapor(tgt){
   const _selE=f=>odAll.filter(r=>f(String(r.odeme_tarihi||"").slice(0,10))).reduce((t,r)=>t+(Number(r.tutar_eur)||0),0);
   const selSonE=_selE(d=>d>=afDon+"-01"&&d<=afSon), selCaE=_selE(d=>d>=caDon+"-01"&&d<=caSon), selYilE=_selE(d=>d.slice(0,4)===String(caY));
   const kut=(b,v,alt)=>`<div class="obkut"><div class="obkb">${b}</div><div class="obkv">${v}</div><div class="obka">${alt}</div></div>`;
-  ib+=`<h3 class="sec">Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler <span class="muted">(${esc(afAd)} satırları mavi)</span></h3>
+  ib+=`<h3 class="sec">Tahsilat <span class="muted">(${esc(afAd)} satırları mavi)</span></h3>
     <div class="obaf" style="max-width:none"><div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">${odTbl}<div class="obkutlar">`
-    +kut("Cari Ay Toplam Ödeme",nf(selCaE)+" €",esc(caAd))+kut("Son Ay Toplam Ödeme",nf(selSonE)+" €",esc(afAd))+kut("Cari Yıl Toplam Ödeme",nf(selYilE)+" €",String(caY))
+    +kut("Cari Ay Toplam Tahsilat",nf(selCaE)+" €",esc(caAd))+kut("Son Ay Toplam Tahsilat",nf(selSonE)+" €",esc(afAd))+kut("Cari Yıl Toplam Tahsilat",nf(selYilE)+" €",String(caY))
     +kut("Cari Ay Prim",nf(selCaE/10000)+" €","1/10.000 · "+esc(caAd))+kut("Son Ay Prim",nf(selSonE/10000)+" €","1/10.000 · "+esc(afAd))
     +`</div></div></div>`;
   /* DEVLET-DESTEK (2026-09-24, Melih): Selectron ödemeleri primi 1/10.000 (tutar_eur toplamı) + Devlet Destek
@@ -3064,7 +3064,7 @@ async function loadObrapor(tgt){
   /* ===== OB-DPGF + OB-PRIM (2026-09-24, Melih; OB-PRIM2 güncel): DPGF's - Situations - Avenants bloğu (ob_dpgf/ob_situation/ob_avenant,
      tablolar alt alta) ve ÖB Performans Primi. Dönem = kapanan ay (afDon). Puan: Takipteki işler 50 (OB-AGIRLIK2: tamamlanan 3×ağırlık/100, ilerleyen 0,5×ağırlık/100, tavan 50)
      · Zamanında güncelleme 10 (ÖB Faaliyet ve Sel-Arb ayrı ayrı 11 − ayın kaçıncı iş günü; ortalama) · MK notu 10 · MB notu 10
-     · (OB-PRIM3: DPGF/Situation puandan çıktı; toplam tavan 80). Ek primler: DPGF 2 €/adet + €/20000 · Situation 1 €/adet + €/10000 (İptal hariç; OB-PRIM-ORAN10K 09.11.2026) · Selectron € × 1/10.000 · Avenants € × 5/1000
+     · (OB-PRIM3: DPGF/Situation puandan çıktı; toplam tavan 80). Ek primler: DPGF 2 €/adet + €/20000 · Situation 1 €/adet + €/10000 (İptal hariç; OB-PRIM-ORAN10K 09.11.2026) · Tahsilat € × 1/10.000 (OB-TAHSILAT-PRIM) · Avenants € × 5/1000
      · Devlet destek iadesi ₺ × 1/100. ===== */
   const [dpq,stq,paq,ppq,pyq2,kurOB,avq,pvq]=await Promise.all([ /* OB-AVENANT */
     sb.from("ob_dpgf").select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false}),
@@ -3173,7 +3173,7 @@ async function loadObrapor(tgt){
     + `</tbody></table></div>
     <div class="scroll"><table class="obod"><thead><tr><th>Kalem (son ay formülü)</th><th class="num">Son ay ${esc(afAd)}</th><th class="num">Cari ay ${esc(caAd)}</th></tr></thead><tbody>
      <tr><td>Performans primi = taban ${pin("ob-taban",taban,12)} ₺ × ${nf(puan)} / ${PTAVAN}</td><td class="num">${perfTL==null?"— (taban girilmedi)":nf(perfTL)+" ₺"}</td><td class="num muted" title="Puan ay kapanınca hesaplanır">—</td></tr>
-     <tr><td>Selectron ödemeleri primi = ${nf(selEur)} € × 1/10.000</td><td class="num">${nf(selPrimE)} €${eurTL?` (${nf(selPrimE*eurTL)} ₺)`:""}</td><td class="num" title="${nf(selEurCa)} € × 1/10.000">${eC(cP.sel)}</td></tr>
+     <tr><td>Tahsilat primi = ${nf(selEur)} € × 1/10.000</td><td class="num">${nf(selPrimE)} €${eurTL?` (${nf(selPrimE*eurTL)} ₺)`:""}</td><td class="num" title="${nf(selEurCa)} € × 1/10.000">${eC(cP.sel)}</td></tr>
      <tr><td>DPGF primi = ${dpN} adet × 2 € + ${nf(dpAy)} € / 20000</td><td class="num">${nf(dpPrimE)} €${eurTL?` (${nf(dpPrimE*eurTL)} ₺)`:""}</td><td class="num" title="${dpNCa} adet × 2 € + ${nf(dpCa)} € / 20000">${eC(cP.dp)}</td></tr>
      <tr><td>Situation primi = ${stN} adet × 1 € + ${nf(stAy)} € / 10000 <span class="muted">(İptal Edildi hariç)</span></td><td class="num">${nf(stPrimE)} €${eurTL?` (${nf(stPrimE*eurTL)} ₺)`:""}</td><td class="num" title="${stNCa} adet × 1 € + ${nf(stCa)} € / 10000">${eC(cP.st)}</td></tr>
      <tr><td>TS primi (Avenant geldi) = ${nf(avAy)} € × 5/1000</td><td class="num">${nf(avPrimE)} €${eurTL?` (${nf(avPrimE*eurTL)} ₺)`:""}</td><td class="num" title="${nf(avCa)} € × 5/1000">${eC(cP.av)}</td></tr>
