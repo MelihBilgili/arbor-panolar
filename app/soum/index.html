@@ -225,7 +225,7 @@ const SB=ARB_ACTIVE;
   l.innerHTML='<b style="color:#16324f;font-size:12.5px">Oturum: '+esc(k?k.kod+' — '+k.ad:'Teklif Hazırlama')+'</b>';
   const b=document.createElement("button"); b.textContent="Çıkış"; b.className="btn2"; b.style.marginLeft="8px"; b.onclick=async()=>{ await ARB_GATE_SB.auth.signOut(); location.reload(); }; l.appendChild(b); })();
 const LIB=window.SOUM_LIB||{pdf:"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",worker:"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
-  xlsx:"https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",exceljs:"https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js",fonts:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",asset:"./"};
+  xlsx:"https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",exceljs:"https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js",jszip:"https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js",fonts:"https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/",asset:"./"};
 const scr={};
 function yukle(u){ if(scr[u]) return scr[u]; return scr[u]=new Promise((ok,no)=>{ const s=document.createElement("script"); s.src=u; s.onload=ok; s.onerror=()=>no(new Error("Yüklenemedi: "+u)); document.head.appendChild(s); }); }
 const n2=v=>Math.round((+v+Number.EPSILON)*100)/100;
@@ -835,6 +835,35 @@ function notDoldur(){
 
 /* ---------------- Excel ---------------- */
 async function resimB64(u){ const r=await fetch(u); const b=await r.blob(); return await new Promise(ok=>{ const fr=new FileReader(); fr.onload=()=>ok(fr.result); fr.readAsDataURL(b); }); }
+/* SOUM-HUCREYE-YERLESTIR (09.11.2026, Melike/Melih): poz görselleri Excel "Hücreye Yerleştir" ile (görsel hücre değeri; richData/metadata, XlsxWriter embed_image yapısı). ExcelJS desteklemediği için yazılan xlsx JSZip ile sonradan işlenir; hücreye önce yer tutucu sayı yazılır. */
+async function hucreyeResim(buf,HC){
+  if(!HC.length) return buf;
+  await yukle(LIB.jszip); const z=await JSZip.loadAsync(buf);
+  const SY="xl/worksheets/sheet1.xml"; let sx=await z.file(SY).async("string");
+  const NS="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata", XH='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
+  let n=0;
+  HC.forEach((h,i)=>{ const re=new RegExp('<c r="'+h.adr+'"([^>]*)><v>'+h.ph+'</v></c>');
+    if(!re.test(sx)) return; n++;
+    sx=sx.replace(re,(m,a)=>'<c r="'+h.adr+'"'+a.replace(/\s+t="[^"]*"/,"").replace(/\s+vm="[^"]*"/,"")+' t="e" vm="'+n+'"><v>#VALUE!</v></c>');
+    z.file("xl/media/soum_hc_"+n+".png",String(h.b64).replace(/^data:[^,]*,/,""),{base64:true}); });
+  if(!n) return buf;
+  const sira=[...Array(n).keys()];
+  z.file(SY,sx);
+  z.file("xl/metadata.xml",XH+'<metadata xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:xlrd="'+NS+'"><metadataTypes count="1"><metadataType name="XLRICHVALUE" minSupportedVersion="120000" copy="1" pasteAll="1" pasteValues="1" merge="1" splitFirst="1" rowColShift="1" clearFormats="1" clearComments="1" assign="1" coerce="1"/></metadataTypes><futureMetadata name="XLRICHVALUE" count="'+n+'">'+sira.map(k=>'<bk><extLst><ext uri="{3e2802c4-a4d2-4d8b-9148-e3be6c30e623}"><xlrd:rvb i="'+k+'"/></ext></extLst></bk>').join("")+'</futureMetadata><valueMetadata count="'+n+'">'+sira.map(k=>'<bk><rc t="1" v="'+k+'"/></bk>').join("")+'</valueMetadata></metadata>');
+  z.file("xl/richData/rdrichvalue.xml",XH+'<rvData xmlns="'+NS+'" count="'+n+'">'+sira.map(k=>'<rv s="0"><v>'+k+'</v><v>5</v></rv>').join("")+'</rvData>');
+  z.file("xl/richData/rdrichvaluestructure.xml",XH+'<rvStructures xmlns="'+NS+'" count="1"><s t="_localImage"><k n="_rvRel:LocalImageIdentifier" t="i"/><k n="CalcOrigin" t="i"/></s></rvStructures>');
+  z.file("xl/richData/rdRichValueTypes.xml",XH+'<rvTypesInfo xmlns="http://schemas.microsoft.com/office/spreadsheetml/2017/richdata2" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="x" xmlns:x="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><global><keyFlags><key name="_Self"><flag name="ExcludeFromFile" value="1"/><flag name="ExcludeFromCalcComparison" value="1"/></key>'+["_DisplayString","_Flags","_Format","_SubLabel","_Attribution","_Icon","_Display","_CanonicalPropertyNames","_ClassificationId"].map(k=>'<key name="'+k+'"><flag name="ExcludeFromCalcComparison" value="1"/></key>').join("")+'</keyFlags></global></rvTypesInfo>');
+  z.file("xl/richData/richValueRel.xml",XH+'<richValueRels xmlns="http://schemas.microsoft.com/office/spreadsheetml/2022/richvaluerel" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+sira.map(k=>'<rel r:id="rId'+(k+1)+'"/>').join("")+'</richValueRels>');
+  z.file("xl/richData/_rels/richValueRel.xml.rels",XH+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sira.map(k=>'<Relationship Id="rId'+(k+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/soum_hc_'+(k+1)+'.png"/>').join("")+'</Relationships>');
+  const WR="xl/_rels/workbook.xml.rels"; let wr=await z.file(WR).async("string");
+  wr=wr.replace("</Relationships>",[["http://schemas.openxmlformats.org/officeDocument/2006/relationships/sheetMetadata","metadata.xml"],["http://schemas.microsoft.com/office/2022/10/relationships/richValueRel","richData/richValueRel.xml"],["http://schemas.microsoft.com/office/2017/06/relationships/rdRichValue","richData/rdrichvalue.xml"],["http://schemas.microsoft.com/office/2017/06/relationships/rdRichValueStructure","richData/rdrichvaluestructure.xml"],["http://schemas.microsoft.com/office/2017/06/relationships/rdRichValueTypes","richData/rdRichValueTypes.xml"]].map((x,k)=>'<Relationship Id="rIdSoumHc'+(k+1)+'" Type="'+x[0]+'" Target="'+x[1]+'"/>').join("")+"</Relationships>");
+  z.file(WR,wr);
+  const CT="[Content_Types].xml"; let ct=await z.file(CT).async("string");
+  if(!/Extension="png"/i.test(ct)) ct=ct.replace(/(<Types[^>]*>)/,'$1<Default Extension="png" ContentType="image/png"/>');
+  ct=ct.replace("</Types>",[["/xl/metadata.xml","application/vnd.openxmlformats-officedocument.spreadsheetml.sheetMetadata+xml"],["/xl/richData/rdRichValueTypes.xml","application/vnd.ms-excel.rdrichvaluetypes+xml"],["/xl/richData/rdrichvalue.xml","application/vnd.ms-excel.rdrichvalue+xml"],["/xl/richData/rdrichvaluestructure.xml","application/vnd.ms-excel.rdrichvaluestructure+xml"],["/xl/richData/richValueRel.xml","application/vnd.ms-excel.richvaluerel+xml"]].map(x=>'<Override PartName="'+x[0]+'" ContentType="'+x[1]+'"/>').join("")+"</Types>");
+  z.file(CT,ct);
+  return await z.generateAsync({type:"arraybuffer",compression:"DEFLATE"});
+}
 async function excelYap(){
   if(!S.poz.length) return;
   durum("Excel hazırlanıyor…");
@@ -886,11 +915,11 @@ async function excelYap(){
   ws.mergeCells(C("n1")+"5:"+C("n2")+"5"); ws.getRow(5).height=46.5;
   [[0,"Seri"],[2,"Montaj m²"],[3,"Vitrophanie €"],[4,"Brüt Fiyat €"],[5,"Brüt Total €"]].forEach(([o,t])=>st(IC(o)+"5",{v:t,f:{size:11,bold:true}}));
   /* pozlar */
-  const r0=6;
+  const r0=6, HC=[]; /* SOUM-HUCREYE-YERLESTIR */
   for(let i=0;i<S.poz.length;i++){ const p=S.poz[i], r=r0+i, row=ws.getRow(r); row.height=187.5;
     const cAt=(col,v,o)=>{ const x=ws.getCell(col+r); x.value=v; x.font={name:"Arial",size:14}; x.alignment={vertical:"middle",horizontal:"center",wrapText:true}; x.border=kenar; Object.assign(x,o||{}); return x; }, c=(key,v,o)=>cAt(C(key),v,o);
     const L=C("L")+r, Hh=C("H")+r, F=C("F")+r, Sx=C("S")+r;
-    c("no",p.no); if(ix.bina) c("bina",p.bina||"");
+    c("no",(!en&&p.img&&p.kod)?{richText:[{text:String(p.no==null?"":p.no)+"\n",font:{name:"Arial",size:14}},{text:String(p.kod),font:{name:"Arial",size:9,bold:true}}]}:p.no); /* SOUM-HUCREYE-YERLESTIR: FR'de kod görsel hücresinden No hücresine */ if(ix.bina) c("bina",p.bina||"");
     c("fac",facadeAd(p),{alignment:{vertical:"middle",horizontal:"center",textRotation:90,wrapText:true}});
     if(en){ c("ref",refAd(p),{font:{name:"Arial",size:14,bold:true}}); c("img",""); }
     else c("img",p.kod,{alignment:{vertical:"bottom",horizontal:"left"},font:{name:"Arial",size:14,bold:true}});
@@ -905,7 +934,7 @@ async function excelYap(){
     cAt(IC(0),p.seri,{font:{name:"Arial",size:12}}); cAt(IC(2),{formula:F+"*"+Sx,result:(p.F||0)*p.L*p.H/1e6},{numFmt:"0.00",font:{name:"Arial",size:12}});
     cAt(IC(3),{formula:"((("+L+"*2)*(25*1.4))/1000)*"+F,result:2*p.L*35/1000*(p.F||0)},{numFmt:EUR,font:{name:"Arial",size:12}});
     cAt(IC(4),p.brut,{numFmt:EUR,font:{name:"Arial",size:12}}); cAt(IC(5),{formula:B+"*"+F,result:(p.brut||0)*(p.F||0)},{numFmt:EUR,font:{name:"Arial",size:12}});
-    if(p.img){ const id=wb.addImage({base64:p.img.url,extension:"png"}); const maxW=250,maxH=215, k=Math.min(maxW/p.img.w,maxH/p.img.h); ws.addImage(id,{tl:{col:ix.img-1+0.05,row:r-1+0.04},ext:{width:p.img.w*k,height:p.img.h*k}}); }
+    if(p.img){ const ph=9876500+HC.length; HC.push({adr:C("img")+r,ph,b64:p.img.url}); const gx=ws.getCell(C("img")+r); gx.value=ph; gx.alignment={vertical:"middle",horizontal:"center"}; }
   }
   const rl=r0+S.poz.length-1, rt=rl+1;
   ws.mergeCells("A"+rt+":"+XL(ix.F-1)+rt); st("A"+rt,{v:"TOTAL",f:{size:14,bold:true,color:{argb:YESIL}},a:{horizontal:"left"}});
@@ -995,7 +1024,7 @@ async function excelYap(){
   swS.getCell(rs+1,13).value="Moyenne"; swS.getCell(rs+1,13).font={bold:true}; swS.getCell(rs+1,14).value={formula:`SUM(Q4:Q${rs-1})/SUM(P4:P${rs-1})`}; swS.getCell(rs+1,15).value={formula:`SUM(R4:R${rs-1})/SUM(P4:P${rs-1})`}; [14,15].forEach(k=>{ swS.getCell(rs+1,k).numFmt="0.000"; swS.getCell(rs+1,k).font={bold:true}; });
   uwS.getCell(rs+3,1).value="Df/Bini/Uf: Ürün Konfigürasyonu seri tablosu · Ψg: "+(S.psi!=null?"Pencad raporu (Warm Edge)":"seri tablosu")+" · Ug: Cam Listesi"; swS.getCell(rs+3,1).value="Sff = 0 (kasadan güneş kazancı yok sayılır) · Sfg, Tlg: Cam Listesi";
   [uwS,swS].forEach(sh=>{ sh.getColumn(1).width=20; for(let k=2;k<=18;k++) sh.getColumn(k).width=11; });
-  const buf=await wb.xlsx.writeBuffer();
+  const buf=await hucreyeResim(await wb.xlsx.writeBuffer(),HC);
   const yy=tar.toISOString().slice(2,10).replace(/-/g,"");
   const ad=("Excel_"+(S.baslik[1]||$("f_proje").value)+"_"+(S.baslik[0]||$("f_firma").value)+"_"+yy+(DIL()==="en"?"_EN":"")).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_")+".xlsx";
   const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})); a.download=ad; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },2000);
