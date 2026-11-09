@@ -515,7 +515,7 @@ async function grOzel(){
    Şart = Personel › "Aylık Güncellenecek Formlar"daki formlarının HEPSİ bu ayın son tarihinde (ayın ilk iş günü) ya da sonra
    güncellenmiş (FRM_FK ve canlı damgalar loadRef ile aynı). Aylık formu olmayan prim alanlar şartı sağlamış sayılır (PRIM-SART-FORMSUZ, 06.11.2026; ek şart PRIM_SART_EK'e).
    Sütunlar = Personel tablosunun 2 · 8 · 12 · 13. sütunları: Ad Soyad · Yol-Yemek · önceki ay prim · son 12 ay ort. prim. */
-const PRIM_SART_EK={}; /* PRIM-SART-ONCEKI-AY-YOK (09.11.2026, Melih): önceki ay (Ekim 2026) prim sütunu çıkarıldı */
+const PRIM_SART_EK={}; /* PRIM-SART-BASLIK-SADE (09.11.2026): başlıkta ay yok */ /* PRIM-SART-ONCEKI-AY-YOK (09.11.2026, Melih): önceki ay (Ekim 2026) prim sütunu çıkarıldı */
 async function grPrimSart(){
   const t0=grNow(); t0.setHours(0,0,0,0);
   if(t0<new Date(2026,10,1)) return "";
@@ -558,7 +558,7 @@ async function grPrimSart(){
   const n=v=>(v==null||v==="")?'<span class="gr-muted">—</span>':Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0});
   const rows=L.length?L.map(x=>`<tr><td>${esc(x.ad)}</td><td class="n">${n(x.yy)}</td><td class="n">${n(x.av)}</td></tr>`).join("")
     :`<tr><td colspan="3" class="gr-muted">Bu ay şartı sağlayan henüz yok</td></tr>`;
-  return `<div class="scroll"><table class="grt"><thead><tr><th>Prim şartını sağlayan · ${esc(GR_AYTAM[t0.getMonth()]+" "+t0.getFullYear())}</th><th class="n">Yol-Yemek (TL)</th><th class="n">Son 12 Ay Ort. Prim (TL)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="scroll"><table class="grt"><thead><tr><th>Prim şartını sağlayan</th><th class="n">Yol-Yemek (TL)</th><th class="n">Son 12 Ay Ort. Prim (TL)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 async function grGundem(){
   const [{data,error},primH]=await Promise.all([sb.from("ana_gundem").select("*"),grPrimSart().catch(()=>"")]); /* PRIM-SART-GIRIS */
