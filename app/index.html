@@ -167,7 +167,7 @@
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="giris_ust.js?v=261109a"></script><!-- GIRIS-UST-ORTAK · GIRIS-GRAFIK-BIRLES · GIRIS-YEKSEN-15 -->
+<script src="giris_ust.js?v=261109b"></script><!-- GIRIS-UST-ORTAK · GIRIS-GRAFIK-BIRLES · GIRIS-YEKSEN-15 · GIRIS-ALACAK-PEMBE -->
 <script src="my_acil.js?v=261106i"></script><!-- MY-FAALIYET -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -567,6 +567,11 @@ async function grGundem(){
   const all=data||[];
   const mb=all.filter(r=>r.kaynak_tip!=='pem'&&r.kaynak_tip!=='prj'&&r.ilgili==='MB'&&!/Öncelik/i.test(String(r.son_durum||""))).sort((a,b)=>String(a.kod).localeCompare(String(b.kod)));
   let pem=all.filter(r=>r.kaynak_tip==='pem');
+  /* GIRIS-PEM-ACIL (09.11.2026, Melih): MY'de Acil işaretli PEM'ler de PEM bloğunda (rpc giris_acil_pem); gündemde olan satır pembe işaretlenir, olmayan salt-okur pembe satır olarak eklenir */
+  try{ const {data:ac}=await sb.rpc("giris_acil_pem"); const fd2=d=>{ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(d||"")); return m?m[3]+"."+m[2]+"."+m[1].slice(2):""; };
+    (ac||[]).forEach(a=>{ const no=String(a.no), ek=pem.find(r=>String(r.kod)===no), kn="Acil · Hedef yükleme "+(fd2(a.kesin||a.hedef)||"—")+(a.aciklama?" · "+String(a.aciklama).split("\n")[0]:"");
+      if(ek){ ek._acil=true; ek.erp=Object.assign({},ek.erp||{}); if(!ek.erp.durum&&a.durum) ek.erp.durum=a.durum; return; }
+      pem.push({id:null,kod:no,konu:kn,_acil:true,erp:{proje:a.proje||"",ekbilgi:a.ekbilgi||"",adet:a.adet||"",durum:a.durum||"",termin:a.termin||""}}); }); }catch(e){}
   /* GIRIS-PEM-SEVKSIZ (09.11.2026, Melih): sevk edilmiş PEM'ler Giriş'te gösterilmez — pem_snapshot'ta sevk_tarihi dolu ya da en son dolu durum "Sevk" */
   try{ const nos=pem.map(r=>Number(r.kod)).filter(n=>n>0);
     if(nos.length){ const {data:ps}=await sb.from("pem_snapshot").select("satir_nr,erp_yukleme_id,durum,sevk_tarihi").in("satir_nr",nos);
@@ -600,15 +605,15 @@ const agPemPrjBlock=(function(){
     const dcol=tip==='pem'?'termin':'aup', noteCol=tip==='pem'?'ekbilgi':'notlar';
     const noteHd=tip==='pem'?'Ek Bilgi':'Satış/Şantiye Notları', dateHd=tip==='pem'?'Termin Tarihi':'AÜP Tarihi', kodW=tip==='pem'?'c5':'c8';
     const sorted=[...rowsX].sort((a,b)=>(ev(a,dcol)||'99999999').localeCompare(ev(b,dcol)||'99999999'));
-    const body=sorted.map(r=>`<tr data-id="${r.id}">`
-      +`<td class="c ${kodW} ged" data-f="kod" data-type="text"><span title="${esc(r.kod)}">${esc(r.kod)}</span></td>`
+    const body=sorted.map(r=>`<tr data-id="${r.id}"${r._acil?' style="background:#fde4ec" title="Acil (MY)"':''}>` /* GIRIS-PEM-ACIL */
+      +`<td class="c ${kodW}${r.id?' ged':''}" data-f="kod" data-type="text"><span title="${esc(r.kod)}">${esc(r.kod)}</span></td>`
       +`<td class="c c15"><span title="${esc(ev(r,'proje'))}">${esc(ev(r,'proje'))}</span></td>`
       +`<td class="c c25"><span title="${esc(ev(r,noteCol))}">${esc(ev(r,noteCol))}</span></td>`
       +`<td class="c c3"><span>${esc(ev(r,'adet'))}</span></td>`
       +`<td class="c cdur"><span title="${esc(ev(r,'durum'))}">${esc(ev(r,'durum'))}</span></td>`
       +`<td class="c c8"><span>${fdate(ev(r,dcol))}</span></td>`
-      +`<td class="c ckon ged" data-f="konu" data-type="text"><span title="${esc(r.konu)}">${esc(r.konu)}</span></td>`
-      +`<td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
+      +`<td class="c ckon${r.id?' ged':''}" data-f="konu" data-type="text"><span title="${esc(r.konu)}">${esc(r.konu)}</span></td>`
+      +`<td>${r.id?`<button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button>`:''}</td></tr>`).join("");
     const title=(tip==='pem'?'PEM-':'PRJ-')+rowsX.length;
     return `<h3 class="sec">${title}</h3><div class="scroll gblk"><table><thead><tr><th>Kod</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>Durum</th><th>${dateHd}</th><th>Konu</th><th></th></tr></thead><tbody>${body}</tbody></table></div>`;
   };
