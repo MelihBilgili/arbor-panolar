@@ -25,8 +25,10 @@ async function kur(sb){ if(KUR) return KUR; let r={EUR:1}, ok=false;
   KUR=r; return r; }
 function netEur(r,k){ if(r.net_tutar_eur!=null){ const d=Number(r.net_tutar_eur); if(isFinite(d)) return d; }
   const v=Number(r.net_tutar); if(!isFinite(v)) return null; const pb=r.para_birimi||'EUR'; if(pb==='EUR') return v; const x=k&&k[pb]; return x>0?v/x:null; }
+/* GIRIS-YEKSEN-15 (09.11.2026, Melih): Giriş'te (o.grafik===true) tüm grafiklerin y ekseni %50 uzun; MK/CTP aynı */
+let YK=1;
 function spark(pts,opt){
-  opt=opt||{}; const W=244,H=78,L=40,R=6,T=8,B=16, birim=opt.birim||" €";
+  opt=opt||{}; const W=244,H=Math.round(54*YK)+24,L=40,R=6,T=8,B=16, birim=opt.birim||" €";
   const vs=pts.filter(p=>p.y!=null).map(p=>p.y);
   if(!vs.length) return '<div class="gru-muted">Veri yok</div>';
   let mn=Math.min(0,Math.min.apply(null,vs)), mx=Math.max.apply(null,vs); if(mx===mn) mx=mn+1;
@@ -44,7 +46,7 @@ function spark(pts,opt){
    (sel_arb_ozet + sel_arb_snapshot, alacaklı tarihler) + Cari nokta (turuncu) çizgi; cari ay kutuları: son 12 ay aylık toplam çubuk (bu ay turuncu).
    Yalnız o.grafik=true (Giriş); MK Faaliyet / CTP eski kutular. */
 function bars(pts,opt){
-  opt=opt||{}; const W=244,H=78,L=40,R=6,T=8,B=16, birim=opt.birim||" €";
+  opt=opt||{}; const W=244,H=Math.round(54*YK)+24,L=40,R=6,T=8,B=16, birim=opt.birim||" €";
   const vs=pts.map(p=>p.y||0); if(!pts.length||!vs.some(v=>v)) return '<div class="gru-muted">Veri yok</div>';
   let mn=Math.min(0,Math.min.apply(null,vs)), mx=Math.max.apply(null,vs); if(mx===mn) mx=mn+1;
   const n=pts.length, iw=W-L-R, bw=iw/n, Y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn));
@@ -58,23 +60,26 @@ function bars(pts,opt){
 /* MK-GRAFIK-BIRLES (29.10.2026, Melih): MK formu ve Giriş panosunda birden çok seri tek grafikte ayrı renkli çizgilerle (GIRIS-GRAFIK-BIRLES) */
 const MRENK=["#2e6da4","#e07b00","#0a6b57","#b23a2e"];
 function multi(S,opt){
-  opt=opt||{}; const W=330,H=96,L=40,R=6,T=8,B=16, birim=opt.birim||" €";
-  const vs=[]; S.forEach(s=>s.pts.forEach(p=>{ if(p.y!=null) vs.push(p.y); }));
+  /* SELARB-FT-SAG (09.11.2026): s.sag=true olan seri kendi ölçeğiyle sağ eksende (küçük değerler düz çizgi görünmesin); s.renk seri rengi */
+  opt=opt||{}; const anySag=S.some(s=>s.sag), W=330+(anySag?34:0),H=Math.round(72*YK)+24,L=40,R=anySag?40:6,T=8,B=16, birim=opt.birim||" €";
+  const vs=[], vR=[]; S.forEach(s=>s.pts.forEach(p=>{ if(p.y!=null) (s.sag?vR:vs).push(p.y); }));
+  if(!vs.length&&vR.length){ vR.forEach(v=>vs.push(v)); }
   if(!vs.length) return '<div class="gru-muted">Veri yok</div>';
   let mn=Math.min(0,Math.min.apply(null,vs)), mx=Math.max.apply(null,vs); if(mx===mn) mx=mn+1;
-  const n=Math.max.apply(null,S.map(s=>s.pts.length)), iw=W-L-R, X=i=>L+(n<=1?iw/2:i*iw/(n-1)), Y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn));
-  let g=`<line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" class="gru-ax"/><line x1="${L}" y1="${Y(Math.max(mn,0)).toFixed(1)}" x2="${W-R}" y2="${Y(Math.max(mn,0)).toFixed(1)}" class="gru-ax"/>`
+  let mnR=vR.length?Math.min(0,Math.min.apply(null,vR)):0, mxR=vR.length?Math.max.apply(null,vR):1; if(mxR===mnR) mxR=mnR+1;
+  const n=Math.max.apply(null,S.map(s=>s.pts.length)), iw=W-L-R, X=i=>L+(n<=1?iw/2:i*iw/(n-1)), Y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn)), YR=v=>T+(H-T-B)*(1-(v-mnR)/(mxR-mnR));
+  let g=(vR.length?`<line x1="${W-R}" y1="${T}" x2="${W-R}" y2="${H-B}" class="gru-ax"/><text x="${W-R+3}" y="${T+7}" class="gru-yl" style="text-anchor:start">${esc(kK(mxR))}</text><text x="${W-R+3}" y="${H-B}" class="gru-yl" style="text-anchor:start">${esc(kK(mnR))}</text>`:"")+`<line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" class="gru-ax"/><line x1="${L}" y1="${Y(Math.max(mn,0)).toFixed(1)}" x2="${W-R}" y2="${Y(Math.max(mn,0)).toFixed(1)}" class="gru-ax"/>`
     +`<text x="${L-3}" y="${T+7}" class="gru-yl">${esc(kK(mx))}</text><text x="${L-3}" y="${H-B}" class="gru-yl">${esc(kK(mn))}</text>`;
-  S.forEach((s,k)=>{ const c=MRENK[k%MRENK.length]; let d="";
-    s.pts.forEach((p,i)=>{ if(p.y==null) return; d+=(d?"L":"M")+X(i).toFixed(1)+" "+Y(p.y).toFixed(1); });
+  S.forEach((s,k)=>{ const c=s.renk||MRENK[k%MRENK.length], Yf=(s.sag&&vR.length&&vs!==vR)?YR:Y; let d="";
+    s.pts.forEach((p,i)=>{ if(p.y==null) return; d+=(d?"L":"M")+X(i).toFixed(1)+" "+Yf(p.y).toFixed(1); });
     g+=`<path d="${d}" fill="none" stroke="${c}" stroke-width="1.6"/>`;
-    s.pts.forEach((p,i)=>{ if(p.y==null) return; g+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${p.cur?3.4:2}" fill="${c}"><title>${esc(s.ad+" · "+p.x+": "+Math.round(p.y).toLocaleString("tr-TR")+birim)}</title></circle>`; }); });
+    s.pts.forEach((p,i)=>{ if(p.y==null) return; g+=`<circle cx="${X(i).toFixed(1)}" cy="${Yf(p.y).toFixed(1)}" r="${p.cur?3.4:2}" fill="${c}"><title>${esc(s.ad+" · "+p.x+": "+Math.round(p.y).toLocaleString("tr-TR")+birim)}</title></circle>`; }); });
   const P=S[0].pts; g+=`<text x="${X(0)}" y="${H-3}" class="gru-xl" text-anchor="start">${esc(P[0].x)}</text><text x="${X(n-1)}" y="${H-3}" class="gru-xl" text-anchor="end">${esc(P[P.length-1].x)}</text>`;
   return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="gru-svg">${g}</svg>`;
 }
 function mkart(baslik,S,vals,fmt,opt){
   return `<div class="gru-card gru-mk"><div class="gru-ct">${esc(baslik)}</div>`
-    +S.map((s,k)=>`<div class="gru-ml"><span class="gru-mn" style="background:${MRENK[k%MRENK.length]}"></span>${esc(s.ad)}: <b>${fmt(vals[k])}</b></div>`).join("")
+    +S.map((s,k)=>`<div class="gru-ml"><span class="gru-mn" style="background:${s.renk||MRENK[k%MRENK.length]}"></span>${esc(s.ad)}${s.sag?' <span style="color:#7b8794">(sağ eksen)</span>':''}: <b>${fmt(vals[k])}</b></div>`).join("")
     +multi(S,opt)+`</div>`;
 }
 const CSS=`
@@ -165,8 +170,8 @@ async function satis(o,elT,elG){
     elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3><div class="gru-cards">${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* MK-GRAFIK-BIRLES */}${dkK}</div>`;
     return; }
   elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3>`
-    +`<div class="gru-cards">${kart("Yurt İçi alınan Prj (€)",kS("so_a"),c("so_a")," €")/* GIRIS-YI-ALINAN */}${kart("Yurt İçi muht. Prj (€)",kS("so_m"),c("so_m")," €")}${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* GIRIS-GRAFIK-BIRLES */}</div>`
-    +`<div class="gru-cards" style="margin-top:10px">${kart("Top.alınan Prj (€)",kS("top_a"),c("top_a")," €")}${kart("Top.muht. Prj (€)",kS("top_m"),c("top_m")," €")}${dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):""}</div>`;
+    +`<div class="gru-cards">${mkart("Yurt İçi Prj (€)",[{ad:"Alınan",pts:kS("so_a")},{ad:"Muhtemel",pts:kS("so_m")}],[c("so_a"),c("so_m")],v=>money(v)+" €")/* GIRIS-YI-ALINAN · GIRIS-YI-TOP-BIRLES */}${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* GIRIS-GRAFIK-BIRLES */}</div>`
+    +`<div class="gru-cards" style="margin-top:10px">${mkart("Toplam Prj (€)",[{ad:"Alınan",pts:kS("top_a")},{ad:"Muhtemel",pts:kS("top_m")}],[c("top_a"),c("top_m")],v=>money(v)+" €")/* GIRIS-YI-TOP-BIRLES */}${dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):""}</div>`;
 }
 /* ---- Takip notu penceresi ---- */
 async function notAc(o,k,r,yenile){
@@ -246,7 +251,7 @@ async function selArb(o,el){
     const sP=i=>H.map(h=>({x:h.x,y:h.v[i]})).concat([{x:"Cari",y:K[i][1],cur:true}]);
     { /* MK-GRAFIK-BIRLES / GIRIS-GRAFIK-BIRLES: Güncel Alacak ayrı, diğer 4 kutu tek grafikte (MK + Giriş) */
       el.innerHTML=`<div class="gru-boxes"><div class="gru-box"><div class="gru-ct">${esc(K[0][0])}</div><div class="gru-cv">${K[0][1]==null?"—":money(K[0][1])+" €"}</div>${spark(sP(0))}</div>`
-        +mkart("Selectron",[1,2,3,4].map(i=>({ad:K[i][0],pts:sP(i)})),[1,2,3,4].map(i=>K[i][1]),v=>v==null?"—":money(v)+" €").replace('class="gru-card gru-mk"','class="gru-box gru-mk"')+`</div>`;
+        +mkart("Selectron",[1,2,3,4].map(i=>({ad:K[i][0],pts:sP(i),renk:i===1?"#1f9d55":(i===3?"#2e6da4":undefined),sag:i===3})),/* SELARB-GON-YESIL · SELARB-FT-SAG */[1,2,3,4].map(i=>K[i][1]),v=>v==null?"—":money(v)+" €").replace('class="gru-card gru-mk"','class="gru-box gru-mk"')+`</div>`;
       return; }
     el.innerHTML=`<div class="gru-boxes">${K.map(([a,v],i)=>`<div class="gru-box"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${v==null?"—":money(v)+" €"}</div>${spark(sP(i))}</div>`).join("")}</div>`;
     return; }
@@ -294,7 +299,7 @@ async function egitim(o,el){
   el.innerHTML=`<div style="padding:12px 2px 4px">Gerçekleşen eğitim: bu ay <b>${ay(gE)}</b> · bu yıl <b>${gE.length}</b> \u05C0 Yayınlanan doküman: bu ay <b>${ay(yE)}</b> · bu yıl <b>${yE.length}</b></div>`;
 }
 async function render(kap,o){
-  if(!kap||!o||!o.sb) return; css(); KUR=null;
+  if(!kap||!o||!o.sb) return; css(); KUR=null; YK=(o.grafik===true)?1.5:1; /* GIRIS-YEKSEN-15 */
   kap.classList.add("gru");
   kap.innerHTML='<div class="gru-t"></div><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div><div class="gru-e"></div>';
   /* MK-GRAFIK-UST (29.10.2026, Melih): o.ustKap verilirse grafikler (Satış/DK1 kartları · Sel-Arb · cari ay) o kaba, tablo kap'ta kalır */
