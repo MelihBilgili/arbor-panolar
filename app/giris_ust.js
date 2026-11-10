@@ -106,7 +106,14 @@ const CSS=`
 .gru-boxes{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px}
 .gru-box{border:1px solid #c9d6e3;border-left:4px solid #2e6da4;border-radius:6px;background:#f6f9fc;padding:5px 12px;min-width:150px}
 .gru-box3{flex:1 1 0;min-width:200px}
-.gru-box.gru-gr{border-left-color:#0a6b57;background:#f3faf7}`;
+.gru-box.gru-gr{border-left-color:#0a6b57;background:#f3faf7}
+.gru-graf{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0 4px;align-items:start}
+.gru-graf>.gru-g,.gru-graf>.gru-s,.gru-graf>.gru-c,.gru-graf .gru-cards,.gru-graf .gru-boxes{display:contents}
+.gru-graf .gru-h{grid-column:1/-1;margin-bottom:0}
+.gru-graf .gru-card,.gru-graf .gru-box{min-width:0;margin:0}
+.gru-graf .gru-svg{max-width:100%;height:auto}
+@media (max-width:900px){.gru-graf{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.gru-graf{grid-template-columns:minmax(0,1fr)}}`;
 function css(){ if(document.getElementById("gru-css")) return; const st=document.createElement("style"); st.id="gru-css"; st.textContent=CSS; document.head.appendChild(st); }
 
 /* ---- Satış tablosu + grafikler ---- */
@@ -301,9 +308,9 @@ async function egitim(o,el){
 async function render(kap,o){
   if(!kap||!o||!o.sb) return; css(); KUR=null; YK=(o.grafik===true)?1.5:1; /* GIRIS-YEKSEN-15 */
   kap.classList.add("gru");
-  kap.innerHTML='<div class="gru-t"></div><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div><div class="gru-e"></div>';
+  kap.innerHTML='<div class="gru-t"></div><div class="gru-graf"><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div></div><div class="gru-e"></div>'; /* GRAFIK-UCLU (10.11.2026, Melih): grafikler yan yana üçer (gru-graf grid) */
   /* MK-GRAFIK-UST (29.10.2026, Melih): o.ustKap verilirse grafikler (Satış/DK1 kartları · Sel-Arb · cari ay) o kaba, tablo kap'ta kalır */
-  const U=o.ustKap; if(U){ U.classList.add("gru"); U.innerHTML='<div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div>'; ['.gru-g','.gru-s','.gru-c'].forEach(c=>{ const x=kap.querySelector(c); if(x) x.remove(); }); }
+  const U=o.ustKap; if(U){ U.classList.add("gru"); U.innerHTML='<div class="gru-graf"><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div></div>'; ['.gru-graf'].forEach(c=>{ const x=kap.querySelector(c); if(x) x.remove(); }); }
   const q=c=>kap.querySelector(c)||(U&&U.querySelector(c)), kor=p=>Promise.resolve().then(p).catch(e=>{ try{ console.warn("GRUST:",e); }catch(_){} });
   if(o.bolum==="ctp"){ await Promise.all([kor(()=>satis(o,q(".gru-t"),q(".gru-g"))),kor(()=>egitim(o,q(".gru-e")))]); return; } /* CTP-FAALIYET */
   await Promise.all([kor(()=>satis(o,q(".gru-t"),q(".gru-g"))),kor(()=>selArb(o,q(".gru-s"))),kor(()=>cari(o,q(".gru-c")))]);
