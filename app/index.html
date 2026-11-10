@@ -690,7 +690,7 @@ function cfoAc(L){
   p=document.createElement("div"); p.id="cfoPop";
   p.innerHTML='<div class="cfoK"><div class="cfoH"><b>Cam Fiyat Onayı</b><button class="cfoX" title="Kapat">✕</button></div>'
     +L.map(o=>'<div class="cfoR" data-id="'+o.id+'">'+(o.pencere?'<iframe class="cfoW" sandbox="allow-same-origin" title="Fiyat penceresi"></iframe>':'')+'<div class="cfoM">'+md(o.mesaj||"")+'</div><div class="cfoB"><button data-k="pencad">Pencad Fiyatını Onayla ('+tr2(o.pencad)+' €/m²)</button>'
-      +'<button data-k="hesaplanan">Hesaplanan Fiyatı Onayla ('+tr2(o.birim)+' €/m²)</button><button data-k="yenilendi">Pencad Fiyatı Yenilendi</button><span class="cfoS"></span></div></div>').join("")+'</div>';
+      /* CFO-HESAP-YOK (10.11.2026, Melih): "Hesaplanan Fiyatı Onayla" seçeneği kaldırıldı */+'<button data-k="yenilendi">Pencad Fiyatı Yenilendi</button><span class="cfoS"></span></div></div>').join("")+'</div>';
   document.body.appendChild(p);
   /* CAM-FIYAT-ONAY-PENCERE: talep anındaki fiyat penceresi, betiksiz iframe'de aynen */
   p.querySelectorAll(".cfoR").forEach(R=>{ const f=R.querySelector("iframe.cfoW"), o=L.find(x=>x.id===+R.dataset.id); if(!f||!o) return;
