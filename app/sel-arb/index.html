@@ -261,7 +261,7 @@ async function load(){
    Avenant = ob_avenant, Tahsilat = ob_tahsilat, Yapılmış Situ = ob_situation 'İptal Edildi' hariç; eşleme proje adı, büyük/küçük harf duyarsız) */
 /* SELARB-BASLIK-261001 (Melih): (€) başlıklar; Beklenen İlk Ödeme başlıkları iki satır (\n → <br>), küçük punto, dar sütun */
 const KX=[["kontrat","Kontrat","in"],["para_birimi","Para Birimi","pb"],["vade_gun","Vade (gün)","gn"],["avenant","TS\n(Avenants) (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
-  ["tahsilat","Tahsilat (€)","ro"],["situ","Yapılmış Situ (€)","ro"],["yapilacak_situ","Yapılacak Situ (€)","in"],
+  ["tahsilat","Tahsilat (€)","ro"],["situ","Yapılmış Situ (€)","ro"],["yapilacak_situ","(Yüklenmiş)\nYapılacak Situ (€)","in"],   /* SITU-YUKLEME (10.11.2026): yüklenmiş ama situ yapılmamış; OE dağıtımı/ÖB situ oranlaması ile otomatik değişir, cari kaynaklı satırda Güncel Alacak'a dahil */
   ["ilk_odeme_tarih","Beklenen İlk\nÖdeme Tarihi","dt"],["ilk_odeme_tutar","Beklenen İlk\nÖdeme Tutarı (€)","in"]];
 const kKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kObKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
@@ -375,9 +375,10 @@ function bind(){
       else { v=parseTr(inp.value); if(Number.isNaN(v)){ td.classList.add("bad"); msg("Geçersiz tutar: "+inp.value,"err"); return; } }
       td.classList.remove("bad");
       const body={updated_at:new Date().toISOString()}; body[f]=v;
-      const {error}=await sb.from("sel_arb_guncel").update(body).eq("id",id);
+      const {data:_u,error}=await sb.from("sel_arb_guncel").update(body).eq("id",id).select("alacak");
       if(error){ msg("Kaydedilemedi: "+error.message,"err"); return; }
       const r=ST.g.find(x=>x.id===id); if(r) r[f]=v;
+      if(f==="yapilacak_situ"&&r&&_u&&_u[0]&&r.alacak_kaynak==="cari"){ r.alacak=_u[0].alacak; msg("Kaydedildi — Güncel Alacak yeniden hesaplandı","ok"); render(); return; }   /* SITU-YUKLEME: cari kaynaklı satırda alacak = cari bakiye + yapılacak situ */
       if(inp.dataset.gn) inp.value=v==null?"":String(v); else if(inp.type!=="date") inp.value=fmt(v);
       if(f==="kontrat"||f==="vade_gun") td.classList.toggle("sa-eksik",v==null);
       td.classList.remove("saved"); void td.offsetWidth; td.classList.add("saved"); msg("Kaydedildi","ok");
