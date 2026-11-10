@@ -91,7 +91,7 @@
       if(kesEd) return (kz?'<span class="my-kg">Yükleme tarihi gir</span>':'')+'<input type="date" class="my-kes" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" value="'+esc(r.kesin?String(r.kesin).slice(0,10):"")+'">';
       return r.kesin?'<b>'+fd(r.kesin)+'</b>':(kz?'<span class="my-kg">Yükleme tarihi gir</span>':'');
     }; /* MY-ACIKLAMA-EKLE (28.10.2026): Giriş panosunda "Açıklama Ekle" sütunu (yalnız MB) */
-    var h='<div class="myab"><h3>ACİL YÜKLEMELER · MY ('+rows.length+')</h3><div class="myw"><table class="mya'+(el._ksAcik?'':' ks-kapali')+(el._tbAcik?'':' tb-kapali')+'"><thead><tr>'
+    var h='<div class="myab"><h3>ACİL YÜKLEMELER</h3><div class="myw"><table class="mya'+(el._ksAcik?'':' ks-kapali')+(el._tbAcik?'':' tb-kapali')+'"><thead><tr>'
       +'<th>Durum</th><th>Sorumlu</th><th>Görev</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Kesinleşen<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama'+(ack?' <span style="font-weight:400">(Ekle)</span>':'')+'</th>'+'</tr></thead><tbody>'
       +anaR.concat(tbR,kesR).map(function(r,i){
         var no=r.tur==="PEM"?("PEM "+r.kod):r.kod;
