@@ -587,7 +587,7 @@ async function grGundem(){
   try{ const nos=pem.map(r=>Number(r.kod)).filter(n=>n>0);
     if(nos.length){ const {data:ps}=await sb.from("pem_snapshot").select("satir_nr,erp_yukleme_id,durum,sevk_tarihi").in("satir_nr",nos);
       const sv={}, sd={}; (ps||[]).sort((a,b)=>b.erp_yukleme_id-a.erp_yukleme_id).forEach(x=>{ if(x.sevk_tarihi) sv[x.satir_nr]=1; if(x.durum&&!(x.satir_nr in sd)) sd[x.satir_nr]=String(x.durum); });
-      pem=pem.filter(r=>{ const n=Number(r.kod); return !(sv[n]||/sevk/i.test(sd[n]||"")); }); } }catch(e){}
+      pem=pem.filter(r=>{ const n=Number(r.kod); return !(sv[n]||/sevk edildi/i.test(sd[n]||"") /* GIRIS-SEVK-EDILDI: "3 Sevke Hazır" gizlenmez */); }); } }catch(e){}
   const mbRows=mb.map(r=>`<tr data-id="${r.id}"><td class="kod ged" data-f="kod" data-type="text">${esc(r.kod)}</td><td class="ged" data-f="konu" data-type="text">${esc(r.konu)}</td><td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
   el.innerHTML=`<div class="ag-wrap">`
     +(`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">`+(mb.length?`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${mbRows}</tbody></table></div>`:"")+(primH||"")+`<div id="gr-situyk"></div></div>`)   /* SITU-YUKLEME: Prim şartını sağlayan sağında */
@@ -878,6 +878,14 @@ async function addGundem(){
     const btn=document.getElementById("ag-add"); btn.disabled=true; btn.textContent="Ekleniyor…";
     const {error}=await sb.from("ana_gundem").insert([{kod:kod,kod_prefix:(ilg==='PEM'?'P':'R'),konu,ilgili:ilg,kaynak_tip:ilg.toLowerCase(),turetilmis:false}]);
     btn.disabled=false; btn.textContent="Ekle";
+    if(error&&(error.code==="23505"||/ana_gundem_kod_key/.test(error.message||""))){ /* GUNDEM-KOD-VAR (10.11.2026, Melih): kod zaten gündemde -> konusu güncellensin mi */
+      const {data:ex}=await sb.from("ana_gundem").select("id,konu").eq("kod",kod).limit(1);
+      const e0=ex&&ex[0];
+      if(e0&&confirm(ilg+" "+kod+" zaten gündemde.\nMevcut konu: "+(e0.konu||"")+"\n\nKonu \""+konu+"\" olarak değiştirilsin mi?")){
+        const {error:e2}=await sb.from("ana_gundem").update({konu}).eq("id",e0.id);
+        if(e2){ alert(e2.message); return; }
+        ekod.value=""; ek.value=""; loadGundem(); }
+      return; }
     if(error){ alert(error.message); return; }
     ekod.value=""; ek.value=""; loadGundem(); return;
   }
