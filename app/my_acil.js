@@ -41,7 +41,7 @@
      +"table.mya tr.my-tbbas td{cursor:pointer;user-select:none}table.mya.tb-kapali tr.my-tb{display:none}" /* MY-TERMIN-BANT */ /* MY-KESIN-BANT */
      +".my-kg{color:#b40000;font-weight:700;margin-right:5px}input.my-kes{font:inherit;font-size:11.5px;border:1px solid #d9a3b6;border-radius:4px;padding:0 3px;background:#fff;color:#1c2430}input.my-kes:disabled{opacity:.6}"
      +"input.my-ack{font:inherit;font-size:12px;width:30ch;border:1px solid #d9a3b6;border-radius:4px;padding:1px 6px;background:#fff;color:#1c2430}input.my-ack:focus{outline:none;border-color:#b0003a}input.my-ack:disabled{opacity:.6}"
-     +"table.mya td.w.mack{white-space:nowrap;min-width:30ch;max-width:52ch;overflow:hidden;text-overflow:ellipsis} /* MY-TEK-SATIR (10.11.2026, Melih): satirlar tek satir, en yeni aciklama basta, tamami hover */"+"table.mya.nr-kapali tr.my-nr{display:none}table.mya tr.my-nr td{background:#fff;border-bottom-color:#e6eaef}table.mya tr.my-nrbas td{cursor:pointer;user-select:none}"; /* MY-DURUM-MK-OE */ /* MY-ACK-SATIR (06.11.2026, Melih/OE): açıklama kayıtları alt alta, tamamı görünür */
+     +"table.mya td.w.mack{white-space:nowrap;min-width:30ch;max-width:52ch;overflow:hidden;text-overflow:ellipsis} /* MY-TEK-SATIR (10.11.2026, Melih): satirlar tek satir, en yeni aciklama basta, tamami hover */"+"table.mya.nr-kapali tr.my-nr{display:none}table.mya tr.my-nr td{background:#fff;border-bottom-color:#e6eaef}table.mya tr.my-nrbas td{cursor:pointer;user-select:none}table.mya tr.my-sh td{background:#fff;border-bottom-color:#e6eaef}table.mya tr.my-sh button.del{border:0;background:none;color:#9aa5b1;cursor:pointer;font-size:12px;padding:0 2px}table.mya tr.my-sh button.del:hover{color:#b40000}"; /* MY-DURUM-MK-OE */ /* MY-ACK-SATIR (06.11.2026, Melih/OE): açıklama kayıtları alt alta, tamamı görünür */
     document.head.appendChild(s);
   }
   async function liste(sb){
@@ -68,7 +68,8 @@
     var dno=function(r){ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return m?parseFloat(m[1].replace(",",".")):999; };
     rows.sort(function(a,b){ return (dno(a)-dno(b))||String(a.durum_erp||"").localeCompare(String(b.durum_erp||""),"tr")||String(a.hedef||"9999").localeCompare(String(b.hedef||"9999"))||String(a.no).localeCompare(String(b.no)); });
     var nor=(d.rows||[]).filter(function(r){ return r.durum!=="Acil"; }); /* MY-DURUM-MK-OE: Normal takiptekiler acilden ayri bantta */
-    if(!rows.length&&!nor.length){ el.innerHTML=""; return; }
+    var sh=(mod==="giris"&&Array.isArray(o.sahsi))?o.sahsi:[]; /* GIRIS-ACIL-SAHSI */
+    if(!rows.length&&!nor.length&&!sh.length){ el.innerHTML=""; if(o.sonra) try{ o.sonra(el); }catch(e){} return; }
     var mk=mod==="mk", gr=mod==="giris";
     var ackTers=function(s){ return String(s==null?"":s).split("\n").reverse().join("\n"); }; /* MY-ACK-YENI-UST (10.11.2026, Melih): aciklama satirlari en yeni ustte */
     var ack=gr||mod==="oe"; /* MY-ACIKLAMA-OE (06.11.2026, Melih): Açıklama Ekle sütunu OE Faaliyet'te de (rpc my_aciklama_ekle onur.form@ → "OE" önekli) */
@@ -91,8 +92,14 @@
       if(kesEd) return (kz?'<span class="my-kg">Yükleme tarihi gir</span>':'')+'<input type="date" class="my-kes" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" value="'+esc(r.kesin?String(r.kesin).slice(0,10):"")+'">';
       return r.kesin?'<b>'+fd(r.kesin)+'</b>':(kz?'<span class="my-kg">Yükleme tarihi gir</span>':'');
     }; /* MY-ACIKLAMA-EKLE (28.10.2026): Giriş panosunda "Açıklama Ekle" sütunu (yalnız MB) */
+    var shH=sh.length?('<tr class="my-grp"><td colspan="'+ncol+'">ŞAHSİ PEM\'LER ('+sh.length+')</td></tr>'+sh.map(function(r){ var e=r.erp||{}, g=sg({tur:"PEM",durum_erp:e.durum});
+      return '<tr class="my-sh" data-id="'+esc(r.id)+'" data-tur="PEM" data-no="'+esc(r.kod)+'"><td class="w" style="max-width:24ch" title="'+esc(e.durum)+'">'+esc(e.durum)+'</td><td>'+esc(g[0])+'</td><td>'+esc(g[1])+'</td><td>PEM '+esc(r.kod)+'</td>'
+        +'<td class="w" title="'+esc((e.proje||"")+(e.ekbilgi?" · "+e.ekbilgi:""))+'">'+esc(e.proje)+'</td><td style="text-align:right">'+esc(e.adet)+'</td><td>'+fd(e.termin)+'</td><td></td><td></td>'
+        +'<td><button class="del" data-id="'+esc(r.id)+'" title="Gündemden kapat (sil)">✕</button></td>'+(mk?'<td></td>':'')
+        +'<td class="w mack ged" data-f="konu" data-type="text" title="'+esc(r.konu)+'">'+esc(r.konu)+'</td></tr>'; }).join("")
+      +(rows.length?'<tr class="my-grp"><td colspan="'+ncol+'">ACİL</td></tr>':'')):''; /* GIRIS-ACIL-SAHSI (10.11.2026, Melih): Giriş'te gündemdeki acil olmayan PEM'ler en üstte */
     var h='<div class="myab"><h3>ACİL YÜKLEMELER</h3><div class="myw"><table class="mya'+(el._ksAcik?'':' ks-kapali')+(el._tbAcik?'':' tb-kapali')+'"><thead><tr>'
-      +'<th>Durum</th><th>Sorumlu</th><th>Görev</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Kesinleşen<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama'+(ack?' <span style="font-weight:400">(Ekle)</span>':'')+'</th>'+'</tr></thead><tbody>'
+      +'<th>Durum</th><th>Sorumlu</th><th>Görev</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Kesinleşen<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama'+(ack?' <span style="font-weight:400">(Ekle)</span>':'')+'</th>'+'</tr></thead><tbody>'+shH
       +anaR.concat(tbR,kesR).map(function(r,i){
         var no=r.tur==="PEM"?("PEM "+r.kod):r.kod;
         var onay=(mk&&r.sekil==="Uçak"&&!r.ucak_onay)?'<button class="my-onay" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">Uçak yüklemesini onayla</button>':'';
@@ -186,6 +193,7 @@
         acilBlok(el,o);
       });
     });
+    if(o.sonra) try{ o.sonra(el); }catch(e){} /* GIRIS-ACIL-SAHSI */
   }
   function dAcilPencere(sb,r,k,sonra){ /* MY-DURUM-MK-OE: dogrudan Acile cevir (MK/OE/MB) */
     sStil(); var m=document.createElement("div"); m.className="my-modal";
