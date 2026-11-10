@@ -1,4 +1,4 @@
-/* MY-FAALIYET (28.10.2026, Melih): MY Faaliyet ortak betiği — kaynak kod/my_acil.js → app/my_acil.js
+<script>/* SERT-YENILE */(function(){try{var K='sy:'+location.pathname;function taze(){try{var t=+sessionStorage.getItem(K)||0;if(Date.now()-t<10000)return;sessionStorage.setItem(K,Date.now());}catch(e){}var u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.toString());}var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(n&&n.transferSize===0)taze();addEventListener('pageshow',function(e){if(e.persisted)taze();});document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('download'))return;var h=a.getAttribute('href')||'';if(/^(#|javascript:|mailto:|tel:)/i.test(h))return;var u=new URL(a.href,location.href);if(u.origin!==location.origin||!/(\/|\.html?)$/i.test(u.pathname))return;u.searchParams.set('v',Date.now());a.href=u.toString();},true);}catch(e){}})();</script>/* MY-FAALIYET (28.10.2026, Melih): MY Faaliyet ortak betiği — kaynak kod/my_acil.js → app/my_acil.js
    - MYACIL.liste(sb)            : rpc my_faaliyet_liste() → {damga, oe_at, rows[]} (PRJ/PEM panosunun yurt dışı içeriği, İptal hariç;
                                    sıra: Acil (hedef yükleme tarihine göre) → Normal (AÜP / termin tarihine göre))
    - MYACIL.acilBlok(el,{sb,mod}): Acil satırlar bloğu — OE Faaliyet, MK Faaliyet ve Giriş panosunun en üstünde.
@@ -69,6 +69,7 @@
     rows.sort(function(a,b){ return (dno(a)-dno(b))||String(a.durum_erp||"").localeCompare(String(b.durum_erp||""),"tr")||String(a.hedef||"9999").localeCompare(String(b.hedef||"9999"))||String(a.no).localeCompare(String(b.no)); });
     if(!rows.length){ el.innerHTML=""; return; }
     var mk=mod==="mk", gr=mod==="giris";
+    var ackTers=function(s){ return String(s==null?"":s).split("\n").reverse().join("\n"); }; /* MY-ACK-YENI-UST (10.11.2026, Melih): aciklama satirlari en yeni ustte */
     var ack=gr||mod==="oe"; /* MY-ACIKLAMA-OE (06.11.2026, Melih): Açıklama Ekle sütunu OE Faaliyet'te de (rpc my_aciklama_ekle onur.form@ → "OE" önekli) */
     /* MY-KESIN-YUKLEME (06.11.2026, Melih): Kesinleşen Yükleme Tarihi (OE girer; Giriş'te MB de). Durum 3 Sevke Hazır + boş → kırmızı satır "Yükleme tarihi gir";
        tarih girilenler beyaz zeminle altta "Yükleneceği Kesinleşenler" grubunda (kesin tarihe göre). */
@@ -97,7 +98,7 @@
         var grp=((i===anaR.length&&tbR.length)?'<tr class="my-grp my-tbbas" title="Aç / kapat"><td colspan="'+ncol+'"><span class="my-ok">'+(el._tbAcik?'▾':'▸')+'</span> TERMİNİ BEKLENENLER ('+tbR.length+')</td></tr>':'')+((i===anaR.length+tbR.length&&kesR.length)?'<tr class="my-grp my-ksbas" title="Aç / kapat"><td colspan="'+ncol+'"><span class="my-ok">'+(el._ksAcik?'▾':'▸')+'</span> YÜKLENECEĞİ KESİNLEŞENLER ('+kesR.length+')</td></tr>':'');
         return grp+'<tr class="'+cls+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td><td>'+esc(sg(r)[0])+'</td><td>'+esc(sg(r)[1])+'</td><td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
           +'<td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td><td><b>'+fd(r.hedef)+'</b></td><td>'+kesHtml(r)+'</td><td>'+sekilHtml(r)+'</td>'
-          +(mk?'<td>'+onay+'</td>':'')+'<td class="w mack" title="'+esc(r.aciklama)+'">'+esc(r.aciklama)+'</td>' /* MY-ACK-SATIR */
+          +(mk?'<td>'+onay+'</td>':'')+'<td class="w mack" title="'+esc(ackTers(r.aciklama))+'">'+esc(ackTers(r.aciklama))+'</td>' /* MY-ACK-SATIR / MY-ACK-YENI-UST */
           +(ack?'<td><input class="my-ack" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" placeholder="Yazıp Enter’a basın"></td>':'')+'</tr>';
       }).join("")+'</tbody></table></div></div>';
     el.innerHTML=h;
