@@ -41,7 +41,7 @@
      +"table.mya tr.my-tbbas td{cursor:pointer;user-select:none}table.mya.tb-kapali tr.my-tb{display:none}" /* MY-TERMIN-BANT */ /* MY-KESIN-BANT */
      +".my-kg{color:#b40000;font-weight:700;margin-right:5px}input.my-kes{font:inherit;font-size:11.5px;border:1px solid #d9a3b6;border-radius:4px;padding:0 3px;background:#fff;color:#1c2430}input.my-kes:disabled{opacity:.6}"
      +"input.my-ack{font:inherit;font-size:12px;width:30ch;border:1px solid #d9a3b6;border-radius:4px;padding:1px 6px;background:#fff;color:#1c2430}input.my-ack:focus{outline:none;border-color:#b0003a}input.my-ack:disabled{opacity:.6}"
-     +"table.mya td.w.mack{white-space:pre-line;min-width:30ch;max-width:52ch;vertical-align:top}"+"table.mya.nr-kapali tr.my-nr{display:none}table.mya tr.my-nr td{background:#fff;border-bottom-color:#e6eaef}table.mya tr.my-nrbas td{cursor:pointer;user-select:none}"; /* MY-DURUM-MK-OE */ /* MY-ACK-SATIR (06.11.2026, Melih/OE): açıklama kayıtları alt alta, tamamı görünür */
+     +"table.mya td.w.mack{white-space:nowrap;min-width:30ch;max-width:52ch;overflow:hidden;text-overflow:ellipsis} /* MY-TEK-SATIR (10.11.2026, Melih): satirlar tek satir, en yeni aciklama basta, tamami hover */"+"table.mya.nr-kapali tr.my-nr{display:none}table.mya tr.my-nr td{background:#fff;border-bottom-color:#e6eaef}table.mya tr.my-nrbas td{cursor:pointer;user-select:none}"; /* MY-DURUM-MK-OE */ /* MY-ACK-SATIR (06.11.2026, Melih/OE): açıklama kayıtları alt alta, tamamı görünür */
     document.head.appendChild(s);
   }
   async function liste(sb){
