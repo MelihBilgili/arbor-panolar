@@ -48,7 +48,7 @@
   .miss{border-color:#c62828!important;background:#fff2f2!important}
   #ftt .ftp-btn{width:100%;text-align:left;font:inherit;font-size:12px;padding:4px 6px;border:1px solid #cdd6df;border-radius:6px;background:#f5f9ff;color:#16324f;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} /* OE-FT-PROJE-DAGIT */
   #ftt .ftp-btn.ftp-eksik{border-color:#c62828;background:#fff2f2;color:#b23a2e;font-weight:600}
-  #ftt .ftp-btn.ftp-eski{background:#fafafa;color:#9aa6b2}
+  #ftt .ftp-eski{color:#9aa6b2;padding:4px 6px;display:block}
   .scroll{overflow-x:auto}
 html,body{max-width:100vw;overflow-x:hidden}
 </style>
@@ -348,7 +348,8 @@ async function ftpYukle(){
 function ftpDurum(r){ const L=FTP[r.id]||[], t=L.reduce((a,x)=>a+Number(x.tutar||0),0);
   return {L:L, top:t, tamam:L.length>0&&r.tutar!=null&&Math.abs(t-Number(r.tutar))<=0.01}; }
 function ftpHucre(r){ const d=ftpDurum(r);
-  if(!d.L.length) return r.proje_dagitim_zorunlu?'<button class="ftp-btn ftp-eksik" title="Faturayı projelere dağıtın">Proje dağıt</button>':'<button class="ftp-btn ftp-eski" title="Eski fatura — dağıtım zorunlu değil">—</button>';
+  if(!r.proje_dagitim_zorunlu) return '<span class="ftp-eski" title="Önceki fatura — proje seçimi yalnız yeni faturalarda">—</span>';   /* OE-FT-PROJE-ESKI-STATIK */
+  if(!d.L.length) return '<button class="ftp-btn ftp-eksik" title="Faturayı projelere dağıtın">Proje dağıt</button>';
   const ad=d.L.map(x=>x.diger?FTP_DIGER:x.proje).join(" + ");
   return '<button class="ftp-btn'+(d.tamam?'':' ftp-eksik')+'" title="'+esc(ad)+(d.tamam?'':' — toplam fatura tutarına eşit değil')+'">'+esc(ad)+'</button>'; }
 async function ftpListe(){ if(FTPL) return FTPL;
@@ -356,7 +357,7 @@ async function ftpListe(){ if(FTPL) return FTPL;
   const g=new Set(); FTPL=[]; (data||[]).forEach(x=>{ const k=String(x.proje||"").trim().toLocaleLowerCase("tr"); if(k&&!g.has(k)){ g.add(k); FTPL.push(x); } });
   FTPL.sort((a,b)=>String(a.proje).localeCompare(String(b.proje),"tr")); return FTPL; }
 async function ftpAc(fid){
-  const r=FT.find(x=>Number(x.id)===Number(fid)); if(!r) return;
+  const r=FT.find(x=>Number(x.id)===Number(fid)); if(!r||!r.proje_dagitim_zorunlu) return;   /* OE-FT-PROJE-ESKI-STATIK */
   if(r.tutar==null){ alert("Önce fatura tutarını girin; sonra fatura projelere dağıtılır."); return; }
   let L; try{ L=await ftpListe(); }catch(e){ alert("Sel-Arb proje listesi okunamadı: "+(e.message||e)); return; }
   const old=document.getElementById("ftp-modal"); if(old) old.remove();
