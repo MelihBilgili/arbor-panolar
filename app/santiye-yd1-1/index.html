@@ -87,6 +87,7 @@
   .sevk tr.srow.done td{background:#f4fbf7}
   .sevk tr.srow.miss td{background:#fff2f2}
   /* SANTIYE-TABLO2 */ .sevk td:first-child{min-width:170px} .sevk tr.srow td textarea{min-height:62px}
+  .sevk tr.grp td{background:#eef2f7;color:#16324f;font-weight:700;font-size:12px;padding:5px 8px} /* SANTIYE-GELECEK */
   .hidden{display:none}
   .empty{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:22px;text-align:center;color:#7a8896;font-size:13px}
   #rolLbl{display:flex;align-items:center}
@@ -307,12 +308,12 @@ async function yukle(){
   const SV = SATIR.filter(sevkHazir), DG = SATIR.filter(r=>!sevkHazir(r));
   box.innerHTML = (SV.length ? sevkTablo(SV) : "") + (DG.length ? onayTablo(DG) : "");
   ileriYukle(donem);
+  SV.push(...DG);  /* SANTIYE-GELECEK: iki tablo aynı kurallar (PST zorunlu, açıklama) */
   SV.forEach(r=>{ const pg=document.getElementById("pstg_"+r.id);
     if(pg) pg.onchange=async()=>{ pg.classList.remove("miss"); r.pst_santiye=pg.value||null; await kaydet(r.id,{pst_santiye:r.pst_santiye}); }; });
   SV.forEach(r=>{ const hu=document.getElementById("hus_"+r.id);
     if(hu) hu.onchange=async()=>{ r.onemli_hususlar=hu.value.trim()||null; await kaydet(r.id,{onemli_hususlar:r.onemli_hususlar}); }; });
-  DG.forEach(bagla);
-  SATIR = DG;   /* Güncelle kontrolü yalnız soru alan projelerde */
+  SATIR = [];   /* SANTIYE-GELECEK: soru kalmadı */
   SEVK = SV;    /* SEVK-PST-ZORUNLU: Sevke Hazır tablosunda PST boş satır Güncelle'yi durdurur */
   santEskiTara(); /* SEVK-ESKI-BILGI-SANT: açılışta eski bilgiler kırmızı */
 }
@@ -332,10 +333,12 @@ async function ileriYukle(donem){
       +'<td class="c">'+esc(x.adet==null?"—":x.adet)+'</td><td class="c">'+fd(x.mvt)+'</td><td class="c">'+fd(x.aup)+'</td><td class="c">'+fd(x.pst)+'</td></tr>').join("")
     +'</tbody></table></div>';
 }
-function onayTablo(rs){ /* SANTIYE-TABLO */
-  return '<div class="sevk"><h3>Onay Bekleyen Projeler</h3><table><thead><tr>'
-    +'<th>Proje</th><th class="c">Proje Toplamı (Ad)</th><th class="c">MVT</th><th class="c">AÜP</th><th class="c">PST</th><th class="c">Proje Durumu</th><th>Onay</th><th class="gen">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
-    +rs.map(blok).join("")+'</tbody></table></div>';
+function onayTablo(rs){ /* SANTIYE-GELECEK (2026-11-10, Melih): Sevke Hazır ile birebir aynı tablo; Üretim Durumu grup başlığı; soru yok */
+  const kod=r=>{ const v=parseFloat(String(r.proje_durumu||"").trim().split(/\s+/)[0]); return isNaN(v)?99:v; };
+  const g=new Map(); rs.slice().sort((a,b)=>kod(a)-kod(b)).forEach(r=>{ const k=String(r.proje_durumu||"—").trim(); if(!g.has(k)) g.set(k,[]); g.get(k).push(r); });
+  return '<div class="sevk"><h3>Gelecek Ayın Sonuna Kadar Yüklenecek Projeler</h3><table><thead><tr>'
+    +'<th>Proje</th><th class="c">Proje Toplamı (Ad)</th><th class="c">AÜP</th><th class="c">PST</th><th class="gen">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
+    +[...g].map(([k,l])=>'<tr class="grp"><td colspan="5">'+esc(k)+'</td></tr>'+l.map(sevkSatir).join("")).join("")+'</tbody></table></div>';
 }
 async function kvzYaz(damga){ /* SANTIYE-KVZ: formun dayandığı ERP çekiminin sisteme kaydedildiği an */
   const el=document.getElementById("kvz"); if(!el) return;
@@ -348,10 +351,13 @@ function sevkHazir(r){ return /^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").t
 function sevkTablo(rs){
   return '<div class="sevk"><h3>Sevke Hazır Projeler</h3><table><thead><tr>'
     /* SANTIYE-SEVK-ADBASLIK */ +'<th>Proje</th><th class="c">Proje Toplamı (Ad)</th><th class="c">AÜP</th><th class="c">PST</th><th class="gen">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
-    +rs.map(r=>'<tr><td>'+esc(r.proje_adi||"—")+'</td><td class="c">'+esc(r.adet==null?"—":r.adet)+'</td>'
-      +'<td class="c">'+fd(r.aup)+'</td><td class="c"><input type="date" class="pstg" id="pstg_'+r.id+'" value="'+esc(r.pst_santiye?String(r.pst_santiye).slice(0,10):"")+'"></td>'  /* SEVK-PST-GIRIS (2026-10-05): boş başlar, şantiye girer → pst_santiye */
-      +'<td><textarea id="hus_'+r.id+'" data-id="'+r.id+'">'+esc(r.onemli_hususlar||"")+'</textarea></td></tr>').join("")
+    +rs.map(sevkSatir).join("")
     +'</tbody></table></div>';
+}
+function sevkSatir(r){ /* SANTIYE-GELECEK: Sevke Hazır ve Gelecek Ay tabloları aynı satır biçimi */
+  return '<tr><td>'+esc(r.proje_adi||"—")+'</td><td class="c">'+esc(r.adet==null?"—":r.adet)+'</td>'
+      +'<td class="c">'+fd(r.aup)+'</td><td class="c"><input type="date" class="pstg" id="pstg_'+r.id+'" value="'+esc(r.pst_santiye?String(r.pst_santiye).slice(0,10):"")+'"></td>'  /* SEVK-PST-GIRIS (2026-10-05): boş başlar, şantiye girer → pst_santiye */
+      +'<td><textarea id="hus_'+r.id+'" data-id="'+r.id+'">'+esc(r.onemli_hususlar||"")+'</textarea></td></tr>';
 }
 
 function blok(r){
@@ -541,9 +547,9 @@ document.getElementById("ay_btn").onclick=async()=>{
   if(eksik || sevkAd.length){ /* SEVK-PST-ZORUNLU: iki sebep tek uyarıda */
     const liste=a=>"• "+a.slice(0,15).join("\n• ")+(a.length>15?"\n• … ("+(a.length-15)+" proje daha)":"");
     const s=[];
-    if(sevkAd.length) s.push("Sevke Hazır Projeler tablosunda "+sevkAd.length+" projede PST seçilmemiş:\n\n"+liste(sevkAd));
+    if(sevkAd.length) s.push(sevkAd.length+" projede PST seçilmemiş:\n\n"+liste(sevkAd));
     if(eksik) s.push(eksik+" projede \"Eğer hazırsa hemen yüklenecek mi?\" / MVT ve \"PST’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?\" sorularından birine cevap seçilmemiş (ya da \"Hayır\" cevabının sebebi yazılmamış):\n\n"+liste(eksikAd));
-    msg((sevkAd.length?sevkAd.length+" Sevke Hazır projede PST seçilmemiş. ":"")+(eksik?eksik+" projede soru cevabı (ya da 'Hayır' sebebi) eksik.":""),false);
+    msg((sevkAd.length?sevkAd.length+" projede PST seçilmemiş. ":"")+(eksik?eksik+" projede soru cevabı (ya da 'Hayır' sebebi) eksik.":""),false);
     alert("Güncelleme yapılamadı.\n\nSebep:\n\n"+s.join("\n\n")+"\n\nKırmızı işaretli yerleri tamamlayın.");
     if(ilk) ilk.scrollIntoView({behavior:"smooth",block:"center"}); return; }
   { const es=santEskiTara(); /* SEVK-ESKI-BILGI-SANT */
