@@ -99,6 +99,7 @@ html,body{max-width:100vw;overflow-x:hidden}
   </div>
 
   <div id="bloklar"><div class="empty">Yükleniyor…</div></div>
+  <div id="ileri"></div><!-- SANTIYE-ILERI: MVT sınırından sonraki projeler, salt-okur -->
 
 </div>
 
@@ -270,7 +271,8 @@ async function yukle(){
   if(r.error){ box.innerHTML='<div class="empty">Hata: '+esc(r.error.message)+'</div>'; return; }
   SATIR = r.data||[];
   if(!SATIR.length){
-    box.innerHTML='<div class="empty">Bu formda henüz proje yok.<br>Projeler, her ayın 21’inden sonraki ilk ERP çekiminde otomatik olarak eklenir.</div>';
+    box.innerHTML='<div class="empty">Bu formda henüz proje yok.<br>Projeler her ERP çekiminde otomatik olarak güncellenir.</div>';
+    ileriYukle(null);
     document.getElementById("ay_btn").disabled=true; return;
   }
   /* Yalnız EN YENİ dönem gösterilir (geçmiş dönemler veritabanında kalır). */
@@ -284,6 +286,7 @@ async function yukle(){
   /* SANTIYE-SEVK-BLOK: 8 / 8.1 durumundakiler soru almaz → üstte tablo; onay kontrolüne girmez */
   const SV = SATIR.filter(sevkHazir), DG = SATIR.filter(r=>!sevkHazir(r));
   box.innerHTML = (SV.length ? sevkTablo(SV) : "") + DG.map(blok).join("");
+  ileriYukle(donem);
   SV.forEach(r=>{ const pg=document.getElementById("pstg_"+r.id);
     if(pg) pg.onchange=async()=>{ pg.classList.remove("miss"); r.pst_santiye=pg.value||null; await kaydet(r.id,{pst_santiye:r.pst_santiye}); }; });
   SV.forEach(r=>{ const hu=document.getElementById("hus_"+r.id);
@@ -294,6 +297,21 @@ async function yukle(){
   santEskiTara(); /* SEVK-ESKI-BILGI-SANT: açılışta eski bilgiler kırmızı */
 }
 
+/* SANTIYE-ILERI (2026-11-10, Melih): MVT'si dönem sınırından (dönem ayını izleyen ayın sonu) sonra olan
+   projeler sayfanın en altında salt-okur tablo; soru sorulmaz, Güncelle kontrolüne girmez. Kaynak santiye_form_ileri. */
+async function ileriYukle(donem){
+  const el=document.getElementById("ileri"); if(!el) return;
+  let q=sb.from("santiye_form_ileri").select("*").eq("form_kodu",FORM_KODU);
+  q = donem ? q.eq("donem",donem) : q.order("donem",{ascending:false});
+  const r=await q.order("mvt",{ascending:true}).order("proje_no",{ascending:true});
+  if(r.error||!r.data||!r.data.length){ el.innerHTML=""; return; }
+  const d0=r.data[0].donem, rs=r.data.filter(x=>x.donem===d0);
+  el.innerHTML='<div class="sevk" style="margin-top:14px"><h3>İleri Tarihli Projeler</h3><table><thead><tr>'
+    +'<th>Proje Kodu</th><th>Proje</th><th>Proje Durumu</th><th class="n">Proje Toplamı (Ad)</th><th class="n">MVT</th><th class="n">AÜP</th><th class="n">PST</th></tr></thead><tbody>'
+    +rs.map(x=>'<tr><td>'+esc(x.proje_no||"—")+'</td><td>'+esc(x.proje_adi||"—")+'</td><td>'+esc(x.proje_durumu||"—")+'</td>'
+      +'<td class="n">'+esc(x.adet==null?"—":x.adet)+'</td><td class="n">'+fd(x.mvt)+'</td><td class="n">'+fd(x.aup)+'</td><td class="n">'+fd(x.pst)+'</td></tr>').join("")
+    +'</tbody></table></div>';
+}
 function sevkHazir(r){ return /^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").trim()); }
 function sevkTablo(rs){
   return '<div class="sevk"><h3>Sevke Hazır Projeler</h3><table><thead><tr>'
