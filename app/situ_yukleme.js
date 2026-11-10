@@ -27,7 +27,7 @@ const CSS=`
 .syk-m .syk-alt{color:#5a6b7d;margin-bottom:8px}
 .syk-m .syk-uyari{background:#fff6dd;border:1px solid #f0d58a;border-radius:6px;padding:6px 9px;margin:6px 0 10px;color:#6b4e00;font-size:12px}
 .syk-m table{border-collapse:collapse;width:100%;font-size:12px}
-.syk-m th{text-align:left;color:#5a6b7d;font-weight:600;padding:3px 4px;border-bottom:1px solid #e3e9f0}
+.syk-m th{text-align:left;background:#16324f;color:#fff;font-weight:600;padding:4px 6px;border-bottom:1px solid #e3e9f0}
 .syk-m td{padding:3px 4px;border-bottom:1px solid #f0f3f7}
 .syk-m input.syk-oran{width:6ch;text-align:right;padding:2px 4px;border:1px solid #c9d6e3;border-radius:4px}
 .syk-m select{max-width:100%;padding:3px;border:1px solid #c9d6e3;border-radius:5px;font-size:12px}
