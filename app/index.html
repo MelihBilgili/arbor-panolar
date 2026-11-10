@@ -569,7 +569,7 @@ async function grGundem(){
   let pem=all.filter(r=>r.kaynak_tip==='pem');
   /* GIRIS-PEM-ACIL (09.11.2026, Melih): MY'de Acil işaretli PEM'ler de PEM bloğunda (rpc giris_acil_pem); gündemde olan satır pembe işaretlenir, olmayan salt-okur pembe satır olarak eklenir */
   try{ const {data:ac}=await sb.rpc("giris_acil_pem"); const fd2=d=>{ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(d||"")); return m?m[3]+"."+m[2]+"."+m[1].slice(2):""; };
-    (ac||[]).forEach(a=>{ const no=String(a.no), ek=pem.find(r=>String(r.kod)===no), kn="Acil · Hedef yükleme "+(fd2(a.kesin||a.hedef)||"—")+(a.aciklama?" · "+String(a.aciklama).split("\n")[0]:"");
+    (ac||[]).forEach(a=>{ const no=String(a.no), ek=pem.find(r=>String(r.kod)===no), kn="Acil · Hedef yükleme "+(fd2(a.kesin||a.hedef)||"—")+(a.aciklama?" · "+String(a.aciklama).split("\n").filter(Boolean).pop() /* GIRIS-PEM-ACIL-YENI: en yeni aciklama */:"");
       if(ek){ ek._acil=true; ek.erp=Object.assign({},ek.erp||{}); if(!ek.erp.durum&&a.durum) ek.erp.durum=a.durum; return; }
       pem.push({id:null,kod:no,konu:kn,_acil:true,erp:{proje:a.proje||"",ekbilgi:a.ekbilgi||"",adet:a.adet||"",durum:a.durum||"",termin:a.termin||""}}); }); }catch(e){}
   /* GIRIS-PEM-SEVKSIZ (09.11.2026, Melih): sevk edilmiş PEM'ler Giriş'te gösterilmez — pem_snapshot'ta sevk_tarihi dolu ya da en son dolu durum "Sevk" */
