@@ -168,7 +168,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="giris_ust.js?v=261109b"></script><!-- GIRIS-UST-ORTAK · GIRIS-GRAFIK-BIRLES · GIRIS-YEKSEN-15 · GIRIS-ALACAK-PEMBE -->
-<script src="my_acil.js?v=261110g"></script><!-- MY-FAALIYET -->
+<script src="my_acil.js?v=261110h"></script><!-- MY-FAALIYET -->
 <script src="situ_yukleme.js?v=261110"></script><!-- SITU-YUKLEME -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -454,7 +454,7 @@ async function loadGiris(){
     <div id="gr-not" style="margin-top:16px"></div><!-- GIRIS-NOT -->
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
-  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grCfo),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot),kor(()=>window.MYACIL&&MYACIL.acilBlok(grEl("gr-my"),{sb:sb,mod:"giris"}))]);
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grCfo),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
 }
 /* 1 — Ezan vakitleri (Diyanet yöntemi) + gündüz ortalama sıcaklık (gün doğumu–batımı saatlik ortalaması) + yağış */
 async function grVakit(){
@@ -561,10 +561,20 @@ async function grPrimSart(){
     :`<tr><td colspan="3" class="gr-muted">Bu ay şartı sağlayan henüz yok</td></tr>`;
   return `<div class="scroll"><table class="grt"><thead><tr><th>Prim şartını sağlayan</th><th class="n">Yol-Yemek (TL)</th><th class="n">Son 12 Ay Ort. Prim (TL)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
+/* GIRIS-ACIL-SAHSI (10.11.2026, Melih): Giriş'te ayrı PEM tablosu yok; Acil yüklemeler tablosunun en üstünde "ŞAHSİ PEM'LER" grubu =
+   ana_gundem'deki acil olmayan PEM'ler (Konu tıklayınca düzenlenir, ✕ gündemden siler). Acil blok yalnız buradan çizilir. */
+function grAcilSahsi(pem){
+  const myEl=grEl("gr-my"); if(!myEl||!window.MYACIL) return;
+  const sahsi=(pem||[]).filter(r=>r.id&&!r._acil).sort((a,b)=>String((a.erp||{}).termin||'99999999').localeCompare(String((b.erp||{}).termin||'99999999')));
+  return MYACIL.acilBlok(myEl,{sb:sb,mod:"giris",sahsi:sahsi,sonra:el=>{
+    el.querySelectorAll("tr.my-sh .ged").forEach(x=>x.onclick=ev=>{ ev.stopPropagation(); startEdit(x); });
+    el.querySelectorAll("tr.my-sh button.del").forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); delGundem(b.dataset.id); });
+  }});
+}
 async function grGundem(){
   const [{data,error},primH]=await Promise.all([sb.from("ana_gundem").select("*"),grPrimSart().catch(()=>"")]); /* PRIM-SART-GIRIS */
   const el=grEl("gr-gundem"); if(!el) return;
-  if(error){ el.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  if(error){ grAcilSahsi([]); el.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const all=data||[];
   const mb=all.filter(r=>r.kaynak_tip!=='pem'&&r.kaynak_tip!=='prj'&&r.ilgili==='MB'&&!/Öncelik/i.test(String(r.son_durum||""))).sort((a,b)=>String(a.kod).localeCompare(String(b.kod)));
   let pem=all.filter(r=>r.kaynak_tip==='pem');
@@ -581,7 +591,8 @@ async function grGundem(){
   const mbRows=mb.map(r=>`<tr data-id="${r.id}"><td class="kod ged" data-f="kod" data-type="text">${esc(r.kod)}</td><td class="ged" data-f="konu" data-type="text">${esc(r.konu)}</td><td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
   el.innerHTML=`<div class="ag-wrap">`
     +(`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">`+(mb.length?`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${mbRows}</tbody></table></div>`:"")+(primH||"")+`<div id="gr-situyk"></div></div>`)   /* SITU-YUKLEME: Prim şartını sağlayan sağında */
-    +agPemPrjBlock(pem,'pem')+`</div>`;
+    +`</div>`; /* GIRIS-ACIL-SAHSI: PEM tablosu Acil yüklemelere birleşti */
+  grAcilSahsi(pem);
   el.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
   el.querySelectorAll(".ged").forEach(x=>x.onclick=()=>startEdit(x));
   try{ if(window.SITUYK) SITUYK.render(document.getElementById("gr-situyk"),{sb:sb,kim:()=>"MB"}); }catch(e){}   /* SITU-YUKLEME */
