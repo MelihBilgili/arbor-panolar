@@ -293,7 +293,7 @@ async function yukle(){
   if(r.error){ box.innerHTML='<div class="empty">Hata: '+esc(r.error.message)+'</div>'; return; }
   SATIR = r.data||[];
   if(!SATIR.length){
-    box.innerHTML='<div class="empty">Bu formda henüz proje yok.<br>Projeler her ERP çekiminde otomatik olarak güncellenir.</div>';
+    box.innerHTML=''; /* SANTIYE-BOS-MESAJ-YOK */
     ileriYukle(null); kvzYaz(null);
     document.getElementById("ay_btn").disabled=true; return;
   }
