@@ -50,7 +50,7 @@
     return r.data||{rows:[]};
   }
   function sekilHtml(r){
-    if(!r.sekil) return "";
+    if(!r.sekil) return "Kamyon"; /* MY-SEKIL-KAMYON: varsayılan yükleme şekli */
     if(r.sekil==="Uçak") return r.ucak_onay?'<span class="my-ucak-ok">Uçak</span>':'<span class="my-ucak-bek" title="MK onayı bekleniyor">Uçak</span>';
     return esc(r.sekil);
   }
@@ -231,7 +231,7 @@
     if(!rows.length){ el.innerHTML=""; return; }
     var B=[["prj","Projeler · 4.1 – 7.1",false],["sevk","Sevke Hazır · 8 / 8.1",false],["pem","PEM",true]];
     var ek='<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek sm">Yükleme<br>Şekli</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>';
-    var h='<div class="mysan"><h3>MY Faaliyet · Projeleriniz ve PEM\'leriniz</h3><div class="alt">Satıra sağ tıklayarak acil ya da normal takibe alma talebinde bulunabilir, ayrıntıları görebilirsiniz. Talepler MY onayından sonra geçerli olur.</div><div class="mys-msg" id="mys-msg"></div>'
+    var h='<div class="mysan"><h3>Projeleriniz ve PEM\'leriniz</h3><div class="alt">Satıra sağ tıklayarak acil ya da normal takibe alma talebinde bulunabilir, ayrıntıları görebilirsiniz. Talepler MY onayından sonra geçerli olur.</div><div class="mys-msg" id="mys-msg"></div>'
       +B.map(function(b){
         var R=rows.filter(function(r){ return r.blok===b[0]; }); if(!R.length) return "";
         var head=b[2]?'<th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th>':'<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
@@ -245,7 +245,7 @@
             : '<td title="'+esc(r.no)+'">'+esc(r.kod)+'</td><td class="w"'+padAd+' title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>';
           var dur=esc(r.durum||"Normal")+(r.talep?' <span class="bek" title="MY onayı bekleniyor">→ '+esc(r.talep)+' (MY onayı bekliyor)</span>':'');
           return '<tr class="'+(ac?'acil':'')+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">'+ilk
-            +'<td>'+(ac?fd(r.hedef):'')+'</td><td>'+(ac?sekilHtml(r):'')+'</td><td class="w" title="'+esc(r.aciklama)+'">'+(ac?esc(r.aciklama):'')+'</td>'
+            +'<td>'+(ac?fd(r.hedef):'')+'</td><td>'+sekilHtml(r)+'</td><td class="w" title="'+esc(r.aciklama)+'">'+(ac?esc(r.aciklama):'')+'</td>'
             +'<td class="dur '+(ac?'acil':'')+'" title="'+esc(String(r.durum||'Normal')+(r.talep?' → '+r.talep+' (MY onayı bekliyor)':''))+'">'+dur+'</td></tr>';
         }).join("")+'</tbody></table></div>';
       }).join("")+'</div>';
