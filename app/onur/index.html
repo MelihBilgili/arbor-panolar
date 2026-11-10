@@ -35,6 +35,7 @@
   .prev{color:#8a97a4;font-size:12px}
   input.cell{font:inherit;border:1px solid #86a6c6;border-radius:6px;padding:5px 7px;width:100%;min-width:160px}
   .ed{border:1px dashed #cdd6df;border-radius:6px;padding:5px 7px;min-height:30px;cursor:text;color:#1c2430}
+  /* OE-PEM-SANTIYE */ select.psan{font:inherit;font-size:12px;border:1px solid #d9a3b6;border-radius:5px;padding:3px 5px;background:#fde4ec;color:#1c2430;max-width:20ch}select.psan.miss{outline:2px solid #b40000}.psan-ok{color:#16324f;white-space:nowrap}.psan-of{color:#5a6b7d;white-space:nowrap}
   .ed:hover{border-color:#2e7d54;background:#f6fbf7}
   .ed.empty{color:#b7c6d6}
   .saveflash{outline:2px solid #2e7d54}
@@ -412,8 +413,11 @@ function ftpGuncelHucre(id){ const r=FT.find(x=>Number(x.id)===Number(id)), td=d
 function fmt2(v){ return (v==null||isNaN(v))?"":Number(v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
 /* ---------- BLOK: sevke hazır PEM/PRJ sevk durumu ---------- */
-let ROWS=[];
+let ROWS=[], PSAN={rows:{},formlar:[]}; /* OE-PEM-SANTIYE (10.11.2026, Melih): PEM'in şantiye formu; yoksa OE seçer */
+async function psanYukle(){ const r=await sb.rpc("pem_santiye_liste"); if(r.error){ console.warn(r.error); return; }
+  const d=r.data||{}; PSAN={rows:{},formlar:d.formlar||[]}; (d.rows||[]).forEach(x=>PSAN.rows[String(x.no)]=x); }
 async function load(){
+  await psanYukle();
   const [{data,error},dg,_tr]=await Promise.all([
     sb.from("hazir_pem_prj").select("*"),
     sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1),
@@ -434,10 +438,10 @@ async function load(){
 }
 function render(){
   const rows=ROWS;
-  let html='<table><thead><tr><th>Tür</th><th>No</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Hazır Tarihi</th><th>Önceki</th><th>Güncel Sevk Durumu</th></tr></thead><tbody>';
+  let html='<table><thead><tr><th>Tür</th><th>No</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Hazır Tarihi</th><th>Önceki</th><th>Güncel Sevk Durumu</th><th title="PEM hangi şantiye formunda görünecek">Şantiye Formu</th></tr></thead><tbody>';
   let last="";
   rows.forEach(r=>{
-    if(r.tur!==last){ last=r.tur; html+='<tr class="grp"><td colspan="8">'+esc(r.tur)+'</td></tr>'; }
+    if(r.tur!==last){ last=r.tur; html+='<tr class="grp"><td colspan="9">'+esc(r.tur)+'</td></tr>'; }
     const g=r.onur_guncel||"";
     html+='<tr data-i="'+ROWS.indexOf(r)+'">'
       +'<td class="kod">'+esc(r.tur)+'</td>'
@@ -448,13 +452,30 @@ function render(){
       +'<td class="num">'+fd(r.hazir_tarihi)+'</td>'
       +'<td class="prev">'+esc(r.onur_onceki||"")+'</td>'
       +'<td><div class="ed '+(g?"":"empty")+'" data-i="'+ROWS.indexOf(r)+'">'+(g?esc(g):"+ durum")+'</div></td>'
+      +'<td>'+psanHucre(r)+'</td>'
       +'</tr>';
   });
   html+='</tbody></table>';
   const list=$("list"); list.innerHTML=html;
   list.querySelectorAll(".ed").forEach(el=>el.onclick=()=>edit(el));
+  list.querySelectorAll("select.psan").forEach(s=>s.onchange=()=>psanAta(s));
   if(typeof sevkEskiListe==="function") sevkEskiListe(); /* SEVK-ESKI-BILGI: açılışta eski bilgiler kırmızı */
 }
+function psanHucre(r){ const x=PSAN.rows[String(r.no)];
+  if(!x) return '';
+  if(x.ofis) return '<span class="psan-of" title="Ofis stoğu — sorumlu MY; tüm şantiye formlarında ortak tabloda">Ofis (MY)</span>';
+  const f=PSAN.formlar.find(f=>f.kod===x.santiye);
+  if(f) return '<span class="psan-ok" title="'+esc((f.kisi||'')+(x.kaynak?' · eşleme: '+x.kaynak:' · ERP şantiye sorumlusu'))+'">'+esc(f.ad)+'</span>';
+  return '<select class="psan" data-no="'+esc(r.no)+'" title="ERP\'de şantiye sorumlusu yok — PEM\'in görüneceği şantiye formunu seçin"><option value="">Seçiniz…</option>'
+    +PSAN.formlar.map(f=>'<option value="'+esc(f.kod)+'">'+esc(f.ad+(f.kisi?' · '+f.kisi:''))+'</option>').join('')+'</select>';
+}
+async function psanAta(s){ const no=s.getAttribute("data-no"), kod=s.value; if(!kod) return;
+  s.disabled=true; const msg=$("msg");
+  const r=await sb.rpc("pem_santiye_ata",{p_no:no,p_kod:kod});
+  if(r.error){ msg.className="msg err"; msg.textContent=r.error.message; s.disabled=false; return; }
+  await psanYukle(); render(); msg.className="msg ok"; msg.textContent="PEM "+no+" projesi şantiye formuna eşlendi"; setTimeout(()=>msg.textContent="",2500);
+}
+function psanEksik(){ const l=[]; document.querySelectorAll("#list select.psan").forEach(s=>{ s.classList.add("miss"); l.push("PEM "+s.getAttribute("data-no")); }); return l; }
 function edit(el){
   if(el.querySelector("input")) return;
   const i=parseInt(el.dataset.i), r=ROWS[i];
@@ -559,6 +580,13 @@ $("ay_btn").onclick=async()=>{
     alert("Güncelleme yapılamadı — "+_se.length+" satırda sevk durumu girilmemiş ya da anlamlı değil.\n\nKırmızı işaretli hücreleri doldurun:\n\n• "+_se.slice(0,15).join("\n• ")+(_se.length>15?"\n• … ("+(_se.length-15)+" satır daha)":""));
     fmsg("ay_msg",_se.length+" satırda sevk durumu eksik — kırmızı hücreleri doldurun.",false);
     const ilk=document.querySelector("#list .ed.miss"); if(ilk) ilk.scrollIntoView({block:"center"});
+    return;
+  }
+  const _ps=psanEksik(); /* OE-PEM-SANTIYE: şantiye formu seçilmemiş PEM varsa güncelleme durur */
+  if(_ps.length){
+    alert("Güncelleme yapılamadı — "+_ps.length+" PEM için şantiye formu seçilmemiş.\n\nŞantiye Formu sütunundaki kırmızı kutulardan seçin:\n\n• "+_ps.slice(0,15).join("\n• "));
+    fmsg("ay_msg",_ps.length+" PEM için şantiye formu seçilmemiş — kırmızı kutulardan seçin.",false);
+    const ilk=document.querySelector("#list select.psan"); if(ilk) ilk.scrollIntoView({block:"center"});
     return;
   }
   const _so=sevkEskiListe(); /* SEVK-ESKI-BILGI */
