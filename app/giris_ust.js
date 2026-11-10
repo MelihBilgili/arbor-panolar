@@ -250,7 +250,7 @@ async function selArb(o,el){
       return {x:dl(x.tarih),v:[a,gg,b,(f==null||Math.round(f)===0)?null:f,b==null?null:b-((gg||0)+(a||0)+(f||0))]}; });
     const sP=i=>H.map(h=>({x:h.x,y:h.v[i]})).concat([{x:"Cari",y:K[i][1],cur:true}]);
     { /* MK-GRAFIK-BIRLES / GIRIS-GRAFIK-BIRLES: Güncel Alacak ayrı, diğer 4 kutu tek grafikte (MK + Giriş) */
-      el.innerHTML=`<div class="gru-boxes"><div class="gru-box"><div class="gru-ct">${esc(K[0][0])}</div><div class="gru-cv">${K[0][1]==null?"—":money(K[0][1])+" €"}</div>${spark(sP(0))}</div>`
+      el.innerHTML=`<div class="gru-boxes">`/* GIRIS-ALACAK-GRAFIK-YOK (10.11.2026): ayrı Güncel Alacak kutusu+grafiği kaldırıldı (Giriş + MK); değer Selectron kartında */
         +mkart("Selectron",[1,2,3,4,0].map(i=>({ad:K[i][0],pts:sP(i),renk:i===1?"#1f9d55":(i===3?"#2e6da4":(i===0?"#e83e8c":undefined)),sag:i===3})),/* SELARB-GON-YESIL · SELARB-FT-SAG · GIRIS-ALACAK-PEMBE (09.11.2026): Güncel Alacak pembe çizgi */[1,2,3,4,0].map(i=>K[i][1]),v=>v==null?"—":money(v)+" €").replace('class="gru-card gru-mk"','class="gru-box gru-mk"')+`</div>`;
       return; }
     el.innerHTML=`<div class="gru-boxes">${K.map(([a,v],i)=>`<div class="gru-box"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${v==null?"—":money(v)+" €"}</div>${spark(sP(i))}</div>`).join("")}</div>`;
