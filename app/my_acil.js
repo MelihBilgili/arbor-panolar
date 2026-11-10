@@ -302,11 +302,27 @@
     document.head.appendChild(s);
   }
   function sKapat(){ var m=document.getElementById("mys-ctx"); if(m) m.remove(); }
+  /* PEM-OFIS-MY (10.11.2026, Melih): ofis stoğu PEM'lerinin tek sorumlusu MY — tüm şantiye formlarında sayfanın en altında ortak, salt-okur tablo */
+  function ofisBlok(R){
+    var el=document.getElementById("my-ofis");
+    if(!el){ var w=document.querySelector(".wrap")||document.body; el=document.createElement("div"); el.id="my-ofis"; w.appendChild(el); }
+    if(!R.length){ el.innerHTML=""; return; }
+    var W=[64,72,190,250,44,72,260,90];
+    el.innerHTML='<div class="mysan" style="margin-top:22px"><h3>Ofis Stoğu PEM\'leri</h3><div class="alt">Ofis stoklarının sorumlusu MY\'dir; bu tablo tüm şantiye formlarında ortaktır ve bilgi içindir.</div>'
+      +'<div class="myw"><table class="mys fx" style="width:'+W.reduce(function(a,x){return a+x;},0)+'px"><colgroup>'+W.map(function(x){ return '<col style="width:'+x+'px">'; }).join('')+'</colgroup>'
+      +'<thead><tr><th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th><th class="ek">Sevk Durumu</th><th class="ek sm">Takip<br>Durumu</th></tr></thead><tbody>'
+      +R.map(function(r){ var ac=r.durum==="Acil";
+        return '<tr class="'+(ac?'acil':'')+'" style="cursor:default"><td title="'+esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td>'
+          +'<td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'
+          +'<td class="w" title="'+esc(r.sevk_durumu)+'">'+esc(r.sevk_durumu)+'</td><td class="dur '+(ac?'acil':'')+'">'+esc(r.durum||"Normal")+'</td></tr>';
+      }).join("")+'</tbody></table></div></div>';
+  }
   async function santiyeBlok(el,o){
     if(!el) return; o=o||{}; stil(); sStil();
     var sb=o.sb, kod=o.kod, d;
     try{ var r0=await sb.rpc("my_santiye_liste",{p_kod:kod}); if(r0.error) throw r0.error; d=r0.data||{rows:[]}; }catch(e){ el.innerHTML=""; return; }
     var rows=d.rows||[];
+    ofisBlok(d.ofis||[]); /* PEM-OFIS-MY */
     if(!rows.length){ el.innerHTML=""; return; }
     var B=[["prj","Projeler · 4.1 – 7.1",false],["sevk","Sevke Hazır · 8 / 8.1",false],["pem","PEM",true]];
     var ek='<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek sm">Yükleme<br>Şekli</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>';
