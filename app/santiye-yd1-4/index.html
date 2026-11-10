@@ -68,6 +68,24 @@
   input.pstg.miss{border-color:#c0392b;background:#fdecea} /* SEVK-PST-ZORUNLU */
   .sevk td input.pstg{font:inherit;font-size:12.5px;padding:3px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8}
   .sevk td textarea{width:100%;min-width:260px;font:inherit;font-size:12.5px;padding:4px 6px;border:1px solid #cdd6df;border-radius:6px;background:#fffdf8;resize:vertical;min-height:30px;height:30px}
+  /* SANTIYE-TABLO (2026-11-10, Melih): bant sağında Kaynak Veri Zamanı; bilgi kutusu + Güncelle yan yana; tüm proje listeleri aynı tablo biçimi */
+  header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+  header .kvz{font-size:12px;color:#bcd3ea;white-space:nowrap;text-align:right;padding-top:3px}
+  header .kvz b{color:#fff;font-weight:700}
+  .ustsira{display:flex;gap:12px;align-items:stretch;margin-bottom:14px;flex-wrap:wrap}
+  .ustsira .info{flex:1 1 560px;margin-bottom:0}
+  .ustsira .topbar{flex:0 0 250px;flex-direction:column;align-items:flex-end;justify-content:flex-start;gap:6px;margin-bottom:0;padding:10px 12px}
+  .ustsira .topbar .note{flex:0 0 auto;min-width:0;text-align:right}
+  .sevk th.c,.sevk td.c{text-align:center;width:1%;white-space:nowrap;padding-left:5px;padding-right:5px}
+  .sevk th.gen{width:55%}
+  .sevk td textarea{min-width:340px}
+  .sevk td.onay{min-width:270px}
+  .sevk td .soru{margin-bottom:6px}
+  .sevk td .soru .q{font-size:11.5px;line-height:1.35;margin-bottom:4px}
+  .sevk td .opt button{padding:3px 10px;font-size:11.5px}
+  .sevk td .seb{min-width:0;min-height:30px;height:auto}
+  .sevk tr.srow.done td{background:#f4fbf7}
+  .sevk tr.srow.miss td{background:#fff2f2}
   .hidden{display:none}
   .empty{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:22px;text-align:center;color:#7a8896;font-size:13px}
   #rolLbl{display:flex;align-items:center}
@@ -75,17 +93,18 @@ html,body{max-width:100vw;overflow-x:hidden}
 </style>
 </head>
 <body>
-<header>
+<header><div>
   <h1>Şantiye Formu · Yurt Dışı 1-4</h1>
   <div class="sub">Buraya ilgili şantiye sorumlusu tarafından, projelerin sevkiyatlarına ilişkin müşterilerin güncel gereksinim bilgileri işlenir.</div>
   <div class="sub">Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak “Güncelle” düğmesine basılmadıkça gönderilmez.</div>
-</header>
+</div><div class="kvz" id="kvz"></div></header>
 <div class="wrap">
   <div id="santiye-foto"></div><!-- MY-SANTIYE-FOTO: MY şantiye ziyareti açık sorunları, salt-okur (app/santiye_foto.js) -->
   <div id="my-santiye"></div><!-- MY-SANTIYE (28.10.2026): bu şantiyenin MY Faaliyet satırları, sağ tık Acil/Normal talebi → MY onayı (app/my_acil.js) -->
 
+  <div class="ustsira"><!-- SANTIYE-TABLO -->
   <div class="info">
-    <div class="erp" id="erpStamp">Bu formdaki bilgiler, ERP sisteminden … tarihinde çekilen raporlara dayanmaktadır. Güncel durum farklı olabilir.</div>
+    <div class="erp">Tarihler şantiye teslimini değil, fabrika yüklemesini yansıtmaktadır.</div>
     <div><b>MVT:</b> Müşteriye verilen ya da verilmesi mümkün olan, aynı zamanda üretim için hedef niteliği taşıyan tarih.</div>
     <div><b>AÜP:</b> Ana üretim planında güncel olarak üretimin tamamlanacağı öngörülen tarih.</div>
     <div><b>PST:</b> Şantiye taleplerine uygun olarak (MVT’ten daha erken olmamak üzere) planlanan sevk tarihi.</div>
@@ -97,6 +116,7 @@ html,body{max-width:100vw;overflow-x:hidden}
     <div id="rolLbl"></div>
     <div class="msg" id="msg"></div>
   </div>
+  </div><!-- /ustsira -->
 
   <div id="bloklar"><div class="empty">Yükleniyor…</div></div>
   <div id="ileri"></div><!-- SANTIYE-ILERI: MVT sınırından sonraki projeler, salt-okur -->
@@ -272,7 +292,7 @@ async function yukle(){
   SATIR = r.data||[];
   if(!SATIR.length){
     box.innerHTML='<div class="empty">Bu formda henüz proje yok.<br>Projeler her ERP çekiminde otomatik olarak güncellenir.</div>';
-    ileriYukle(null);
+    ileriYukle(null); kvzYaz(null);
     document.getElementById("ay_btn").disabled=true; return;
   }
   /* Yalnız EN YENİ dönem gösterilir (geçmiş dönemler veritabanında kalır). */
@@ -281,11 +301,10 @@ async function yukle(){
   SANT_ONC={}; SATIR.forEach(x=>{ if(x.donem<donem && !(x.proje_no in SANT_ONC)) SANT_ONC[x.proje_no]=x; });
   SATIR = SATIR.filter(x=>x.donem===donem);
   const d0 = SATIR[0].erp_tarih;
-  document.getElementById("erpStamp").textContent =
-    "Bu formdaki bilgiler, ERP sisteminden "+fd(d0)+" tarihinde çekilen raporlara dayanmaktadır. Güncel durum farklı olabilir.";
+  kvzYaz(SATIR[0].erp_damga);
   /* SANTIYE-SEVK-BLOK: 8 / 8.1 durumundakiler soru almaz → üstte tablo; onay kontrolüne girmez */
   const SV = SATIR.filter(sevkHazir), DG = SATIR.filter(r=>!sevkHazir(r));
-  box.innerHTML = (SV.length ? sevkTablo(SV) : "") + DG.map(blok).join("");
+  box.innerHTML = (SV.length ? sevkTablo(SV) : "") + (DG.length ? onayTablo(DG) : "");
   ileriYukle(donem);
   SV.forEach(r=>{ const pg=document.getElementById("pstg_"+r.id);
     if(pg) pg.onchange=async()=>{ pg.classList.remove("miss"); r.pst_santiye=pg.value||null; await kaydet(r.id,{pst_santiye:r.pst_santiye}); }; });
@@ -307,17 +326,29 @@ async function ileriYukle(donem){
   if(r.error||!r.data||!r.data.length){ el.innerHTML=""; return; }
   const d0=r.data[0].donem, rs=r.data.filter(x=>x.donem===d0);
   el.innerHTML='<div class="sevk" style="margin-top:14px"><h3>İleri Tarihli Projeler</h3><table><thead><tr>'
-    +'<th>Proje Kodu</th><th>Proje</th><th>Proje Durumu</th><th class="n">Proje Toplamı (Ad)</th><th class="n">MVT</th><th class="n">AÜP</th><th class="n">PST</th></tr></thead><tbody>'
-    +rs.map(x=>'<tr><td>'+esc(x.proje_no||"—")+'</td><td>'+esc(x.proje_adi||"—")+'</td><td>'+esc(x.proje_durumu||"—")+'</td>'
-      +'<td class="n">'+esc(x.adet==null?"—":x.adet)+'</td><td class="n">'+fd(x.mvt)+'</td><td class="n">'+fd(x.aup)+'</td><td class="n">'+fd(x.pst)+'</td></tr>').join("")
+    +'<th>Proje Kodu</th><th>Proje</th><th class="c">Proje Durumu</th><th class="c">Proje Toplamı (Ad)</th><th class="c">MVT</th><th class="c">AÜP</th><th class="c">PST</th></tr></thead><tbody>'
+    +rs.map(x=>'<tr><td>'+esc(x.proje_no||"—")+'</td><td>'+esc(x.proje_adi||"—")+'</td><td class="c">'+esc(x.proje_durumu||"—")+'</td>'
+      +'<td class="c">'+esc(x.adet==null?"—":x.adet)+'</td><td class="c">'+fd(x.mvt)+'</td><td class="c">'+fd(x.aup)+'</td><td class="c">'+fd(x.pst)+'</td></tr>').join("")
     +'</tbody></table></div>';
+}
+function onayTablo(rs){ /* SANTIYE-TABLO */
+  return '<div class="sevk"><h3>Onay Bekleyen Projeler</h3><table><thead><tr>'
+    +'<th>Proje</th><th class="c">Proje Toplamı (Ad)</th><th class="c">MVT</th><th class="c">AÜP</th><th class="c">PST</th><th class="c">Proje Durumu</th><th>Onay</th><th class="gen">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
+    +rs.map(blok).join("")+'</tbody></table></div>';
+}
+async function kvzYaz(damga){ /* SANTIYE-KVZ: formun dayandığı ERP çekiminin sisteme kaydedildiği an */
+  const el=document.getElementById("kvz"); if(!el) return;
+  const r=await sb.rpc("santiye_kaynak_zamani",{p_damga:damga||null});
+  if(r.error||!r.data){ el.innerHTML=""; return; }
+  const d=new Date(r.data), p=n=>String(n).padStart(2,"0");
+  el.innerHTML='Kaynak Veri Zamanı: <b>'+p(d.getDate())+"."+p(d.getMonth()+1)+"."+String(d.getFullYear()).slice(2)+" "+p(d.getHours())+":"+p(d.getMinutes())+'</b>';
 }
 function sevkHazir(r){ return /^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").trim()); }
 function sevkTablo(rs){
   return '<div class="sevk"><h3>Sevke Hazır Projeler</h3><table><thead><tr>'
-    /* SANTIYE-SEVK-ADBASLIK */ +'<th>Proje</th><th class="n">Proje Toplamı (Ad)</th><th class="n">AÜP</th><th class="n">PST</th><th style="width:40%">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
-    +rs.map(r=>'<tr><td>'+esc(r.proje_adi||"—")+'</td><td class="n">'+esc(r.adet==null?"—":r.adet)+'</td>'
-      +'<td class="n">'+fd(r.aup)+'</td><td class="n"><input type="date" class="pstg" id="pstg_'+r.id+'" value="'+esc(r.pst_santiye?String(r.pst_santiye).slice(0,10):"")+'"></td>'  /* SEVK-PST-GIRIS (2026-10-05): boş başlar, şantiye girer → pst_santiye */
+    /* SANTIYE-SEVK-ADBASLIK */ +'<th>Proje</th><th class="c">Proje Toplamı (Ad)</th><th class="c">AÜP</th><th class="c">PST</th><th class="gen">Yükleme Planına İlişkin Açıklama</th></tr></thead><tbody>'
+    +rs.map(r=>'<tr><td>'+esc(r.proje_adi||"—")+'</td><td class="c">'+esc(r.adet==null?"—":r.adet)+'</td>'
+      +'<td class="c">'+fd(r.aup)+'</td><td class="c"><input type="date" class="pstg" id="pstg_'+r.id+'" value="'+esc(r.pst_santiye?String(r.pst_santiye).slice(0,10):"")+'"></td>'  /* SEVK-PST-GIRIS (2026-10-05): boş başlar, şantiye girer → pst_santiye */
       +'<td><textarea id="hus_'+r.id+'" data-id="'+r.id+'">'+esc(r.onemli_hususlar||"")+'</textarea></td></tr>').join("")
     +'</tbody></table></div>';
 }
@@ -344,24 +375,16 @@ function blok(r){
   const mvtSoru = /^7(\s|$)/.test(String(r.proje_durumu||"").trim())
     ? (mvtGecti(r.aup) ? "Eğer hazırsa hemen yüklenecek mi?" : MVT_STD)
     : (mvtGecti(r.mvt) ? "Eğer hazır olsaydı hemen yükleme ister miydiniz?" : MVT_STD);
-  return '<div class="blk'+(tam?" done":"")+'" id="blk_'+r.id+'">'
-    +'<div class="sol">'
-      +kv("Proje",r.proje_adi)  /* SANTIYE-KOMPAKT: PGD → Proje, Part kaldırıldı */
-      +kv("Ürün Adedi",r.adet)
-      +kv("MVT",fd(r.mvt))+kv("AÜP",fd(r.aup))+kv("PST",fd(r.pst))
-      +kv("Durum",r.proje_durumu)  /* SANTIYE-DURUM-SATIR: PST altinda proje durumu (ERP Prj) */
-    +'</div>'
-    +'<div class="sag">'
-      +'<div class="sorular">'
-      +soru("mvt",mvtSoru)
-      +(pstGir(r) ? pstKutu(r) : soru("pst","<b>PST</b>’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?"))
-      +'</div>'
-      /* HUSUS-KUTU: proje bazlı serbest not; anında kaydedilir, zorunlu değildir. SANTIYE-KOMPAKT: sağ sütunda */
-      +'<div class="hus">'
-        +'<div class="q">Yükleme Planına İlişkin Açıklama:</div>'
-        +'<textarea class="seb" id="hus_'+r.id+'" data-id="'+r.id+'" placeholder="">'+esc(r.onemli_hususlar||"")+'</textarea>'
-      +'</div>'
-    +'</div></div>';
+  /* SANTIYE-TABLO: proje = tablo satırı (Sevke Hazır ile aynı biçim); id blk_<id>, done/miss sınıfları korunur */
+  return '<tr class="srow'+(tam?" done":"")+'" id="blk_'+r.id+'">'
+    +'<td>'+esc(r.proje_adi||"—")+'</td>'
+    +'<td class="c">'+esc(r.adet==null?"—":r.adet)+'</td>'
+    +'<td class="c">'+fd(r.mvt)+'</td><td class="c">'+fd(r.aup)+'</td><td class="c">'+fd(r.pst)+'</td>'
+    +'<td class="c">'+esc(r.proje_durumu||"—")+'</td>'
+    +'<td class="onay">'+soru("mvt",mvtSoru)
+      +(pstGir(r) ? pstKutu(r) : soru("pst","<b>PST</b>’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?"))+'</td>'
+    +'<td><textarea id="hus_'+r.id+'" data-id="'+r.id+'">'+esc(r.onemli_hususlar||"")+'</textarea></td>'
+    +'</tr>';
 }
 
 /* PST-BELIRLE (2026-10-05, Melih): "7 Üretim" + ERP PST boş → PST onay sorusu yerine "PST belirleyiniz:" GG/AA/YY kutusu → pst_santiye */
