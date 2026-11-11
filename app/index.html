@@ -2877,6 +2877,30 @@ async function loadSelArb(tgt){
   const tg=document.getElementById("sa-toggle");
   if(tg) tg.onclick=()=>{ const on=tg.dataset.on==="1"; document.querySelectorAll("#"+tgt+" tr.sa-hide").forEach(x=>x.style.display=on?"none":""); tg.dataset.on=on?"0":"1"; tg.textContent=on?`Boş-alacak satırları göster (${hiddenCount})`:`Boş-alacak satırları gizle (${hiddenCount})`; };
   saCariBagla(tgt);   /* SELARB-CARI-261009 */
+  saSiralaBagla(tgt);   /* SELARB-SIRALA */
+}
+/* SELARB-SIRALA (11.11.2026, Melih): başlığa tıkla → satırlar o sütuna göre sıralanır, tekrar tık yönü çevirir; toplam satırları hep altta */
+function saSiralaBagla(tgt){
+  const body=document.getElementById(tgt); if(!body) return;
+  const tbl=body.querySelector(".sa-wrap table"), tb=tbl&&tbl.tBodies[0]; if(!tb||!tbl.tHead) return;
+  const r1=tbl.tHead.rows[0], r2=tbl.tHead.rows[1], cols=[]; let ix=0;
+  Array.from(r1.cells).forEach(th=>{ if(th.colSpan>1){ Array.from(r2?r2.cells:[]).forEach((t2,j)=>cols.push([t2,ix+j])); ix+=th.colSpan; } else { cols.push([th,ix]); ix++; } });
+  const val=s=>{ s=String(s||"").replace(/[€%\s ]/g,"").replace("−","-"); if(s==="") return null;
+    const m=s.match(/^(\d{2})\.(\d{2})\.(\d{2}|\d{4})$/); if(m) return Number((m[3].length===2?"20"+m[3]:m[3])+m[2]+m[1]);
+    if(/^[+-]?\d[\d.]*(,\d+)?$/.test(s)) return Number(s.replace(/\./g,"").replace(",","."));
+    return s.toLocaleLowerCase("tr"); };
+  let cur=-1, dir=1;
+  cols.forEach(([th,ci])=>{ th.style.cursor="pointer"; th.addEventListener("click",()=>{
+    const rows=Array.from(tb.rows), data=rows.filter(r=>!r.classList.contains("sa-foot")), foot=rows.filter(r=>r.classList.contains("sa-foot"));
+    const vs=new Map(data.map(r=>[r,val(r.cells[ci]?r.cells[ci].textContent:"")]));
+    const sayi=data.some(r=>typeof vs.get(r)==="number");
+    if(cur===ci) dir=-dir; else { cur=ci; dir=sayi?-1:1; }
+    data.sort((a,b)=>{ const x=vs.get(a), y=vs.get(b); if(x==null&&y==null) return 0; if(x==null) return 1; if(y==null) return -1;
+      if(typeof x==="number"&&typeof y==="number") return (x-y)*dir; return String(x).localeCompare(String(y),"tr")*dir; });
+    data.concat(foot).forEach(r=>tb.appendChild(r));
+    tbl.tHead.querySelectorAll(".sa-ok").forEach(s=>s.remove());
+    const ok=document.createElement("span"); ok.className="sa-ok"; ok.style.fontSize="9px"; ok.textContent=dir>0?" ▲":" ▼"; th.appendChild(ok);
+  }); });
 }
 /* SELARB-CARI-261009 (Melih): Sel-Arb satırına sağ tık → "Cari hesap" / "Selectron faturaları".
    Kaynak view sel_arb_cari = Excel açılışı (sel_arb_cari_acilis, SEL-ARB_261006_OZ VERDUN→KINGS) + Sel-Arb devir/ceza
