@@ -229,7 +229,7 @@ async function notAc(o,k,r,yenile){
 async function selArb(o,el){
   const sb=o.sb;
   const [s,oz,g,od,ih,ak]=await Promise.all([
-    sb.from("sel_arb_snapshot").select("sira,firma,proje,tarih,alacak"),
+    (async()=>{ let d=[],o=0; for(;;){ const r=await sb.from("sel_arb_snapshot").select("sira,firma,proje,tarih,alacak").order("tarih").order("sira").order("id").range(o,o+999); if(r.error) return r; d=d.concat(r.data||[]); if((r.data||[]).length<1000) return {data:d,error:null}; o+=1000; } })()   /* SNAP-SAYFALI */,
     sb.from("sel_arb_ozet").select("*").order("tarih"),
     sb.from("sel_arb_guncel").select("sira,firma,proje,alacak").order("sira"),
     sb.from("sel_odeme").select("tutar_eur").is("islendi_tarih",null),
