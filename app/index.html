@@ -2841,7 +2841,7 @@ async function loadSelArb(tgt){
       +`<td class="sa-proje"><span class="c" title="${esc(h[0]||"")}">${esc(h[0]||"")}</span></td>`
       +`<td class="sa-firma"><span class="c" title="${esc(h[1]||"")}">${esc(h[1]||"")}</span></td>`
       +KXP.map((k,i)=>`<td class="sa-kx${k[2]==="o"?" sa-kxo":""}">${esc(kxFmt(h.kx?h.kx[i]:null,i))}</td>`).join("")   /* SELARB-KONTRAT-PANO */
-      +`<td class="sa-num sa-canli">${esc(h[canliIdx]||"")}</td>`
+      +`<td class="sa-num sa-canli"${(!isFoot&&gBy[h.sira]&&gBy[h.sira].alacak_kaynak==="manuel")?' style="color:#c00" title="Manuel (maktu)"':""}>${esc(h[canliIdx]||"")}</td>`   /* SELARB-MANUEL-KIRMIZI */
       +`<td class="sa-num sa-delta">${esc(h[2+nd]||"")}</td>`
       +mid.join("")+`</tr>`;
   }).join("");
