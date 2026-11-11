@@ -310,7 +310,7 @@ function render(){
       +`<td class="sa-num sa-delta">${esc(delta(r.g,lv))}</td>`
       +(r.raw.alacak_kaynak==="cari"   /* SELARB-ALACAK-KAYNAK: cari kaynaklı hücre salt-okur, yeşil italik */
         ?`<td class="sa-num sa-g" title="Cari hesap bakiyesi — değiştirmek için sağ tık › Güncel alacak belirle"><input size="1" type="text" readonly data-cari="1" style="color:#0a6b57;font-style:italic;cursor:default" value="${esc(fmt(r.g))}"></td>`
-        :`<td class="sa-num sa-g" title="Manuel (maktu) — kaynak için sağ tık › Güncel alacak belirle"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" value="${esc(fmt(r.g))}"></td>`)
+        :`<td class="sa-num sa-g" title="Manuel (maktu) — kaynak için sağ tık › Güncel alacak belirle"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" style="color:#c00" value="${esc(fmt(r.g))}"></td>`)   /* SELARB-MANUEL-KIRMIZI */
       +dates.map((d,i)=>`<td class="sa-num${oc(i)}">${esc(fmt(r.v[d]))}</td>`).join("")+`</tr>`;
   }).join("");
   /* En üstte daima boş satır (SELARB-BOS-SATIR) */
