@@ -2789,7 +2789,7 @@ async function loadSelArb(tgt){
   const fmt=v=>(v==null||v==="")?"":Math.round(v).toLocaleString("tr-TR");
   /* Δ = SON AY − BİR ÖNCEKİ AY (en yeni iki tarih sütunu). series yeni→eski sıralı: [0]=son ay, [1]=önceki ay. İkisinden biri boşsa fark boş. */
   /* SELARB-CARI-AY: Δ = CARİ AY − SON DONMUŞ AY (arr[0]) */
-  const delta=(arr,cari)=>{ const cur=(cari==null||cari==="")?null:Number(cari), prev=arr[0]; if(cur==null||prev==null) return ""; const dl=Math.round(cur-prev); if(dl===0) return ""; return (dl>0?"+":"−")+Math.abs(dl).toLocaleString("tr-TR"); };
+  const delta=(arr,cari)=>{ const cur=(cari==null||cari==="")?null:Number(cari), prev=arr[0]; if(cur==null&&prev==null) return ""; const dl=Math.round(Number(cur||0)-Number(prev||0));   /* SELARB-DELTA-MEKANIK (11.11.2026, Melih): Δ = güncel − son ay sonu, boş = 0 */ if(dl===0) return ""; return (dl>0?"+":"−")+Math.abs(dl).toLocaleString("tr-TR"); };
   /* Sütun sırası: Proje · Firma · Δ önceki→son ay € · tarih sütunları (yeni→eski) */
   const basliklar=["Proje","Firma",...dates.map(dLbl),"Δ Son → Cari"];
   const rows=[];
