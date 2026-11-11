@@ -167,7 +167,7 @@
 <div id="app"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="giris_ust.js?v=261110y"></script><!-- GIRIS-UST-ORTAK · GIRIS-GRAFIK-BIRLES · GIRIS-YEKSEN-15 · GIRIS-ALACAK-PEMBE · GIRIS-ALACAK-GRAFIK-YOK -->
+<script src="giris_ust.js?v=261111a"></script><!-- GIRIS-UST-ORTAK · GIRIS-GRAFIK-BIRLES · GIRIS-YEKSEN-15 · GIRIS-ALACAK-PEMBE · GIRIS-ALACAK-GRAFIK-YOK -->
 <script src="my_acil.js?v=261110h"></script><!-- MY-FAALIYET -->
 <script src="situ_yukleme.js?v=261110"></script><!-- SITU-YUKLEME -->
 <script>
@@ -2749,7 +2749,7 @@ const SA_NOTE="Tarih sütunlarındaki tutarlar o tarihteki güncel ALACAK (recei
 async function loadSelArb(tgt){
   const body=document.getElementById(tgt);
   const [s,o,g,obt]=await Promise.all([
-    sb.from("sel_arb_snapshot").select("*").order("tarih").order("sira"),
+    (async()=>{ let d=[],o=0; for(;;){ const r=await sb.from("sel_arb_snapshot").select("*").order("tarih").order("sira").order("id").range(o,o+999); if(r.error) return r; d=d.concat(r.data||[]); if((r.data||[]).length<1000) return {data:d,error:null}; o+=1000; } })()   /* SNAP-SAYFALI */,
     sb.from("sel_arb_ozet").select("*").order("tarih"),
     sb.from("sel_arb_guncel").select("*").order("sira"),
     sb.from("sel_arb_ob_toplam").select("*")   /* SELARB-KONTRAT-PANO */
@@ -3707,7 +3707,7 @@ async function loadSantiye(tgt){
   const [s,mk,sa]=await Promise.all([
     sb.from("santiye").select("*").order("sira"),
     sb.from("mk_santiye_snapshot").select("*"),
-    sb.from("sel_arb_snapshot").select("tarih,sira,firma,proje,alacak")
+    (async()=>{ let d=[],o=0; for(;;){ const r=await sb.from("sel_arb_snapshot").select("tarih,sira,firma,proje,alacak").order("tarih").order("sira").order("id").range(o,o+999); if(r.error) return r; d=d.concat(r.data||[]); if((r.data||[]).length<1000) return {data:d,error:null}; o+=1000; } })()   /* SNAP-SAYFALI */
   ]);
   const err=s.error;
   if(err){ view.innerHTML=`<div class="load">Hata: ${esc(err.message)}</div>`; return; }
