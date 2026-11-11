@@ -260,18 +260,19 @@ async function load(){
    in = serbest (sel_arb_guncel kolonları), ro = ÖB Faaliyet formundan proje bazlı toplam (view sel_arb_ob_toplam:
    Avenant = ob_avenant, Tahsilat = ob_tahsilat, Yapılmış Situ = ob_situation 'İptal Edildi' hariç; eşleme proje adı, büyük/küçük harf duyarsız) */
 /* SELARB-BASLIK-261001 (Melih): (€) başlıklar; Beklenen İlk Ödeme başlıkları iki satır (\n → <br>), küçük punto, dar sütun */
-const KX=[["kontrat","Kontrat","in"],["para_birimi","Para Birimi","pb"],["vade_gun","Vade (gün)","gn"],["avenant","TS\n(Avenants) (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
-  ["tahsilat","Tahsilat (€)","ro"],["situ","Yapılmış Situ (€)","ro"],["yapilacak_situ","(Yüklenmiş)\nYapılacak Situ (€)","in"],   /* SITU-YUKLEME (10.11.2026): yüklenmiş ama situ yapılmamış; OE dağıtımı/ÖB situ oranlaması ile otomatik değişir, cari kaynaklı satırda Güncel Alacak'a dahil */
+const KX=[["kontrat","Kontrat","in"],["kdv","KDV","pb"],["para_birimi","Para Birimi","pb"],   /* SELARB-YAPILMAMIS (11.11.2026): KDV HT/TTC */
+  ["vade_gun","Vade (gün)","gn"],["avenant","TS\n(Avenants) (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
+  ["tahsilat","Tahsilat (€)","ro"],["situ","Yapılmış Situ (€)","ro"],["yapilacak_situ","(Yüklenmiş)\nYapılmamış Situ (€)","ro"],   /* SITU-YUKLEME (10.11.2026): yüklenmiş ama situ yapılmamış; OE dağıtımı/ÖB situ oranlaması ile otomatik değişir, cari kaynaklı satırda Güncel Alacak'a dahil */
   ["ilk_odeme_tarih","Beklenen İlk\nÖdeme Tarihi","dt"],["ilk_odeme_tutar","Beklenen İlk\nÖdeme Tutarı (€)","in"]];
 const kKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kObKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kOb=r=>{ if(ST.obS&&ST.obS[r.sira]) return ST.obS[r.sira]; const k=kKey(r.proje); if(ST.ob[k]) return ST.ob[k]; for(const x in ST.ob){ if(kObKey(x)===k) return ST.ob[x]; } return {}; };
-const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" data-f="${f}" data-sk="k:${f}" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}${ad.indexOf("\n")>=0?" sa-sm":""}" title="${t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"}">${esc(ad).replace(/\n/g,"<br>")}</th>`).join("");
+const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" data-f="${f}" data-sk="k:${f}" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}${ad.indexOf("\n")>=0?" sa-sm":""}" title="${f==="yapilacak_situ"?"Yükleme toplamı × oran (HT 1,40 · TTC 1,72) − Yapılmış Situ; otomatik":(f==="situ"||f==="tahsilat"?"Cari hesaptan (Excel açılışı + ÖB Faaliyet formu) otomatik gelir":(t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"))}">${esc(ad).replace(/\n/g,"<br>")}</th>`).join("");
 const kCells=r=>{ const ob=kOb(r); return KX.map(([f,ad,t])=>{
   if(t==="ro") return `<td class="sa-num sa-ro" data-f="${f}">${esc(fmt(ob[f]))}</td>`;
   if(t==="dt") return `<td class="sa-x"><input type="date" data-id="${r.id}" data-f="${f}" value="${esc(r[f]||"")}"></td>`;
   const eks=(f==="kontrat"||f==="vade_gun")&&(r[f]==null||r[f]==="")?" sa-eksik":"";   /* SELARB-MUSTERI-VADE: ilk 4 sütun eksik → pembe */
-  if(t==="pb") return `<td class="sa-x"><select class="sa-pb" data-id="${r.id}" data-f="${f}">${["","EUR","GBP","USD"].map(o=>`<option value="${o}"${(r[f]||"")===o?" selected":""}>${o||"—"}</option>`).join("")}</select></td>`;   /* SELARB-PARA-BIRIMI */
+  if(t==="pb") return `<td class="sa-x"><select class="sa-pb" data-id="${r.id}" data-f="${f}">${(f==="kdv"?["","HT","TTC"]:["","EUR","GBP","USD"]).map(o=>`<option value="${o}"${(r[f]||"")===o?" selected":""}>${o||"—"}</option>`).join("")}</select></td>`;   /* SELARB-PARA-BIRIMI */
   if(t==="gn") return `<td class="sa-num sa-x${eks}"><input size="1" type="text" inputmode="numeric" data-gn="1" data-id="${r.id}" data-f="${f}" value="${esc(r[f]==null?"":String(r[f]))}"></td>`;
   return `<td class="sa-num sa-x${eks}"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" data-f="${f}" value="${esc(fmt(r[f]))}"></td>`; }).join(""); };
 const kDolu=r=>KX.some(([f,ad,t])=>t!=="ro"&&r[f]!=null&&r[f]!=="");
@@ -299,7 +300,7 @@ function render(){
   let hidden=0;
   const tr=rows.map(r=>{
     const lv=r.v[last]==null?null:Number(r.v[last]);
-    const bos=!(r.g) && !(lv);   /* SELARB-BOS-PANO (11.11.2026, Melih): pano gibi; YD-KAZANDIK/ELLE satırı da alacak boşsa gizlenir */   /* SELARB-DEVIR-261001: kontrat vb. tüm satırlarda dolu → gizleme yine alacak bazlı */   /* PSEL-260930: YD'den yeni gelen proje gizlenmez */
+    const bos=!Math.round(r.g||0) && !Math.round(lv||0);   /* SELARB-BOS-YUVARLA (11.11.2026): pano gibi tam €'ya yuvarlanmış değer; kuruşluk bakiye boş sayılır */   /* SELARB-BOS-PANO (11.11.2026, Melih): pano gibi; YD-KAZANDIK/ELLE satırı da alacak boşsa gizlenir */   /* SELARB-DEVIR-261001: kontrat vb. tüm satırlarda dolu → gizleme yine alacak bazlı */   /* PSEL-260930: YD'den yeni gelen proje gizlenmez */
     if(bos) hidden++;
     const hide=bos&&!ST.showEmpty;
     return `<tr data-id="${r.id}" data-sira="${esc(r.sira)}" data-proje="${esc(r.raw.proje||"")}"${hide?' style="display:none"':''}>`
@@ -391,9 +392,9 @@ function bind(){
   document.querySelectorAll("select.sa-pb").forEach(sl=>{
     sl.onchange=async()=>{
       const td=sl.parentElement, id=+sl.dataset.id, v=sl.value||null, r0=ST.g.find(x=>x.id===id)||{};
-      const {error}=await sb.from("sel_arb_guncel").update({para_birimi:v,updated_at:new Date().toISOString()}).eq("id",id);
-      if(error){ msg("Kaydedilemedi: "+error.message,"err"); sl.value=r0.para_birimi||""; return; }
-      r0.para_birimi=v; td.classList.remove("saved"); void td.offsetWidth; td.classList.add("saved"); msg("Kaydedildi","ok");
+      const {error}=await sb.from("sel_arb_guncel").update({[sl.dataset.f]:v,updated_at:new Date().toISOString()}).eq("id",id);
+      if(error){ msg("Kaydedilemedi: "+error.message,"err"); sl.value=r0[sl.dataset.f]||""; return; }
+      r0[sl.dataset.f]=v; if(sl.dataset.f==="kdv"){ msg("Kaydedildi — Yapılmamış Situ yeniden hesaplandı","ok"); load(); return; } td.classList.remove("saved"); void td.offsetWidth; td.classList.add("saved"); msg("Kaydedildi","ok");
     };
   });
   document.querySelectorAll("input.sa-musin").forEach(inp=>{
