@@ -241,7 +241,7 @@ let ST={snap:[],oz:[],g:[],open:false,showEmpty:false};
 async function load(){
   try{ await sb.rpc("sel_arb_alacak_tazele"); }catch(_){}   /* SELARB-ALACAK-KAYNAK: cari kaynaklı satırlar bakiyeye eşitlenir */
   const [s,o,g,py,obt,mq]=await Promise.all([
-    sb.from("sel_arb_snapshot").select("tarih,sira,firma,proje,alacak").order("tarih").order("sira"),
+    (async()=>{ let d=[],o=0; for(;;){ const r=await sb.from("sel_arb_snapshot").select("tarih,sira,firma,proje,alacak").order("tarih").order("sira").order("id").range(o,o+999); if(r.error) return r; d=d.concat(r.data||[]); if((r.data||[]).length<1000) return {data:d,error:null}; o+=1000; } })()   /* SNAP-SAYFALI */,
     sb.from("sel_arb_ozet").select("*").order("tarih"),
     sb.from("sel_arb_guncel").select("*").order("sira"),
     sb.from("pano_yayin").select("yayin_at").eq("anahtar","sel_arb_form").limit(1),
