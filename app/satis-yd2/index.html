@@ -726,7 +726,7 @@ function render(){
     +COLS.map(c=>'<th title="'+esc(c.h)+'">'+c.h+'</th>').join('')
     +'<th class="pairA gs">Takip Tarihi</th><th class="pairA">Görevli</th><th class="pairA">Takip Notları / Görevleri</th>'
     +'<th>Durum</th></tr></thead><tbody>';
-  h+=rowHTML(DRAFT,"draft");
+  if(window.ARB_EM==="int@arbor.com.tr") h+=rowHTML(DRAFT,"draft"); /* YD-YENI-SATIR-MB: yeni satırı yalnız Melih/Claude açar */
   ROWS.forEach((r,i)=>{ h+=rowHTML(r,i); });
   h+='</tbody></table>';
   h+='<div class="legend">'+DISPLAY_ORDER.filter(d=>DURUM_BG[d]).map(d=>'<span class="lg-item"><span class="lg-sw" style="background:'+DURUM_BG[d]+'"></span>'+esc(d)+'</span>').join('')+'</div>';
