@@ -113,7 +113,7 @@
       if(h1.parentNode!==h) h1.parentNode.classList.add("arb-h1w");
       function konum(){ pop.style.left="-8px"; var r=q.getBoundingClientRect(), w=pop.offsetWidth||0, vw=document.documentElement.clientWidth; if(r.left-8+w>vw-12) pop.style.left=Math.max(-r.left+12,vw-12-w-r.left)+"px"; }
       q.addEventListener("mouseenter",konum);
-      q.addEventListener("click",function(e){ if(e.target.closest(".arb-hlp-pop")) return; konum(); e.stopPropagation(); q.classList.toggle("acik"); });
+      q.addEventListener("click",function(e){ if(e.target.closest(".arb-hlp-pop")) return; e.stopPropagation(); q.classList.toggle("acik"); konum(); });
       document.addEventListener("click",function(e){ if(!q.contains(e.target)) q.classList.remove("acik"); });
       document.addEventListener("keydown",function(e){ if(e.key==="Escape") q.classList.remove("acik"); });
     }
