@@ -278,7 +278,7 @@ const kObKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kOb=r=>{ if(ST.obS&&ST.obS[r.sira]) return ST.obS[r.sira]; const k=kKey(r.proje); if(ST.ob[k]) return ST.ob[k]; for(const x in ST.ob){ if(kObKey(x)===k) return ST.ob[x]; } return {}; };
 const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" data-f="${f}" data-sk="k:${f}" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}${ad.indexOf("\n")>=0?" sa-sm":""}" title="${f==="yapilacak_situ"?"Yükleme toplamı × oran (HT 1,33 · TTC 1,60) − Yapılmış Situ; otomatik":(f==="situ"||f==="tahsilat"?"Cari hesaptan (Excel açılışı + ÖB Faaliyet formu) otomatik gelir":(t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"))}">${esc(ad).replace(/\n/g,"<br>")}</th>`).join("");
 const kCells=r=>{ const ob=kOb(r); return KX.map(([f,ad,t])=>{
-  if(f==="yapilacak_situ"&&r.yapilacak_kaynak==="manuel") return `<td class="sa-num sa-ro" data-f="${f}" style="color:#c00" title="Manuel (maktu) ${esc(fmt(r.yapilacak_maktu))} € — sonradan ÖB formuna girilen situationlar düşülür; değiştirmek için sağ tık › Yapılmamış situ belirle">${esc(fmt(r.yapilacak_situ))}</td>`;   /* SELARB-YAP-MAKTU */
+  if(f==="yapilacak_situ"&&r.yapilacak_kaynak==="manuel") return `<td class="sa-num sa-ro" data-f="${f}" style="color:#c00" title="Manuel (maktu) ${esc(fmt(r.yapilacak_maktu))} € — sonradan girilen OE yüklemeleri (× oran) eklenir, ÖB situationları düşülür; değiştirmek için sağ tık › Yapılmamış situ belirle">${esc(fmt(r.yapilacak_situ))}</td>`;   /* SELARB-YAP-MAKTU */
   if(t==="ro") return `<td class="sa-num sa-ro" data-f="${f}">${esc(fmt(ob[f]))}</td>`;
   if(t==="dt") return `<td class="sa-x"><input type="date" data-id="${r.id}" data-f="${f}" value="${esc(r[f]||"")}"></td>`;
   const eks=(f==="kontrat"||f==="vade_gun")&&(r[f]==null||r[f]==="")?" sa-eksik":"";   /* SELARB-MUSTERI-VADE: ilk 4 sütun eksik → pembe */
@@ -490,7 +490,7 @@ async function saYsAc(sira,proje){
     <label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="radio" name="sa-ys" value="manuel"${kay==="manuel"?" checked":""}> Manuel
       <input id="sa-ys-t" type="text" inputmode="decimal" style="width:12ch;text-align:right;padding:3px 6px;border:1px solid #c9d6e3;border-radius:5px" value="${esc(fmt(ilk))}"> €</label>
     <label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="radio" name="sa-ys" value="oto"${kay==="oto"?" checked":""}> Otomatik (yükleme × oran − yapılmış situ)</label>
-    <div style="color:#5a6b7d;font-size:11.5px;margin-top:4px">Manuelde, bu tarihten sonra ÖB formuna girilen situationlar tutardan düşülür.</div>
+    <div style="color:#5a6b7d;font-size:11.5px;margin-top:4px">Manuelde, bu tarihten sonra OE formuna girilen yüklemeler (× oran) eklenir, ÖB formuna girilen situationlar düşülür.</div>
     <div id="sa-ys-m" style="color:#b23a2e;min-height:16px;margin-top:4px"></div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
       <button id="sa-ys-v" style="border:1px solid #cdd8e4;background:#fff;color:#16324f;border-radius:7px;padding:5px 12px;cursor:pointer">Vazgeç</button>
