@@ -75,6 +75,7 @@
   td.sa-vbos{background:#f28b82!important} td.sa-vbos input{background:#ffe3e0;border-color:#d93025}
   .sa-wrap th.sa-ack,.sa-wrap td.sa-ack{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;border-right:2px solid #cdd8e4}
   tr.sa-foot>td:first-child{white-space:normal;max-width:23.33ch;line-height:14px} /* SELARB-PROJE-DAR (12.11.2026, Melih): alt toplam satir adlari Proje sutununu genisletmesin (Proje-Musteri arasi bosluk) */
+  .sa-wrap th[data-f=vade_gun]{padding:1px 2px} td.sa-x:has(>input[data-f=vade_gun]){padding:2px 1px} td.sa-x input[data-f=vade_gun]{width:3.4ch!important;padding:1px 1px} /* SELARB-VADE-DAR (12.11.2026, Melih): Vade basligi iki satir, sutun minimum */
   td.sa-ack[data-ack]{cursor:text} td.sa-ack input{width:100%;box-sizing:border-box;font:inherit;border:1px solid #9fb3c8;border-radius:4px;padding:1px 4px}
 </style>
 </head>
@@ -277,7 +278,7 @@ async function load(){
    Avenant = ob_avenant, Tahsilat = ob_tahsilat, Yapılmış Situ = ob_situation 'İptal Edildi' hariç; eşleme proje adı, büyük/küçük harf duyarsız) */
 /* SELARB-BASLIK-261001 (Melih): (€) başlıklar; Beklenen İlk Ödeme başlıkları iki satır (\n → <br>), küçük punto, dar sütun */
 const KX=[["kontrat","Kontrat","in"],["kdv","KDV","pb"],["para_birimi","Para Birimi","pb"],   /* SELARB-YAPILMAMIS (11.11.2026): KDV HT/TTC */
-  ["vade_gun","Vade (gün)","gn"],["avenant","TS\n(Avenants) (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
+  ["vade_gun","Vade\n(gün)","gn"],["avenant","TS\n(Avenants) (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
   ["tahsilat","Tahsilat (€)","ro"],["situ","Yapılmış Situ (€)","ro"],["yapilacak_situ","(Yüklenmiş)\nYapılmamış Situ (€)","ro"],   /* SITU-YUKLEME (10.11.2026): yüklenmiş ama situ yapılmamış; OE dağıtımı/ÖB situ oranlaması ile otomatik değişir, cari kaynaklı satırda Güncel Alacak'a dahil */
   ];   /* SELARB-ILK-ODEME-YOK (12.11.2026, Melih): Beklenen İlk Ödeme Tarihi/Tutarı sütunları kaldırıldı (alanlar DB'de duruyor) */
 const kKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
