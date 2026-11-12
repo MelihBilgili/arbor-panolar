@@ -278,7 +278,8 @@ const kObKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kOb=r=>{ if(ST.obS&&ST.obS[r.sira]) return ST.obS[r.sira]; const k=kKey(r.proje); if(ST.ob[k]) return ST.ob[k]; for(const x in ST.ob){ if(kObKey(x)===k) return ST.ob[x]; } return {}; };
 const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" data-f="${f}" data-sk="k:${f}" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}${ad.indexOf("\n")>=0?" sa-sm":""}" title="${f==="yapilacak_situ"?"Yükleme toplamı × oran (HT 1,33 · TTC 1,60) − Yapılmış Situ; otomatik":(f==="situ"||f==="tahsilat"?"Cari hesaptan (Excel açılışı + ÖB Faaliyet formu) otomatik gelir":(t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"))}">${esc(ad).replace(/\n/g,"<br>")}</th>`).join("");
 const kCells=r=>{ const ob=kOb(r); return KX.map(([f,ad,t])=>{
-  if(f==="yapilacak_situ"&&r.yapilacak_kaynak==="manuel") return `<td class="sa-num sa-ro" data-f="${f}" style="color:#c00" title="Manuel (maktu) ${esc(fmt(r.yapilacak_maktu))} € — sonradan girilen OE yüklemeleri (× oran) eklenir, ÖB situationları düşülür; değiştirmek için sağ tık › Yapılmamış situ belirle">${esc(fmt(r.yapilacak_situ))}</td>`;   /* SELARB-YAP-MAKTU */
+  if(f==="yapilacak_situ"){ const man=r.yapilacak_kaynak==="manuel", v=r.yapilacak_situ!=null?r.yapilacak_situ:ob[f];   /* SELARB-YAP-HUCRE (12.11.2026, Melih): hücreye yazılan tutar manuel (maktu) olur; boş bırakılırsa otomatiğe döner */
+    return `<td class="sa-num sa-x" title="${man?"Manuel (maktu) "+esc(fmt(r.yapilacak_maktu))+" € — sonradan girilen OE yüklemeleri (× oran) eklenir, ÖB situationları düşülür. Boşaltırsanız otomatik hesaba döner.":"Otomatik: yükleme × oran − yapılmış situ. Tutar yazarsanız manuel (maktu) olur."}"><input size="1" type="text" inputmode="decimal" data-ys="${esc(r.sira)}" style="${man?"color:#c00;":""}text-align:right" value="${esc(fmt(v))}"></td>`; }
   if(t==="ro") return `<td class="sa-num sa-ro" data-f="${f}">${esc(fmt(ob[f]))}</td>`;
   if(t==="dt") return `<td class="sa-x"><input type="date" data-id="${r.id}" data-f="${f}" value="${esc(r[f]||"")}"></td>`;
   const eks=(f==="kontrat"||f==="vade_gun")&&(r[f]==null||r[f]==="")?" sa-eksik":"";   /* SELARB-MUSTERI-VADE: ilk 4 sütun eksik → pembe */
@@ -377,6 +378,18 @@ function bind(){
     if(ST.sort&&ST.sort.k===th.dataset.sk) th.insertAdjacentText("beforeend",ST.sort.dir>0?" ▲":" ▼");
     th.onclick=()=>{ const k=th.dataset.sk; ST.sort=(ST.sort&&ST.sort.k===k)?(ST.sort.dir>0?{k,dir:-1}:null):{k,dir:1}; render(); }; });
   const be=document.getElementById("saEmpty"); if(be) be.onclick=()=>{ ST.showEmpty=!ST.showEmpty; render(); };
+  /* SELARB-YAP-HUCRE: Yapılmamış Situ hücresine yazma */
+  document.querySelectorAll("input[data-ys]").forEach(inp=>{
+    inp.onchange=async()=>{
+      const sira=Number(inp.dataset.ys), raw=inp.value.trim(), td=inp.parentElement;
+      let k="oto", n=null; if(raw!==""){ n=parseTr(raw); if(Number.isNaN(n)||n==null){ td.classList.add("bad"); msg("Geçersiz tutar: "+raw,"err"); return; } k="manuel"; }
+      td.classList.remove("bad");
+      const {error}=await sb.rpc("sel_arb_yapilmamis_belirle",{p_sira:sira,p_kaynak:k,p_tutar:n,p_kim:ROL});
+      if(error){ msg("Kaydedilemedi: "+error.message,"err"); return; }
+      msg("Yapılmamış situ "+(k==="manuel"?"manuel kaydedildi":"otomatiğe döndü"),"ok"); load();
+    };
+    inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } };
+  });
   document.querySelectorAll("td.sa-g input[data-id]").forEach(inp=>{
     inp.onchange=async()=>{
       const td=inp.parentElement, id=+inp.dataset.id, n=parseTr(inp.value);
