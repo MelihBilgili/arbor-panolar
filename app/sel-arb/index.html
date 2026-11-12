@@ -69,6 +69,12 @@
   td.sa-x input[data-f=ilk_odeme_tutar]{width:8ch;padding:1px 2px}
   td.sa-x:has(input[data-f^=ilk_odeme]){padding:2px 2px}
   @keyframes ok2{from{background:#c8f0d4}to{background:#fff}}
+  /* SELARB-VADE-ACK (12.11.2026, Melih): bant ile tablo arasi bosluk yok; bos Vade kirmizi; Guncel Alacak sagina Aciklama (Ekle) sutunu (Acil yuklemeler Aciklama gibi: tek satir, en yeni basta, tamami hover, hucreye tikla -> ekle) */
+  .wrap{padding-top:0!important}
+  .arb-bsag .msg{min-height:0;font-size:12px}.arb-bsag .msg.ok{color:#9be7b5}.arb-bsag .msg.err{color:#ffb3b3}.arb-bsag #rolLbl b{color:#fff!important}
+  td.sa-vbos{background:#f28b82!important} td.sa-vbos input{background:#ffe3e0;border-color:#d93025}
+  .sa-wrap th.sa-ack,.sa-wrap td.sa-ack{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;border-right:2px solid #cdd8e4}
+  td.sa-ack[data-ack]{cursor:text} td.sa-ack input{width:100%;box-sizing:border-box;font:inherit;border:1px solid #9fb3c8;border-radius:4px;padding:1px 4px}
 </style>
 </head>
 <body>
@@ -77,7 +83,7 @@
   <div class="sub">Arbor SAS'ın firma/proje bazlı güncel alacakları. <b>Güncel Alacak (€)</b> sütunu ay boyunca düzenlenir; ay sona erince kendiliğinden sabitlenip <b>Önceki Alacak (€)</b> grubuna eklenir ve SEL-ARB panosunda yeni ay sütunu olur. Yeni proje, YD1/YD2 Akış formunda durumu “Kazandık” olunca buraya kendiliğinden eklenir.<!-- SELARB-ACIKLAMA-YENI --></div>
 </header>
 <div class="wrap">
-  <div class="btns"><button id="bGuncelle">Güncelle</button><span id="saEmptyBox" data-arb-bant></span><!-- SELARB-BOS-BANT --><span id="rolLbl"></span><span class="msg" id="msg"></span></div>
+  <div class="btns"><button id="bGuncelle">Güncelle</button><span id="saEmptyBox" data-arb-bant></span><!-- SELARB-BOS-BANT --><span id="rolLbl" data-arb-bant></span><span class="msg" id="msg" data-arb-bant></span><!-- SELARB-VADE-ACK --></div>
   <div class="hint" id="stamp"></div>
   <div id="tbl"><div class="hint">Yükleniyor…</div></div>
 </div>
@@ -282,10 +288,11 @@ const kCells=r=>{ const ob=kOb(r); return KX.map(([f,ad,t])=>{
     return `<td class="sa-num sa-x" title="${man?"Manuel (maktu) "+esc(fmt(r.yapilacak_maktu))+" € — sonradan girilen OE yüklemeleri (× oran) eklenir, ÖB situationları düşülür. Boşaltırsanız otomatik hesaba döner.":"Otomatik: yükleme × oran − yapılmış situ. Tutar yazarsanız manuel (maktu) olur."}"><input size="1" type="text" inputmode="decimal" data-ys="${esc(r.sira)}" style="${man?"color:#c00;":""}text-align:right" value="${esc(fmt(v))}"></td>`; }
   if(t==="ro") return `<td class="sa-num sa-ro" data-f="${f}">${esc(fmt(ob[f]))}</td>`;
   if(t==="dt") return `<td class="sa-x"><input type="date" data-id="${r.id}" data-f="${f}" value="${esc(r[f]||"")}"></td>`;
-  const eks=(f==="kontrat"||f==="vade_gun")&&(r[f]==null||r[f]==="")?" sa-eksik":"";   /* SELARB-MUSTERI-VADE: ilk 4 sütun eksik → pembe */
+  const eks=(r[f]==null||r[f]==="")?(f==="kontrat"?" sa-eksik":f==="vade_gun"?" sa-vbos":""):"";   /* SELARB-VADE-ACK: bos Vade kirmizi */   /* SELARB-MUSTERI-VADE: ilk 4 sütun eksik → pembe */
   if(t==="pb") return `<td class="sa-x"><select class="sa-pb" data-id="${r.id}" data-f="${f}">${(f==="kdv"?["","HT","TTC"]:["","EUR","GBP","USD"]).map(o=>`<option value="${o}"${(r[f]||"")===o?" selected":""}>${o||"—"}</option>`).join("")}</select></td>`;   /* SELARB-PARA-BIRIMI */
   if(t==="gn") return `<td class="sa-num sa-x${eks}"><input size="1" type="text" inputmode="numeric" data-gn="1" data-id="${r.id}" data-f="${f}" value="${esc(r[f]==null?"":String(r[f]))}"></td>`;
   return `<td class="sa-num sa-x${eks}"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" data-f="${f}" value="${esc(fmt(r[f]))}"></td>`; }).join(""); };
+const ackTers=s=>String(s==null?"":s).split("\n").reverse().join("\n");   /* SELARB-VADE-ACK: en yeni aciklama basta */
 const kDolu=r=>KX.some(([f,ad,t])=>t!=="ro"&&r[f]!=null&&r[f]!=="");
 function render(){
   /* SELARB-FORM-DOLU-SON (23.09.2026, Melih): alacak değeri olmayan (yalnız özet) tarih sütunu gösterilmez
@@ -322,6 +329,7 @@ function render(){
       +(r.raw.alacak_kaynak==="cari"   /* SELARB-ALACAK-KAYNAK: cari kaynaklı hücre salt-okur, yeşil italik */
         ?`<td class="sa-num sa-g" title="Cari hesap bakiyesi — değiştirmek için sağ tık › Güncel alacak belirle"><input size="1" type="text" readonly data-cari="1" style="color:#0a6b57;font-style:italic;cursor:default" value="${esc(fmt(r.g))}"></td>`
         :`<td class="sa-num sa-g" title="Manuel (maktu) — kaynak için sağ tık › Güncel alacak belirle"><input size="1" type="text" inputmode="decimal" data-id="${r.id}" style="color:#c00" value="${esc(fmt(r.g))}"></td>`)   /* SELARB-MANUEL-KIRMIZI */
+      +`<td class="sa-ack" data-ack="${r.id}" title="${esc(ackTers(r.raw.aciklama))}">${esc(ackTers(r.raw.aciklama))}</td>`   /* SELARB-VADE-ACK */
       +dates.map((d,i)=>`<td class="sa-num${oc(i)}">${esc(fmt(r.v[d]))}</td>`).join("")+`</tr>`;
   }).join("");
   /* En üstte daima boş satır (SELARB-BOS-SATIR) */
@@ -349,14 +357,14 @@ function render(){
   const ft=F.map(([ad,fn,gv,carry,kyn],fi)=>{
     const lv=last?fn(last):null;
     return `<tr class="sa-foot"><td>${esc(ad)}</td><td class="sa-firma sa-src"><span class="c" title="${esc(kyn)}">${esc(kyn)}</span></td>${KX.map((k,ki)=>`<td class="sa-num">${fi===0&&kxTop[ki]!=null?esc(fmt(kxTop[ki])):""}</td>`).join("")}<td class="sa-num sa-delta">${carry?"":esc(delta(gv,lv))}</td>`
-      +`<td class="sa-num sa-g"${carry?' title="Son dönem değeri (Önceki Alacak son sütunu)"':''}>${carry?`<span class="carry">${esc(fmt(gv))}</span>`:esc(fmt(gv))}</td>`
+      +`<td class="sa-num sa-g"${carry?' title="Son dönem değeri (Önceki Alacak son sütunu)"':''}>${carry?`<span class="carry">${esc(fmt(gv))}</span>`:esc(fmt(gv))}</td><td class="sa-ack"></td>`
       +dates.map((d,i)=>`<td class="sa-num${oc(i)}">${esc(fmt(fn(d)))}</td>`).join("")+`</tr>`;
   }).join("");
   /* SELARB-FORM-ALTSIZ (23.09.2026, Melih): alt toplam satırları (Güncel Alacak Toplam … Faaliyet Kaybı) formda gösterilmez; yalnız SEL-ARB panosunda */
   /* SELARB-FORM-ALT2: alt satırlar yeniden gösteriliyor */
   const tgTxt=ST.open?"◂":"▸";
   const head=`<thead><tr><th rowspan="2" data-sk="proje">Proje</th><th rowspan="2" data-sk="firma">Müşteri</th>${kHead()}<th rowspan="2" data-sk="d" class="sa-num sa-dh">Δ güncel→son €</th>`
-    +`<th rowspan="2" data-sk="g" class="sa-num sa-g">Güncel Alacak (€)</th>`
+    +`<th rowspan="2" data-sk="g" class="sa-num sa-g">Güncel Alacak (€)</th><th rowspan="2" class="sa-ack">Açıklama <span style="font-weight:400">(Ekle)</span></th>`   /* SELARB-VADE-ACK */
     +`<th class="sa-tg" id="saTg" colspan="${ST.open?Math.max(nd,1):1}" title="Diğer ayları aç/kapat">Önceki Alacak (€) ${tgTxt}</th></tr>`
     +`<tr>${dates.map((d,i)=>`<th data-sk="t:${d}" class="sa-num${oc(i)}">${esc(dLbl(d))}</th>`).join("")}</tr></thead>`;
   const btn=""; /* SELARB-BOS-BANT (12.11.2026, Melih): bos-alacak dugmesi lacivert bantta (#saEmptyBox, FORM-BANT2 tasir) */
@@ -368,6 +376,7 @@ function render(){
 /* SELARB-STICKY: ikinci baslik satirinin sabit konumu ve tablonun yuksekligi pencereye gore */
 function saSticky(){ const w=document.querySelector("#tbl .sa-wrap"); if(!w) return; const t=w.querySelector("table"), tr=w.querySelector("thead tr");
   if(t&&tr){ const z=parseFloat(getComputedStyle(t).zoom)||1; w.style.setProperty("--sa-h1",(tr.getBoundingClientRect().height/z)+"px"); }
+  { const g=w.querySelector("thead th.sa-g"); if(g){ const gw=Math.round(g.getBoundingClientRect().width/(parseFloat(getComputedStyle(t).zoom)||1)); w.querySelectorAll(".sa-ack").forEach(c=>{ c.style.width=c.style.minWidth=c.style.maxWidth=gw+"px"; }); } }   /* SELARB-VADE-ACK: Aciklama = Guncel Alacak genisligi */
   w.style.maxHeight=Math.max(240, window.innerHeight-(w.getBoundingClientRect().top+window.scrollY)-6)+"px"; }
 window.addEventListener("resize",saSticky); [800,2500,6000].forEach(t=>setTimeout(saSticky,t));
 function bind(){
@@ -377,6 +386,19 @@ function bind(){
   document.querySelectorAll("#tbl thead th[data-sk]").forEach(th=>{ th.style.cursor="pointer"; th.title=(th.title?th.title+" · ":"")+"Sıralamak için tıklayın";   /* SELARB-SIRALA */
     if(ST.sort&&ST.sort.k===th.dataset.sk) th.insertAdjacentText("beforeend",ST.sort.dir>0?" ▲":" ▼");
     th.onclick=()=>{ const k=th.dataset.sk; ST.sort=(ST.sort&&ST.sort.k===k)?(ST.sort.dir>0?{k,dir:-1}:null):{k,dir:1}; render(); }; });
+  /* SELARB-VADE-ACK: Aciklama hucresine tikla -> bos satir, Enter/odak kaybi -> eklenir (ROL GG/AA/YY: metin), Esc -> vazgec */
+  document.querySelectorAll("td.sa-ack[data-ack]").forEach(td=>{
+    td.onclick=ev=>{ ev.stopPropagation(); if(td.querySelector("input")) return;
+      const id=+td.dataset.ack, eski=td.innerHTML; let bitti=false;
+      td.innerHTML='<input placeholder="Yazıp Enter\'a basın">'; const inp=td.querySelector("input"); inp.focus();
+      const geri=()=>{ bitti=true; td.innerHTML=eski; };
+      const kaydet=async()=>{ if(bitti) return; const t=inp.value.trim(); if(!t){ geri(); return; } bitti=true; inp.disabled=true;
+        const {data,error}=await sb.rpc("sel_arb_aciklama_ekle",{p_id:id,p_metin:t});
+        if(error){ bitti=false; inp.disabled=false; msg("Eklenemedi: "+error.message,"err"); return; }
+        const r=ST.g.find(x=>x.id===id); if(r) r.aciklama=data; msg("Açıklama eklendi","ok"); render(); };
+      inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); kaydet(); } else if(e.key==="Escape"){ geri(); } };
+      inp.onblur=()=>kaydet(); inp.oncontextmenu=e=>e.stopPropagation(); };
+  });
   const be=document.getElementById("saEmpty"); if(be) be.onclick=()=>{ ST.showEmpty=!ST.showEmpty; render(); };
   /* SELARB-YAP-HUCRE: Yapılmamış Situ hücresine yazma */
   document.querySelectorAll("input[data-ys]").forEach(inp=>{
@@ -420,7 +442,7 @@ function bind(){
       const r=ST.g.find(x=>x.id===id); if(r) r[f]=v;
       if(f==="yapilacak_situ"&&r&&_u&&_u[0]&&r.alacak_kaynak==="cari"){ r.alacak=_u[0].alacak; msg("Kaydedildi — Güncel Alacak yeniden hesaplandı","ok"); render(); return; }   /* SITU-YUKLEME: cari kaynaklı satırda alacak = cari bakiye + yapılacak situ */
       if(inp.dataset.gn) inp.value=v==null?"":String(v); else if(inp.type!=="date") inp.value=fmt(v);
-      if(f==="kontrat"||f==="vade_gun") td.classList.toggle("sa-eksik",v==null);
+      if(f==="kontrat") td.classList.toggle("sa-eksik",v==null); if(f==="vade_gun") td.classList.toggle("sa-vbos",v==null);   /* SELARB-VADE-ACK */
       td.classList.remove("saved"); void td.offsetWidth; td.classList.add("saved"); msg("Kaydedildi","ok");
     };
     inp.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); inp.blur(); } };
