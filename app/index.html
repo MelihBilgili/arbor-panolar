@@ -529,9 +529,10 @@ async function grPrimSart(){
     sb.from("pano_yayin").select("anahtar,yayin_at"),
     sb.from("form_takip").select("form_key,gunc_sikligi,son_guncelleme"),
     sb.from("mk_ay_islendi").select("*").order("id",{ascending:false}).limit(1),
-    sb.from("form_erisim").select("yol,ad,sira,kisiler,herkes")]);
+    sb.from("form_erisim").select("yol,ad,sira,kisiler,herkes"),
+    sb.rpc("yd_temas_uyari")]); /* YD-TEMAS-GECIKME (12.11.2026): ilk temas iletim + 1-7 doldurma gecikmesi, 1 iş günü = 9 saat */
   const D=r=>(r&&!r.error)?(r.data||[]):[];
-  const [K,MP,AYR,PY,FT,MKA,FE]=R.map(D);
+  const [K,MP,AYR,PY,FT,MKA,FE,YU]=R.map(D); const UY={}; YU.forEach(x=>{ UY[x.kisi_kod]=x.uyari; });
   const AY={}; AYR.forEach(x=>{ AY[x.kisi_id+"|"+x.yil+"-"+x.ay]=x.tutar; });
   let PM=t0.getMonth(), PYr=t0.getFullYear(); if(PM===0){PM=12;PYr--;}
   const back=(y,m,n)=>{ let mm=m-n, yy=y; while(mm<=0){mm+=12;yy--;} return {y:yy,m:mm}; };
@@ -556,12 +557,12 @@ async function grPrimSart(){
     .filter(m=>{ const f=KF[m.kisi_kod]||[], ek=PRIM_SART_EK[m.kisi_kod]; /* PRIM-SART-FORMSUZ: aylık formu olmayan prim alan şartı sağlamış sayılır */
       return f.every(Boolean)&&(!ek||ek({t0,due})); })
     .filter(m=>{ const v=AY[m.id+"|"+PYr+"-"+PM]; return v==null||v===""; }) /* PRIM-SART-ODENMIS-YOK: önceki ay primi dolu olan gösterilmez */
-    .map(m=>({ad:kBy[m.kisi_kod].tam_ad||m.kisi, yy:m.yol_yemek, pa:AY[m.id+"|"+PYr+"-"+PM], av:avgOf(m.id)}))
+    .map(m=>({ad:kBy[m.kisi_kod].tam_ad||m.kisi, uy:UY[m.kisi_kod]||"", yy:m.yol_yemek, pa:AY[m.id+"|"+PYr+"-"+PM], av:avgOf(m.id)}))
     .sort((a,b)=>String(a.ad).localeCompare(String(b.ad),"tr"));
   const n=v=>(v==null||v==="")?'<span class="gr-muted">—</span>':Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0});
-  const rows=L.length?L.map(x=>`<tr><td>${esc(x.ad)}</td><td class="n">${n(x.yy)}</td><td class="n">${n(x.av)}</td></tr>`).join("")
-    :`<tr><td colspan="3" class="gr-muted">Bu ay şartı sağlayan henüz yok</td></tr>`;
-  return `<div class="scroll"><table class="grt"><thead><tr><th>Prim şartını sağlayan</th><th class="n">Yol-Yemek (TL)</th><th class="n">Son 12 Ay Ort. Prim (TL)</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  const rows=L.length?L.map(x=>`<tr><td>${esc(x.ad)}</td><td class="n">${n(x.yy)}</td><td class="n">${n(x.av)}</td><td style="color:#b40000;font-size:11px;white-space:normal;min-width:220px;max-width:460px">${x.uy?esc(x.uy):""}</td></tr>`).join("")
+    :`<tr><td colspan="4" class="gr-muted">Bu ay şartı sağlayan henüz yok</td></tr>`;
+  return `<div class="scroll"><table class="grt"><thead><tr><th>Prim şartını sağlayan</th><th class="n">Yol-Yemek (TL)</th><th class="n">Son 12 Ay Ort. Prim (TL)</th><th>Uyarı</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 /* GIRIS-ACIL-SAHSI (10.11.2026, Melih): Giriş'te ayrı PEM tablosu yok; Acil yüklemeler tablosunun en üstünde "ŞAHSİ PEM'LER" grubu =
    ana_gundem'deki acil olmayan PEM'ler (Konu tıklayınca düzenlenir, ✕ gündemden siler). Acil blok yalnız buradan çizilir. */
