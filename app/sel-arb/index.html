@@ -508,7 +508,9 @@ async function saGaAc(sira,proje){
 }
 async function saCariAc(tur,sira,proje){
   /* SELARB-CARI-1000 (11.11.2026, Melih): view 1.589 satır, PostgREST 1000 sınırı sonrakileri (ör. Les Ateliers 63) kesiyordu → yalnız bu projenin satırları sunucuda süzülüp alınır */
-  const key=String(proje||"").trim().toLowerCase();
+  /* SELARB-CARI-HAM-AD (12.11.2026): ARB-AD-YAZIM data-proje'yi biçimlendiriyor (ı, tek boşluk) → anahtar ham proje adından (ST.g, sira) */
+  const _gr=(ST.g||[]).find(x=>Number(x.sira)===Number(sira));
+  const key=String((_gr&&_gr.proje)||proje||"").trim().toLowerCase();
   const q=await sb.from("sel_arb_cari").select("*").eq("tablo",tur).ilike("proje_key",key.replace(/[\\%_]/g,"\\$&")).limit(5000);
   if(q.error){ alert("Hata: "+q.error.message); return; }
   const list=(q.data||[]).filter(r=>r.tablo===tur && String(r.proje_key||"").trim().toLowerCase()===key && (r.sira==null||Number(r.sira)===sira));
