@@ -268,11 +268,11 @@ async function load(){
 const KX=[["kontrat","Kontrat","in"],["kdv","KDV","pb"],["para_birimi","Para Birimi","pb"],   /* SELARB-YAPILMAMIS (11.11.2026): KDV HT/TTC */
   ["vade_gun","Vade (gün)","gn"],["avenant","TS\n(Avenants) (€)","ro"],["ceza","Ceza (€)","in"],["dgd","DGD (€)","in"],["rg","RG (€)","in"],
   ["tahsilat","Tahsilat (€)","ro"],["situ","Yapılmış Situ (€)","ro"],["yapilacak_situ","(Yüklenmiş)\nYapılmamış Situ (€)","ro"],   /* SITU-YUKLEME (10.11.2026): yüklenmiş ama situ yapılmamış; OE dağıtımı/ÖB situ oranlaması ile otomatik değişir, cari kaynaklı satırda Güncel Alacak'a dahil */
-  ["ilk_odeme_tarih","Beklenen İlk\nÖdeme Tarihi","dt"],["ilk_odeme_tutar","Beklenen İlk\nÖdeme Tutarı (€)","in"]];
+  ];   /* SELARB-ILK-ODEME-YOK (12.11.2026, Melih): Beklenen İlk Ödeme Tarihi/Tutarı sütunları kaldırıldı (alanlar DB'de duruyor) */
 const kKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kObKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kOb=r=>{ if(ST.obS&&ST.obS[r.sira]) return ST.obS[r.sira]; const k=kKey(r.proje); if(ST.ob[k]) return ST.ob[k]; for(const x in ST.ob){ if(kObKey(x)===k) return ST.ob[x]; } return {}; };
-const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" data-f="${f}" data-sk="k:${f}" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}${ad.indexOf("\n")>=0?" sa-sm":""}" title="${f==="yapilacak_situ"?"Yükleme toplamı × oran (HT 1,40 · TTC 1,72) − Yapılmış Situ; otomatik":(f==="situ"||f==="tahsilat"?"Cari hesaptan (Excel açılışı + ÖB Faaliyet formu) otomatik gelir":(t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"))}">${esc(ad).replace(/\n/g,"<br>")}</th>`).join("");
+const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" data-f="${f}" data-sk="k:${f}" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}${ad.indexOf("\n")>=0?" sa-sm":""}" title="${f==="yapilacak_situ"?"Yükleme toplamı × oran (HT 1,33 · TTC 1,60) − Yapılmış Situ; otomatik":(f==="situ"||f==="tahsilat"?"Cari hesaptan (Excel açılışı + ÖB Faaliyet formu) otomatik gelir":(t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"))}">${esc(ad).replace(/\n/g,"<br>")}</th>`).join("");
 const kCells=r=>{ const ob=kOb(r); return KX.map(([f,ad,t])=>{
   if(t==="ro") return `<td class="sa-num sa-ro" data-f="${f}">${esc(fmt(ob[f]))}</td>`;
   if(t==="dt") return `<td class="sa-x"><input type="date" data-id="${r.id}" data-f="${f}" value="${esc(r[f]||"")}"></td>`;
