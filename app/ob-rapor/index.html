@@ -175,7 +175,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
      <div style="margin-bottom:12px"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">Situations <span class="cnt" id="c6"></span></h3>
       <div class="scroll"><table style="min-width:760px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th style="width:80px">İlerleme No</th><th style="width:110px">Dönem</th><th style="width:110px">Tutar (€)</th><th style="width:140px">Onay Durumu</th><th class="x"></th></tr></thead><tbody id="t6"></tbody></table></div></div>
      <div><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">TS <span class="cnt" id="c7"></span></h3><!-- OB-TS-261006 -->
-      <div class="scroll"><table style="min-width:1035px"><thead><tr><th style="width:72px">Tarih</th><th style="width:95px">No</th><th style="width:170px">Proje</th><th style="width:230px">İçerik</th><th style="width:175px">Açıklama</th><!-- OB-TS-ACIKLAMA-261006 --><th style="width:120px">Tutar (€, KDV hariç)</th><th style="width:140px">Durum</th><th class="x"></th></tr></thead><tbody id="t7"></tbody></table></div></div>
+      <div class="scroll"><table style="min-width:1145px"><thead><tr><th style="width:72px">Tarih</th><th style="width:95px">No</th><th style="width:170px">Proje</th><th style="width:230px">İçerik</th><th style="width:175px">Açıklama</th><!-- OB-TS-ACIKLAMA-261006 --><th style="width:120px">Tutar (€, KDV hariç)</th><th style="width:110px" title="Bu TS'in bağlı olduğu situation; Avenant geldi için zorunlu">İlerleme No (Situ)</th><!-- OB-TS-SITU-NO --><th style="width:140px">Durum</th><th class="x"></th></tr></thead><tbody id="t7"></tbody></table></div></div>
      <div style="margin-top:12px"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">PV's de Réception <span class="cnt" id="c9"></span></h3><!-- OB-PVR (01.10.2026): Tutar = Sel-Arb kontrat tutarı (trigger) -->
       <div class="scroll"><table style="min-width:620px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th style="width:130px">Tutar (€)</th><th>Açıklama</th><th class="x"></th></tr></thead><tbody id="t9"></tbody></table></div></div>
     </div>
@@ -981,15 +981,27 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
   const TSD=["Avenant geldi","Onaylandı, avenant bekleniyor","Müşteriden dönüş bekleniyor","Mehmet Bey dönüşü bekleniyor","İptal edildi"]; /* OB-TS-DURUM-261104 (ÖB talebi) */ /* OB-TS-261006 */ /* TS-ONAY-AV (07.10.2026) */
   const opts=(list,cur)=>['<option value=""></option>'].concat(list.map(o=>'<option'+(String(cur||"")===o?" selected":"")+'>'+escq(o)+'</option>')).join("");
   const inp=(f,v,cls,typ)=>'<input'+(typ?' type="'+typ+'"':'')+(cls?' class="'+cls+'"':'')+' data-f="'+f+'" value="'+escq(v==null?"":v)+'">';
+  /* OB-TS-SITU-NO (12.11.2026, Melih): TS satirinda ayni projenin daha once islenmis situation ilerleme no'su secilir;
+     secim yoksa durum "Avenant geldi" yapilamaz (DB trigger trg_ob_avenant_situ_zorunlu da engeller). */
+  let SITU={};
+  const pk=x=>String(x||"").trim().toLocaleLowerCase("tr");
+  async function situYukle(){ const {data}=await sb.from("ob_situation").select("proje,ilerleme_no,donem,tarih,onay_durumu").order("tarih",{ascending:true});
+    SITU={}; (data||[]).forEach(x=>{ const n=String(x.ilerleme_no||"").trim(); if(!n||x.onay_durumu==="İptal Edildi") return; const k=pk(x.proje);
+      (SITU[k]=SITU[k]||[]); if(!SITU[k].some(y=>y.n===n)) SITU[k].push({n:n,d:x.donem||""}); }); }
+  const situSel=r=>{ const L=SITU[pk(r.proje)]||[], cur=String(r.situ_no||"");
+    let o='<option value=""></option>'+L.map(x=>'<option value="'+escq(x.n)+'"'+(x.n===cur?" selected":"")+'>'+escq(x.n+(x.d?" · "+x.d:""))+'</option>').join("");
+    if(cur&&!L.some(x=>x.n===cur)) o+='<option value="'+escq(cur)+'" selected>'+escq(cur)+'</option>';
+    return '<select data-f="situ_no"'+(L.length?'':' title="Bu projede işlenmiş situation yok"')+'>'+o+'</select>'; };
   const T={
     ob_dpgf:{tb:"t5",cnt:"c5",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("correspondence",r.correspondence)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']},
     ob_situation:{tb:"t6",cnt:"c6",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("ilerleme_no",r.ilerleme_no)+'</td>','<td>'+inp("donem",r.donem)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td><select data-f="onay_durumu">'+opts(ONAY,r.onay_durumu)+'</select></td>']},
     ob_tahsilat:{tb:"t8",cnt:"c8",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" data-sap-ek="Harç ve Vergi İadesi|Diğer (Proje Dışı)" readonly') /* TAHSILAT-EK-SECENEK */+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>']}, /* OB-TAHSILAT-260930 */
     ob_pv_reception:{tb:"t9",cnt:"c9",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("tutar",nf(r.tutar),"num").replace("<input",'<input readonly tabindex="-1" style="background:#f1f3f5" title="Sel-Arb kontrat tutarı (otomatik)"').replace('data-f="tutar"','data-ro="tutar"')+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>']}, /* OB-PVR */
-    ob_avenant:{tb:"t7",cnt:"c7",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("no",r.no)+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("icerik",r.icerik)+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td><select data-f="durum">'+opts(TSD,r.durum)+'</select></td>']} /* OB-TS-261006 */
+    ob_avenant:{tb:"t7",cnt:"c7",cols:r=>['<td>'+inp("tarih",r.tarih,"","date")+'</td>','<td>'+inp("no",r.no)+'</td>','<td>'+inp("proje",r.proje).replace("<input",'<input data-sap="1" readonly')+'</td>','<td>'+inp("icerik",r.icerik)+'</td>','<td>'+inp("aciklama",r.aciklama)+'</td>','<td>'+inp("tutar",nf(r.tutar),"num")+'</td>','<td>'+situSel(r)+'</td>','<td><select data-f="durum">'+opts(TSD,r.durum)+'</select></td>']} /* OB-TS-261006 */ /* OB-TS-SITU-NO */
   };
   async function load(tbl){
     const t=T[tbl];
+    if(tbl==="ob_avenant") await situYukle(); /* OB-TS-SITU-NO */
     const {data,error}=tbl==="ob_avenant" /* OB-TS-SIRA-261006 */
       ? await sb.from(tbl).select("*").order("tarih",{ascending:false,nullsFirst:false}).order("no",{ascending:false}).order("id",{ascending:false})
       : await sb.from(tbl).select("*").order("tarih",{ascending:false,nullsFirst:true}).order("id",{ascending:false});
@@ -1001,19 +1013,24 @@ document.head.insertAdjacentHTML("beforeend","<style>.carit{display:inline-block
     const nr=$(t.tb).querySelector("tr[data-new]");
     nr.querySelectorAll("[data-f]").forEach(el=>{ el.onchange=async()=>{
       const f=el.getAttribute("data-f"); if(el.value.trim()==="") return;
+      if(tbl==="ob_avenant"&&f==="durum"&&el.value==="Avenant geldi"){ alert("Durum \"Avenant geldi\" yapılamaz.\n\nÖnce satırı kaydedip (Proje seçerek) İlerleme No (Situ) sütununda situation'ı seçiniz."); el.value=""; return; } /* OB-TS-SITU-NO */
       const body={}; body[f]=val(f,el);
       const {error}=await sb.from(tbl).insert(body);
       if(error) bmsg("Hata: "+error.message,false,tbl); else { bmsg("Yeni satır kaydedildi.",true,tbl); load(tbl); } }; });
     $(t.tb).querySelectorAll("tr[data-id]").forEach(tr=>{
       const id=tr.getAttribute("data-id");
-      tr.querySelectorAll("[data-f]").forEach(el=>{ el.onchange=async()=>{
-        const f=el.getAttribute("data-f"); const body={updated_at:new Date().toISOString()}; body[f]=val(f,el);
+      tr.querySelectorAll("[data-f]").forEach(el=>{ el.dataset.onceki=el.value; el.onchange=async()=>{
+        const f=el.getAttribute("data-f");
+        if(tbl==="ob_avenant"){ const sn=tr.querySelector('[data-f="situ_no"]'), du=tr.querySelector('[data-f="durum"]'); /* OB-TS-SITU-NO */
+          if((f==="durum"&&el.value==="Avenant geldi"&&!(sn&&sn.value))||(f==="situ_no"&&!el.value&&du&&du.value==="Avenant geldi")){
+            alert("Durum \"Avenant geldi\" yapılamaz.\n\nÖnce İlerleme No (Situ) sütununda bu TS'in bağlı olduğu situation'ı seçiniz."); el.value=el.dataset.onceki||""; return; } }
+        const body={updated_at:new Date().toISOString()}; body[f]=val(f,el);
         const {error}=await sb.from(tbl).update(body).eq("id",id);
-        if(error) bmsg("Hata: "+error.message,false,tbl); else { bmsg("Kaydedildi.",true,tbl); if(f==="tarih"||(tbl==="ob_pv_reception"&&f==="proje")) load(tbl); } }; }); /* OB-PVR: proje değişince kontrat tutarı yenilenir */
+        if(error){ bmsg("Hata: "+error.message,false,tbl); el.value=el.dataset.onceki||""; } else { el.dataset.onceki=el.value; bmsg("Kaydedildi.",true,tbl); if(f==="tarih"||(tbl==="ob_pv_reception"&&f==="proje")||(tbl==="ob_avenant"&&f==="proje")) load(tbl); } }; }); /* OB-PVR: proje değişince kontrat tutarı yenilenir */
       tr.querySelector(".del").onclick=async()=>{ if(!confirm("Bu satır silinsin mi?")) return;
         const {error}=await sb.from(tbl).delete().eq("id",id); if(error) bmsg("Hata: "+error.message,false,tbl); else load(tbl); };
     });
-    eskiKapat(t.tb,"tarih",tbl==="ob_situation"?7:(tbl==="ob_avenant"?8:5)); /* OB-TS-261006 */ /* ESKI-KAPAT */
+    eskiKapat(t.tb,"tarih",tbl==="ob_situation"?7:(tbl==="ob_avenant"?9:5)); /* OB-TS-SITU-NO: 9 */ /* OB-TS-261006 */ /* ESKI-KAPAT */
     cariBanner(t.tb,"Cari Ay Toplam EUR"+(tbl==="ob_situation"?" <span style=\"font-weight:400;font-size:12px\">(İptal Edildi hariç)</span>":(tbl==="ob_avenant"?" <span style=\"font-weight:400;font-size:12px\">(yalnız Avenant geldi)</span>":"")),
       R.filter(r=>cariAyMi(r.tarih)&&!(tbl==="ob_situation"&&r.onay_durumu==="İptal Edildi")&&!(tbl==="ob_avenant"&&(r.durum!=="Avenant geldi"||r.aktarim))).reduce((a,r)=>a+(Number(r.tutar)||0),0),"€"); /* CARI-TOPLAM */
     if(tbl==="ob_avenant"){ tsBar(R); tsFiltre(true); } /* OB-TS-FILTRE-261006 */
