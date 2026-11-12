@@ -54,6 +54,86 @@
     m.querySelector(".ml").addEventListener("click",function(e){ if(e.target&&e.target.tagName==="A") m.classList.remove("acik"); });
     document.addEventListener("click",function(e){ if(!m.contains(e.target)) m.classList.remove("acik"); });
     document.addEventListener("keydown",function(e){ if(e.key==="Escape") m.classList.remove("acik"); });
+    if(h) bantKur(h,bu);
+  }
+  /* FORM-BANT2 (12.11.2026, Melih): tum formlarda lacivert bant ince; banttaki aciklayici metinler (.sub/.hsub/.hinfo/.note)
+     form adinin sagindaki "?" ikonuna tasinir (uzerine gelince / tiklayinca acilir). "Guncelle" dugmesi ve Son guncelleme
+     tarihi bandin sagina tasinir. Tarih: sayfada #stamp varsa o tasinir, yoksa DAMGA eslemesiyle dugme damgasi okunur
+     (FORM-SON-GUNC ile ayni kaynak). Sayfadaki [data-arb-bant] ogeleri de banda tasinir (or. Sel-Arb bos-alacak dugmesi). */
+  var CLI=null;
+  var DAMGA={"sel-arb/":["py","sel_arb_form"],"onur/":["py","oe_sevk"],"ob-rapor/":["py","ob_rapor"],"ahsap/":["py","ahsap"],
+    "mk-prim/":["mk"],"so/":["say","SO"],"fy/":["say","FY"],"fy2/":["say","FY2"],"teklif/":["fy"]};
+  function damgaKaynak(bu){ if(DAMGA[bu]) return DAMGA[bu]; var m=/^santiye-(.+)\/$/.exec(bu||""); return m?["py","santiye_"+m[1].replace(/-/g,"_")]:null; }
+  function tx(el){ return (el.textContent||"").replace(/\s+/g," ").trim().toLocaleLowerCase("tr-TR"); }
+  function fd(s){ if(!s) return "—"; var d=new Date(s); return isNaN(d)?"—":d.toLocaleDateString("tr-TR",{day:"2-digit",month:"2-digit",year:"2-digit"}); }
+  function bantStil(){
+    if(document.getElementById("arb-bant2-css")) return;
+    var s=document.createElement("style"); s.id="arb-bant2-css";
+    s.textContent="header.arb-mh{display:flex!important;align-items:center!important;flex-wrap:wrap;gap:4px 14px;padding:5px 14px 5px 104px!important;min-height:38px;box-sizing:border-box}"
+      +"header.arb-mh #arb-menu{top:50%;transform:translateY(-50%)}"
+      +"header.arb-mh h1{font-size:16px!important;margin:0!important;line-height:1.25!important;display:inline-block}"
+      +".arb-h1w{display:flex!important;align-items:center;gap:8px;flex-wrap:wrap;margin:0!important}"
+      +".arb-hlp{position:relative;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font:700 12px 'Segoe UI',system-ui,sans-serif;cursor:help;flex:none;user-select:none}"
+      +".arb-hlp:hover,.arb-hlp.acik{background:#fff;color:#16324f}"
+      +".arb-hlp .arb-hlp-pop{display:none;position:absolute;left:-8px;top:calc(100% + 7px);z-index:1001;background:#fff;color:#1d2b3a;border:1px solid #cdd8e4;border-radius:9px;box-shadow:0 8px 28px rgba(0,0,0,.22);padding:10px 13px;width:max-content;max-width:min(600px,85vw);font:400 12.5px/1.5 'Segoe UI',system-ui,sans-serif;text-align:left;cursor:default}"
+      +".arb-hlp .arb-hlp-pop::before{content:'';position:absolute;left:0;right:0;top:-9px;height:9px}"
+      +".arb-hlp:hover .arb-hlp-pop,.arb-hlp.acik .arb-hlp-pop{display:block}"
+      +".arb-hlp-pop>*{display:block!important;margin:0 0 6px!important;max-width:none!important;font-size:12.5px!important;line-height:1.5!important;color:#1d2b3a!important;background:none!important;border:0!important;padding:0!important;flex:none!important;min-width:0!important}"
+      +".arb-hlp-pop>*:last-child{margin-bottom:0!important}.arb-hlp-pop *{color:inherit!important}.arb-hlp-pop a{color:#1f5f99!important;text-decoration:underline}"
+      +".arb-bsag{margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap}"
+      +".arb-bsag button{background:#fff!important;color:#16324f!important;border:0!important;border-radius:7px!important;padding:5px 13px!important;font:700 13px 'Segoe UI',system-ui,sans-serif!important;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15);margin:0!important}"
+      +".arb-bsag button:hover{background:#e8f0f8!important}.arb-bsag button:disabled{opacity:.6;cursor:wait}"
+      +".arb-bsag button.arb-gunc{background:#f2b84b!important}.arb-bsag button.arb-gunc:hover{background:#f7cd77!important}"
+      +".arb-bsag .arb-damga{color:#cfe0f0!important;font-size:12px!important;white-space:nowrap;margin:0!important;padding:0!important;background:none!important;border:0!important}"
+      +".arb-bsag [data-arb-bant]{display:inline-flex;align-items:center;margin:0!important;padding:0!important}"
+      +"@media print{.arb-hlp{display:none}}";
+    document.head.appendChild(s);
+  }
+  async function damgaOku(k){
+    if(!CLI||!k) return undefined;
+    try{
+      if(k[0]==="py"){ var r=await CLI.from("pano_yayin").select("yayin_at").eq("anahtar",k[1]).limit(1); return (r&&!r.error&&r.data&&r.data[0])?r.data[0].yayin_at:null; }
+      if(k[0]==="say"){ var r2=await CLI.from("satis_ay_islendi").select("updated_at").eq("kaynak",k[1]).limit(1); return (r2&&!r2.error&&r2.data&&r2.data[0])?r2.data[0].updated_at:null; }
+      if(k[0]==="mk"){ var r3=await CLI.from("mk_ay_islendi").select("*").order("id",{ascending:false}).limit(1); var x=(r3&&!r3.error&&r3.data&&r3.data[0])||null; return x?(x.updated_at||x.created_at||null):null; }
+      if(k[0]==="fy"){ var r4=await CLI.from("fiyat_yayin").select("yayin_at").eq("id",1).limit(1); return (r4&&!r4.error&&r4.data&&r4.data[0])?r4.data[0].yayin_at:null; }
+    }catch(e){}
+    return undefined;
+  }
+  function bantKur(h,bu){
+    if(h.dataset.arbBant2) return; h.dataset.arbBant2="1";
+    bantStil();
+    /* "?" ikonu + aciklama metinleri */
+    var h1=h.querySelector("h1");
+    var acik=[].slice.call(h.querySelectorAll(".sub,.hsub,.hinfo,.note")).filter(function(e){ return !e.closest("#arb-menu"); });
+    if(h1&&acik.length){
+      var q=document.createElement("span"); q.className="arb-hlp"; q.tabIndex=0; q.setAttribute("aria-label","Açıklama"); q.textContent="?";
+      var pop=document.createElement("div"); pop.className="arb-hlp-pop"; q.appendChild(pop);
+      acik.forEach(function(e){ pop.appendChild(e); });
+      h1.parentNode.insertBefore(q,h1.nextSibling);
+      if(h1.parentNode!==h) h1.parentNode.classList.add("arb-h1w");
+      q.addEventListener("click",function(e){ if(e.target.closest(".arb-hlp-pop")) return; e.stopPropagation(); q.classList.toggle("acik"); });
+      document.addEventListener("click",function(e){ if(!q.contains(e.target)) q.classList.remove("acik"); });
+      document.addEventListener("keydown",function(e){ if(e.key==="Escape") q.classList.remove("acik"); });
+    }
+    var sag=document.createElement("div"); sag.className="arb-bsag"; h.appendChild(sag);
+    var dmg=null, kendi=false, k=damgaKaynak(bu), btn=null;
+    function tazele(){ if(!kendi||!dmg) return; damgaOku(k).then(function(v){ if(v!==undefined) dmg.textContent="Son güncelleme: "+fd(v); }); }
+    function yerlestir(){
+      [].slice.call(document.querySelectorAll("[data-arb-bant]")).forEach(function(e){ if(!sag.contains(e)) sag.insertBefore(e,btn||dmg||null); });
+      if(!btn){
+        btn=[].slice.call(document.querySelectorAll("button")).filter(function(b){
+          return !b.closest("table")&&!b.closest("#arb-menu")&&!b.closest(".arb-hlp")&&/^(aylık )?güncelle$/.test(tx(b)); })[0]||null;
+        if(btn){ btn.classList.add("arb-gunc"); sag.insertBefore(btn,dmg||null);
+          btn.addEventListener("click",function(){ [4000,10000,25000].forEach(function(t){ setTimeout(tazele,t); }); }); }
+      }
+      if(!dmg){
+        var st=document.getElementById("stamp");
+        if(st){ dmg=st; dmg.classList.add("arb-damga"); sag.appendChild(dmg); }
+        else if(k&&CLI){ dmg=document.createElement("span"); dmg.className="arb-damga"; dmg.textContent="Son güncelleme: …"; sag.appendChild(dmg); kendi=true; tazele(); }
+      }
+    }
+    yerlestir();
+    [1500,4000,9000].forEach(function(t){ setTimeout(yerlestir,t); });
   }
   /* FORM-MENU-REST: supabase istemcisi olmayan sayfa (cam/, yalniz MB): MB pano oturumunun tokeniyle REST okuma; okunamazsa menude yalniz bu form */
   async function restOku(){
@@ -79,6 +159,7 @@
       var r=null; try{ r=await cli.from("form_erisim").select("yol,ad,sira,kisiler,herkes,rol_map,varsayilan_rol").order("sira"); }catch(e){}
       rows=(r&&!r.error&&r.data)||[];
     }
+    CLI=cli; /* FORM-BANT2 */
     var kod=(em===MB)?"MB":kisiKod(em,rows);
     var bu=yol();
     var L=rows.filter(function(f){ if(f.yol!==bu&&GIZLI[f.yol]) return false; return f.yol===bu || kod==="MB" || f.herkes || (kod&&(f.kisiler||[]).indexOf(kod)>=0); });
