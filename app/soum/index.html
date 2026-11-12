@@ -604,9 +604,9 @@ async function oku(){
     const R=await pdfAc(kaynak.f); const C=raporCoz(R); S.rapor=R;
     if(!C.poz.length) throw new Error("PDF'te poz bulunamadı ("+kaynak.f.name+").");
     let ekstra=C.ekstra, top=C.top;
-    if(d("detay")&&d("rapor")){ const R2=await pdfAc(d("rapor").f); const C2=raporCoz(R2); ekstra=ekstra.concat(C2.ekstra); if(top==null) top=C2.top; } /* SOUM-EKSTRA-TUM: Rapor'daki Özet Extra Malzemeler kodları da eklenir */
+    if(d("detay")&&d("rapor")){ const R2=await pdfAc(d("rapor").f); const C2=raporCoz(R2); ekstra=ekstra.concat(C2.ekstra); if(top==null) top=C2.top; if(C.adetTop==null) C.adetTop=C2.adetTop; } /* SOUM-EKSTRA-TUM: Rapor'daki Özet Extra Malzemeler kodları da eklenir */
     const uniq={}; ekstra.forEach(e=>{ if(!uniq[e.kod]) uniq[e.kod]=e; }); S.ekstra=Object.values(uniq).map(e=>Object.assign(e,{carpan:/^Fa183/i.test(e.kod)?2:1,dahil:true}));
-    S.ekstraTop=S.ekstra.reduce((a,e)=>a+(e.tutar||0),0); S.pdfTop=top; S.baslik=C.baslik;
+    S.ekstraTop=S.ekstra.reduce((a,e)=>a+(e.tutar||0),0); S.pdfTop=top; S.adetTop=C.adetTop; S.baslik=C.baslik;
     S.psi=(()=>{ const m=/Psi\s*=\s*([\d,\.]+)/i.exec(C.poz.map(p=>p.metin).join("\n")); return m?+m[1].replace(",","."):null; })();
     S.of=null; const of=d("ofrapor")||d("ofdetay");
     if(of){ const Ro=await pdfAc(of.f); const Co=raporCoz(Ro); S.of={top:Co.top,ekstra:Co.ekstra.reduce((a,e)=>a+(e.tutar||0),0),poz:Co.poz}; }
@@ -764,7 +764,7 @@ function hesapla(){
   let pose=m2*birim*K; const mf=[]; if($("f_disi").value==="1"){ pose*=(1+par("duvar_disi",0.40)); mf.push("duvar dışı +%"+fN(par("duvar_disi",0.4)*100,0)); }
   if(uzak){ pose*=(1+par("uzak_montaj",0.65)); mf.push("uzak bölge +%"+fN(par("uzak_montaj",0.65)*100,0)); }
   const montDahil=$("f_mont").value==="1";
-  const kamyon=Math.max(1,+$("f_kamyon").value||Math.ceil(adet/50)); if(!$("f_kamyon").dataset.elle) $("f_kamyon").value=Math.ceil(adet/50);
+  /* SOUM-TRANSPORT-ADET (12.11.2026, Melike Başaran): kamyon varsayılanı Pencad raporundaki Doğrama Adeti / 50 (yoksa poz adetleri toplamı) */ const trAdet=S.adetTop||adet; if(!$("f_kamyon").dataset.elle) $("f_kamyon").value=Math.ceil(trAdet/50); const kamyon=Math.max(1,+$("f_kamyon").value||Math.ceil(trAdet/50));
   const transport=kamyon*2*1000*K, petit=$("f_petit").value==="1";
   /* ekstralar */
   /* SOUM-OPSIYON-SEC (04.11.2026, Melih): Pencad ekstra malzemesi "Dahil" → yalnız ilgili pozların notunda, toplamda/opsiyonda satır yok; "Dahil" değil → notta yok, toplamın altında ayrı opsiyon satırı */
