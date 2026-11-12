@@ -278,6 +278,7 @@ const kObKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
 const kOb=r=>{ if(ST.obS&&ST.obS[r.sira]) return ST.obS[r.sira]; const k=kKey(r.proje); if(ST.ob[k]) return ST.ob[k]; for(const x in ST.ob){ if(kObKey(x)===k) return ST.ob[x]; } return {}; };
 const kHead=()=>KX.map(([f,ad,t])=>`<th rowspan="2" data-f="${f}" data-sk="k:${f}" class="sa-num ${t==="ro"?"sa-ro":"sa-k"}${ad.indexOf("\n")>=0?" sa-sm":""}" title="${f==="yapilacak_situ"?"Yükleme toplamı × oran (HT 1,33 · TTC 1,60) − Yapılmış Situ; otomatik":(f==="situ"||f==="tahsilat"?"Cari hesaptan (Excel açılışı + ÖB Faaliyet formu) otomatik gelir":(t==="ro"?"ÖB Faaliyet formundan otomatik gelir":"Serbest doldurulur"))}">${esc(ad).replace(/\n/g,"<br>")}</th>`).join("");
 const kCells=r=>{ const ob=kOb(r); return KX.map(([f,ad,t])=>{
+  if(f==="yapilacak_situ"&&r.yapilacak_kaynak==="manuel") return `<td class="sa-num sa-ro" data-f="${f}" style="color:#c00" title="Manuel (maktu) ${esc(fmt(r.yapilacak_maktu))} € — sonradan ÖB formuna girilen situationlar düşülür; değiştirmek için sağ tık › Yapılmamış situ belirle">${esc(fmt(r.yapilacak_situ))}</td>`;   /* SELARB-YAP-MAKTU */
   if(t==="ro") return `<td class="sa-num sa-ro" data-f="${f}">${esc(fmt(ob[f]))}</td>`;
   if(t==="dt") return `<td class="sa-x"><input type="date" data-id="${r.id}" data-f="${f}" value="${esc(r[f]||"")}"></td>`;
   const eks=(f==="kontrat"||f==="vade_gun")&&(r[f]==null||r[f]==="")?" sa-eksik":"";   /* SELARB-MUSTERI-VADE: ilk 4 sütun eksik → pembe */
@@ -466,15 +467,48 @@ function saCariMenu(x,y,sira,proje){
   saCariMenuKapat();
   const m=document.createElement("div"); m.id="sa-cmenu";
   m.style.cssText=`position:fixed;left:${x}px;top:${y}px;z-index:9999;background:#fff;border:1px solid #c9d3de;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.18);font-size:12.5px;min-width:170px;padding:4px 0`;
-  m.innerHTML=`<div class="sa-cm-it" data-t="ga" style="font-weight:700">Güncel alacak belirle</div><div class="sa-cm-it" data-t="cari">Cari hesap</div><div class="sa-cm-it" data-t="sel">Selectron faturaları</div>`;   /* SELARB-ALACAK-KAYNAK */
+  m.innerHTML=`<div class="sa-cm-it" data-t="ga" style="font-weight:700">Güncel alacak belirle</div><div class="sa-cm-it" data-t="ys" style="font-weight:700">Yapılmamış situ belirle</div><div class="sa-cm-it" data-t="cari">Cari hesap</div><div class="sa-cm-it" data-t="sel">Selectron faturaları</div>`;   /* SELARB-ALACAK-KAYNAK */
   m.querySelectorAll(".sa-cm-it").forEach(it=>{ it.style.cssText="padding:6px 14px;cursor:pointer;white-space:nowrap";
     it.onmouseenter=()=>it.style.background="#eef3f8"; it.onmouseleave=()=>it.style.background="";
-    it.onclick=()=>{ saCariMenuKapat(); if(it.dataset.t==="ga") saGaAc(sira,proje); else saCariAc(it.dataset.t,sira,proje); }; });
+    it.onclick=()=>{ saCariMenuKapat(); if(it.dataset.t==="ga") saGaAc(sira,proje); else if(it.dataset.t==="ys") saYsAc(sira,proje); else saCariAc(it.dataset.t,sira,proje); }; });
   document.body.appendChild(m);
   const r=m.getBoundingClientRect(); if(r.right>innerWidth) m.style.left=(innerWidth-r.width-6)+"px"; if(r.bottom>innerHeight) m.style.top=(innerHeight-r.height-6)+"px";
   setTimeout(()=>{ const k=ev=>{ if(!m.contains(ev.target)){ saCariMenuKapat(); document.removeEventListener("mousedown",k,true); } }; document.addEventListener("mousedown",k,true); },0);
 }
 /* SELARB-ALACAK-KAYNAK (02.11.2026, Melih): Güncel alacak kaynağı — Manuel (maktu, yeniden belirlenene kadar sabit) / Cari hesap (bakiye, sürekli güncel) */
+/* SELARB-YAP-MAKTU (12.11.2026, Melih): Yapılmamış Situ manuel (maktu) ya da otomatik; manuelde sonradan ÖB'ye girilen situationlar düşülür (RPC sel_arb_yapilmamis_belirle) */
+async function saYsAc(sira,proje){
+  const r=ST.g.find(x=>Number(x.sira)===Number(sira)); if(!r) return;
+  const old=document.getElementById("sa-gamodal"); if(old) old.remove();
+  const kay=r.yapilacak_kaynak==="manuel"?"manuel":"oto";
+  const ilk=kay==="manuel"?r.yapilacak_situ:(r.yapilacak_maktu!=null?r.yapilacak_maktu:r.yapilacak_situ);
+  const ov=document.createElement("div"); ov.id="sa-gamodal";
+  ov.style.cssText="position:fixed;inset:0;z-index:9998;background:rgba(10,25,45,.45);display:flex;align-items:flex-start;justify-content:center;padding:12vh 16px";
+  ov.innerHTML=`<div style="background:#fff;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.3);padding:14px 16px;min-width:300px;max-width:92vw;font-size:13px;color:#16324f">
+    <div style="font-weight:700;font-size:14px;margin-bottom:2px">Yapılmamış situ belirle</div>
+    <div style="color:#5a6b7d;margin-bottom:10px">${esc(proje)}</div>
+    <label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="radio" name="sa-ys" value="manuel"${kay==="manuel"?" checked":""}> Manuel
+      <input id="sa-ys-t" type="text" inputmode="decimal" style="width:12ch;text-align:right;padding:3px 6px;border:1px solid #c9d6e3;border-radius:5px" value="${esc(fmt(ilk))}"> €</label>
+    <label style="display:flex;align-items:center;gap:8px;margin:6px 0"><input type="radio" name="sa-ys" value="oto"${kay==="oto"?" checked":""}> Otomatik (yükleme × oran − yapılmış situ)</label>
+    <div style="color:#5a6b7d;font-size:11.5px;margin-top:4px">Manuelde, bu tarihten sonra ÖB formuna girilen situationlar tutardan düşülür.</div>
+    <div id="sa-ys-m" style="color:#b23a2e;min-height:16px;margin-top:4px"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+      <button id="sa-ys-v" style="border:1px solid #cdd8e4;background:#fff;color:#16324f;border-radius:7px;padding:5px 12px;cursor:pointer">Vazgeç</button>
+      <button id="sa-ys-k" style="border:0;background:#16324f;color:#fff;border-radius:7px;padding:5px 14px;cursor:pointer">Kaydet</button></div></div>`;
+  document.body.appendChild(ov);
+  const kapat=()=>ov.remove();
+  ov.onclick=e=>{ if(e.target===ov) kapat(); };
+  document.getElementById("sa-ys-v").onclick=kapat;
+  const t=document.getElementById("sa-ys-t");
+  t.onfocus=()=>{ ov.querySelector('input[name="sa-ys"][value="manuel"]').checked=true; };
+  document.getElementById("sa-ys-k").onclick=async()=>{
+    const k=ov.querySelector('input[name="sa-ys"]:checked').value, m=document.getElementById("sa-ys-m");
+    let n=null; if(k==="manuel"){ n=parseTr(t.value); if(Number.isNaN(n)||n==null){ m.textContent="Geçersiz tutar"; return; } }
+    const {data,error}=await sb.rpc("sel_arb_yapilmamis_belirle",{p_sira:Number(sira),p_kaynak:k,p_tutar:n,p_kim:ROL});
+    if(error){ m.textContent="Kaydedilemedi: "+error.message; return; }
+    kapat(); msg("Yapılmamış situ "+(k==="manuel"?"manuel":"otomatik")+" belirlendi","ok"); load();
+  };
+}
 async function saGaAc(sira,proje){
   const r=ST.g.find(x=>Number(x.sira)===Number(sira)); if(!r) return;
   const old=document.getElementById("sa-gamodal"); if(old) old.remove();
