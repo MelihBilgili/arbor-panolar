@@ -509,11 +509,11 @@ async function saCariAc(tur,sira,proje){
   const dd=t=>t?(String(t).slice(8,10)+"."+String(t).slice(5,7)+"."+String(t).slice(2,4)):"";
   let cols, rows=[], bak=0, top={};
   if(tur==="cari"){
-    cols=["Tarih","Vade","Situ / Belge No",`Situ (${sym})`,`Avenant - TS (${sym})`,`Ceza (${sym})`,`Tahsilat (${sym})`,`Bakiye (${sym})`,"Açıklama","Kaynak"];
-    list.forEach(r=>{ const s=n(r.situ),a=n(r.avenant),c=n(r.ceza),o=n(r.odeme); bak+=(s||0)-(c||0)-(o||0);
+    cols=["Tarih","Vade","Situ / Belge No",`Situ (${sym})`,`Tahsilat (${sym})`,`Bakiye (${sym})`,"Açıklama","Kaynak"]; /* SELARB-CARI-AV-CEZA-YOK (12.11.2026, Melih): Avenant-TS ve Ceza sütunları gösterilmez; bakiye hesabı aynı, yalnız avenantlı satır listelenmez */
+    list.forEach(r=>{ const s=n(r.situ),a=n(r.avenant),c=n(r.ceza),o=n(r.odeme); bak+=(s||0)-(c||0)-(o||0); if(s==null&&o==null&&c==null) return;
       ["s","a","c","o"].forEach((k,i)=>{ const v=[s,a,c,o][i]; if(v!=null) top[k]=(top[k]||0)+v; });
-      rows.push([dd(r.tarih),dd(r.vade),r.belge_no||"",f2(s),f2(a),f2(c),f2(o),f2(bak),r.aciklama||"",r.kaynak||""]); });
-    rows.toplam=["Toplam","","",f2(top.s),f2(top.a),f2(top.c),f2(top.o),f2(bak),"",""];
+      rows.push([dd(r.tarih),dd(r.vade),r.belge_no||"",f2(s),f2(o),f2(bak),r.aciklama||"",r.kaynak||""]); });
+    rows.toplam=["Toplam","","",f2(top.s),f2(top.o),f2(bak),"",""];
   } else {
     cols=["Tarih","Vade","Fatura No",`Fatura Tutarı (${sym})`,`Ödeme (${sym})`,`Bakiye (${sym})`,"Açıklama","Kaynak"];
     list.forEach(r=>{ const fv=n(r.fatura),o=n(r.odeme); bak+=(fv||0)-(o||0);
@@ -522,7 +522,7 @@ async function saCariAc(tur,sira,proje){
     rows.toplam=["Toplam","","",f2(top.f),f2(top.o),f2(bak),"",""];
   }
   const baslik=(tur==="cari"?"Cari hesap":"Selectron faturaları")+" — "+proje;
-  const numIdx=new Set(tur==="cari"?[3,4,5,6,7]:[3,4,5]);
+  const numIdx=new Set(tur==="cari"?[3,4,5]:[3,4,5]);
   const old=document.getElementById("sa-cmodal"); if(old) old.remove();
   const ov=document.createElement("div"); ov.id="sa-cmodal";
   ov.style.cssText="position:fixed;inset:0;z-index:9998;background:rgba(10,25,45,.45);display:flex;align-items:flex-start;justify-content:center;padding:4vh 2vw";
