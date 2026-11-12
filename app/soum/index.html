@@ -824,7 +824,7 @@ function ozetCiz(){
   $("ozet").innerHTML='<table><tbody>'+sat.map(s=>'<tr><td class="l">'+esc(s[0])+'</td><td class="num b">'+fP(s[1])+'</td><td class="l mini">'+esc(s[2])+'</td></tr>').join("")
     +'<tr class="top"><td class="l">'+tt("Livré sur chantier","Delivered to site")+'</td><td class="num">'+fP(h.toplam)+'</td><td class="l mini">'+fN(h.adet,0)+' ürün · '+fN(h.m2,2)+' m² · iskonto çarpanı '+frN(h.X2,2)+'</td></tr>'
     +(h.pror?'<tr><td class="l">'+esc(prorAd(h))+'</td><td class="num b">'+fP(h.pror.tutar)+'</td><td class="l mini">Livré sur chantier × %'+frN(h.pror.oran,2)+'</td></tr>':'')
-    +(h.ind?'<tr><td class="l" style="color:#c00;font-weight:800">'+tt("Remise","Discount")+'</td><td class="num" style="color:#c00;font-weight:800">'+fP(-h.ind)+'</td><td class="l mini">Livré sur chantier son '+(String(h.adm).length-1)+' hanesi sıfır olacak şekilde</td></tr>':'')
+    +(h.ind?'<tr><td class="l" style="font-weight:800">'+tt("Remise","Discount")+'</td><td class="num" style="color:#c00;font-weight:800">'+fP(-h.ind)+'</td><td class="l mini">Livré sur chantier son '+(String(h.adm).length-1)+' hanesi sıfır olacak şekilde</td></tr>':'')
     +'<tr class="top"><td class="l">'+tt("Total livré sur chantier","Total Delivered to Site")+'</td><td class="num">'+fP(h.genel)+'</td><td class="l mini">Livré sur chantier'+(h.pror?' + Prorata':'')+(h.ind?' − '+tt("Remise","Discount"):'')+'</td></tr>' /* SOUM-INDIRIM */
     +H.op.map(s=>'<tr class="opt"><td class="l">'+esc(s[0])+'</td><td class="num">'+(typeof s[1]==="number"?fP(s[1]):esc(s[1]))+'</td><td class="l mini">'+esc(s[2])+'</td></tr>').join("")+'</tbody></table>';
   $("ekstralar").innerHTML=S.ekstra.length?'<table><thead><tr><th>Dahil</th><th class="l">Stok</th><th class="l">Ad</th><th>Miktar</th><th>Pencad tutarı</th><th>Çarpan</th><th class="l">Offre satırı</th></tr></thead><tbody>'+S.ekstra.map((e,i)=>'<tr><td><input type="checkbox" data-ed="'+i+'"'+(e.dahil?' checked':'')+'></td><td class="l">'+esc(e.kod)+'</td><td class="l">'+esc(e.ad)+'</td><td>'+fN(e.miktar,0)+' '+esc(e.birim)+'</td><td class="num">'+fE(e.tutar)+'</td><td><input class="n" data-ec="'+i+'" value="'+esc(e.carpan)+'"></td><td class="l">'+(e.dahil?'<i>Pozun notunda (ayrı satır yok)</i>':esc(tt("Option "+ekstraAd(e),ekstraAd(e).replace(/^Extra:/,"Option:"))))+'</td></tr>').join("")+'</tbody></table>':'<div class="bos">Raporda ekstra malzeme yok.</div>';
@@ -987,7 +987,7 @@ async function excelYap(){
   const prR=H.pror?rLs+1:null;
   if(prR){ ws.getRow(prR).height=48.6; st(cR+prR,{v:{formula:cR+rLs+"*"+(H.pror.oran/100),result:n2(H.pror.tutar)},nf:PB,f:{size:18,bold:true},fill:ACIK}); ws.mergeCells(cN1+prR+":"+cN2+prR); st(cN1+prR,{v:prorAd(H),f:{size:18,bold:true,color:{argb:YESIL}},a:{horizontal:"left"}}); }
   const dR=H.ind?rLs+1+(prR?1:0):null, tR=rLs+1+(prR?1:0)+(dR?1:0); /* SOUM-INDIRIM: Remise kırmızı kalın, Total Delivered to Site */
-  if(dR){ ws.getRow(dR).height=48.6; st(cR+dR,{v:-n2(H.ind),nf:PB,f:{size:18,bold:true,color:{argb:"FFC00000"}},fill:ACIK}); ws.mergeCells(cN1+dR+":"+cN2+dR); st(cN1+dR,{v:tt("Remise","Discount"),f:{size:18,bold:true,color:{argb:"FFC00000"}},a:{horizontal:"left"}}); }
+  if(dR){ ws.getRow(dR).height=48.6; st(cR+dR,{v:-n2(H.ind),nf:PB,f:{size:18,bold:true,color:{argb:"FFC00000"}},fill:ACIK}); ws.mergeCells(cN1+dR+":"+cN2+dR); st(cN1+dR,{v:tt("Remise","Discount"),f:{size:18,bold:true},a:{horizontal:"left"}}); } /* SOUM-INDIRIM-RENK (12.11.2026, Melike Başaran): Remise/Discount metni siyah, yalnız tutar kırmızı */
   ws.getRow(tR).height=48.6; st(cR+tR,{v:{formula:cR+rLs+(prR?"+"+cR+prR:"")+(dR?"+"+cR+dR:""),result:n2(H.genel)},nf:PB,f:{size:22,bold:true},fill:ACIK}); ws.mergeCells(cN1+tR+":"+cN2+tR); st(cN1+tR,{v:tt("Total livré sur chantier","Total Delivered to Site"),f:{size:24,bold:true,color:{argb:YESIL}},a:{horizontal:"left"}});
   const opB=tR+1;
   H.op.forEach((o,k)=>{ const rr=opB+k; ws.getRow(rr).height=o[0].length>40?72:48.6; const sayi=typeof o[1]==="number";
@@ -1152,7 +1152,7 @@ function pdfYap(){
   const blok=top.map(x=>'<tr><td class="pr b">'+eu(x[1])+'</td><td class="lb">'+(x[3]&&x[2]==="proto"?'<div class="proto">'+(x[3].p.img?'<img class="pimg" src="'+x[3].p.img.url+'">':'')+'<div>'+tt("PV Prototype + Transport + Pose","Mock-up + transport + installation")+'<br>'+esc(refAd(x[3].p))+tt(" (1-u)"," (1 u)")+'</div></div>':esc(x[0]))+'</td></tr>').join("")
     +'<tr class="ls"><td class="pr">'+eu(h.toplam)+'</td><td class="lb">'+tt("Livré sur chantier","Delivered to site")+'</td></tr>'
     +(h.pror?'<tr><td class="pr b">'+eu(h.pror.tutar)+'</td><td class="lb">'+esc(prorAd(h))+'</td></tr>':'')
-    +(h.ind?'<tr><td class="pr b" style="color:#c00">-'+eu(h.ind)+'</td><td class="lb" style="color:#c00">'+tt("Remise","Discount")+'</td></tr>':'')
+    +(h.ind?'<tr><td class="pr b" style="color:#c00">-'+eu(h.ind)+'</td><td class="lb">'+tt("Remise","Discount")+'</td></tr>':'')
     +'<tr class="ls"><td class="pr">'+eu(h.genel)+'</td><td class="lb">'+tt("Total livré sur chantier","Total Delivered to Site")+'</td></tr>' /* SOUM-INDIRIM */
     +h.op.map(x=>'<tr><td class="pr b">'+eu(x[1])+'</td><td class="lb">'+esc(x[0])+'</td></tr>').join("");
   const nl=t=>esc(t).replace(/\n/g,"<br>");
