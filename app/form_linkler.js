@@ -4,6 +4,8 @@
    Bulunulan form koyu (tiklanmaz). Linkler yeni sekmede acilir. Kaynak kod/form_linkler.js -> app/form_linkler.js */
 (function(){
   if(window.__ARB_FLINK) return; window.__ARB_FLINK=1;
+  /* TABLO-SIRALA (12.11.2026): tum formlarda baslik tiklayinca siralama — ortak betik */
+  try{ if(!window.__ARB_SIRALA){ var _ts=document.createElement("script"); _ts.src="../tablo_sirala.js?v=261112"; (document.head||document.documentElement).appendChild(_ts); } }catch(e){}
   var MB="int@arbor.com.tr", t0=Date.now();
   /* FLINK-GIZLI (27.10.2026, Melih): Cam Fiyatlandirma, Cam Konfigurasyon ve Cam Listesi cubukta yok; Urun Konfigurasyonu basligindaki dugmelerden acilir (URUN-KONFIG-CAMLINK). Bulunulan form ise yine koyu gosterilir. */
   var GIZLI={"cam/":1,"cam-konfig/":1,"cam-listesi/":1};
