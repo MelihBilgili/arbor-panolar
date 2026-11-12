@@ -98,7 +98,7 @@
         <div class="s2"><label for="f_kat">İskonto çarpanı <a href="#" id="f_katSifirla" class="mini">hesapla</a></label><input id="f_kat" inputmode="decimal"></div>
         <div class="s2"><label for="f_mont">Montaj (Pose)</label><select id="f_mont"><option value="1">Dahil</option><option value="0">Hariç</option></select></div>
         <div class="s2"><label for="f_dep">Departman</label><input id="f_dep" inputmode="numeric" value="75"></div>
-        <div class="s2"><label for="f_disi">Duvar dışı montaj</label><select id="f_disi"><option value="0">Hayır</option><option value="1">Evet</option></select></div>
+        <div class="s2"><label for="f_disi">Duvar dışı montaj</label><select id="f_disi"><option value="0">Hayır</option><option value="1">Evet</option></select><div id="f_disi_uy" class="mini" style="color:#b00020;font-weight:bold;display:none">Eker eklendi mi?</div></div><!-- SOUM-ETUT -->
         <div class="s2"><label for="f_petit">Petit porteur</label><select id="f_petit"><option value="0">Hayır</option><option value="1">Evet</option></select></div>
         <div class="s2"><label for="f_kamyon">Kamyon sayısı</label><input id="f_kamyon" inputmode="numeric"></div>
         <div class="s2"><label for="f_ins_sure">Insertion süresi (saat) <a href="#" id="f_insSifirla" class="mini">hesapla</a></label><input id="f_ins_sure" inputmode="decimal"></div>
@@ -106,7 +106,7 @@
         <div class="s2"><label for="f_pror">Prorata oranı (%)</label><input id="f_pror" inputmode="decimal" value="2"></div>
         <div class="s4"><label>Prototip (birden fazla seçilebilir)</label><div id="f_proto" style="max-height:110px;overflow:auto;border:1px solid #cdd6df;border-radius:6px;padding:3px 7px;background:#fff"><span class="mini">Yok</span></div></div><!-- SOUM-PROTO-COK -->
         <div class="s2"><label for="f_uretim">Üretim süresi (hafta) <a href="#" id="f_uretimSifirla" class="mini">hesapla</a></label><input id="f_uretim" inputmode="numeric"></div>
-        <div class="s2"><label for="f_vitro">Vitrophanie</label><select id="f_vitro"><option value="1">Dahil</option><option value="0">Hariç</option></select></div>
+        <div class="s4"><label>Vitrophanie — opsiyon (pozlar seçilebilir)</label><div id="f_vitro" style="max-height:110px;overflow:auto;border:1px solid #cdd6df;border-radius:6px;padding:3px 7px;background:#fff"><span class="mini">Yok</span></div></div><!-- SOUM-ETUT -->
       </div>
       <div class="g" style="margin-top:6px"><!-- SOUM-OPSIYON-SEC -->
         <div class="s2"><label for="f_op_ins">Opsiyon: Insertion tutarı</label><select id="f_op_ins"><option value="1">Var</option><option value="0">Yok</option></select></div><!-- SOUM-INDIRIM -->
@@ -134,8 +134,9 @@
       <div class="g" id="pnAlan"></div>
       <div class="uy" style="margin:8px 0 4px;color:#b00020;font-weight:bold">Motorlu ferme imposte fiyatlandırıldığında kontrol paneli kesinlikle fiyata dahil edilecek.</div>
       <label for="pn_notlar">Müşteriye bildirilecek notlar — mail'de eklenecek bilgiler (her satır bir not)</label><textarea id="pn_notlar" rows="6"></textarea>
+      <label for="pn_etut" style="display:block;margin-top:8px">Teklifle ilgili etüte bildirilmesi gereken notlar (her satır bir not)</label><textarea id="pn_etut" rows="5"></textarea><!-- SOUM-ETUT -->
     </div>
-    <button class="btn" id="btnExcel">Excel'i indir</button> <button class="btn" id="btnPdf" style="background:#16324f">PDF oluştur</button>
+    <button class="btn" id="btnExcel">Excel'i indir</button> <button class="btn" id="btnPdf" style="background:#16324f">PDF oluştur</button> <button class="btn" id="btnTutanak" style="background:#086324">Etüt Tutanak PDF'i oluştur</button>
   </div>
 </div>
 
@@ -656,6 +657,7 @@ async function baslikDoldur(){
   const hv=f=>S.poz.some(f); kSet("den",[hv(p=>p.ozl.bAlu)&&"alu",hv(p=>p.ozl.bBois)&&"ahs"]); kSet("pervaz",[]); kSet("sove",[hv(p=>p.ozl.sove)&&"ic"]); /* SOUM-KAPSAM-COK */ /* SOUM-EN-KAPSAM2 (05.11.2026, Melike Başaran): denizlik alu dış/ahşap dış/iç, pervaz iç/dış, söve iç/dış/dahil değil; menfez yuvası ve iç denizlik tahtası seçimi kalktı */
   enGoster();
   $("f_proto").innerHTML=S.poz.length?S.poz.map((p,i)=>'<label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" value="'+i+'" style="width:auto;margin-right:5px">'+p.no+' · '+esc(p.kod)+' ('+p.L+'×'+p.H+')</label>').join(""):'<span class="mini">Yok</span>'; /* SOUM-PROTO-COK */
+  $("f_vitro").innerHTML=S.poz.length?S.poz.map((p,i)=>'<label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" checked value="'+i+'" style="width:auto;margin-right:5px">'+p.no+' · '+esc(p.kod)+' ('+p.L+'×'+p.H+')</label>').join(""):'<span class="mini">Yok</span>'; /* SOUM-ETUT (12.11.2026, Melike Başaran): Vitrophanie pozları seçilebilir (varsayılan hepsi) */
   notDoldur();
   hesapla();
 }
@@ -736,6 +738,8 @@ const kapsam=k=>{ const e=document.getElementById("f_k_"+k); return !e||e.value!
 const kSecL=k=>[...document.querySelectorAll("#f_k_"+k+" input:checked")].map(x=>x.value); /* SOUM-KAPSAM-COK (05.11.2026, Melike Başaran): denizlik/pervaz/söve çoklu seçim */
 const kSet=(k,L)=>document.querySelectorAll("#f_k_"+k+" input").forEach(x=>x.checked=L.includes(x.value));
 const protoSec=()=>[...document.querySelectorAll("#f_proto input:checked")].map(x=>+x.value); /* SOUM-PROTO-COK */
+const vitSec=()=>[...document.querySelectorAll("#f_vitro input:checked")].map(x=>+x.value); /* SOUM-ETUT */
+const ekerMi=e=>/^AR-EK/i.test(String(e.kod))||/eker/.test(nrmTxt(e.ad)); /* SOUM-ETUT */
 const refAd=p=>EN()&&!p.kodElle?p.kodPdf:p.kod; /* İngilizcede (PF-SACC)/(PF-ACC) eki yazılmaz */
 const camMetin=p=>EN()&&!p.camElle?p.camEn:p.camFr;
 function notMetin(p){ if(p.notElle!=null) return p.notElle; if(DIL()==="en"&&p.nf) return notEn(p); const mt=$("f_mont").value==="1"?"Mortaise entrée d'air + Pose":"Mortaise entrée d'air"; return p.notSat.map(x=>x==="MORTAISE"?mt:x).concat(notEk(p,false)).join("\n"); }
@@ -761,8 +765,8 @@ function hesapla(){
   uretimYaz(); kurYaz();
   const K=EN()?kur():1;
   let HT=0, m2=0, adet=0, vitMl=0;
-  S.poz.forEach((p,i)=>{ p.ekB=0; }); (S.ekstra||[]).filter(e=>e.mod==="birim").forEach(e=>{ const n=ekAdet(e); if(n>0) (e.tik||[]).forEach(i=>{ if(S.poz[i]) S.poz[i].ekB+=(e.tutar||0)*(+e.carpan||1)/n; }); }); /* SOUM-EKSTRA-MOD: Birim fiyat → Pencad tutarı tikli pozların adedine bölünüp brüt poz fiyatına eklenir */
-  S.poz.forEach((p,i)=>{ const bE=(p.brut||0)+(p.ekB||0); p.brutE=bE; const be=$("b"+i); if(be) be.innerHTML=fN(bE,2)+(p.ekB?'<div class="mini">'+fN(p.brut,2)+' + ekstra '+fN(p.ekB,2)+'</div>':''); const Q=bE*X2*K, R=(p.F||0)*n2(Q); p.Q=Q; p.R=R; HT+=R; m2+=p.L*p.H/1e6*(p.F||0); adet+=(p.F||0); vitMl+=2*p.L/1000*(p.F||0);
+  S.poz.forEach((p,i)=>{ p.ekB=0; }); (S.ekstra||[]).filter(e=>e.mod==="birim").forEach(e=>{ const n=ekAdet(e); if(n>0) (e.tik||[]).forEach(i=>{ const pp=S.poz[i]; if(!pp) return; pp.ekB+=ekerMi(e)?pp.L/1000*(e.fiyat!=null?e.fiyat:(e.miktar?(e.tutar||0)/e.miktar:0))*(+e.carpan||1):(e.tutar||0)*(+e.carpan||1)/n; }); }); /* SOUM-ETUT: Eker birim fiyatta genişlik/1000 × Pencad birim fiyatı */ /* SOUM-EKSTRA-MOD: Birim fiyat → Pencad tutarı tikli pozların adedine bölünüp brüt poz fiyatına eklenir */
+  S.poz.forEach((p,i)=>{ const bE=(p.brut||0)+(p.ekB||0); p.brutE=bE; const be=$("b"+i); if(be) be.innerHTML=fN(bE,2)+(p.ekB?'<div class="mini">'+fN(p.brut,2)+' + ekstra '+fN(p.ekB,2)+'</div>':''); const Q=bE*X2*K, R=(p.F||0)*n2(Q); p.Q=Q; p.R=R; HT+=R; m2+=p.L*p.H/1e6*(p.F||0); adet+=(p.F||0); if(vitSec().includes(i)) vitMl+=2*p.L/1000*(p.F||0);
     const q=$("q"+i), r=$("r"+i); if(q) q.textContent=fP(Q); if(r) r.textContent=fP(R);
     const ta=document.querySelector('tr[data-i="'+i+'"] textarea[data-k="notlar"]'); if(ta&&p.notElle==null) ta.value=notMetin(p); });
   /* montaj (Ürün Fiyatlandırma ile aynı kural) */
@@ -772,6 +776,7 @@ function hesapla(){
   if(uzak){ pose*=(1+par("uzak_montaj",0.65)); mf.push("uzak bölge +%"+fN(par("uzak_montaj",0.65)*100,0)); }
   pose=Math.ceil(pose-1e-9); /* SOUM-EKSTRA-MOD: montaj tutarı tam sayıya yukarı yuvarlanır */
   const montDahil=$("f_mont").value==="1";
+  { const du=$("f_disi_uy"); if(du) du.style.display=$("f_disi").value==="1"?"":"none"; } /* SOUM-ETUT */
   /* SOUM-TRANSPORT-ADET (12.11.2026, Melike Başaran): kamyon varsayılanı Pencad raporundaki Doğrama Adeti / 50 (yoksa poz adetleri toplamı) */ const trAdet=S.adetTop||adet; if(!$("f_kamyon").dataset.elle) $("f_kamyon").value=Math.ceil(trAdet/50); const kamyon=Math.max(1,+$("f_kamyon").value||Math.ceil(trAdet/50));
   const transport=kamyon*2*1000*K, petit=$("f_petit").value==="1";
   /* ekstralar */
@@ -779,28 +784,31 @@ function hesapla(){
   /* SOUM-EKSTRA-MOD (12.11.2026, Melike Başaran): her ekstra için Birim fiyat (pozun notu + brüt poz fiyatı) · Ekstra malzeme (Delivered to site üstünde satır, toplama girer) · Opsiyon (Total Delivered to Site altında) */
   const ekT=e=>({e,ad:ekstraAd(e),tutar:(e.tutar||0)*X2*(+e.carpan||1)*K});
   const ekL=S.ekstra.filter(e=>e.mod==="ekstra").map(e=>{ const x=ekT(e); x.ad=tt("Option "+x.ad,x.ad); return x; }), ekO=S.ekstra.filter(e=>e.mod==="opsiyon").map(ekT);
-  const vitDahil=$("f_vitro").value==="1", vitTut=vitMl*35*K;
+  const vitTut=vitMl*35*K, vitDahil=vitTut>0; /* SOUM-ETUT: Vitrophanie Total Delivered to Site altında opsiyon */
   /* prototip */
   const protoL=protoSec().map(i=>{ const p=S.poz[i]; const pm2=p.L*p.H/1e6; const pay=m2?pm2/m2:0; /* SOUM-PROTO-COK (05.11.2026, Melike Başaran): birden fazla prototip, toplamı hesaba */
     const birimEk=S.ekstra.filter(e=>false).reduce((a,e)=>{ const adetPoz=ekstraPozAdet(e,p); return a+(adetPoz?(e.fiyat||0)*X2*(+e.carpan||1)*K*adetPoz:0); },0);
     const tp=pay*((montDahil?pose:0)+transport);
-    return {p,tutar:n2(p.Q)+tp+birimEk,pay,tp,birimEk}; });
+    return {p,tutar:(n2(p.Q)+tp+birimEk)*1.5,pay,tp,birimEk}; }); /* SOUM-ETUT: prototip × 1,5 */
   const proto=protoL.length?{L:protoL,tutar:protoL.reduce((a,x)=>a+x.tutar,0)}:null;
   /* SOUM-PRORATA (27.10.2026, Melih): Insertion süresi (saat) varsayılanı = (Livré sur chantier (insertion hariç, €) × 0,3 × 0,1) / 35,5, 0,1 saate yuvarlanır, elle değiştirilebilir;
      Insertion tutarı = süre × 35,5 €/saat (İngilizcede × kur), toplamın içinde; Prorata = oran × Livré sur chantier, ayrı satır */
-  const taban=HT+(montDahil?pose:0)+(petit?transport:0)+(proto?proto.tutar:0)+ekL.reduce((a,x)=>a+x.tutar,0)+(vitDahil?vitTut:0);
+  const taban=HT+(montDahil?pose:0)+(petit?transport:0)+(proto?proto.tutar:0)+ekL.reduce((a,x)=>a+x.tutar,0);
   const se=$("f_ins_sure"); if(!se.dataset.elle) se.value=frN(Math.round(taban/K*0.3*0.1/35.5*10)/10,1);
   const insS=+String(se.value||"").replace(",",".")||0, ins=n2(insS*35.5*K), insAd=tt("Heures d'insertion ("+frN(insS,1).replace(/,0$/,"")+" h)","Insertion hours ("+dN(insS,1).replace(/\.0$/,"")+" h)");
   $("f_ins_tut").value=ins?fP(ins):"";
   let toplam=taban; /* SOUM-INDIRIM (12.11.2026, Melike Başaran): Insertion toplamda değil, opsiyon (f_op_ins Yok → hiç yok); Prorata altında Remise/Discount = Livré sur chantier'ın
      <10.000 son 1, <100.000 son 2, diğer son 3 hanesi; Total Delivered to Site = Livré + Prorata − Remise */
   const prO=+String($("f_pror").value||"").replace(",",".")||0, pror=prO>0?{oran:prO,tutar:toplam*prO/100}:null;
-  const adm=toplam<10000?10:toplam<100000?100:1000, ind=Math.max(0,n2(toplam-Math.floor((toplam+1e-9)/adm)*adm)), genel=toplam+(pror?pror.tutar:0)-ind;
+  /* SOUM-ETUT (12.11.2026, Melike Başaran): Insertion hours Prorata altında toplama girer (f_op_ins Yok → yok); Remise yuvarlaması Total Delivered to Site (Livré + Prorata + Insertion) üzerinden;
+     Prorata ve Insertion 0 ise Remise Delivered to site'ın üstünde, Total Delivered to Site satırı yok */
+  const opIns=$("f_op_ins").value==="1"&&ins>0, ara=toplam+(pror?pror.tutar:0)+(opIns?ins:0), tdYok=!pror&&!opIns;
+  const adm=ara<10000?10:ara<100000?100:1000, ind=Math.max(0,n2(ara-Math.floor((ara+1e-9)/adm)*adm)), genel=ara-ind;
   /* opsiyonlar */
   const obAdet=S.poz.filter(p=>p.ob).reduce((a,p)=>a+(p.F||0),0);
   const mv=S.of&&S.pdfTop!=null&&S.of.top!=null?((S.pdfTop-S.ekstraTop)-(S.of.top-S.of.ekstra))*X2*2*K:null;
   const brutPozE=S.poz.reduce((a,p)=>a+(p.brutE||0)*(p.F||0),0);
-  H={brutPozE,ekO,K,X2,ins,insAd,insS,ind,adm,genel,pror,HT,m2,adet,vitMl,vitTut,vitDahil,pose,birim,mf,montDahil,kamyon,transport,petit,ekL,proto,toplam,obAdet,mv,brut,brutPoz,uzak,dep};
+  H={opIns,ara,tdYok,brutPozE,ekO,K,X2,ins,insAd,insS,ind,adm,genel,pror,HT,m2,adet,vitMl,vitTut,vitDahil,pose,birim,mf,montDahil,kamyon,transport,petit,ekL,proto,toplam,obAdet,mv,brut,brutPoz,uzak,dep};
   ozetCiz();
 }
 const prorAd=h=>tt("Prorata ("+frN(h.pror.oran,2).replace(/,00$/,"")+" %)","Prorata ("+dN(h.pror.oran,2).replace(/\.00$/,"")+"%)");
@@ -824,22 +832,24 @@ function ozetCiz(){
   sat.push([tt("Fourniture / Bureau d'étude 12% / transport","Supply / design office 12% / transport"),h.HT,"Pozlar toplamı (Prix total)"]);
   if(h.montDahil) sat.push([tt("Pose","Installation"),h.pose,fN(h.m2,2)+" m² × "+h.birim+" €/m²"+kx+(h.mf.length?" · "+h.mf.join(" · "):"")+" (departman "+h.dep+")"]);
   if(h.petit) sat.push([tt("Livraison en petit porteur","Delivery by small truck"),h.transport,h.kamyon+" kamyon × 2 × 1.000 €"+kx]);
-  if(h.proto) h.proto.L.forEach(x=>sat.push([tt("PV Prototype + Transport + Pose — "+x.p.kod+" (1-u)","Mock-up + transport + installation — "+refAd(x.p)+" (1 u)"),x.tutar,"birim fiyat "+fP(n2(x.p.Q))+" + "+fN(x.pay*100,2)+"% × (pose"+(h.montDahil?"":" yok")+" + transport "+fP(h.transport)+") = "+fP(x.tp)+(x.birimEk?" + aksesuar "+fP(x.birimEk):""),"proto",x])); /* SOUM-PROTO-COK */
-  if(h.vitDahil) sat.push([tt("PV Vitrophanie ("+frN(h.vitMl,2)+" ml)","Extra: glazing manifestation ("+dN(h.vitMl,2)+" lm)"),h.vitTut,"2 × L × adet × 35 €/ml"+kx,"vitro"]);
+  if(h.proto) h.proto.L.forEach(x=>sat.push([tt("PV Prototype + Transport + Pose — "+x.p.kod+" (1-u)","Mock-up + transport + installation — "+refAd(x.p)+" (1 u)"),x.tutar,"(birim fiyat "+fP(n2(x.p.Q))+" + "+fN(x.pay*100,2)+"% × (pose"+(h.montDahil?"":" yok")+" + transport "+fP(h.transport)+") = "+fP(x.tp)+(x.birimEk?" + aksesuar "+fP(x.birimEk):"")+") × 1,5","proto",x])); /* SOUM-PROTO-COK */
   h.ekL.forEach(x=>sat.push([x.ad,x.tutar,fE(x.e.tutar)+" × "+frN(h.X2,2)+(+x.e.carpan!==1?" × "+x.e.carpan:"")+kx+" (Pencad ekstra, Ekstra malzeme)"])); /* SOUM-EKSTRA-MOD: Delivered to site'ın hemen üstünde */
-  const op=[]; if(h.ins) op.push([tt("Option Heures d'insertion ("+frN(h.insS,1).replace(/,0$/,"")+" h)","Option: Insertion hours ("+dN(h.insS,1).replace(/\.0$/,"")+" h)"),h.ins,"süre × 35,5 €/saat"+kx+" (varsayılan süre = Livré sur chantier × 0,3 × 0,1 / 35,5)","ins"]); /* SOUM-INDIRIM */
+  const op=[]; if(h.vitDahil) op.push([tt("Option PV Vitrophanie ("+frN(h.vitMl,2)+" ml)","Option: glazing manifestation ("+dN(h.vitMl,2)+" lm)"),h.vitTut,"2 × L × adet × 35 €/ml (seçili pozlar)"+kx,"vitro"]); /* SOUM-ETUT: Insertion toplamda (Prorata altında); Vitrophanie opsiyon */
   { const ct=h.HT*0.02, cE=ct/(h.K||1), cn=cE<=5000?10:cE<=10000?20:30; /* SOUM-EKSTRA-MOD: kırık cam adedi tutara göre (≤5.000 € 10, ≤10.000 € 20, üstü 30) */
     op.push([tt("Option Remplacement vitrage cassé sur chantier ("+cn+" vitrages)","Option: replacement of broken glazing on site ("+cn+" units)"),ct,"HT × %2 · "+cn+" cam (≤5.000 € 10, ≤10.000 € 20, üstü 30)","cam"]); }
   (h.ekO||[]).forEach(x=>op.push([tt("Option "+x.ad,x.ad.replace(/^Extra:/,"Option:")),x.tutar,fE(x.e.tutar)+" × "+frN(h.X2,2)+(+x.e.carpan!==1?" × "+x.e.carpan:"")+kx+" (Pencad ekstra, Opsiyon)","ek"]));
   if(h.mv!=null) op.push([tt("Option MV Passage OB à OF ("+h.obAdet+"-u)","Option: deduction for inward opening instead of tilt & turn ("+h.obAdet+" u)"),h.mv,"(Pencad toplamı − ekstralar − OF'ye geçiş toplamı) × "+frN(h.X2,2)+" × 2"+kx,"mv"]);
   op.push([tt("Option Poignée PMR","Option: accessible (PRM) handle"),tt(frN(210.12*h.X2,2).replace(/\B(?=(\d{3})+(?!\d))/g,".")+" € / unité","£"+dN(210.12*h.X2*h.K,2)+" / unit"),"210,12 € × "+frN(h.X2,2)+kx,"pmr"]);
-  op.push([tt("Option Cage Métallique","Option: metal crate"),tt("3250 € / unité","£"+dN(3250*h.K,2)+" / unit"),"3.250 €"+kx,"cage"]); op.push([tt("Option Manitou","Option: telehandler (Manitou)"),h.adet/50*2000*h.K,"adet / 50 × 2.000 €"+kx,"manitou"]); op.push([tt("Option Grue et échafaudage","Option: crane and scaffolding"),tt("Non Compris","Not included"),"","grue"]);
-  H.sat=sat; H.op=op.filter(o=>{ const e=document.getElementById("f_op_"+o[3]); return !e||e.value==="1"; }); const op0=op; /* SOUM-OPSIYON-SEC: Hayır seçilen opsiyon Excel/PDF/özette yok */
+  op.push([tt("Option Cage Métallique","Option: metal crate"),tt("3250 € / unité","£"+dN(3250*h.K,2)+" / unit"),"3.250 €"+kx,"cage"]); op.push([tt("Option Manitou","Option: telehandler (Manitou)"),h.adet/50*3000*h.K,"adet / 50 × 3.000 €"+kx,"manitou"]); /* SOUM-ETUT */ op.push([tt("Option Grue et échafaudage","Option: crane and scaffolding"),tt("Non Compris","Not included"),"","grue"]);
+  H.sat=sat; H.op=op.filter(o=>{ const e=document.getElementById("f_op_"+o[3]); return !e||e.value==="1"; }); const op0=op; /* SOUM-OPSIYON-SEC: Hayır seçilen opsiyon Excel/PDF/özette yok */ if(!EN()) H.op.forEach(o=>{ o[0]=String(o[0]).replace(/^Option (?!PV )/,"Option PV "); }); /* SOUM-ETUT: Fransızcada tüm opsiyonlar "Option PV …" */
   $("ozet").innerHTML='<table><tbody>'+sat.map(s=>'<tr><td class="l">'+esc(s[0])+'</td><td class="num b">'+fP(s[1])+'</td><td class="l mini">'+esc(s[2])+'</td></tr>').join("")
-    +'<tr class="top"><td class="l">'+tt("Livré sur chantier","Delivered to site")+'</td><td class="num">'+fP(h.toplam)+'</td><td class="l mini">'+fN(h.adet,0)+' ürün · '+fN(h.m2,2)+' m² · iskonto çarpanı '+frN(h.X2,2)+'</td></tr>'
-    +(h.pror?'<tr><td class="l">'+esc(prorAd(h))+'</td><td class="num b">'+fP(h.pror.tutar)+'</td><td class="l mini">Livré sur chantier × %'+frN(h.pror.oran,2)+'</td></tr>':'')
-    +(h.ind?'<tr><td class="l" style="font-weight:800">'+tt("Remise","Discount")+'</td><td class="num" style="color:#c00;font-weight:800">'+fP(-h.ind)+'</td><td class="l mini">Livré sur chantier son '+(String(h.adm).length-1)+' hanesi sıfır olacak şekilde</td></tr>':'')
-    +'<tr class="top"><td class="l">'+tt("Total livré sur chantier","Total Delivered to Site")+'</td><td class="num">'+fP(h.genel)+'</td><td class="l mini">Livré sur chantier'+(h.pror?' + Prorata':'')+(h.ind?' − '+tt("Remise","Discount"):'')+'</td></tr>' /* SOUM-INDIRIM */
+    +(function(){ const dS='<tr><td class="l" style="font-weight:800">'+tt("Remise","Discount")+'</td><td class="num" style="color:#c00;font-weight:800">'+fP(-h.ind)+'</td><td class="l mini">'+(h.tdYok?'Livré sur chantier':'Total Delivered to Site')+' son '+(String(h.adm).length-1)+' hanesi sıfır olacak şekilde</td></tr>';
+      const ls=v=>'<tr class="top"><td class="l">'+tt("Livré sur chantier","Delivered to site")+'</td><td class="num">'+fP(v)+'</td><td class="l mini">'+fN(h.adet,0)+' ürün · '+fN(h.m2,2)+' m² · iskonto çarpanı '+frN(h.X2,2)+(h.tdYok&&h.ind?' · Remise sonrası':'')+'</td></tr>';
+      if(h.tdYok) return (h.ind?dS:'')+ls(h.genel); /* SOUM-ETUT: Prorata ve Insertion 0 → Remise üstte, Total Delivered to Site yok */
+      return ls(h.toplam)+(h.pror?'<tr><td class="l">'+esc(prorAd(h))+'</td><td class="num b">'+fP(h.pror.tutar)+'</td><td class="l mini">Livré sur chantier × %'+frN(h.pror.oran,2)+'</td></tr>':'')
+        +(h.opIns?'<tr><td class="l">'+esc(h.insAd)+'</td><td class="num b">'+fP(h.ins)+'</td><td class="l mini">süre × 35,5 €/saat'+kx+' (varsayılan süre = Livré sur chantier × 0,3 × 0,1 / 35,5)</td></tr>':'')
+        +(h.ind?dS:'')
+        +'<tr class="top"><td class="l">'+tt("Total livré sur chantier","Total Delivered to Site")+'</td><td class="num">'+fP(h.genel)+'</td><td class="l mini">Livré sur chantier'+(h.pror?' + Prorata':'')+(h.opIns?' + Insertion':'')+(h.ind?' − '+tt("Remise","Discount"):'')+'</td></tr>'; })() /* SOUM-ETUT */
     +H.op.map(s=>'<tr class="opt"><td class="l">'+esc(s[0])+'</td><td class="num">'+(typeof s[1]==="number"?fP(s[1]):esc(s[1]))+'</td><td class="l mini">'+esc(s[2])+'</td></tr>').join("")+'</tbody></table>';
   $("ekstralar").innerHTML=S.ekstra.length?'<table><thead><tr><th>Fiyatlama</th><th class="l">Stok</th><th class="l">Ad</th><th>Miktar</th><th>Pencad tutarı</th><th>Çarpan</th><th class="l">Offre satırı</th></tr></thead><tbody>'+S.ekstra.map((e,i)=>'<tr><td style="white-space:nowrap">'+[["birim","Birim fiyat"],["ekstra","Ekstra malzeme"],["opsiyon","Opsiyon"]].map(m=>'<button type="button" class="emb'+(e.mod===m[0]?' on':'')+'" data-em="'+i+'" data-m="'+m[0]+'">'+m[1]+'</button>').join("")+'</td><td class="l">'+esc(e.kod)+'</td><td class="l">'+esc(e.ad)+'</td><td>'+fN(e.miktar,0)+' '+esc(e.birim)+'</td><td class="num">'+fE(e.tutar)+'</td><td><input class="n" data-ec="'+i+'" value="'+esc(e.carpan)+'"></td><td class="l">'+(e.mod==="birim"?'<i>Birim fiyata dahil · tikli pozların notunda ('+fN(ekAdet(e),0)+' adet)</i>':e.mod==="ekstra"?esc(tt("Option "+ekstraAd(e),ekstraAd(e)))+' <i class="mini">(Delivered to site üstünde)</i>':esc(tt("Option "+ekstraAd(e),ekstraAd(e).replace(/^Extra:/,"Option:")))+' <i class="mini">(Total Delivered to Site altında)</i>')+'</td></tr>').join("")+'</tbody></table>':'<div class="bos">Raporda ekstra malzeme yok.</div>';
   document.querySelectorAll("[data-em]").forEach(c=>c.onclick=()=>{ const e=S.ekstra[+c.dataset.em]; e.mod=c.dataset.m; e.dahil=e.mod==="birim"; hesapla(); }); /* SOUM-EKSTRA-MOD */
@@ -977,7 +987,7 @@ async function excelYap(){
     c("R",{formula:F+"*ROUND("+Q+",2)",result:p.R},{numFmt:PB,font:{name:"Arial",size:16},fill:{type:"pattern",pattern:"solid",fgColor:{argb:ACIK}}});
     ws.mergeCells(C("n1")+r+":"+C("n2")+r); c("n1",notMetin(p),{alignment:{vertical:"middle",horizontal:"left",wrapText:true},font:{name:"Arial",size:16}});
     cAt(IC(0),p.seri,{font:{name:"Arial",size:12}}); cAt(IC(2),{formula:F+"*"+Sx,result:(p.F||0)*p.L*p.H/1e6},{numFmt:"0.00",font:{name:"Arial",size:12}});
-    cAt(IC(3),{formula:"((("+L+"*2)*(25*1.4))/1000)*"+F,result:2*p.L*35/1000*(p.F||0)},{numFmt:EUR,font:{name:"Arial",size:12}});
+    cAt(IC(3),vitSec().includes(i)?{formula:"((("+L+"*2)*(25*1.4))/1000)*"+F,result:2*p.L*35/1000*(p.F||0)}:0,{numFmt:EUR,font:{name:"Arial",size:12}});
     cAt(IC(4),p.brutE!=null?n2(p.brutE):p.brut,{numFmt:EUR,font:{name:"Arial",size:12}}); cAt(IC(5),{formula:B+"*"+F,result:(p.brutE!=null?n2(p.brutE):(p.brut||0))*(p.F||0)},{numFmt:EUR,font:{name:"Arial",size:12}});
     if(p.img){ const ph=9876500+HC.length; HC.push({adr:C("img")+r,ph,b64:p.img.url}); const gx=ws.getCell(C("img")+r); gx.value=ph; gx.alignment={vertical:"middle",horizontal:"center"}; }
   }
@@ -996,13 +1006,16 @@ async function excelYap(){
     st(cR+rr,{v:s.f?{formula:s.f,result:s.v}:n2(s.v),nf:PB,f:{size:18,bold:true},fill:ACIK}); ws.mergeCells(cN1+rr+":"+cN2+rr); st(cN1+rr,{v:s.t,f:{size:18,bold:true,color:{argb:YESIL}},a:{horizontal:"left"}});
     if(s.pr&&s.tip==="proto"){ const pp=s.pr.p; ws.getRow(rr).height=130; ws.getCell(cN1+rr).value=tt("PV Prototype + Transport + Pose\n"+pp.kod+" (1-u)","Mock-up + transport + installation\n"+refAd(pp)+" (1 u)"); ws.getCell(cN1+rr).alignment={vertical:"middle",horizontal:"left",wrapText:true,indent:pp.img?8:0}; /* SOUM-PROTO-YAN: çizim solda, metin sağda */
       if(pp.img){ const id=wb.addImage({base64:pp.img.url,extension:"png"}); const k=Math.min(90/pp.img.w,150/pp.img.h); ws.addImage(id,{tl:{col:ix.n1-1+0.05,row:rr-1+0.08},ext:{width:pp.img.w*k,height:pp.img.h*k}}); } } });
-  const rLs=r+satirlar.length; ws.getRow(rLs).height=48.6;
-  st(cR+rLs,{v:{formula:"SUM("+cR+ilk+":"+cR+(rLs-1)+")",result:n2(H.toplam)},nf:PB,f:{size:22,bold:true},fill:ACIK}); ws.mergeCells(cN1+rLs+":"+cN2+rLs); st(cN1+rLs,{v:tt("Livré sur chantier","Delivered to site"),f:{size:24,bold:true,color:{argb:YESIL}},a:{horizontal:"left"}});
-  const prR=H.pror?rLs+1:null;
-  if(prR){ ws.getRow(prR).height=48.6; st(cR+prR,{v:{formula:cR+rLs+"*"+(H.pror.oran/100),result:n2(H.pror.tutar)},nf:PB,f:{size:18,bold:true},fill:ACIK}); ws.mergeCells(cN1+prR+":"+cN2+prR); st(cN1+prR,{v:prorAd(H),f:{size:18,bold:true,color:{argb:YESIL}},a:{horizontal:"left"}}); }
-  const dR=H.ind?rLs+1+(prR?1:0):null, tR=rLs+1+(prR?1:0)+(dR?1:0); /* SOUM-INDIRIM: Remise kırmızı kalın, Total Delivered to Site */
-  if(dR){ ws.getRow(dR).height=48.6; st(cR+dR,{v:-n2(H.ind),nf:PB,f:{size:18,bold:true,color:{argb:"FFC00000"}},fill:ACIK}); ws.mergeCells(cN1+dR+":"+cN2+dR); st(cN1+dR,{v:tt("Remise","Discount"),f:{size:18,bold:true},a:{horizontal:"left"}}); } /* SOUM-INDIRIM-RENK (12.11.2026, Melike Başaran): Remise/Discount metni siyah, yalnız tutar kırmızı */
-  ws.getRow(tR).height=48.6; st(cR+tR,{v:{formula:cR+rLs+(prR?"+"+cR+prR:"")+(dR?"+"+cR+dR:""),result:n2(H.genel)},nf:PB,f:{size:22,bold:true},fill:ACIK}); ws.mergeCells(cN1+tR+":"+cN2+tR); st(cN1+tR,{v:tt("Total livré sur chantier","Total Delivered to Site"),f:{size:24,bold:true,color:{argb:YESIL}},a:{horizontal:"left"}});
+  /* SOUM-ETUT (12.11.2026, Melike Başaran): Livré → Prorata → Insertion → Remise → Total Delivered to Site; Prorata ve Insertion yoksa Remise Livré'nin üstünde, Total yok */
+  const rowS=(rr,v,t,o)=>{ o=o||{}; ws.getRow(rr).height=48.6; st(cR+rr,{v,nf:PB,f:{size:o.buyuk?22:18,bold:true,color:o.kirmizi?{argb:"FFC00000"}:undefined},fill:ACIK}); ws.mergeCells(cN1+rr+":"+cN2+rr); st(cN1+rr,{v:t,f:{size:o.buyuk?24:18,bold:true,color:o.kirmizi?undefined:{argb:YESIL}},a:{horizontal:"left"}}); };
+  let tR;
+  if(H.tdYok){ const dR=H.ind?r+satirlar.length:null; if(dR) rowS(dR,-n2(H.ind),tt("Remise","Discount"),{kirmizi:true});
+    tR=r+satirlar.length+(dR?1:0); rowS(tR,{formula:"SUM("+cR+ilk+":"+cR+(tR-1)+")",result:n2(H.genel)},tt("Livré sur chantier","Delivered to site"),{buyuk:true}); }
+  else { const rLs=r+satirlar.length; rowS(rLs,{formula:"SUM("+cR+ilk+":"+cR+(rLs-1)+")",result:n2(H.toplam)},tt("Livré sur chantier","Delivered to site"),{buyuk:true});
+    let q=rLs+1; const prR=H.pror?q++:null; if(prR) rowS(prR,{formula:cR+rLs+"*"+(H.pror.oran/100),result:n2(H.pror.tutar)},prorAd(H));
+    const inR=H.opIns?q++:null; if(inR) rowS(inR,n2(H.ins),H.insAd);
+    const dR=H.ind?q++:null; if(dR) rowS(dR,-n2(H.ind),tt("Remise","Discount"),{kirmizi:true});
+    tR=q; rowS(tR,{formula:cR+rLs+(prR?"+"+cR+prR:"")+(inR?"+"+cR+inR:"")+(dR?"+"+cR+dR:""),result:n2(H.genel)},tt("Total livré sur chantier","Total Delivered to Site"),{buyuk:true}); }
   const opB=tR+1;
   H.op.forEach((o,k)=>{ const rr=opB+k; ws.getRow(rr).height=o[0].length>40?72:48.6; const sayi=typeof o[1]==="number";
     st(cR+rr,{v:sayi?(o[3]==="cam"?{formula:cR+ilk+"*0.02",result:n2(o[1])}:n2(o[1])):o[1],nf:sayi?PB:undefined,f:{size:18,bold:true},fill:ACIK}); ws.mergeCells(cN1+rr+":"+cN2+rr); st(cN1+rr,{v:o[0],f:{size:18,bold:true,color:{argb:YESIL}},a:{horizontal:"left"}}); });
@@ -1046,6 +1059,7 @@ async function excelYap(){
   pn.getCell("E2").value="Müşteriye bildirilecek notlar - Mail'de eklenecek bilgiler"; pn.getCell("E2").font={bold:true,color:{argb:YESIL}};
   const uy=pn.getCell("E3"); uy.value=PN_UYARI; uy.font={bold:true,color:{argb:"FFB00020"}}; uy.alignment={wrapText:true,vertical:"top"}; uy.border=kenar;
   const pnn=String($("pn_notlar").value||"").split(/\n+/).filter(x=>x.trim()); pnn.forEach((t,k)=>{ const q=pn.getCell(k+4,5); q.value=t.trim(); q.alignment={wrapText:true,vertical:"top"}; q.border=kenar; });
+  { pn.getColumn(7).width=70; const g=pn.getCell("G2"); g.value="Teklifle ilgili etüte bildirilmesi gereken notlar"; g.font={bold:true,color:{argb:YESIL}}; String(($("pn_etut")||{}).value||"").split(/\n+/).filter(x=>x.trim()).forEach((t,k)=>{ const q=pn.getCell(k+3,7); q.value=t.trim(); q.alignment={wrapText:true,vertical:"top"}; q.border=kenar; }); } /* SOUM-ETUT */
   { const T=(S.termin||[]).filter(r=>(r.bolge||"yd1")===($("f_bolge").value==="fr"?"yd1":"yd2")); let rr=PN.length+5;
     const th=pn.getCell(rr,1); th.value="Termin (hafta) — Ürün Fiyatlandırma, "+($("f_bolge").value==="fr"?"Yurt Dışı 1":"Yurt Dışı 2"); th.font={bold:true,color:{argb:YESIL}}; rr++;
     T.forEach(r=>{ const a=pn.getCell(rr,1), b=pn.getCell(rr,2); a.value=r.aralik||""; b.value="68p/78t/78a içeren: "+(r.ic_68||"–")+" · Numune (std. cam): "+(r.numune||"–")+" · Std. dışı cam: "+(r.std_disi||"–"); [a,b].forEach(q=>{ q.border=kenar; q.alignment={vertical:"top",wrapText:true}; }); rr++; }); }
@@ -1105,7 +1119,7 @@ $("btnKlasor").onclick=klasorSec;
 $("inKlasor").onchange=e=>{ S.dosya=[]; const fs=[...e.target.files].filter(f=>!/(^|\/)[_.][^\/]*\//.test(f.webkitRelativePath||"")); dosyaEkle(fs); const r=(fs[0]&&fs[0].webkitRelativePath||"").split("/")[0]; $("kokDurum").textContent=r?"Seçili klasör: "+r:""; durum(fs.length+" dosya bulundu. Kullanımları kontrol edip <b>Oku</b>'ya basınız."); };
 $("btnOku").onclick=oku; $("btnExcel").onclick=excelYap;
 function enGoster(){ $("enAlan").style.display=EN()?"":"none"; }
-["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro","f_k_den","f_k_pervaz","f_k_sove","f_pas","f_op_ins","f_op_cam","f_op_mv","f_op_pmr","f_op_cage","f_op_manitou","f_op_grue"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto"||id==="f_bolge") notDoldur(); });
+["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro","f_k_den","f_k_pervaz","f_k_sove","f_pas","f_op_ins","f_op_cam","f_op_mv","f_op_pmr","f_op_cage","f_op_manitou","f_op_grue"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto"||id==="f_bolge") notDoldur(); if(id==="f_disi"&&$("f_disi").value==="1") alert("Duvar dışı montaj seçildi — Eker eklendi mi?"); /* SOUM-ETUT */ });
 $("f_revize").onchange=()=>revGoster();
 $("f_ins_sure").oninput=()=>{ $("f_ins_sure").dataset.elle=1; hesapla(); }; $("f_insSifirla").onclick=e=>{ e.preventDefault(); delete $("f_ins_sure").dataset.elle; hesapla(); };
 $("f_pror").oninput=()=>{ hesapla(); notDoldur(); };
@@ -1164,10 +1178,12 @@ function pdfYap(){
   const satir=S.poz.map(p=>'<tr class="poz">'+PK.map(k=>'<td'+(PC[k[0]]?' class="'+PC[k[0]]+'"':'')+'>'+PV[k[0]](p)+'</td>').join("")+'</tr>').join("");
   const top=[[h.sat[0][0],h.HT]].concat(h.sat.slice(1).map(x=>[x[0],x[1],x[3],x[4]]));
   const blok=top.map(x=>'<tr><td class="pr b">'+eu(x[1])+'</td><td class="lb">'+(x[3]&&x[2]==="proto"?'<div class="proto">'+(x[3].p.img?'<img class="pimg" src="'+x[3].p.img.url+'">':'')+'<div>'+tt("PV Prototype + Transport + Pose","Mock-up + transport + installation")+'<br>'+esc(refAd(x[3].p))+tt(" (1-u)"," (1 u)")+'</div></div>':esc(x[0]))+'</td></tr>').join("")
-    +'<tr class="ls"><td class="pr">'+eu(h.toplam)+'</td><td class="lb">'+tt("Livré sur chantier","Delivered to site")+'</td></tr>'
-    +(h.pror?'<tr><td class="pr b">'+eu(h.pror.tutar)+'</td><td class="lb">'+esc(prorAd(h))+'</td></tr>':'')
-    +(h.ind?'<tr><td class="pr b" style="color:#c00">-'+eu(h.ind)+'</td><td class="lb">'+tt("Remise","Discount")+'</td></tr>':'')
-    +'<tr class="ls"><td class="pr">'+eu(h.genel)+'</td><td class="lb">'+tt("Total livré sur chantier","Total Delivered to Site")+'</td></tr>' /* SOUM-INDIRIM */
+    +(function(){ const dS=h.ind?'<tr><td class="pr b" style="color:#c00">-'+eu(h.ind)+'</td><td class="lb">'+tt("Remise","Discount")+'</td></tr>':'';
+      if(h.tdYok) return dS+'<tr class="ls"><td class="pr">'+eu(h.genel)+'</td><td class="lb">'+tt("Livré sur chantier","Delivered to site")+'</td></tr>';
+      return '<tr class="ls"><td class="pr">'+eu(h.toplam)+'</td><td class="lb">'+tt("Livré sur chantier","Delivered to site")+'</td></tr>'
+        +(h.pror?'<tr><td class="pr b">'+eu(h.pror.tutar)+'</td><td class="lb">'+esc(prorAd(h))+'</td></tr>':'')
+        +(h.opIns?'<tr><td class="pr b">'+eu(h.ins)+'</td><td class="lb">'+esc(h.insAd)+'</td></tr>':'')+dS
+        +'<tr class="ls"><td class="pr">'+eu(h.genel)+'</td><td class="lb">'+tt("Total livré sur chantier","Total Delivered to Site")+'</td></tr>'; })() /* SOUM-ETUT */
     +h.op.map(x=>'<tr><td class="pr b">'+eu(x[1])+'</td><td class="lb">'+esc(x[0])+'</td></tr>').join("");
   const nl=t=>esc(t).replace(/\n/g,"<br>");
   const html='<!doctype html><html lang="'+DIL()+'"><head><meta charset="utf-8"><title>'+esc(ad)+'</title><style>'
@@ -1199,7 +1215,7 @@ function pdfYap(){
 function sartGruplar(){ const en=EN(), SR=en?window.SOUM_SART_EN:window.SOUM_SART, vrVar=S.poz.some(p=>p.ozl.panjur), K=en?kur():1;
   const kasa=en?"£"+dN(3250*K,0):"3 250 €", ur=String(($("f_uretim")||{}).value||"").trim()||"10";
   return SR.gruplar.map(g=>({t:g.t,b:g.b.filter(b=>!b.vr||vrVar).map(b=>{ let m=b.m.map(t=>t.replace("{KASA}",kasa).replace("{URETIM}",ur));
-    /* SOUM-INDIRIM: insertion opsiyon, hariçlerde kalır */ if(!en&&H&&H.pror) m=m.map(t=>t.replace(" proratas,",""));
+    /* SOUM-INDIRIM: insertion opsiyon, hariçlerde kalır */ if(!en&&H&&H.pror) m=m.map(t=>t.replace(" proratas,","")); if(!en&&H&&H.opIns) m=m.map(t=>t.replace(" heures d'insertion,","")); /* SOUM-ETUT */
     if(b.kapsam&&SR.kapsam){ const Kp=SR.kapsam, d=Kp.dahil_sabit.slice(), h=Kp.haric_sabit.slice(); /* SOUM-EN-KAPSAM2: denizlik/pervaz/söve seçime göre; menfez yuvası Pencad'den; iç denizlik tahtası denizlik "İç" değilse hariç */
       const sec={den:{alu:"external aluminium sills",ahs:"external timber sills",ic:"internal timber sills"},pervaz:{ic:"internal timber trims",dis:"external timber trims"},sove:{ic:"internal window jambs",dis:"external window jambs"}}, kal=Object.assign({},Kp.kalem,{sove:Kp.kalem.sove||"window jambs"});
       Object.keys(kal).forEach(k=>{ if(sec[k]){ const L=kSecL(k).map(v=>sec[k][v]).filter(Boolean); if(L.length) d.push(...L); else h.push(kal[k]); } else if(k==="myuva"||k==="menfez") (S.poz.some(p=>p.ozl.menfez)?d:h).push(kal[k]); /* SOUM-KAPSAM-COK: menfez seçimi kalktı, Pencad MNF'den */ else if(k==="icden"){ if(!kSecL("den").includes("ic")) h.push(kal[k]); } else (kapsam(k)?d:h).push(kal[k]); });
@@ -1211,6 +1227,45 @@ function sartHtml(){ const ul=a=>'<ul>'+a.map(t=>'<li>'+esc(t)+'</li>').join("")
 function glosHtml(){ const SR=DIL()==="en"?window.SOUM_SART_EN:window.SOUM_SART, vrVar=S.poz.some(p=>p.ozl.panjur), gl=a=>'<div class="gl">'+a.map(x=>'<b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span>').join("")+'</div>';
   return '<div class="sart glos"><h2>'+tt("GLOSSAIRE","GLOSSARY")+'</h2>'+gl(SR.glossaire)+'<h3>'+esc(SR.dimensions.t)+'</h3>'+gl(SR.dimensions.m)+(vrVar&&SR.dimensions.vr.m.length?'<div class="vrb">'+esc(SR.dimensions.vr.bas[0])+'<b>'+esc(SR.dimensions.vr.bas[1])+'</b></div><div class="gl vr">'+SR.dimensions.vr.m.map(x=>'<b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span>').join("")+'</div>':'')+'</div>'; }
 $("btnPdf").onclick=pdfYap;
+/* SOUM-ETUT (12.11.2026, Melike Başaran): Etüt Tutanak PDF'i — Arbor antetli; Proje Notu + Aksesuarlar (Pencad ekstra malzemeleri) + Camlar + poz tablosu (poz no, görsel, cam, ekstra malzeme seçimleri) */
+function tutanakYap(){
+  if(!S.poz.length){ durum("Önce Pencad raporunu yükleyiniz.","hata"); return; }
+  const w=window.open("","_blank"); if(!w){ durum("Açılır pencere engellendi; tarayıcıda bu siteye açılır pencere izni veriniz.","hata"); return; }
+  hesapla(); notDoldur();
+  const nl=t=>esc(t).replace(/\n/g,"<br>"), satL=id=>String(($(id)||{}).value||"").split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  const tar=$("f_tarih").value?new Date($("f_tarih").value+"T12:00:00"):new Date(), yy=tar.toISOString().slice(2,10).replace(/-/g,"");
+  const ad=("Etut_Tutanak_"+$("f_proje").value+"_"+yy).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_");
+  const pn=PN.filter(x=>x[1]!=="pn_rev"||$("f_revize").value==="1").map(x=>[x[0],String(($(x[1])||{}).value||"").trim()]).filter(x=>x[1]);
+  const modAd={birim:"Birim fiyat",ekstra:"Ekstra malzeme",opsiyon:"Opsiyon"};
+  const EK=S.ekstra||[];
+  const aks=EK.length?'<table><thead><tr><th>Stok</th><th>Ad</th><th>Miktar</th><th>Fiyatlama</th><th>Pozlar</th></tr></thead><tbody>'+EK.map((e,j)=>'<tr><td>'+esc(e.kod)+'</td><td class="l">'+esc(e.ad)+'</td><td>'+fN(e.miktar,0)+' '+esc(e.birim||"")+'</td><td>'+(modAd[e.mod]||"")+'</td><td class="l">'+S.poz.map((p,i)=>ekTik(e,i)?p.no:null).filter(x=>x!=null).join(", ")+'</td></tr>').join("")+'</tbody></table>':'<p>Ekstra malzeme yok.</p>';
+  const camG={}; S.poz.forEach(p=>{ const c=String(p.camFr||p.camPdf||"").trim()||"—"; (camG[c]=camG[c]||[]).push(p.no); });
+  const cam='<table><thead><tr><th class="l">Cam</th><th>Pozlar</th></tr></thead><tbody>'+Object.keys(camG).map(c=>'<tr><td class="l">'+nl(c)+'</td><td class="l">'+camG[c].join(", ")+'</td></tr>').join("")+'</tbody></table>';
+  const poz='<table class="poz"><thead><tr><th>No</th><th>Repère</th><th>Görsel</th><th>L × H (mm)</th><th>Adet</th><th class="l">Cam</th>'+EK.map(e=>'<th class="ek">'+esc(ekstraKisa(e,false))+'</th>').join("")+'</tr></thead><tbody>'
+    +S.poz.map((p,i)=>'<tr><td>'+esc(p.no)+'</td><td><b>'+esc(p.kod)+'</b></td><td class="im">'+(p.img?'<img src="'+p.img.url+'">':'')+'</td><td>'+p.L+' × '+p.H+'</td><td>'+(p.F||0)+'</td><td class="l cm">'+nl(p.camFr||p.camPdf||"")+'</td>'+EK.map(e=>'<td>'+(ekTik(e,i)?'✓':'')+'</td>').join("")+'</tr>').join("")+'</tbody></table>';
+  const ul=a=>a.length?'<ul>'+a.map(t=>'<li>'+esc(t)+'</li>').join("")+'</ul>':'<p>—</p>';
+  const html='<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>'+esc(ad)+'</title><style>'
+  +'@page{size:A4 portrait;margin:8mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#000;font-size:9px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+  +'.antet{display:flex;align-items:center;justify-content:space-between;background:#086324;border-bottom:5px solid #7AC142;color:#fff;padding:6px 10px}.antet img{height:52px}.antet .t{text-align:right;font-family:Calibri,Arial;font-size:10px;line-height:1.35}.antet .t b{font-size:13px}'
+  +'h1{margin:6px 0;text-align:center;color:#2B4714;font-size:20px;letter-spacing:4px;border:1px solid #000;padding:4px}h2{margin:8px 0 3px;background:#2B4714;color:#fff;font-size:11px;padding:3px 7px}'
+  +'table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:2px 4px;text-align:center;vertical-align:middle}th{background:#D9EACA;color:#2B4714}.l{text-align:left}'
+  +'.pn td:first-child{font-weight:bold;width:32%;text-align:left;background:#F2F6EE}.pn td{text-align:left}.poz tr{page-break-inside:avoid}.im img{max-width:90px;max-height:80px;display:block;margin:auto}.cm{font-size:8px;width:120px}.ek{font-size:7.5px;max-width:60px}.uy{color:#b00020;font-weight:bold;margin:4px 0}ul{margin:3px 0;padding-left:18px}'
+  +'</style></head><body>'
+  +'<div class="antet"><img src="'+window.SOUM_IMG.logo+'"><div class="t"><b>'+esc(ANTET[0])+'</b><br>'+ANTET.slice(1).map(esc).join("<br>")+'</div></div>'
+  +'<h1>ETÜT TUTANAĞI</h1>'
+  +'<table><tr><th>Proje</th><th>Müşteri</th><th>Ref</th><th>Hazırlayan</th><th>Tarih</th></tr><tr><td>'+nl([$("f_proje").value,$("f_padres").value].filter(Boolean).join("\n"))+'</td><td>'+nl([$("f_firma").value,$("f_ilgili").value].filter(Boolean).join("\n"))+'</td><td>'+esc($("f_ref").value)+'</td><td>'+esc(parAd($("f_par").value))+'</td><td>'+tar.toLocaleDateString("tr-TR")+'</td></tr></table>'
+  +'<h2>Proje Notu</h2><table class="pn"><tbody>'+pn.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+nl(x[1])+'</td></tr>').join("")+'</tbody></table>'
+  +'<div class="uy">'+esc(PN_UYARI)+'</div>'
+  +'<h2>Teklifle ilgili etüte bildirilmesi gereken notlar</h2>'+ul(satL("pn_etut"))
+  +'<h2>Müşteriye bildirilecek notlar</h2>'+ul(satL("pn_notlar"))
+  +'<h2>Aksesuarlar</h2>'+aks
+  +'<h2>Camlar</h2>'+cam
+  +'<h2>Pozlar — cam ve ekstra malzeme seçimleri</h2>'+poz
+  +'<script>window.onload=function(){setTimeout(function(){window.print();},300);};<\/script></body></html>';
+  w.document.open(); w.document.write(html); w.document.close();
+  durum("Etüt Tutanak görünümü yeni sekmede açıldı: yazdırma penceresinde <b>PDF olarak kaydet</b>'i seçiniz (dosya adı: "+esc(ad)+".pdf).","ok");
+}
+$("btnTutanak").onclick=tutanakYap;
 
 </script>
 <!-- FORM-LINKLER --><script src="../form_linkler.js?v=261105"></script><!-- FORM-MENU -->
