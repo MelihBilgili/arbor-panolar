@@ -381,9 +381,12 @@ function bind(){
       const td=inp.parentElement, id=+inp.dataset.id, n=parseTr(inp.value);
       if(Number.isNaN(n)){ td.classList.add("bad"); msg("Geçersiz tutar: "+inp.value,"err"); return; }
       td.classList.remove("bad");
-      const {error}=await sb.from("sel_arb_guncel").update({alacak:n,updated_at:new Date().toISOString(),updated_by:ROL}).eq("id",id);
+      /* SELARB-MAKTU-TAHSILAT (12.11.2026, Melih): elle girilen tutar yeni maktu olur; bundan sonra ÖB'ye girilen tahsilatlar ondan düşülür */
+      const r=ST.g.find(x=>x.id===id);
+      const {error}=r&&r.sira!=null ? await sb.rpc("sel_arb_alacak_belirle",{p_sira:Number(r.sira),p_kaynak:"manuel",p_tutar:n,p_kim:ROL})
+        : await sb.from("sel_arb_guncel").update({alacak:n,updated_at:new Date().toISOString(),updated_by:ROL}).eq("id",id);
       if(error){ msg("Kaydedilemedi: "+error.message,"err"); return; }
-      const r=ST.g.find(x=>x.id===id); if(r) r.alacak=n;
+      if(r){ r.alacak=n; r.alacak_maktu=n; r.alacak_kaynak="manuel"; }
       msg("Kaydedildi","ok"); render();
       const nx=document.querySelector(`td.sa-g input[data-id="${id}"]`); if(nx){ nx.parentElement.classList.add("saved"); }
     };
