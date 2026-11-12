@@ -72,7 +72,7 @@
   <div class="sub">Arbor SAS'ın firma/proje bazlı güncel alacakları. <b>Güncel Alacak (€)</b> sütunu ay boyunca düzenlenir; ay sona erince kendiliğinden sabitlenip <b>Önceki Alacak (€)</b> grubuna eklenir ve SEL-ARB panosunda yeni ay sütunu olur. Yeni proje, YD1/YD2 Akış formunda durumu “Kazandık” olunca buraya kendiliğinden eklenir.<!-- SELARB-ACIKLAMA-YENI --></div>
 </header>
 <div class="wrap">
-  <div class="btns"><button id="bGuncelle">Güncelle</button><span id="rolLbl"></span><span class="msg" id="msg"></span></div>
+  <div class="btns"><button id="bGuncelle">Güncelle</button><span id="saEmptyBox" data-arb-bant></span><!-- SELARB-BOS-BANT --><span id="rolLbl"></span><span class="msg" id="msg"></span></div>
   <div class="hint" id="stamp"></div>
   <div id="tbl"><div class="hint">Yükleniyor…</div></div>
 </div>
@@ -342,7 +342,8 @@ function render(){
     +`<th rowspan="2" data-sk="g" class="sa-num sa-g">Güncel Alacak (€)</th>`
     +`<th class="sa-tg" id="saTg" colspan="${ST.open?Math.max(nd,1):1}" title="Diğer ayları aç/kapat">Önceki Alacak (€) ${tgTxt}</th></tr>`
     +`<tr>${dates.map((d,i)=>`<th data-sk="t:${d}" class="sa-num${oc(i)}">${esc(dLbl(d))}</th>`).join("")}</tr></thead>`;
-  const btn=hidden?`<div class="hint"><button class="btn2" id="saEmpty">${ST.showEmpty?"Boş-alacak satırları gizle":"Boş-alacak satırları göster"} (${hidden})</button></div>`:"";
+  const btn=""; /* SELARB-BOS-BANT (12.11.2026, Melih): bos-alacak dugmesi lacivert bantta (#saEmptyBox, FORM-BANT2 tasir) */
+  { const eb=document.getElementById("saEmptyBox"); if(eb) eb.innerHTML=hidden?`<button class="btn2" id="saEmpty">${ST.showEmpty?"Boş-alacak satırları gizle":"Boş-alacak satırları göster"} (${hidden})</button>`:""; }
   const musDl=`<datalist id="saMusL">${(ST.mus||[]).map(m=>`<option value="${esc(m)}"></option>`).join("")}</datalist>`;   /* SELARB-MUSTERI-VADE */
   document.getElementById("tbl").innerHTML=btn+musDl+`<div class="sa-wrap"><table class="${ST.open?"open":""}">${head}<tbody>${nw}${tr}</tbody></table></div>`;
   bind();
