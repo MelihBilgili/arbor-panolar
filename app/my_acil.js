@@ -85,7 +85,7 @@
     var ncol=11+(mk?1:0);
     /* MY-ACIL-SORUMLU (06.11.2026, Melih): Durum'un sağında Sorumlu + Görev (yalnız PEM, ERP durum no'suna göre) */
     var SG={"0":["Buse Hanım","Malzeme listesini yükle"],"0.1":["Onur Bey","Malzeme onayını ver"],"1":["Berat Bey","Termini gir"],"1.2":["Semih Bey","Termini gir"] /* MY-SORUMLU-12-SEMIH (13.11.2026, Melih) */,"1.3":["Berat Bey · Umut Bey · Semih Bey","Termini gir"],"2":["Semih Bey","Termini gir"]};
-    var sg=function(r){ if(r.tur!=="PEM") return ["",""]; if(r.tarih) return ["",""]; /* MY-TERMIN-GIRILDI (13.11.2026, Melih): AÜP/Termin dolu PEM'de Sorumlu/Görev ("Termini gir") gösterilmez */ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return (m&&SG[m[1].replace(",",".")])||["",""]; };
+    var sg=function(r){ if(r.tur!=="PEM") return ["",""]; /* MY-TERMIN-GIRILDI (13.11.2026, Melih): AÜP/Termin dolu PEM'de Sorumlu/Görev ("Termini gir") gösterilmez; MY-TERMIN-GECTI (13.11.2026, Melih): termin bugünden önceyse Sorumlu + kırmızı "Termin geçti" */ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); var s=(m&&SG[m[1].replace(",",".")])||null; if(r.tarih) return (s&&String(r.tarih).slice(0,10)<bugun)?[s[0],"Termin geçti",1]:["",""]; return s||["",""]; }; var sgTd=function(g){ var st=g[2]?' style="color:#c62828"':''; return '<td'+st+'>'+esc(g[0])+'</td><td'+st+'>'+esc(g[1])+'</td>'; };
     var shz=function(r){ var n=dno(r); return n===3||n===8; }; /* MY-SEVKE-HAZIR-8 (10.11.2026, Melih): PEM 3 ve PRJ 8 Sevke Hazir -> kirmizi + Yukleme tarihi gir */
     var kesHtml=function(r){
       var kz=!r.kesin&&shz(r);
@@ -93,7 +93,7 @@
       return r.kesin?'<b>'+fd(r.kesin)+'</b>':(kz?'<span class="my-kg">Yükleme tarihi gir</span>':'');
     }; /* MY-ACIKLAMA-EKLE (28.10.2026): Giriş panosunda "Açıklama Ekle" sütunu (yalnız MB) */
     var shH=sh.length?('<tr class="my-grp"><td colspan="'+ncol+'">ŞAHSİ PEM\'LER ('+sh.length+')</td></tr>'+sh.map(function(r){ var e=r.erp||{}, g=sg({tur:"PEM",durum_erp:e.durum,tarih:e.termin});
-      return '<tr class="my-sh" data-id="'+esc(r.id)+'" data-tur="PEM" data-no="'+esc(r.kod)+'"><td class="w" style="max-width:24ch" title="'+esc(e.durum)+'">'+esc(e.durum)+'</td><td>'+esc(g[0])+'</td><td>'+esc(g[1])+'</td><td>PEM '+esc(r.kod)+'</td>'
+      return '<tr class="my-sh" data-id="'+esc(r.id)+'" data-tur="PEM" data-no="'+esc(r.kod)+'"><td class="w" style="max-width:24ch" title="'+esc(e.durum)+'">'+esc(e.durum)+'</td>'+sgTd(g)+'<td>PEM '+esc(r.kod)+'</td>'
         +'<td class="w" title="'+esc((e.proje||"")+(e.ekbilgi?" · "+e.ekbilgi:""))+'">'+esc(e.proje)+'</td><td style="text-align:right">'+esc(e.adet)+'</td><td>'+fd(e.termin)+'</td><td></td><td></td>'
         +'<td><button class="del" data-id="'+esc(r.id)+'" title="Gündemden kapat (sil)">✕</button></td>'+(mk?'<td></td>':'')
         +'<td class="w mack ged" data-f="konu" data-type="text" title="'+esc(r.konu)+'">'+esc(r.konu)+'</td></tr>'; }).join("")
@@ -105,7 +105,7 @@
         var onay=(mk&&r.sekil==="Uçak"&&!r.ucak_onay)?'<button class="my-onay" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">Uçak yüklemesini onayla</button>':'';
         var cls=r.kesin?'my-ks':(tbR.indexOf(r)>=0?'my-tb':(shz(r)?'my-kz':''));
         var grp=((i===anaR.length&&tbR.length)?'<tr class="my-grp my-tbbas" title="Aç / kapat"><td colspan="'+ncol+'"><span class="my-ok">'+(el._tbAcik?'▾':'▸')+'</span> TERMİNİ BEKLENENLER ('+tbR.length+')</td></tr>':'')+((i===anaR.length+tbR.length&&kesR.length)?'<tr class="my-grp my-ksbas" title="Aç / kapat"><td colspan="'+ncol+'"><span class="my-ok">'+(el._ksAcik?'▾':'▸')+'</span> YÜKLENECEĞİ KESİNLEŞENLER ('+kesR.length+')</td></tr>':'');
-        return grp+'<tr class="'+cls+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td><td>'+esc(sg(r)[0])+'</td><td>'+esc(sg(r)[1])+'</td><td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
+        return grp+'<tr class="'+cls+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td>'+sgTd(sg(r))+'<td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
           +'<td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td><td><b>'+fd(r.hedef)+'</b></td><td>'+kesHtml(r)+'</td><td>'+sekilHtml(r)+'</td>'
           +(mk?'<td>'+onay+'</td>':'')+'<td class="w mack'+(ack?' my-acked':'')+'" title="'+esc(ackTers(r.aciklama))+'">'+esc(ackTers(r.aciklama))+'</td>' /* MY-ACK-SATIR / MY-ACK-YENI-UST */+'</tr>';
       }).join("")+'</tbody></table></div>'
