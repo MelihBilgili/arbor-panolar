@@ -219,17 +219,21 @@ function gq(g){const p=g.k.split('|'),c=p[0].split('/'),f=p[3].split('').map(Num
   return{c,cav:+p[1],cu:+p[1],tg:g.tg,nlam:P.reduce((a,x)=>a+x.lam,0),pvb4:P.filter(x=>x.lam&&x.pvb>=4).length,tr:f[0],lowe:f[1],solar:f[2],fp:f[3],ac:f[4],sat:f[5],tp:f[6],xc:f[7],ar:f[8],we:f[9],cool:0,plan:0,en:0,coat:'',own:1,frm:p[2]};}
 function yakinlar(q,po,h,hasH,u){let out='';
   /* 1) hedef degerler: Ug/SF <= hedef (esit yoksa en yakin kucuk), TL/Rw+Ctr >= hedef (esit yoksa en yakin buyuk) */
-  const L1='Cam listesindeki en yakın hedef değerler:';
+  const L1='Cam listesindeki en yakın hedef değerler:';let _y1=null;/* CAM-YAKIN-TEKIL */
   if(!hasH)out+=lineY(L1,'<span class="lv">— hedef değer girilmedi</span>');
   else{const SC={ug:0.1,tl:0.01,rw:1,sf:0.01};let best=null;
     /* CAM-V11 YAKIN-X2: Ug/SF hedefin ustu x2, TL/Rw+Ctr hedefin alti x2 ceza; iki yonde de aday olur */
     for(const C of CAT){let s=0,ok=true;for(const t of ['ug','tl','rw','sf']){if(h[t]==null)continue;const v=C[t];if(v==null){ok=false;break;}
         const kotu=(t==='ug'||t==='sf')?v-h[t]:h[t]-v;s+=(kotu>0?2*kotu:-kotu)/SC[t];}
       if(!ok)continue;const d=Dq(q,C);if(!best||s<best.s-1e-9||(Math.abs(s-best.s)<=1e-9&&d<best.d))best={C,s,d};}
+    if(best)_y1=best.C;
     out+=lineY(L1,best?bodyY(nmT(best.C.komb),kalL(best.C),best.C,catFiyat(best.C,u)):'<span class="no">Hedefleri karşılayan kombinasyon cam listesinde yok</span>');}
   /* 2) forma islenen kombinasyona en yakin cam listesi kaydi */
   let bc=null;for(const C of CAT){const d=Dq(q,C);if(!bc||d<bc.d-1e-9||(Math.abs(d-bc.d)<=1e-9&&!(bc.C.satis>0)&&C.satis>0))bc={C,d};}
-  out+=lineY('Cam listesindeki en yakın kombinasyon:',bc?bodyY(nmT(bc.C.komb),kalL(bc.C),bc.C,catFiyat(bc.C,u)):'—');
+  /* CAM-YAKIN-TEKIL (13.11.2026, Melih): 1. ve 2. satir ayni kaydi bulursa tek satir, birlesik etiket */
+  if(bc&&_y1&&_y1===bc.C){const i=out.lastIndexOf('<div class="line yk">');out=out.slice(0,i);
+    out+=lineY('Cam listesindeki en yakın hedef değerler ve kombinasyon:',bodyY(nmT(bc.C.komb),kalL(bc.C),bc.C,catFiyat(bc.C,u)));}
+  else out+=lineY('Cam listesindeki en yakın kombinasyon:',bc?bodyY(nmT(bc.C.komb),kalL(bc.C),bc.C,catFiyat(bc.C,u)):'—');
   /* 3) forma islenen kombinasyona en yakin gecmis teklif grubu */
   let bg=G.find(r=>r.k===po.key)||null;
   if(!bg){let bd=1e9;for(const r of G){const Q=gq(r),d=Dq(q,Q)+(Q.frm!==u.frm?0.5:0);if(d<bd-1e-9||(Math.abs(d-bd)<=1e-9&&bg&&r.n>bg.n)){bd=d;bg=r;}}}
