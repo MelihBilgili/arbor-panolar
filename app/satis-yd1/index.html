@@ -421,7 +421,13 @@ function tutarDolu(r){ return !!r && r.net_tutar!=null && String(r.net_tutar).tr
 function ydRevMi(r){ if(!r) return false; if(r.muhtemel_kaynak_id) return true; return (String(r.talebe_iliskin_notlar||"")+"\n"+String(r.teklif_birimi_notlari||"")).split(/\r?\n/).some(function(x){ return /^(\d{2}\/\d{2}\/\d{2} [^:]{1,15}: )?Revizyon(\s*—.*)?$/i.test(x.trim()); }); } /* REV-PROJE-KOYU (09.10.2026, Melih) + REV-NOT-TALEP: iki not sütunu */
 function prjCls(r,f,key){ if(f!=='proje'||key==='draft'||!r||r.durum!=='Teklif Bekleniyor') return ''; return ' prj-bek'+(ydRevMi(r)?' prj-rev':'')+((ydRevMi(r)&&String(r.ihale||'')==='Alındı')?' prj-ihale':''); } /* REV-PROJE-KOYU2: yeşil yalnız revizyonda */
 function tkBenim(r){ const g=tkBekleyenG(r); return !!g && !!ARB_EKLEYEN && (g===ARB_EKLEYEN||g==="Herkes"); }
-function tkGorevSay(){ const el=document.getElementById("tk-gorev-say"); if(!el) return; const n=ROWS.filter(tkBenim).length; el.textContent=n?n+" Adet bekleyen takip görevin var!":""; }
+function tkGorevSay(){ const el=document.getElementById("tk-gorev-say"); if(!el) return; const n=ROWS.filter(tkBenim).length; el.textContent=n?n+" Adet bekleyen takip görevin var!":""; el.style.cursor=n?"pointer":""; el.style.textDecoration=n?"underline":""; el.title=n?"Tıklayın: ilgili takip notuna gider"+(n>1?" (her tıklamada sıradaki)":""):""; el.onclick=n?tkGorevGit:null; } /* TAKIP-GOREV-GIT (13.11.2026, Melih) */
+let TKG_I=0;
+function tkGorevGit(){ const L=ROWS.filter(tkBenim); if(!L.length) return; const r=L[TKG_I%L.length]; TKG_I++;
+  const tr=Array.prototype.slice.call(document.querySelectorAll('#list tr[data-i]')).find(function(t){ return getRow(t.dataset.i)===r; });
+  if(!tr){ setMsg("Görevli satır şu an listede görünmüyor (filtreyi kaldırın): "+(r.proje||""),false); return; }
+  const td=tr.querySelector("td.tknotes")||tr; td.scrollIntoView({behavior:"smooth",block:"center",inline:"center"});
+  td.style.outline="3px solid #c00"; td.style.outlineOffset="-3px"; setTimeout(function(){ td.style.outline=""; },3000); }
 
 const DURUM_OPTS=["Teklif Talebi Geldi","Teklif İncelendi","Teklif Bekleniyor","Teklif Teslim Edildi","Revizyon İstendi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı","İptal"];  /* YD-IPTAL (29.09.2026): her durumdan seçilebilir, en altta */
 const DURUM_SIRA={}; DURUM_OPTS.forEach((d,i)=>DURUM_SIRA[d]=i+1);
