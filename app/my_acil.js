@@ -85,14 +85,14 @@
     var ncol=11+(mk?1:0);
     /* MY-ACIL-SORUMLU (06.11.2026, Melih): Durum'un sağında Sorumlu + Görev (yalnız PEM, ERP durum no'suna göre) */
     var SG={"0":["Buse Hanım","Malzeme listesini yükle"],"0.1":["Onur Bey","Malzeme onayını ver"],"1":["Berat Bey","Termini gir"],"1.2":["Umut Bey","Termini gir"],"1.3":["Berat Bey · Umut Bey · Semih Bey","Termini gir"],"2":["Semih Bey","Termini gir"]};
-    var sg=function(r){ if(r.tur!=="PEM") return ["",""]; var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return (m&&SG[m[1].replace(",",".")])||["",""]; };
+    var sg=function(r){ if(r.tur!=="PEM") return ["",""]; if(r.tarih) return ["",""]; /* MY-TERMIN-GIRILDI (13.11.2026, Melih): AÜP/Termin dolu PEM'de Sorumlu/Görev ("Termini gir") gösterilmez */ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return (m&&SG[m[1].replace(",",".")])||["",""]; };
     var shz=function(r){ var n=dno(r); return n===3||n===8; }; /* MY-SEVKE-HAZIR-8 (10.11.2026, Melih): PEM 3 ve PRJ 8 Sevke Hazir -> kirmizi + Yukleme tarihi gir */
     var kesHtml=function(r){
       var kz=!r.kesin&&shz(r);
       if(kesEd) return (kz?'<span class="my-kg">Yükleme tarihi gir</span>':'')+'<input type="date" class="my-kes" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" value="'+esc(r.kesin?String(r.kesin).slice(0,10):"")+'">';
       return r.kesin?'<b>'+fd(r.kesin)+'</b>':(kz?'<span class="my-kg">Yükleme tarihi gir</span>':'');
     }; /* MY-ACIKLAMA-EKLE (28.10.2026): Giriş panosunda "Açıklama Ekle" sütunu (yalnız MB) */
-    var shH=sh.length?('<tr class="my-grp"><td colspan="'+ncol+'">ŞAHSİ PEM\'LER ('+sh.length+')</td></tr>'+sh.map(function(r){ var e=r.erp||{}, g=sg({tur:"PEM",durum_erp:e.durum});
+    var shH=sh.length?('<tr class="my-grp"><td colspan="'+ncol+'">ŞAHSİ PEM\'LER ('+sh.length+')</td></tr>'+sh.map(function(r){ var e=r.erp||{}, g=sg({tur:"PEM",durum_erp:e.durum,tarih:e.termin});
       return '<tr class="my-sh" data-id="'+esc(r.id)+'" data-tur="PEM" data-no="'+esc(r.kod)+'"><td class="w" style="max-width:24ch" title="'+esc(e.durum)+'">'+esc(e.durum)+'</td><td>'+esc(g[0])+'</td><td>'+esc(g[1])+'</td><td>PEM '+esc(r.kod)+'</td>'
         +'<td class="w" title="'+esc((e.proje||"")+(e.ekbilgi?" · "+e.ekbilgi:""))+'">'+esc(e.proje)+'</td><td style="text-align:right">'+esc(e.adet)+'</td><td>'+fd(e.termin)+'</td><td></td><td></td>'
         +'<td><button class="del" data-id="'+esc(r.id)+'" title="Gündemden kapat (sil)">✕</button></td>'+(mk?'<td></td>':'')
