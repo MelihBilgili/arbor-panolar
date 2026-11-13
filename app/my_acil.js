@@ -84,7 +84,7 @@
     anaR=anaR.filter(function(r){ return tbR.indexOf(r)<0; });
     var ncol=11+(mk?1:0);
     /* MY-ACIL-SORUMLU (06.11.2026, Melih): Durum'un sağında Sorumlu + Görev (yalnız PEM, ERP durum no'suna göre) */
-    var SG={"0":["Buse Hanım","Malzeme listesini yükle"],"0.1":["Onur Bey","Malzeme onayını ver"],"1":["Berat Bey","Termini gir"],"1.2":["Umut Bey","Termini gir"],"1.3":["Berat Bey · Umut Bey · Semih Bey","Termini gir"],"2":["Semih Bey","Termini gir"]};
+    var SG={"0":["Buse Hanım","Malzeme listesini yükle"],"0.1":["Onur Bey","Malzeme onayını ver"],"1":["Berat Bey","Termini gir"],"1.2":["Semih Bey","Termini gir"] /* MY-SORUMLU-12-SEMIH (13.11.2026, Melih) */,"1.3":["Berat Bey · Umut Bey · Semih Bey","Termini gir"],"2":["Semih Bey","Termini gir"]};
     var sg=function(r){ if(r.tur!=="PEM") return ["",""]; if(r.tarih) return ["",""]; /* MY-TERMIN-GIRILDI (13.11.2026, Melih): AÜP/Termin dolu PEM'de Sorumlu/Görev ("Termini gir") gösterilmez */ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return (m&&SG[m[1].replace(",",".")])||["",""]; };
     var shz=function(r){ var n=dno(r); return n===3||n===8; }; /* MY-SEVKE-HAZIR-8 (10.11.2026, Melih): PEM 3 ve PRJ 8 Sevke Hazir -> kirmizi + Yukleme tarihi gir */
     var kesHtml=function(r){
