@@ -84,7 +84,7 @@
     anaR=anaR.filter(function(r){ return tbR.indexOf(r)<0; });
     var ncol=11+(mk?1:0);
     /* MY-ACIL-SORUMLU (06.11.2026, Melih): Durum'un sağında Sorumlu + Görev (yalnız PEM, ERP durum no'suna göre) */
-    var SG={"0":["Buse Hanım","Malzeme listesini yükle"],"0.1":["Onur Bey","Malzeme onayını ver"],"1":["Berat Bey","Termini gir"],"1.2":["Semih Bey","Termini gir"] /* MY-SORUMLU-12-SEMIH (13.11.2026, Melih) */,"1.3":["Berat Bey · Umut Bey · Semih Bey","Termini gir"],"2":["Semih Bey","Termini gir"]};
+    var SG={"0":["Buse Hanım","Malzeme listesini yükle"],"0.1":["Onur Bey","Malzeme onayını ver"],"1":["Berat Bey","Termini gir"],"1.2":["Berat Bey","Termini gir"] /* MY-SORUMLU-12-BERAT (13.11.2026, Melih; MY-SORUMLU-12-SEMIH yerine) */,"1.3":["Berat Bey · Umut Bey · Semih Bey","Termini gir"],"2":["Semih Bey","Termini gir"]};
     var sg=function(r){ if(r.tur!=="PEM") return ["",""]; /* MY-TERMIN-GIRILDI (13.11.2026, Melih): AÜP/Termin dolu PEM'de Sorumlu/Görev ("Termini gir") gösterilmez; MY-TERMIN-GECTI (13.11.2026, Melih): termin bugünden önceyse Sorumlu + kırmızı "Termin geçti" */ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); var s=(m&&SG[m[1].replace(",",".")])||null; if(r.tarih) return (s&&String(r.tarih).slice(0,10)<bugun)?[s[0],"Termin geçti",1]:["",""]; return s||["",""]; }; var sgTd=function(g){ var st=g[2]?' style="color:#c62828"':''; return '<td'+st+'>'+esc(g[0])+'</td><td'+st+'>'+esc(g[1])+'</td>'; };
     var shz=function(r){ var n=dno(r); return n===3||n===8; }; /* MY-SEVKE-HAZIR-8 (10.11.2026, Melih): PEM 3 ve PRJ 8 Sevke Hazir -> kirmizi + Yukleme tarihi gir */
     var kesHtml=function(r){
