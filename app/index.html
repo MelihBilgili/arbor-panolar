@@ -560,7 +560,7 @@ async function grPrimSart(){
     .map(m=>({kod:m.kisi_kod, ad:kBy[m.kisi_kod].tam_ad||m.kisi, uy:UY[m.kisi_kod]||"", yy:m.yol_yemek, pa:AY[m.id+"|"+PYr+"-"+PM], av:avgOf(m.id)}))
     .sort((a,b)=>String(a.ad).localeCompare(String(b.ad),"tr"));
   const n=v=>(v==null||v==="")?'<span class="gr-muted">—</span>':Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0});
-  const rows=L.length?L.map(x=>`<tr><td>${x.kod==="ÖB"?`<a href="#" class="gr-obprim" title="ÖB Performans Primi" style="color:#1d5fa8;text-decoration:underline;cursor:pointer">${esc(x.ad)}</a>`:esc(x.ad)}</td><td class="n">${n(x.yy)}</td><td class="n">${n(x.av)}</td><td style="color:#b40000;font-size:11px;white-space:normal;min-width:220px;max-width:460px">${x.uy?esc(x.uy):""}</td></tr>`).join("")
+  const rows=L.length?L.map(x=>`<tr><td>${(x.kod==="ÖB"||x.kod==="MK")/* GIRIS-MK-PRIM-POP */?`<a href="#" class="gr-obprim" data-kod="${esc(x.kod)}" title="${x.kod==="MK"?"MK Faaliyet primleri":"ÖB Performans Primi"}" style="color:#1d5fa8;text-decoration:underline;cursor:pointer">${esc(x.ad)}</a>`:esc(x.ad)}</td><td class="n">${n(x.yy)}</td><td class="n">${n(x.av)}</td><td style="color:#b40000;font-size:11px;white-space:normal;min-width:220px;max-width:460px">${x.uy?esc(x.uy):""}</td></tr>`).join("")
     :`<tr><td colspan="4" class="gr-muted">Bu ay şartı sağlayan henüz yok</td></tr>`;
   return `<div class="scroll"><table class="grt"><thead><tr><th>Prim şartını sağlayan</th><th class="n">Yol-Yemek (TL)</th><th class="n">Son 12 Ay Ort. Prim (TL)</th><th>Uyarı</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -577,11 +577,12 @@ function grAcilSahsi(pem){
 /* GIRIS-OB-PRIM-POP (14.11.2026, Melih): "Prim şartını sağlayan" tablosunda ÖB adına tıklayınca ÖB Faaliyet panosundaki
    "ÖB Performans Primi (<kapanan ay>)" bloğu pencerede açılır. loadObrapor pencere içindeki gizli kaba çizer, yalnız .ob-prim-blok görünür;
    MB notu / taban değişince loadObrapor aynı kaba yeniden çizer. */
-function grObPrimPop(){
+/* GIRIS-MK-PRIM-POP (14.11.2026, Melih): MK adına tıklayınca MK Faaliyet prim blokları (Müşteri Memnuniyeti · TS Ekstra · FR Satış · Diğer Satış) aynı pencerede; loadMkPrim çizer, üst toplam satırı gizli. */
+function grObPrimPop(kod){ const mk=kod==="MK";
   let ov=document.getElementById("gr-obprim-ov"); if(ov) ov.remove();
   ov=document.createElement("div"); ov.id="gr-obprim-ov";
   ov.style.cssText="position:fixed;inset:0;background:rgba(15,30,45,.45);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:4vh 2vw;overflow:auto";
-  ov.innerHTML=`<style>#gr-obprim-host>:not(style):not(.ob-prim-blok){display:none!important}#gr-obprim-host .ob-prim-blok h3.sec{margin-top:0}</style>
+  ov.innerHTML=`<style>${mk?"#gr-obprim-host table.mkptop{display:none!important}":"#gr-obprim-host>:not(style):not(.ob-prim-blok){display:none!important}"}#gr-obprim-host .ob-prim-blok h3.sec{margin-top:0}</style>
     <div style="background:#fff;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.25);padding:14px 16px;max-width:96vw;position:relative">
     <button id="gr-obprim-x" title="Kapat" style="position:absolute;top:6px;right:8px;border:0;background:none;font-size:20px;cursor:pointer;color:#3d4a57">✕</button>
     <div id="gr-obprim-host"><div class="load">Yükleniyor…</div></div></div>`;
@@ -591,7 +592,7 @@ function grObPrimPop(){
   document.addEventListener("keydown",esk);
   ov.onclick=e=>{ if(e.target===ov) kapat(); };
   document.getElementById("gr-obprim-x").onclick=kapat;
-  loadObrapor("gr-obprim-host").catch(e=>{ const h=document.getElementById("gr-obprim-host"); if(h) h.innerHTML=`<div class="load">Hata: ${esc(String(e))}</div>`; });
+  (mk?loadMkPrim("gr-obprim-host"):loadObrapor("gr-obprim-host")).catch(e=>{ const h=document.getElementById("gr-obprim-host"); if(h) h.innerHTML=`<div class="load">Hata: ${esc(String(e))}</div>`; });
 }
 async function grGundem(){
   const [{data,error},primH]=await Promise.all([sb.from("ana_gundem").select("*"),grPrimSart().catch(()=>"")]); /* PRIM-SART-GIRIS */
@@ -617,7 +618,7 @@ async function grGundem(){
   grAcilSahsi(pem);
   el.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
   el.querySelectorAll(".ged").forEach(x=>x.onclick=()=>startEdit(x));
-  el.querySelectorAll("a.gr-obprim").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); grObPrimPop(); }); /* GIRIS-OB-PRIM-POP */
+  el.querySelectorAll("a.gr-obprim").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); grObPrimPop(a.dataset.kod); }); /* GIRIS-OB-PRIM-POP */
   try{ if(window.SITUYK) SITUYK.render(document.getElementById("gr-situyk"),{sb:sb,kim:()=>"MB"}); }catch(e){}   /* SITU-YUKLEME */
 }
 /* GIRIS-UST-ORTAK (16.10.2026, Melih): Sıkı Takip+Muhtemel tablosu, Satış/DK1 grafikleri, Sel-Arb ve cari ay kutuları
