@@ -1468,7 +1468,7 @@ async function loadAup(){
      "Yükleme Planına İlişkin Açıklama" (santiye_form_proje.onemli_hususlar; proje_no başına en yeni dolu dönem). */
   const YPM={}; ((yp&&yp.data)||[]).forEach(f=>{ const t=String(f.onemli_hususlar||"").trim(); if(t&&!(f.proje_no in YPM)) YPM[f.proje_no]=t; });
   /* AUP-YP-TOHUM (12.10.2026): şantiye formunda açıklama yoksa, kaldırılan Hazır PEM/PRJ panosundaki OE sevk durumu (bir defalık kopya, aup_yp_tohum) gösterilir. */
-  try{ const ypt=await sb.from("aup_yp_tohum").select("proje_no,metin"); ((ypt&&ypt.data)||[]).forEach(f=>{ const t=String(f.metin||"").trim(); if(t&&!(f.proje_no in YPM)) YPM[f.proje_no]=t; }); }catch(e){}
+  /* AUP-YP-YALNIZ-FORM (14.11.2026, Melih): Yükleme Planı yalnız şantiye formlarındaki "Yükleme Planına İlişkin Açıklama"dan; aup_yp_tohum yedeği gösterilmez (tablo duruyor). */
   const rowS=r=>{
     const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
     const sn=String(r.satis_santiye_notlari||""), un=String(r.uretim_notlari||""), yn=YPM[r.proje_no]||"";
