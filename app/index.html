@@ -557,10 +557,10 @@ async function grPrimSart(){
     .filter(m=>{ const f=KF[m.kisi_kod]||[], ek=PRIM_SART_EK[m.kisi_kod]; /* PRIM-SART-FORMSUZ: aylık formu olmayan prim alan şartı sağlamış sayılır */
       return f.every(Boolean)&&(!ek||ek({t0,due})); })
     .filter(m=>{ const v=AY[m.id+"|"+PYr+"-"+PM]; return v==null||v===""; }) /* PRIM-SART-ODENMIS-YOK: önceki ay primi dolu olan gösterilmez */
-    .map(m=>({ad:kBy[m.kisi_kod].tam_ad||m.kisi, uy:UY[m.kisi_kod]||"", yy:m.yol_yemek, pa:AY[m.id+"|"+PYr+"-"+PM], av:avgOf(m.id)}))
+    .map(m=>({kod:m.kisi_kod, ad:kBy[m.kisi_kod].tam_ad||m.kisi, uy:UY[m.kisi_kod]||"", yy:m.yol_yemek, pa:AY[m.id+"|"+PYr+"-"+PM], av:avgOf(m.id)}))
     .sort((a,b)=>String(a.ad).localeCompare(String(b.ad),"tr"));
   const n=v=>(v==null||v==="")?'<span class="gr-muted">—</span>':Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0});
-  const rows=L.length?L.map(x=>`<tr><td>${esc(x.ad)}</td><td class="n">${n(x.yy)}</td><td class="n">${n(x.av)}</td><td style="color:#b40000;font-size:11px;white-space:normal;min-width:220px;max-width:460px">${x.uy?esc(x.uy):""}</td></tr>`).join("")
+  const rows=L.length?L.map(x=>`<tr><td>${x.kod==="ÖB"?`<a href="#" class="gr-obprim" title="ÖB Performans Primi" style="color:#1d5fa8;text-decoration:underline;cursor:pointer">${esc(x.ad)}</a>`:esc(x.ad)}</td><td class="n">${n(x.yy)}</td><td class="n">${n(x.av)}</td><td style="color:#b40000;font-size:11px;white-space:normal;min-width:220px;max-width:460px">${x.uy?esc(x.uy):""}</td></tr>`).join("")
     :`<tr><td colspan="4" class="gr-muted">Bu ay şartı sağlayan henüz yok</td></tr>`;
   return `<div class="scroll"><table class="grt"><thead><tr><th>Prim şartını sağlayan</th><th class="n">Yol-Yemek (TL)</th><th class="n">Son 12 Ay Ort. Prim (TL)</th><th>Uyarı</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -573,6 +573,25 @@ function grAcilSahsi(pem){
     el.querySelectorAll("tr.my-sh .ged").forEach(x=>x.onclick=ev=>{ ev.stopPropagation(); startEdit(x); });
     el.querySelectorAll("tr.my-sh button.del").forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); delGundem(b.dataset.id); });
   }});
+}
+/* GIRIS-OB-PRIM-POP (14.11.2026, Melih): "Prim şartını sağlayan" tablosunda ÖB adına tıklayınca ÖB Faaliyet panosundaki
+   "ÖB Performans Primi (<kapanan ay>)" bloğu pencerede açılır. loadObrapor pencere içindeki gizli kaba çizer, yalnız .ob-prim-blok görünür;
+   MB notu / taban değişince loadObrapor aynı kaba yeniden çizer. */
+function grObPrimPop(){
+  let ov=document.getElementById("gr-obprim-ov"); if(ov) ov.remove();
+  ov=document.createElement("div"); ov.id="gr-obprim-ov";
+  ov.style.cssText="position:fixed;inset:0;background:rgba(15,30,45,.45);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:4vh 2vw;overflow:auto";
+  ov.innerHTML=`<style>#gr-obprim-host>:not(style):not(.ob-prim-blok){display:none!important}#gr-obprim-host .ob-prim-blok h3.sec{margin-top:0}</style>
+    <div style="background:#fff;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.25);padding:14px 16px;max-width:96vw;position:relative">
+    <button id="gr-obprim-x" title="Kapat" style="position:absolute;top:6px;right:8px;border:0;background:none;font-size:20px;cursor:pointer;color:#3d4a57">✕</button>
+    <div id="gr-obprim-host"><div class="load">Yükleniyor…</div></div></div>`;
+  document.body.appendChild(ov);
+  const kapat=()=>{ ov.remove(); document.removeEventListener("keydown",esk); };
+  const esk=e=>{ if(e.key==="Escape") kapat(); };
+  document.addEventListener("keydown",esk);
+  ov.onclick=e=>{ if(e.target===ov) kapat(); };
+  document.getElementById("gr-obprim-x").onclick=kapat;
+  loadObrapor("gr-obprim-host").catch(e=>{ const h=document.getElementById("gr-obprim-host"); if(h) h.innerHTML=`<div class="load">Hata: ${esc(String(e))}</div>`; });
 }
 async function grGundem(){
   const [{data,error},primH]=await Promise.all([sb.from("ana_gundem").select("*"),grPrimSart().catch(()=>"")]); /* PRIM-SART-GIRIS */
@@ -598,6 +617,7 @@ async function grGundem(){
   grAcilSahsi(pem);
   el.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
   el.querySelectorAll(".ged").forEach(x=>x.onclick=()=>startEdit(x));
+  el.querySelectorAll("a.gr-obprim").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); grObPrimPop(); }); /* GIRIS-OB-PRIM-POP */
   try{ if(window.SITUYK) SITUYK.render(document.getElementById("gr-situyk"),{sb:sb,kim:()=>"MB"}); }catch(e){}   /* SITU-YUKLEME */
 }
 /* GIRIS-UST-ORTAK (16.10.2026, Melih): Sıkı Takip+Muhtemel tablosu, Satış/DK1 grafikleri, Sel-Arb ve cari ay kutuları
@@ -3227,7 +3247,7 @@ async function loadObrapor(tgt){
   const topCaTL=cP.dd+(eurTL?(cP.sel+cP.dp+cP.st+cP.av+cP.pv)*eurTL:0);
   const eC=v=>`${nf(v)} €${eurTL?` (${nf(v*eurTL)} ₺)`:""}`;
   const topTL=(perfTL||0)+ddPrimTL+(eurTL?(selPrimE+avPrimE+dpPrimE+stPrimE+pvPrimE)*eurTL:0);
-  ib+=`<h3 class="sec">ÖB Performans Primi <span class="muted">(${esc(afAd)})</span></h3>
+  ib+=`<div class="ob-prim-blok" data-m="GIRIS-OB-PRIM-POP"><h3 class="sec">ÖB Performans Primi <span class="muted">(${esc(afAd)})</span></h3>
     <div class="obaf" style="max-width:none"><div data-m="OB-PRIM-YAN" style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start"><div class="scroll"><table class="obod" id="ob-pt1"><thead><tr><th>Kriter</th><th>Ölçüm</th><th class="num">Puan</th><th class="num">En çok</th></tr></thead><tbody>`
     + KAL.map(k=>`<tr><td>${esc(k[0])}</td><td>${k[3]==="mbsel"||/dph|sth/.test(k[3])?acik(k[3]):esc(k[3])}</td><td class="num">${k[2]==null?"—":nf(k[2])}</td><td class="num">${k[1]}</td></tr>`).join("")
     + `<tr class="itot"><td colspan="2">TOPLAM PUAN${eksikK.length?` <span class="muted" style="font-weight:400">(eksik: ${esc(eksikK.join(", "))})</span>`:""}</td><td class="num">${nf(puan)}</td><td class="num">${PTAVAN}</td></tr>`
@@ -3241,7 +3261,7 @@ async function loadObrapor(tgt){
      <tr><td>PV's de Réception primi = ${pvN} adet × 2 € + ${nf(pvAy)} € / 1000</td><td class="num">${nf(pvPrimE)} €${eurTL?` (${nf(pvPrimE*eurTL)} ₺)`:""}</td><td class="num" title="${pvNCa} adet × 2 € + ${nf(pvCa)} € / 1000">${eC(cP.pv)}</td></tr>
      <tr><td>Devlet destek primi = ${nf(ddAyTop)} ₺ × 1/100</td><td class="num">${nf(ddPrimTL)} ₺</td><td class="num" title="${nf(ddCaTop)} ₺ × 1/100">${nf(cP.dd)} ₺</td></tr>
      <tr class="itot"><td>TOPLAM PRİM${eurTL?` <span class="muted" style="font-weight:400">(1 € = ${nf(eurTL)} ₺)</span>`:" (€ kısmı hariç — kur alınamadı)"}</td><td class="num">${nf(topTL)} ₺</td><td class="num" title="Performans primi hariç">${nf(topCaTL)} ₺</td></tr>
-    </tbody></table></div></div><span class="msg" id="ob-prim-msg"></span></div>`; /* OB-PRIM-YAN OB-PRIM-CARI */
+    </tbody></table></div></div><span class="msg" id="ob-prim-msg"></span></div></div>`; /* OB-PRIM-YAN OB-PRIM-CARI GIRIS-OB-PRIM-POP: blok sarıcısı */
   try{ sb.from("ob_prim_ay").upsert({donem:afDon,toplam_puan:Math.round(puan*100)/100,updated_at:new Date().toISOString(),
     puan_detay:{kalemler:KAL.map(k=>({kriter:k[0],en_cok:k[1],puan:k[2]==null?null:Math.round(k[2]*100)/100})),dpgf_eur:dpAy,situation_eur:stAy,dpgf_adet:dpN,situation_adet:stN,dpgf_prim_eur:dpPrimE,situation_prim_eur:stPrimE,
       selectron_eur:selEur,selectron_prim_eur:selPrimE,avenant_eur:avAy,avenant_prim_eur:avPrimE,pvr_adet:pvN,pvr_eur:pvAy,pvr_prim_eur:pvPrimE,iade_tl:ddAyTop,iade_prim_tl:ddPrimTL,taban_tl:taban,performans_prim_tl:perfTL,kur_eur_tl:eurTL,toplam_prim_tl:topTL}},
