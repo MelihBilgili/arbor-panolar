@@ -147,10 +147,14 @@ async function satis(o,elT,elG){
     ydR.filter(r=>(r.blok==='YD1'||r.blok==='YD2')&&r.durum==='Kazandık').forEach(r=>{ const e=netEur(r,k); if(e!=null&&e>AL) muh.push({e,r,t:"yd"}); });
     soR.filter(r=>/^al/i.test(r.statu||"")&&Number(r.net_eur)>AL).forEach(r=>muh.push({e:Number(r.net_eur),r,t:"so"}));
     muh.sort((a,b)=>(Number(b.e)||0)-(Number(a.e)||0)); }
-  const body=siki.map(r=>ydS(r)).join("")+muh.map((x,i)=>{ const c=(i===0&&siki.length)?"gru-ayr":""; return x.t==="yd"?ydS(x.r,c):soS(x.r,c); }).join("");
+  /* CTP-ALINAN-SUTUN (14.11.2026, Melih): CTP Alınan tablosunda Müşteri…Görevli yerine YD satış formunun 8·9·10·15. sütunları (Adet · Ürün Tipi/Serisi · Kemer/Karolaj · Ağaç); Yurt İçi satırlarında bu alanlar yok (boş) */
+  const ctpTH=`<thead><tr><th>Proje</th><th class="n">Adet</th><th>Ürün Tipi / Serisi</th><th>Kemer/Karolaj</th><th>Ağaç</th><th>Takip Notu</th><th></th></tr></thead>`;
+  const ctpYd=r=>{ const l=tkSon(r); return `<tr><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td class="n">${esc(r.adet==null?"":r.adet)}</td><td>${esc(r.urun_tipi_serisi||"")}</td><td>${esc(r.kemer_karolaj||"")}</td><td>${esc(r.agac||"")}</td><td class="w2" title="${esc(l.n||"")}">${esc(l.n||"")}</td><td><button class="gru-nb" data-k="yd" data-id="${r.id}" title="Takip notu ekle (${esc(r.blok)} formuna yazılır)">+ Not</button></td></tr>`; };
+  const ctpSo=r=>`<tr><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td></td><td></td><td></td><td></td><td class="w2" title="${esc(r.durum||"")}">${esc(r.durum||"")}</td><td><button class="gru-nb" data-k="so" data-id="${r.id}" title="Durum notu (Yurt İçi Satış formuna yazılır)">+ Not</button></td></tr>`;
+  const body=o.bolum==="ctp"?muh.map(x=>x.t==="yd"?ctpYd(x.r):ctpSo(x.r)).join(""):siki.map(r=>ydS(r)).join("")+muh.map((x,i)=>{ const c=(i===0&&siki.length)?"gru-ayr":""; return x.t==="yd"?ydS(x.r,c):soS(x.r,c); }).join("");
   const by={yd:{},so:{}}; ydR.forEach(r=>by.yd[r.id]=r); soR.forEach(r=>by.so[r.id]=r);
   elT.innerHTML=(o.bolum==="ctp"?`<h3 class="gru-h">Alınan &gt; 75.000 € <span class="gru-muted">(${muh.length})</span></h3>`:`<h3 class="gru-h">Sıkı Takip Edilecekler <span class="gru-muted">(${siki.length})</span> ve Muhtemel &gt; 500.000 <span class="gru-muted">(${muh.length})</span></h3>`)
-    +(body?`<div class="gru-sc"><table class="grt">${TH}<tbody>${body}</tbody></table></div>`:'<div class="gru-muted">Kayıt yok</div>');
+    +(body?`<div class="gru-sc"><table class="grt">${o.bolum==="ctp"?ctpTH:TH}<tbody>${body}</tbody></table></div>`:'<div class="gru-muted">Kayıt yok</div>');
   elT.querySelectorAll(".gru-nb").forEach(b=>b.onclick=()=>notAc(o,b.dataset.k,by[b.dataset.k][Number(b.dataset.id)],()=>satis(o,elT,elG)));
   /* grafikler: İcmal son 12 ay + Satış cari durum; Etüt DK1 */
   const today=now(); today.setHours(0,0,0,0);
