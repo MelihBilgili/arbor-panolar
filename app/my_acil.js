@@ -4,7 +4,7 @@
    - MYACIL.acilBlok(el,{sb,mod}): Acil satırlar bloğu — OE Faaliyet, MK Faaliyet ve Giriş panosunun en üstünde.
                                    mod "mk": onay bekleyen Uçak satırının yanında kırmızı "Uçak yüklemesini onayla" kutusu (rpc my_ucak_onayla).
    - MYACIL.ayrinti(sb,tur,no)   : Ayrıntılar penceresi — ERP ingest bilgileri + Takip Durumu geçmişi (rpc my_ayrinti).
-   Formlarda <div id="my-acil" data-mod="oe|mk"></div> varsa oturum açılınca kendiliğinden çizilir (ARB_ACTIVE). */
+   Formlarda <div id="my-acil" data-mod="oe|mk|ctp"></div> (ctp: salt-okur, CTP-ACIL-GRAFIK) varsa oturum açılınca kendiliğinden çizilir (ARB_ACTIVE). */
 (function(){
   if(window.MYACIL) return;
   function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
@@ -117,6 +117,7 @@
     var KD=mod==="mk"?"MK":(mod==="oe"?"OE":"MB");
     var aMenu=function(ev,tr){ /* MY-DURUM-MK-OE (10.11.2026, Melih): MK/OE/Giriş doğrudan Normal<->Acil (rpc my_durum_yaz) */
       var tt=tr.getAttribute("data-tur"), nn=tr.getAttribute("data-no");
+      if(mod==="ctp") return ayrinti(sb,tt,nn); /* CTP-ACIL-GRAFIK (14.11.2026, Melih): CTP Faaliyet salt-okur — sağ tık yalnız Ayrıntılar */
       var r=(d.rows||[]).filter(function(x){ return x.tur===tt&&x.no===nn; })[0]; if(!r) return ayrinti(sb,tt,nn);
       sKapat(); sStil(); var m=document.createElement("div"); m.id="mys-ctx"; m.className="mys-ctx";
       var lbl=r.tur==="PEM"?"PEM "+r.kod:r.kod;
