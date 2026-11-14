@@ -142,9 +142,14 @@ async function satis(o,elT,elG){
     .concat(soR.filter(r=>/^muht/i.test(r.statu||"")&&Number(r.net_eur)>SINIR).map(r=>({e:Number(r.net_eur),r,t:"so"})))
     .sort((a,b)=>(Number(b.e)||0)-(Number(a.e)||0));
   if(o.bolum==="ctp") siki.length=0; /* CTP-FAALIYET: yalnız Muhtemel > 500.000 */
+  /* CTP-ALINAN-75 (14.11.2026, Melih): CTP'de Muhtemel > 500.000 yerine Alınan > 75.000 € (YD Kazandık + Yurt İçi Alındı, EUR) */
+  if(o.bolum==="ctp"){ muh.length=0; const AL=75000;
+    ydR.filter(r=>(r.blok==='YD1'||r.blok==='YD2')&&r.durum==='Kazandık').forEach(r=>{ const e=netEur(r,k); if(e!=null&&e>AL) muh.push({e,r,t:"yd"}); });
+    soR.filter(r=>/^al/i.test(r.statu||"")&&Number(r.net_eur)>AL).forEach(r=>muh.push({e:Number(r.net_eur),r,t:"so"}));
+    muh.sort((a,b)=>(Number(b.e)||0)-(Number(a.e)||0)); }
   const body=siki.map(r=>ydS(r)).join("")+muh.map((x,i)=>{ const c=(i===0&&siki.length)?"gru-ayr":""; return x.t==="yd"?ydS(x.r,c):soS(x.r,c); }).join("");
   const by={yd:{},so:{}}; ydR.forEach(r=>by.yd[r.id]=r); soR.forEach(r=>by.so[r.id]=r);
-  elT.innerHTML=(o.bolum==="ctp"?`<h3 class="gru-h">Muhtemel &gt; 500.000 <span class="gru-muted">(${muh.length})</span></h3>`:`<h3 class="gru-h">Sıkı Takip Edilecekler <span class="gru-muted">(${siki.length})</span> ve Muhtemel &gt; 500.000 <span class="gru-muted">(${muh.length})</span></h3>`)
+  elT.innerHTML=(o.bolum==="ctp"?`<h3 class="gru-h">Alınan &gt; 75.000 € <span class="gru-muted">(${muh.length})</span></h3>`:`<h3 class="gru-h">Sıkı Takip Edilecekler <span class="gru-muted">(${siki.length})</span> ve Muhtemel &gt; 500.000 <span class="gru-muted">(${muh.length})</span></h3>`)
     +(body?`<div class="gru-sc"><table class="grt">${TH}<tbody>${body}</tbody></table></div>`:'<div class="gru-muted">Kayıt yok</div>');
   elT.querySelectorAll(".gru-nb").forEach(b=>b.onclick=()=>notAc(o,b.dataset.k,by[b.dataset.k][Number(b.dataset.id)],()=>satis(o,elT,elG)));
   /* grafikler: İcmal son 12 ay + Satış cari durum; Etüt DK1 */
