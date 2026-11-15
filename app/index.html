@@ -3992,6 +3992,7 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     /* BAHCE-YILLIK BAHCE-YILLIK-TOPRAK BAHCE-YIL-EKIM-MART BAHCE-DOLOMIT-SADE */ .bht td.bhy{white-space:nowrap;font-size:11.5px}
     /* BAHCE-MALC-SUTUN */ .bht th.bhm,.bht td.bhm{width:1%;white-space:nowrap;text-align:center;padding:3px 1px}
     .bht td.bhay{max-width:40ch;font-size:11.5px}
+    /* BAHCE-PLAN-DUZENLE */ .bht td.bhpl[contenteditable]{cursor:text;min-width:10ch}.bht td.bhpl[contenteditable]:hover{background:#f5f9f5}.bht td.bhpl[contenteditable]:focus{outline:2px solid #2f5d3a;outline-offset:-2px;background:#fff}.bht td.bhpl.kay{background:#e3f2e3}
     /* BAHCE-BUAY-DUZENLE */ .bht td.bhay[contenteditable]{cursor:text;min-width:12ch}.bht td.bhay[contenteditable]:hover{background:#f5f9f5}.bht td.bhay[contenteditable]:focus{outline:2px solid #2f5d3a;outline-offset:-2px;background:#fff}.bht td.bhay.kay{background:#e3f2e3}
     .bht td.bhx{width:20px;padding:3px 2px;text-align:center}
     .bhdel{border:0;background:none;cursor:pointer;color:#b9c2cc;font-size:13px;line-height:1;padding:1px 3px;border-radius:4px}
@@ -4013,7 +4014,7 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
     /* BAHCE-EKLE-SATIR (25.09.2026): en üstte boş ekleme satırı — bahce_bitki insert (+ bu ayın işi → bahce_bakim) */
     /* BAHCE-EKLE-SATIR: yalnız Latince ad girilir (25.09.2026, Melih) */
     h+='<tr class="bhadd"><td><input class="bhin" data-c="latince" placeholder="Bitki adı (her dil)" style="width:18ch"></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>'+(notVar?'<td></td>':'')+'<td class="bhx"><button class="bhok" title="Ekle">＋</button></td></tr>';
-    rows.forEach(r=>{ h+='<tr><td class="bhk" title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</td><td class="bhi">'+esc(r.isik||"")+'</td><td class="bhs">'+esc(r.soguk||"")+'</td><td class="bht2">'+esc(r.toprak||"")+'</td><td class="bhy">'+esc(r.yil_ekim||"")+'</td><td class="bhy">'+esc(r.yil_mart||"")+'</td><td class="bhm">'+esc(r.malc||"")+'</td><td class="bhy">'+esc(r.tasima||"")+'</td><td class="bhu">'+esc(r.sulama||"")+'</td><td class="bht2">'+esc(r.plan||"")+'</td><td class="bhay" contenteditable="true" spellcheck="false" title="Düzenlemek için tıkla; Enter kaydeder, Esc vazgeçer, boş bırakılırsa silinir" data-id="'+r.id+'">'+esc((isMap[r.id]||[]).join("; "))+'</td>'+(notVar?'<td>'+esc(r.notlar||"")+'</td>':'')+'<td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(nm(r))+'">✕</button></td></tr>'; });
+    rows.forEach(r=>{ h+='<tr><td class="bhk" title="'+esc(r.ad||"")+'">'+esc(nm(r))+'</td><td class="bhi">'+esc(r.isik||"")+'</td><td class="bhs">'+esc(r.soguk||"")+'</td><td class="bht2">'+esc(r.toprak||"")+'</td><td class="bhy">'+esc(r.yil_ekim||"")+'</td><td class="bhy">'+esc(r.yil_mart||"")+'</td><td class="bhm">'+esc(r.malc||"")+'</td><td class="bhy">'+esc(r.tasima||"")+'</td><td class="bhu">'+esc(r.sulama||"")+'</td><td class="bht2 bhpl" contenteditable="true" spellcheck="false" title="Düzenlemek için tıkla; Enter kaydeder, Esc vazgeçer" data-pid="'+r.id+'">'+esc(r.plan||"")+'</td><td class="bhay" contenteditable="true" spellcheck="false" title="Düzenlemek için tıkla; Enter kaydeder, Esc vazgeçer, boş bırakılırsa silinir" data-id="'+r.id+'">'+esc((isMap[r.id]||[]).join("; "))+'</td>'+(notVar?'<td>'+esc(r.notlar||"")+'</td>':'')+'<td class="bhx"><button class="bhdel" title="Sil" data-id="'+esc(r.id)+'" data-k="'+esc(nm(r))+'">✕</button></td></tr>'; });
     h+='</tbody></table></div>';
     /* BAHCE-LEJANT (06.10.2026): tablonun altında simge lejantı; BAHCE-SIMGE-POMZA, BAHCE-MALC-POMZA-GERI (09.10.2026) */
     h+='<div class="bhlj"><b>Işık:</b> ☀️ tam güneş · ⛅ yarı gölge · ☁️ gölge<br><b>Toprak (kova oranı, toplam 10):</b> 🛘 besinsiz bahçe toprağı · 🍂 olgun kompost · 🌱 kapak toprağı · 🪨 pomza kırığı 2–8 mm · 🪱N dikimde N avuç solucan gübresi (pelet+leonardit) · 🍙N dikimde N avuç dolomit<br><b>Malç (M):</b> 🍪 pomza · 🥢 5–8 cm kuru çam iğnesi<br><b>Ekim / Mart (her yıl; malçı aralayıp üstten serp, malçı 5 cm\'ye tamamla):</b> 🍂N N avuç olgun kompost (ekim) · 🍙1/3 3 yılda bir 1 avuç dolomit (ekim) · 🪱N N avuç solucan gübresi (mart) · – ek gerekmez<br><!-- BAHCE-TASIMA --><b>Taşıma:</b> yerleşmiş bitkiyi taşımaya uygun ay(lar) · ✕ kazık köklü, yerleşmişken taşınmaz</div>';
@@ -4067,6 +4068,18 @@ async function loadBahce(tgt){   /* BAHCE-KOMPAKT (21.09.2026): telefona göre d
       const {error:ue}=v
         ? await sb.from("bahce_bakim").upsert({bitki_id:id,ay:buAy,is_:v},{onConflict:"bitki_id,ay"})
         : await sb.from("bahce_bakim").delete().eq("bitki_id",id).eq("ay",buAy);
+      if(ue){ alert("Kaydedilemedi: "+(ue.message||ue)); td.textContent=td.dataset.o; return; }
+      td.textContent=v; td.dataset.o=v; td.classList.add("kay"); setTimeout(()=>td.classList.remove("kay"),900);
+    };
+  });
+  /* BAHCE-PLAN-DUZENLE (15.11.2026): Plan hücresi düzenlenebilir → bahce_bitki.plan (boşsa null) */
+  body.querySelectorAll("td.bhpl[data-pid]").forEach(td=>{
+    td.dataset.o=td.textContent;
+    td.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey){ e.preventDefault(); td.blur(); } else if(e.key==="Escape"){ td.textContent=td.dataset.o; td.blur(); } };
+    td.onblur=async()=>{
+      const v=td.textContent.replace(/\s+/g," ").trim();
+      if(v===td.dataset.o.trim()){ td.textContent=td.dataset.o; return; }
+      const {error:ue}=await sb.from("bahce_bitki").update({plan:v||null}).eq("id",Number(td.dataset.pid));
       if(ue){ alert("Kaydedilemedi: "+(ue.message||ue)); td.textContent=td.dataset.o; return; }
       td.textContent=v; td.dataset.o=v; td.classList.add("kay"); setTimeout(()=>td.classList.remove("kay"),900);
     };
