@@ -479,11 +479,11 @@ function ciz(){
   ok.sort((a,b)=>(fy(a)-fy(b)||0) || ((b.sert?1:0)-(a.sert?1:0)) || (SERI.indexOf(a.S)-SERI.indexOf(b.S)) || ((a.C.k||0)-(b.C.k||0)));
   const seriSay=new Set(ok.map(r=>sAd(r))).size;
   $("ozet").innerHTML=yakin?'<div class="uyari">Hedefleri tam karşılayan konfigürasyon yok — en yakın '+ok.length+' konfigürasyon gösteriliyor; karşılanmayan değerler kırmızı.</div>'
-    :'<b>'+ok.length+'</b> konfigürasyon · <b>'+seriSay+'</b> seri';
-  $("ozet").innerHTML+='<span class="sertlej"><b>Koyu renkli konfigürasyon</b>: sertifikada geçen cam</span>';
+    :''; /* URUN-KONFIG-OZET-SADE (16.11.2026, Melih): sayı/seri/ilk 400 notu kaldırıldı, yalnız koyu yazı açıklaması */
+  $("ozet").innerHTML+='<span class="sertlej" style="margin-left:0">Sertifikada geçen cam konfigürasyonları koyu renkte yazılmıştır.</span>';
   if(window._SO_EL&&_SO_EL.length) $("ozet").innerHTML+='<div class="uyari" style="margin-top:6px">Seçilen '+[ek.yng?"yangın dayanımı":"",ek.guv?"güvenlik sınıfı":""].filter(Boolean).join(" ve ")+' için geçerli sertifikası olmadığından elenen seriler: '+esc(_SO_EL.join(", "))+'</div>'; /* SERT-OZET */
   if(!ok.length){ $("res").innerHTML='<div class="bos">Seçilen süzgeçlere uyan veri yok.</div>'; return; }
-  const TAVAN=400, topN=ok.length; if(ok.length>TAVAN){ ok=ok.slice(0,TAVAN); $("ozet").innerHTML+=' · ilk '+TAVAN+' satır gösteriliyor, hedefleri daraltın'; }
+  const TAVAN=400, topN=ok.length; if(ok.length>TAVAN){ ok=ok.slice(0,TAVAN); }
   const th=KOL.map(c=>'<th data-k="'+c.k+'" class="'+(c.l?"l":"")+'">'+c.t+(c.k==="fiyat"?" ▲":"")+'</th>').join("");
   window._SR=ok; /* SERI-AKTAR */
   const tb=ok.map((r,i)=>{ const e=r.eks||{}; const bad=k=>e[k]>0?" bad":"";
