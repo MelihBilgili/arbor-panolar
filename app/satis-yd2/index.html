@@ -73,6 +73,7 @@
   td.pairA.gs .tklatest{max-width:158px}
   .tknotes{display:flex;flex-direction:row;align-items:center;gap:4px;min-width:109px}
   .tknotes .tklatest,.tknote-input{flex:1;min-width:0;max-width:87px;text-align:left}
+  /* YD-DURUM-GRUP */ table.yd-g2{margin-top:14px} tr.ydd td{font-weight:700;font-size:12.5px;color:#16324f;padding:5px 8px;border-top:2px solid #16324f} tr.ydd td span{font-weight:400;color:#5b6b7b}
   /* YD-IKI-TABLO */ .yd-g2 .tknote-input,.yd-g2 .tknotes .tklatest{max-width:none} h3.ydgrp{margin:14px 4px 6px;font-size:13.5px;color:#16324f} h3.ydgrp:first-child{margin-top:2px} h3.ydgrp span{color:#5b6b7b;font-weight:400}
   .tknote-input{min-height:26px}
   .tkAddBtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:0 10px;height:26px;display:block;font-size:11.5px;font-weight:700;cursor:pointer;flex:none}
@@ -751,7 +752,7 @@ function eksikBos(r,f,key){
    Talebe İlişkin Notlar, Şartname Ahşap?, Teklif Birimi Notları, Öncelik yok, Takip Notları geniş. Veri ve COLS değişmedi. */
 const YD_GIZ={1:['agac','iskonto_yuzde','net_tutar','para_birimi'],2:['gelen_tarih','istenen_tarih','talebe_iliskin_notlar','sartname_ahsap','teklif_birimi_notlari','oncelik']};
 const YD_NOT_W={1:{talebe_iliskin_notlar:300,teklif_birimi_notlari:300},2:{}};
-const YD_TK_W={2:500};
+const YD_TK_W={2:435}; /* YD-DURUM-GRUP: iki tablonun toplam eni eşit */
 function ydCols(g){ return COLS.filter(c=>YD_GIZ[g].indexOf(c.f)<0).map(c=>YD_NOT_W[g][c.f]?Object.assign({},c,{w:YD_NOT_W[g][c.f]}):c); }
 function ydGrup(r){ return tkYasak(r)?1:2; }
 function rowHTML(r,key,gz){
@@ -778,7 +779,8 @@ function rowHTML(r,key,gz){
       return '<td class="'+tdc+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+prjCls(r,c.f,key)+'" data-f="'+c.f+'" type="text"'+ipucu+(alanYasak(c.f)?' readonly title="Bu alana kayıt yetkiniz yok" style="cursor:not-allowed;color:#6a7888;':' style="')+'width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
     +(gz===1?'':pairCells(r,key,bg))
-    +'<td style="background:'+bgv+'"><div class="durumro'+durumWarn+'" style="width:122px" title="'+(key==="draft"?"":"Durum değiştirmek için satıra sağ tıklayın")+'">'+esc(durumGor(r))+'</div></td>' /* DURUM-SAGTIK: elle seçim yok */ /* SIKI-TAKIP */
+    +'' /* YD-DURUM-GRUP: Durum sütunu kaldırıldı, durum grup başlığında */
+    +(0?'<td style="background:'+bgv+'"><div class="durumro'+durumWarn+'" style="width:122px" title="'+(key==="draft"?"":"Durum değiştirmek için satıra sağ tıklayın")+'">'+esc(durumGor(r))+'</div></td>':'') /* DURUM-SAGTIK: elle seçim yok */ /* SIKI-TAKIP */
     /* SIL-CARPI-YOK (08.10.2026, Melih): sağdaki ✕ sütunu kaldırıldı — silme yalnız sağ tık › Sil */
     +'</tr>';
 }
@@ -787,13 +789,17 @@ function render(){
   let h=''; /* YD-IKI-TABLO */
   [1,2].forEach(g=>{
     const GC=ydCols(g), idx=[]; ROWS.forEach((r,i)=>{ if(ydGrup(r)===g) idx.push(i); });
-    h+='<h3 class="ydgrp">'+(g===1?'1. Durumu boş · Teklif Talebi Geldi · Teklif İncelendi · Teklif Bekleniyor':'2. Diğer durumlar')+' <span>('+idx.length+')</span></h3>'
-      +'<table class="yd-g'+g+'"><colgroup>'+GC.map(c=>'<col style="width:'+c.w+'px">').join('')+(g===2?'<col style="width:72px"><col style="width:84px"><col style="width:'+YD_TK_W[2]+'px">':'')+'<col style="width:130px"></colgroup><thead><tr>'
+    if(!idx.length && g===2) return;
+    const ncol=GC.length+(g===2?3:0); /* YD-DURUM-GRUP: grup başlığı yok; her durum kendi başlık satırıyla */
+    h+='<table class="yd-g'+g+'"><colgroup>'+GC.map(c=>'<col style="width:'+c.w+'px">').join('')+(g===2?'<col style="width:72px"><col style="width:84px"><col style="width:'+YD_TK_W[2]+'px">':'')+'</colgroup><thead><tr>'
       +GC.map(c=>'<th title="'+esc(c.h)+'">'+c.h+'</th>').join('')
       +(g===2?'<th class="pairA gs">Takip Tarihi</th><th class="pairA">Görevli</th><th class="pairA">Takip Notları / Görevleri</th>':'')
-      +'<th>Durum</th></tr></thead><tbody>';
+      +'</tr></thead><tbody>';
     if(g===1 && window.ARB_EM==="int@arbor.com.tr") h+=rowHTML(DRAFT,"draft",1); /* YD-YENI-SATIR-MB: yeni satırı yalnız Melih/Claude açar */
-    idx.forEach(i=>{ h+=rowHTML(ROWS[i],i,g); });
+    let onc=null;
+    idx.forEach(i=>{ const d=durumGor(ROWS[i]); if(d!==onc){ onc=d; const n=idx.filter(j=>durumGor(ROWS[j])===d).length;
+        h+='<tr class="ydd"><td colspan="'+ncol+'" style="background:'+(DURUM_BG[d]||'#eef2f6')+'">'+esc(d||'Durumu boş')+' <span>('+n+')</span></td></tr>'; }
+      h+=rowHTML(ROWS[i],i,g); });
     h+='</tbody></table>';
   });
   h+='<div class="legend">'+DISPLAY_ORDER.filter(d=>DURUM_BG[d]).map(d=>'<span class="lg-item"><span class="lg-sw" style="background:'+DURUM_BG[d]+'"></span>'+esc(d)+'</span>').join('')+'</div>';
@@ -814,7 +820,7 @@ function render(){
   list.querySelectorAll(".tknote-pending").forEach(ta=>{ ta.addEventListener("input",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object") p.n=ta.value; }); ta.addEventListener("change",()=>{ const p=PENDING_TK[ta.dataset.row]; if(p&&typeof p==="object"){ p.n=ta.value; tkCommitEntry(ta.dataset.row); } }); });
   list.querySelectorAll(".tkgorevli-pending").forEach(s=>s.addEventListener("change",()=>{ const p=PENDING_TK[s.dataset.row]; if(p&&typeof p==="object"){ p.g=s.value; s.classList.remove("eksikbos"); tkCommitEntry(s.dataset.row); } })); /* YD-GOREVLI */
   list.querySelectorAll(".del").forEach(b=>b.onclick=()=>delRow(+b.closest("tr").dataset.i));
-  list.querySelectorAll("tbody tr").forEach(tr=>{ if(tr.dataset.i==="draft") return; tr.addEventListener("contextmenu",e=>{ e.preventDefault(); ctxAc(+tr.dataset.i,e.clientX,e.clientY); }); }); /* DURUM-SAGTIK */
+  list.querySelectorAll("tbody tr").forEach(tr=>{ if(tr.dataset.i==="draft"||tr.dataset.i==null) return; /* YD-DURUM-GRUP */ tr.addEventListener("contextmenu",e=>{ e.preventDefault(); ctxAc(+tr.dataset.i,e.clientX,e.clientY); }); }); /* DURUM-SAGTIK */
   tkGorevSay(); /* TAKIP-GOREV */
   if(ARB_FOCUS_ROW!=null){ const ta=list.querySelector('tr[data-i="'+ARB_FOCUS_ROW+'"] .tknote-input, tr[data-i="'+ARB_FOCUS_ROW+'"] .tknote-pending'); if(ta) ta.focus(); ARB_FOCUS_ROW=null; }
   sums();
