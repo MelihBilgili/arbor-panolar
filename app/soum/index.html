@@ -1301,7 +1301,16 @@ async function klasorSec(){
   catch(e){ durum("Klasör okunamadı: "+esc(e.message||e),"hata"); } }
 $("btnKlasor").onclick=klasorSec;
 $("inKlasor").onchange=e=>{ S.dosya=[]; const fs=[...e.target.files].filter(f=>!/(^|\/)[_.][^\/]*\//.test(f.webkitRelativePath||"")); dosyaEkle(fs); const r=(fs[0]&&fs[0].webkitRelativePath||"").split("/")[0]; $("kokDurum").textContent=r?"Seçili klasör: "+r:""; durum(fs.length+" dosya bulundu. Kullanımları kontrol edip <b>Oku</b>'ya basınız."); };
-$("btnOku").onclick=oku; $("btnExcel").onclick=excelYap;
+/* SOUM-PN-ZORUNLU (16.11.2026, Melike Başaran): Excel / PDF / Uw / Sfw – Tlw / Etüt Tutanak indirilmeden önce 6 · Proje Notu'ndaki görünen tüm alanlar dolu olmalı (uygulanmıyorsa "-" yazılır). */
+function pnEksik(){ try{ notDoldur(); }catch(e){} const a=$("pnAlan"), k=a&&a.closest(".kart"); if(!k) return [];
+  if(!k.dataset.pnz){ k.dataset.pnz=1; k.addEventListener("input",e=>{ if(e.target&&e.target.style) e.target.style.outline=""; }); }
+  return [...k.querySelectorAll("input,textarea")].filter(e=>e.offsetParent!==null&&!String(e.value||"").trim()); }
+function pnKapi(f){ return function(){ if(S.poz.length){ const L=pnEksik(); if(L.length){ L.forEach(e=>e.style.outline="2px solid #b00020");
+  const ad=L.map(e=>{ const l=document.querySelector('label[for="'+e.id+'"]'); return l?l.textContent.trim():e.id; });
+  durum("İndirmeden önce 6 · Proje Notu'ndaki tüm alanlar doldurulmalı (uygulanmıyorsa \"-\" yazınız). Boş: "+ad.map(esc).join(", "),"hata");
+  alert("İndirmeden önce 6 · Proje Notu'ndaki tüm alanlar doldurulmalı (uygulanmıyorsa \"-\" yazınız).\n\nBoş alanlar: "+ad.join(", "));
+  L[0].scrollIntoView({block:"center"}); L[0].focus(); return; } } return f.apply(this,arguments); }; }
+$("btnOku").onclick=oku; $("btnExcel").onclick=pnKapi(excelYap);
 function enGoster(){ const en=EN(), a=$("enAlan"), dn=$("f_k_den"); a.style.display=""; [...a.children].forEach(c=>{ c.style.display=(en||c.contains(dn))?"":"none"; }); } /* SOUM-261113-DEN (13.11.2026, Melike Başaran): Denizlik seçimi Fransızcada da görünür */
 ["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro","f_k_den","f_k_pervaz","f_k_sove","f_pas","f_op_ins","f_op_cam","f_op_mv","f_op_pmr","f_op_cage","f_op_manitou","f_op_grue"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto"||id==="f_bolge") notDoldur(); if(id==="f_disi"&&$("f_disi").value==="1") alert("Duvar dışı montaj seçildi — Eker eklendi mi?"); /* SOUM-ETUT */ });
 $("f_revize").onchange=()=>{ revGoster(); pozCiz(); hesapla(); }; $("f_revnot").oninput=revNotYaz; /* SOUM-REVIZE-ARSIV */
@@ -1466,7 +1475,7 @@ function sartHtml(){ const ul=a=>'<ul>'+a.map(t=>'<li>'+esc(t)+'</li>').join("")
   return h+'<img class="sertalt" src="'+window.SOUM_IMG.sertifika+'">'; }
 function glosHtml(){ const SR=DIL()==="en"?window.SOUM_SART_EN:window.SOUM_SART, vrVar=S.poz.some(p=>p.ozl.panjur), gl=a=>'<div class="gl">'+a.map(x=>'<b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span>').join("")+'</div>';
   return '<div class="sart glos"><h2>'+tt("GLOSSAIRE","GLOSSARY")+'</h2>'+gl(SR.glossaire)+'<h3>'+esc(SR.dimensions.t)+'</h3>'+gl(SR.dimensions.m)+(vrVar&&SR.dimensions.vr.m.length?'<div class="vrb">'+esc(SR.dimensions.vr.bas[0])+'<b>'+esc(SR.dimensions.vr.bas[1])+'</b></div><div class="gl vr">'+SR.dimensions.vr.m.map(x=>'<b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span>').join("")+'</div>':'')+'</div>'; }
-$("btnPdf").onclick=pdfYap;
+$("btnPdf").onclick=pnKapi(pdfYap); /* SOUM-PN-ZORUNLU */
 /* SOUM-PERF-PDF (16.11.2026, Melike Başaran): Uw ve Sfw – Tlw düğmeleri — Excel'deki "Uw" / "Sfw-Tlw" sayfalarının PDF çıktısı (hesap Excel ile aynı: EN ISO 10077-1, Sff = 0) */
 const PERF_PENCERE='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 500" width="96" height="150" fill="none" stroke="#000" stroke-width="1.5"><rect x="30" y="35" width="210" height="390"/><rect x="62" y="58" width="146" height="334"/><rect x="68" y="64" width="134" height="322"/><path d="M202 64 L68 225 L202 386 M68 386 L135 64 L202 386" stroke-width="1"/><rect x="42" y="210" width="12" height="35" stroke-width="1.5"/><path d="M48 225 v30" stroke-width="3"/><path d="M15 470 H255 M15 455 v25 M255 455 v25 M290 20 V440 M280 20 h20 M280 440 h20" stroke-width="1"/><text x="128" y="494" font-family="Arial" font-size="24" fill="#000" stroke="none">A</text><text x="296" y="240" font-family="Arial" font-size="24" fill="#000" stroke="none" transform="rotate(90 300 232)">B</text></svg>'; /* SOUM-PERF-PDF3 (16.11.2026, Melike Başaran): Uw / Sfw – Tlw PDF'inde önce pencere görseli (A × B) ve formüller, sonra tablo, altta notlar; × Adet sütunları yok */
 function perfPdf(tur){
@@ -1512,7 +1521,7 @@ function perfPdf(tur){
   w.document.open(); w.document.write(html); w.document.close();
   durum((uw?"Uw":"Sfw – Tlw")+" PDF görünümü yeni sekmede açıldı: yazdırma penceresinde <b>PDF olarak kaydet</b>'i seçiniz (dosya adı: "+esc(ad)+".pdf).","ok");
 }
-$("btnUwPdf").onclick=()=>perfPdf("uw"); $("btnSwPdf").onclick=()=>perfPdf("sw");
+$("btnUwPdf").onclick=pnKapi(()=>perfPdf("uw")); $("btnSwPdf").onclick=pnKapi(()=>perfPdf("sw")); /* SOUM-PN-ZORUNLU */
 /* SOUM-ETUT (12.11.2026, Melike Başaran): Etüt Tutanak PDF'i — Arbor antetli; Proje Notu + Aksesuarlar (Pencad ekstra malzemeleri) + Camlar + poz tablosu (poz no, görsel, cam, ekstra malzeme seçimleri) */
 function tutanakYap(){
   if(!S.poz.length){ durum("Önce Pencad raporunu yükleyiniz.","hata"); return; }
@@ -1551,7 +1560,7 @@ function tutanakYap(){
   w.document.open(); w.document.write(html); w.document.close();
   durum("Etüt Tutanak görünümü yeni sekmede açıldı: yazdırma penceresinde <b>PDF olarak kaydet</b>'i seçiniz (dosya adı: "+esc(ad)+".pdf).","ok");
 }
-$("btnTutanak").onclick=tutanakYap;
+$("btnTutanak").onclick=pnKapi(tutanakYap); /* SOUM-PN-ZORUNLU */
 $("btnKaydet").onclick=formKaydet; /* SOUM-261113-KAYDET */
 
 </script>
