@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><script>/* SERT-YENILE */(function(){try{var K='sy:'+location.pathname;function taze(){try{var t=+sessionStorage.getItem(K)||0;if(Date.now()-t<10000)return;sessionStorage.setItem(K,Date.now());}catch(e){}var u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.toString());}var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(n&&n.transferSize===0)taze();addEventListener('pageshow',function(e){if(e.persisted)taze();});document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('download'))return;var h=a.getAttribute('href')||'';if(/^(#|javascript:|mailto:|tel:)/i.test(h))return;var u=new URL(a.href,location.href);if(u.origin!==location.origin||!/(\/|\.html?)$/i.test(u.pathname))return;u.searchParams.set('v',Date.now());a.href=u.toString();},true);}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cam Terminolojisi</title>
+<!-- CAM-TERIM (16.11.2026, Melih): cam terminolojisi, marka/kaplama adlarının genel karşılıkları, fiyat türetme yöntemi (yalnız MB) ve fiyat hesaplayıcı. Model ../cam/ sayfasından okunur. Kullanıcı: Herkes (cam.form rolü). -->
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#c9dcf0;margin-top:3px;line-height:1.5;max-width:1100px}
+  header a{color:#fff}
+  .wrap{max-width:1300px;margin:0 auto;padding:10px 10px 40px}
+  details.blk{background:#fff;border:1px solid #dde3ea;border-radius:10px;margin:0 0 12px;overflow:hidden}
+  details.blk>summary{background:#16324f;color:#fff;font-weight:700;font-size:14px;padding:9px 14px;cursor:pointer}
+  details.blk>*:not(summary){margin:10px 14px}
+  .not{font-size:12.5px;color:#41536a;line-height:1.55;background:#f4f7fb;border:1px solid #e3eaf2;border-radius:8px;padding:8px 10px}
+  .tw{overflow:auto}
+  table{border-collapse:collapse;width:100%;font-size:12.5px}
+  thead th{background:#eef4fb;color:#16324f;font-weight:600;font-size:11.5px;padding:6px 8px;text-align:left;border-bottom:2px solid #d3e0ee;white-space:nowrap}
+  td{border-bottom:1px solid #eef1f5;padding:5px 8px;vertical-align:top;line-height:1.45}
+  td.b{font-weight:600;color:#16324f;white-space:nowrap}
+  td.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .g{color:#6b7c8f;font-size:12px}
+  .sat{margin:6px 0;font-size:13px}.sat.big{font-size:15px}
+  .uy{color:#b40000;font-weight:600}
+  h3{font-size:13px;color:#16324f;margin:14px 14px 4px}
+  .kat{display:inline-block;margin:2px 8px 2px 0}
+  code{background:#eef2f6;border-radius:4px;padding:0 4px;font-size:12px}
+  .frm{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+  .frm label{display:flex;flex-direction:column;font-size:11.5px;color:#41536a;gap:3px;width:90px}
+  .frm label.gen{width:min(420px,100%)}
+  .frm label.ck{flex-direction:row;align-items:center;width:auto;gap:5px;padding-bottom:6px}
+  .frm input{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:5px 7px;width:100%}
+  .frm input[type=checkbox]{width:auto}
+  details summary{cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <h1>Cam Terminolojisi</h1>
+  <div class="sub">Cam konfigürasyonlarında geçen terimler, marka ve kaplama adlarının genel karşılıkları ve <a href="../cam/" target="_blank">Cam Fiyatlandırma</a> modelinin fiyatı nasıl türettiği. Fiyat marka/terim nötrdür: eşdeğer marka adı genel terimle aynı fiyatı alır.</div>
+</header>
+<div class="wrap">
+  <div id="durum" class="g"></div>
+  <details class="blk" open><summary>Terimler ve gösterim</summary><div id="soz" class="tw"></div></details>
+  <details class="blk" open><summary>Marka ve kaplama adları</summary>
+    <div class="not">"Fiyat modelinin okuduğu" sütunu canlıdır: Cam Fiyatlandırma modeli adı bugün nasıl okuyorsa onu gösterir. Genel karşılıkla uyuşmayan satır, modelde henüz karşılığı olmayan bir özelliktir.</div>
+    <div id="marka" class="tw"></div></details>
+  <div id="fyblok" style="display:none">
+  <details class="blk" open><summary>Fiyat türetme</summary>
+    <div class="not">Cam Fiyat, Arbor'un ERP cam siparişlerinden (cam.xlsx, 739 kayıt) kalibre edilmiş log-doğrusal modelle hesaplanır: <b>ln(fiyat) = sabit + Σ katsayı × değişken</b>. Bu yüzden her etken fiyatı <b>yüzde</b> olarak değiştirir; € karşılığı başlangıç camına bağlıdır. Model çıktısı ×2,5 (KAT) ile Cam Fiyat'a çevrilir. Geçmiş siparişlerde aynı yapı + özellik kombinasyonu varsa o grubun sapması kadar düzeltme eklenir (grup düzeltmesi). Marka ve kaplama adları hesaptan önce genel terime çevrilir. Aşağıdaki tablo, referans camda yalnız o etken değişirken (diğer her şey sabit, grup düzeltmesi hariç) fiyatın ne kadar değiştiğini gösterir. Bu bölüm yalnız MB oturumunda görünür.</div>
+    <div id="fyref" class="sat"></div>
+    <div id="fytab" class="tw"></div>
+    <h3>Örnek camlar (referans koşullarda)</h3>
+    <div id="fyorn" class="tw"></div>
+    <details><summary>Model katsayıları</summary><div id="fykat" class="g"></div></details>
+  </details>
+  <details class="blk" open><summary>Fiyat hesaplayıcı</summary>
+    <div class="not">Kombinasyonu dıştan içe yazın (ör. <code>6 Stopray Vision 70/35 / 16 Ar90 / 44.2 Silence</code>). Tlg, Sfg ve Cam Rw+Ctr boşsa Cam Listesi'ndeki en yakın camlardan tahmin edilir.</div>
+    <div class="frm">
+      <label class="gen">Kombinasyon<input id="hk" value="4 / 16 Ar-We / 4 Low-e"></label>
+      <label>Tlg<input id="htl" inputmode="decimal" size="1"></label>
+      <label>Sfg<input id="hsf" inputmode="decimal" size="1"></label>
+      <label>Cam Rw+Ctr<input id="hrw" inputmode="decimal" size="1"></label>
+      <label>Adet<input id="had" value="10" inputmode="numeric" size="1"></label>
+      <label>Toplam m²<input id="hm2" value="10" inputmode="decimal" size="1"></label>
+      <label class="ck"><input type="checkbox" id="hka"> Karolaj</label>
+      <label class="ck"><input type="checkbox" id="heg"> Eğrisel</label>
+    </div>
+    <div id="hout"></div>
+  </details>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ARB-KOD-GIRIS (23.09.2026): forma giris = kisisel 6 haneli kod (App > Referans > Kisiler > Sifre).
+   form-giris edge fonksiyonu kodu dogrular, yetkiyi form_erisim'den kontrol eder, rolu otomatik secer ve
+   rol hesabi icin tek kullanimlik token doner; burada verifyOtp ile oturum acilir. Rol hesaplarinin parolasi yoktur. */
+window.ARB_FORM_YOL=(function(){ var m=/\/app\/([^\/]+)\//.exec(location.pathname); return m?m[1]+"/":""; })();
+window.ARB_KOD_GIRIS=async function(cli,kod){
+  kod=String(kod==null?"":kod).replace(/\D/g,"");
+  if(kod.length!==6) return {error:{message:"Kod 6 haneli olmal\u0131d\u0131r."}};
+  try{
+    var r=await fetch("https://zehysygpqxqmrzangvuc.supabase.co/functions/v1/form-giris",{method:"POST",cache:"no-store",
+      headers:{"Content-Type":"application/json",apikey:"sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc"},
+      body:JSON.stringify({form:window.ARB_FORM_YOL,kod:kod})});
+    var j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok||!j.ok||!j.token_hash) return {error:{message:j.hata||"Kod hatal\u0131."}};
+    var v=await cli.auth.verifyOtp({token_hash:j.token_hash,type:"magiclink"});
+    if(v.error) return {error:{message:"Giri\u015f a\u00e7\u0131lamad\u0131: "+v.error.message}};
+    try{ localStorage.setItem("arb_kisi_"+window.ARB_FORM_YOL,JSON.stringify({kod:j.kisi,ad:j.ad,rol:j.rol})); }catch(e){}
+    return {error:null,data:j};
+  }catch(e){ return {error:{message:"Ba\u011flant\u0131 hatas\u0131."}}; }
+};
+window.ARB_KISI_AL=function(em){ try{ var k=JSON.parse(localStorage.getItem("arb_kisi_"+window.ARB_FORM_YOL)||"null"); return (k&&(!em||k.rol===em))?k:null; }catch(e){ return null; } };
+</script>
+<script>
+/* ===== ARBOR FORM KAPISI — Herkes (cam.form rol hesabı) + MB geçişi ===== */
+const ARB_ROLLER = [
+  { email:"cam.form@arbor.com.tr", ad:"Cam" }
+];
+const ARB_STORE = "arbform_camterim";
+const ARB_NOSTORE = (u,o)=> fetch(u, Object.assign({}, o||{}, {cache:"no-store"}));
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE},global:{fetch:ARB_NOSTORE}});
+const ARB_MB = "int@arbor.com.tr";
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{global:{fetch:ARB_NOSTORE}});
+var ARB_ACTIVE = ARB_GATE_SB;
+var ARB_EMAIL = "";
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  var opts='<option value="" disabled selected>— Rolünüzü seçiniz —</option>'
+    + ARB_ROLLER.map(function(r){ return '<option value="'+r.email+'">'+r.ad+'</option>'; }).join("");
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:330px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:10px">Arbor — Cam Terminolojisi</div>'
+    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:10px">Kişisel giriş kodunuzu giriniz. Rolünüz koda göre otomatik belirlenir.</div>'
+    +'<input id="arb-pw" type="password" placeholder="6 haneli giriş kodu" autocomplete="off" inputmode="numeric" maxlength="6" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giriş</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px"></div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var pw=document.getElementById("arb-pw").value;
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giriş yapılıyor…";
+    var r=await ARB_KOD_GIRIS(ARB_GATE_SB,pw);
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent=((r.error&&r.error.message)||"Kod hatalı."); return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  var izin=ARB_ROLLER.map(function(r){return r.email;});
+  if(izin.indexOf(em)<0){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(izin.indexOf(em)>=0 || em===ARB_MB){ ARB_EMAIL=em; (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script type="text/plain" id="arbmain">
+/* CAM-TERIM (16.11.2026, Melih): cam terminolojisi + fiyat türetme yöntemi. Model ../cam/ sayfasından çalışma anında okunur (Ürün Konfigürasyonu ile aynı yol). */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const f=(v,d)=>v==null||!isFinite(v)?"–":v.toLocaleString("tr-TR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const MB=(typeof ARB_EMAIL!=="undefined"&&ARB_EMAIL==="int@arbor.com.tr");
+/* Marka sözlüğü: [terim, üretici, tür, genel karşılık, açıklama] — kaynaklar Project claude/bekleyen_cam_model_terimler_261116.md */
+const MARKA=[
+ ["Ar / Ar90 / Argon","—","Gaz","Argon","%90 argon + %10 hava; endüstri standardı dolum. Havaya göre Ug'yi düşürür."],
+ ["We / Warm Edge / Swisspacer / Thermix","çeşitli","Ara çıta","Warm edge","Isı köprüsünü azaltan plastik/kompozit ara çıta; ψg ve Uw'yi düşürür."],
+ ["Akustik / Acoustic / AKS / acs / Silence / Stratophone","SG (Stadip Silence), AGC (Stratophone)","PVB","Akustik PVB","Ses sönümleyici çekirdekli PVB'li lamine cam; Rw+Ctr'yi yükseltir."],
+ ["Planitherm XN / ONE / Ultra N / Neo / One T","Saint-Gobain","Kaplama","Low-E","Isı yalıtım (düşük emisyon) kaplaması."],
+ ["Planitherm 4S","Saint-Gobain","Kaplama","Solar Low-E","\"Four seasons\": solar kontrol + ısı yalıtımı."],
+ ["Cool-Lite SKN / Xtreme","Saint-Gobain","Kaplama","Solar Low-E","Çift/üçlü gümüşlü seçici solar kontrol. \"II\" = temperlenecek sürüm."],
+ ["iplus 1.0 / 1.1 / 1.0T / 1.1T / 1.0NT / LS","AGC","Kaplama","Low-E","Isı yalıtım kaplaması; T = ısıl işleme uygun, LS = üçlü cam için."],
+ ["Energy 72/38 · 65/41 · 70/37","AGC","Kaplama","Solar Low-E","Konut penceresi için solar kontrol + ısı yalıtımı."],
+ ["Stopray Vision / Neutral / Ultraselect / Smart","AGC","Kaplama","Solar Low-E","Manyetron solar kontrol kaplaması (Ug 1,0)."],
+ ["Stopsol Classic / Supersilver","AGC","Kaplama","Yansıtıcı solar","Pirolitik, yansıtıcı solar kontrol; Low-E değil."],
+ ["Sunergy","AGC","Kaplama","Solar Low-E (pirolitik)","Pirolitik solar kontrol + ısı yalıtımı."],
+ ["ipasol Bright","AGC","Kaplama","Yansıtıcı solar","Lamine tek cam (çift cidar); ısıcam değil."],
+ ["Planibel A / G / G fasT","AGC","Kaplama","Low-E (sert kaplama)","Pirolitik Low-E (Ug 1,4–1,5)."],
+ ["-AF / Anti-Fog","AGC","Kaplama (#1)","Buğu önleyici","Dış yüzeyde yoğuşmayı geciktiren kaplama; modelde karşılığı yok."],
+ ["Climax / Climax T","Şişecam","Kaplama","Low-E","Isı yalıtım kaplaması; T = temperlenebilir (temperli değil)."],
+ ["Duosol / Duosol T","Şişecam","Kaplama","Solar Low-E","Çift gümüşlü solar Low-E."],
+ ["Ecosol / Ecosol T","Şişecam","Kaplama","Solar Low-E","Tek gümüşlü solar Low-E."],
+ ["EN2plus / ZERO NG / TRIII E","Euroglas","Kaplama","Low-E","Isı yalıtım kaplamaları."],
+ ["COMBI / SELEKT / SUPERSELEKT","Euroglas","Kaplama","Solar Low-E","Solar kontrol + ısı yalıtımı."],
+ ["SN / SNX (SunGuard SuperNeutral)","Guardian","Kaplama","Solar Low-E","SuperNeutral / eXtra Selective solar kontrol.","SN 70/35"],
+ ["HP (SunGuard High Performance)","Guardian","Kaplama","Solar Low-E","Tek kaplamada solar kontrol + Low-E.","HP Neutral 50/32"],
+ ["HD (SunGuard High Durable)","Guardian","Kaplama","Solar (Low-E değil)","Yüksek dayanımlı solar kontrol; çoğunlukla tek cam.","HD Neutral 67"],
+ ["Solar Grey / Bronze / Gold (SunGuard Solar)","Guardian","Kaplama","Yansıtıcı solar","Low-E değil; model şu an Solar Low-E okuyor.","Solar Grey 20"],
+ ["Guardian Sun","Guardian","Kaplama","Solar Low-E","Low-E, Sfg ≈ 0,43."],
+ ["ClimaGuard Premium2 / 1.0+ / Neutral 70","Guardian","Kaplama","Low-E","Isı yalıtım kaplamaları."],
+ ["ClimaGuard Solar","Guardian","Kaplama","Solar Low-E",""],
+ ["ClimaGuard Dry","Guardian","Kaplama (#1)","Yoğuşma önleyici","Modelde karşılığı yok."],
+ ["ViewBoost / Clarity / PureSight","Guardian","Kaplama","Yansıma önleyici","Modelde karşılığı yok."],
+ ["NEXA 6 / NEXA 9","Guardian","Cam","Düz float (düşük karbon)","Kaplama değil, düşük karbonlu float cam."],
+ ["Extra Clear / Ultra Clear / Clearvision","çeşitli","Cam","Extra Clear","Düşük demirli, yeşilsiz cam."],
+ ["Satine / Satin / Buzlu / Desenli","çeşitli","Cam","Satine","Asitle matlaştırılmış ya da desenli cam."],
+ ["Temper / Tempered / Temperli / Tmp","—","İşlem","Temperli","Isıl işlemle sertleştirilmiş güvenlik camı."],
+ ["Fire Proof / EI30 / EI60 / Pyrobel","çeşitli","Cam","Yangın dayanımlı","EI30/EI60: 30/60 dk bütünlük + yalıtım."]
+];
+const SOZ=[
+ ["Kombinasyon yazımı","Camlar dıştan içe, \"/\" ile ayrılır: <b>4 / 16 Ar-We / 4 Low-e</b> = 4 mm dış cam · 16 mm argonlu warm edge boşluk · 4 mm Low-E iç cam. Üçlü camda iki boşluk vardır."],
+ ["Lamine kodu (44.2)","İlk iki rakam cam kalınlıkları (4 + 4 mm), noktadan sonraki rakam 0,38 mm PVB kat sayısı: .1 = 0,38 · .2 = 0,76 · .4 = 1,52 · .6 = 2,28 mm. 44.2 = 8,76 mm, 66.2 = 12,76 mm."],
+ ["Yüzey numarası (#1…#6)","Dıştan içe cam yüzeyleri: #1 dış yüz, #2 dış camın içi, #3 iç camın boşluğa bakan yüzü… Solar kaplama genelde #2, Low-E #3 (üçlüde #5)."],
+ ["Ug (W/m²K)","Camın (orta bölge) ısı geçirgenliği. Düşük = daha iyi yalıtım."],
+ ["Uw (W/m²K)","Pencerenin tamamının ısı geçirgenliği (EN ISO 10077-1): Uw = (Ag·Ug + Af·Uf + lg·ψg) / Aw. Ag cam alanı, Af kasa alanı, lg cam çevresi, ψg ara çıta ısı köprüsü."],
+ ["Uf, ψg","Uf: kasanın ısı geçirgenliği. ψg: cam kenarı/ara çıta doğrusal ısı köprüsü (warm edge ile düşer)."],
+ ["Tlg / Tlw","Cam / pencere ışık geçirimi (0–1 ya da %)."],
+ ["Sfg / Sfw / Sff","Cam / pencere / kasa solar faktörü (g değeri): içeri geçen güneş enerjisi oranı. Düşük = daha az ısınma."],
+ ["Seçicilik","Tlg / Sfg. 2'ye yakın değerler yüksek seçici solar kaplamadır (ışık çok, ısı az)."],
+ ["Rw (C; Ctr)","Ses yalıtım indeksi (dB) ve trafik gürültüsü düzeltmesi. Rw+Ctr = trafik gürültüsüne göre etkin yalıtım."],
+ ["Cam Rw+Ctr / Ürün Rw+Ctr","Cam Rw+Ctr camın kendi değeri; Ürün Rw+Ctr pencerenin test (sertifika) değeridir, kasa ve contadan etkilenir, camınkinden düşüktür."],
+ ["Low-E","Düşük emisyonlu kaplama: ısı yalıtımı (kış). Sfg yüksek kalır."],
+ ["Solar Low-E","Güneş kontrol + ısı yalıtımı (yaz + kış). Sfg düşüktür. \"N(70/37)\" = Tlg 70 / Sfg 37."],
+ ["Yansıtıcı solar","Yansıma ile güneş kontrolü; Low-E değildir."],
+ ["Pirolitik / Manyetron","Pirolitik (sert) kaplama float hattında; manyetron (yumuşak) vakumda kaplanır, performansı daha yüksektir."],
+ ["Temperlenebilir (T, II)","Kaplamanın temper fırınına girebildiğini gösterir; camın temperli olduğu anlamına gelmez."],
+ ["Karolaj / Eğrisel","Karolaj: cam içinde/üstünde çıta ile bölme. Eğrisel: kemerli, dairesel camlar."]
+];
+let M=null;
+async function modelYukle(){
+  const t=await (await fetch("../cam/index.html",{cache:"no-store"})).text();
+  const ln=a=>{ const i=t.indexOf(a); if(i<0) throw new Error(a); const j=t.indexOf("\n",i); return t.slice(i,j<0?t.length:j); };
+  const seg=(a,b)=>{ const i=t.indexOf(a); if(i<0) throw new Error(a); const j=t.indexOf(b,i); if(j<0) throw new Error(b); return t.slice(i,j+b.length); };
+  const code=[ln("const DB="),seg("const CAMF=(function(){","return{feats,catRow,coat,low};})();"),ln("const LISTE_SNAP="),ln("const GADJ_NF="),ln("const KAT="),ln("const SEC_COAT=")].join("\n");
+  M=new Function(code+"\nreturn {DB,CAMF,LISTE_SNAP,GADJ_NF,KAT,SEC_COAT,SEC_K};")();
+  M.CAT=M.LISTE_SNAP.map(M.CAMF.catRow).filter(x=>x);
+}
+function etiket(F){ const a=[]; if(F.solar||F.sisecam)a.push("Solar Low-E"); else if(F.lowe)a.push("Low-E"); if(F.acoustic)a.push("Akustik"); if(F.argon)a.push("Argon"); if(F.we||F.swiss)a.push("Warm edge"); if(F.extraclear)a.push("Extra Clear"); if(F.temper)a.push("Temperli"); if(F.satin)a.push("Satine"); if(F.fireproof)a.push("Yangın"); return a.join(" · ")||"—"; }
+function sozluk(){
+  $("soz").innerHTML='<table><thead><tr><th>Terim</th><th>Açıklama</th></tr></thead><tbody>'+SOZ.map(r=>'<tr><td class="b">'+r[0]+'</td><td>'+r[1]+'</td></tr>').join("")+'</tbody></table>';
+  const rows=MARKA.map(r=>{ let okur="…";
+    if(M){ try{ const nm=r[5]||r[0].split(" / ")[0].split(" · ")[0].split(" (")[0]; const F=M.CAMF.feats("6 "+nm+" #2 / 16 Hava / 4"); okur=etiket(F).replace(/ · ?$/,""); }catch(e){ okur="–"; } }
+    return '<tr><td class="b">'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td class="b">'+esc(r[3])+'</td><td class="g">'+esc(okur)+'</td><td>'+esc(r[4])+'</td></tr>'; });
+  $("marka").innerHTML='<table><thead><tr><th>Terim / marka</th><th>Üretici</th><th>Tür</th><th>Genel karşılık</th><th>Fiyat modelinin okuduğu</th><th>Açıklama</th></tr></thead><tbody>'+rows.join("")+'</tbody></table>';
+}
+/* ---- Fiyat türetme (yalnız MB) ---- */
+function fiyatX(X){ const K=M.DB.coef; let s=M.DB.ic; for(const k in K) s+=K[k]*(X[k]||0); return Math.exp(s)*M.KAT; }
+function bazX(){ return {tg:8,tg2:Math.pow(8-14,2)/100,nlam:0,pvb4:0,triple:0,cav:16,cav_dar:0,cav_genis:0,lowe:1,solar:0,satin:0,temper:0,acoustic:0,extraclear:0,fireproof:0,argon:1,we:1,karolaj:0,egrisel:0,
+  l_ortm2:Math.log(1),tl:0.79,rwctr:30,sf:0.61,l_m2:Math.log(10),kucuk_m2:0,kucuk_adet:0}; }
+const tgX=(X,t)=>{ X.tg=t; X.tg2=Math.pow(Math.min(t,22)-14,2)/100; return X; };
+function fark(ad,deg,fn,not){ const a=bazX(), b=fn(bazX()); const pa=fiyatX(a), pb=fiyatX(b); return [ad,deg,pb-pa,pb/pa-1,not||""]; }
+function fiyatTablo(){
+  const K=M.DB.coef, b0=fiyatX(bazX());
+  const R=[];
+  [8,10,12,14,16,18,20,24,28].forEach(t=>R.push(fark("Toplam cam kalınlığı",t+" → "+(t+2)+" mm",X=>tgX(X,t+2),"")));
+  R.forEach((r,i)=>{ const t=[8,10,12,14,16,18,20,24,28][i]; const a=tgX(bazX(),t),b=tgX(bazX(),t+2); r[2]=fiyatX(b)-fiyatX(a); r[3]=fiyatX(b)/fiyatX(a)-1; if(t>=18&&t<22) r[4]='Modelin eğrisel kalınlık terimi bu aralıkta fiyatı düşürüyor (bu kalınlıkta sipariş az; güvenilir değil).'; if(t===8) r[4]='Kalınlık etkisi doğrusal değil: € farkı başlangıç kalınlığına göre değişir.'; });
+  const E=[
+   ["Lamine cam","+1 lamine cam (kalınlık aynı)",X=>{X.nlam=1;return X;},"PVB'nin kendi kalınlığı ayrıca kalınlık satırından gelir."],
+   ["PVB kalınlığı","PVB ≥ 1,52 mm (.4 ve üstü)",X=>{X.nlam=1;X.pvb4=1;return X;},"Lamine etkisi dahil."],
+   ["Akustik PVB","Akustik",X=>{X.acoustic=1;return X;},""],
+   ["Üçlü cam","Çift → üçlü (yapı)",X=>{X.triple=1;return X;},"Üçüncü camın kalınlığı ayrıca kalınlık satırından gelir."],
+   ["Boşluk","16 → 12 mm",X=>{X.cav=12;X.cav_dar=1;return X;},""],
+   ["Boşluk","16 → 20 mm",X=>{X.cav=20;X.cav_genis=1;return X;},""],
+   ["Temper","Temperli",X=>{X.temper=1;return X;},""],
+   ["Satine","Satine / buzlu",X=>{X.satin=1;return X;},""],
+   ["Extra Clear","Extra Clear",X=>{X.extraclear=1;return X;},""],
+   ["Yangın dayanımı","EI30",X=>{X.fireproof=1;return X;},"EI60 = EI30 × 1,1."],
+   ["Argon","Hava → argon",X=>X,"Modelde ayrı etkisi yok: siparişlerin hemen hepsi argonlu, fark ayrıştırılamıyor."],
+   ["Warm edge","Alüminyum çıta → warm edge",X=>{X.we=0;return X;},"Ters yönde hesaplandı."],
+   ["Karolaj","Karolajlı",X=>{X.karolaj=1;return X;},""],
+   ["Eğrisel","Kemerli / dairesel",X=>{X.egrisel=1;return X;},""],
+   ["Işık geçirimi","Tlg +0,05",X=>{X.tl+=0.05;return X;},""],
+   ["Solar faktör","Sfg −0,05",X=>{X.sf-=0.05;return X;},""],
+   ["Ses yalıtımı","Cam Rw+Ctr +1 dB",X=>{X.rwctr+=1;return X;},""],
+   ["Kaplama tipi","Low-E → Solar Low-E (yalnız tip)",X=>{X.solar=1;return X;},"Solar camın düşük Sfg'si ayrıca Sfg satırından gelir."],
+   ["Ortalama cam alanı","1 → 2 m²/adet",X=>{X.l_ortm2=Math.log(2);return X;},""],
+   ["Toplam metraj","10 → 50 m²",X=>{X.l_m2=Math.log(50);return X;},""],
+   ["Küçük sipariş","Toplam < 2 m²",X=>{X.kucuk_m2=1;return X;},""],
+   ["Küçük sipariş","≤ 2 adet",X=>{X.kucuk_adet=1;return X;},""]
+  ];
+  E.forEach(e=>{ const r=fark(e[0],e[1],e[2],e[3]); if(/Ters yönde/.test(e[3])){ r[2]=-r[2]; r[3]=1/(1+r[3])-1; } R.push(r); });
+  const ornek=[["Kaplamasız 4 / 16 Ar-We / 4",X=>{X.lowe=0;X.tl=0.82;X.sf=0.78;return X;}],["Low-E 4 / 16 Ar-We / 4 Low-e (referans)",X=>X],["Solar Low-E N(70/37) 6 / 16 Ar-We / 4",X=>{tgX(X,10);X.solar=1;X.tl=0.70;X.sf=0.37;return X;}],["Akustik 44.2 Acoustic / 16 Ar-We / 4 Low-e",X=>{tgX(X,12);X.nlam=1;X.acoustic=1;X.tl=0.78;X.rwctr=34;return X;}]];
+  $("fyref").innerHTML='Referans cam: <b>4 / 16 Ar-We / 4 Low-e</b> (Tlg 0,79 · Sfg 0,61 · Cam Rw+Ctr 30 dB), düz, 10 adet / 10 m² → <b>'+f(b0,2)+' €/m²</b>.';
+  $("fytab").innerHTML='<table><thead><tr><th>Etken</th><th>Değişim</th><th>Fiyat farkı €/m²</th><th>Oran</th><th>Not</th></tr></thead><tbody>'+R.map(r=>'<tr><td class="b">'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td class="n">'+(r[2]>0.004?"+":"")+f(Math.abs(r[2])<0.005?0:r[2],2)+'</td><td class="n">'+(r[3]>0.00005?"+":"")+f(Math.abs(r[3])<0.00005?0:100*r[3],1)+' %</td><td class="g">'+esc(r[4])+'</td></tr>').join("")+'</tbody></table>';
+  $("fyorn").innerHTML='<table><thead><tr><th>Örnek cam</th><th>Fiyat €/m²</th></tr></thead><tbody>'+ornek.map(o=>'<tr><td>'+esc(o[0])+'</td><td class="n">'+f(fiyatX(o[1](bazX())),2)+'</td></tr>').join("")+'</tbody></table>';
+  $("fykat").innerHTML=Object.keys(K).map(k=>'<span class="kat"><code>'+k+'</code> '+f(K[k],4)+'</span>').join(" ")+' · sabit <code>ic</code> '+f(M.DB.ic,4)+' · <code>KAT</code> '+M.KAT;
+}
+/* Hesaplayıcı */
+function medianM(a){a=a.slice().sort((x,y)=>x-y);const n=a.length;return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):null;}
+function distM(q,C,t){const m=k=>C[k]!==q[k]?1:0,d=C.c[0]!==q.c[0]?1:0,i=C.c[C.c.length-1]!==q.c[q.c.length-1]?1:0;
+  if(t==='tl'||t==='sf')return 100*m('lowe')+50*m('solar')+5*m('coat')+3*m('sat')+1.5*m('xc')+1*m('tr')+Math.abs(C.tg-q.tg)/8+0.3*m('ac')+0.3*m('fp');
+  return 100*m('tr')+3*m('ac')+1.5*d+1.5*i+Math.abs(C.tg-q.tg)/2+0.7*Math.abs(C.nlam-q.nlam)+Math.abs(C.cav-q.cav)/6+2*m('fp')+0.1*m('lowe');}
+function perfM(q,t){let mn=1e9;const ds=[];for(const C of M.CAT){if(C[t]==null)continue;const d=distM(q,C,t);ds.push([d,C[t]]);if(d<mn)mn=d;}return medianM(ds.filter(x=>x[0]<=mn+0.25).map(x=>x[1]));}
+function hesapla(){
+  const k=$("hk").value.trim(), out=$("hout"); if(!k){ out.innerHTML=""; return; }
+  const num=id=>{ const v=$(id).value.trim().replace(",","."); return v===""?null:Number(v); };
+  let q=null; try{ q=M.CAMF.catRow({kombinasyon:k,ug:1,tl:null,sf:null}); }catch(e){}
+  if(!q){ out.innerHTML='<div class="uy">Kombinasyon okunamadı (en az iki cam ve bir boşluk gerekir).</div>'; return; }
+  const F=M.CAMF.feats(k);
+  let tl=num("htl"), sf=num("hsf"), rw=num("hrw"); if(tl!=null&&tl>1)tl/=100; if(sf!=null&&sf>1)sf/=100;
+  const tah=[]; if(tl==null){tl=perfM(q,"tl");tah.push("Tlg");} if(sf==null){sf=perfM(q,"sf");tah.push("Sfg");} if(rw==null){rw=perfM(q,"rw");tah.push("Rw+Ctr");}
+  const cl=x=>x?1:0, ad=Math.max(1,+$("had").value||10), m2=Math.max(0.2,+$("hm2").value||10);
+  const X={tg:q.tg,tg2:Math.pow(Math.min(q.tg,22)-14,2)/100,nlam:q.nlam,pvb4:q.pvb4,triple:q.tr,cav:q.cu,cav_dar:cl(q.cu<=12),cav_genis:cl(q.cu>=20),lowe:q.lowe,solar:q.solar,satin:q.sat,temper:cl(q.tp),acoustic:q.ac,extraclear:q.xc,fireproof:q.fp,argon:q.ar,we:q.we,karolaj:$("hka").checked?1:0,egrisel:$("heg").checked?1:0,
+    l_ortm2:Math.log(Math.min(Math.max(m2/ad,0.05),4)),tl,rwctr:rw,sf,l_m2:Math.log(Math.min(Math.max(m2,0.2),300)),kucuk_m2:cl(m2<2),kucuk_adet:cl(ad<=2)};
+  const K=M.DB.coef; let s=M.DB.ic; const kat=[]; for(const c in K){ const v=K[c]*(X[c]||0); s+=v; if(Math.abs(v)>1e-9) kat.push([c,X[c],v]); }
+  const est=Math.exp(s)*(q.solar&&M.SEC_COAT[q.coat]?M.SEC_K:1);
+  const flags=[q.tr,q.lowe,q.solar,q.fp,q.ac,q.sat,cl(q.tp),q.xc,q.ar,q.we].join(''), an=M.GADJ_NF[q.c.join('/')+'|'+q.cu+'|*|'+flags];
+  const fy=(an?est*Math.exp(an[0]):est)*M.KAT;
+  out.innerHTML='<div class="sat"><b>Model okuması:</b> camlar '+esc(q.c.join(" / "))+' · toplam cam '+f(q.tg,1)+' mm · boşluk '+q.cu+' mm · '+esc(etiket(F))+'</div>'
+   +'<div class="sat"><b>Tlg</b> '+f(tl,2)+' · <b>Sfg</b> '+f(sf,2)+' · <b>Cam Rw+Ctr</b> '+f(rw,0)+' dB'+(tah.length?' <span class="g">('+tah.join(", ")+' Cam Listesi\'ndeki en yakın camlardan tahmin)</span>':'')+'</div>'
+   +'<div class="sat big">Cam Fiyat: <b>'+f(fy,2)+' €/m²</b>'+(an?' <span class="g">(grup düzeltmesi ×'+f(Math.exp(an[0]),3)+', '+an[1]+' sipariş)</span>':'')+'</div>'
+   +'<details><summary>Hesap ayrıntısı</summary><table><thead><tr><th>Değişken</th><th>Değer</th><th>Katsayı × değer</th></tr></thead><tbody>'+kat.map(r=>'<tr><td><code>'+r[0]+'</code></td><td class="n">'+f(r[1],3)+'</td><td class="n">'+f(r[2],4)+'</td></tr>').join("")+'<tr><td><code>ic</code></td><td></td><td class="n">'+f(M.DB.ic,4)+'</td></tr></tbody></table><div class="g">Fiyat = e<sup>toplam</sup> × grup düzeltmesi × KAT ('+M.KAT+').</div></details>';
+}
+(async function(){
+  try{ await modelYukle(); }catch(e){ $("durum").textContent="Fiyat modeli okunamadı; terimler gösteriliyor."; }
+  sozluk();
+  if(MB&&M){ $("fyblok").style.display=""; fiyatTablo(); ["hk","htl","hsf","hrw","had","hm2","hka","heg"].forEach(id=>$(id).addEventListener("input",hesapla)); ["hka","heg"].forEach(id=>$(id).addEventListener("change",hesapla)); hesapla(); }
+})();
+</script>
+
+<!-- ARBOR-DRAGSCROLL -->
+<style>
+  /* Kaydirma cubuklari gizli — kaydirma tekerlek + surukleme ile yapilir */
+  *{scrollbar-width:none;-ms-overflow-style:none}
+  ::-webkit-scrollbar{width:0!important;height:0!important;background:transparent}
+  body.arb-dragging,body.arb-dragging *{cursor:grabbing!important;user-select:none!important}
+</style>
+<script>
+(function(){
+  var el=null,sx=0,sy=0,l=0,t=0,moved=false;
+  function skip(n){ return !!(n.closest && n.closest("input,select,textarea,button,a,summary,label,option,.del,.adel,.idel,.ddel,.fdel")); }
+  function scrollable(n){
+    var st=getComputedStyle(n);
+    var okx=(st.overflowX==="auto"||st.overflowX==="scroll") && n.scrollWidth>n.clientWidth+2;
+    var oky=(st.overflowY==="auto"||st.overflowY==="scroll") && n.scrollHeight>n.clientHeight+2;
+    return okx||oky;
+  }
+  function start(n,e){
+    el=n; sx=e.clientX; sy=e.clientY; l=n.scrollLeft; t=n.scrollTop; moved=false;
+    document.body.classList.add("arb-dragging"); e.preventDefault();
+  }
+  document.addEventListener("mousedown",function(e){
+    if(e.button!==0||skip(e.target)) return;
+    var n=e.target, hucre=null;
+    while(n && n.nodeType===1 && n!==document.body){
+      if(scrollable(n)){
+        /* once tablo/kutu kapsayicisi; hucre ici mini-kaydirici yalnizca baska aday yoksa */
+        if(!n.closest("td,th")) return start(n,e);
+        if(!hucre) hucre=n;
+      }
+      n=n.parentElement;
+    }
+    if(hucre) return start(hucre,e);
+  },true);
+  document.addEventListener("mousemove",function(e){
+    if(!el) return;
+    var dx=e.clientX-sx, dy=e.clientY-sy;
+    if(Math.abs(dx)+Math.abs(dy)>3) moved=true;
+    el.scrollLeft=l-dx; el.scrollTop=t-dy;
+  });
+  document.addEventListener("mouseup",function(){
+    if(!el) return; el=null; document.body.classList.remove("arb-dragging");
+  });
+  document.addEventListener("click",function(e){ if(moved){ moved=false; e.stopPropagation(); e.preventDefault(); } },true);
+})();
+</script>
+<!-- /ARBOR-DRAGSCROLL -->
+<script>
+/* ARB-HOVERTITLE: sigmayan hucre/alan icerigi hover'da (title) gosterilir - tum pano/form ortak */
+(function(){
+  function fx(el){
+    if(!el||el.nodeType!==1) return;
+    var tag=el.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'){ var v=el.value||''; if(v) el.title=v; else el.removeAttribute('title'); return; }
+    if(tag==='SELECT'){ var o=el.options[el.selectedIndex]; var v2=o?o.textContent:''; if(v2) el.title=v2; else el.removeAttribute('title'); return; }
+    if(el.children.length) return;
+    var t=(el.textContent||'').trim();
+    if(t && el.scrollWidth>el.clientWidth+1 && !el.getAttribute('title')) el.title=t;
+  }
+  function scan(root){ if(root&&root.querySelectorAll) root.querySelectorAll('td,th,div,span,input,select,textarea').forEach(fx); }
+  document.addEventListener('input',function(e){ fx(e.target); },true);
+  document.addEventListener('change',function(e){ fx(e.target); },true);
+  var mo=new MutationObserver(function(muts){ muts.forEach(function(m){ m.addedNodes.forEach(function(n){ if(n.nodeType===1){ fx(n); scan(n); } }); }); });
+  function boot(){ mo.observe(document.body,{childList:true,subtree:true}); scan(document.body); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+<!-- /ARB-HOVERTITLE -->
+<script>
+/* ARB-TARIH-YY (01.10.2026, Melih): tarih girişleri GG.AA.YY metin kutusu — takvim simgesi yok, dar sütun.
+   Tek kaynak kod/_tarih_yy.js (formlara ve app'e SON </body> önüne gömülür).
+   input[type=date] bulunduğunda metin kutusuna çevrilir; kod için davranış aynı kalır:
+   .value okuması ISO (YYYY-AA-GG) ya da "" döner, ISO yazılınca GG.AA.YY gösterilir, .type hâlâ "date" der.
+   Giriş: 011026 · 1.10.26 · 01/10/2026 · 01-10-26 → 01.10.26. Eksik/geçersiz yazımda input/change olayı
+   koda iletilmez (yarım tarih kaydedilmez); odaktan çıkınca geçersizse önceki değere döner. */
+(function(){
+  if(window.ARB_TYY) return;
+  var D=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value");
+  var TD=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"type");
+  function p2(n){ n=String(n); return n.length<2?"0"+n:n; }
+  function isoOk(y,m,d){ var x=new Date(+y,+m-1,+d); return x.getFullYear()==+y&&x.getMonth()==+m-1&&x.getDate()==+d; }
+  function iso2d(s){ var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s==null?"":s)); return m?m[3]+"."+m[2]+"."+m[1].slice(2):(s==null?"":String(s)); }
+  function d2iso(s){ s=String(s==null?"":s).trim(); if(!s) return "";
+    var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s); if(m) return isoOk(m[1],m[2],m[3])?s:null;
+    m=/^(\d{1,2})[.\/\-](\d{1,2})[.\/\-](\d{2}|\d{4})$/.exec(s)||/^(\d{2})(\d{2})(\d{2}|\d{4})$/.exec(s); if(!m) return null;
+    var y=m[3].length==2?"20"+m[3]:m[3]; if(!isoOk(y,m[2],m[1])) return null;
+    return y+"-"+p2(m[2])+"-"+p2(m[1]); }
+  function conv(el){
+    if(!el||el.__tyy) return el; el.__tyy=1;
+    var v=D.get.call(el);
+    TD.set.call(el,"text");
+    Object.defineProperty(el,"type",{configurable:true,get:function(){return "date";},set:function(){}});
+    Object.defineProperty(el,"value",{configurable:true,
+      get:function(){ var r=d2iso(D.get.call(el)); return r==null?"":r; },
+      set:function(x){ D.set.call(el,iso2d(x)); el.__tyyOk=D.get.call(el); }});
+    el.classList.add("tarih-yy"); el.setAttribute("data-tarih","1");
+    if(!el.placeholder) el.placeholder="GG.AA.YY";
+    el.setAttribute("inputmode","numeric"); el.setAttribute("autocomplete","off"); el.maxLength=10;
+    D.set.call(el,iso2d(v)); el.__tyyOk=D.get.call(el);
+    return el; }
+  function scan(root){ if(!root||!root.querySelectorAll) return;
+    if(root.tagName==="INPUT"&&TD.get.call(root)==="date") conv(root);
+    var a=root.querySelectorAll('input[type="date"]'); for(var i=0;i<a.length;i++) conv(a[i]); }
+  function gate(e){ var el=e.target; if(!el||!el.__tyy) return;
+    if(e.type==="input"){ e.stopImmediatePropagation(); return; }  /* yazarken kayıt yok; yalnız change (odaktan çıkış) */
+    var raw=D.get.call(el), r=d2iso(raw);
+    if(r==null){ e.stopImmediatePropagation();
+      if(e.type==="change"){ D.set.call(el,el.__tyyOk||""); } return; }
+    if(e.type==="change"){ D.set.call(el,iso2d(r)); el.__tyyOk=D.get.call(el); } }
+  window.addEventListener("input",gate,true);
+  window.addEventListener("change",gate,true);
+  var st=document.createElement("style");
+  st.textContent="input.tarih-yy{width:8.6ch!important;min-width:0!important;max-width:none!important;box-sizing:content-box!important;padding-left:3px!important;padding-right:3px!important;font-variant-numeric:tabular-nums}";
+  (document.head||document.documentElement).appendChild(st);
+  scan(document);
+  new MutationObserver(function(ms){ for(var i=0;i<ms.length;i++){ var n=ms[i].addedNodes; for(var j=0;j<n.length;j++) if(n[j].nodeType===1) scan(n[j]); } })
+    .observe(document.documentElement,{childList:true,subtree:true});
+  window.ARB_TYY=conv; window.ARB_TYY_FMT=iso2d; window.ARB_TYY_ISO=d2iso;
+})();
+</script>
+<!-- ARB-EXCEL-BTN -->
+<script>
+/* ARB-EXCEL-BTN (EXCEL-MAIL, 06.10.2026) — TEK KAYNAK: kod/_excel_btn.js, sayfalara kod/_excel_btn_inject.py ile girer.
+   Her gorunur tablonun ust sagina "Excel" dugmesi (sayfa duzenine dokunmayan, position:fixed katman).
+   Basinca tablo (gorunen hali; input/select degerleri dahil, birlesik hucreler korunur) xlsx'e cevrilir ve
+   edge 'tablo-excel-mail' ile giris yapan kullaniciya mail eki olarak gider. Tablo haric tutmak icin: data-noexcel. */
+(function () {
+  if (window.ARB_XL_INIT) return; window.ARB_XL_INIT = 1;
+  var SB = "https://zehysygpqxqmrzangvuc.supabase.co";
+  var XLSX_URL = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+  var st = document.createElement("style");
+  st.textContent = ".arb-xl-btn{position:fixed;z-index:40;font:600 10.5px/1 system-ui,'Segoe UI',Arial,sans-serif;padding:3px 7px;" +
+    "border:1px solid #1d6f42;color:#1d6f42;background:#fff;border-radius:5px;cursor:pointer;opacity:.8;display:none;white-space:nowrap}" +
+    ".arb-xl-btn:hover{opacity:1;background:#1d6f42;color:#fff}.arb-xl-btn.koyu{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}.arb-xl-btn.koyu:hover{background:rgba(255,255,255,.18);color:#fff}" + /* XL-ZEMIN */
+    ".arb-xl-btn[disabled]{opacity:.55;cursor:wait}@media print{.arb-xl-btn{display:none!important}}";
+  document.head.appendChild(st);
+  var BTN = []; // {t, b}
+
+  function uygun(t) {
+    if (!t.isConnected || (t.parentElement && t.parentElement.closest("table"))) return false;
+    if (t.closest("[data-noexcel]")) return false;
+    var r = t.rows; if (!r || r.length < 2) return false;
+    var mx = 0; for (var i = 0; i < Math.min(r.length, 6); i++) mx = Math.max(mx, r[i].cells.length);
+    return mx >= 2;
+  }
+  function tara() {
+    var ts = document.querySelectorAll("table");
+    for (var i = 0; i < ts.length; i++) {
+      var t = ts[i]; if (t.__arbxl || !uygun(t)) continue;
+      var b = document.createElement("button"); b.type = "button"; b.className = "arb-xl-btn"; b.textContent = "Excel";
+      b.title = "Tablonun Excel halini e-posta ile gönder";
+      (function (tt, bb) { bb.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); gonder(tt, bb); }); })(t, b);
+      document.body.appendChild(b); t.__arbxl = b; BTN.push({ t: t, b: b });
+    }
+    for (var j = BTN.length - 1; j >= 0; j--) if (!BTN[j].t.isConnected) { BTN[j].b.remove(); BTN.splice(j, 1); }
+    yerlestir();
+  }
+  function gorunurSag(t, rc) {
+    var right = Math.min(rc.right, window.innerWidth), top = rc.top, el = t.parentElement;
+    while (el && el !== document.body && el !== document.documentElement) {
+      var cs = getComputedStyle(el);
+      if (cs.overflowX !== "visible" || cs.overflowY !== "visible") { var pr = el.getBoundingClientRect(); right = Math.min(right, pr.right); top = Math.max(top, pr.top); }
+      el = el.parentElement;
+    }
+    return { right: right, top: top };
+  }
+  function dolu(x, y, w, h) { /* dugmenin konacagi alanda tiklanabilir/yazili oge var mi */
+    var pts = [[x + 2, y + 2], [x + w - 2, y + 2], [x + 2, y + h - 2], [x + w - 2, y + h - 2], [x + w / 2, y + h / 2]];
+    for (var i = 0; i < pts.length; i++) {
+      var es = document.elementsFromPoint(pts[i][0], pts[i][1]);
+      for (var j = 0; j < es.length; j++) {
+        var e = es[j]; if (e.classList && e.classList.contains("arb-xl-btn")) continue;
+        if (e.closest && e.closest("button,input,select,textarea,a,label,[onclick]")) return true;
+        break;
+      }
+    }
+    return false;
+  }
+  function zeminKoyu(x, y) { /* XL-ZEMIN: dugmenin altindaki gercek arka plan koyu mu */
+    var es = document.elementsFromPoint(x, y), e = null;
+    for (var j = 0; j < es.length; j++) if (!(es[j].classList && es[j].classList.contains("arb-xl-btn"))) { e = es[j]; break; }
+    while (e && e.nodeType === 1) {
+      var m = (getComputedStyle(e).backgroundColor || "").match(/[\d.]+/g);
+      if (m && m.length >= 3 && (m.length < 4 || +m[3] > 0.3)) return (0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]) / 255 < 0.5;
+      e = e.parentElement;
+    }
+    return false;
+  }
+  function metinKutulari(tr) { /* satirdaki yazilarin ekran kutulari */
+    var out = [], w = document.createTreeWalker(tr, NodeFilter.SHOW_TEXT, null), n, rg = document.createRange();
+    while ((n = w.nextNode())) {
+      if (!n.nodeValue.trim()) continue;
+      rg.selectNodeContents(n); var rs = rg.getClientRects();
+      for (var k = 0; k < rs.length; k++) if (rs[k].width > 0) out.push(rs[k]);
+    }
+    return out;
+  }
+  function cakisir(ks, x, y, w, h) {
+    for (var k = 0; k < ks.length; k++) { var r = ks[k]; if (x < r.right + 4 && x + w > r.left - 4 && y < r.bottom && y + h > r.top) return true; }
+    return false;
+  }
+  function sabitUst(x, y, t) { /* XL-ZEMIN: tablonun ustu sabit menu/sekme cubugu mu (tabloyu icermeyen nav/header/fixed/sticky) */
+    var es = document.elementsFromPoint(x, y), e = null;
+    for (var j = 0; j < es.length; j++) if (!(es[j].classList && es[j].classList.contains("arb-xl-btn"))) { e = es[j]; break; }
+    for (var u = e; u && u.nodeType === 1 && u !== document.body; u = u.parentElement) {
+      if (u.contains(t)) return false;
+      var ps = getComputedStyle(u).position;
+      if (ps === "fixed" || ps === "sticky" || /^(NAV|HEADER)$/.test(u.tagName) || u.getAttribute("role") === "navigation") return true;
+    }
+    return false;
+  }
+  function yerlestir() {
+    for (var i = 0; i < BTN.length; i++) {
+      var t = BTN[i].t, b = BTN[i].b, goster = false;
+      var rc = t.getBoundingClientRect();
+      if (rc.width > 100 && rc.height > 10 && rc.bottom > 0 && rc.top < window.innerHeight) {
+        var g = gorunurSag(t, rc), x = g.right - 6, y = Math.max(rc.top, g.top, 0) + 4;
+        if (x > rc.left + 40 && y < rc.bottom) {
+          var h = document.elementFromPoint(x, y);
+          goster = !!h && (t.contains(h) || (h.classList && h.classList.contains("arb-xl-btn")));
+          if (goster) {
+            var bw = b.offsetWidth || 44, bh = b.offsetHeight || 18;
+            var bx = g.right - bw, by = rc.top - bh - 2;
+            if (by < 0 || dolu(bx, by, bw, bh) || sabitUst(bx + bw / 2, by + bh / 2, t)) { /* ustte bos yer yoksa: ilk satirda yazi ve dugme olmayan en sagdaki yer */
+              var tr0 = null; for (var q = 0; q < t.rows.length; q++) if (t.rows[q].getClientRects().length) { tr0 = t.rows[q]; break; }
+              var rr = tr0 ? tr0.getBoundingClientRect() : rc;
+              by = Math.max(rr.top, 0) + Math.max(1, (Math.min(rr.height, 40) - bh) / 2);
+              var ks = tr0 ? metinKutulari(tr0) : [], x0 = bx - 4;
+              while (x0 > rc.left + 4 && (cakisir(ks, x0, by, bw, bh) || dolu(x0, by, bw, bh))) x0 -= 6;
+              bx = x0 > rc.left + 4 ? x0 : bx - 4;
+            }
+            b.classList.toggle("koyu", zeminKoyu(bx + bw / 2, by + bh / 2));
+            b.style.left = Math.round(bx) + "px"; b.style.top = Math.round(by) + "px";
+          }
+        }
+      }
+      var d = goster ? "block" : "none"; if (b.style.display !== d) b.style.display = d;
+    }
+  }
+  var raf = 0; function yp() { if (!raf) raf = requestAnimationFrame(function () { raf = 0; yerlestir(); }); }
+  var to = 0; function tp() { clearTimeout(to); to = setTimeout(tara, 350); }
+  window.addEventListener("scroll", yp, true); window.addEventListener("resize", yp);
+  document.addEventListener("click", function () { setTimeout(yp, 60); }, true);
+  function basla() {
+    tara();
+    new MutationObserver(function (ms) {
+      for (var i = 0; i < ms.length; i++) { var n = ms[i].target; if (!(n.classList && n.classList.contains("arb-xl-btn"))) { tp(); return; } }
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class", "hidden"] });
+    setInterval(yp, 1500);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", basla); else basla();
+
+  // ---------- tablo → hucre degerleri
+  function gizli(el) { return !(el.offsetParent || el.getClientRects().length); }
+  function metin(n) {
+    if (n.nodeType === 3) return n.nodeValue;
+    if (n.nodeType !== 1) return "";
+    var tg = n.tagName;
+    if (tg === "SCRIPT" || tg === "STYLE" || tg === "BUTTON" || (n.classList && n.classList.contains("arb-xl-btn"))) return "";
+    if (gizli(n) && tg !== "BR") return "";
+    if (tg === "BR") return "\n";
+    if (tg === "SELECT") { var o = n.options[n.selectedIndex]; return o && o.value !== "" ? o.text : ""; }
+    if (tg === "INPUT") {
+      var ty = (n.type || "").toLowerCase();
+      if (ty === "checkbox") return n.checked ? "✓" : "";
+      if (ty === "radio") return n.checked ? (n.value || "✓") : "";
+      if (ty === "hidden" || ty === "button" || ty === "submit" || ty === "file") return "";
+      return n.value || "";
+    }
+    if (tg === "TEXTAREA") return n.value || "";
+    var s = "", blok = /^(DIV|P|LI|TR|H\d)$/.test(tg);
+    for (var c = n.firstChild; c; c = c.nextSibling) s += metin(c);
+    return blok ? "\n" + s + "\n" : s;
+  }
+  function hucre(c) {
+    var s = metin(c).replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").trim();
+    var ti = (c.getAttribute("title") || "").trim();
+    if (ti && /(…|\.\.\.)$/.test(s) && ti.length > s.length) s = ti;
+    if (s === "✕" || s === "×") s = "";
+    return s;
+  }
+  function sayi(s) {
+    var x = s.replace(/\s/g, "").replace(/[€$£₺]$/, "").replace(/^[€$£₺]/, "");
+    if (!x || x.length > 16 || /^-?0\d/.test(x)) return null;
+    if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(x) || /^-?\d+(,\d+)?$/.test(x)) {
+      var v = parseFloat(x.replace(/\./g, "").replace(",", ".")); return isFinite(v) ? v : null;
+    }
+    return null;
+  }
+  function matris(t) {
+    var rows = [], merges = [], occ = {}, ri = 0, basSatir = 0;
+    for (var i = 0; i < t.rows.length; i++) {
+      var tr = t.rows[i]; if (gizli(tr)) continue;
+      var ci = 0, row = rows[ri] || (rows[ri] = []), hepTh = true, var1 = false, m0 = merges.length;
+      for (var j = 0; j < tr.cells.length; j++) {
+        var c = tr.cells[j]; if (gizli(c)) continue;
+        while (occ[ri + ":" + ci]) ci++;
+        var v = hucre(c), n = sayi(v), cs = Math.max(1, c.colSpan || 1), rs = Math.max(1, c.rowSpan || 1);
+        if (c.tagName !== "TH") hepTh = false; if (v) var1 = true;
+        row[ci] = n === null ? v : n;
+        if (cs > 1 || rs > 1) {
+          merges.push({ s: { r: ri, c: ci }, e: { r: ri + rs - 1, c: ci + cs - 1 } });
+          for (var a = 0; a < rs; a++) for (var b2 = 0; b2 < cs; b2++) if (a || b2) occ[(ri + a) + ":" + (ci + b2)] = 1;
+        }
+        ci += cs;
+      }
+      if (!var1 && merges.length === m0 && !Object.keys(occ).some(function (q) { return q.indexOf(ri + ":") === 0; })) { rows.length = ri; continue; }
+      if (ri === basSatir && (hepTh || (tr.parentElement && tr.parentElement.tagName === "THEAD"))) basSatir = ri + 1;
+      ri++;
+    }
+    var w = 0; rows.forEach(function (r) { w = Math.max(w, r.length); });
+    rows = rows.map(function (r) { var o = []; for (var k = 0; k < w; k++) o.push(r[k] === undefined ? "" : r[k]); return o; });
+    return { rows: rows, merges: merges, bas: basSatir };
+  }
+  function temiz(x) { /* emoji/simge basini ve ' · ' sonrasini at */
+    x = String(x || '').split(' · ')[0].replace(/^[^0-9A-Za-zÀ-ɏ]+/, '').trim(); return x || 'Tablo';
+  }
+  function baslik(t) { return temiz(baslik0(t)); }
+  function baslik0(t) {
+    if (t.caption && t.caption.textContent.trim()) return t.caption.textContent.trim();
+    var el = t;
+    for (var lv = 0; lv < 6 && el && el !== document.body; lv++) {
+      var p = el.previousElementSibling, k = 0;
+      while (p && k < 4) {
+        if (!gizli(p) && p.tagName !== "TABLE" && p.tagName !== "SCRIPT" && p.tagName !== "STYLE") {
+          var tx = (p.innerText || "").trim().split("\n")[0].trim();
+          var fw = parseInt(getComputedStyle(p).fontWeight, 10) || 400;
+          if (tx.length >= 2 && tx.length <= 90 && (/^H[1-6]$/.test(p.tagName) || fw >= 600 || /tit|bas|head|hdr|bh/i.test(p.className || ""))) return tx;
+        }
+        p = p.previousElementSibling; k++;
+      }
+      el = el.parentElement;
+    }
+    var th = t.querySelector("th"); return th && th.textContent.trim() ? th.textContent.trim().slice(0, 60) : "Tablo";
+  }
+
+  // ---------- oturum: formda kisi kodu girisi (arb_kisi_<yol>) + rol hesabi; panoda int@
+  function formYol() {
+    if (window.ARB_FORM_YOL) return String(window.ARB_FORM_YOL);
+    var m = location.pathname.match(/\/app\/([^\/]+)\/?/); return m ? m[1] + "/" : "";
+  }
+  function oturumlar() {
+    var out = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i), v; try { v = JSON.parse(localStorage.getItem(k)); } catch (e) { continue; }
+      if (v && v.currentSession) v = v.currentSession;
+      if (v && v.access_token && v.user && v.user.email) out.push({ em: String(v.user.email).toLowerCase(), tok: v.access_token, exp: (v.expires_at || 0) * 1000 });
+    }
+    return out;
+  }
+  function oturumSec() {
+    var yol = formYol(), ks = null, ss = oturumlar(), simdi = Date.now() + 20000, sec = null;
+    try { ks = JSON.parse(localStorage.getItem("arb_kisi_" + yol) || "null"); } catch (e) { }
+    function bul(em) { for (var i = 0; i < ss.length; i++) if (ss[i].em === em && ss[i].exp > simdi) return ss[i]; return null; }
+    if (ks && ks.rol) { sec = bul(String(ks.rol).toLowerCase()); if (sec) return { s: sec, kisi: ks.kod, form: yol }; }
+    if (window.ARB_EM) { sec = bul(String(window.ARB_EM).toLowerCase()); if (sec) return { s: sec, kisi: ks && ks.kod, form: yol }; }
+    sec = bul("int@arbor.com.tr"); if (sec) return { s: sec, kisi: "MB", form: yol };
+    for (var j = 0; j < ss.length; j++) if (ss[j].exp > simdi && /@arbor\.com\.tr$/.test(ss[j].em)) return { s: ss[j], kisi: ks && ks.kod, form: yol };
+    return null;
+  }
+  function yukle() {
+    return new Promise(function (ok, no) {
+      if (window.XLSX && window.XLSX.write) return ok();
+      var s = document.createElement("script"); s.src = XLSX_URL; s.onload = function () { ok(); };
+      s.onerror = function () { no(new Error("Excel kütüphanesi yüklenemedi.")); }; document.head.appendChild(s);
+    });
+  }
+  function ascii(s) {
+    var M = { "ç": "c", "Ç": "C", "ğ": "g", "Ğ": "G", "ı": "i", "İ": "I", "ö": "o", "Ö": "O", "ş": "s", "Ş": "S", "ü": "u", "Ü": "U" };
+    return s.replace(/[çÇğĞıİöÖşŞüÜ]/g, function (c) { return M[c]; }).replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  }
+  function gonder(t, b) {
+    if (b.disabled) return;
+    var ot = oturumSec();
+    if (!ot) { alert("Excel gönderilemedi.\n\nSebep: Oturum bulunamadı ya da süresi doldu. Sayfayı yenileyip tekrar deneyiniz."); return; }
+    var bas = baslik(t), sayfa = (document.title || "Arbor").replace(/\s+/g, " ").trim();
+    var m = matris(t);
+    if (!m.rows.length) { alert("Excel gönderilemedi.\n\nSebep: Tablo boş."); return; }
+    b.disabled = true; b.textContent = "Gönderiliyor…";
+    yukle().then(function () {
+      var X = window.XLSX, ws = X.utils.aoa_to_sheet(m.rows);
+      if (m.merges.length) ws["!merges"] = m.merges;
+      ws["!cols"] = (m.rows[0] || []).map(function (_, c) {
+        var w = 6; m.rows.forEach(function (r) { String(r[c]).split("\n").forEach(function (l) { w = Math.max(w, l.length + 2); }); });
+        return { wch: Math.min(w, 60) };
+      });
+      if (m.bas > 0 && m.rows.length > m.bas) ws["!autofilter"] = { ref: X.utils.encode_range({ s: { r: m.bas - 1, c: 0 }, e: { r: m.rows.length - 1, c: m.rows[0].length - 1 } }) };
+      var wb = X.utils.book_new();
+      X.utils.book_append_sheet(wb, ws, (bas.replace(/[\[\]:*?\/\\]/g, " ").trim() || "Tablo").slice(0, 31));
+      var b64 = X.write(wb, { bookType: "xlsx", type: "base64" });
+      var d = new Date(), gun = ("0" + d.getDate()).slice(-2) + ("0" + (d.getMonth() + 1)).slice(-2) + String(d.getFullYear()).slice(-2);
+      var dosya = (ascii(bas).slice(0, 60) || "Tablo") + "_" + gun + ".xlsx";
+      return fetch(SB + "/functions/v1/tablo-excel-mail", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + ot.s.tok },
+        body: JSON.stringify({ b64: b64, dosya: dosya, baslik: bas, sayfa: sayfa, form: ot.form, kisi: ot.kisi || "" })
+      }).then(function (r) { return r.json().catch(function () { return { ok: false, hata: "HTTP " + r.status }; }); });
+    }).then(function (j) {
+      if (j && j.ok) alert("Excel dosyası e-posta ile gönderildi.\n\nAlıcı: " + j.to + "\nTablo: " + bas);
+      else alert("Excel gönderilemedi.\n\nSebep: " + ((j && (j.hata || j.message || j.msg)) || "bilinmeyen hata"));
+    }).catch(function (e) {
+      alert("Excel gönderilemedi.\n\nSebep: " + (e && e.message ? e.message : e));
+    }).then(function () { b.disabled = false; b.textContent = "Excel"; });
+  }
+})();
+</script>
+<!-- /ARB-EXCEL-BTN -->
+<!-- FORM-LINKLER --><script src="../form_linkler.js?v=261105"></script><!-- FORM-MENU -->
+</body>
+</html>
