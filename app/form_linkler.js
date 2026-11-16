@@ -11,17 +11,15 @@
   var GIZLI={"cam/":1,"cam-konfig/":1,"cam-listesi/":1};
   function yol(){ if(window.ARB_FORM_YOL) return window.ARB_FORM_YOL; var m=/\/app\/([^\/]+)\//.exec(location.pathname); return m?m[1]+"/":""; }
   function esc(t){ return String(t==null?"":t).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
-  /* FLINK-KISI-YEDEK (19.10.2026): bu formda kisi kaydi yoksa (eski oturum) kod sirayla: ayni rolun kaydi -> form_erisim rol_map/varsayilan_rol'de
-     bu role tek kisi -> cihazdaki tum arb_kisi_* kayitlari tek kisiyse o; hicbiri yoksa yalniz herkes=true formlar gosterilir */
+  /* FLINK-KENDI (16.11.2026, Melih): menu yalniz giris yapan kisinin kendi formlarini gosterir. Kisi = bu formun kendi giris kaydi
+     (arb_kisi_<form>). Kayit yoksa yalniz bu formun tek yetkilisi varsa o kisi; aksi halde kisi yok sayilir (yalniz herkes=true formlar).
+     Eski FLINK-KISI-YEDEK ayni rol/cihazdaki baska formlarin kayitlarina bakiyordu; ortak bilgisayarda baskasinin (or. TH) formlari
+     menude gorunuyordu — kaldirildi. */
   function kisiKod(em,rows){
     try{ if(window.ARB_KISI_AL){ var k=window.ARB_KISI_AL(em); if(k&&k.kod) return k.kod; } }catch(e){}
-    var tum={};
-    try{ for(var i=0;i<localStorage.length;i++){ var key=localStorage.key(i); if(key.indexOf("arb_kisi_")!==0) continue;
-      var v=JSON.parse(localStorage.getItem(key)||"null"); if(v&&v.kod){ if(v.rol===em) return v.kod; tum[v.kod]=1; } } }catch(e){}
-    var ad={}; (rows||[]).forEach(function(f){ var m=f.rol_map||{}; for(var c in m) if(String(m[c]).toLowerCase()===em) ad[c]=1;
-      if(String(f.varsayilan_rol||"").toLowerCase()===em&&(f.kisiler||[]).length===1) ad[f.kisiler[0]]=1; });
-    var a=Object.keys(ad); if(a.length===1) return a[0];
-    var t=Object.keys(tum); if(t.length===1) return t[0];
+    try{ var bu=yol(), v=JSON.parse(localStorage.getItem("arb_kisi_"+bu)||"null"); if(v&&v.kod&&(!v.rol||v.rol===em)) return v.kod; }catch(e){}
+    var bu2=yol(), f=(rows||[]).filter(function(x){ return x.yol===bu2; })[0];
+    if(f&&!f.herkes&&(f.kisiler||[]).length===1) return f.kisiler[0];
     return null;
   }
   /* FORM-MENU (05.11.2026, Melih): link cubugu yerine lacivert bandin (header) en solunda "Menu" dugmesi; yetkili formlar altinda acilir liste.
