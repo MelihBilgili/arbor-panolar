@@ -73,6 +73,7 @@
   td.pairA.gs .tklatest{max-width:158px}
   .tknotes{display:flex;flex-direction:row;align-items:center;gap:4px;min-width:109px}
   .tknotes .tklatest,.tknote-input{flex:1;min-width:0;max-width:87px;text-align:left}
+  /* YD-IKI-TABLO */ .yd-g2 .tknote-input,.yd-g2 .tknotes .tklatest{max-width:none} h3.ydgrp{margin:14px 4px 6px;font-size:13.5px;color:#16324f} h3.ydgrp:first-child{margin-top:2px} h3.ydgrp span{color:#5b6b7b;font-weight:400}
   .tknote-input{min-height:26px}
   .tkAddBtn{background:#16324f;color:#fff;border:0;border-radius:6px;padding:0 10px;height:26px;display:block;font-size:11.5px;font-weight:700;cursor:pointer;flex:none}
   .tkAddBtn:hover{background:#204a75}
@@ -745,12 +746,21 @@ function eksikBos(r,f,key){
   }
   return false;
 }
-function rowHTML(r,key){
+/* YD-IKI-TABLO (16.11.2026, Melih): tablo ikiye ayrıldı — 1) durumu boş / Teklif Talebi Geldi / Teklif İncelendi / Teklif Bekleniyor (tkYasak):
+   Ağaç, İskonto %, Net Tutar, Para Birimi ve takip sütunları yok, not sütunları geniş; 2) diğer durumlar: Gelen/İstenen Tarih,
+   Talebe İlişkin Notlar, Şartname Ahşap?, Teklif Birimi Notları, Öncelik yok, Takip Notları geniş. Veri ve COLS değişmedi. */
+const YD_GIZ={1:['agac','iskonto_yuzde','net_tutar','para_birimi'],2:['gelen_tarih','istenen_tarih','talebe_iliskin_notlar','sartname_ahsap','teklif_birimi_notlari','oncelik']};
+const YD_NOT_W={1:{talebe_iliskin_notlar:300,teklif_birimi_notlari:300},2:{}};
+const YD_TK_W={2:500};
+function ydCols(g){ return COLS.filter(c=>YD_GIZ[g].indexOf(c.f)<0).map(c=>YD_NOT_W[g][c.f]?Object.assign({},c,{w:YD_NOT_W[g][c.f]}):c); }
+function ydGrup(r){ return tkYasak(r)?1:2; }
+function rowHTML(r,key,gz){
+  gz=gz||ydGrup(r); const GC=ydCols(gz);
   const bg = key==="draft" ? "" : (DURUM_BG[durumGor(r)]||""); /* SIKI-TAKIP */
   const bgv=bg||'transparent';
   const ttAge=daysAgo(r.teklif_teslim_tarihi);
   const durumWarn=(r.durum==="Teklif Bekleniyor" && ttAge!==null && ttAge>15) ? " durum-warn" : "";
-  return '<tr data-i="'+key+'" style="background:'+bgv+'">'+COLS.map(c=>{
+  return '<tr data-i="'+key+'" style="background:'+bgv+'">'+GC.map(c=>{
       if(ARSIV_F.indexOf(c.f)>=0){ const v=dispVal(r,c); const ek=(c.t==='num'?' style="text-align:right;':' style="')+'cursor:pointer;width:'+c.w+'px"'; /* YD-ARSIV-SECIM */
         return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input readonly class="cell arsClick'+(String(v).trim()?' filled':'')+(eksikBos(r,c.f,key)?' eksikbos':'')+'" data-row="'+key+'" type="text" title="'+esc(key==="draft"?"Satırı kaydettikten sonra Teklif arşivinden seçilir":"Teklif arşivinden seçmek için tıklayın")+'"'+ek+' value="'+esc(v)+'"></td>'; }
       const v=dispVal(r,c), req=c.req?" req":"", empty=(c.req&&!String(v).trim()&&!tutarDolu(r)?" bad":"")+(eksikBos(r,c.f,key)?" eksikbos":"");
@@ -767,20 +777,25 @@ function rowHTML(r,key){
       const tdc=(c.t==='num'?'net':'')+(c.f==='musteri'?'mus'+(ilgVar(r)?' ilg-var':''):''); /* YD-ILGILI */
       return '<td class="'+tdc+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+prjCls(r,c.f,key)+'" data-f="'+c.f+'" type="text"'+ipucu+(alanYasak(c.f)?' readonly title="Bu alana kayıt yetkiniz yok" style="cursor:not-allowed;color:#6a7888;':' style="')+'width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
-    +pairCells(r,key,bg)
+    +(gz===1?'':pairCells(r,key,bg))
     +'<td style="background:'+bgv+'"><div class="durumro'+durumWarn+'" style="width:122px" title="'+(key==="draft"?"":"Durum değiştirmek için satıra sağ tıklayın")+'">'+esc(durumGor(r))+'</div></td>' /* DURUM-SAGTIK: elle seçim yok */ /* SIKI-TAKIP */
     /* SIL-CARPI-YOK (08.10.2026, Melih): sağdaki ✕ sütunu kaldırıldı — silme yalnız sağ tık › Sil */
     +'</tr>';
 }
 function render(){
   sortROWS();
-  let h='<table><colgroup>'+COLS.map(c=>'<col style="width:'+c.w+'px">').join('')+'<col style="width:72px"><col style="width:84px"><col style="width:150px"><col style="width:130px"></colgroup><thead><tr>'
-    +COLS.map(c=>'<th title="'+esc(c.h)+'">'+c.h+'</th>').join('')
-    +'<th class="pairA gs">Takip Tarihi</th><th class="pairA">Görevli</th><th class="pairA">Takip Notları / Görevleri</th>'
-    +'<th>Durum</th></tr></thead><tbody>';
-  if(window.ARB_EM==="int@arbor.com.tr") h+=rowHTML(DRAFT,"draft"); /* YD-YENI-SATIR-MB: yeni satırı yalnız Melih/Claude açar */
-  ROWS.forEach((r,i)=>{ h+=rowHTML(r,i); });
-  h+='</tbody></table>';
+  let h=''; /* YD-IKI-TABLO */
+  [1,2].forEach(g=>{
+    const GC=ydCols(g), idx=[]; ROWS.forEach((r,i)=>{ if(ydGrup(r)===g) idx.push(i); });
+    h+='<h3 class="ydgrp">'+(g===1?'1. Durumu boş · Teklif Talebi Geldi · Teklif İncelendi · Teklif Bekleniyor':'2. Diğer durumlar')+' <span>('+idx.length+')</span></h3>'
+      +'<table class="yd-g'+g+'"><colgroup>'+GC.map(c=>'<col style="width:'+c.w+'px">').join('')+(g===2?'<col style="width:72px"><col style="width:84px"><col style="width:'+YD_TK_W[2]+'px">':'')+'<col style="width:130px"></colgroup><thead><tr>'
+      +GC.map(c=>'<th title="'+esc(c.h)+'">'+c.h+'</th>').join('')
+      +(g===2?'<th class="pairA gs">Takip Tarihi</th><th class="pairA">Görevli</th><th class="pairA">Takip Notları / Görevleri</th>':'')
+      +'<th>Durum</th></tr></thead><tbody>';
+    if(g===1 && window.ARB_EM==="int@arbor.com.tr") h+=rowHTML(DRAFT,"draft",1); /* YD-YENI-SATIR-MB: yeni satırı yalnız Melih/Claude açar */
+    idx.forEach(i=>{ h+=rowHTML(ROWS[i],i,g); });
+    h+='</tbody></table>';
+  });
   h+='<div class="legend">'+DISPLAY_ORDER.filter(d=>DURUM_BG[d]).map(d=>'<span class="lg-item"><span class="lg-sw" style="background:'+DURUM_BG[d]+'"></span>'+esc(d)+'</span>').join('')+'</div>';
   const list=document.getElementById("list"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{
