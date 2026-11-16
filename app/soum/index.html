@@ -1290,13 +1290,17 @@ $("f_kamyon").oninput=()=>{ $("f_kamyon").dataset.elle=1; hesapla(); };
 dosyaCiz();
 /* SOUM-ARSIV (05.11.2026, Melih): indirilen her Excel teklif Supabase'e kaydedilir (tablo soum_teklif + depo soum-teklif, yol YYYY/MM/<zaman>_<dosya>);
    formun başındaki "Teklif arşivi" bölümünde aranır ve indirilir. Kayıt başarısız olursa indirme yine yapılır, durum satırında uyarı çıkar. */
+/* YD-ARSIV-SECIM (16.11.2026, Melih): arşiv satırına Ağaç (Pencad Ağaç Türü, tekil) ve Montaj Hariç Net Tutar (Total Delivered to Site − montaj tutarı, montaj dahilse) yazılır;
+   Yurt Dışı Satış formları bu üç bilgiyi (Net Tutar, Ağaç, İskonto) yalnız buradan seçer. İskonto % = (1 − İskonto çarpanı) × 100. */
+function arsivAgac(){ return [...new Set(S.poz.map(p=>String(p.agac||"").trim()).filter(Boolean))].join(", ")||null; }
+function arsivNet(){ const g=+H.genel; if(!isFinite(g)) return null; return n2(g-(H.montDahil?(+H.pose||0):0)); }
 async function arsivKaydet(ad,buf,tar){
   try{ if(!SB.storage) return; const z=new Date(), yol=z.toISOString().slice(0,7).replace("-","/")+"/"+z.getTime()+"_"+ad;
     const up=await SB.storage.from("soum-teklif").upload(yol,new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),{upsert:false}); if(up.error) throw up.error;
     const k=(typeof ARB_EMAIL!=="undefined"&&window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null;
     const rec={olusturan_kisi:k?(k.kod+" — "+k.ad):(typeof ARB_EMAIL!=="undefined"?ARB_EMAIL:""),proje:$("f_proje").value,firma:$("f_firma").value,ilgili:$("f_ilgili").value,ref:$("f_ref").value,
       dil:DIL(),bolge:$("f_bolge").value,tarih:tar.toISOString().slice(0,10),par:$("f_par").value,hazirlayan:$("f_haz").value,revize:($("f_revize")||{}).value==="1",
-      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:EN()?"GBP":"EUR",iskonto:H.X2,dosya_adi:ad,depo_yolu:yol};
+      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:EN()?"GBP":"EUR",iskonto:H.X2,agac:arsivAgac(),net_montaj_haric:arsivNet(),dosya_adi:ad,depo_yolu:yol};
     const r=await SB.from("soum_teklif").insert(rec); if(r.error) throw r.error;
     $("durum").insertAdjacentHTML("beforeend",' <span class="mini">· Teklif arşivine kaydedildi.</span>'); if($("arsivIc").style.display!=="none") arsivYukle();
   }catch(e){ console.warn("arşiv",e); $("durum").insertAdjacentHTML("beforeend",' <span class="mini" style="color:#b00020">· Arşive kaydedilemedi: '+esc(e.message||e)+'</span>'); } }
@@ -1335,7 +1339,7 @@ async function formKaydet(){ if(revEksik()) return; /* SOUM-REVIZE-ARSIV */
     const k=(typeof ARB_EMAIL!=="undefined"&&window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null;
     const rec={olusturan_kisi:k?(k.kod+" — "+k.ad):(typeof ARB_EMAIL!=="undefined"?ARB_EMAIL:""),proje:$("f_proje").value,firma:$("f_firma").value,ilgili:$("f_ilgili").value,ref:$("f_ref").value,
       dil:DIL(),bolge:$("f_bolge").value,tarih:tar.toISOString().slice(0,10),par:$("f_par").value,hazirlayan:$("f_haz").value,revize:($("f_revize")||{}).value==="1",
-      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:EN()?"GBP":"EUR",iskonto:H.X2,dosya_adi:ad,form_yolu:yol};
+      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:EN()?"GBP":"EUR",iskonto:H.X2,agac:arsivAgac(),net_montaj_haric:arsivNet(),dosya_adi:ad,form_yolu:yol};
     const r=await SB.from("soum_teklif").insert(rec); if(r.error) throw r.error;
     S.pnotKayit=pnot; durum("Form Teklif arşivine kaydedildi: <b>"+esc(ad)+"</b> (arşivde <b>Formu aç</b> ile kaydedildiği hâliyle açılır).","ok"); if($("arsivIc").style.display!=="none") arsivYukle();
   }catch(e){ console.error(e); durum("Form kaydedilemedi: "+esc(e.message||e),"hata"); } }

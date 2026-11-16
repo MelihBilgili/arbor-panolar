@@ -455,6 +455,50 @@ const COLS=[
  {f:'para_birimi',h:'Para Birimi',w:45,t:'sel',opts:['EUR','GBP','USD']}
 ];
 const REQ_F=COLS.filter(c=>c.req).map(c=>c.f);
+/* YD-ARSIV-SECIM (16.11.2026, Melih): Ağaç, İskonto %, Montaj Hariç Net Tutar (ve onlara bağlı Para Birimi) elle girilmez;
+   hücreye tıklayınca Teklif Hazırlama (soum) formunun Teklif arşivi (soum_teklif) açılır, seçilen teklifin değerleri yazılır
+   (satis_yd_akis.soum_teklif_id). İskonto % = (1 − İskonto çarpanı) × 100. Ağaç/Net bilgisi olmayan eski arşiv kayıtları seçilemez
+   (Teklif Hazırlama'da formu açıp yeniden kaydedince dolar). Yeni satırda (taslak) seçim satır kaydedildikten sonra yapılır. */
+const ARSIV_F=['agac','iskonto_yuzde','net_tutar','para_birimi'];
+let ARSIV_L=null;
+function arsTr(t){ return String(t||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim(); }
+function arsIsk(x){ const k=Number(x); return (x==null||!isFinite(k))?null:String(Math.round((1-k)*1000)/10).replace(".",","); }
+function arsTutar(v,pb){ return v==null?"":Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0})+" "+(pb||""); }
+async function arsAc(key){
+  const r=getRow(key); if(!r||key==="draft"){ setMsg("Önce satırı kaydedin; arşiv seçimi kayıtlı satırda yapılır.",false); return; }
+  if(alanYasak('net_tutar')){ setMsg("Bu alana kayıt yetkiniz yok.",false); return; }
+  const ov=document.createElement("div");
+  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:10003";
+  ov.innerHTML='<div style="background:#fff;border-radius:10px;padding:14px 16px;width:min(980px,95vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.25)">'
+    +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><b>Teklif arşivinden seç</b><span style="color:#5b6b7b;font-size:12px">— '+esc(r.proje||"")+'</span><span style="flex:1"></span><button type="button" data-x style="border:0;background:none;font-size:18px;cursor:pointer">✕</button></div>'
+    +'<input data-q placeholder="Proje, firma, ref…" style="padding:6px 8px;border:1px solid #cdd6df;border-radius:6px;margin-bottom:8px;font:inherit">'
+    +'<div data-l style="overflow:auto;flex:1">Yükleniyor…</div>'
+    +'<div style="color:#5b6b7b;font-size:11.5px;margin-top:6px">Ağaç, İskonto %, Montaj Hariç Net Tutar ve Para Birimi yalnız buradan gelir. Gri satırlar eski arşiv kaydıdır (Ağaç/Net bilgisi yok): Teklif Hazırlama formunda <b>Formu aç</b> → yeniden kaydet ya da Excel\'i yeniden üret.</div></div>';
+  document.body.appendChild(ov);
+  const kap=()=>ov.remove(); ov.querySelector("[data-x]").onclick=kap; ov.addEventListener("click",e=>{ if(e.target===ov) kap(); });
+  ov.addEventListener("keydown",e=>{ if(e.key==="Escape") kap(); });
+  const q=ov.querySelector("[data-q]"), L=ov.querySelector("[data-l]");
+  q.value=r.proje||"";
+  if(!ARSIV_L){ const a=await sb.from("soum_teklif").select("id,olusturma,proje,firma,ref,tarih,bolge,dil,toplam,para_birimi,iskonto,agac,net_montaj_haric,dosya_adi,depo_yolu,form_yolu").order("olusturma",{ascending:false}).limit(1000);
+    if(a.error){ L.innerHTML='<div style="color:#b40000">Arşiv okunamadı: '+esc(a.error.message)+'</div>'; return; } ARSIV_L=a.data||[]; }
+  const ciz=()=>{ const w=arsTr(q.value).split(" ").filter(Boolean);
+    const M=ARSIV_L.filter(x=>{ const t=arsTr([x.proje,x.firma,x.ref,x.dosya_adi].join(" ")); return w.every(k=>t.includes(k)); });
+    L.innerHTML=M.length?'<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="text-align:left;background:#f2f5f8"><th style="padding:4px">Tarih</th><th>Proje</th><th>Firma</th><th>Ref</th><th>Tür</th><th>Ağaç</th><th style="text-align:right">İsk. %</th><th style="text-align:right">Montaj Hariç Net</th><th></th></tr></thead><tbody>'
+      +M.map(x=>{ const ok=x.net_montaj_haric!=null&&x.agac; const sec=String(r.soum_teklif_id)===String(x.id);
+        return '<tr style="border-top:1px solid #e3e8ee;'+(ok?'':'color:#9aa6b2;')+(sec?'background:#eaf5ee;':'')+'"><td style="padding:4px;white-space:nowrap">'+esc(fmtDate(x.tarih||String(x.olusturma||"").slice(0,10)))+'</td><td>'+esc(x.proje||"")+'</td><td>'+esc(x.firma||"")+'</td><td>'+esc(x.ref||"")+'</td><td>'+(x.form_yolu?"Form":"Excel")+'</td><td>'+esc(x.agac||"—")+'</td><td style="text-align:right">'+esc(arsIsk(x.iskonto)||"")+'</td><td style="text-align:right;white-space:nowrap">'+esc(ok?arsTutar(x.net_montaj_haric,x.para_birimi):"—")+'</td><td style="text-align:right">'+(ok?'<button type="button" data-s="'+x.id+'" style="padding:3px 10px;border:1px solid #2e7d54;border-radius:6px;background:#eaf5ee;cursor:pointer;font:inherit">'+(sec?"Seçili":"Seç")+'</button>':'')+'</td></tr>'; }).join('')+'</tbody></table>'
+      :'<div style="color:#5b6b7b">Aramaya uyan arşiv teklifi yok.</div>';
+    L.querySelectorAll("[data-s]").forEach(b=>b.onclick=async()=>{ const x=ARSIV_L.find(y=>String(y.id)===b.dataset.s); if(x&&await arsSec(r,x)) kap(); }); };
+  q.oninput=ciz; ciz(); q.focus();
+}
+async function arsSec(r,x){
+  const agac=String(x.agac||"").split(",")[0].trim()||null;
+  const upd={soum_teklif_id:x.id,agac:agac,iskonto_yuzde:arsIsk(x.iskonto),net_tutar:Number(x.net_montaj_haric),para_birimi:x.para_birimi||"EUR"};
+  setMsg("Güncel kur alınıyor…",true); const kurOk=await eurAlanlari(r,upd);
+  const {error}=await sb.from("satis_yd_akis").update(upd).eq("id",r.id);
+  if(error){ setMsg("Kayıt hatası: "+error.message,false); return false; }
+  Object.assign(r,upd); render();
+  setMsg(kurOk?"Arşivden alındı ✓":"Arşivden alındı ama kur alınamadı — € karşılığı boş.",kurOk); return true;
+}
 let ROWS=[];
 let DRAFT=null;
 let PENDING_TK={};
@@ -707,6 +751,8 @@ function rowHTML(r,key){
   const ttAge=daysAgo(r.teklif_teslim_tarihi);
   const durumWarn=(r.durum==="Teklif Bekleniyor" && ttAge!==null && ttAge>15) ? " durum-warn" : "";
   return '<tr data-i="'+key+'" style="background:'+bgv+'">'+COLS.map(c=>{
+      if(ARSIV_F.indexOf(c.f)>=0){ const v=dispVal(r,c); const ek=(c.t==='num'?' style="text-align:right;':' style="')+'cursor:pointer;width:'+c.w+'px"'; /* YD-ARSIV-SECIM */
+        return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input readonly class="cell arsClick'+(String(v).trim()?' filled':'')+(eksikBos(r,c.f,key)?' eksikbos':'')+'" data-row="'+key+'" type="text" title="'+esc(key==="draft"?"Satırı kaydettikten sonra Teklif arşivinden seçilir":"Teklif arşivinden seçmek için tıklayın")+'"'+ek+' value="'+esc(v)+'"></td>'; }
       const v=dispVal(r,c), req=c.req?" req":"", empty=(c.req&&!String(v).trim()&&!tutarDolu(r)?" bad":"")+(eksikBos(r,c.f,key)?" eksikbos":"");
       if(c.t==='note'){ const sat=ntSatirlar(r[c.f]); /* YD-NOT-EKLE: son not görünür, hover'da tümü alt alta */
         return '<td style="background:'+bgv+'"><div class="ntcell" style="width:'+c.w+'px"><div class="ntlast ntClick'+(ntYasak(c.f)?' ntkilit':'')+'" data-row="'+key+'" data-nf="'+c.f+'" title="'+esc(sat.join("\n"))+'"><span title="'+esc(sat.join("\n"))+'">'+esc(sat[0]||"")+'</span></div></div></td>'; } /* NT-HOVER-TUM: span'a da tum notlar; ARB-HOVERTITLE span'a yalniz son notu yaziyordu */
@@ -745,6 +791,7 @@ function render(){
     });
   });
   list.querySelectorAll(".tkClick").forEach(b=>b.onclick=()=>tkStartEntry(b.dataset.row));  /* YD-EKLE-TIKLA */
+  list.querySelectorAll(".arsClick").forEach(b=>b.onclick=()=>arsAc(b.dataset.row)); /* YD-ARSIV-SECIM */
   list.querySelectorAll(".ntClick").forEach(b=>b.onclick=()=>ntAc(b.dataset.row,b.dataset.nf));  /* YD-NOT-EKLE */
   list.querySelectorAll("td.mus").forEach(td=>{ td.addEventListener("mouseenter",()=>ilgAc(td,false)); td.addEventListener("mouseleave",()=>{ if(!ILG.pin) ilgKapatGec(); }); td.addEventListener("click",()=>ilgAc(td,true)); }); /* YD-ILGILI */
   if(ILG.key!=null){ const td=list.querySelector('tr[data-i="'+ILG.key+'"] td.mus'); if(td) ILG.td=td; else ilgKapat(); }
@@ -836,6 +883,7 @@ function musOnemGoster(key,val){ const s=document.querySelector('#list tr[data-i
 async function saveRow(key,f,val,el){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
   if(alanYasak(f)){ if(el) el.value=(r[f]==null?"":r[f]); setMsg("Bu alana kayıt yetkiniz yok.",false); return; } /* ALAN-YETKI */
+  if(ARSIV_F.indexOf(f)>=0){ setMsg("Bu alan yalnız Teklif arşivinden seçilir.",false); return; } /* YD-ARSIV-SECIM */
   let v=convVal(f,val);
   if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YY biçiminde olmalı."; return; }
   let musOnem; /* MUSTERI-ONEM-OTO */
