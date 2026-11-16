@@ -733,9 +733,10 @@ function pozCiz(){
   const EK=S.ekstra||[]; /* SOUM-EKSTRA-MOD (12.11.2026, Melike Başaran): tablonun sağında her Pencad ekstra malzemesi için tik sütunu, altta tikli pozların adet toplamı */
   /* SOUM-261113-EKBAS (13.11.2026, Melike Başaran): ekstra malzeme tik sütunları tablonun başında (No · Vue'den hemen sonra); kanat kısıtlayıcıda poz başına görselden sayılan kanat sayısı (×n) */
   const KB=KOL.slice(0,2), KS=KOL.slice(2), th=k=>(k[0]==="facade"||k[0]==="bina")?basTh(k):'<th'+(/camFr|notlar|facade|kod|uyg/.test(k[0])?' class="l"':'')+'>'+k[1]+'</th>';
-  el.innerHTML='<table><thead><tr>'+KB.map(th).join("")+EK.map(e=>'<th class="ekc" title="'+esc(e.kod+' · '+e.ad)+'">'+esc(ekstraKisa(e,false)).slice(0,22)+(kisitMi(e)?'<div class="mini">(kanat)</div>':'')+'</th>').join("")+KS.map(th).join("")+'</tr></thead><tbody>'+S.poz.map((p,i)=>'<tr data-i="'+i+'">'+KB.map(k=>hucre(p,k,i)).join("")+EK.map((e,j)=>'<td class="ekc"><input type="checkbox" style="width:auto" data-tk="'+j+'"'+(ekTik(e,i)?' checked':'')+'>'+(kisitMi(e)?'<div class="mini">×'+ekAg(e,i)+'</div>':'')+'</td>').join("")+KS.map(k=>hucre(p,k,i)).join("")+'</tr>').join("")
+  el.innerHTML='<table><thead><tr>'+KB.map(th).join("")+EK.map((e,j)=>'<th class="ekc" title="'+esc(e.kod+' · '+e.ad)+'">'+esc(ekstraKisa(e,false)).slice(0,22)+(kisitMi(e)?'<div class="mini">(kanat)</div>':'')+'<label class="mini" style="display:block;white-space:nowrap" title="Tüm pozları seç / kaldır"><input type="checkbox" style="width:auto" data-tka="'+j+'"'+(S.poz.length&&S.poz.every((p,i)=>ekTik(e,i))?' checked':'')+'> Tümü</label></th>').join("")+KS.map(th).join("")+'</tr></thead><tbody>'+S.poz.map((p,i)=>'<tr data-i="'+i+'">'+KB.map(k=>hucre(p,k,i)).join("")+EK.map((e,j)=>'<td class="ekc"><input type="checkbox" style="width:auto" data-tk="'+j+'"'+(ekTik(e,i)?' checked':'')+'>'+(kisitMi(e)?'<div class="mini">×'+ekAg(e,i)+'</div>':'')+'</td>').join("")+KS.map(k=>hucre(p,k,i)).join("")+'</tr>').join("")
     +(EK.length?'<tr class="ektop"><td class="l mini" colspan="2">Ekstra toplamı (tikli pozların adedi)</td>'+EK.map(e=>'<td class="ekc">'+fN(ekAdet(e),0)+'</td>').join("")+'<td colspan="'+KS.length+'"></td></tr>':'')+'</tbody></table>';
   el.querySelectorAll("[data-bas]").forEach(x=>x.onchange=()=>{ BAS()[x.dataset.bas]=x.value.trim(); }); el.querySelectorAll("[data-bg]").forEach(x=>x.onchange=()=>{ BAS()["g"+x.dataset.bg]=x.checked; }); /* SOUM-BASLIK-GIZ */
+  el.querySelectorAll("[data-tka]").forEach(c=>c.onchange=()=>{ const e=S.ekstra[+c.dataset.tka]; e.tik=c.checked?S.poz.map((p,i)=>i):[]; pozCiz(); hesapla(); }); /* SOUM-EK-TUMU (16.11.2026, Melike Başaran): ekstra malzeme başlığında Tümü tiki */
   el.querySelectorAll("[data-tk]").forEach(c=>c.onchange=()=>{ const e=S.ekstra[+c.dataset.tk], i=+c.closest("tr").dataset.i; e.tik=(e.tik||[]).filter(x=>x!==i); if(c.checked) e.tik.push(i); pozCiz(); hesapla(); });
   el.querySelectorAll("[data-k]").forEach(inp=>{ inp.onchange=()=>{ const p=S.poz[+inp.closest("tr").dataset.i], k=inp.dataset.k; let v=inp.value;
     if(["ug","uw","sg","rw","tl"].includes(k)){ v=v.trim()===""?null:+v.replace(",","."); if(k==="rw") p.rwAlt=false; }
@@ -819,7 +820,9 @@ function frDen(p,L){ const sec=kSecL("den"), DN={alu:"Bavette Alu",ahs:"Bavette 
   if(!kapi){ const ek=[]; [["alu","bAlu"],["ahs","bBois"]].forEach(([v,k])=>{ if(sec.includes(v)&&!S.poz.some(q=>q.ozl&&q.ozl[k])&&!o.includes(DN[v])) ek.push(DN[v]); }); if(sec.includes("ic")) ek.push("Tablette intérieure bois");
     const mi=o.indexOf("MORTAISE"); if(mi>=0) o.splice(mi,0,...ek); else o=o.concat(ek); }
   return o; }
-function notMetin(p){ if(p.notElle!=null) return p.notElle; if(DIL()==="en"&&p.nf) return notEn(p); const mt=$("f_mont").value==="1"?"Mortaise entrée d'air + Pose":"Mortaise entrée d'air"; return frDen(p,p.notSat).map(x=>x==="MORTAISE"?mt:x).concat(notEk(p,false)).join("\n"); }
+/* SOUM-FR-PF (16.11.2026, Melike Başaran): Fransız notunda PF tipi — Standart → Seuil alu PMR (ilk satırda yoksa), SACC → Pièce d'appui bois, ACC → Bavette Alu */
+function frPf(p,L){ if(!p.pf) return L; const PT={STD:"Seuil alu PMR",SACC:"Pièce d'appui bois",ACC:"Bavette Alu"}[p.pfTip]; if(!PT) return L; if(p.pfTip==="STD"&&/seuil PMR/i.test(L[0]||"")) return L; if(L.includes(PT)) return L; return [L[0],PT].concat(L.slice(1)); }
+function notMetin(p){ if(p.notElle!=null) return p.notElle; if(DIL()==="en"&&p.nf) return notEn(p); const mt=$("f_mont").value==="1"?"Mortaise entrée d'air + Pose":"Mortaise entrée d'air"; return frPf(p,frDen(p,p.notSat)).map(x=>x==="MORTAISE"?mt:x).concat(notEk(p,false)).join("\n"); }
 const FACADE_EN={"Tunnel au nu intérieur":"In reveal, flush inside","App. Int.":"Internal face fix","App. Ext.":"External face fix","Feuillure":"Rebate"};
 const facadeAd=p=>DIL()==="en"?(FACADE_EN[p.facade]||p.facade):p.facade;
 
@@ -1019,7 +1022,7 @@ async function excelYap(){
   const bosmu=f=>S.poz.every(p=>!String(f(p)==null?"":f(p)).trim());
   const KO=en?[["no","No",5.1],["bina",basAd("bina","Building"),11,bosmu(p=>p.bina)||!!BAS().gbina],["ref","Ref.",16],["fac",basAd("fac","Fixing"),7.9,bosmu(p=>p.facade)||!!BAS().gfac],["img","Outside View",37],["L","W (mm)",9],["H","H (mm)",9],["F","Qty (pc)",7.4],["S","Area (m²)",8.2],["P","Perimeter (m)",8.5],
       ["rc","Resistance class",10],["cam","Glazing specification",30],["camU","Fanlight glazing",30,true],["pan","Panel configuration",20,true],["ug","Ug",9.1],["rw","Rw (dB)",9.1],["uw","Average Uw (W/m²K)",11],["sg","Sfg",7.2],["tl","Tlg (%)",7.5],["Q","Unit Price",22.4],["R","Total Price",30.5],["n1","Notes",9.4],["n2","",36.4]]
-    :[["no","No",5.1],["fac",basAd("fac","Facade"),7.9,!!BAS().gfac],["img","Vue Interne",37],["L","L (mm)",9],["H","H (mm)",9],["F","Unité (pc)",7.4],["S","Surface (m2)",8.2],["P","Pourtour (m)",8.5],["cam","Configuration du Vitrage Principal ",30,true],["camU","Configuration du Vitrage Imposte ",30,true],["pan","Configuration du Panneaux",30,true],
+    :[["no","No",5.1],["fac",basAd("fac","Facade"),7.9,!!BAS().gfac],["img","Vue Interne",37],["L","L (mm)",9],["H","H (mm)",9],["F","Unité (pc)",7.4],["S","Surface (m2)",8.2],["P","Pourtour (m)",8.5],["rc","Classe de résistance",10],["cam","Configuration du Vitrage Principal ",30,true],["camU","Configuration du Vitrage Imposte ",30,true],["pan","Configuration du Panneaux",30,true],
       ["ug","Ug",9.1],["rw","RW+Ctr (dB)",9.1],["uw","Uw moyen (W/m2K)",11],["sg","Sfg",7.2],["tl","Tlg (%)",7.5],["Q","Prix Unitaire",22.4],["R","Prix Total",30.5],["n1","Notes",9.4],["n2","",36.4]];
   const XL=n=>{ let s=""; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s; };
   const ix={}; KO.forEach((k,i)=>ix[k[0]]=i+1); const C=k=>XL(ix[k]); const NL=KO.length, LAST=XL(NL), IC=o=>XL(NL+1+o);
@@ -1066,7 +1069,7 @@ async function excelYap(){
     if(en){ c("ref",refAd(p),{font:{name:"Arial",size:14,bold:true}}); c("img",""); }
     else c("img",p.kod,{alignment:{vertical:"bottom",horizontal:"left"},font:{name:"Arial",size:14,bold:true}});
     c("L",p.L); c("H",p.H); c("F",p.F); c("S",{formula:L+"*"+Hh+"/1000000",result:p.L*p.H/1e6},{numFmt:"0.00"}); c("P",{formula:"("+L+"+"+Hh+")*2/1000",result:(p.L+p.H)*2/1000},{numFmt:"0.0"});
-    if(en) c("rc",p.rc||"");
+    c("rc",p.rc||""); /* SOUM-FR-RC */
     c("cam",camMetin(p),en?{alignment:{vertical:"middle",horizontal:"left",wrapText:true},font:{name:"Arial",size:12}}:undefined); c("camU",""); c("pan","");
     c("ug",p.ug,{numFmt:"0.0"}); c("rw",p.rw); c("uw",p.uw,{numFmt:"0.00"}); c("sg",p.sg,{numFmt:"0.00"}); c("tl",p.tl);
     const B=IC(4)+r, Q=C("Q")+r;
@@ -1293,7 +1296,7 @@ function pdfYap(){
   /* SOUM-UK: PDF sütunları dile göre; İngilizcede boş Building / Fixing / Resistance class gösterilmez */
   const bosmu=f=>S.poz.every(p=>!String(f(p)==null?"":f(p)).trim());
   const PK=(en?[["no","No"],["bina",basAd("bina","Building"),bosmu(p=>p.bina)||!!BAS().gbina],["ref","Ref."],["fac",basAd("fac","Fixing"),bosmu(p=>p.facade)||!!BAS().gfac],["img","Outside View"],["L","W (mm)"],["H","H (mm)"],["F","Qty (pc)"],["S","Area (m²)"],["P","Perimeter (m)"],["rc","Resistance class"],/* SOUM-RC-GORUN (16.11.2026, Melike Başaran): Resistance class PDF ve Excel'de her zaman görünür */ /* SOUM-261113-PDFCAM: cam sütunu (Vitrage / Glazing specification) PDF'te yok */["ug","Ug"],["rw","Rw (dB)"],["uw","Average Uw (W/m²K)"],["sg","Sfg"],["tl","Tlg (%)"],["Q","Unit Price"],["R","Total Price"],["not","Notes"]]
-    :[["no","No"],["fac",basAd("fac","Facade"),!!BAS().gfac],["img","Vue Interne"],["L","L (mm)"],["H","H (mm)"],["F","Unité (pc)"],["S","Surface (m2)"],["P","Pourtour (m)"],["ug","Ug"],["rw","RW+Ctr (dB)"],["uw","Uw moyen (W/m2K)"],["sg","Sfg"],["tl","Tlg (%)"],["Q","Prix Unitaire"],["R","Prix Total"],["not","Notes"]]).filter(k=>!k[2]);
+    :[["no","No"],["fac",basAd("fac","Facade"),!!BAS().gfac],["img","Vue Interne"],["L","L (mm)"],["H","H (mm)"],["F","Unité (pc)"],["S","Surface (m2)"],["P","Pourtour (m)"],["rc","Classe de résistance"],/* SOUM-FR-RC (16.11.2026, Melike Başaran): Fransızcada da RC sütunu her zaman */["ug","Ug"],["rw","RW+Ctr (dB)"],["uw","Uw moyen (W/m2K)"],["sg","Sfg"],["tl","Tlg (%)"],["Q","Prix Unitaire"],["R","Prix Total"],["not","Notes"]]).filter(k=>!k[2]);
   const PV={no:p=>p.no,bina:p=>esc(p.bina||""),ref:p=>'<b>'+esc(refAd(p))+'</b>',fac:p=>'<div>'+esc(facadeAd(p))+'</div>',img:p=>(p.img?'<img src="'+p.img.url+'">':'')+(en?'':'<b>'+esc(p.kod)+'</b>'),L:p=>p.L,H:p=>p.H,F:p=>p.F||0,S:p=>dN(p.L*p.H/1e6,2),P:p=>dN((p.L+p.H)*2/1000,1),
     rc:p=>esc(p.rc||""),cam:p=>esc(camMetin(p)).replace(/\n/g,"<br>"),ug:p=>dN(p.ug,1),rw:p=>esc(p.rw==null?"":p.rw),uw:p=>dN(p.uw,2),sg:p=>dN(p.sg,2),tl:p=>esc(p.tl==null?"":p.tl),Q:p=>dP(n2(p.Q)),R:p=>dP(p.R),not:p=>esc(notMetin(p)).replace(/\n/g,"<br>")};
   const PC={fac:"fac",img:"vue",Q:"pr",R:"pr",not:"not",cam:"cm"};
