@@ -1444,10 +1444,13 @@ function perfPdf(tur){
     return [esc(p.kod),esc(p.seri),dN(A,2),dN(B,2),d3(G.df),d3(G.bi),d3(Ag),dN(p.sg,2),dN(tl,2),d3(Af),d3(Aw),"0",d3(Ag/Aw),'<b>'+d3(sw)+'</b>','<b>'+d3(tlw)+'</b>',n,d3(sw!=null?sw*n:null),d3(tlw!=null?tlw*n:null)]; });
   const bas=uw?[tt("N° de chassis","Window ref."),"Seri",tt("A-Largeur (m)","A-Width (m)"),tt("B-Hauteur (m)","B-Height (m)"),"Df","Bini","Ag","Ug","Af","Uf","lg","Ψg","Aw","Uw","Adet","Uw × Adet"]
     :[tt("N° de chassis","Window ref."),"Seri",tt("A-Largeur (m)","A-Width (m)"),tt("B-Hauteur (m)","B-Height (m)"),"Df","Bini","Ag","Sfg","Tlg","Af","Aw","Sff","σ = Ag/Aw","Sfw","Tlw","Adet","Sw × Adet","Tlw × Adet"];
-  const grp=uw?[["",2],[tt("Dimensions","Dimension"),4],[tt("Vitrage","Glass"),2],[tt("Cadre","Frame"),2],["Intercalaire",2],[tt("Menuiserie","Joinery"),2],["",2]]
-    :[["",2],[tt("Dimensions","Dimension"),4],[tt("Vitrage","Glass"),3],[tt("Cadre","Frame"),4],[tt("Menuiserie","Joinery"),2],["",3]];
-  const top=uw?'<tr class="tp"><td colspan="13">'+tt("Uw Moyenne","Uw Total")+'</td><td>'+dN(tA?tX/tA:null,2)+'</td><td colspan="2"></td></tr>'
-    :'<tr class="tp"><td colspan="13">'+tt("Moyenne","Total")+'</td><td>'+d3(tA?tX/tA:null)+'</td><td>'+d3(tA?tY/tA:null)+'</td><td colspan="3"></td></tr>';
+  /* SOUM-PERF-PDF2: Excel'de gizli sütunlar (Seri, Df, Adet) PDF'te de yok; başlık satırı açık yeşil, Uw/Sfw/Tlw hücreleri sarı */
+  const GIZ=uw?[1,4,14]:[1,4,15], YS=uw?[11]:[11,12], gz=a=>a.filter((_,i)=>!GIZ.includes(i));
+  const rowsG=rows.map(gz), basG=gz(bas);
+  const grp=uw?[["",1],[tt("Dimensions","Dimension"),3],[tt("Vitrage","Glass"),2],[tt("Cadre","Frame"),2],["Intercalaire",2],[tt("Menuiserie","Joinery"),2],["",1]]
+    :[["",1],[tt("Dimensions","Dimension"),3],[tt("Vitrage","Glass"),3],[tt("Cadre","Frame"),4],[tt("Menuiserie","Joinery"),2],["",2]];
+  const top=uw?'<tr class="tp"><td colspan="11">'+tt("Uw Moyenne","Uw Total")+'</td><td>'+dN(tA?tX/tA:null,2)+'</td><td></td></tr>'
+    :'<tr class="tp"><td colspan="11">'+tt("Moyenne","Total")+'</td><td>'+d3(tA?tX/tA:null)+'</td><td>'+d3(tA?tY/tA:null)+'</td><td colspan="2"></td></tr>';
   const baslik=uw?tt("NOTE DE CALCUL PERFORMANCE THERMIQUE Uw (EN ISO 10077-1)","THERMAL PERFORMANCE CALCULATION NOTE Uw (EN ISO 10077-1)"):tt("NOTE DE CALCUL PERFORMANCE THERMIQUES Sw et Tlw","THERMAL PERFORMANCE CALCULATION NOTE Sw and Tlw");
   const dip=uw?tt("Valeur Uw déclarée selon EN ISO 10077-1 · Df/Bini/Uf : caractéristiques de la gamme · Ψg : ","Declared Uw value according to EN ISO 10077-1 · Df/Bini/Uf: window range data · Ψg: ")+(S.psi!=null?"Warm Edge":tt("gamme","window range"))
     :tt("Sff = 0 (apport solaire du cadre négligé) · Sfg, Tlg : caractéristiques du vitrage","Sff = 0 (solar gain through the frame neglected) · Sfg, Tlg: glazing data");
@@ -1458,13 +1461,13 @@ function perfPdf(tur){
   +'.antet{display:flex;align-items:center;justify-content:space-between;background:#086324;border-bottom:5px solid #7AC142;color:#fff;padding:6px 10px}.antet img{height:52px}.antet .t{text-align:right;font-family:Calibri,Arial;font-size:10px;line-height:1.35}.antet .t b{font-size:13px}'
   +'h1{margin:8px 0 2px;text-align:center;color:#2B4714;font-size:15px}.pr{text-align:center;margin:0 0 6px;font-size:10px}'
   +'table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:3px 4px;text-align:center;vertical-align:middle}tr{page-break-inside:avoid}'
-  +'th{background:#16324F;color:#fff;font-size:8.5px}tr.gr th{background:#D9EACA;color:#2B4714;font-size:9.5px}tr.gr th.b{background:#fff;border:none}td:first-child{text-align:left;white-space:nowrap}'
+  +'th{background:#9BBB59;color:#fff;font-size:8.5px}td.y{background:#FFFFCC}tr.gr th{background:#D9EACA;color:#2B4714;font-size:9.5px}tr.gr th.b{background:#fff;border:none}td:first-child{text-align:left;white-space:nowrap}'
   +'tr.tp td{font-weight:bold;font-size:10.5px;background:#D9EACA}tr.tp td:first-child{text-align:right}.dip{margin-top:6px;font-size:8.5px}'
   +'</style></head><body>'
   +'<div class="antet"><img src="'+(EN()?window.SOUM_IMG.logoEn:window.SOUM_IMG.logo)+'"><div class="t"><b>'+esc(antet()[0])+'</b><br>'+antet().slice(1).map(esc).join("<br>")+'</div></div>'
   +'<h1>'+baslik+'</h1><p class="pr">'+esc([$("f_proje").value,$("f_ref").value?"Ref. "+$("f_ref").value:"",tar.toLocaleDateString(EN()?"en-GB":"tr-TR")].filter(Boolean).join(" · "))+'</p>'
-  +'<table><thead><tr class="gr">'+grp.map(g=>'<th colspan="'+g[1]+'"'+(g[0]?'':' class="b"')+'>'+g[0]+'</th>').join("")+'</tr><tr>'+bas.map(b=>'<th>'+b+'</th>').join("")+'</tr></thead><tbody>'
-  +rows.map(r=>'<tr>'+r.map(v=>'<td>'+v+'</td>').join("")+'</tr>').join("")+top+'</tbody></table>'
+  +'<table><thead><tr class="gr">'+grp.map(g=>'<th colspan="'+g[1]+'"'+(g[0]?'':' class="b"')+'>'+g[0]+'</th>').join("")+'</tr><tr>'+basG.map(b=>'<th>'+b+'</th>').join("")+'</tr></thead><tbody>'
+  +rowsG.map(r=>'<tr>'+r.map((v,i)=>'<td'+(YS.includes(i)?' class="y"':'')+'>'+v+'</td>').join("")+'</tr>').join("")+top+'</tbody></table>'
   +'<p class="dip">'+esc(dip)+'</p>'
   +'<script>window.onload=function(){setTimeout(function(){window.print();},300);};<\/script></body></html>';
   w.document.open(); w.document.write(html); w.document.close();
