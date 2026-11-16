@@ -137,7 +137,7 @@
       <label for="pn_notlar">Müşteriye bildirilecek notlar — mail'de eklenecek bilgiler (her satır bir not)</label><textarea id="pn_notlar" rows="6"></textarea>
       <label for="pn_etut" style="display:block;margin-top:8px">Teklifle ilgili etüte bildirilmesi gereken notlar (her satır bir not)</label><textarea id="pn_etut" rows="5"></textarea><!-- SOUM-ETUT -->
     </div>
-    <button class="btn" id="btnExcel">Excel'i indir</button> <button class="btn" id="btnPdf" style="background:#16324f">PDF oluştur</button> <button class="btn" id="btnKaydet" style="background:#7a4b00">Formu kaydet</button><!-- SOUM-261113-KAYDET --> <button class="btn" id="btnTutanak" style="background:#086324">Etüt Tutanak PDF'i oluştur</button>
+    <button class="btn" id="btnExcel">Excel'i indir</button> <button class="btn" id="btnPdf" style="background:#16324f">PDF oluştur</button> <button class="btn" id="btnUwPdf" style="background:#16324f">Uw</button> <button class="btn" id="btnSwPdf" style="background:#16324f">Sfw – Tlw</button><!-- SOUM-PERF-PDF --> <button class="btn" id="btnKaydet" style="background:#7a4b00">Formu kaydet</button><!-- SOUM-261113-KAYDET --> <button class="btn" id="btnTutanak" style="background:#086324">Etüt Tutanak PDF'i oluştur</button>
   </div>
 </div>
 
@@ -1430,6 +1430,47 @@ function sartHtml(){ const ul=a=>'<ul>'+a.map(t=>'<li>'+esc(t)+'</li>').join("")
 function glosHtml(){ const SR=DIL()==="en"?window.SOUM_SART_EN:window.SOUM_SART, vrVar=S.poz.some(p=>p.ozl.panjur), gl=a=>'<div class="gl">'+a.map(x=>'<b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span>').join("")+'</div>';
   return '<div class="sart glos"><h2>'+tt("GLOSSAIRE","GLOSSARY")+'</h2>'+gl(SR.glossaire)+'<h3>'+esc(SR.dimensions.t)+'</h3>'+gl(SR.dimensions.m)+(vrVar&&SR.dimensions.vr.m.length?'<div class="vrb">'+esc(SR.dimensions.vr.bas[0])+'<b>'+esc(SR.dimensions.vr.bas[1])+'</b></div><div class="gl vr">'+SR.dimensions.vr.m.map(x=>'<b>'+esc(x[0])+'</b><span>'+esc(x[1])+'</span>').join("")+'</div>':'')+'</div>'; }
 $("btnPdf").onclick=pdfYap;
+/* SOUM-PERF-PDF (16.11.2026, Melike Başaran): Uw ve Sfw – Tlw düğmeleri — Excel'deki "Uw" / "Sfw-Tlw" sayfalarının PDF çıktısı (hesap Excel ile aynı: EN ISO 10077-1, Sff = 0) */
+function perfPdf(tur){
+  if(!S.poz.length){ durum("Önce pozları okuyunuz.","uyari"); return; }
+  const w=window.open("","_blank"); if(!w){ durum("Açılır pencere engellendi; tarayıcıda bu siteye açılır pencere izni veriniz.","hata"); return; }
+  hesapla(); const uw=tur==="uw", d3=v=>dN(v,3);
+  let tA=0,tX=0,tY=0;
+  const rows=S.poz.map(p=>{ const G=seriGeo(p.seri), psi=S.psi!=null?S.psi:G.p2;
+    const A=p.L/1000, B=p.H/1000, Ag=(A-2*G.df)*(B-2*G.df), Aw=A*B, Af=Aw-Ag, lg=2*((A-2*(G.df-G.bi))+(B-2*(G.df-G.bi))), n=+p.F||0;
+    if(uw){ const u=G.uf!=null&&p.ug!=null&&psi!=null?(Ag*p.ug+Af*G.uf+lg*psi)/Aw:null; if(u!=null){ tA+=n; tX+=u*n; }
+      return [esc(p.kod),esc(p.seri),dN(A,2),dN(B,2),d3(G.df),d3(G.bi),d3(Ag),dN(p.ug,2),d3(Af),d3(G.uf),d3(lg),d3(psi),d3(Aw),'<b>'+dN(u,2)+'</b>',n,d3(u!=null?u*n:null)]; }
+    const tl=p.tl!=null?p.tl/100:null, sw=p.sg!=null?p.sg*Ag/Aw:null, tlw=tl!=null?tl*Ag/Aw:null; if(sw!=null||tlw!=null){ tA+=n; tX+=(sw||0)*n; tY+=(tlw||0)*n; }
+    return [esc(p.kod),esc(p.seri),dN(A,2),dN(B,2),d3(G.df),d3(G.bi),d3(Ag),dN(p.sg,2),dN(tl,2),d3(Af),d3(Aw),"0",d3(Ag/Aw),'<b>'+d3(sw)+'</b>','<b>'+d3(tlw)+'</b>',n,d3(sw!=null?sw*n:null),d3(tlw!=null?tlw*n:null)]; });
+  const bas=uw?[tt("N° de chassis","Window ref."),"Seri",tt("A-Largeur (m)","A-Width (m)"),tt("B-Hauteur (m)","B-Height (m)"),"Df","Bini","Ag","Ug","Af","Uf","lg","Ψg","Aw","Uw","Adet","Uw × Adet"]
+    :[tt("N° de chassis","Window ref."),"Seri",tt("A-Largeur (m)","A-Width (m)"),tt("B-Hauteur (m)","B-Height (m)"),"Df","Bini","Ag","Sfg","Tlg","Af","Aw","Sff","σ = Ag/Aw","Sfw","Tlw","Adet","Sw × Adet","Tlw × Adet"];
+  const grp=uw?[["",2],[tt("Dimensions","Dimension"),4],[tt("Vitrage","Glass"),2],[tt("Cadre","Frame"),2],["Intercalaire",2],[tt("Menuiserie","Joinery"),2],["",2]]
+    :[["",2],[tt("Dimensions","Dimension"),4],[tt("Vitrage","Glass"),3],[tt("Cadre","Frame"),4],[tt("Menuiserie","Joinery"),2],["",3]];
+  const top=uw?'<tr class="tp"><td colspan="13">'+tt("Uw Moyenne","Uw Total")+'</td><td>'+dN(tA?tX/tA:null,2)+'</td><td colspan="2"></td></tr>'
+    :'<tr class="tp"><td colspan="13">'+tt("Moyenne","Total")+'</td><td>'+d3(tA?tX/tA:null)+'</td><td>'+d3(tA?tY/tA:null)+'</td><td colspan="3"></td></tr>';
+  const baslik=uw?tt("NOTE DE CALCUL PERFORMANCE THERMIQUE Uw (EN ISO 10077-1)","THERMAL PERFORMANCE CALCULATION NOTE Uw (EN ISO 10077-1)"):tt("NOTE DE CALCUL PERFORMANCE THERMIQUES Sw et Tlw","THERMAL PERFORMANCE CALCULATION NOTE Sw and Tlw");
+  const dip=uw?tt("Valeur Uw déclarée selon EN ISO 10077-1 · Df/Bini/Uf : caractéristiques de la gamme · Ψg : ","Declared Uw value according to EN ISO 10077-1 · Df/Bini/Uf: window range data · Ψg: ")+(S.psi!=null?"Warm Edge":tt("gamme","window range"))
+    :tt("Sff = 0 (apport solaire du cadre négligé) · Sfg, Tlg : caractéristiques du vitrage","Sff = 0 (solar gain through the frame neglected) · Sfg, Tlg: glazing data");
+  const tar=$("f_tarih").value?new Date($("f_tarih").value+"T12:00:00"):new Date(), yy=tar.toISOString().slice(2,10).replace(/-/g,"");
+  const ad=((uw?"Uw_":"Sfw-Tlw_")+((S.baslik&&S.baslik[1])||$("f_proje").value)+"_"+((S.baslik&&S.baslik[0])||$("f_firma").value)+"_"+yy+(EN()?"_EN":"")).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_");
+  const html='<!doctype html><html lang="'+DIL()+'"><head><meta charset="utf-8"><title>'+esc(ad)+'</title><style>'
+  +'@page{size:A4 landscape;margin:8mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#000;font-size:9px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+  +'.antet{display:flex;align-items:center;justify-content:space-between;background:#086324;border-bottom:5px solid #7AC142;color:#fff;padding:6px 10px}.antet img{height:52px}.antet .t{text-align:right;font-family:Calibri,Arial;font-size:10px;line-height:1.35}.antet .t b{font-size:13px}'
+  +'h1{margin:8px 0 2px;text-align:center;color:#2B4714;font-size:15px}.pr{text-align:center;margin:0 0 6px;font-size:10px}'
+  +'table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:3px 4px;text-align:center;vertical-align:middle}tr{page-break-inside:avoid}'
+  +'th{background:#16324F;color:#fff;font-size:8.5px}tr.gr th{background:#D9EACA;color:#2B4714;font-size:9.5px}tr.gr th.b{background:#fff;border:none}td:first-child{text-align:left;white-space:nowrap}'
+  +'tr.tp td{font-weight:bold;font-size:10.5px;background:#D9EACA}tr.tp td:first-child{text-align:right}.dip{margin-top:6px;font-size:8.5px}'
+  +'</style></head><body>'
+  +'<div class="antet"><img src="'+(EN()?window.SOUM_IMG.logoEn:window.SOUM_IMG.logo)+'"><div class="t"><b>'+esc(antet()[0])+'</b><br>'+antet().slice(1).map(esc).join("<br>")+'</div></div>'
+  +'<h1>'+baslik+'</h1><p class="pr">'+esc([$("f_proje").value,$("f_ref").value?"Ref. "+$("f_ref").value:"",tar.toLocaleDateString(EN()?"en-GB":"tr-TR")].filter(Boolean).join(" · "))+'</p>'
+  +'<table><thead><tr class="gr">'+grp.map(g=>'<th colspan="'+g[1]+'"'+(g[0]?'':' class="b"')+'>'+g[0]+'</th>').join("")+'</tr><tr>'+bas.map(b=>'<th>'+b+'</th>').join("")+'</tr></thead><tbody>'
+  +rows.map(r=>'<tr>'+r.map(v=>'<td>'+v+'</td>').join("")+'</tr>').join("")+top+'</tbody></table>'
+  +'<p class="dip">'+esc(dip)+'</p>'
+  +'<script>window.onload=function(){setTimeout(function(){window.print();},300);};<\/script></body></html>';
+  w.document.open(); w.document.write(html); w.document.close();
+  durum((uw?"Uw":"Sfw – Tlw")+" PDF görünümü yeni sekmede açıldı: yazdırma penceresinde <b>PDF olarak kaydet</b>'i seçiniz (dosya adı: "+esc(ad)+".pdf).","ok");
+}
+$("btnUwPdf").onclick=()=>perfPdf("uw"); $("btnSwPdf").onclick=()=>perfPdf("sw");
 /* SOUM-ETUT (12.11.2026, Melike Başaran): Etüt Tutanak PDF'i — Arbor antetli; Proje Notu + Aksesuarlar (Pencad ekstra malzemeleri) + Camlar + poz tablosu (poz no, görsel, cam, ekstra malzeme seçimleri) */
 function tutanakYap(){
   if(!S.poz.length){ durum("Önce Pencad raporunu yükleyiniz.","hata"); return; }
