@@ -550,8 +550,8 @@ async function gorselSinif(url){
   const kanatlar=C.filter(o=>o.s.t==="ucgen"||o.s.t==="ok"), sabitler=C.filter(o=>o.s.t==="sabit"||o.s.t==="arti");
   /* kemer: en üstteki cam bölgesinin üst kenarı yatay değil */
   let arched=false; const ust0=C.slice().sort((a,b)=>a.y0-b.y0)[0];
-  if(ust0){ const w=ust0.x1-ust0.x0+1, h=ust0.y1-ust0.y0+1, id=B.indexOf(ust0), tY=f=>{ const x=Math.round(ust0.x0+f*(w-1)); for(let y=ust0.y0;y<=ust0.y1;y++) if(L[y*W+x]===id) return y; return null; };
-    const v=[0.12,0.3,0.5,0.7,0.88].map(tY); if(v.every(x=>x!=null)){ const es=Math.max(4,0.05*h); arched=(v[2]<Math.min(v[0],v[4])-es)||(Math.abs(v[0]-v[4])>es&&Math.min(v[0],v[4])<=v[2]&&v[2]<=Math.max(v[0],v[4])); } }
+  if(ust0){ const w=ust0.x1-ust0.x0+1, h=ust0.y1-ust0.y0+1, id=B.indexOf(ust0), tY=f=>{ const x=Math.round(ust0.x0+f*(w-1)); for(let y=ust0.y0;y<=ust0.y1;y++) if(L[y*W+x]===id&&T[y*W+x]===1) return y; return null; }; /* SOUM-261116-GORSEL: yalnız cam (mavi) pikseli; üst profildeki kırmızı menteşe işareti/gri profil kemer sayılmaz */
+    const v=[0.12,0.3,0.5,0.7,0.88].map(tY); if(v.every(x=>x!=null)){ const es=Math.max(4,0.05*h), art=v.every((x,i)=>!i||x>=v[i-1]-1), azl=v.every((x,i)=>!i||x<=v[i-1]+1); arched=(v[2]<Math.min(v[0],v[4])-es&&v[1]<v[0]&&v[3]<v[4])||(Math.abs(v[0]-v[4])>es&&(art||azl)); } }
   const r={kanat:kanatlar.length,arched,ust:false,alt:false,tip:"",en:"",tr:""};
   if(!C.length){ let n=0,a=W,b2=-1,c=Hh,e=-1; for(let i=0;i<N;i++) if(T[i]>=2){ n++; const x=i%W,y=(i-x)/W; if(x<a)a=x; if(x>b2)b2=x; if(y<c)c=y; if(y>e)e=y; }
     if(n>=20&&(b2-a)>0.35*W&&(e-c)>0.35*Hh) return Object.assign(r,{kanat:1,tip:"kapi",en:"Single door",tr:"Tek kanatlı kapı"}); return null; }
@@ -561,7 +561,7 @@ async function gorselSinif(url){
   else if(kanatlar.length===2&&kanatlar.every(o=>o.s.t==="ucgen")&&Math.abs(kanatlar[0].cy-kanatlar[1].cy)<0.25*Math.max(kanatlar[0].y1-kanatlar[0].y0,1)){ const [s1,s2]=kanatlar.slice().sort((a,b)=>a.cxx-b.cxx);
     if(s1.s.sag&&s2.s.sol) Object.assign(r,{tip:"fransiz",en:"French Window",tr:"Fransız açılım"}); }
   else if(kanatlar.length===1&&kanatlar[0].s.t==="ucgen"){ const s=kanatlar[0].s, yan=s.sol||s.sag;
-    if(yan&&(s.ust||s.alt)) Object.assign(r,{tip:"cift",en:"Tilt and turn window",tr:"Çift açılım"}); else if(yan) Object.assign(r,{tip:"tek",en:"Side Hung window",tr:"Tek açılım"}); }
+    if(yan&&(s.ust||s.alt)) Object.assign(r,{tip:"cift",en:"Tilt and turn window",tr:"Çift açılım"}); else if(yan) Object.assign(r,{tip:"tek",en:"Side Hung window",tr:"Tek açılım"}); else if(s.ust&&!s.alt) Object.assign(r,{tip:"vasistas",en:"Tilt window",tr:"Vasistas"}); /* SOUM-261116-GORSEL (16.11.2026, Melike Başaran): mavi alanda tepesi üstte üçgen → vasistas (Tilt window) */ }
   else if(!kanatlar.length) Object.assign(r,{tip:"sabit",en:"Fixed window",tr:"Sabit"});
   if(r.tip!=="giyotinGor"&&kanatlar.length){ const ky0=Math.min(...kanatlar.map(o=>o.y0)), ky1=Math.max(...kanatlar.map(o=>o.y1)); r.ust=sabitler.some(o=>o.cy<ky0); r.alt=sabitler.some(o=>o.cy>ky1); }
   return r; }
@@ -822,7 +822,15 @@ function frDen(p,L){ const sec=kSecL("den"), DN={alu:"Bavette Alu",ahs:"Bavette 
   return o; }
 /* SOUM-FR-PF (16.11.2026, Melike Başaran): Fransız notunda PF tipi — Standart → Seuil alu PMR (ilk satırda yoksa), SACC → Pièce d'appui bois, ACC → Bavette Alu */
 function frPf(p,L){ if(!p.pf) return L; const PT={STD:"Seuil alu PMR",SACC:"Pièce d'appui bois",ACC:"Bavette Alu"}[p.pfTip]; if(!PT) return L; if(p.pfTip==="STD"&&/seuil PMR/i.test(L[0]||"")) return L; if(L.includes(PT)) return L; return [L[0],PT].concat(L.slice(1)); }
-function notMetin(p){ if(p.notElle!=null) return p.notElle; if(DIL()==="en"&&p.nf) return notEn(p); const mt=$("f_mont").value==="1"?"Mortaise entrée d'air + Pose":"Mortaise entrée d'air"; return frPf(p,frDen(p,p.notSat)).map(x=>x==="MORTAISE"?mt:x).concat(notEk(p,false)).join("\n"); }
+/* SOUM-261116-GORSEL (16.11.2026, Melike Başaran): poz görseli kuralları Fransızca notta da — 1. satırdaki "Fenêtre/PF n vantail(x) OB/OF" görselden: tek → OF, çift → OB, vasistas → Soufflet,
+   Fransız → 2 vantaux, sabit → fixe, giyotin → guillotine, giyotin görünümlü → aspect guillotine (soufflet bas); kemer → cintrée; üst ışıklık → imposte fixe, alt sabit → allège fixe. Görsel tanınmazsa Pencad metni. */
+function frGs(p,L){ const G=p.gs; if(!G||!G.tip||G.tip==="kapi"||!L||!L.length) return L; let s=L[0]; const m=/(Fenêtre|PF) (1 vantail|2 vantaux)( (OB|OF))?/.exec(s); if(!m) return L;
+  const ad=m[1]+(G.arched?" cintrée":""), v2=(G.kanat||1)>=2?"2 vantaux":"1 vantail", ac=m[4]||"";
+  const yeni={tek:ad+" "+v2+" OF",cift:ad+" "+v2+" OB",vasistas:ad+" "+v2+" Soufflet",fransiz:ad+" 2 vantaux"+(ac?" "+ac:""),sabit:ad+" fixe",giyotin:ad+" guillotine"+((G.kanat||1)>=2?" 2 vantaux":""),giyotinGor:ad+" aspect guillotine, soufflet bas"}[G.tip];
+  if(!yeni) return L; s=s.replace(m[0],yeni);
+  const ekle=t=>{ if(s.includes(t)) return; s=/ avec /.test(s)?s.replace(" avec "," avec "+t+" et "):s.replace(/\.?$/," avec "+t+"."); };
+  if(G.ust) ekle("imposte fixe"); if(G.alt) ekle("allège fixe"); return [s].concat(L.slice(1)); }
+function notMetin(p){ if(p.notElle!=null) return p.notElle; if(DIL()==="en"&&p.nf) return notEn(p); const mt=$("f_mont").value==="1"?"Mortaise entrée d'air + Pose":"Mortaise entrée d'air"; return frPf(p,frDen(p,frGs(p,p.notSat))).map(x=>x==="MORTAISE"?mt:x).concat(notEk(p,false)).join("\n"); }
 const FACADE_EN={"Tunnel au nu intérieur":"In reveal, flush inside","App. Int.":"Internal face fix","App. Ext.":"External face fix","Feuillure":"Rebate"};
 const facadeAd=p=>DIL()==="en"?(FACADE_EN[p.facade]||p.facade):p.facade;
 
