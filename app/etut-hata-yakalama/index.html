@@ -57,7 +57,7 @@
 <body>
 <header>
   <h1>Etüt Hata Yakalama</h1>
-  <div class="sub">Yakalanan hatalar. Buraya girilen her satır Etüt-Proje Hataları formuna otomatik aktarılır. Yeni kayıt için en alttaki boş satırı doldurunuz; mevcut hücreler değiştirilince kaydedilir.</div>
+  <div class="sub">Yakalanan hatalar. Proje Hata Yakalama formuna girilen satırlar da burada görünür. Buraya girilen her satır Etüt-Proje Hataları formuna otomatik aktarılır. Yeni kayıt için en alttaki boş satırı doldurunuz; mevcut hücreler değiştirilince kaydedilir.</div>
 </header>
 <div class="wrap">
   <div class="btns durum"><span id="rolLbl"></span><span class="msg" id="msg"></span></div>
@@ -169,7 +169,7 @@ const num=v=>Number(v)||0;
 const D={hata:[],pers:[],yuk:[],mem:[],dk:[]}; const P={}; let KID={};  /* ETUT-KIDEM: etut_personel.id → kıdem (yıl), Personel panosu (maas_prim) */
 const kid=p=>KID[p.id];
 const TBL={hatalar:"etut_hata",etut:"etut_hata",icmal:"etut_personel",yuk:"etut_proje_yuk",mem:"etut_memnuniyet",dk:"etut_dk"};
-const rowsOf=id=>id==="hatalar"?D.hata.filter(r=>r.sayfa!=="etut"):id==="etut"?D.hata.filter(r=>r.sayfa==="etut"):id==="icmal"?D.pers:D[id];
+const rowsOf=id=>id==="hatalar"?D.hata.filter(r=>r.sayfa!=="etut"):id==="etut"?D.hata.filter(r=>r.sayfa==="etut"||r.sayfa==="proje") /* PROJE-YAKALAMA-BESLE (16.11.2026): Proje Hata Yakalama satırları da görünür ve düzenlenir */:id==="icmal"?D.pers:D[id];
 /* kişi eşleşmesi: ilk ad, metin içinde bağımsız kelime (Hatayı Yapan / Yakalayan serbest metin) */
 const ilk=p=>String(p.ad||"").trim().split(/\s+/)[0].toLocaleLowerCase("tr");
 const icerir=(txt,p)=>{ const f=ilk(p); if(!f) return false; const t=" "+String(txt||"").toLocaleLowerCase("tr")+" ";
