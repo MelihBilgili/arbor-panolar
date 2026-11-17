@@ -749,7 +749,7 @@ function cfoAc(L){
   /* CAM-FIYAT-ONAY-PENCERE: talep anındaki fiyat penceresi, betiksiz iframe'de aynen */
   p.querySelectorAll(".cfoR").forEach(R=>{ const f=R.querySelector("iframe.cfoW"), o=L.find(x=>x.id===+R.dataset.id); if(!f||!o) return;
     f.onload=()=>{ try{ f.style.height=(f.contentDocument.body.scrollHeight+4)+"px"; }catch(e){} };
-    f.srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>'+CFO_CSS+'</style></head><body><div id="cfPop">'+String(o.pencere).replace(/Referans Fiyat \(€\/m²\)/g,"Pencad Fiyatı (€/m²)")+'</div></body></html>'; });
+    f.srcdoc='<!DOCTYPE html><html><head><meta charset="utf-8"><style>'+CFO_CSS+'</style></head><body><div id="cfPop">'+String(o.pencere).replace(/ · \d+(?:[.,]\d+)? mm/g,"")/* CFO-KALINLIK-YOK */.replace(/Referans Fiyat \(€\/m²\)/g,"Pencad Fiyatı (€/m²)")+'</div></body></html>'; });
   const kapat=()=>{ p.remove(); grCfo(); };
   p.addEventListener("click",async e=>{ if(e.target===p||e.target.closest(".cfoX")) return kapat();
     const bt=e.target.closest("button[data-k]"); if(!bt) return; const R=bt.closest(".cfoR"), id=+R.dataset.id, S=R.querySelector(".cfoS");

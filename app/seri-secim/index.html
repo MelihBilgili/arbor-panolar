@@ -727,11 +727,12 @@ function cfIsle(w,r0){ const C0=r0.C, r={kombinasyon:C0.komb||C0.c,ug:C0.ug,lt:C
   sv("h_ug",r.ug,2); sv("h_tl",r.lt,2); sv("h_rw",r._rwctr,0); sv("h_sf",r.g,2);
   $w("pencad").value=""; $w("ref").value="";
   w.__KENDI=true; /* CAM-LISTE-KENDI: pencere her zaman camın kendisini fiyatlar */ w.calc(); return true; }
+const cfMmSil=s=>String(s).replace(/ · \d+(?:[.,]\d+)? mm/g,""); /* CFO-KALINLIK-YOK (17.11.2026, Melih): onay penceresinde toplam kalınlık gösterilmez */
 function cfAlt(w){ const o=w.document.getElementById("out"); if(!o) return "";
-  const hd=o.querySelector(".hdfw"); return (hd?hd.outerHTML:"")+[...o.querySelectorAll(".line.yk")].map(x=>x.outerHTML).join(""); }
+  const hd=o.querySelector(".hdfw"); return cfMmSil((hd?hd.outerHTML:"")+[...o.querySelectorAll(".line.yk")].map(x=>x.outerHTML).join("")); }
 function cfTalimat(w){ const d=w.document, o=d.getElementById("out"), ur=o&&o.querySelector(".unitrow");
   const ok=d.getElementById("pencadok"), rd=d.getElementById("refdif");
-  $("cfUnit").innerHTML=ur?ur.outerHTML:"";
+  $("cfUnit").innerHTML=ur?cfMmSil(ur.outerHTML):""; /* CFO-KALINLIK-YOK */
   $("cfDif").textContent=rd?rd.textContent:"–"; $("cfDif").className=rd?rd.className:"refdif";
   $("cfOk").style.display=ok&&ok.style.display!=="none"?"":"none";
   $("cfRef").disabled=$("cfPc").value!=="evet"; cfOnayUygula(); }

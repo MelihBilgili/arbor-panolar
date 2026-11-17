@@ -258,6 +258,7 @@ function yakinTek(q,P,u){const Z=P&&P.z;if(!Z||Z.R==null)return null;
     if(ci.length>1)continue;if(ci.length)fk.push('cam '+rc[ci[0]]+' → '+qc[ci[0]]);
     if(+p[1]!==+q.cu)fk.push('boşluk '+p[1]+' → '+q.cu);
     if(rf[1]!==qf[1]||rf[2]!==qf[2])fk.push('kaplama '+(rf[2]?'solar':rf[1]?'Low-E':'yok')+' → '+(qf[2]?'solar':qf[1]?'Low-E':'yok'));
+    else if(rf[2]&&qf[2]){/* CAM-YAKIN-KAPLAMA (17.11.2026, Melih): solar kaplama türü (N(50/33) vb.) farklı ya da teklifte belirtilmemişse "Aynı" denmez */const ko=CAMF.coat(r.komb)||'',kq=q.coat||'',ka=c=>c?(KAP_AD[c]||String(c).replace(/^n(\d\d)(\d\d)$/,'N($1/$2)')):'türü belirtilmemiş';if(ko!==kq)fk.push('solar kaplama '+ka(ko)+' → '+ka(kq));}
     for(const i of [4,5,6,7])if(rf[i]!==qf[i])fk.push(AD[i]+(qf[i]?' var':' yok'));
     if(rf[8]!==qf[8]||rf[9]!==qf[9])fk.push('Ar/WE '+(rf[8]?'Ar':'hava')+(rf[9]?'-WE':'')+' → '+(qf[8]?'Ar':'hava')+(qf[9]?'-WE':''));
     if(fk.length>1)continue;
