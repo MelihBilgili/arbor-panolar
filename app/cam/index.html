@@ -163,7 +163,7 @@ const NORM=[[/\bar\s?90\b/gi,'Ar'],[/stadip\s+silence|\bsilence\b|stratophone/gi
   [/planitherm(\s*(xn|one|ultra\s?n|neo|lux|total\+?))?(\s*ii)?(\s*t)?(\s*fg)?/gi,'Low-e'],[/\benergy\b/gi,'Solar Low-e'],[/stopray(\s*(vision|neutral|ultraselect|smart|silver|grey))?/gi,'Solar Low-e'],
   [/duosol(\s*t)?|ecosol(\s*t)?|climax\s+select/gi,'Solar Low-e'],[/superselekt|\bselekt\b|\bcombi(\s*(neutral|grey|silver))?/gi,'Solar Low-e'],[/sunguard(\s*superneutral)?(\s*s?nx?)?|\bsnx?(?=\s*\(?\d)/gi,'Solar Low-e'],
   [/\bhp\b(?=\s+(neutral|silver|bronze|royal|light|amber|bright))/gi,'Solar Low-e'],[/guardian\s+sun\b/gi,'Solar Low-e'],[/climaguard\s+solar/gi,'Solar Low-e'],[/iplus(\s*(1\.[01]\s*n?t?|ls|top\s*1\.0))?/gi,'Low-e'],
-  [/\bclimax(\s*t)?/gi,'Low-e'],[/en2plus|zero\s+ng|\btriii(\s*e)?\b/gi,'Low-e'],[/climaguard(?!\s+dry)(\s*(premium\s?2|1\.0\+?|neutral\s*70|a\s*1[.,][01]))?(\s*t)?/gi,'Low-e'],[/planibel\s*(g\s*fast|g|a)\b/gi,'Low-e'],[/ultra\s?clear|extra\s?clear/gi,'Extra Clear']];
+  [/\bclimax(\s*t)?/gi,'Low-e'],[/en2plus|zero\s+ng|\btriii(\s*e)?\b/gi,'Low-e'],[/climaguard(?!\s+dry)(\s*(premium\s?2|1\.0\+?|neutral\s*70|a\s*1[.,][01]))?(\s*t)?/gi,'Low-e'],[/planibel\s*(g\s*fast|g|a)\b/gi,'Low-e'],[/ultra\s?clear|extra\s?clear/gi,'Extra Clear'],/* CAM-YANGIN-AD (17.11.2026, Melih): yangın camı marka adları; Contraflam-30 = EI30 (30 dk), Contraflam Lite 60 = EW60 */[/contraflam\s*lite\s*-?\s*(\d{2,3})\b/gi,'EW$1 Fire Proof'],[/(?:contraflam|pyrostop|pyrobelite|pyrobel|pyroswiss|vetroflam)\s*-?\s*(\d{2,3})\b/gi,'EI$1 Fire Proof'],[/contraflam(\s*lite)?|pyrostop|pyrobelite|pyroswiss|vetroflam/gi,'Fire Proof']];
 function normKomb(k){let s=String(k);for(const[rx,r]of NORM)s=s.replace(rx,r);s=s.replace(/([A-Za-zÇĞİÖŞÜçğıöşü(]\s?)(\d{2})\/(\d{2})/g,'$1$2_$3');return s.replace(/Solar Low-e\s+Low-e/g,'Solar Low-e').replace(/(Low-e)(\s+Low-e)+/g,'$1');}
 function feats(k){k=normKomb(k);const p=parse(k),s=low(k),P=p.panes,n=P.length,o={npane:n};
   o.cav=p.cav?p.cav:0;o.triple=(p.ncav||1)>=2?1:0;o.tg=P.reduce((a,x)=>a+x.mm,0);o.nlam=P.reduce((a,x)=>a+x.lam,0);
@@ -172,7 +172,7 @@ function feats(k){k=normKomb(k);const p=parse(k),s=low(k),P=p.panes,n=P.length,o
   o.codes=P.map(x=>x.code!=null?x.code:ncode(x.mm));
   const t=r=>RB(r).test(s)?1:0;
   o.acoustic=t('akust|acoust|aks|acs');o.satin=t('satin|satine|sablé|sable|buzlu|desenli');o.temper=t('temper|tmp|temp\\.');
-  o.fireproof=t('fire|ei60|e30|ei 60|eı60|eı30|eı 60|pyrobel');o.coollite=s.includes('cool lite')?1:0;o.planitherm=s.includes('planitherm')?1:0;o.energy=s.includes('energy')?1:0;
+  o.fireproof=t('fire|ei60|e30|ei 60|eı60|eı30|eı 60|pyrobel|ei ?\\d\\d|ew ?\\d\\d');o.coollite=s.includes('cool lite')?1:0;o.planitherm=s.includes('planitherm')?1:0;o.energy=s.includes('energy')?1:0;
   o.sisecam=t('şişecam.*(solar|low)');o.solar=(t('solar|sunguard|solaire|70/37|konfor')&&!o.coollite)?1:0;
   o.lowe=(t('low-?\\s?e|lowe|\\bfe\\b|planitherm|konfor')||o.solar||o.coollite||o.energy)?1:0;
   o.extraclear=t('extra ?clear|ultra ?clear|extraclear');o.argon=t('\\bar\\b|ar-|argon|arg\\b| ar ');
