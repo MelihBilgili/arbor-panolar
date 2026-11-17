@@ -211,7 +211,7 @@ let CAT=buildCat(LISTE_SNAP);
     if(!r.ok)continue;const d=await r.json();if(Array.isArray(d)&&d.length){CAT=buildCat(d);calc();return;}
   }}catch(e){}})();
 /* CAM-V8 YAKIN-SATIRLAR: cam listesi / fiyat teklifleri en yakin kombinasyonlar */
-const nmT=s=>String(s).replace(/\s*\|\|\|.*$/,'').replace(/,?\s*Ug\s*=\s*[\d.,]+/i,'').trim();
+const nmT=s=>String(s).replace(/\s*\|\|\|.*$/,'').replace(/,?\s*Ug\s*=\s*[\d.,]+/i,'').replace(/\bacoustic\b/gi,'Akustik').trim(); /* CAM-AKUSTIK-TEK (17.11.2026, Melih): ekranda tek terim — Acoustic → Akustik */
 function Dq(q,C){const m=k=>(C[k]||0)!==(q[k]||0)?1:0;
   return 100*m('tr')+10*m('lowe')+4*m('solar')+3*m('ac')+3*m('sat')+3*m('fp')+2*m('xc')+m('ar')+m('we')+0.5*m('tp')+2*((C.coat||'')!==(q.coat||'')?1:0)
     +1.5*(C.c[0]!==q.c[0]?1:0)+1.5*(C.c[C.c.length-1]!==q.c[q.c.length-1]?1:0)+Math.abs(C.tg-q.tg)/2+0.7*Math.abs((C.nlam||0)-(q.nlam||0))+Math.abs(C.cav-q.cav)/6;}
