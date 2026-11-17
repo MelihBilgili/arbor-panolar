@@ -738,7 +738,7 @@ function cfTalimat(w){ const d=w.document, o=d.getElementById("out"), ur=o&&o.qu
 function cfKapat(){ const p=$("cfPop"); if(p) p.remove(); }
 async function cfAc(r,onay){
   cfKapat(); window._CFR=r; window._CFONAY=onay||null; /* CAM-FIYAT-ONAY */
-  const komb=esc(String(r.C.c||r.C.komb||"").replace(/Ar90\b/g,"Ar"));
+  const komb=esc(String(r.C.c||r.C.komb||"").replace(/Ar90\b/g,"Ar").replace(/\bacoustic\b/gi,"Akustik")); /* CAM-AKUSTIK-TEK (17.11.2026) */
   document.body.insertAdjacentHTML("beforeend",'<div id="cfPop"><div class="cfk"><div class="cfh"><div><div class="lbl">Cam Fiyatlandırma panosunda</div><b>'+komb+'</b> · '+esc(sAd(r))+'</div><button class="cfx" title="Kapat">✕</button></div>'
     +'<div id="cfAlt"><div class="lv">Hesaplanıyor…</div></div>'
     +'<button class="cfbtn" id="cfBtn">Fiyat kullanım talimatı al</button>'
@@ -771,7 +771,7 @@ async function cfTalepGonder(w){
   const u=$("cfUnit"); if(!u||!u.querySelector(".bfwarn")) return;
   const birim=+w._BF, pencad=parseFloat(String($("cfRef").value).replace(",","."));
   if(!(birim>0&&pencad>0)) return;
-  const komb=String(r.C.c||r.C.komb||"").replace(/Ar90\b/g,"Ar"), seri=sAd(r), key=komb+"|"+seri+"|"+pencad;
+  const komb=String(r.C.c||r.C.komb||"").replace(/Ar90\b/g,"Ar").replace(/\bacoustic\b/gi,"Akustik"), seri=sAd(r), key=komb+"|"+seri+"|"+pencad;
   if(_cfoGiden.has(key)) return; _cfoGiden.add(key);
   const o=w.document.getElementById("out"), tx=(x,s)=>{ const e=x.querySelector(s); return e?e.textContent.trim():""; };
   const satirlar=o?[...o.querySelectorAll(".line.yk")].map(x=>({lbl:tx(x,".ll"),fiyat:tx(x,".yp")||tx(x,".yl .lv"),deger:tx(x,".yl .lv"),komb:tx(x,".yr b")})):[];
