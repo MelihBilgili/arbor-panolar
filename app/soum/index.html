@@ -818,6 +818,7 @@ function pozCiz(){
     if(k==="ekf"){ const x=String(v).trim()===""?null:trNum(v); p.ekF=x==null||isNaN(x)?null:x; hesapla(); return; } /* SOUM-EKFIYAT */
     if(k==="revnot"){ p.revNot=v; return; } /* SOUM-POZ-REVNOT */
     if(k==="camFr"){ p.camElle=1; } if(k==="notlar"){ p.notElle=v; } else if(k==="pfTip"){ p.pfTip=v; if(!p.kodElle) p.kod=kodAd(p.kodPdf,v); pozCiz(); } else { if(k==="kod") p.kodElle=1; p[k]=v; } hesapla(); }; });
+  notGerekceBagla(el); /* SOUM-NOTES-GEREKCE */
 }
 function hucre(p,k,i){
   const v=p[k[0]];
@@ -1103,7 +1104,7 @@ async function hucreyeResim(buf,HC){
   z.file(CT,ct);
   return await z.generateAsync({type:"arraybuffer",compression:"DEFLATE"});
 }
-async function excelYap(){ if(revEksik()) return; /* SOUM-REVIZE-ARSIV */
+async function excelYap(){ if(xlYasakMi()) return; /* SOUM-XL-YETKI */ if(revEksik()) return; /* SOUM-REVIZE-ARSIV */
   if(!S.poz.length) return;
   durum("Excel hazırlanıyor…");
   try{
@@ -1311,6 +1312,26 @@ function pnKapi(f){ return function(){ if(S.poz.length){ const L=pnEksik(); if(L
   alert("İndirmeden önce 6 · Proje Notu'ndaki tüm alanlar doldurulmalı (uygulanmıyorsa \"-\" yazınız).\n\nBoş alanlar: "+ad.join(", "));
   L[0].scrollIntoView({block:"center"}); L[0].focus(); return; } } return f.apply(this,arguments); }; }
 $("btnOku").onclick=oku; $("btnExcel").onclick=pnKapi(excelYap);
+/* SOUM-XL-YETKI (17.11.2026, Melih onayı; Melike Başaran talebi 16.11): "Excel'i indir" ve arşivdeki "Excel" düğmesi AN Ayşe Nurçin, AYO Ayşenur Özdemir, OKA Okan Altun'da gizli (yalnız arayüz kısıtı). */
+var XL_YASAK=["AN","AYO","OKA"];
+function xlKisi(){ try{ return (typeof ARB_EMAIL!=="undefined"&&window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null; }catch(e){ return null; } }
+function xlYasakMi(){ const k=xlKisi(); return !!(k&&XL_YASAK.includes(String(k.kod||"").toUpperCase())); }
+if(xlYasakMi()&&$("btnExcel")) $("btnExcel").style.display="none";
+/* SOUM-NOTES-GEREKCE (17.11.2026, Melih onayı; Melike Başaran talebi 16.11): bu üç kullanıcı Pozlar'da Notes'u düzenlemeden önce gerekçe yazar; soum_notes_gerekce tablosuna aday kural olarak kaydedilir (otomatik kural olmaz), Cuma 17:00 raporuyla Melike Başaran'a gider. */
+var NOT_GRK=new WeakMap();
+function gerekceSor(p,ta){ const o=document.createElement("div"); o.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;display:flex;align-items:center;justify-content:center";
+  o.innerHTML='<div style="background:#fff;border-radius:10px;padding:18px;width:min(460px,92vw);box-shadow:0 8px 30px rgba(0,0,0,.25)"><div style="font-weight:600;margin-bottom:6px">Poz '+esc(p.no||p.kod||"")+' · Notes</div><div style="margin-bottom:8px">Bu düzenlemeyi neden yapıyorsunuz?</div><textarea rows="4" style="width:100%;box-sizing:border-box"></textarea><div class="mini" style="color:#b00020;min-height:1.2em"></div><div style="text-align:right;margin-top:8px"><button class="btn2" data-x="0">Vazgeç</button> <button class="btn" data-x="1">Devam</button></div></div>';
+  document.body.appendChild(o); const t=o.querySelector("textarea"); t.focus();
+  o.querySelector('[data-x="0"]').onclick=()=>o.remove();
+  o.querySelector('[data-x="1"]').onclick=()=>{ const g=t.value.trim(); if(!g){ o.querySelector(".mini").textContent="Gerekçe yazınız."; t.focus(); return; } NOT_GRK.set(p,{g:g,eski:ta.value}); o.remove(); ta.focus(); }; }
+async function gerekceKaydet(p,r,yeni){ if(String(yeni)===String(r.eski)) return; const k=xlKisi();
+  try{ const q=await SB.from("soum_notes_gerekce").insert({kisi_kod:k?k.kod:"",kisi_ad:k?k.ad:"",proje:($("f_proje")||{}).value||"",poz:String(p.no||p.kod||""),eski_not:r.eski,yeni_not:yeni,gerekce:r.g}); if(q.error) throw q.error; }
+  catch(e){ alert("Notes gerekçesi kaydedilemedi: "+(e.message||e)); } }
+function notGerekceBagla(el){ if(!xlYasakMi()) return;
+  el.querySelectorAll('textarea[data-k="notlar"]').forEach(ta=>{
+    ta.addEventListener("focus",()=>{ const p=S.poz[+ta.closest("tr").dataset.i]; if(!p||NOT_GRK.has(p)) return; ta.blur(); gerekceSor(p,ta); });
+    ta.addEventListener("change",()=>{ const p=S.poz[+ta.closest("tr").dataset.i]; const r=p&&NOT_GRK.get(p); if(!r) return; NOT_GRK.delete(p); gerekceKaydet(p,r,ta.value); }); }); }
+
 function enGoster(){ const en=EN(), a=$("enAlan"), dn=$("f_k_den"); a.style.display=""; [...a.children].forEach(c=>{ c.style.display=(en||c.contains(dn))?"":"none"; }); } /* SOUM-261113-DEN (13.11.2026, Melike Başaran): Denizlik seçimi Fransızcada da görünür */
 ["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_vitro","f_k_den","f_k_pervaz","f_k_sove","f_pas","f_op_ins","f_op_cam","f_op_mv","f_op_pmr","f_op_cage","f_op_manitou","f_op_grue"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto"||id==="f_bolge") notDoldur(); if(id==="f_disi"&&$("f_disi").value==="1") alert("Duvar dışı montaj seçildi — Eker eklendi mi?"); /* SOUM-ETUT */ });
 $("f_revize").onchange=()=>{ revGoster(); pozCiz(); hesapla(); }; $("f_revnot").oninput=revNotYaz; /* SOUM-REVIZE-ARSIV */
@@ -1346,7 +1367,7 @@ function arsivCiz(){ const q=nrmTxt($("arsivAra").value), L=ARSIV.filter(r=>!q||
   const tf=d=>d?new Date(d).toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"";
   const para=(v,p)=>v==null?"":(+v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+(p==="GBP"?" £":" €");
   $("arsivListe").innerHTML=L.length?'<table><thead><tr><th class="l">Oluşturma</th><th class="l">Proje</th><th class="l">Firma</th><th>Ref</th><th>Dil</th><th>Poz</th><th>Ürün</th><th>Livré / Delivered</th><th class="l">Hazırlayan</th><th class="l">Oluşturan</th><th></th></tr></thead><tbody>'
-    +L.map(r=>'<tr><td class="l">'+tf(r.olusturma)+'</td><td class="l">'+esc(r.proje)+(r.revize?' <span class="mini">(revize)</span>':'')+'</td><td class="l">'+esc(r.firma)+'</td><td>'+esc(r.ref)+'</td><td>'+(r.dil==="en"?"EN":"FR")+'</td><td>'+(r.poz_adet??"")+'</td><td>'+(r.urun_adet??"")+'</td><td class="num">'+para(r.toplam,r.para_birimi)+'</td><td class="l">'+esc(r.hazirlayan)+'</td><td class="l mini">'+esc(r.olusturan_kisi)+'</td><td style="white-space:nowrap">'+(r.depo_yolu?'<button class="btn2" data-ai="'+r.id+'">Excel</button>':'')+(r.form_yolu?' <button class="btn2" data-af="'+r.id+'">Formu aç</button> <button class="btn2" data-arv="'+r.id+'" title="Kayıtlı formu revizyon olarak aç">Revize</button>':'')+'</td></tr>').join("")+'</tbody></table>'
+    +L.map(r=>'<tr><td class="l">'+tf(r.olusturma)+'</td><td class="l">'+esc(r.proje)+(r.revize?' <span class="mini">(revize)</span>':'')+'</td><td class="l">'+esc(r.firma)+'</td><td>'+esc(r.ref)+'</td><td>'+(r.dil==="en"?"EN":"FR")+'</td><td>'+(r.poz_adet??"")+'</td><td>'+(r.urun_adet??"")+'</td><td class="num">'+para(r.toplam,r.para_birimi)+'</td><td class="l">'+esc(r.hazirlayan)+'</td><td class="l mini">'+esc(r.olusturan_kisi)+'</td><td style="white-space:nowrap">'+(r.depo_yolu&&!xlYasakMi()?'<button class="btn2" data-ai="'+r.id+'">Excel</button>':'')+(r.form_yolu?' <button class="btn2" data-af="'+r.id+'">Formu aç</button> <button class="btn2" data-arv="'+r.id+'" title="Kayıtlı formu revizyon olarak aç">Revize</button>':'')+'</td></tr>').join("")+'</tbody></table>'
     :'<div class="bos">'+(ARSIV.length?"Aramaya uyan teklif yok.":"Henüz kayıtlı teklif yok.")+'</div>';
   document.querySelectorAll("[data-ai]").forEach(b=>b.onclick=async()=>{ const r=ARSIV.find(x=>String(x.id)===b.dataset.ai); if(!r) return;
     try{ const d=await SB.storage.from("soum-teklif").download(r.depo_yolu); if(d.error) throw d.error; const a=document.createElement("a"); a.href=URL.createObjectURL(d.data); a.download=r.dosya_adi||"teklif.xlsx"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },2000); }
