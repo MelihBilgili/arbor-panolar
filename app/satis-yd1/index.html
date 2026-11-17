@@ -498,8 +498,8 @@ async function arsSec(r,x){
   setMsg("Güncel kur alınıyor…",true); const kurOk=await eurAlanlari(r,upd);
   const {error}=await sb.from("satis_yd_akis").update(upd).eq("id",r.id);
   if(error){ setMsg("Kayıt hatası: "+error.message,false); return false; }
-  Object.assign(r,upd); render();
-  setMsg(kurOk?"Arşivden alındı ✓":"Arşivden alındı ama kur alınamadı — € karşılığı boş.",kurOk); return true;
+  Object.assign(r,upd); const ilr=await maybeAutoAdvance(r); render(); /* YD-ARSIV-SAGTIK: seçimden hemen sonra otomatik ilerleme */
+  setMsg(kurOk?"Arşivden alındı ✓"+(ilr?" — durum: "+r.durum:""):"Arşivden alındı ama kur alınamadı — € karşılığı boş.",kurOk); return true;
 }
 let ROWS=[];
 let DRAFT=null;
@@ -1260,9 +1260,10 @@ async function tkSaveNote(key,val){
 /* DURUM-SAGTIK (08.10.2026, Melih): Durum sütunundan elle seçim kaldırıldı. Satıra sağ tıklayınca menü:
    Revizyon · Muhtemel · Kazandık · Üretimde · Kaybettik · Müşteri İşi Alamadı · İptal · Sil.
    Şartı tutmayan seçenek soluk ve tıklanamaz (neden title'da). Geçiş saveRow ile yapılır (aynı şart/kopya kuralları). */
-const CTX_SEC=[["Yeniden Aç","__ac"],["Sıkı Takip Edilecek","__siki"],["Revizyon","Revizyon İstendi"],["Muhtemel","Muhtemel"],["Kazandık","Kazandık"],["Üretimde","Üretimde"],["Kaybettik","Kaybettik"],["Müşteri İşi Alamadı","Müşteri İşi Alamadı"],["İptal","İptal"],["Sil","__sil"]];
+const CTX_SEC=[["Teklif arşivinden seç","__ars"],["Yeniden Aç","__ac"],["Sıkı Takip Edilecek","__siki"],["Revizyon","Revizyon İstendi"],["Muhtemel","Muhtemel"],["Kazandık","Kazandık"],["Üretimde","Üretimde"],["Kaybettik","Kaybettik"],["Müşteri İşi Alamadı","Müşteri İşi Alamadı"],["İptal","İptal"],["Sil","__sil"]];
 function ctxNeden(r,v){
   if(v==="__sil") return "";
+  if(v==="__ars") return alanYasak('net_tutar')?"Bu alana kayıt yetkiniz yok":""; /* YD-ARSIV-SAGTIK */
   if(v==="__ac") return r.durum==="İptal"?"":"Yalnız İptal satırı yeniden açılır"; /* IPTAL-GERI-AL */
   if(v==="__siki") return sikiListede(r)?"":((r.durum==="Teklif Teslim Edildi"||r.durum==="Takip Bekleniyor")?"":"Yalnız Teklif Teslim Edildi / Takip Bekleniyor satırında"); /* SIKI-TAKIP */
   if(r.durum===v) return "Satır zaten bu durumda";
@@ -1333,6 +1334,7 @@ function ctxAc(i,x,y){
   const w=m.offsetWidth,h=m.offsetHeight; m.style.left=Math.max(4,Math.min(x,innerWidth-w-4))+"px"; m.style.top=Math.max(4,Math.min(y,innerHeight-h-4))+"px";
   m.querySelectorAll("button").forEach(b=>b.onclick=async()=>{ if(b.classList.contains("off")) return; const v=b.dataset.v; ctxKapat();
     if(v==="__sil"){ await delRow(i); return; }
+    if(v==="__ars"){ await arsAc(String(i)); return; } /* YD-ARSIV-SAGTIK */
     if(v==="__ac"){ await iptalGeriAl(r); return; } /* IPTAL-GERI-AL */
     if(v==="__siki"){ await sikiDegis(r); return; } /* SIKI-TAKIP */
     if(v==="Kaybettik"||v==="İptal"){ if(!(await ctxNedenNotu(r,v))) return; } /* DURUM-SAGTIK2 */
