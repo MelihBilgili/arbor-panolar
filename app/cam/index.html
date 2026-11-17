@@ -257,15 +257,16 @@ function yakinTek(q,P,u){const Z=P&&P.z;if(!Z||Z.R==null)return null;
     const fk=[];const ci=[];for(let i=0;i<rc.length;i++)if(rc[i]!==qc[i])ci.push(i);
     if(ci.length>1)continue;if(ci.length)fk.push('cam '+rc[ci[0]]+' → '+qc[ci[0]]);
     if(+p[1]!==+q.cu)fk.push('boşluk '+p[1]+' → '+q.cu);
-    if(rf[1]!==qf[1]||rf[2]!==qf[2])fk.push('kaplama '+(rf[2]?'solar':rf[1]?'Low-E':'yok')+' → '+(qf[2]?'solar':qf[1]?'Low-E':'yok'));
-    else if(rf[2]&&qf[2]){/* CAM-YAKIN-KAPLAMA (17.11.2026, Melih): solar kaplama türü (N(50/33) vb.) farklı ya da teklifte belirtilmemişse "Aynı" denmez */const ko=CAMF.coat(r.komb)||'',kq=q.coat||'',ka=c=>c?(KAP_AD[c]||String(c).replace(/^n(\d\d)(\d\d)$/,'N($1/$2)')):'türü belirtilmemiş';if(ko!==kq)fk.push('solar kaplama '+ka(ko)+' → '+ka(kq));}
+    /* CAM-YAKIN-ETKI (17.11.2026, Melih): fark "<eski> → <yeni>: <etki>" biçiminde; kaplama adı türüyle (Solar Low-e N(50/33)) */
+    const ka=c=>c?(KAP_AD[c]||String(c).replace(/^n(\d\d)(\d\d)$/,'N($1/$2)')):'',kad=(lw,so,c)=>so?'Solar Low-e'+(c?' '+ka(c):''):lw?'Low-E':'Kaplamasız',kco=rf[2]?(CAMF.coat(r.komb)||''):'',kcq=qf[2]?(q.coat||''):'';
+    if(rf[1]!==qf[1]||rf[2]!==qf[2]||(rf[2]&&qf[2]&&kco!==kcq))fk.push(kad(rf[1],rf[2],kco)+' → '+kad(qf[1],qf[2],kcq));/* CAM-YAKIN-KAPLAMA: solar kaplama türü farklı ya da teklifte belirtilmemişse "Aynı" denmez */
     for(const i of [4,5,6,7])if(rf[i]!==qf[i])fk.push(AD[i]+(qf[i]?' var':' yok'));
     if(rf[8]!==qf[8]||rf[9]!==qf[9])fk.push('Ar/WE '+(rf[8]?'Ar':'hava')+(rf[9]?'-WE':'')+' → '+(qf[8]?'Ar':'hava')+(qf[9]?'-WE':''));
     if(fk.length>1)continue;
     const Q=gq(r),zo=DB.fiyat(Q,perf(Q),u,null,Q.solar?perf(Object.assign({},Q,{solar:0,coat:'',lowe:1})):null),eko=zo.solarEk||0,ko=(zo.est-eko)/(zo.KC+zo.R);
     const kat=kp/ko,dR=Z.R-zo.R,al=(r.bf-eko)*kat+dR+ekp,ay=!fk.length;
-    const ac=ay&&Math.abs(al-r.bf)<0.005?'':' (bileşen '+(dR>=0?'+':'−')+t(Math.abs(dR))+' €'+(Math.abs(kat-1)>0.0005?', katsayı ×'+f2(kat,3):'')+(ekp!==eko?', solar '+(ekp-eko>=0?'+':'−')+t(Math.abs(ekp-eko))+' €':'')+')';
-    const s=(ay?'Aynı':'Fark: '+fk[0])+' · '+r.komb.split('|||')[0].trim().replace(/\s+/g,' ')+' · '+r.n+' teklif / '+r.p+' proje · ort. alış '+t(r.bf)+' €/m² → '+t(al)+' €/m²'+ac+' × '+f2(KAT,1)+' = '+t(al*KAT)+' €/m²';
+    const de=dR+ekp-eko,et=[];if(Math.abs(de)>0.005)et.push((de>=0?'+':'−')+t(Math.abs(de))+' €');if(Math.abs(kat-1)>0.0005)et.push('×'+f2(kat,3));
+    const s=(ay?'Aynı':fk[0]+(et.length?': '+et.join(', '):''))+' · '+r.komb.split('|||')[0].trim().replace(/\s+/g,' ')+' · '+r.n+' teklif / '+r.p+' proje · ort. alış '+t(r.bf)+' €/m² → '+t(al)+' €/m² × '+f2(KAT,1)+' = '+t(al*KAT)+' €/m²';
     L.push({ay,n:r.n,birim:al*KAT,s,html:s.replace(/&/g,'&amp;').replace(/</g,'&lt;')});}
   L.sort((a,b)=>(b.ay-a.ay)||(b.n-a.n));const N=L.reduce((a,x)=>a+x.n,0),ort=N?L.reduce((a,x)=>a+x.birim*x.n,0)/N:null;
   return{L,N,ort,txt:L.length?L.map(x=>x.s).concat(['Teklif adedine göre ağırlıklı ortalama: '+t(ort)+' €/m² ('+N+' teklif)']):[]};}
