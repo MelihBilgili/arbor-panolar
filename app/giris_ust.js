@@ -61,11 +61,11 @@ function bars(pts,opt){
 const MRENK=["#2e6da4","#e07b00","#0a6b57","#b23a2e"];
 function multi(S,opt){
   /* SELARB-FT-SAG (09.11.2026): s.sag=true olan seri kendi ölçeğiyle sağ eksende (küçük değerler düz çizgi görünmesin); s.renk seri rengi */
-  opt=opt||{}; const anySag=S.some(s=>s.sag), W=330+(anySag?34:0),H=Math.round(72*YK)+24,L=40,R=anySag?40:6,T=8,B=16, birim=opt.birim||" €";
+  opt=opt||{}; const anySag=S.some(s=>s.sag), W=330+(anySag?34:0),H=Math.round(72*YK*(opt.hK||1))+24 /* GIRIS-PRJ-YUKSEK: opt.hK yükseklik katı */,L=40,R=anySag?40:6,T=8,B=16, birim=opt.birim||" €";
   const vs=[], vR=[]; S.forEach(s=>s.pts.forEach(p=>{ if(p.y!=null) (s.sag?vR:vs).push(p.y); }));
   if(!vs.length&&vR.length){ vR.forEach(v=>vs.push(v)); }
   if(!vs.length) return '<div class="gru-muted">Veri yok</div>';
-  let mn=Math.min(0,Math.min.apply(null,vs)), mx=Math.max.apply(null,vs); if(mx===mn) mx=mn+1;
+  let mn=opt.oto?Math.floor(Math.min.apply(null,vs))-2:Math.min(0,Math.min.apply(null,vs)) /* GIRIS-ISK-GRAFIK: opt.oto eksen 0'dan başlamaz */, mx=opt.oto?Math.ceil(Math.max.apply(null,vs))+2:Math.max.apply(null,vs); if(mx===mn) mx=mn+1;
   let mnR=vR.length?Math.min(0,Math.min.apply(null,vR)):0, mxR=vR.length?Math.max.apply(null,vR):1; if(mxR===mnR) mxR=mnR+1;
   const n=Math.max.apply(null,S.map(s=>s.pts.length)), iw=W-L-R, X=i=>L+(n<=1?iw/2:i*iw/(n-1)), Y=v=>T+(H-T-B)*(1-(v-mn)/(mx-mn)), YR=v=>T+(H-T-B)*(1-(v-mnR)/(mxR-mnR));
   let g=(vR.length?`<line x1="${W-R}" y1="${T}" x2="${W-R}" y2="${H-B}" class="gru-ax"/><text x="${W-R+3}" y="${T+7}" class="gru-yl" style="text-anchor:start">${esc(kK(mxR))}</text><text x="${W-R+3}" y="${H-B}" class="gru-yl" style="text-anchor:start">${esc(kK(mnR))}</text>`:"")+`<line x1="${L}" y1="${T}" x2="${L}" y2="${H-B}" class="gru-ax"/><line x1="${L}" y1="${Y(Math.max(mn,0)).toFixed(1)}" x2="${W-R}" y2="${Y(Math.max(mn,0)).toFixed(1)}" class="gru-ax"/>`
@@ -119,12 +119,13 @@ function css(){ if(document.getElementById("gru-css")) return; const st=document
 /* ---- Satış tablosu + grafikler ---- */
 async function satis(o,elT,elG){
   const sb=o.sb;
-  const [sy,yd,sk,ic,dk]=await Promise.all([
+  const [sy,yd,sk,ic,dk,bl]=await Promise.all([
     o.grafik==="mk"?Promise.resolve({data:[]}):sb.from("satis_yorum").select("*").eq("kaynak","SO").eq("aktif",true), /* GIRIS-MK-YI: MK formunda Yurt İçi yok */
     sb.from("satis_yd_akis").select("*"),
     sb.from("yd_siki_takip").select("blok,proje,musteri").eq("aktif",true), /* SIKI-AKTIF-GIRIS (19.10.2026): çıkarılanlar Giriş'te görünmesin */
-    sb.from("icmal_satir").select("donem,is_total,so_alinan_eur,so_muht_eur,fa_alinan_eur,fy2_alinan_eur,fa_muht_eur,fy2_muht_eur"),
-    sb.from("etut_dk").select("erp_damga,tarih,created_at,dk1,dk2,dk3,dk4,yurt_ici")
+    sb.from("icmal_satir").select("donem,is_total,so_alinan_eur,so_muht_eur,fa_alinan_eur,fy2_alinan_eur,fa_muht_eur,fy2_muht_eur,fr_isk_pct,dig_isk_pct"),
+    sb.from("etut_dk").select("erp_damga,tarih,created_at,dk1,dk2,dk3,dk4,yurt_ici"),
+    o.grafik==="mk"?Promise.resolve({data:[]}):sb.from("fiyat_parametre_log").select("gecerli_baslangic,fransa_deger,diger_deger").eq("anahtar","baz_iskonto").order("gecerli_baslangic",{ascending:true}) /* GIRIS-ISK-GRAFIK */
   ]);
   const k=await kur(sb);
   const soR=(sy&&!sy.error&&sy.data)||[], ydR=(yd&&!yd.error&&yd.data)||[], skR=(sk&&!sk.error&&sk.data)||[];
@@ -185,12 +186,23 @@ async function satis(o,elT,elG){
   if(o.grafik==="mk"){ /* GIRIS-MK-GRAFIK: MK formunda yalnız YD alınan · YD muht. · Etüt DK1, tek satır */
     elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3><div class="gru-cards">${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* MK-GRAFIK-BIRLES */}${dkK}</div>`;
     return; }
+  /* GIRIS-ISK-GRAFIK (17.11.2026, Melih): Prj grafiğinin altında YD1 (mavi) ve YD2 (turuncu) baz iskonto seyri — ay sonundaki son
+     fiyat_parametre_log baz_iskonto değeri (Fiyatlandırma FR / Diğer), log öncesi aylar icmal_satir fr_isk_pct / dig_isk_pct (İcmal ile aynı kural) */
+  const pctN=v=>{ const m=String(v==null?"":v).match(/-?\d+([.,]\d+)?/); return m?Number(m[0].replace(",",".")):null; };
+  const BIL=(bl&&!bl.error&&bl.data)||[];
+  const iskS=ser.map(sv=>{ let sonGun; if(sv.cur) sonGun=today.toLocaleDateString("en-CA"); else { const ay=+sv.x.slice(0,2), yil=2000+ +sv.x.slice(3,5); sonGun=new Date(Date.UTC(yil,ay,0)).toISOString().slice(0,10); }
+    let hit=null; BIL.forEach(x=>{ if(String(x.gecerli_baslangic)<=sonGun) hit=x; });
+    const icr=icBy[String(sv.x).slice(0,5)]||{};
+    return {x:sv.x,cur:sv.cur,yd1:hit?pctN(hit.fransa_deger):pctN(icr.fr_isk_pct),yd2:hit?pctN(hit.diger_deger):pctN(icr.dig_isk_pct)}; });
+  const iskP=f=>iskS.map(z=>({x:z.x,y:z[f],cur:z.cur}));
+  const iskH=iskS.some(z=>z.yd1!=null||z.yd2!=null)?`<div class="gru-cards" style="margin-top:10px">${mkart("Baz İskonto (%) — YD1 · YD2",[{ad:"YD1",pts:iskP("yd1"),renk:"#2e6da4"},{ad:"YD2",pts:iskP("yd2"),renk:"#e07b00"}],[iskS[iskS.length-1].yd1,iskS[iskS.length-1].yd2],v=>v==null?"—":"%"+String(v).replace(".",","),{birim:" %",oto:true})}</div>`:"";
   /* GIRIS-PRJ-TEK-GRAFIK (17.11.2026, Melih): Yurt İçi, Yurt Dışı ve Toplam Prj tek grafikte — renk bölge (YI turuncu, YD mavi, Toplam bordo — GIRIS-PRJ-RENK 17.11.2026), Alınan düz, Muhtemel kesik çizgi (Giriş + CTP Faaliyet) */
   const PRJ_S=[{ad:"Yurt İçi Alınan",pts:kS("so_a"),renk:"#e07b00"},{ad:"Yurt İçi Muhtemel",pts:kS("so_m"),renk:"#e07b00",kesik:true},
     {ad:"Yurt Dışı Alınan",pts:kS("yd_a"),renk:"#2e6da4"},{ad:"Yurt Dışı Muhtemel",pts:kS("yd_m"),renk:"#2e6da4",kesik:true},
     {ad:"Toplam Alınan",pts:kS("top_a"),renk:"#7b1e2b"},{ad:"Toplam Muhtemel",pts:kS("top_m"),renk:"#7b1e2b",kesik:true}];
   elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3>`
-    +`<div class="gru-cards">${mkart("Prj (€) — Yurt İçi · Yurt Dışı · Toplam",PRJ_S,[c("so_a"),c("so_m"),c("yd_a"),c("yd_m"),c("top_a"),c("top_m")],v=>money(v)+" €")}${dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):""}</div>`;
+    +`<div class="gru-cards">${mkart("Prj (€) — Yurt İçi · Yurt Dışı · Toplam",PRJ_S,[c("so_a"),c("so_m"),c("yd_a"),c("yd_m"),c("top_a"),c("top_m")],v=>money(v)+" €",{hK:1.7} /* GIRIS-PRJ-YUKSEK (17.11.2026, Melih): y ekseni 1,7 kat */)}${dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):""}</div>`
+    +iskH;
 }
 /* ---- Takip notu penceresi ---- */
 async function notAc(o,k,r,yenile){
