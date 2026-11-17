@@ -52,7 +52,7 @@
     <div id="marka" class="tw"></div></details>
   <div id="fyblok" style="display:none">
   <details class="blk" open><summary>Fiyat türetme</summary>
-    <div class="not">Cam Fiyat, Arbor'un ERP cam siparişlerinden (713 kayıt) kalibre edilmiş modelle hesaplanır: <b>alış = e<sup>sabit + Σ katsayı × değişken</sup> × (30 + kural €)</b>, Cam Fiyat = alış × 2,5 (KAT). <b>Kural €</b> Enes Uzun'un 16.11.2026 alış fiyatı kurallarıdır: cam katmanı 4 → 5 mm +1,5 · 5 → 6 mm +2,5 · 6 → 8 mm +3,5 €/m² (8 mm üstü +1,75 €/mm); PVB 0,38 / 0,76 / 1,14 / 1,52 mm = 3,5 / 6 / 9,5 / 12,5 €/m², akustik PVB ek +1,5 / +3 / +4,25 / +5,5; ara boşluk farkı yok; argon +2 €/m². Diğer etkenler (kaplama, temper, extra clear, satine, warm edge, Tlg, Sfg, Rw+Ctr, metraj) yüzde olarak etki eder. Camların dıştan içe sırası fiyatı değiştirmez. Geçmiş siparişlerde aynı kombinasyon ya da tek farkla ayrılan kardeşi (Low-E, akustik, temper, extra clear, argon, warm edge, tek cam katmanı, boşluk) varsa bunların sapması eşit ağırlıkla düzeltme olarak eklenir (grup düzeltmesi). Marka ve kaplama adları hesaptan önce genel terime çevrilir. Aşağıdaki tablo, referans camda yalnız o etken değişirken (grup düzeltmesi hariç) fiyatın ne kadar değiştiğini gösterir. Bu bölüm yalnız MB oturumunda görünür.</div>
+    <div class="not">Cam Fiyat, Arbor'un ERP cam siparişlerinden (713 kayıt) kalibre edilmiş modelle hesaplanır: <b>alış = e<sup>sabit + Σ katsayı × değişken</sup> × (30 + kural €)</b>, Cam Fiyat = alış × 2,5 (KAT). <b>Kural €</b> Enes Uzun'un 16.11.2026 alış fiyatı kurallarıdır: cam katmanı 4 → 5 mm +1,5 · 5 → 6 mm +2,5 · 6 → 8 mm +3,5 €/m² (8 mm üstü +1,75 €/mm); PVB 0,38 / 0,76 / 1,14 / 1,52 mm = 3,5 / 6 / 9,5 / 12,5 €/m², akustik PVB ek +1,5 / +3 / +4,25 / +5,5; ara boşluk farkı yok; argon +2 €/m². <b>Solar kaplama</b> (Melih kuralı): alış, aynı camın Low-E karşılığının ×1,045'i; seçici kaplamada (Sfg ≤ 0,40) ×1,07'si. Diğer etkenler (kaplama, temper, extra clear, satine, warm edge, Tlg, Sfg, Rw+Ctr, metraj) yüzde olarak etki eder. Camların dıştan içe sırası fiyatı değiştirmez. Geçmiş siparişlerde aynı kombinasyon ya da tek farkla ayrılan kardeşi (Low-E, akustik, temper, extra clear, argon, warm edge, tek cam katmanı, boşluk) varsa bunların sapması eşit ağırlıkla düzeltme olarak eklenir (grup düzeltmesi). Marka ve kaplama adları hesaptan önce genel terime çevrilir. Aşağıdaki tablo, referans camda yalnız o etken değişirken (grup düzeltmesi hariç) fiyatın ne kadar değiştiğini gösterir. Bu bölüm yalnız MB oturumunda görünür.</div>
     <div id="fyref" class="sat"></div>
     <div id="fytab" class="tw"></div>
     <h3>Örnek camlar (referans koşullarda)</h3>
@@ -231,7 +231,7 @@ function sozluk(){
 /* ---- Fiyat türetme (yalnız MB) — CAM-KURAL (17.11.2026): DB.fiyat ile ---- */
 const U0={frm:"duz",ort:1,m2:10,adet:10}, V0={tl:0.79,sf:0.61,rw:30};
 const Q0={c:["4","4"],cu:16,tr:0,lowe:1,solar:0,fp:0,ac:0,sat:0,tp:0,xc:0,ar:1,we:1};
-function fyP(d){ d=d||{}; return M.DB.fiyat(Object.assign({},Q0,d.q||{}),Object.assign({},V0,d.v||{}),Object.assign({},U0,d.u||{}),null).est*M.KAT; }
+function fyP(d){ d=d||{}; return M.DB.fiyat(Object.assign({},Q0,d.q||{}),Object.assign({},V0,d.v||{}),Object.assign({},U0,d.u||{}),null,V0).est*M.KAT; }
 function fiyatTablo(){
   const K=M.DB.kural, b0=fyP();
   const E=[
@@ -253,7 +253,8 @@ function fiyatTablo(){
    ["Extra Clear","Extra Clear",{},{q:{xc:1}},""],
    ["Yangın dayanımı","EI30",{},{q:{fp:1}},"EI60 = EI30 × 1,1."],
    ["Warm edge","Alüminyum çıta → warm edge",{q:{we:0}},{},""],
-   ["Kaplama tipi","Low-E → Solar Low-E (yalnız tip)",{},{q:{solar:1}},"Solar camın düşük Sfg'si ayrıca Sfg satırından gelir."],
+   ["Solar kaplama","Low-E → Solar Low-E",{},{q:{solar:1},v:{tl:0.72,sf:0.45}},"Melih kuralı: alış Low-E karşılığı ×1,045."],
+   ["Solar kaplama","Low-E → seçici solar (Sfg ≤ 0,40)",{},{q:{solar:1},v:{tl:0.70,sf:0.37}},"Melih kuralı: alış Low-E karşılığı ×1,07."],
    ["Işık geçirimi","Tlg +0,05",{},{v:{tl:0.84}},""],
    ["Solar faktör","Sfg −0,05",{},{v:{sf:0.56}},""],
    ["Ses yalıtımı","Cam Rw+Ctr +1 dB",{},{v:{rw:31}},""],
@@ -290,7 +291,7 @@ function hesapla(){
   const u={frm:ka&&eg?"ke":ka?"karolaj":eg?"egrisel":"duz",ort:m2/ad,m2,adet:ad}, v={tl,sf,rw};
   const qr=Object.assign({},q,{c:q.c.slice().reverse()}),_d=t=>{const a=perfM(qr,t),b=perfM(q,t);return a==null||b==null?0:a-b;};
   const vr=qr.c.join("/")!==q.c.join("/")?{tl:tl==null?null:tl+_d("tl"),sf:sf==null?null:sf+_d("sf"),rw:rw==null?null:rw+_d("rw")}:null;
-  const Z=M.DB.fiyat(Object.assign({},q,{tp:q.tp?1:0}),v,u,vr), fy=Z.unit*M.KAT, K=M.DB.kural;
+  const Z=M.DB.fiyat(Object.assign({},q,{tp:q.tp?1:0}),v,u,vr,q.solar?(()=>{const qL=Object.assign({},q,{solar:0,coat:"",lowe:1});return {tl:perfM(qL,"tl"),sf:perfM(qL,"sf")};})():null), fy=Z.unit*M.KAT, K=M.DB.kural;
   out.innerHTML='<div class="sat"><b>Model okuması:</b> camlar '+esc(q.c.join(" / "))+' · toplam cam '+f(q.tg,1)+' mm · boşluk '+q.cu+' mm · '+esc(etiket(F))+'</div>'
    +'<div class="sat"><b>Tlg</b> '+f(tl,2)+' · <b>Sfg</b> '+f(sf,2)+' · <b>Cam Rw+Ctr</b> '+f(rw,0)+' dB'+(tah.length?' <span class="g">('+tah.join(", ")+' Cam Listesi\'ndeki en yakın camlardan tahmin)</span>':'')+'</div>'
    +'<div class="sat big">Cam Fiyat: <b>'+f(fy,2)+' €/m²</b>'+(Z.g?' <span class="g">(grup düzeltmesi ×'+f(Math.exp(Z.adj),3)+', '+f(Z.n,1)+' sipariş ağırlığı — kendi ve kardeş kombinasyonlar)</span>':'')+'</div>'

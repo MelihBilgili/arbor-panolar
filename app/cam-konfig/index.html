@@ -317,7 +317,7 @@ function fiyat(r){
     satin:q.sat,temper:tp,acoustic:q.ac,extraclear:q.xc,fireproof:q.fp,argon:q.ar,we,karolaj:0,egrisel:0,l_ortm2:Math.log(Math.min(Math.max(m2/adet,0.05),4)),
     tl:v.tl,rwctr:v.rw,sf:v.sf,l_m2:Math.log(Math.min(Math.max(m2,0.2),300)),kucuk_m2:0,kucuk_adet:0};
   /* CAM-KURAL (17.11.2026): fiyat ../cam/ DB.fiyat (EU kuralları + simetri + kardeş havuzu) */ const qr=Object.assign({},q,{c:q.c.slice().reverse()}),_d=t=>{const a=perfM(qr,t),b=perfM(q,t);return a==null||b==null?0:a-b;},vr=qr.c.join("/")!==q.c.join("/")?{tl:v.tl==null?null:v.tl+_d("tl"),sf:v.sf==null?null:v.sf+_d("sf"),rw:v.rw==null?null:v.rw+_d("rw")}:null;
-  const _Z=CAMM.DB.fiyat(Object.assign({},q,{tp}),v,{frm:"duz",ort:m2/adet,m2,adet},vr);
+  const _Z=CAMM.DB.fiyat(Object.assign({},q,{tp}),v,{frm:"duz",ort:m2/adet,m2,adet},vr,q.solar?(()=>{const qL=Object.assign({},q,{solar:0,coat:"",lowe:1});return {tl:perfM(qL,"tl"),sf:perfM(qL,"sf")};})():null); /* CAM-SOLAR-KURAL */
   const k30=q.fp&&!/e[iı]\s?30|\be30\b/i.test(String(r.kombinasyon||""))?1.1:1;
   r._fy=_Z.unit*k30*CAMM.KAT; return r._fy;
 }
