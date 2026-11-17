@@ -489,7 +489,7 @@ function cfTalimat(w){ const d=w.document, o=d.getElementById("out"), ur=o&&o.qu
 function cfKapat(){ const p=$("cfPop"); if(p) p.remove(); }
 async function cfAc(r){
   cfKapat();
-  const komb=esc(String(r.kombinasyon||"").replace(/Ar90\b/g,"Ar"));
+  const komb=esc(String(r.kombinasyon||"").replace(/Ar90\b/g,"Ar").replace(/\bacoustic\b/gi,"Akustik")); /* CAM-AKUSTIK-TEK (17.11.2026) */
   document.body.insertAdjacentHTML("beforeend",'<div id="cfPop"><div class="cfk"><div class="cfh"><div><div class="lbl">Cam Fiyatlandırma panosunda</div><b>'+komb+'</b> · '+esc(r.uretici||"")+'</div><button class="cfx" title="Kapat">✕</button></div>'
     +'<div id="cfAlt"><div class="lv">Hesaplanıyor…</div></div>'
     +'<button class="cfbtn" id="cfBtn">Fiyat kullanım talimatı al</button>'
