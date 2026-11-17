@@ -72,14 +72,14 @@ function multi(S,opt){
     +`<text x="${L-3}" y="${T+7}" class="gru-yl">${esc(kK(mx))}</text><text x="${L-3}" y="${H-B}" class="gru-yl">${esc(kK(mn))}</text>`;
   S.forEach((s,k)=>{ const c=s.renk||MRENK[k%MRENK.length], Yf=(s.sag&&vR.length&&vs!==vR)?YR:Y; let d="";
     s.pts.forEach((p,i)=>{ if(p.y==null) return; d+=(d?"L":"M")+X(i).toFixed(1)+" "+Yf(p.y).toFixed(1); });
-    g+=`<path d="${d}" fill="none" stroke="${c}" stroke-width="1.6"/>`;
+    g+=`<path d="${d}" fill="none" stroke="${c}" stroke-width="1.6"${s.kesik?' stroke-dasharray="4 3"':''}/>`; /* GIRIS-PRJ-TEK-GRAFIK: kesik çizgi */
     s.pts.forEach((p,i)=>{ if(p.y==null) return; g+=`<circle cx="${X(i).toFixed(1)}" cy="${Yf(p.y).toFixed(1)}" r="${p.cur?3.4:2}" fill="${c}"><title>${esc(s.ad+" · "+p.x+": "+Math.round(p.y).toLocaleString("tr-TR")+birim)}</title></circle>`; }); });
   const P=S[0].pts; g+=`<text x="${X(0)}" y="${H-3}" class="gru-xl" text-anchor="start">${esc(P[0].x)}</text><text x="${X(n-1)}" y="${H-3}" class="gru-xl" text-anchor="end">${esc(P[P.length-1].x)}</text>`;
   return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="gru-svg">${g}</svg>`;
 }
 function mkart(baslik,S,vals,fmt,opt){
   return `<div class="gru-card gru-mk"><div class="gru-ct">${esc(baslik)}</div>`
-    +S.map((s,k)=>`<div class="gru-ml"><span class="gru-mn" style="background:${s.renk||MRENK[k%MRENK.length]}"></span>${esc(s.ad)}${s.sag?' <span style="color:#7b8794">(sağ eksen)</span>':''}: <b>${fmt(vals[k])}</b></div>`).join("")
+    +S.map((s,k)=>`<div class="gru-ml"><span class="gru-mn" style="${s.kesik?`background:none;border-top:2px dashed ${s.renk||MRENK[k%MRENK.length]};height:0`:`background:${s.renk||MRENK[k%MRENK.length]}`}"></span>${esc(s.ad)}${s.sag?' <span style="color:#7b8794">(sağ eksen)</span>':''}: <b>${fmt(vals[k])}</b></div>`).join("")
     +multi(S,opt)+`</div>`;
 }
 const CSS=`
@@ -185,9 +185,12 @@ async function satis(o,elT,elG){
   if(o.grafik==="mk"){ /* GIRIS-MK-GRAFIK: MK formunda yalnız YD alınan · YD muht. · Etüt DK1, tek satır */
     elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3><div class="gru-cards">${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* MK-GRAFIK-BIRLES */}${dkK}</div>`;
     return; }
+  /* GIRIS-PRJ-TEK-GRAFIK (17.11.2026, Melih): Yurt İçi, Yurt Dışı ve Toplam Prj tek grafikte — renk bölge (YI yeşil, YD mavi, Toplam turuncu), Alınan düz, Muhtemel kesik çizgi (Giriş + CTP Faaliyet) */
+  const PRJ_S=[{ad:"Yurt İçi Alınan",pts:kS("so_a"),renk:"#0a6b57"},{ad:"Yurt İçi Muhtemel",pts:kS("so_m"),renk:"#0a6b57",kesik:true},
+    {ad:"Yurt Dışı Alınan",pts:kS("yd_a"),renk:"#2e6da4"},{ad:"Yurt Dışı Muhtemel",pts:kS("yd_m"),renk:"#2e6da4",kesik:true},
+    {ad:"Toplam Alınan",pts:kS("top_a"),renk:"#e07b00"},{ad:"Toplam Muhtemel",pts:kS("top_m"),renk:"#e07b00",kesik:true}];
   elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3>`
-    +`<div class="gru-cards">${mkart("Yurt İçi Prj (€)",[{ad:"Alınan",pts:kS("so_a")},{ad:"Muhtemel",pts:kS("so_m")}],[c("so_a"),c("so_m")],v=>money(v)+" €")/* GIRIS-YI-ALINAN · GIRIS-YI-TOP-BIRLES */}${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* GIRIS-GRAFIK-BIRLES */}</div>`
-    +`<div class="gru-cards" style="margin-top:10px">${mkart("Toplam Prj (€)",[{ad:"Alınan",pts:kS("top_a")},{ad:"Muhtemel",pts:kS("top_m")}],[c("top_a"),c("top_m")],v=>money(v)+" €")/* GIRIS-YI-TOP-BIRLES */}${dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):""}</div>`;
+    +`<div class="gru-cards">${mkart("Prj (€) — Yurt İçi · Yurt Dışı · Toplam",PRJ_S,[c("so_a"),c("so_m"),c("yd_a"),c("yd_m"),c("top_a"),c("top_m")],v=>money(v)+" €")}${dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):""}</div>`;
 }
 /* ---- Takip notu penceresi ---- */
 async function notAc(o,k,r,yenile){
