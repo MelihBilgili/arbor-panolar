@@ -765,6 +765,7 @@ async function baslikDoldur(){
   let yd=null;
   try{ const q=await SB.rpc("soum_proje_bilgi",{p_proje:projPdf.split(/\s/)[0]||""});
     if(!q.error&&q.data&&q.data.length) yd=q.data.find(r=>!musPdf||nrmTxt(r.musteri).includes(nrmTxt(musPdf).split(" ")[0]))||q.data[0]; }catch(e){}
+  if(S.ydSec){ yd=S.ydSec; $("f_proje").value=String(S.ydSec.proje||"").toLocaleUpperCase("tr"); } /* SOUM-YD-SECIM */
   S.yd=yd;
   const ilg=yd&&yd.ilgili_ad?yd.ilgili_ad:(S.dpgf&&S.dpgf.ust.acheteur)||"";
   const tc=s=>s.toLowerCase().replace(/(^|[\s\-'])(\p{L})/gu,(a,b,c)=>b+c.toUpperCase());
@@ -830,7 +831,7 @@ function hucre(p,k,i){
   if(k[0]==="camFr") return '<td class="l"><textarea data-k="camFr" rows="3">'+esc(p.camFr)+'</textarea><div class="mini">'+esc(p.camPdf)+(p.cam&&p.cam.stok_kodu?' · '+esc(p.cam.stok_kodu):'')+'</div></td>';
   if(k[0]==="Q") return '<td class="num" id="q'+i+'">–</td>'; if(k[0]==="R") return '<td class="num" id="r'+i+'">–</td>';
   if(k[0]==="pfTip") return '<td class="l">'+(p.pf?'<select data-k="pfTip">'+[["STD","Standart (alu eşik)"],["SACC","SACC (çıkışsız)"],["ACC","ACC (teras/balkon)"]].map(o=>'<option value="'+o[0]+'"'+(o[0]===p.pfTip?' selected':'')+'>'+o[1]+'</option>').join("")+'</select>':'–')+'</td>';
-  if(k[0]==="brut") return '<td class="num"><input data-k="brut" class="n" value="'+esc(frN(p.brut,2))+'" style="width:9ch'+(p.brutElle?';background:#fff3c4':'')+'" title="Pencad raporundan; elle düzeltilebilir">'+(p.brutElle&&p.brutPdf!=null?'<div class="mini">Pencad '+fN(p.brutPdf,2)+'</div>':'')+'<div class="mini" id="b'+i+'"></div></td>'; /* SOUM-EKSTRA-MOD: Birim fiyat ekstraları hesapla()'da eklenir */ /* SOUM-BRUT-ELLE (16.11.2026, Melike Başaran): brüt elle düzeltilebilir */
+  if(k[0]==="brut") return '<td class="num"><input data-k="brut" class="n" value="'+esc(frN(p.brut,2))+'"'+(fiyatIzin()?'':' readonly')+' style="width:9ch'+(p.brutElle?';background:#fff3c4':'')+(fiyatIzin()?'':';background:#eef1f4;cursor:not-allowed')+'" title="'+(fiyatIzin()?'Pencad raporundan; elle düzeltilebilir':'Birim fiyatı yalnız Enes Uzun ve Hilal Ölker değiştirebilir')+'">'+(p.brutElle&&p.brutPdf!=null?'<div class="mini">Pencad '+fN(p.brutPdf,2)+'</div>':'')+'<div class="mini" id="b'+i+'"></div></td>'; /* SOUM-EKSTRA-MOD: Birim fiyat ekstraları hesapla()'da eklenir */ /* SOUM-BRUT-ELLE (16.11.2026, Melike Başaran): brüt elle düzeltilebilir */
   if(k[0]==="ekf") return '<td><input data-k="ekf" class="n" value="'+esc(p.ekF==null?"":frN(p.ekF,2))+'" style="width:9ch" title="Birim fiyata + olarak eklenir"></td>'; /* SOUM-EKFIYAT */
   if(k[0]==="revnot") return '<td class="l"><textarea data-k="revnot" rows="3" placeholder="Revize notu">'+esc(p.revNot||"")+'</textarea></td>'; /* SOUM-POZ-REVNOT */
   if(k[0]==="uw"&&S.uwMod==="hes"){ const h=uwHes(p), d3=v=>frN(v,3); return '<td><input data-k="uw" value="'+esc(h.u==null?"":frN(h.u,2))+'" class="n" readonly style="background:#fff3c4" title="Hesaplanan Uw (EN ISO 10077-1); elle düzeltmek için Uw Average seçiniz"><div class="mini" style="text-align:left;white-space:nowrap">Ag '+d3(h.Ag)+' · Ug '+frN(h.ug,2)+'<br>Af '+d3(h.Af)+' · Uf '+d3(h.uf)+'<br>lg '+d3(h.lg)+' · Ψg '+d3(h.psi)+'<br>Aw '+d3(h.Aw)+'<br><b>Uw = '+(h.u==null?"–":frN(h.u,2))+'</b></div></td>'; } /* SOUM-UW-MOD */
@@ -1303,7 +1304,24 @@ async function klasorSec(){
   try{ const fs=await klasorTopla(h,h.name+"/",[]); dosyaEkle(fs); $("kokDurum").textContent="Seçili klasör: "+h.name;
     durum(fs.length?fs.length+" dosya bulundu. Kullanımları kontrol edip <b>Oku</b>'ya basınız.":"Klasörde PDF/Excel dosyası bulunamadı.",fs.length?"":"uyari"); }
   catch(e){ durum("Klasör okunamadı: "+esc(e.message||e),"hata"); } }
-$("btnKlasor").onclick=klasorSec;
+/* SOUM-YD-SECIM (17.11.2026, Melike Başaran talebi, Melih onayı): yeni teklif öncesi YD1/YD2 "Teklif Bekleniyor" proje seçimi (RPC soum_yd_bekleyen);
+   seçilen satır Proje ismi/Şirket/ilgili alanlarını doldurur ve arşive yd_satir_id olarak yazılır. Seçim tıklaması klasör seçiciyi de açar (kullanıcı hareketi korunur). */
+S.ydSec=null;
+async function ydSecAc(){
+  let L=[]; try{ const q=await SB.rpc("soum_yd_bekleyen"); if(!q.error) L=q.data||[]; }catch(e){}
+  const ov=document.createElement("div"); ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:10003";
+  ov.innerHTML='<div style="background:#fff;border-radius:10px;padding:14px 16px;width:min(820px,95vw);max-height:85vh;display:flex;flex-direction:column"><div style="display:flex;align-items:center;margin-bottom:8px"><b>Teklif hazırlanacak proje (Teklif Bekleniyor)</b><span style="flex:1"></span><button type="button" data-x style="border:0;background:none;font-size:18px;cursor:pointer">✕</button></div>'
+   +'<input data-q placeholder="Proje, müşteri…" style="padding:6px 8px;border:1px solid #cdd6df;border-radius:6px;margin-bottom:8px;font:inherit"><div data-l style="overflow:auto;flex:1"></div>'
+   +'<div style="margin-top:8px;display:flex;gap:8px"><button type="button" class="btn2" data-yok>Listede yok — devam et</button></div></div>';
+  document.body.appendChild(ov); const kap=()=>ov.remove(); ov.querySelector("[data-x]").onclick=kap;
+  const q=ov.querySelector("[data-q]"), Lel=ov.querySelector("[data-l]");
+  const ciz=()=>{ const w=nrmTxt(q.value).split(" ").filter(Boolean); const M=L.filter(r=>{ const t=nrmTxt([r.blok,r.proje,r.musteri].join(" ")); return w.every(k=>t.includes(k)); });
+    Lel.innerHTML=M.length?'<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="text-align:left;background:#f2f5f8"><th style="padding:4px">Blok</th><th>Proje</th><th>Müşteri</th><th></th></tr></thead><tbody>'+M.map(r=>'<tr style="border-top:1px solid #e3e8ee"><td style="padding:4px">'+esc(r.blok)+'</td><td>'+esc(r.proje||"")+'</td><td>'+esc(r.musteri||"")+'</td><td style="text-align:right"><button type="button" class="btn2" data-s="'+r.id+'">Seç</button></td></tr>').join("")+'</tbody></table>':'<div class="mini">"Teklif Bekleniyor" durumunda proje yok.</div>';
+    Lel.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{ S.ydSec=L.find(r=>String(r.id)===b.dataset.s)||null; kap(); klasorSec(); }); };
+  ov.querySelector("[data-yok]").onclick=()=>{ S.ydSec=null; kap(); klasorSec(); };
+  q.oninput=ciz; ciz(); q.focus();
+}
+$("btnKlasor").onclick=ydSecAc;
 $("inKlasor").onchange=e=>{ S.dosya=[]; const fs=[...e.target.files].filter(f=>!/(^|\/)[_.][^\/]*\//.test(f.webkitRelativePath||"")); dosyaEkle(fs); const r=(fs[0]&&fs[0].webkitRelativePath||"").split("/")[0]; $("kokDurum").textContent=r?"Seçili klasör: "+r:""; durum(fs.length+" dosya bulundu. Kullanımları kontrol edip <b>Oku</b>'ya basınız."); };
 /* SOUM-PN-ZORUNLU (16.11.2026, Melike Başaran): Excel / PDF / Uw / Sfw – Tlw / Etüt Tutanak indirilmeden önce 6 · Proje Notu'ndaki görünen tüm alanlar dolu olmalı (uygulanmıyorsa "-" yazılır). */
 function pnEksik(){ try{ notDoldur(); }catch(e){} const a=$("pnAlan"), k=a&&a.closest(".kart"); if(!k) return [];
@@ -1319,6 +1337,9 @@ $("btnOku").onclick=oku; $("btnExcel").onclick=pnKapi(excelYap);
 var XL_YASAK=["AN","AYO","OKA"];
 function xlKisi(){ try{ return (typeof ARB_EMAIL!=="undefined"&&window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null; }catch(e){ return null; } }
 function xlYasakMi(){ const k=xlKisi(); return !!(k&&XL_YASAK.includes(String(k.kod||"").toUpperCase())); }
+/* SOUM-FIYAT-YETKI (17.11.2026, Melike Başaran talebi, Melih onayı): poz birim fiyatını (Brüt €) yalnız EU ve HÖ değiştirir; kişi bilinmiyorsa (int@) serbest. Yalnız arayüz. */
+var FIYAT_IZIN=["EU","HÖ"];
+function fiyatIzin(){ const k=xlKisi(); return !k||FIYAT_IZIN.includes(String(k.kod||"").toLocaleUpperCase("tr")); }
 if(xlYasakMi()&&$("btnExcel")) $("btnExcel").style.display="none";
 /* SOUM-NOTES-GEREKCE (17.11.2026, Melih onayı; Melike Başaran talebi 16.11): bu üç kullanıcı Pozlar'da Notes'u düzenlemeden önce gerekçe yazar; soum_notes_gerekce tablosuna aday kural olarak kaydedilir (otomatik kural olmaz), Cuma 17:00 raporuyla Melike Başaran'a gider. */
 var NOT_GRK=new WeakMap();
@@ -1383,7 +1404,7 @@ async function arsivKaydet(ad,buf,tar){
     const k=(typeof ARB_EMAIL!=="undefined"&&window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null;
     const rec={...duzBilgi(),proje:$("f_proje").value,firma:$("f_firma").value,ilgili:$("f_ilgili").value,ref:$("f_ref").value,
       dil:DIL(),bolge:$("f_bolge").value,tarih:tar.toISOString().slice(0,10),par:$("f_par").value,hazirlayan:$("f_haz").value,revize:($("f_revize")||{}).value==="1",
-      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:EN()?"GBP":"EUR",iskonto:H.X2,agac:arsivAgac(),net_montaj_haric:arsivNet(),dosya_adi:ad,depo_yolu:yol};
+      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:EN()?"GBP":"EUR",iskonto:H.X2,agac:arsivAgac(),net_montaj_haric:arsivNet(),yd_satir_id:(S.ydSec&&S.ydSec.id)||null,dosya_adi:ad,depo_yolu:yol};
     const r=await SB.from("soum_teklif").insert(rec); if(r.error) throw r.error;
     $("durum").insertAdjacentHTML("beforeend",' <span class="mini">· Teklif arşivine kaydedildi.</span>'); if($("arsivIc").style.display!=="none") arsivYukle();
   }catch(e){ console.warn("arşiv",e); $("durum").insertAdjacentHTML("beforeend",' <span class="mini" style="color:#b00020">· Arşive kaydedilemedi: '+esc(e.message||e)+'</span>'); } }
@@ -1422,7 +1443,7 @@ async function formKaydet(){ if(revEksik()) return; /* SOUM-REVIZE-ARSIV */
     const k=(typeof ARB_EMAIL!=="undefined"&&window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null;
     const rec={...duzBilgi(),proje:$("f_proje").value,firma:$("f_firma").value,ilgili:$("f_ilgili").value,ref:$("f_ref").value,
       dil:DIL(),bolge:$("f_bolge").value,tarih:tar.toISOString().slice(0,10),par:$("f_par").value,hazirlayan:$("f_haz").value,revize:($("f_revize")||{}).value==="1",
-      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:EN()?"GBP":"EUR",iskonto:H.X2,agac:arsivAgac(),net_montaj_haric:arsivNet(),dosya_adi:ad,form_yolu:yol};
+      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:EN()?"GBP":"EUR",iskonto:H.X2,agac:arsivAgac(),net_montaj_haric:arsivNet(),yd_satir_id:(S.ydSec&&S.ydSec.id)||null,dosya_adi:ad,form_yolu:yol};
     const r=await SB.from("soum_teklif").insert(rec); if(r.error) throw r.error;
     if(rec.duzenleyen) duzBildir(rec,J); /* SOUM-DUZENLEYEN */
     S.pnotKayit=pnot; durum("Form Teklif arşivine kaydedildi: <b>"+esc(ad)+"</b> (arşivde <b>Formu aç</b> ile kaydedildiği hâliyle açılır).","ok"); if($("arsivIc").style.display!=="none") arsivYukle();
