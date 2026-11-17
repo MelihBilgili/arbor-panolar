@@ -185,10 +185,10 @@ async function satis(o,elT,elG){
   if(o.grafik==="mk"){ /* GIRIS-MK-GRAFIK: MK formunda yalnız YD alınan · YD muht. · Etüt DK1, tek satır */
     elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3><div class="gru-cards">${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* MK-GRAFIK-BIRLES */}${dkK}</div>`;
     return; }
-  /* GIRIS-PRJ-TEK-GRAFIK (17.11.2026, Melih): Yurt İçi, Yurt Dışı ve Toplam Prj tek grafikte — renk bölge (YI yeşil, YD mavi, Toplam turuncu), Alınan düz, Muhtemel kesik çizgi (Giriş + CTP Faaliyet) */
-  const PRJ_S=[{ad:"Yurt İçi Alınan",pts:kS("so_a"),renk:"#0a6b57"},{ad:"Yurt İçi Muhtemel",pts:kS("so_m"),renk:"#0a6b57",kesik:true},
+  /* GIRIS-PRJ-TEK-GRAFIK (17.11.2026, Melih): Yurt İçi, Yurt Dışı ve Toplam Prj tek grafikte — renk bölge (YI turuncu, YD mavi, Toplam bordo — GIRIS-PRJ-RENK 17.11.2026), Alınan düz, Muhtemel kesik çizgi (Giriş + CTP Faaliyet) */
+  const PRJ_S=[{ad:"Yurt İçi Alınan",pts:kS("so_a"),renk:"#e07b00"},{ad:"Yurt İçi Muhtemel",pts:kS("so_m"),renk:"#e07b00",kesik:true},
     {ad:"Yurt Dışı Alınan",pts:kS("yd_a"),renk:"#2e6da4"},{ad:"Yurt Dışı Muhtemel",pts:kS("yd_m"),renk:"#2e6da4",kesik:true},
-    {ad:"Toplam Alınan",pts:kS("top_a"),renk:"#e07b00"},{ad:"Toplam Muhtemel",pts:kS("top_m"),renk:"#e07b00",kesik:true}];
+    {ad:"Toplam Alınan",pts:kS("top_a"),renk:"#7b1e2b"},{ad:"Toplam Muhtemel",pts:kS("top_m"),renk:"#7b1e2b",kesik:true}];
   elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3>`
     +`<div class="gru-cards">${mkart("Prj (€) — Yurt İçi · Yurt Dışı · Toplam",PRJ_S,[c("so_a"),c("so_m"),c("yd_a"),c("yd_m"),c("top_a"),c("top_m")],v=>money(v)+" €")}${dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):""}</div>`;
 }
