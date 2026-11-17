@@ -1269,7 +1269,7 @@ async function excelYap(){ if(revEksik()) return; /* SOUM-REVIZE-ARSIV */
   uwS.getCell(rs+1,13).value="Uw Moyenne"; uwS.getCell(rs+1,13).font={bold:true}; uwS.getCell(rs+1,14).value={formula:`SUM(P4:P${rs-1})/SUM(O4:O${rs-1})`}; uwS.getCell(rs+1,14).numFmt="0.00"; uwS.getCell(rs+1,14).font={bold:true};
   swS.getCell(rs+1,13).value="Moyenne"; swS.getCell(rs+1,13).font={bold:true}; swS.getCell(rs+1,14).value={formula:`SUM(Q4:Q${rs-1})/SUM(P4:P${rs-1})`}; swS.getCell(rs+1,15).value={formula:`SUM(R4:R${rs-1})/SUM(P4:P${rs-1})`}; [14,15].forEach(k=>{ swS.getCell(rs+1,k).numFmt="0.000"; swS.getCell(rs+1,k).font={bold:true}; });
   uwS.getCell(rs+3,1).value="Df/Bini/Uf: Ürün Konfigürasyonu seri tablosu · Ψg: "+(S.psi!=null?"Pencad raporu (Warm Edge)":"seri tablosu")+" · Ug: Cam Listesi"; swS.getCell(rs+3,1).value="Sff = 0 (kasadan güneş kazancı yok sayılır) · Sfg, Tlg: Cam Listesi";
-  [uwS,swS].forEach(sh=>{ sh.getColumn(1).width=20; for(let k=2;k<=18;k++) sh.getColumn(k).width=11; }); uwS.getColumn(16).hidden=true; swS.getColumn(17).hidden=true; swS.getColumn(18).hidden=true; /* SOUM-PERF-PDF3: × Adet sütunları Excel'de gizli */
+  [uwS,swS].forEach(sh=>{ sh.getColumn(1).width=20; for(let k=2;k<=18;k++) sh.getColumn(k).width=11; }); uwS.getColumn(16).hidden=true; uwS.getColumn(6).hidden=true; swS.getColumn(6).hidden=true; swS.getColumn(17).hidden=true; swS.getColumn(18).hidden=true; /* SOUM-PERF-PDF3: × Adet sütunları Excel'de gizli */
   const buf=await hucreyeResim(await wb.xlsx.writeBuffer(),HC);
   const yy=tar.toISOString().slice(2,10).replace(/-/g,"");
   const ad=("Excel_"+(S.baslik[1]||$("f_proje").value)+"_"+(S.baslik[0]||$("f_firma").value)+"_"+yy+(DIL()==="en"?"_EN":"")).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_")+".xlsx";
@@ -1492,12 +1492,12 @@ function perfPdf(tur){
   const bas=uw?[tt("N° de chassis","Window ref."),"Seri",tt("A-Largeur (m)","A-Width (m)"),tt("B-Hauteur (m)","B-Height (m)"),"Df","Bini","Ag","Ug","Af","Uf","lg","Ψg","Aw","Uw","Adet","Uw × Adet"]
     :[tt("N° de chassis","Window ref."),"Seri",tt("A-Largeur (m)","A-Width (m)"),tt("B-Hauteur (m)","B-Height (m)"),"Df","Bini","Ag","Sfg","Tlg","Af","Aw","Sff","σ = Ag/Aw","Sfw","Tlw","Adet","Sw × Adet","Tlw × Adet"];
   /* SOUM-PERF-PDF2: Excel'de gizli sütunlar (Seri, Df, Adet) PDF'te de yok; başlık satırı açık yeşil, Uw/Sfw/Tlw hücreleri sarı */
-  const GIZ=uw?[1,4,14,15]:[1,4,15,16,17], YS=uw?[11]:[11,12], gz=a=>a.filter((_,i)=>!GIZ.includes(i));
+  const GIZ=uw?[1,4,5,14,15]:[1,4,5,15,16,17], YS=uw?[10]:[10,11] /* SOUM-BINI-GIZLI: Bini sütunu Uw ve Sfw – Tlw raporlarında gizli (17.11.2026, Melike Başaran) */, gz=a=>a.filter((_,i)=>!GIZ.includes(i));
   const rowsG=rows.map(gz), basG=gz(bas);
-  const grp=uw?[["",1],[tt("Dimensions","Dimension"),3],[tt("Vitrage","Glass"),2],[tt("Cadre","Frame"),2],["Intercalaire",2],[tt("Menuiserie","Joinery"),2]]
-    :[["",1],[tt("Dimensions","Dimension"),3],[tt("Vitrage","Glass"),3],[tt("Cadre","Frame"),4],[tt("Menuiserie","Joinery"),2]];
-  const top=uw?'<tr class="tp"><td colspan="11">'+tt("Uw Moyenne","Uw Total")+'</td><td>'+dN(tA?tX/tA:null,2)+'</td></tr>'
-    :'<tr class="tp"><td colspan="11">'+tt("Moyenne","Total")+'</td><td>'+d3(tA?tX/tA:null)+'</td><td>'+d3(tA?tY/tA:null)+'</td></tr>';
+  const grp=uw?[["",1],[tt("Dimensions","Dimension"),2],[tt("Vitrage","Glass"),2],[tt("Cadre","Frame"),2],["Intercalaire",2],[tt("Menuiserie","Joinery"),2]]
+    :[["",1],[tt("Dimensions","Dimension"),2],[tt("Vitrage","Glass"),3],[tt("Cadre","Frame"),4],[tt("Menuiserie","Joinery"),2]];
+  const top=uw?'<tr class="tp"><td colspan="10">'+tt("Uw Moyenne","Uw Total")+'</td><td>'+dN(tA?tX/tA:null,2)+'</td></tr>'
+    :'<tr class="tp"><td colspan="10">'+tt("Moyenne","Total")+'</td><td>'+d3(tA?tX/tA:null)+'</td><td>'+d3(tA?tY/tA:null)+'</td></tr>';
   const baslik=uw?tt("NOTE DE CALCUL PERFORMANCE THERMIQUE Uw (EN ISO 10077-1)","THERMAL PERFORMANCE CALCULATION NOTE Uw (EN ISO 10077-1)"):tt("NOTE DE CALCUL PERFORMANCE THERMIQUES Sw et Tlw","THERMAL PERFORMANCE CALCULATION NOTE Sw and Tlw");
   const dip=uw?tt("Valeur Uw déclarée selon EN ISO 10077-1 · Df/Bini/Uf : caractéristiques de la gamme · Ψg : ","Declared Uw value according to EN ISO 10077-1 · Df/Bini/Uf: window range data · Ψg: ")+(S.psi!=null?"Warm Edge":tt("gamme","window range"))
     :tt("Sff = 0 (apport solaire du cadre négligé) · Sfg, Tlg : caractéristiques du vitrage","Sff = 0 (solar gain through the frame neglected) · Sfg, Tlg: glazing data");
