@@ -468,7 +468,7 @@ function arsIsk(x){ const k=Number(x); return (x==null||!isFinite(k))?null:Strin
 function arsTutar(v,pb){ return v==null?"":Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0})+" "+(pb||""); }
 async function arsAc(key){
   const r=getRow(key); if(!r||key==="draft"){ setMsg("Önce satırı kaydedin; arşiv seçimi kayıtlı satırda yapılır.",false); return; }
-  if(alanYasak('net_tutar')){ setMsg("Bu alana kayıt yetkiniz yok.",false); return; }
+  /* YD-ARSIV-HERKES (17.11.2026, Melih): arşivi tüm personel açar ve seçer (OBL dahil; ALAN_YASAK yalnız elle girişte) */
   const ov=document.createElement("div");
   ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:10003";
   ov.innerHTML='<div style="background:#fff;border-radius:10px;padding:14px 16px;width:min(980px,95vw);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 30px rgba(0,0,0,.25)">'
@@ -1263,7 +1263,7 @@ async function tkSaveNote(key,val){
 const CTX_SEC=[["Teklif arşivinden seç","__ars"],["Yeniden Aç","__ac"],["Sıkı Takip Edilecek","__siki"],["Revizyon","Revizyon İstendi"],["Muhtemel","Muhtemel"],["Kazandık","Kazandık"],["Üretimde","Üretimde"],["Kaybettik","Kaybettik"],["Müşteri İşi Alamadı","Müşteri İşi Alamadı"],["İptal","İptal"],["Sil","__sil"]];
 function ctxNeden(r,v){
   if(v==="__sil") return "";
-  if(v==="__ars") return alanYasak('net_tutar')?"Bu alana kayıt yetkiniz yok":""; /* YD-ARSIV-SAGTIK */
+  if(v==="__ars") return ""; /* YD-ARSIV-SAGTIK · YD-ARSIV-HERKES */
   if(v==="__ac") return r.durum==="İptal"?"":"Yalnız İptal satırı yeniden açılır"; /* IPTAL-GERI-AL */
   if(v==="__siki") return sikiListede(r)?"":((r.durum==="Teklif Teslim Edildi"||r.durum==="Takip Bekleniyor")?"":"Yalnız Teklif Teslim Edildi / Takip Bekleniyor satırında"); /* SIKI-TAKIP */
   if(r.durum===v) return "Satır zaten bu durumda";
