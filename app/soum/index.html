@@ -133,7 +133,7 @@
     <div class="kart"><div class="tit">4 · Pencad ekstra malzemeleri <span>(Offre'de "PV …" satırı = Pencad tutarı × iskonto çarpanı × çarpan)</span></div><div class="res" id="ekstralar"></div></div>
     <div class="kart"><div class="tit">5 · Toplamlar ve opsiyonlar</div><div class="res" id="ozet"></div></div>
     <div class="kart"><div class="tit">Dipnotlar <span>(Fransızca teklifin altındaki Compris / Non compris; tikli → Compris, tiksiz → Non compris)</span></div><div class="res" id="dipnot"></div></div><!-- SOUM-DIPNOT -->
-    <div class="kart"><div class="tit">6 · Proje Notu <span>(Excel'de ayrı sayfa)</span></div>
+    <div class="kart"><div class="tit">6 · Proje Notu</div>
       <div class="g" id="pnAlan"></div>
       <div id="pnDosya" style="margin:8px 0 4px"></div><!-- SOUM-261113-PNOT -->
       <div class="uy" style="margin:8px 0 4px;color:#b00020;font-weight:bold">Motorlu ferme imposte fiyatlandırıldığında kontrol paneli kesinlikle fiyata dahil edilecek.</div>
@@ -765,7 +765,7 @@ async function baslikDoldur(){
   let yd=null;
   try{ const q=await SB.rpc("soum_proje_bilgi",{p_proje:projPdf.split(/\s/)[0]||""});
     if(!q.error&&q.data&&q.data.length) yd=q.data.find(r=>!musPdf||nrmTxt(r.musteri).includes(nrmTxt(musPdf).split(" ")[0]))||q.data[0]; }catch(e){}
-  if(S.ydSec){ yd=S.ydSec; $("f_proje").value=String(S.ydSec.proje||"").toLocaleUpperCase("tr"); } /* SOUM-YD-SECIM */
+  if(S.ydSec){ yd=S.ydSec; $("f_proje").value=String(S.ydSec.proje||"").toUpperCase(); } /* SOUM-YD-SECIM */ /* SOUM-261117-METIN: büyük harfte Türkçe karakter yok (BRIGHTON) */
   S.yd=yd;
   const ilg=yd&&yd.ilgili_ad?yd.ilgili_ad:(S.dpgf&&S.dpgf.ust.acheteur)||"";
   const tc=s=>s.toLowerCase().replace(/(^|[\s\-'])(\p{L})/gu,(a,b,c)=>b+c.toUpperCase());
@@ -788,7 +788,7 @@ async function baslikDoldur(){
 
 /* ---------------- poz tablosu ---------------- */
 const KOL=[["no","No",0],["img","Kanat",0],["facade","Facade",1],["bina","Bina (EN)",1],["pfTip","Doğrama tipi",1],["kod","Poz adı",1],["L","L",1],["H","H",1],["F","Adet",0],["seri","Seri",0],["camFr","Cam Kombinasyonu (İç)",1],["rc","RC sınıfı (EN)",1],
-  ["ug","Ug",1],["rw","Rw+Ctr",1],["uw","Uw",1],["sg","Sg",1],["tl","Tl %",1],["brut","Brüt €",0],["Q","Birim fiyat",0],["R","Toplam fiyat",0],["notlar","Notes",1],["ekf","Ekstra",1],["revnot","Revize notu",1]]; /* SOUM-BASLIK-TR (17.11.2026, Melike Başaran): DPGF sütunu kaldırıldı; başlıklar Türkçe */ /* SOUM-EKFIYAT / SOUM-POZ-REVNOT (16.11.2026, Melike Başaran) */
+  ["ug","Ug",1],["rw","Rw+Ctr",1],["uw","Uw",1],["sg","Sg",1],["tl","Tl %",1],["brut","Brüt €",0],["Q","Birim fiyat",0],["R","Toplam fiyat",0],["notlar","Açıklamalar",1],["ekf","Ekstra",1],["revnot","Revize notu",1]]; /* SOUM-BASLIK-TR (17.11.2026, Melike Başaran): DPGF sütunu kaldırıldı; başlıklar Türkçe */ /* SOUM-EKFIYAT / SOUM-POZ-REVNOT (16.11.2026, Melike Başaran) */
 /* SOUM-BASLIK-GIZ (16.11.2026, Melike Başaran): Pozlar'da Facade ve Bina başlıkları düzenlenebilir, PDF/Excel bu adı kullanır; "PDF'te gizle" tiki sütunu PDF ve Excel'den çıkarır (Formu kaydet ile saklanır) */
 const BAS=()=>S.bas||(S.bas={});
 const basAd=(k,def)=>{ const v=String(BAS()[k]||"").trim(); return v||def; };
@@ -796,7 +796,7 @@ function basTh(k){ const b=k[0]==="facade"?"fac":"bina", def=b==="fac"?(EN()?"Fi
   return '<th class="l"><input data-bas="'+b+'" value="'+esc(BAS()[b]||"")+'" placeholder="'+def+'" title="PDF/Excel başlığı" style="width:10ch"><label class="mini" style="display:block;white-space:nowrap"><input type="checkbox" data-bg="'+b+'" style="width:auto"'+(BAS()["g"+b]?" checked":"")+'> PDF\'te gizle</label></th>'; }
 /* SOUM-EKFIYAT (16.11.2026, Melike Başaran): Notes yanında başlığı değiştirilebilir ekstra sütunu; poz başına girilen tutar birim fiyata (Prix unitaire) + olarak eklenir; "Notes'a ekle" tikliyse fiyat girilen pozların notunun en altına başlık adı */
 const ekfAd=()=>String(BAS().ekf||"").trim()||"Ekstra";
-function ekfTh(){ return '<th class="l"><input data-ekf="ekf" value="'+esc(BAS().ekf||"")+'" placeholder="Ekstra" title="Sütun başlığı" style="width:12ch"><label class="mini" style="display:block;white-space:nowrap"><input type="checkbox" data-ekf="ekfNot" style="width:auto"'+(BAS().ekfNot?" checked":"")+'> Notes\'a ekle</label></th>'; }
+function ekfTh(){ return '<th class="l"><input data-ekf="ekf" value="'+esc(BAS().ekf||"")+'" placeholder="Ekstra" title="Sütun başlığı" style="width:12ch"><label class="mini" style="display:block;white-space:nowrap"><input type="checkbox" data-ekf="ekfNot" style="width:auto"'+(BAS().ekfNot?" checked":"")+'> Açıklamaya ekle</label></th>'; }
 /* SOUM-UW-MOD (16.11.2026, Melike Başaran): Uw başlığında "Uw Average" (sertifika Uw'si, varsayılan) ve "Uw" (EN ISO 10077-1 hesap değerleri Uw kutusunun altında) */
 function uwTh(){ const m=S.uwMod==="hes"?"hes":"avg", b=(k,t)=>'<button type="button" class="emb'+(m===k?' on':'')+'" data-uwm="'+k+'" style="display:block;width:100%;margin:2px 0">'+t+'</button>'; return '<th>Uw'+b("avg","Uw Average")+b("hes","Uw")+'</th>'; }
 function uwHes(p){ const G=seriGeo(p.seri), psi=S.psi!=null?S.psi:G.p2, A=p.L/1000, B=p.H/1000, Ag=(A-2*G.df)*(B-2*G.df), Aw=A*B, Af=Aw-Ag, lg=2*((A-2*(G.df-G.bi))+(B-2*(G.df-G.bi)));
