@@ -297,12 +297,12 @@ function refUpd(){const e=$('ref'),d=$('refdif'),pc=($('pencad')||{}).value||'',
   /* CAM-V19 PENCAD: bos/Evet+ref yok -> birim fiyat bos; ref yalniz Evet'te girilir; |fark|>15 -> soluk birim + Onaysiz Kullanmayiniz */
   e.disabled=pc!=='evet';if(pc!=='evet'&&e.value!=='')e.value='';
   const r=parseFloat(String(e.value).replace(',','.'));let p=null;
-  if(r>0&&b>0){p=Math.round((r/b-1)*100);d.textContent=(p>0?'+':p<0?'\u2212':'\u00b1')+'%'+Math.abs(p);d.className='refdif '+(Math.abs(p)>15?'rbad':'rok');}
+  const oz=!!window._OZEL;/* CAM-OZEL-PENCAD */if(!oz&&r>0&&b>0){p=Math.round((r/b-1)*100);d.textContent=(p>0?'+':p<0?'\u2212':'\u00b1')+'%'+Math.abs(p);d.className='refdif '+(Math.abs(p)>15?'rbad':'rok');}
   else{d.textContent='\u2013';d.className='refdif';}
-  {const ok=$('pencadok');if(ok)ok.style.display=(pc==='evet'&&p!=null&&Math.abs(p)<=15)?'':'none';} /* CAM-V20 PENCAD-OK */
+  {const ok=$('pencadok');if(ok)ok.style.display=(pc==='evet'&&(oz?r>0:(p!=null&&Math.abs(p)<=15)))?'':'none';} /* CAM-V20 PENCAD-OK */
   if(!big)return;const host=big.parentNode;host.querySelectorAll('.bfwarn,.bfhint').forEach(x=>x.remove());
   const show=pc==='hayir'||(pc==='evet'&&r>0),bad=p!=null&&Math.abs(p)>15;
-  big.classList.toggle('faded',show&&bad);
+  big.classList.toggle('faded',show&&bad);if(oz){big.textContent='\u2014';host.insertAdjacentHTML('beforeend','<div class="bfhint">\u00d6zel cam (bombeli / nerv\u00fcr / jaluzili): model fiyatlamaz, Pencad fiyat\u0131n\u0131 kullan\u0131n\u0131z</div>');return;}
   if(!show){big.textContent='\u2014';host.insertAdjacentHTML('beforeend','<div class="bfhint">'+(pc===''?'Pencad\'de fiyat var m\u0131? se\u00e7in':'Referans fiyat\u0131 girin')+'</div>');}
   else{big.textContent=f2(b,2)+' \u20ac/m\u00b2';if(bad)host.insertAdjacentHTML('beforeend','<div class="bfwarn">Onays\u0131z Kullanmay\u0131n\u0131z</div>');}}
 function ownName(q){const k=$('kap').value,t=q.tp?' Temperli':'',a=q.ac?' Akustik':'',sa=q.sat?' Satin':'',x=q.xc?' Extra Clear':'';
@@ -327,7 +327,7 @@ function calc(){const q=own(),u=ctxUI(),h=hedef();$('ortaWrap').style.display=q.
   $('out').innerHTML='<div class="unitrow"><div><div class="lbl">Birim fiyat '+badge+'</div><div class="big">'+f2(unit*KAT,2)/* CAM-V16 BIRIM-2HANE */+' €/m²</div></div>'+
    '<div class="komb"><div class="lbl">Fiyatlanan kombinasyon</div><b>'+/* CAM-V17 KOMB-FORMDAN; CAM-LISTE-KENDI: katalogdan başka cam fiyatlandıysa onun adı + not */(sel.src==='cat'?nmT(sel.name)+' · '+f2(kalin(sel.q),2):ownName(q)+' · '+f2(kalin(q),2))+' mm</b>'+note+'</div></div>'+
    hedefUyari(vo,h)+yakinlar(q,po,h,hasH,u);
-  window._BF=unit*KAT;refUpd();
+  window._BF=unit*KAT;/* CAM-OZEL-PENCAD (17.11.2026, Melih): bombeli / nervür / jaluzili cam modelle fiyatlanmaz, onay için Pencad fiyatı kullanılır */window._OZEL=/bombe|nerv[üu]r|jaluzi/i.test((window._OZEL_AD||'')+' '+(sel.src==='cat'?sel.name:''));refUpd();
   const tgs=sel.q.tg,fk=P.key.split('|').slice(2,4).join('|');
   const sim=G.filter(r=>r!==g&&r.k.split('|').slice(2,4).join('|')===fk&&Math.abs(r.tg-tgs)<=2);
   let mh='';const row=r=>'<tr><td>'+r.komb+'</td><td class="num">'+r.n+'</td><td class="num">'+r.p+'</td><td class="num">'+fmt(r.bf)+'</td><td class="num">'+fmt(r.lo)+'–'+fmt(r.hi)+'</td></tr>';

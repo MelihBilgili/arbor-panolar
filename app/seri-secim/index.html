@@ -712,7 +712,7 @@ function cfYukle(){ if(CFP) return CFP;
         CFW=w; ok(w); }catch(e){ no(e); } };
     f.onerror=no; document.body.appendChild(f); });
   return CFP; }
-function cfIsle(w,r0){ const C0=r0.C, r={kombinasyon:C0.komb||C0.c,ug:C0.ug,lt:C0.tl==null?null:C0.tl/100,g:C0.g,_rwctr:C0.rwc}; const d=w.document, $w=id=>d.getElementById(id);
+function cfIsle(w,r0){ const C0=r0.C, r={kombinasyon:C0.komb||C0.c,ug:C0.ug,lt:C0.tl==null?null:C0.tl/100,g:C0.g,_rwctr:C0.rwc}; const d=w.document, $w=id=>d.getElementById(id); w._OZEL_AD=String(r.kombinasyon||""); /* CAM-OZEL-PENCAD */
   const q=CAMM&&CAMM.CAMF.catRow({kombinasyon:r.kombinasyon,ug:r.ug,tl:r.lt,sf:r.g});
   if(!q) return false;
   const sel=(id,v)=>{ const e=$w(id); if(!e) return; v=String(v); if(![...e.options].some(o=>o.value===v)){ const o=d.createElement("option"); o.value=v; o.textContent=v; e.appendChild(o); } e.value=v; };

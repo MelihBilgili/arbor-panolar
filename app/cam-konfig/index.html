@@ -463,7 +463,7 @@ function cfYukle(){ if(CFP) return CFP;
         CFW=w; ok(w); }catch(e){ no(e); } };
     f.onerror=no; document.body.appendChild(f); });
   return CFP; }
-function cfIsle(w,r){ const d=w.document, $w=id=>d.getElementById(id);
+function cfIsle(w,r){ const d=w.document, $w=id=>d.getElementById(id); w._OZEL_AD=String(r.kombinasyon||""); /* CAM-OZEL-PENCAD */
   const q=CAMM&&CAMM.CAMF.catRow({kombinasyon:r.kombinasyon,ug:r.ug,tl:r.lt,sf:r.g,rw:r.rw,ctr:r.ctr});
   if(!q) return false;
   const sel=(id,v)=>{ const e=$w(id); if(!e) return; v=String(v); if(![...e.options].some(o=>o.value===v)){ const o=d.createElement("option"); o.value=v; o.textContent=v; e.appendChild(o); } e.value=v; };
