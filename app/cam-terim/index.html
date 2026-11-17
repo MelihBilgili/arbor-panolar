@@ -52,7 +52,7 @@
     <div id="marka" class="tw"></div></details>
   <div id="fyblok" style="display:none">
   <details class="blk" open><summary>Fiyat türetme</summary>
-    <div class="not">Cam Fiyat, Arbor'un ERP cam siparişlerinden (cam.xlsx, 739 kayıt) kalibre edilmiş log-doğrusal modelle hesaplanır: <b>ln(fiyat) = sabit + Σ katsayı × değişken</b>. Bu yüzden her etken fiyatı <b>yüzde</b> olarak değiştirir; € karşılığı başlangıç camına bağlıdır. Model çıktısı ×2,5 (KAT) ile Cam Fiyat'a çevrilir. Geçmiş siparişlerde aynı yapı + özellik kombinasyonu varsa o grubun sapması kadar düzeltme eklenir (grup düzeltmesi). Marka ve kaplama adları hesaptan önce genel terime çevrilir. Aşağıdaki tablo, referans camda yalnız o etken değişirken (diğer her şey sabit, grup düzeltmesi hariç) fiyatın ne kadar değiştiğini gösterir. Bu bölüm yalnız MB oturumunda görünür.</div>
+    <div class="not">Cam Fiyat, Arbor'un ERP cam siparişlerinden (713 kayıt) kalibre edilmiş modelle hesaplanır: <b>alış = e<sup>sabit + Σ katsayı × değişken</sup> × (30 + kural €)</b>, Cam Fiyat = alış × 2,5 (KAT). <b>Kural €</b> Enes Uzun'un 16.11.2026 alış fiyatı kurallarıdır: cam katmanı 4 → 5 mm +1,5 · 5 → 6 mm +2,5 · 6 → 8 mm +3,5 €/m² (8 mm üstü +1,75 €/mm); PVB 0,38 / 0,76 / 1,14 / 1,52 mm = 3,5 / 6 / 9,5 / 12,5 €/m², akustik PVB ek +1,5 / +3 / +4,25 / +5,5; ara boşluk farkı yok; argon +2 €/m². Diğer etkenler (kaplama, temper, extra clear, satine, warm edge, Tlg, Sfg, Rw+Ctr, metraj) yüzde olarak etki eder. Camların dıştan içe sırası fiyatı değiştirmez. Geçmiş siparişlerde aynı kombinasyon ya da tek farkla ayrılan kardeşi (Low-E, akustik, temper, extra clear, argon, warm edge, tek cam katmanı, boşluk) varsa bunların sapması eşit ağırlıkla düzeltme olarak eklenir (grup düzeltmesi). Marka ve kaplama adları hesaptan önce genel terime çevrilir. Aşağıdaki tablo, referans camda yalnız o etken değişirken (grup düzeltmesi hariç) fiyatın ne kadar değiştiğini gösterir. Bu bölüm yalnız MB oturumunda görünür.</div>
     <div id="fyref" class="sat"></div>
     <div id="fytab" class="tw"></div>
     <h3>Örnek camlar (referans koşullarda)</h3>
@@ -228,47 +228,48 @@ function sozluk(){
     return '<tr><td class="b">'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td>'+esc(r[2])+'</td><td class="b">'+esc(r[3])+'</td><td class="g">'+esc(okur)+'</td><td>'+esc(r[4])+'</td></tr>'; });
   $("marka").innerHTML='<table><thead><tr><th>Terim / marka</th><th>Üretici</th><th>Tür</th><th>Genel karşılık</th><th>Fiyat modelinin okuduğu</th><th>Açıklama</th></tr></thead><tbody>'+rows.join("")+'</tbody></table>';
 }
-/* ---- Fiyat türetme (yalnız MB) ---- */
-function fiyatX(X){ const K=M.DB.coef; let s=M.DB.ic; for(const k in K) s+=K[k]*(X[k]||0); return Math.exp(s)*M.KAT; }
-function bazX(){ return {tg:8,tg2:Math.pow(8-14,2)/100,nlam:0,pvb4:0,triple:0,cav:16,cav_dar:0,cav_genis:0,lowe:1,solar:0,satin:0,temper:0,acoustic:0,extraclear:0,fireproof:0,argon:1,we:1,karolaj:0,egrisel:0,
-  l_ortm2:Math.log(1),tl:0.79,rwctr:30,sf:0.61,l_m2:Math.log(10),kucuk_m2:0,kucuk_adet:0}; }
-const tgX=(X,t)=>{ X.tg=t; X.tg2=Math.pow(Math.min(t,22)-14,2)/100; return X; };
-function fark(ad,deg,fn,not){ const a=bazX(), b=fn(bazX()); const pa=fiyatX(a), pb=fiyatX(b); return [ad,deg,pb-pa,pb/pa-1,not||""]; }
+/* ---- Fiyat türetme (yalnız MB) — CAM-KURAL (17.11.2026): DB.fiyat ile ---- */
+const U0={frm:"duz",ort:1,m2:10,adet:10}, V0={tl:0.79,sf:0.61,rw:30};
+const Q0={c:["4","4"],cu:16,tr:0,lowe:1,solar:0,fp:0,ac:0,sat:0,tp:0,xc:0,ar:1,we:1};
+function fyP(d){ d=d||{}; return M.DB.fiyat(Object.assign({},Q0,d.q||{}),Object.assign({},V0,d.v||{}),Object.assign({},U0,d.u||{}),null).est*M.KAT; }
 function fiyatTablo(){
-  const K=M.DB.coef, b0=fiyatX(bazX());
-  const R=[];
-  [8,10,12,14,16,18,20,24,28].forEach(t=>R.push(fark("Toplam cam kalınlığı",t+" → "+(t+2)+" mm",X=>tgX(X,t+2),"")));
-  R.forEach((r,i)=>{ const t=[8,10,12,14,16,18,20,24,28][i]; const a=tgX(bazX(),t),b=tgX(bazX(),t+2); r[2]=fiyatX(b)-fiyatX(a); r[3]=fiyatX(b)/fiyatX(a)-1; if(t>=18&&t<22) r[4]='Modelin eğrisel kalınlık terimi bu aralıkta fiyatı düşürüyor (bu kalınlıkta sipariş az; güvenilir değil).'; if(t===8) r[4]='Kalınlık etkisi doğrusal değil: € farkı başlangıç kalınlığına göre değişir.'; });
+  const K=M.DB.kural, b0=fyP();
   const E=[
-   ["Lamine cam","+1 lamine cam (kalınlık aynı)",X=>{X.nlam=1;return X;},"PVB'nin kendi kalınlığı ayrıca kalınlık satırından gelir."],
-   ["PVB kalınlığı","PVB ≥ 1,52 mm (.4 ve üstü)",X=>{X.nlam=1;X.pvb4=1;return X;},"Lamine etkisi dahil."],
-   ["Akustik PVB","Akustik",X=>{X.acoustic=1;return X;},""],
-   ["Üçlü cam","Çift → üçlü (yapı)",X=>{X.triple=1;return X;},"Üçüncü camın kalınlığı ayrıca kalınlık satırından gelir."],
-   ["Boşluk","16 → 12 mm",X=>{X.cav=12;X.cav_dar=1;return X;},""],
-   ["Boşluk","16 → 20 mm",X=>{X.cav=20;X.cav_genis=1;return X;},""],
-   ["Temper","Temperli",X=>{X.temper=1;return X;},""],
-   ["Satine","Satine / buzlu",X=>{X.satin=1;return X;},""],
-   ["Extra Clear","Extra Clear",X=>{X.extraclear=1;return X;},""],
-   ["Yangın dayanımı","EI30",X=>{X.fireproof=1;return X;},"EI60 = EI30 × 1,1."],
-   ["Argon","Hava → argon",X=>X,"Modelde ayrı etkisi yok: siparişlerin hemen hepsi argonlu, fark ayrıştırılamıyor."],
-   ["Warm edge","Alüminyum çıta → warm edge",X=>{X.we=0;return X;},"Ters yönde hesaplandı."],
-   ["Karolaj","Karolajlı",X=>{X.karolaj=1;return X;},""],
-   ["Eğrisel","Kemerli / dairesel",X=>{X.egrisel=1;return X;},""],
-   ["Işık geçirimi","Tlg +0,05",X=>{X.tl+=0.05;return X;},""],
-   ["Solar faktör","Sfg −0,05",X=>{X.sf-=0.05;return X;},""],
-   ["Ses yalıtımı","Cam Rw+Ctr +1 dB",X=>{X.rwctr+=1;return X;},""],
-   ["Kaplama tipi","Low-E → Solar Low-E (yalnız tip)",X=>{X.solar=1;return X;},"Solar camın düşük Sfg'si ayrıca Sfg satırından gelir."],
-   ["Ortalama cam alanı","1 → 2 m²/adet",X=>{X.l_ortm2=Math.log(2);return X;},""],
-   ["Toplam metraj","10 → 50 m²",X=>{X.l_m2=Math.log(50);return X;},""],
-   ["Küçük sipariş","Toplam < 2 m²",X=>{X.kucuk_m2=1;return X;},""],
-   ["Küçük sipariş","≤ 2 adet",X=>{X.kucuk_adet=1;return X;},""]
+   ["Cam katmanı","4 → 5 mm",{q:{c:["4","4"]}},{q:{c:["5","4"]}},"EU kuralı: +1,5 €/m² alış."],
+   ["Cam katmanı","5 → 6 mm",{q:{c:["5","4"]}},{q:{c:["6","4"]}},"EU kuralı: +2,5 €/m² alış."],
+   ["Cam katmanı","6 → 8 mm",{q:{c:["6","4"]}},{q:{c:["8","4"]}},"EU kuralı: +3,5 €/m² alış."],
+   ["Cam katmanı","8 → 10 mm",{q:{c:["8","4"]}},{q:{c:["10","4"]}},"EU kuralında yok; 6 → 8 eğimiyle (+1,75 €/mm) uzatıldı."],
+   ["Lamine","4 → 44.1 (0,38 PVB)",{},{q:{c:["44.1","4"]}},"Performans (Tlg, Sfg, Rw+Ctr) sabit tutuldu; gerçekte Rw+Ctr artar."],
+   ["PVB","44.1 → 44.2 (0,76)",{q:{c:["44.1","4"]}},{q:{c:["44.2","4"]}},"EU kuralı: 0,38 = 3,5 · 0,76 = 6 €/m²."],
+   ["PVB","44.2 → 44.3 (1,14)",{q:{c:["44.2","4"]}},{q:{c:["44.3","4"]}},"EU kuralı: 1,14 = 9,5 €/m²."],
+   ["PVB","44.3 → 44.4 (1,52)",{q:{c:["44.3","4"]}},{q:{c:["44.4","4"]}},"EU kuralı: 1,52 = 12,5 €/m²."],
+   ["Akustik PVB","44.2 → 44.2 akustik",{q:{c:["44.2","4"]}},{q:{c:["44.2","4"],ac:1}},"EU kuralı: 0,76 akustik +3 €/m² (1,52: +5,5)."],
+   ["Boşluk","16 → 12 mm",{},{q:{cu:12}},"EU: boşluk farkı yok."],
+   ["Boşluk","16 → 20 mm",{},{q:{cu:20}},"EU: boşluk farkı yok."],
+   ["Argon","Hava → argon",{q:{ar:0}},{},"EU kuralı: +2 €/m² alış."],
+   ["Üçlü cam","Çift → üçlü (4/4/4)",{},{q:{c:["4","4","4"],tr:1}},""],
+   ["Temper","Temperli",{},{q:{tp:1}},""],
+   ["Satine","Satine / buzlu",{},{q:{sat:1}},""],
+   ["Extra Clear","Extra Clear",{},{q:{xc:1}},""],
+   ["Yangın dayanımı","EI30",{},{q:{fp:1}},"EI60 = EI30 × 1,1."],
+   ["Warm edge","Alüminyum çıta → warm edge",{q:{we:0}},{},""],
+   ["Kaplama tipi","Low-E → Solar Low-E (yalnız tip)",{},{q:{solar:1}},"Solar camın düşük Sfg'si ayrıca Sfg satırından gelir."],
+   ["Işık geçirimi","Tlg +0,05",{},{v:{tl:0.84}},""],
+   ["Solar faktör","Sfg −0,05",{},{v:{sf:0.56}},""],
+   ["Ses yalıtımı","Cam Rw+Ctr +1 dB",{},{v:{rw:31}},""],
+   ["Karolaj","Karolajlı",{},{u:{frm:"karolaj"}},""],
+   ["Eğrisel","Kemerli / dairesel",{},{u:{frm:"egrisel"}},""],
+   ["Ortalama cam alanı","1 → 2 m²/adet",{},{u:{ort:2}},""],
+   ["Toplam metraj","10 → 50 m²",{},{u:{m2:50}},""],
+   ["Küçük sipariş","Toplam < 2 m²",{},{u:{m2:1.5}},""],
+   ["Küçük sipariş","≤ 2 adet",{},{u:{adet:2}},""]
   ];
-  E.forEach(e=>{ const r=fark(e[0],e[1],e[2],e[3]); if(/Ters yönde/.test(e[3])){ r[2]=-r[2]; r[3]=1/(1+r[3])-1; } R.push(r); });
-  const ornek=[["Kaplamasız 4 / 16 Ar-We / 4",X=>{X.lowe=0;X.tl=0.82;X.sf=0.78;return X;}],["Low-E 4 / 16 Ar-We / 4 Low-e (referans)",X=>X],["Solar Low-E N(70/37) 6 / 16 Ar-We / 4",X=>{tgX(X,10);X.solar=1;X.tl=0.70;X.sf=0.37;return X;}],["Akustik 44.2 Acoustic / 16 Ar-We / 4 Low-e",X=>{tgX(X,12);X.nlam=1;X.acoustic=1;X.tl=0.78;X.rwctr=34;return X;}]];
-  $("fyref").innerHTML='Referans cam: <b>4 / 16 Ar-We / 4 Low-e</b> (Tlg 0,79 · Sfg 0,61 · Cam Rw+Ctr 30 dB), düz, 10 adet / 10 m² → <b>'+f(b0,2)+' €/m²</b>.';
+  const R=E.map(e=>{ const pa=fyP(e[2]), pb=fyP(e[3]); return [e[0],e[1],pb-pa,pb/pa-1,e[4]]; });
+  const ornek=[["Kaplamasız 4 / 16 Ar-We / 4",{q:{lowe:0},v:{tl:0.82,sf:0.78}}],["Low-E 4 / 16 Ar-We / 4 Low-e (referans)",{}],["Solar Low-E N(70/37) 6 / 16 Ar-We / 4",{q:{c:["6","4"],solar:1},v:{tl:0.70,sf:0.37}}],["Akustik 44.2 Acoustic / 16 Ar-We / 4 Low-e",{q:{c:["44.2","4"],ac:1},v:{tl:0.78,rw:34}}]];
+  $("fyref").innerHTML='Referans cam: <b>4 / 16 Ar-We / 4 Low-e</b> (Tlg 0,79 · Sfg 0,61 · Cam Rw+Ctr 30 dB), düz, 10 adet / 10 m² → <b>'+f(b0,2)+' €/m²</b> (alış '+f(b0/M.KAT,2)+' €/m²). Kural € alış fiyatına eklenir; tablo Cam Fiyat (×'+M.KAT+') farkını gösterir.';
   $("fytab").innerHTML='<table><thead><tr><th>Etken</th><th>Değişim</th><th>Fiyat farkı €/m²</th><th>Oran</th><th>Not</th></tr></thead><tbody>'+R.map(r=>'<tr><td class="b">'+esc(r[0])+'</td><td>'+esc(r[1])+'</td><td class="n">'+(r[2]>0.004?"+":"")+f(Math.abs(r[2])<0.005?0:r[2],2)+'</td><td class="n">'+(r[3]>0.00005?"+":"")+f(Math.abs(r[3])<0.00005?0:100*r[3],1)+' %</td><td class="g">'+esc(r[4])+'</td></tr>').join("")+'</tbody></table>';
-  $("fyorn").innerHTML='<table><thead><tr><th>Örnek cam</th><th>Fiyat €/m²</th></tr></thead><tbody>'+ornek.map(o=>'<tr><td>'+esc(o[0])+'</td><td class="n">'+f(fiyatX(o[1](bazX())),2)+'</td></tr>').join("")+'</tbody></table>';
-  $("fykat").innerHTML=Object.keys(K).map(k=>'<span class="kat"><code>'+k+'</code> '+f(K[k],4)+'</span>').join(" ")+' · sabit <code>ic</code> '+f(M.DB.ic,4)+' · <code>KAT</code> '+M.KAT;
+  $("fyorn").innerHTML='<table><thead><tr><th>Örnek cam</th><th>Fiyat €/m²</th></tr></thead><tbody>'+ornek.map(o=>'<tr><td>'+esc(o[0])+'</td><td class="n">'+f(fyP(o[1]),2)+'</td></tr>').join("")+'</tbody></table>';
+  $("fykat").innerHTML=Object.keys(K.coef).map(k=>'<span class="kat"><code>'+k+'</code> '+f(K.coef[k],4)+'</span>').join(" ")+' · sabit <code>ic</code> '+f(K.ic,4)+' · <code>C</code> '+K.C+' · <code>KAT</code> '+M.KAT;
 }
 /* Hesaplayıcı */
 function medianM(a){a=a.slice().sort((x,y)=>x-y);const n=a.length;return n?(n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2):null;}
@@ -284,17 +285,16 @@ function hesapla(){
   const F=M.CAMF.feats(k);
   let tl=num("htl"), sf=num("hsf"), rw=num("hrw"); if(tl!=null&&tl>1)tl/=100; if(sf!=null&&sf>1)sf/=100;
   const tah=[]; if(tl==null){tl=perfM(q,"tl");tah.push("Tlg");} if(sf==null){sf=perfM(q,"sf");tah.push("Sfg");} if(rw==null){rw=perfM(q,"rw");tah.push("Rw+Ctr");}
-  const cl=x=>x?1:0, ad=Math.max(1,+$("had").value||10), m2=Math.max(0.2,+$("hm2").value||10);
-  const X={tg:q.tg,tg2:Math.pow(Math.min(q.tg,22)-14,2)/100,nlam:q.nlam,pvb4:q.pvb4,triple:q.tr,cav:q.cu,cav_dar:cl(q.cu<=12),cav_genis:cl(q.cu>=20),lowe:q.lowe,solar:q.solar,satin:q.sat,temper:cl(q.tp),acoustic:q.ac,extraclear:q.xc,fireproof:q.fp,argon:q.ar,we:q.we,karolaj:$("hka").checked?1:0,egrisel:$("heg").checked?1:0,
-    l_ortm2:Math.log(Math.min(Math.max(m2/ad,0.05),4)),tl,rwctr:rw,sf,l_m2:Math.log(Math.min(Math.max(m2,0.2),300)),kucuk_m2:cl(m2<2),kucuk_adet:cl(ad<=2)};
-  const K=M.DB.coef; let s=M.DB.ic; const kat=[]; for(const c in K){ const v=K[c]*(X[c]||0); s+=v; if(Math.abs(v)>1e-9) kat.push([c,X[c],v]); }
-  const est=Math.exp(s)*(q.solar&&M.SEC_COAT[q.coat]?M.SEC_K:1);
-  const flags=[q.tr,q.lowe,q.solar,q.fp,q.ac,q.sat,cl(q.tp),q.xc,q.ar,q.we].join(''), an=M.GADJ_NF[q.c.join('/')+'|'+q.cu+'|*|'+flags];
-  const fy=(an?est*Math.exp(an[0]):est)*M.KAT;
+  const ad=Math.max(1,+$("had").value||10), m2=Math.max(0.2,+$("hm2").value||10), ka=$("hka").checked, eg=$("heg").checked;
+  /* CAM-KURAL (17.11.2026): fiyat ../cam/ DB.fiyat (EU kuralları + simetri + kardeş havuzu) */
+  const u={frm:ka&&eg?"ke":ka?"karolaj":eg?"egrisel":"duz",ort:m2/ad,m2,adet:ad}, v={tl,sf,rw};
+  const qr=Object.assign({},q,{c:q.c.slice().reverse()}),_d=t=>{const a=perfM(qr,t),b=perfM(q,t);return a==null||b==null?0:a-b;};
+  const vr=qr.c.join("/")!==q.c.join("/")?{tl:tl==null?null:tl+_d("tl"),sf:sf==null?null:sf+_d("sf"),rw:rw==null?null:rw+_d("rw")}:null;
+  const Z=M.DB.fiyat(Object.assign({},q,{tp:q.tp?1:0}),v,u,vr), fy=Z.unit*M.KAT, K=M.DB.kural;
   out.innerHTML='<div class="sat"><b>Model okuması:</b> camlar '+esc(q.c.join(" / "))+' · toplam cam '+f(q.tg,1)+' mm · boşluk '+q.cu+' mm · '+esc(etiket(F))+'</div>'
    +'<div class="sat"><b>Tlg</b> '+f(tl,2)+' · <b>Sfg</b> '+f(sf,2)+' · <b>Cam Rw+Ctr</b> '+f(rw,0)+' dB'+(tah.length?' <span class="g">('+tah.join(", ")+' Cam Listesi\'ndeki en yakın camlardan tahmin)</span>':'')+'</div>'
-   +'<div class="sat big">Cam Fiyat: <b>'+f(fy,2)+' €/m²</b>'+(an?' <span class="g">(grup düzeltmesi ×'+f(Math.exp(an[0]),3)+', '+an[1]+' sipariş)</span>':'')+'</div>'
-   +'<details><summary>Hesap ayrıntısı</summary><table><thead><tr><th>Değişken</th><th>Değer</th><th>Katsayı × değer</th></tr></thead><tbody>'+kat.map(r=>'<tr><td><code>'+r[0]+'</code></td><td class="n">'+f(r[1],3)+'</td><td class="n">'+f(r[2],4)+'</td></tr>').join("")+'<tr><td><code>ic</code></td><td></td><td class="n">'+f(M.DB.ic,4)+'</td></tr></tbody></table><div class="g">Fiyat = e<sup>toplam</sup> × grup düzeltmesi × KAT ('+M.KAT+').</div></details>';
+   +'<div class="sat big">Cam Fiyat: <b>'+f(fy,2)+' €/m²</b>'+(Z.g?' <span class="g">(grup düzeltmesi ×'+f(Math.exp(Z.adj),3)+', '+f(Z.n,1)+' sipariş ağırlığı — kendi ve kardeş kombinasyonlar)</span>':'')+'</div>'
+   +'<details><summary>Hesap ayrıntısı</summary><div class="g">Kural €: '+f(Z.R,2)+' €/m² (cam katmanları, PVB, argon) · model çarpanı '+f(Z.est/(K.C+Z.R),4)+' · alış = çarpan × ('+K.C+' + kural €) = '+f(Z.est,2)+' €/m² · Cam Fiyat = alış × grup düzeltmesi × KAT ('+M.KAT+').</div></details>';
 }
 (async function(){
   try{ await modelYukle(); }catch(e){ $("durum").textContent="Fiyat modeli okunamadı; terimler gösteriliyor."; }
