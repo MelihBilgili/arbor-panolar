@@ -7,6 +7,7 @@
 // CAM-FIYAT-ONAY-KISA (13.11.2026, Melih): WA mesajı etiketli satırlara indirildi — seri, yorum cümleleri,
 //   "Fark neden büyük" başlığı ve "Onay: App › Giriş › Cam Fiyat Onayı Ver" satırı kaldırıldı.
 // CAM-FIYAT-ONAY-AD-ESLES (13.11.2026, Melih, v5): Pencad/cam listesi ve teklif eşleşmesinde Akustik=Acoustic; aynı cam "en yakın" diye gösterilmez.
+// CAM-YAKIN-TEKLIF (17.11.2026, Melih, v8): teklif satırları yerine "Yakın teklifler" listesi (b.yakin).
 // CAM-ONAY-SATIS (17.11.2026, Melih, v7): kıyas yeniden girilen Pencad satış fiyatı (v6'daki alış ×2,5 kıyası kaldırıldı; hesap satırı kalır).
 // CAM-ONAY-ALIS25 + CAM-ONAY-HESAP (17.11.2026, Melih, v6): fark Pencad alış ×2,5'e göre (girilen Pencad satışı, listedeki satış/alış
 //   çarpanıyla ×2,5'e çevrilir; form "kiyas" gönderir, yoksa pencad_satir'dan hesaplanır); mesaja modelin birim fiyat hesabı ("hesap") eklenir.
@@ -102,7 +103,6 @@ function mesajYaz(b: Record<string, unknown>) {
   const S = (Array.isArray(b.satirlar) ? b.satirlar : []) as Sat[];
   const bul = (re: RegExp) => S.find((x) => re.test(String(x.lbl || "")));
   const ls = bul(/listesindeki en yakın kombinasyon/i) || bul(/listesindeki/i);
-  const tk = bul(/teklif/i);
   const out: string[] = [];
   out.push(`*Cam fiyat onay talebi* · ${tarih()} · ${b.kisi_ad || b.kisi_kod || "?"}`);
   out.push(`${komb}.`);
@@ -121,18 +121,11 @@ function mesajYaz(b: Record<string, unknown>) {
     if (ps && Math.abs(ps / pencad - 1) > 0.01) t += ` Girilen Pencad fiyatı (${tr(pencad)}) listedekinden farklı.`;
     out.push(t);
   } else if (b.pencad_satir === null) out.push("Pencad cam listesi: Kombinasyon bulunamadı.");
-  // Teklif satırı
-  let tkFiyat: number | null = null, tkAyni = false, tkN = 0;
-  if (tk && tk.fiyat) {
-    const m = /([\d.]+,\d+)\s*€/.exec(tk.fiyat); tkFiyat = m ? sayi(m[1]) : null;
-    const n = /(\d+)\s*teklif/i.exec(tk.fiyat); tkN = n ? +n[1] : 0;
-    tkAyni = nrm(tk.komb) === nrm(komb);
-  }
-  if (tkFiyat) {
-    out.push(tkAyni ? `Teklif kombinasyonu: birebir aynısı var` : `Tekliflerdeki en yakın kombinasyon: ${tk!.komb}`);
-    out.push(`Teklif adedi: ${tkN || "?"}`);
-    out.push(`Tekliflere göre fiyat (Teklifin ortalaması × 2,5): ${tr(tkFiyat)} €/m².`);
-  } else out.push("Fiyat tekliflerinde bu cama yakın bir kombinasyon yok.");
+  // CAM-YAKIN-TEKLIF (17.11.2026, Melih, v8): "en yakın teklif" yerine fiyatlanan kombinasyonla aynı ya da tek yönden farklı geçmiş teklifler;
+  // her biri için fiyatlanan kombinasyonun bileşen kurallarıyla fiyatı (satırlar formdan, b.yakin)
+  const YK = (Array.isArray(b.yakin) ? b.yakin : []).map((x) => String(x)).filter((x) => x.trim());
+  if (YK.length) { out.push("Yakın teklifler:"); for (const x of YK) out.push("– " + x); }
+  else out.push("Yakın teklifler: aynı ya da tek yönden farklı kombinasyonda geçmiş teklif yok.");
   // Cam listesi satırı
   if (ls) {
     const m = /([\d.]+,\d+)\s*€/.exec(String(ls.fiyat || "")); const lf = m ? sayi(m[1]) : null;
@@ -142,8 +135,7 @@ function mesajYaz(b: Record<string, unknown>) {
   }
   // Model
   const rz = String(b.rozet || "").trim();
-  if (tkFiyat && tkN > 0 && tkN <= 3 && Math.abs(yuzde(pencad, tkFiyat)) <= 15) out.push(`• Formun fiyatı modelden geliyor (${rz || tkN + " teklif"}). Az teklifli kombinasyonda teklif fiyatı modeli neredeyse hiç yukarı çekmiyor (“az teklifli kombinasyon” sorunu).`);
-  else if (rz) out.push(`• Formun fiyat dayanağı: ${rz}.`);
+  if (rz) out.push(`• Formun fiyat dayanağı: ${rz}.`);
   return { text: out.join("\n"), fark };
 }
 

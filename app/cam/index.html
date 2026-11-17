@@ -241,13 +241,33 @@ function yakinlar(q,po,h,hasH,u){let out='';
   if(bc&&_y1&&_y1===bc.C){const i=out.lastIndexOf('<div class="line yk">');out=out.slice(0,i);
     out+=lineY('Cam listesindeki en yakın hedef değerler ve kombinasyon:',bodyY(nmT(bc.C.komb),kalL(bc.C),bc.C,catFiyat(bc.C,u)));}
   else out+=lineY('Cam listesindeki en yakın kombinasyon:',bc?bodyY(nmT(bc.C.komb),kalL(bc.C),bc.C,catFiyat(bc.C,u)):'—');
-  /* 3) forma islenen kombinasyona en yakin gecmis teklif grubu */
-  let bg=G.find(r=>r.k===po.key)||null;
-  if(!bg){let bd=1e9;for(const r of G){const Q=gq(r),d=Dq(q,Q)+(Q.frm!==u.frm?0.5:0);if(d<bd-1e-9||(Math.abs(d-bd)<=1e-9&&bg&&r.n>bg.n)){bd=d;bg=r;}}}
-  if(bg){const Q=gq(bg);out+=lineY('Fiyat tekliflerindeki en yakın kombinasyon:',bodyY(nmT(bg.komb),kalin(Q),perf(Q),f2(bg.bf*KAT,2)+' €/m² (ort. teklif × 2,5 · '+bg.n+' teklif)'/* CAM-V15 */));}
-  else out+=lineY('Fiyat tekliflerindeki en yakın kombinasyon:','—');
+  /* CAM-YAKIN-TEKLIF (17.11.2026, Melih): "en yakın teklif" yerine fiyatlanan kombinasyonla aynı ya da tek yönden farklı geçmiş teklifler;
+     her biri için fiyatlanan kombinasyonun fiyatı bileşen kurallarıyla: (teklif alışı − solar ek) × katsayı oranı + kural € farkı + solar ek, × 2,5 */
+  const YT=yakinTek(q,po,u);window._YAKIN=YT?YT.txt:[];
+  out+=lineY('Yakın teklifler:',YT&&YT.L.length?YT.L.map(x=>'<div>'+x.html+'</div>').join('')+'<div><b>Teklif adedine göre ağırlıklı ortalama: '+f2(YT.ort,2)+' €/m²</b> ('+YT.N+' teklif)</div>':'<span class="lv">— aynı ya da tek yönden farklı kombinasyonda geçmiş teklif yok</span>');
   return out;}
 
+/* CAM-YAKIN-TEKLIF (17.11.2026, Melih): fiyatlanan kombinasyonla aynı ya da tek yönden (bir cam katmanı, boşluk, kaplama, akustik, satin, temper, Extra Clear, Ar/WE) farklı geçmiş teklif grupları */
+function yakinTek(q,P,u){const Z=P&&P.z;if(!Z||Z.R==null)return null;
+  const fl=Q=>[Q.tr,Q.lowe,Q.solar,Q.fp,Q.ac,Q.sat,Q.tp,Q.xc,Q.ar,Q.we].map(x=>x?1:0);
+  const kn=a=>{a=a.map(String);for(let i=0;i<a.length;i++){const r=a[a.length-1-i];if(a[i]<r)return a;if(a[i]>r)return a.slice().reverse();}return a;};
+  const AD={4:'akustik',5:'satin',6:'temper',7:'Extra Clear'},qf=fl(Object.assign({},q,{tp:P.tp})),qc=kn(q.c),ekp=Z.solarEk||0,kp=(Z.est-ekp)/(Z.KC+Z.R),t=x=>f2(x,2),L=[];
+  for(const r of G){const p=r.k.split('|');if(p[2]!==(u.frm||'duz'))continue;const rf=p[3].split('').map(Number),rc=kn(p[0].split('/'));
+    if(rc.length!==qc.length||rf[0]!==qf[0]||rf[3]!==qf[3])continue;
+    const fk=[];const ci=[];for(let i=0;i<rc.length;i++)if(rc[i]!==qc[i])ci.push(i);
+    if(ci.length>1)continue;if(ci.length)fk.push('cam '+rc[ci[0]]+' → '+qc[ci[0]]);
+    if(+p[1]!==+q.cu)fk.push('boşluk '+p[1]+' → '+q.cu);
+    if(rf[1]!==qf[1]||rf[2]!==qf[2])fk.push('kaplama '+(rf[2]?'solar':rf[1]?'Low-E':'yok')+' → '+(qf[2]?'solar':qf[1]?'Low-E':'yok'));
+    for(const i of [4,5,6,7])if(rf[i]!==qf[i])fk.push(AD[i]+(qf[i]?' var':' yok'));
+    if(rf[8]!==qf[8]||rf[9]!==qf[9])fk.push('Ar/WE '+(rf[8]?'Ar':'hava')+(rf[9]?'-WE':'')+' → '+(qf[8]?'Ar':'hava')+(qf[9]?'-WE':''));
+    if(fk.length>1)continue;
+    const Q=gq(r),zo=DB.fiyat(Q,perf(Q),u,null,Q.solar?perf(Object.assign({},Q,{solar:0,coat:'',lowe:1})):null),eko=zo.solarEk||0,ko=(zo.est-eko)/(zo.KC+zo.R);
+    const kat=kp/ko,dR=Z.R-zo.R,al=(r.bf-eko)*kat+dR+ekp,ay=!fk.length;
+    const ac=ay&&Math.abs(al-r.bf)<0.005?'':' (bileşen '+(dR>=0?'+':'−')+t(Math.abs(dR))+' €'+(Math.abs(kat-1)>0.0005?', katsayı ×'+f2(kat,3):'')+(ekp!==eko?', solar '+(ekp-eko>=0?'+':'−')+t(Math.abs(ekp-eko))+' €':'')+')';
+    const s=(ay?'Aynı':'Fark: '+fk[0])+' · '+r.komb.split('|||')[0].trim().replace(/\s+/g,' ')+' · '+r.n+' teklif / '+r.p+' proje · ort. alış '+t(r.bf)+' €/m² → '+t(al)+' €/m²'+ac+' × '+f2(KAT,1)+' = '+t(al*KAT)+' €/m²';
+    L.push({ay,n:r.n,birim:al*KAT,s,html:s.replace(/&/g,'&amp;').replace(/</g,'&lt;')});}
+  L.sort((a,b)=>(b.ay-a.ay)||(b.n-a.n));const N=L.reduce((a,x)=>a+x.n,0),ort=N?L.reduce((a,x)=>a+x.birim*x.n,0)/N:null;
+  return{L,N,ort,txt:L.length?L.map(x=>x.s).concat(['Teklif adedine göre ağırlıklı ortalama: '+t(ort)+' €/m² ('+N+' teklif)']):[]};}
 const $=id=>document.getElementById(id);
 const fmt=n=>n==null?'—':n.toLocaleString('tr-TR',{maximumFractionDigits:1});
 const f2=(n,d)=>n==null?'—':n.toLocaleString('tr-TR',{minimumFractionDigits:d,maximumFractionDigits:d});

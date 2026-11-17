@@ -780,7 +780,7 @@ async function cfTalepGonder(w){
   const ex=$("cfTalepNot"); if(ex) ex.remove();
   const nt=document.createElement("div"); nt.className="cftalep"; nt.id="cfTalepNot"; nt.textContent="Onay talebi Melih Bilgili'ye iletiliyor…"; $("cfT").appendChild(nt);
   try{ const {data,error}=await ARB_ACTIVE.functions.invoke("cam-fiyat-onay",{body:{islem:"talep",kisi_kod:k.kod,kisi_ad:k.ad,seri,komb,
-      cam:{c:C.c,komb:C.komb||null,ug:C.ug,tl:C.tl,g:C.g,rwc:C.rwc},birim:Math.round(birim*100)/100,pencad,hesap:w._HESAP||"" /* CAM-ONAY-HESAP */,satirlar,rozet:bd?bd.textContent.trim():""}});
+      cam:{c:C.c,komb:C.komb||null,ug:C.ug,tl:C.tl,g:C.g,rwc:C.rwc},birim:Math.round(birim*100)/100,pencad,hesap:w._HESAP||"" /* CAM-ONAY-HESAP */,yakin:w._YAKIN||[] /* CAM-YAKIN-TEKLIF */,satirlar,rozet:bd?bd.textContent.trim():""}});
     if(error||!data||!data.ok) throw new Error((data&&data.hata)||(error&&error.message)||"hata");
     nt.textContent=data.tekrar?(data.durum==="bekliyor"?"Bu fiyat için onay talebiniz Melih Bilgili'de bekliyor.":"Bu fiyat için onay verildi: üst banttaki “Cam Fiyat Onayınız Var” düğmesine basınız.")
       :"Onay talebi Melih Bilgili'ye iletildi. Onay gelince üst bantta “Cam Fiyat Onayınız Var” düğmesi belirir.";
