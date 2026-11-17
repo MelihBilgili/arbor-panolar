@@ -7,6 +7,7 @@
 // CAM-FIYAT-ONAY-KISA (13.11.2026, Melih): WA mesajı etiketli satırlara indirildi — seri, yorum cümleleri,
 //   "Fark neden büyük" başlığı ve "Onay: App › Giriş › Cam Fiyat Onayı Ver" satırı kaldırıldı.
 // CAM-FIYAT-ONAY-AD-ESLES (13.11.2026, Melih, v5): Pencad/cam listesi ve teklif eşleşmesinde Akustik=Acoustic; aynı cam "en yakın" diye gösterilmez.
+// CAM-ONAY-SATIS (17.11.2026, Melih, v7): kıyas yeniden girilen Pencad satış fiyatı (v6'daki alış ×2,5 kıyası kaldırıldı; hesap satırı kalır).
 // CAM-ONAY-ALIS25 + CAM-ONAY-HESAP (17.11.2026, Melih, v6): fark Pencad alış ×2,5'e göre (girilen Pencad satışı, listedeki satış/alış
 //   çarpanıyla ×2,5'e çevrilir; form "kiyas" gönderir, yoksa pencad_satir'dan hesaplanır); mesaja modelin birim fiyat hesabı ("hesap") eklenir.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
@@ -96,7 +97,7 @@ type Sat = { lbl?: string; fiyat?: string; deger?: string; komb?: string };
 function mesajYaz(b: Record<string, unknown>) {
   const komb = String(b.komb || "");
   const birim = sayi(b.birim) as number, pencad = sayi(b.pencad) as number;
-  const kiyas = kiyasBul(b, pencad), ref = kiyas ?? pencad;
+  const kiyas: number | null = null, ref = pencad; // CAM-ONAY-SATIS (17.11.2026, Melih): kıyas yeniden Pencad satış fiyatı; kiyasBul kullanılmaz
   const fark = Math.round((ref / birim - 1) * 100);
   const S = (Array.isArray(b.satirlar) ? b.satirlar : []) as Sat[];
   const bul = (re: RegExp) => S.find((x) => re.test(String(x.lbl || "")));

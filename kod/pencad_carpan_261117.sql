@@ -23,3 +23,6 @@ begin
 end $$;
 revoke all on function public.pencad_carpan(text,numeric) from public, anon;
 grant execute on function public.pencad_carpan(text,numeric) to authenticated, service_role;
+
+-- CAM-ONAY-SATIS (17.11.2026, Melih): kaldırıldı (migration pencad_carpan_kaldir_261117):
+-- drop function if exists public.pencad_carpan(text,numeric); drop function if exists public.cam_ad_nrm(text);

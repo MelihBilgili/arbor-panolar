@@ -745,21 +745,18 @@ async function cfAc(r,onay){
     +'<div class="cft" id="cfT" style="display:none"><div class="cfrow"><div><label for="cfPc">Pencad\'de Fiyat Var mı?</label><select id="cfPc"><option value=""></option><option value="evet">Evet</option><option value="hayir">Hayır</option></select></div>'
     +'<div><label for="cfRef">Referans Fiyat (€/m²)</label><input id="cfRef" type="number" step="0.01" min="0" disabled></div>'
     +'<span id="cfOk" class="pencadok" style="display:none">Pencad fiyatıyla devam ediniz!</span><span style="color:#cfe0f0;align-self:center">Birim fiyata göre fark</span><span id="cfDif" class="refdif" style="align-self:center">–</span></div>'
-    +'<div id="cfKiyas" class="lv"></div><div id="cfUnit"></div></div></div></div>');
+    +'<div id="cfUnit"></div></div></div></div>');
   const P=$("cfPop");
   P.addEventListener("click",e=>{ if(e.target===P||e.target.closest(".cfx")) cfKapat(); });
   let w; try{ w=await cfYukle(); }catch(e){ $("cfAlt").innerHTML='<div class="no">Cam Fiyatlandırma sayfası açılamadı.</div>'; return; }
   if(!$("cfPop")) return;
   if(!cfIsle(w,r)){ $("cfAlt").innerHTML='<div class="no">Bu kombinasyon Cam Fiyatlandırma formuna işlenemedi.</div>'; $("cfBtn").style.display="none"; return; }
   $("cfAlt").innerHTML=cfAlt(w);
-  /* CAM-ONAY-ALIS25 (17.11.2026, Melih "A"): onay kıyası Pencad alış ×2,5 — girilen Pencad satış fiyatı, Pencad listesindeki satış/alış çarpanıyla ×2,5'e çevrilir */
-  window._CFCARPAN=null; try{ const {data}=await ARB_ACTIVE.rpc("pencad_carpan",{p_komb:String(r.C.komb||r.C.c||""),p_ug:r.C.ug==null?null:+r.C.ug}); if(data&&data[0]&&+data[0].carpan>0) window._CFCARPAN=+data[0].carpan; }catch(e){}
+  /* CAM-ONAY-SATIS (17.11.2026, Melih): onay kıyası yeniden girilen Pencad satış fiyatına göre (CAM-ONAY-ALIS25 geri alındı) */
   $("cfBtn").onclick=()=>{ $("cfT").style.display=""; $("cfBtn").style.display="none"; cfTalimat(w); };
   const gonder=()=>{ const d=w.document, pc=d.getElementById("pencad"), rf=d.getElementById("ref");
     pc.value=$("cfPc").value; if(pc.value!=="evet") $("cfRef").value="";
-    const _k=cfKiyas(); rf.value=_k!=null?String(_k):$("cfRef").value; /* CAM-ONAY-ALIS25 */
-    $("cfKiyas").textContent=_k!=null&&Math.abs(window._CFCARPAN-2.5)>0.02?"Kıyas: Pencad fiyatı alış ×"+cfoTr(window._CFCARPAN)+" → alış ×2,50 = "+cfoTr(_k)+" €/m²":"";
-    rf.dispatchEvent(new w.Event("input",{bubbles:true})); w.refUpd(); cfTalimat(w); cfTalepZamanla(w); };
+    rf.value=$("cfRef").value; rf.dispatchEvent(new w.Event("input",{bubbles:true})); w.refUpd(); cfTalimat(w); cfTalepZamanla(w); };
   $("cfPc").addEventListener("change",gonder); $("cfRef").addEventListener("input",gonder);
   if(onay){ $("cfT").style.display=""; $("cfBtn").style.display="none"; $("cfPc").value="evet"; $("cfRef").value=onay.durum==="yenilendi"?"":String(onay.pencad); gonder(); }
 }
@@ -769,7 +766,6 @@ async function cfAc(r,onay){
 const CFO_KISI=()=>{ if(ARB_EMAIL==="int@arbor.com.tr") return {kod:"MB",ad:"Melih Bilgili"}; const k=(window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null; return k?{kod:k.kod,ad:k.ad}:{kod:"",ad:""}; };
 const cfoTr=v=>(+v).toFixed(2).replace(".",",");
 let _cfoTm=null; const _cfoGiden=new Set();
-function cfKiyas(){ const v=parseFloat(String($("cfRef")&&$("cfRef").value||"").replace(",",".")), c=window._CFCARPAN; return v>0&&c>0?Math.round(v*2.5/c*100)/100:null; } /* CAM-ONAY-ALIS25 */
 function cfTalepZamanla(w){ clearTimeout(_cfoTm); if(window._CFONAY) return; _cfoTm=setTimeout(()=>cfTalepGonder(w),2500); }
 async function cfTalepGonder(w){
   const r=window._CFR; if(!$("cfPop")||!r||window._CFONAY) return;
@@ -784,7 +780,7 @@ async function cfTalepGonder(w){
   const ex=$("cfTalepNot"); if(ex) ex.remove();
   const nt=document.createElement("div"); nt.className="cftalep"; nt.id="cfTalepNot"; nt.textContent="Onay talebi Melih Bilgili'ye iletiliyor…"; $("cfT").appendChild(nt);
   try{ const {data,error}=await ARB_ACTIVE.functions.invoke("cam-fiyat-onay",{body:{islem:"talep",kisi_kod:k.kod,kisi_ad:k.ad,seri,komb,
-      cam:{c:C.c,komb:C.komb||null,ug:C.ug,tl:C.tl,g:C.g,rwc:C.rwc},birim:Math.round(birim*100)/100,pencad,kiyas:cfKiyas(),hesap:w._HESAP||"",satirlar,rozet:bd?bd.textContent.trim():""}});
+      cam:{c:C.c,komb:C.komb||null,ug:C.ug,tl:C.tl,g:C.g,rwc:C.rwc},birim:Math.round(birim*100)/100,pencad,hesap:w._HESAP||"" /* CAM-ONAY-HESAP */,satirlar,rozet:bd?bd.textContent.trim():""}});
     if(error||!data||!data.ok) throw new Error((data&&data.hata)||(error&&error.message)||"hata");
     nt.textContent=data.tekrar?(data.durum==="bekliyor"?"Bu fiyat için onay talebiniz Melih Bilgili'de bekliyor.":"Bu fiyat için onay verildi: üst banttaki “Cam Fiyat Onayınız Var” düğmesine basınız.")
       :"Onay talebi Melih Bilgili'ye iletildi. Onay gelince üst bantta “Cam Fiyat Onayınız Var” düğmesi belirir.";
