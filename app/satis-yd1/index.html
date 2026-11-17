@@ -467,6 +467,8 @@ function arsTr(t){ return String(t||"").toLocaleLowerCase("tr").normalize("NFD")
 function arsIsk(x){ const k=Number(x); return (x==null||!isFinite(k))?null:String(Math.round((1-k)*1000)/10).replace(".",","); }
 function arsTutar(v,pb){ return v==null?"":Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0})+" "+(pb||""); }
 async function arsAc(key){
+  /* YD-ARSIV-CLAUDE (17.11.2026, Melih): arşivden seçim personelde kapalı; Claude, müşteriye giden teklif mailinden ("Claude:" mailine ekli) işler */
+  setMsg("Teklif arşivinden seçimi Claude yapar: müşteriye gönderdiğiniz teklif mailini \"Claude:\" konulu bir maile ekleyerek int@arbor.com.tr adresine iletiniz.",false); return;
   const r=getRow(key); if(!r||key==="draft"){ setMsg("Önce satırı kaydedin; arşiv seçimi kayıtlı satırda yapılır.",false); return; }
   /* YD-ARSIV-HERKES (17.11.2026, Melih): arşivi tüm personel açar ve seçer (OBL dahil; ALAN_YASAK yalnız elle girişte) */
   const ov=document.createElement("div");
@@ -763,7 +765,7 @@ function rowHTML(r,key,gz){
   const durumWarn=(r.durum==="Teklif Bekleniyor" && ttAge!==null && ttAge>15) ? " durum-warn" : "";
   return '<tr data-i="'+key+'" style="background:'+bgv+'">'+GC.map(c=>{
       if(ARSIV_F.indexOf(c.f)>=0){ const v=dispVal(r,c); const ek=(c.t==='num'?' style="text-align:right;':' style="')+'cursor:pointer;width:'+c.w+'px"'; /* YD-ARSIV-SECIM */
-        return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input readonly class="cell arsClick'+(String(v).trim()?' filled':'')+(eksikBos(r,c.f,key)?' eksikbos':'')+'" data-row="'+key+'" type="text" title="'+esc(key==="draft"?"Satırı kaydettikten sonra Teklif arşivinden seçilir":"Teklif arşivinden seçmek için tıklayın")+'"'+ek+' value="'+esc(v)+'"></td>'; }
+        return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input readonly class="cell arsClick'+(String(v).trim()?' filled':'')+(eksikBos(r,c.f,key)?' eksikbos':'')+'" data-row="'+key+'" type="text" title="Claude, müşteriye giden teklif mailinden Teklif arşivinden işler"'+ek+' value="'+esc(v)+'"></td>'; }
       const v=dispVal(r,c), req=c.req?" req":"", empty=(c.req&&!String(v).trim()&&!tutarDolu(r)?" bad":"")+(eksikBos(r,c.f,key)?" eksikbos":"");
       if(c.t==='note'){ const sat=ntSatirlar(r[c.f]); /* YD-NOT-EKLE: son not görünür, hover'da tümü alt alta */
         return '<td style="background:'+bgv+'"><div class="ntcell" style="width:'+c.w+'px"><div class="ntlast ntClick'+(ntYasak(c.f)?' ntkilit':'')+'" data-row="'+key+'" data-nf="'+c.f+'" title="'+esc(sat.join("\n"))+'"><span title="'+esc(sat.join("\n"))+'">'+esc(sat[0]||"")+'</span></div></div></td>'; } /* NT-HOVER-TUM: span'a da tum notlar; ARB-HOVERTITLE span'a yalniz son notu yaziyordu */
@@ -905,7 +907,7 @@ function musOnemGoster(key,val){ const s=document.querySelector('#list tr[data-i
 async function saveRow(key,f,val,el){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
   if(alanYasak(f)){ if(el) el.value=(r[f]==null?"":r[f]); setMsg("Bu alana kayıt yetkiniz yok.",false); return; } /* ALAN-YETKI */
-  if(ARSIV_F.indexOf(f)>=0){ setMsg("Bu alan yalnız Teklif arşivinden seçilir.",false); return; } /* YD-ARSIV-SECIM */
+  if(ARSIV_F.indexOf(f)>=0){ setMsg("Bu alanı Claude, müşteriye giden teklif mailinden Teklif arşivinden işler.",false); return; } /* YD-ARSIV-SECIM */
   let v=convVal(f,val);
   if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YY biçiminde olmalı."; return; }
   let musOnem; /* MUSTERI-ONEM-OTO */
@@ -1260,7 +1262,7 @@ async function tkSaveNote(key,val){
 /* DURUM-SAGTIK (08.10.2026, Melih): Durum sütunundan elle seçim kaldırıldı. Satıra sağ tıklayınca menü:
    Revizyon · Muhtemel · Kazandık · Üretimde · Kaybettik · Müşteri İşi Alamadı · İptal · Sil.
    Şartı tutmayan seçenek soluk ve tıklanamaz (neden title'da). Geçiş saveRow ile yapılır (aynı şart/kopya kuralları). */
-const CTX_SEC=[["Teklif arşivinden seç","__ars"],["Yeniden Aç","__ac"],["Sıkı Takip Edilecek","__siki"],["Revizyon","Revizyon İstendi"],["Muhtemel","Muhtemel"],["Kazandık","Kazandık"],["Üretimde","Üretimde"],["Kaybettik","Kaybettik"],["Müşteri İşi Alamadı","Müşteri İşi Alamadı"],["İptal","İptal"],["Sil","__sil"]];
+const CTX_SEC=[/* YD-ARSIV-CLAUDE: "Teklif arşivinden seç" kaldırıldı */["Yeniden Aç","__ac"],["Sıkı Takip Edilecek","__siki"],["Revizyon","Revizyon İstendi"],["Muhtemel","Muhtemel"],["Kazandık","Kazandık"],["Üretimde","Üretimde"],["Kaybettik","Kaybettik"],["Müşteri İşi Alamadı","Müşteri İşi Alamadı"],["İptal","İptal"],["Sil","__sil"]];
 function ctxNeden(r,v){
   if(v==="__sil") return "";
   if(v==="__ars") return ""; /* YD-ARSIV-SAGTIK · YD-ARSIV-HERKES */
