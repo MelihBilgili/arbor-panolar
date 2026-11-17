@@ -81,11 +81,11 @@
     <div class="kart">
       <div class="tit">2 · Teklif bilgileri</div>
       <div class="g">
-        <div class="s4"><label for="f_ilgili">Client — ilgili</label><input id="f_ilgili"></div>
-        <div class="s4"><label for="f_firma">Client — firma</label><input id="f_firma"></div>
-        <div class="s8"><label for="f_madres">Client — adres <span class="mini">(firmaya kaydedilir)</span></label><input id="f_madres"></div>
-        <div class="s4"><label for="f_proje">Projet</label><input id="f_proje"></div>
-        <div class="s6"><label for="f_padres">Projet — adres</label><input id="f_padres"></div>
+        <div class="s4"><label for="f_ilgili">Müşteri yetkilisi</label><input id="f_ilgili"></div>
+        <div class="s4"><label for="f_firma">Şirket</label><input id="f_firma"></div>
+        <div class="s8"><label for="f_madres">Şirket adresi</label><input id="f_madres"></div>
+        <div class="s4"><label for="f_proje">Proje ismi</label><input id="f_proje"></div>
+        <div class="s6"><label for="f_padres">Proje adresi</label><input id="f_padres"></div>
         <div class="s2"><label for="f_ref">Ref</label><input id="f_ref"></div>
         <div class="s2"><label for="f_tarih">Date</label><input id="f_tarih" type="date"></div>
         <div class="s2"><label for="f_par">Par</label><select id="f_par"></select></div>
@@ -101,7 +101,7 @@
         <div class="s2"><label for="f_mont">Montaj (Pose)</label><select id="f_mont"><option value="1">Dahil</option><option value="0">Hariç</option></select></div>
         <div class="s2"><label for="f_dep">Departman</label><input id="f_dep" inputmode="numeric" value="75"></div>
         <div class="s2"><label for="f_disi">Duvar dışı montaj</label><select id="f_disi"><option value="0">Hayır</option><option value="1">Evet</option></select><div id="f_disi_uy" class="mini" style="color:#b00020;font-weight:bold;display:none">Eker eklendi mi?</div></div><!-- SOUM-ETUT -->
-        <div class="s2"><label for="f_petit">Petit porteur</label><select id="f_petit"><option value="0">Hayır</option><option value="1">Evet</option></select></div>
+        <div class="s2"><label for="f_petit">Ara nakliye</label><select id="f_petit"><option value="0">Hayır</option><option value="1">Evet</option></select></div>
         <div class="s2"><label for="f_kamyon">Kamyon sayısı</label><input id="f_kamyon" inputmode="numeric"></div>
         <div class="s2"><label for="f_ins_sure">Insertion süresi (saat) <a href="#" id="f_insSifirla" class="mini">hesapla</a></label><input id="f_ins_sure" inputmode="decimal"></div>
         <div class="s2"><label for="f_ins_tut">Insertion tutarı</label><input id="f_ins_tut" readonly style="background:#f2f4f7"></div>
@@ -111,12 +111,12 @@
         <div class="s4"><label>Vitrophanie — opsiyon (pozlar seçilebilir)</label><div id="f_vitro" style="max-height:110px;overflow:auto;border:1px solid #cdd6df;border-radius:6px;padding:3px 7px;background:#fff"><span class="mini">Yok</span></div></div><!-- SOUM-ETUT -->
       </div>
       <div class="g" style="margin-top:6px"><!-- SOUM-OPSIYON-SEC -->
-        <div class="s2"><label for="f_op_ins">Opsiyon: Insertion tutarı</label><select id="f_op_ins"><option value="1">Var</option><option value="0">Yok</option></select></div><!-- SOUM-INDIRIM -->
+        <div class="s2" style="display:none"><!-- SOUM-BASLIK-TR: Insertion süresi 0 → Insertion yok --><label for="f_op_ins">Opsiyon: Insertion tutarı</label><select id="f_op_ins"><option value="1">Var</option><option value="0">Yok</option></select></div><!-- SOUM-INDIRIM -->
         <div class="s2"><label for="f_op_cam">Opsiyon: Kırık cam değişimi</label><select id="f_op_cam"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
         <div class="s2"><label for="f_op_mv">Opsiyon: OB → OF geçiş (MV)</label><select id="f_op_mv"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
-        <div class="s2"><label for="f_op_pmr">Opsiyon: PMR kol</label><select id="f_op_pmr"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
+        <div class="s2" style="display:none"><!-- SOUM-BASLIK-TR: PMR kol opsiyonu kaldırıldı --><label for="f_op_pmr">Opsiyon: PMR kol</label><select id="f_op_pmr"><option value="1">Evet</option><option value="0" selected>Hayır</option></select></div>
         <div class="s2"><label for="f_op_cage">Opsiyon: Metal kasa</label><select id="f_op_cage"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
-        <div class="s2"><label for="f_op_manitou">Opsiyon: Manitou</label><select id="f_op_manitou"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
+        <div class="s2"><label for="f_op_manitou">Opsiyon: Forklift</label><select id="f_op_manitou"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
         <div class="s2"><label for="f_op_grue">Opsiyon: Vinç ve iskele</label><select id="f_op_grue"><option value="1">Evet</option><option value="0">Hayır</option></select></div>
       </div>
       <div class="g" id="enAlan" style="margin-top:6px;display:none">
@@ -129,7 +129,7 @@
       <div class="mini" id="f_kur_h" style="margin-top:4px"></div>
       <div class="mini" id="f_kat_h" style="margin-top:6px"></div>
     </div>
-    <div class="kart"><div class="tit">3 · Pozlar <span>(beyaz kutular düzenlenebilir; DPGF sütunu istenen değerle karşılaştırır: yeşil karşılıyor, kırmızı karşılamıyor)</span></div><div class="res" id="pozlar"></div></div>
+    <div class="kart"><div class="tit">3 · Pozlar <span>(beyaz kutular düzenlenebilir)</span></div><div class="res" id="pozlar"></div></div>
     <div class="kart"><div class="tit">4 · Pencad ekstra malzemeleri <span>(Offre'de "PV …" satırı = Pencad tutarı × iskonto çarpanı × çarpan)</span></div><div class="res" id="ekstralar"></div></div>
     <div class="kart"><div class="tit">5 · Toplamlar ve opsiyonlar</div><div class="res" id="ozet"></div></div>
     <div class="kart"><div class="tit">Dipnotlar <span>(Fransızca teklifin altındaki Compris / Non compris; tikli → Compris, tiksiz → Non compris)</span></div><div class="res" id="dipnot"></div></div><!-- SOUM-DIPNOT -->
@@ -786,8 +786,8 @@ async function baslikDoldur(){
 }
 
 /* ---------------- poz tablosu ---------------- */
-const KOL=[["no","No",0],["img","Vue",0],["facade","Facade",1],["bina","Bina (EN)",1],["pfTip","PF tipi",1],["kod","Repère",1],["L","L",1],["H","H",1],["F","Unité",0],["seri","Seri",0],["camFr","Vitrage (iç)",1],["rc","RC sınıfı (EN)",1],
-  ["ug","Ug",1],["rw","Rw+Ctr",1],["uw","Uw",1],["sg","Sg",1],["tl","Tl %",1],["brut","Brüt €",0],["Q","Prix unitaire",0],["R","Prix total",0],["notlar","Notes",1],["ekf","Ekstra",1],["revnot","Revize notu",1],["uyg","DPGF",0]]; /* SOUM-EKFIYAT / SOUM-POZ-REVNOT (16.11.2026, Melike Başaran) */
+const KOL=[["no","No",0],["img","Kanat",0],["facade","Facade",1],["bina","Bina (EN)",1],["pfTip","Doğrama tipi",1],["kod","Poz adı",1],["L","L",1],["H","H",1],["F","Adet",0],["seri","Seri",0],["camFr","Cam Kombinasyonu (İç)",1],["rc","RC sınıfı (EN)",1],
+  ["ug","Ug",1],["rw","Rw+Ctr",1],["uw","Uw",1],["sg","Sg",1],["tl","Tl %",1],["brut","Brüt €",0],["Q","Birim fiyat",0],["R","Toplam fiyat",0],["notlar","Notes",1],["ekf","Ekstra",1],["revnot","Revize notu",1]]; /* SOUM-BASLIK-TR (17.11.2026, Melike Başaran): DPGF sütunu kaldırıldı; başlıklar Türkçe */ /* SOUM-EKFIYAT / SOUM-POZ-REVNOT (16.11.2026, Melike Başaran) */
 /* SOUM-BASLIK-GIZ (16.11.2026, Melike Başaran): Pozlar'da Facade ve Bina başlıkları düzenlenebilir, PDF/Excel bu adı kullanır; "PDF'te gizle" tiki sütunu PDF ve Excel'den çıkarır (Formu kaydet ile saklanır) */
 const BAS=()=>S.bas||(S.bas={});
 const basAd=(k,def)=>{ const v=String(BAS()[k]||"").trim(); return v||def; };
@@ -1049,7 +1049,7 @@ function ozetCiz(){
 /* SOUM-PN2 (27.10.2026, Melih): Proje Notu konuları UK referans teklifinin Proje Notu ile birleştirildi (RAL, ana teklif/option ağaç, Sfw/Tlw, cam yerleri, Safety; sabit uyarı + görsel alanı). */
 const PN=[["Proje ismi","pn_proje"],["Proje adresi","pn_padres"],["Müşteri","pn_musteri"],["Firma","pn_firma"],["Revizyon Notları","pn_rev"],["Seri - taslak tipi","pn_seri"],["RAL kodu","pn_ral"],["Ağaç tipi — ana teklif","pn_agac"],["Ağaç tipi — option","pn_agac_op"],["Akustik","pn_akustik"],
   ["Termal Değerler / AEV","pn_aev"],["Uw","pn_uw"],["Sfg","pn_sg"],["Tlg","pn_tl"],["Sfw","pn_sfw"],["Tlw","pn_tlw"],["Ug","pn_ug"],["Prorata","pn_prorata"],["Termin (hafta)","pn_termin"],["Montaj Tipi","pn_pose"],["Söve / Tapée","pn_tapee"],["Eker","pn_eker"],["Pervaz / Habillage","pn_hab"],["Prototip","pn_proto"],
-  ["Protection","pn_prot"],["Şantiye Temizliği / Nettoyage","pn_net"],["Camlar","pn_camlar"],["Camlar — zemin kat","pn_cam_zemin"],["Camlar — alt cam","pn_cam_alt"],["Camlar — yan sabit","pn_cam_yan"],["Camlar — WC (buzlu)","pn_cam_wc"],["Safety (PAS 24)","pn_safety"],
+  /* SOUM-BASLIK-TR: Protection satırı kaldırıldı (standart) */ ["Şantiye Temizliği / Nettoyage","pn_net"],["Camlar","pn_camlar"],["Camlar — zemin kat","pn_cam_zemin"],["Camlar — alt cam","pn_cam_alt"],["Camlar — yan sabit","pn_cam_yan"],["Camlar — WC (buzlu)","pn_cam_wc"],["Safety (PAS 24)","pn_safety"],
   ["PMR eşik","pn_pmr"],["Kanat kısıtlayıcı","pn_kk"],["Alu Denizlik / Bavette Alu","pn_balu"],["Ahşap Denizlik / Bavette Bois","pn_bbois"],["Menfez delikleri","pn_menfez"],["Panjur VR","pn_vr"]];
 const PN_UYARI="Motorlu ferme imposte fiyatlandırıldığında kontrol paneli kesinlikle fiyata dahil edilecek.";
 function notDoldur(){
@@ -1598,7 +1598,7 @@ function tutanakYap(){
   +'</style></head><body>'
   +'<div class="antet"><img src="'+window.SOUM_IMG.logo+'"><div class="t"><b>'+esc(ANTET[0])+'</b><br>'+ANTET.slice(1).map(esc).join("<br>")+'</div></div>'
   +'<h1>ETÜT TUTANAĞI</h1>'
-  +'<table><tr><th>Proje</th><th>Müşteri</th><th>Ref</th><th>Hazırlayan</th><th>Tarih</th></tr><tr><td>'+nl([$("f_proje").value,$("f_padres").value].filter(Boolean).join("\n"))+'</td><td>'+nl([$("f_firma").value,$("f_ilgili").value].filter(Boolean).join("\n"))+'</td><td>'+esc($("f_ref").value)+'</td><td>'+esc(parAd($("f_par").value))+'</td><td>'+tar.toLocaleDateString("tr-TR")+'</td></tr></table>'
+  +'<table><tr><th>Proje</th><th>Müşteri</th><th>Ref</th><th>Hazırlayan</th><th>Tarih</th></tr><tr><td>'+nl([$("f_proje").value,$("f_padres").value].filter(Boolean).join("\n"))+'</td><td>'+nl([$("f_firma").value,$("f_ilgili").value].filter(Boolean).join("\n"))+'</td><td>'+esc($("f_ref").value)+'</td><td>'+esc($("f_haz").value||parAd($("f_par").value))+'</td><td>'+tar.toLocaleDateString("tr-TR")+'</td></tr></table>'
   +'<h2>Proje Notu</h2><table class="pn"><tbody>'+pn.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+nl(x[1])+'</td></tr>').join("")+'</tbody></table>'
   +'<div class="uy">'+esc(PN_UYARI)+'</div>'
   +'<h2>Teklifle ilgili etüte bildirilmesi gereken notlar</h2>'+ul(satL("pn_etut"))
