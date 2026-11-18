@@ -62,7 +62,7 @@
   <div class="kart">
     <div class="tit">1 · Proje <span>(kendi bilgisayarınızdan proje klasörünü seçin; Arbor ve Müşteri alt klasörleri dahil tüm PDF/Excel dosyaları birlikte okunur)</span></div>
     <div class="birak" id="birak">
-      <button class="btn" id="btnKlasor">Proje klasörü seç</button> <button class="btn2" id="btnKesifForm" type="button">Proje bilgileri</button><!-- SOUM-KESIF-FORM -->
+      <button class="btn" id="btnKlasor">Proje klasörü seç</button> <button class="btn2" id="btnKesifForm" type="button">Proje bilgileri</button><!-- SOUM-KESIF-FORM --> <button class="btn2" id="btnSayim" type="button">Sayım</button><!-- SOUM-261118-SAYIM -->
       <label class="btn2" id="lblYedek" style="display:none">Proje klasörü seç<input type="file" id="inKlasor" webkitdirectory directory multiple hidden></label>
       <span class="mini" id="kokDurum"></span>
     </div>
@@ -832,9 +832,9 @@ function hucre(p,k,i){
   if(k[0]==="img") return '<td>'+(p.img?'<img class="ciz" src="'+p.img.url+'">':'–')+(p.gs?'<div class="mini">'+esc(gsAd(p))+'</div>':'')+'<div class="mini" style="white-space:nowrap">Kanat <input data-kn="1" value="'+(p.kanat!=null?p.kanat:(p.iki?2:1))+'" inputmode="numeric" style="width:4ch'+(p.kanatElle?';background:#fff3c4':'')+'" title="Elle düzeltilebilir; kanat sayısına bağlı ekstralar (kısıtlayıcı, kapı stoperi, kapı kapatıcı) buna göre"></div></td>'; /* SOUM-261113-GORSEL */ /* SOUM-KANAT-ELLE */
   if(k[0]==="notlar") return '<td class="l"><textarea data-k="notlar" rows="5">'+esc(notMetin(p))+'</textarea></td>';
   if(k[0]==="camFr") return '<td class="l"><textarea data-k="camFr" rows="3">'+esc(p.camFr)+'</textarea><div class="mini">'+esc(p.camPdf)+(p.cam&&p.cam.stok_kodu?' · '+esc(p.cam.stok_kodu):'')+'</div></td>';
-  if(k[0]==="Q") return '<td class="num"><span id="q'+i+'">–</span><div class="mini" id="qf'+i+'" style="text-align:left;white-space:nowrap;font-weight:400"></div></td>'; /* SOUM-261118-EKTIK: ekstra malzeme formülü birim fiyatın altında */ if(k[0]==="R") return '<td class="num" id="r'+i+'">–</td>';
+  if(k[0]==="Q") return '<td class="num"><span id="q'+i+'">–</span></td>'; /* SOUM-261118-SAYIM (18.11.2026, Melike Başaran): ekstra malzeme formülü Brüt € altında */ if(k[0]==="R") return '<td class="num" id="r'+i+'">–</td>';
   if(k[0]==="pfTip") return '<td class="l">'+(p.pf?'<select data-k="pfTip">'+[["STD","Standart (alu eşik)"],["SACC","SACC (çıkışsız)"],["ACC","ACC (teras/balkon)"]].map(o=>'<option value="'+o[0]+'"'+(o[0]===p.pfTip?' selected':'')+'>'+o[1]+'</option>').join("")+'</select>':'–')+'</td>';
-  if(k[0]==="brut") return '<td class="num"><input data-k="brut" class="n" value="'+esc(frN(p.brut,2))+'"'+(fiyatIzin()?'':' readonly')+' style="width:9ch'+(p.brutElle?';background:#fff3c4':'')+(fiyatIzin()?'':';background:#eef1f4;cursor:not-allowed')+'" title="'+(fiyatIzin()?'Pencad raporundan; elle düzeltilebilir':'Birim fiyatı yalnız Enes Uzun ve Hilal Ölker değiştirebilir')+'">'+(p.brutElle&&p.brutPdf!=null?'<div class="mini">Pencad '+fN(p.brutPdf,2)+'</div>':'')+'<div class="mini" id="b'+i+'"></div></td>'; /* SOUM-EKSTRA-MOD: Birim fiyat ekstraları hesapla()'da eklenir */ /* SOUM-BRUT-ELLE (16.11.2026, Melike Başaran): brüt elle düzeltilebilir */
+  if(k[0]==="brut") return '<td class="num"><input data-k="brut" class="n" value="'+esc(frN(p.brut,2))+'"'+(fiyatIzin()?'':' readonly')+' style="width:9ch'+(p.brutElle?';background:#fff3c4':'')+(fiyatIzin()?'':';background:#eef1f4;cursor:not-allowed')+'" title="'+(fiyatIzin()?'Pencad raporundan; elle düzeltilebilir':'Birim fiyatı yalnız Enes Uzun ve Hilal Ölker değiştirebilir')+'">'+(p.brutElle&&p.brutPdf!=null?'<div class="mini">Pencad '+fN(p.brutPdf,2)+'</div>':'')+'<div class="mini" id="b'+i+'"></div><div class="mini" id="qf'+i+'" style="text-align:left;white-space:nowrap;font-weight:400"></div></td>'; /* SOUM-261118-SAYIM: formül Brüt € altında */ /* SOUM-EKSTRA-MOD: Birim fiyat ekstraları hesapla()'da eklenir */ /* SOUM-BRUT-ELLE (16.11.2026, Melike Başaran): brüt elle düzeltilebilir */
   if(k[0]==="ekf") return '<td><input data-k="ekf" class="n" value="'+esc(p.ekF==null?"":frN(p.ekF,2))+'" style="width:9ch" title="Birim fiyata + olarak eklenir"></td>'; /* SOUM-EKFIYAT */
   if(k[0]==="revnot") return '<td class="l"><textarea data-k="revnot" rows="3" placeholder="Revize notu">'+esc(p.revNot||"")+'</textarea></td>'; /* SOUM-POZ-REVNOT */
   if(k[0]==="uw"&&S.uwMod==="hes"){ const h=uwHes(p), d3=v=>frN(v,3); return '<td><input data-k="uw" value="'+esc(h.u==null?"":frN(h.u,2))+'" class="n" readonly style="background:#fff3c4" title="Hesaplanan Uw (EN ISO 10077-1); elle düzeltmek için Uw Standart seçiniz"><div class="mini" style="text-align:left;white-space:nowrap">Ag '+d3(h.Ag)+' · Ug '+frN(h.ug,2)+'<br>Af '+d3(h.Af)+' · Uf '+d3(h.uf)+'<br>lg '+d3(h.lg)+' · Ψg '+d3(h.psi)+'<br>Aw '+d3(h.Aw)+'<br><b>Uw = '+(h.u==null?"–":frN(h.u,2))+'</b></div></td>'; } /* SOUM-UW-MOD */
@@ -1073,9 +1073,10 @@ const PN=[["Proje ismi","pn_proje"],["Proje adresi","pn_padres"],["Müşteri","p
   ["Termal Değerler / AEV","pn_aev"],["Uw","pn_uw"],["Sfg","pn_sg"],["Tlg","pn_tl"],["Sfw","pn_sfw"],["Tlw","pn_tlw"],["Ug","pn_ug"],["Prorata","pn_prorata"],["Termin (hafta)","pn_termin"],["Montaj Tipi","pn_pose"],["Söve / Tapée","pn_tapee"],["Eker","pn_eker"],["Pervaz / Habillage","pn_hab"],["Prototip","pn_proto"],
   /* SOUM-BASLIK-TR: Protection satırı kaldırıldı (standart) */ ["Şantiye Temizliği / Nettoyage","pn_net"],["Camlar","pn_camlar"],["Camlar — zemin kat","pn_cam_zemin"],["Camlar — alt cam","pn_cam_alt"],["Camlar — yan sabit","pn_cam_yan"],["Camlar — WC (buzlu)","pn_cam_wc"],["Safety (PAS 24)","pn_safety"],
   ["PMR eşik","pn_pmr"],["Kanat kısıtlayıcı","pn_kk"],["Alu Denizlik / Bavette Alu","pn_balu"],["Ahşap Denizlik / Bavette Bois","pn_bbois"],["Menfez delikleri","pn_menfez"],["Panjur VR","pn_vr"],["Ahşap kepenk","pn_kepenk"]]; /* SOUM-KESIF-FORM: Ahşap kepenk */
+const MONTAJ=["İç montaj","Dış montaj","Tünel montaj"]; /* SOUM-261118-SAYIM: Montaj tipi seçenekleri */
 const PN_UYARI="Motorlu ferme imposte fiyatlandırıldığında kontrol paneli kesinlikle fiyata dahil edilecek.";
 function notDoldur(){
-  const el=$("pnAlan"); if(!el.dataset.kuruldu){ el.innerHTML=PN.map(x=>'<div id="w_'+x[1]+'"><label for="'+x[1]+'">'+x[0]+'</label>'+(x[1]==="pn_rev"?'<textarea id="pn_rev" rows="3"></textarea>':'<input id="'+x[1]+'">')+'</div>').join(""); el.dataset.kuruldu=1; }
+  const el=$("pnAlan"); if(!el.dataset.kuruldu){ el.innerHTML=PN.map(x=>'<div id="w_'+x[1]+'"><label for="'+x[1]+'">'+x[0]+'</label>'+(x[1]==="pn_rev"?'<textarea id="pn_rev" rows="3"></textarea>':'<input id="'+x[1]+'"'+(x[1]==="pn_pose"?' list="dl_pose" title="İç montaj / Dış montaj / Tünel montaj seçilebilir"':'')+'>')+'</div>').join("")+'<datalist id="dl_pose">'+MONTAJ.map(x=>'<option value="'+x+'">').join("")+'</datalist>'; el.dataset.kuruldu=1; /* SOUM-261118-SAYIM */ }
   revGoster();
   const v=(id,x)=>{ const e=$(id); if(e&&!e.dataset.elle) e.value=x||""; };
   const P=S.poz, has=f=>P.some(f), dp=S.dpgf?S.dpgf.sat:[];
@@ -1340,12 +1341,12 @@ async function ydSecAc(){
   const q=ov.querySelector("[data-q]"), Lel=ov.querySelector("[data-l]");
   const ciz=()=>{ const w=nrmTxt(q.value).split(" ").filter(Boolean); const M=L.filter(r=>{ const t=nrmTxt([r.blok,r.proje,r.musteri].join(" ")); return w.every(k=>t.includes(k)); });
     Lel.innerHTML=M.length?'<table style="width:100%;border-collapse:collapse;font-size:12.5px"><thead><tr style="text-align:left;background:#f2f5f8"><th style="padding:4px">Blok</th><th>Proje</th><th>Müşteri</th><th></th></tr></thead><tbody>'+M.map(r=>'<tr style="border-top:1px solid #e3e8ee"><td style="padding:4px">'+esc(r.blok)+'</td><td>'+esc(r.proje||"")+'</td><td>'+esc(r.musteri||"")+'</td><td style="text-align:right"><button type="button" class="btn2" data-s="'+r.id+'">Seç</button></td></tr>').join("")+'</tbody></table>':'<div class="mini">"Teklif Bekleniyor" durumunda proje yok.</div>';
-    Lel.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{ S.ydSec=L.find(r=>String(r.id)===b.dataset.s)||null; S.kf=null; S.notGorsel={notlar:[],etut:[]}; ngCiz(); kap(); kfAc(true); /* SOUM-KESIF-FORM */ }); };
-  ov.querySelector("[data-yok]").onclick=()=>{ S.ydSec=null; S.kf=null; S.notGorsel={notlar:[],etut:[]}; ngCiz(); kap(); kfAc(true); }; /* SOUM-KESIF-FORM */
+    Lel.querySelectorAll("[data-s]").forEach(b=>b.onclick=()=>{ S.ydSec=L.find(r=>String(r.id)===b.dataset.s)||null; S.kf=null; S.sayim=[]; S.notGorsel={notlar:[],etut:[]}; ngCiz(); kap(); kfAc(true); /* SOUM-KESIF-FORM */ }); };
+  ov.querySelector("[data-yok]").onclick=()=>{ S.ydSec=null; S.kf=null; S.sayim=[]; S.notGorsel={notlar:[],etut:[]}; ngCiz(); kap(); kfAc(true); }; /* SOUM-KESIF-FORM */
   q.oninput=ciz; ciz(); q.focus();
 }
 $("btnKlasor").onclick=ydSecAc;
-$("btnKesifForm").onclick=()=>kfAc(false); /* SOUM-KESIF-FORM */
+$("btnKesifForm").onclick=()=>kfAc(false); /* SOUM-KESIF-FORM */ $("btnSayim").onclick=()=>kfAc(false,"sayim"); /* SOUM-261118-SAYIM */
 $("inKlasor").onchange=e=>{ S.dosya=[]; const fs=[...e.target.files].filter(f=>!/(^|\/)[_.][^\/]*\//.test(f.webkitRelativePath||"")); dosyaEkle(fs); const r=(fs[0]&&fs[0].webkitRelativePath||"").split("/")[0]; $("kokDurum").textContent=r?"Seçili klasör: "+r:""; durum(fs.length+" dosya bulundu. Kullanımları kontrol edip <b>Oku</b>'ya basınız."); };
 /* SOUM-PN-ZORUNLU (16.11.2026, Melike Başaran): Excel / PDF / Uw / Sfw – Tlw / Etüt Tutanak indirilmeden önce 6 · Proje Notu'ndaki görünen tüm alanlar dolu olmalı (uygulanmıyorsa "-" yazılır). */
 function pnEksik(){ try{ notDoldur(); }catch(e){} const a=$("pnAlan"), k=a&&a.closest(".kart"); if(!k) return [];
@@ -1460,7 +1461,7 @@ async function formKaydet(){ if(revEksik()) return; /* SOUM-REVIZE-ARSIV */
     (S.pnotKayit||[]).forEach(k=>{ if(!pnot.some(x=>x.ad===k.ad)) pnot.push(k); });
     const alan={}; document.querySelectorAll("#sonuc input[id],#sonuc select[id],#sonuc textarea[id]").forEach(e=>{ if(e.type==="file"||e.type==="checkbox") return; alan[e.id]={v:e.value,e:e.dataset.elle||""}; });
     const grup={}; FORM_GRUP.forEach(g=>grup[g]=[...document.querySelectorAll("#"+g+" input:checked")].map(x=>x.value));
-    const J={v:1,kayit:z.toISOString(),S:{poz:S.poz,ekstra:S.ekstra.map(e=>Object.assign({},e)),ekstraTop:S.ekstraTop,pdfTop:S.pdfTop,of:S.of?{top:S.of.top,ekstra:S.of.ekstra}:null,dpgf:S.dpgf,cctpAdres:S.cctpAdres,adetTop:S.adetTop,baslik:S.baslik,psi:S.psi,yd:S.yd,firma:S.firma,bas:S.bas||{},rev:S.rev||null,indElle:S.indElle==null?null:S.indElle,uwMod:S.uwMod||"avg",dip:S.dip||null},alan,grup,pnot,notGorsel:S.notGorsel||{notlar:[],etut:[]},kf:S.kf||null}; /* SOUM-NOT-GORSEL / SOUM-KESIF-FORM */ /* SOUM-REMISE-ELLE / SOUM-UW-MOD / SOUM-DIPNOT */
+    const J={v:1,kayit:z.toISOString(),S:{poz:S.poz,ekstra:S.ekstra.map(e=>Object.assign({},e)),ekstraTop:S.ekstraTop,pdfTop:S.pdfTop,of:S.of?{top:S.of.top,ekstra:S.of.ekstra}:null,dpgf:S.dpgf,cctpAdres:S.cctpAdres,adetTop:S.adetTop,baslik:S.baslik,psi:S.psi,yd:S.yd,firma:S.firma,bas:S.bas||{},rev:S.rev||null,indElle:S.indElle==null?null:S.indElle,uwMod:S.uwMod||"avg",dip:S.dip||null},alan,grup,pnot,notGorsel:S.notGorsel||{notlar:[],etut:[]},kf:S.kf||null,sayim:(S.sayim||[]).filter(sayimDolu)}; /* SOUM-261118-SAYIM */ /* SOUM-NOT-GORSEL / SOUM-KESIF-FORM */ /* SOUM-REMISE-ELLE / SOUM-UW-MOD / SOUM-DIPNOT */
     const tar=$("f_tarih").value?new Date($("f_tarih").value+"T12:00:00"):z, yy=tar.toISOString().slice(2,10).replace(/-/g,"");
     const ad=("Form_"+$("f_proje").value+"_"+$("f_firma").value+"_"+yy+(EN()?"_EN":"")+(revNo()?"_Revizyon-"+revNo():"")).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_")+".json", yol=kok+"_"+dosyaTem(ad);
     const up=await SB.storage.from("soum-teklif").upload(yol,new Blob([JSON.stringify(J)],{type:"application/json"}),{upsert:false,contentType:"application/json"}); if(up.error) throw up.error;
@@ -1477,7 +1478,7 @@ async function formAc(r){ if(!r||!r.form_yolu) return; durum("Kayıtlı form aç
     durum("Kayıtlı form açıldı: <b>"+esc(r.proje||r.dosya_adi||"")+"</b> · "+esc(new Date(r.olusturma).toLocaleString("tr-TR"))+". Değişiklikten sonra yeniden <b>Formu kaydet</b>'e basınız (yeni kayıt olarak eklenir).","ok"); $("sonuc").scrollIntoView({behavior:"smooth"}); return true; }
   catch(e){ console.error(e); durum("Form açılamadı: "+esc(e.message||e),"hata"); } }
 function formYukle(J){ const X=J.S||{};
-  Object.assign(S,{poz:X.poz||[],ekstra:X.ekstra||[],ekstraTop:X.ekstraTop||0,pdfTop:X.pdfTop==null?null:X.pdfTop,of:X.of||null,dpgf:X.dpgf||null,cctpAdres:X.cctpAdres||"",adetTop:X.adetTop==null?null:X.adetTop,baslik:X.baslik||[],psi:X.psi==null?null:X.psi,yd:X.yd||null,firma:X.firma||null,bas:X.bas||{},rev:X.rev||null,indElle:X.indElle==null?null:X.indElle,uwMod:X.uwMod||"avg",dip:X.dip||null,kesif:null,rapor:null,pnotKayit:J.pnot||[],notGorsel:J.notGorsel||{notlar:[],etut:[]},kf:J.kf||null}); ngCiz(); /* SOUM-NOT-GORSEL */
+  Object.assign(S,{poz:X.poz||[],ekstra:X.ekstra||[],ekstraTop:X.ekstraTop||0,pdfTop:X.pdfTop==null?null:X.pdfTop,of:X.of||null,dpgf:X.dpgf||null,cctpAdres:X.cctpAdres||"",adetTop:X.adetTop==null?null:X.adetTop,baslik:X.baslik||[],psi:X.psi==null?null:X.psi,yd:X.yd||null,firma:X.firma||null,bas:X.bas||{},rev:X.rev||null,indElle:X.indElle==null?null:X.indElle,uwMod:X.uwMod||"avg",dip:X.dip||null,kesif:null,rapor:null,pnotKayit:J.pnot||[],notGorsel:J.notGorsel||{notlar:[],etut:[]},kf:J.kf||null,sayim:J.sayim||[]}); /* SOUM-261118-SAYIM */ ngCiz(); /* SOUM-NOT-GORSEL */
   S.dosya=[]; dosyaCiz(); $("kokDurum").textContent="";
   $("sonuc").style.display="";
   const pl=sec=>S.poz.map((p,i)=>'<label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" value="'+i+'" style="width:auto;margin-right:5px">'+p.no+' · '+esc(p.kod)+' ('+p.L+'×'+p.H+(sec?' · '+(p.F||0)+' adet':'')+')</label>').join("")||'<span class="mini">Yok</span>';
@@ -1634,7 +1635,7 @@ function tutanakYap(){
   const cam='<table><thead><tr><th class="l">Cam</th><th>Pozlar</th></tr></thead><tbody>'+Object.keys(camG).map(c=>'<tr><td class="l">'+nl(c)+'</td><td class="l">'+camG[c].join(", ")+'</td></tr>').join("")+'</tbody></table>';
   const poz='<table class="poz"><thead><tr><th>No</th><th>Repère</th><th>Görsel</th><th>L × H (mm)</th><th>Adet</th><th class="l">Cam</th>'+EK.map(e=>'<th class="ek">'+esc(ekstraKisa(e,false))+'</th>').join("")+'</tr></thead><tbody>'
     +S.poz.map((p,i)=>'<tr><td>'+esc(p.no)+'</td><td><b>'+esc(p.kod)+'</b></td><td class="im">'+(p.img?'<img src="'+p.img.url+'">':'')+'</td><td>'+p.L+' × '+p.H+'</td><td>'+(p.F||0)+'</td><td class="l cm">'+nl(p.camFr||p.camPdf||"")+'</td>'+EK.map(e=>'<td>'+(ekTik(e,i)?'✓':'')+'</td>').join("")+'</tr>').join("")+'</tbody></table>';
-  const ul=a=>a.length?'<ul>'+a.map(t=>'<li>'+esc(t)+'</li>').join("")+'</ul>':'<p>—</p>';
+  const ul=a=>a.length?'<ul>'+a.map(t=>'<li>'+esc(t)+'</li>').join("")+'</ul>':'<p>—</p>', ulG=(a,k)=>{ const g=ngLi(k); return a.length||g?'<ul>'+a.map(t=>'<li>'+esc(t)+'</li>').join("")+g+'</ul>':'<p>—</p>'; }; /* SOUM-261118-SAYIM */
   const html='<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>'+esc(ad)+'</title><style>'
   +'@page{size:A4 portrait;margin:8mm}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#000;font-size:9px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
   +'.antet{display:flex;align-items:center;justify-content:space-between;background:#086324;border-bottom:5px solid #7AC142;color:#fff;padding:6px 10px}.antet img{height:52px}.antet .t{text-align:right;font-family:Calibri,Arial;font-size:10px;line-height:1.35}.antet .t b{font-size:13px}'
@@ -1647,8 +1648,9 @@ function tutanakYap(){
   +'<table><tr><th>Proje</th><th>Müşteri</th><th>Ref</th><th>Hazırlayan</th><th>Tarih</th></tr><tr><td>'+nl([$("f_proje").value,$("f_padres").value].filter(Boolean).join("\n"))+'</td><td>'+nl([$("f_firma").value,$("f_ilgili").value].filter(Boolean).join("\n"))+'</td><td>'+esc($("f_ref").value)+'</td><td>'+esc($("f_haz").value||parAd($("f_par").value))+'</td><td>'+tar.toLocaleDateString("tr-TR")+'</td></tr></table>'
   +'<h2>Proje Notu</h2><table class="pn"><tbody>'+pn.map(x=>'<tr><td>'+esc(x[0])+'</td><td>'+nl(x[1])+'</td></tr>').join("")+'</tbody></table>'
   +'<div class="uy">'+esc(PN_UYARI)+'</div>'
-  +'<h2>Teklifle ilgili etüte bildirilmesi gereken notlar</h2>'+ul(satL("pn_etut"))+ngHtml("etut")
-  +'<h2>Müşteriye bildirilecek notlar</h2>'+ul(satL("pn_notlar"))+ngHtml("notlar")
+  +'<h2>Teklifle ilgili etüte bildirilmesi gereken notlar</h2>'+ulG(satL("pn_etut"),"etut")
+  +'<h2>Müşteriye bildirilecek notlar</h2>'+ulG(satL("pn_notlar"),"notlar")
+  +sayimTablo() /* SOUM-261118-SAYIM */
   +'<h2>Aksesuarlar</h2>'+aks
   +'<h2>Camlar</h2>'+cam
   +'<h2>Pozlar — cam ve ekstra malzeme seçimleri</h2>'+poz
@@ -1677,17 +1679,35 @@ function kfVr(o){ const L=KF[7][1].map(([ad,id])=>String(o[id]||"").trim()?ad+":
 function kfUygula(){ const K=S.kf, el=$("pnAlan"); if(!K||!el||!el.dataset.kuruldu) return; const o=Object.assign({},K), vr=kfVr(K); if(vr) o.pn_vr=vr;
   Object.keys(o).forEach(id=>{ if(/^vr_/.test(id)) return; const e=$(id), v=String(o[id]||"").trim(); if(!e||!v) return; e.value=v; e.dataset.elle=1;
     if(!e.dataset.kfb){ e.dataset.kfb=1; e.addEventListener("input",()=>{ if(!S.kf) return; if(id==="pn_vr") KF[7][1].forEach(x=>delete S.kf[x[1]]); else delete S.kf[id]; }); } }); }
-function kfAc(klasor){ const el=$("pnAlan"), kur=el&&el.dataset.kuruldu, K=S.kf||{}, y=S.ydSec||null, X=(S.kesif&&S.kesif.pn)||{};
-  const ilk=id=>{ if(K[id]!=null) return K[id]; if(/^vr_/.test(id)) return ""; const e=kur&&$(id); if(e&&String(e.value||"").trim()) return e.value; if(X[id]) return X[id];
+/* SOUM-261118-SAYIM (18.11.2026, Melike Başaran): "Proje bilgileri" penceresinde "Sayım" sekmesi (ayrıca üstte "Sayım" düğmesi). Sütunlar Sayım.xlsx başlıkları;
+   son satıra yazılınca altına yeni boş satır eklenir. Formu kaydet JSON'una (sayim) ve Etüt Tutanak PDF'ine girer. Montaj tipi: İç/Dış/Tünel montaj seçimi. */
+const SAYIM=[["poz","Poz No."],["cephe","Cephe"],["bina","Bina"],["kat","Kat"],["tip","Tipoloji"],["adet","Adet"],["db","dB"],["pmr","PMR"],["sde","Sde-Sdb"],["cuisine","Cuisine"],["kk","Kanat Kısıtlayıcı"]];
+S.sayim=[];
+const sayimDolu=r=>!!r&&SAYIM.some(([k])=>String(r[k]||"").trim());
+function sayimKur(kutu){ if(!kutu) return; S.sayim=(S.sayim||[]).filter(sayimDolu);
+  const sat=(r,i)=>'<tr><td style="padding:2px 4px;color:#6b7c8d">'+(i+1)+'</td>'+SAYIM.map(([k])=>'<td style="padding:2px"><input data-sy="'+i+'" data-syk="'+k+'" value="'+esc(r[k]||"")+'" style="width:100%;min-width:'+(k==="tip"?"12ch":"7ch")+';padding:3px 5px;border:1px solid #cdd6df;border-radius:4px;font:inherit;font-size:12px"></td>').join("")+'</tr>';
+  kutu.innerHTML='<table style="border-collapse:collapse;width:100%;font-size:12px"><thead><tr style="background:#f2f5f8;text-align:left"><th style="padding:4px"></th>'+SAYIM.map(([,t])=>'<th style="padding:4px;white-space:nowrap">'+esc(t)+'</th>').join("")+'</tr></thead><tbody>'+S.sayim.concat([{}]).map(sat).join("")+'</tbody></table>';
+  const tb=kutu.querySelector("tbody");
+  const bag=sc=>sc.querySelectorAll("[data-sy]").forEach(inp=>inp.oninput=()=>{ const i=+inp.dataset.sy; S.sayim[i]=S.sayim[i]||{}; S.sayim[i][inp.dataset.syk]=inp.value;
+    if(i===tb.rows.length-1&&String(inp.value).trim()){ tb.insertAdjacentHTML("beforeend",sat({},i+1)); bag(tb.rows[tb.rows.length-1]); } });
+  bag(tb); }
+function sayimTablo(){ const R=(S.sayim||[]).filter(sayimDolu); if(!R.length) return "";
+  return '<h2>Sayım</h2><table><thead><tr>'+SAYIM.map(([,t])=>'<th>'+esc(t)+'</th>').join("")+'</tr></thead><tbody>'+R.map(r=>'<tr>'+SAYIM.map(([k])=>'<td>'+esc(r[k]||"")+'</td>').join("")+'</tr>').join("")+'</tbody></table>'; }
+const kfSecim=(id,v)=>{ v=String(v||"").trim(); const o=!v||MONTAJ.includes(v)?MONTAJ:[v].concat(MONTAJ); return '<select data-kf="'+id+'" style="display:block;width:100%;padding:4px 6px;border:1px solid #cdd6df;border-radius:5px;font:inherit"><option value="">—</option>'+o.map(x=>'<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>').join("")+'</select>'; };
+function kfAc(klasor,sekme){ const el=$("pnAlan"), kur=el&&el.dataset.kuruldu, K=S.kf||{}, y=S.ydSec||null, X=(S.kesif&&S.kesif.pn)||{};
+  const ilk=id=>{ if(K[id]!=null) return K[id]; if(y){ const yv=id==="pn_proje"?String(y.proje||"").toUpperCase():id==="pn_firma"?(y.musteri||""):id==="pn_musteri"?[y.ilgili_ad,y.ilgili_mail,y.ilgili_tel].filter(Boolean).join(" · "):""; if(yv) return yv; } /* SOUM-261118-SAYIM: Proje ismi/Müşteri/Firma YD seçiminden (Excel'den önce) */ if(/^vr_/.test(id)) return ""; const e=kur&&$(id); if(e&&String(e.value||"").trim()) return e.value; if(X[id]) return X[id];
     if(y){ if(id==="pn_proje") return String(y.proje||"").toUpperCase(); if(id==="pn_firma") return y.musteri||""; if(id==="pn_musteri") return [y.ilgili_ad,y.ilgili_mail,y.ilgili_tel].filter(Boolean).join(" · "); } return ""; };
   const ov=document.createElement("div"); ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:10003";
   ov.innerHTML='<div style="background:#fff;border-radius:10px;padding:14px 16px;width:min(900px,96vw);max-height:90vh;display:flex;flex-direction:column"><div style="display:flex;align-items:center;margin-bottom:6px"><b>Proje bilgileri'+(y?' · '+esc(y.blok||"")+' · '+esc(y.proje||""):'')+'</b><span style="flex:1"></span><button type="button" data-x style="border:0;background:none;font-size:18px;cursor:pointer">✕</button></div>'
-   +'<div class="mini" style="margin-bottom:6px">Değerler 6 · Proje Notu\'na yazılır; uygulanmayan alanı boş bırakabilir ya da "-" yazabilirsiniz.</div><div style="overflow:auto;flex:1">'
+   +'<div style="display:flex;gap:4px;margin-bottom:8px"><button type="button" data-tab="pb" style="border:0;border-radius:6px;padding:5px 12px;cursor:pointer;font:inherit">Proje bilgileri</button><button type="button" data-tab="sayim" style="border:0;border-radius:6px;padding:5px 12px;cursor:pointer;font:inherit">Sayım</button></div>' /* SOUM-261118-SAYIM */
+   +'<div data-t1 style="overflow:auto;flex:1"><div class="mini" style="margin-bottom:6px">Değerler 6 · Proje Notu\'na yazılır; uygulanmayan alanı boş bırakabilir ya da "-" yazabilirsiniz.</div>'
    +KF.map(([g,L])=>'<div style="margin:6px 0 2px;font-weight:bold;color:#16324f">'+esc(g)+'</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px 10px">'
-     +L.map(([ad,id])=>'<label style="font-size:12px">'+esc(ad)+'<input data-kf="'+id+'" value="'+esc(ilk(id))+'" style="display:block;width:100%;padding:4px 6px;border:1px solid #cdd6df;border-radius:5px;font:inherit"></label>').join("")+'</div>').join("")
-   +'</div><div style="margin-top:10px;display:flex;gap:8px;align-items:center"><span class="mini" data-uy style="color:#b00020"></span><span style="flex:1"></span>'
+     +L.map(([ad,id])=>'<label style="font-size:12px">'+esc(ad)+(id==="pn_pose"?kfSecim(id,ilk(id)):'<input data-kf="'+id+'" value="'+esc(ilk(id))+'" style="display:block;width:100%;padding:4px 6px;border:1px solid #cdd6df;border-radius:5px;font:inherit">')+'</label>').join("")+'</div>').join("")
+   +'</div><div data-t2 style="overflow:auto;flex:1;display:none"><div class="mini" style="margin-bottom:6px">Son satıra yazınca altına yeni satır eklenir; değerler Formu kaydet ve Etüt Tutanak PDF\'ine girer.</div><div data-sykutu></div></div>'
+   +'<div style="margin-top:10px;display:flex;gap:8px;align-items:center"><span class="mini" data-uy style="color:#b00020"></span><span style="flex:1"></span>'
    +(klasor?'<button type="button" class="btn" data-k style="display:none">Proje klasörü seç</button>':'<button type="button" class="btn" data-s>Kaydet</button>')+'</div></div>';
   document.body.appendChild(ov); const kap=()=>ov.remove(); ov.querySelector("[data-x]").onclick=kap;
+  sayimKur(ov.querySelector("[data-sykutu]")); { const sek=t=>{ ov.querySelector("[data-t1]").style.display=t==="sayim"?"none":""; ov.querySelector("[data-t2]").style.display=t==="sayim"?"":"none"; ov.querySelectorAll("[data-tab]").forEach(b=>{ const a=b.dataset.tab===t; b.style.background=a?"#16324f":"#eef2f6"; b.style.color=a?"#fff":"#16324f"; }); }; ov.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>sek(b.dataset.tab)); sek(sekme==="sayim"?"sayim":"pb"); } /* SOUM-261118-SAYIM */
   const al=()=>{ const o={}; ov.querySelectorAll("[data-kf]").forEach(i=>{ const v=String(i.value||"").trim(); if(v) o[i.dataset.kf]=v; }); return o; };
   const yaz=()=>{ S.kf=al(); kfUygula(); };
   if(klasor){ const b=ov.querySelector("[data-k]"), pi=ov.querySelector('[data-kf="pn_proje"]'), gos=()=>{ const ok=!!String(pi.value||"").trim(); b.style.display=ok?"":"none"; ov.querySelector("[data-uy]").textContent=ok?"":"Proje ismi doldurulunca \"Proje klasörü seç\" görünür."; };
@@ -1702,14 +1722,14 @@ function ngKucult(f){ return new Promise((ok,no)=>{ const fr=new FileReader(); f
   im.onload=()=>{ const m=1600, r=Math.min(1,m/Math.max(im.width,im.height)), c=document.createElement("canvas"); c.width=Math.round(im.width*r); c.height=Math.round(im.height*r);
     const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(im,0,0,c.width,c.height); ok(c.toDataURL("image/jpeg",0.85)); }; im.src=fr.result; }; fr.readAsDataURL(f); }); }
 function ngCiz(){ ["notlar","etut"].forEach(k=>{ const L=$("ngL_"+k); if(!L) return; const A=(S.notGorsel&&S.notGorsel[k])||[];
-  L.innerHTML=A.map((g,i)=>'<span style="display:inline-block;position:relative;margin:4px 6px 0 0"><img src="'+g.d+'" style="height:70px;border:1px solid #cdd6df;border-radius:4px"><button type="button" data-ngs="'+i+'" title="Sil" style="position:absolute;top:-6px;right:-6px;border:0;border-radius:50%;width:18px;height:18px;line-height:16px;background:#b00020;color:#fff;cursor:pointer;font-size:11px">✕</button></span>').join("");
+  L.innerHTML=A.map((g,i)=>'<div style="display:flex;gap:8px;align-items:flex-start;margin:6px 0 0"><b style="padding-top:2px">•</b><span style="display:inline-block;position:relative;flex:none"><img src="'+g.d+'" style="height:70px;border:1px solid #cdd6df;border-radius:4px"><button type="button" data-ngs="'+i+'" title="Sil" style="position:absolute;top:-6px;right:-6px;border:0;border-radius:50%;width:18px;height:18px;line-height:16px;background:#b00020;color:#fff;cursor:pointer;font-size:11px">✕</button></span><textarea data-ngn="'+i+'" rows="3" placeholder="Görselle ilgili not (Etüt Tutanak PDF\'inde ve proje mailinde bu maddeye yazılır)" style="flex:1;font:inherit;font-size:12px">'+esc(g.n||"")+'</textarea></div>').join(""); L.querySelectorAll("[data-ngn]").forEach(t=>t.oninput=()=>{ A[+t.dataset.ngn].n=t.value; }); /* SOUM-261118-SAYIM: görsel = madde satırı + not */
   L.querySelectorAll("[data-ngs]").forEach(b=>b.onclick=()=>{ A.splice(+b.dataset.ngs,1); ngCiz(); }); }); }
 async function ngYapistir(k,ev){ const I=[...((ev.clipboardData||{}).items||[])].filter(x=>/^image\//.test(x.type)); if(!I.length) return; ev.preventDefault();
   if(!S.notGorsel) S.notGorsel={notlar:[],etut:[]}; if(!S.notGorsel[k]) S.notGorsel[k]=[];
   for(const it of I){ try{ const f=it.getAsFile(); if(!f) continue; S.notGorsel[k].push({ad:"gorsel_"+(S.notGorsel[k].length+1)+".jpg",d:await ngKucult(f)}); }catch(e){ durum("Görsel eklenemedi: "+esc(e.message||e),"hata"); } }
   ngCiz(); }
 ["notlar","etut"].forEach(k=>{ const t=$("pn_"+k), b=$("ng_"+k); if(t) t.addEventListener("paste",e=>ngYapistir(k,e)); if(b) b.addEventListener("paste",e=>ngYapistir(k,e)); });
-const ngHtml=k=>{ const A=(S.notGorsel&&S.notGorsel[k])||[]; return A.length?'<div>'+A.map(g=>'<img src="'+g.d+'" style="max-width:100%;max-height:120mm;margin:4px 0;display:block;border:1px solid #ccc">').join("")+'</div>':''; };
+const ngLi=k=>((S.notGorsel&&S.notGorsel[k])||[]).map(g=>'<li>'+esc(String(g.n||"").trim()).replace(/\n/g,"<br>")+'<img src="'+g.d+'" style="max-width:100%;max-height:120mm;margin:4px 0;display:block;border:1px solid #ccc"></li>').join(""); const ngHtml=ngLi; /* SOUM-261118-SAYIM: görseller madde satırı */
 /* SOUM-PROJE-MAIL (18.11.2026, Melike Başaran talebi, Melih onayı): "Projeyi mail at" — Müşteriye bildirilecek notlar (+ görselleri) ve "PDF oluştur" ile aynı PDF
    (tarayıcıda html2pdf ile üretilir) ekli mail; alıcı blok (YD Akış seçimi): YD1 → MN, YD2 → MKB, cc OBL (adresler Personel / kisiler, edge soum-proje-mail).
    Dosyalar soum-teklif deposuna mail/YYYY/MM/… olarak yüklenir. Blok yoksa (YD projesi seçilmemiş) düğme uyarır. */
@@ -1731,7 +1751,7 @@ async function projeMail(){ const blok=String((S.ydSec&&S.ydSec.blok)||(S.yd&&S.
     const yy=async(yol,blob,tip,ad)=>{ const u=await SB.storage.from("soum-teklif").upload(yol,blob,{upsert:false,contentType:tip}); if(u.error) throw u.error; D.push({yol,ad}); };
     await yy(kok+"_"+dosyaTem(Y.ad)+".pdf",pdf,"application/pdf",Y.ad+".pdf");
     for(let i=0;i<G.length;i++){ const b=await (await fetch(G[i].d)).blob(); await yy(kok+"_g"+(i+1)+".jpg",b,"image/jpeg","Not_gorsel_"+(i+1)+".jpg"); }
-    const k=xlKisi(), r=await SB.functions.invoke("soum-proje-mail",{body:{blok,proje:$("f_proje").value,firma:$("f_firma").value,ref:$("f_ref").value,notlar:not,gonderen:k?(k.kod+" — "+k.ad):"",dosyalar:D}});
+    const k=xlKisi(), r=await SB.functions.invoke("soum-proje-mail",{body:{blok,proje:$("f_proje").value,firma:$("f_firma").value,ref:$("f_ref").value,notlar:not.concat(G.map((g,i)=>(String(g.n||"").trim()||"Görsel "+(i+1))+" (ek: Not_gorsel_"+(i+1)+".jpg)")) /* SOUM-261118-SAYIM */,gonderen:k?(k.kod+" — "+k.ad):"",dosyalar:D}});
     if(r.error) throw r.error; const d=r.data||{}; if(!d.ok) throw new Error(d.hata||"gönderilemedi");
     durum("Proje maili gönderildi: "+esc((d.to||[]).join(", "))+(d.cc&&d.cc.length?" · cc "+esc(d.cc.join(", ")):"")+" (ek: PDF"+(G.length?" + "+G.length+" görsel":"")+").","ok"); }
   catch(e){ console.error(e); durum("Proje maili gönderilemedi: "+esc(e.message||e),"hata"); } }
