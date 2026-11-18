@@ -127,6 +127,7 @@ html,body{max-width:100vw;overflow-x:hidden}
 
   <div id="bloklar"><div class="empty">Yükleniyor…</div></div>
   <div id="ileri"></div><!-- SANTIYE-ILERI: MVT sınırından sonraki projeler, salt-okur -->
+  <div id="anket"></div><!-- SANTIYE-ANKET: bu şantiyenin projelerine ait müşteri memnuniyet anketleri -->
   <div id="my-ofis"></div><!-- PEM-OFIS-MY: ofis stoğu PEM'leri, tüm şantiye formlarında ortak (app/my_acil.js) -->
 
 </div>
@@ -328,6 +329,39 @@ async function yukle(){
 
 /* SANTIYE-ILERI (2026-11-10, Melih): MVT'si dönem sınırından (dönem ayını izleyen ayın sonu) sonra olan
    projeler sayfanın en altında salt-okur tablo; soru sorulmaz, Güncelle kontrolüne girmez. Kaynak santiye_form_ileri. */
+/* SANTIYE-ANKET (2026-11-18, Melih): bu şantiyenin projelerine ait müşteri memnuniyet anketleri (musteri_anket.santiye_kodu, rpc santiye_anket).
+   Toplam Memnuniyet Başarısı = yanıtlanan anketlerin puan ortalaması / 4; Anket Geliş Başarısı = yanıtlanan / gönderilen (İptal hariç). */
+async function anketYukle(){
+  const el=document.getElementById("anket"); if(!el) return;
+  const r=await sb.rpc("santiye_anket",{p_form:FORM_KODU});
+  if(r.error||!r.data||!r.data.length){ el.innerHTML=""; return; }
+  const Y=r.data.filter(a=>a.durum==="Yanıtlandı"), B=r.data.filter(a=>a.durum!=="Yanıtlandı");
+  const P=Y.map(a=>parseFloat(a.puan)).filter(x=>!isNaN(x));
+  const ort=P.length?P.reduce((s,x)=>s+x,0)/P.length:null;
+  const yuz=x=>"%"+Math.round(x*100);
+  const nk=x=>x==null?"—":Number(x).toFixed(2).replace(".",",");
+  const renk=v=>v==null?"":(v>=0.75?"#1f7a46":(v>=0.6?"#a86b00":"#b40000"));
+  const cv=v=>{ if(!v) return '<td class="c">—</td>'; const k=/değil/i.test(v)?' style="color:#b40000;font-weight:600"':(/Çok memnun|Tamamen/.test(v)?' style="color:#1f7a46"':"");
+    return '<td class="c"'+k+'>'+esc(v)+'</td>'; };
+  const gel=Y.length/(Y.length+B.length), mem=ort==null?null:ort/4;
+  const kart=(baslik,deger,alt,c)=>'<div style="flex:1;min-width:210px;padding:10px 12px;border:1px solid #eef1f5;border-radius:8px">'
+    +'<div style="font-size:11.5px;color:#5a6b7d">'+baslik+'</div><div style="font-size:22px;font-weight:700;color:'+(c||"#16324f")+'">'+deger+'</div>'
+    +'<div style="font-size:11.5px;color:#5a6b7d">'+alt+'</div></div>';
+  let h='<div class="sevk" style="margin-top:14px"><h3>Müşteri Memnuniyeti</h3>'
+    +'<div style="display:flex;gap:10px;flex-wrap:wrap;padding:10px 12px">'
+    +kart("Toplam Memnuniyet Başarısı", mem==null?"—":yuz(mem), ort==null?"Yanıtlanan anket yok":"Ortalama puan "+nk(ort)+" / 4 · "+P.length+" anket", renk(mem))
+    +kart("Anket Geliş Başarısı", yuz(gel), Y.length+" yanıtlandı / "+(Y.length+B.length)+" gönderildi", renk(gel))
+    +'</div>';
+  if(Y.length) h+='<table><thead><tr><th>Anketi Gelen Proje</th><th>Müşteri</th><th class="c">Yanıt Tarihi</th><th class="c">Etüt</th><th class="c">Kalite</th><th class="c">Süreler</th><th class="c">Teknik/İdari</th><th class="c">SAV</th><th class="c">Tavsiye</th><th class="c">Puan</th></tr></thead><tbody>'
+    +Y.map(a=>{ const p=parseFloat(a.puan); return '<tr><td>'+esc(a.proje||"—")+'</td><td>'+esc(a.yanitlayan_firma||a.firma||"—")+'</td><td class="c">'+fd(a.yanit_at)+'</td>'
+      +cv(a.etut)+cv(a.kalite)+cv(a.sureler)+cv(a.yonetim)+cv(a.sav)+cv(a.tavsiye)
+      +'<td class="c" style="font-weight:700;color:'+renk(isNaN(p)?null:p/4)+'">'+(isNaN(p)?"—":nk(p))+'</td></tr>'; }).join("")
+    +'</tbody></table>';
+  if(B.length) h+='<table style="margin-top:6px"><thead><tr><th>Anketi Beklenen Proje</th><th>Müşteri</th><th class="c">Gönderim Tarihi</th></tr></thead><tbody>'
+    +B.map(a=>'<tr><td>'+esc(a.proje||"—")+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+fd(a.created_at)+'</td></tr>').join("")
+    +'</tbody></table>';
+  el.innerHTML=h+'</div>';
+}
 async function ileriYukle(donem){
   const el=document.getElementById("ileri"); if(!el) return;
   let q=sb.from("santiye_form_ileri").select("*").eq("form_kodu",FORM_KODU);
@@ -587,6 +621,7 @@ document.getElementById("ay_btn").onclick=async()=>{
 };
 
 yukle();
+anketYukle(); /* SANTIYE-ANKET */
 </script>
 
 
