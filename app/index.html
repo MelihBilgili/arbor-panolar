@@ -320,7 +320,7 @@ async function loadPerms(){
 const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_mkprim"]; /* MAASPRIM-PERSONEL: mali_maasprim kaldırıldı (→ Personel) */
 const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_mkprim"];
 /* ÖB Faaliyet artık Mali grubunun içinde (MK Faaliyet'in yanında) */
-/* MENU-KISA-261010 */ /* GIRIS-PANO */const TABS=[["giris","Giriş"],["gundem","Gündem"],["aup","PRJ/PEM"],["santiye","Şantiye"],["satis","Satış"],["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
+/* MENU-KISA-261010 */ /* GIRIS-PANO */const TABS=[["giris","Giriş"],["aup","PRJ/PEM"],["santiye","Şantiye"],["satis","Satış"],["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
 const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
 /* MENU-DUGME: Menü = ilk 8 sekme · Mali grubunun ilk 5 panosu · Formlar · Özel · Üretim Takip. Diğer pano linkleri (Sel-Arb, MK Faaliyet, ÖB Faaliyet) kaldırıldı; kodları duruyor. */
 const MENU_MALI=[["bilanco","Bilanço"],["icmal","İcmal"],["fiyat","Fiyatlandırma"],["kredi","Kredi"],["ahsap","Ahşap"]];
@@ -473,19 +473,21 @@ async function loadGiris(){
     .gblk button.fmail{display:none}
     .ged{cursor:text}.ged:hover{background:#eef5ff;box-shadow:inset 0 0 0 1px #cfe0f1}.saveflash{background:#e6f6ea!important;transition:background .3s}
     .gnb td .cell,.gblk td .cell{width:100%;box-sizing:border-box;font:inherit;padding:2px 5px;border:1px solid #2e6da4;border-radius:5px}
+    .gr-band{border:1px solid #dfe5ec;border-radius:6px;margin:0 0 6px;background:#fff}.gr-band>summary{cursor:pointer;padding:5px 10px;font-weight:600;font-size:12.5px;background:#f6f9fc;border-radius:6px}.gr-band[open]>summary{border-bottom:1px solid #e6ebf1;border-radius:6px 6px 0 0}.gr-band-ic{padding:6px 8px 0}.gr-bands{margin-top:6px}.gr-addrow input,.gr-addrow select{font:inherit;padding:2px 5px;border:1px solid #cdd6df;border-radius:5px;box-sizing:border-box}.gr-addrow .gr-add-btn{font:inherit;font-weight:700;padding:1px 9px;border:1px solid #2e6da4;border-radius:5px;background:#fff;color:#2e6da4;cursor:pointer}/* GIRIS-GUNDEM-BANT */
   </style>
   <div class="gr">
     <div id="gr-vakit" class="gr-bxs"><span class="gr-muted">Vakitler yükleniyor…</span></div>
     <div id="gr-ozel" class="gr-bxs" style="margin:2px 0 8px"></div><div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin:0 0 8px"><button id="gr-onc" class="gr-onc">Öncelik Belirle</button><button id="gr-cfo" class="gr-onc gr-cfo" disabled>Cam Fiyat Onayı Ver</button><!-- GIRIS-CAM-ONAY --></div><!-- GIRIS-ONCELIK-BTN --><!-- GIRIS-BTN-ALT (17.11.2026, Melih): Öncelik Belirle + Cam Fiyat Onayı Ver yaklaşan özel günlerin altında -->
     <div id="gr-my"></div><!-- MY-FAALIYET / MY-ACIL-GUNDEM-UST: Acil yüklemeler MB gündemin hemen üstünde -->
     <div id="gr-gundem"></div>
+    <div id="gr-agblok"></div><!-- GIRIS-GUNDEM-BANT -->
     <div id="gr-ust"></div>
     <div id="gr-santiye"></div>
     <div id="gr-egitim"></div>
     <div id="gr-not" style="margin-top:16px"></div><!-- GIRIS-NOT -->
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
-  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grCfo),kor(grGundem),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grCfo),kor(grGundem),kor(grAgBlok),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
 }
 /* 1 — Ezan vakitleri (Diyanet yöntemi) + gündüz ortalama sıcaklık (gün doğumu–batımı saatlik ortalaması) + yağış */
 async function grVakit(){
@@ -642,13 +644,88 @@ async function grGundem(){
       pem=pem.filter(r=>{ const n=Number(r.kod); return !(sv[n]||/sevk edildi/i.test(sd[n]||"") /* GIRIS-SEVK-EDILDI: "3 Sevke Hazır" gizlenmez */); }); } }catch(e){}
   const mbRows=mb.map(r=>`<tr data-id="${r.id}"><td class="kod ged" data-f="kod" data-type="text">${esc(r.kod)}</td><td class="ged" data-f="konu" data-type="text">${esc(r.konu)}</td><td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
   el.innerHTML=`<div class="ag-wrap">`
-    +(`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">`+(mb.length?`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${mbRows}</tbody></table></div>`:"")+(primH||"")+`<div id="gr-situyk"></div></div>`)   /* SITU-YUKLEME: Prim şartını sağlayan sağında */
+    +(`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">`+(`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${mbRows}${grAgAddRow("MB",false)}</tbody></table></div>`)+(primH||"")+`<div id="gr-situyk"></div></div>`)   /* SITU-YUKLEME: Prim şartını sağlayan sağında */
     +`</div>`; /* GIRIS-ACIL-SAHSI: PEM tablosu Acil yüklemelere birleşti */
   grAcilSahsi(pem);
   el.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
   el.querySelectorAll(".ged").forEach(x=>x.onclick=()=>startEdit(x));
   el.querySelectorAll("a.gr-obprim").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); grObPrimPop(a.dataset.kod); }); /* GIRIS-OB-PRIM-POP */
+  grAgBagla(el); /* GIRIS-GUNDEM-BANT: MB ekleme satırı */
   try{ if(window.SITUYK) SITUYK.render(document.getElementById("gr-situyk"),{sb:sb,kim:()=>"MB"}); }catch(e){}   /* SITU-YUKLEME */
+}
+/* GIRIS-GUNDEM-BANT (18.11.2026, Melih): Gündem panosu (sekmesi) kaldırıldı. ARGE hariç tüm blokları — BAHÇE, PRJ, diğer İlgili grupları, SÖ —
+   Giriş'te MB gündemin altında kapalı açılır bant (details); her bantta satır ekleme satırı (SÖ ERP-türevi, satır eklenmez). En altta "Yeni İlgili"
+   bandı (gundem_secenek'ten ya da Diğer… ile yeni İlgili). MB tablosunun da altında ekleme satırı var. Açılan bantlar yeniden çizimde açık kalır;
+   ekleme satırında yazı varken 5 dk tazelemesi atlanır. Eski loadGundem/addGundem kodu kullanılmıyor (değişmez kapısı için duruyor). */
+window._grBandAcik=window._grBandAcik||{};
+function grAgAddRow(ilg,kodlu){
+  return `<tr class="gr-addrow" data-ilg="${esc(ilg)}"><td>${kodlu?`<input class="gr-add-kod" placeholder="Kod (son 8)" style="width:10ch">`:""}</td><td><input class="gr-add-konu" placeholder="Yeni konu" style="width:100%;min-width:26ch"></td><td><button class="gr-add-btn" title="Ekle">+</button></td></tr>`;
+}
+async function grAgEkle(ilg,kod,konu,yeni){
+  ilg=String(ilg||"").trim(); konu=String(konu||"").trim(); kod=String(kod||"").trim();
+  if(!ilg||!konu) return "İlgili ve Konu gerekli";
+  if(ilg==="PRJ"||ilg==="PEM"){
+    const need=ilg==="PEM"?5:8;
+    if(!new RegExp("^\\d{1,"+need+"}$").test(kod)) return ilg+" için Kod = numaranın son "+need+" hanesi (en çok "+need+" haneli sayı).";
+    const {error}=await sb.from("ana_gundem").insert([{kod:kod,kod_prefix:(ilg==='PEM'?'P':'R'),konu,ilgili:ilg,kaynak_tip:ilg.toLowerCase(),turetilmis:false}]);
+    if(error&&(error.code==="23505"||/ana_gundem_kod_key/.test(error.message||""))){ /* GUNDEM-KOD-VAR */
+      const {data:ex}=await sb.from("ana_gundem").select("id,konu").eq("kod",kod).limit(1); const e0=ex&&ex[0];
+      if(e0&&confirm(ilg+" "+kod+" zaten gündemde.\nMevcut konu: "+(e0.konu||"")+"\n\nKonu \""+konu+"\" olarak değiştirilsin mi?")){
+        const {error:e2}=await sb.from("ana_gundem").update({konu}).eq("id",e0.id); return e2?e2.message:null; }
+      return ""; }
+    return error?error.message:null;
+  }
+  if(yeni){ const {data:_ex}=await sb.from("gundem_secenek").select("id").eq("ad",ilg).limit(1);
+    if(!_ex||!_ex.length){ const {data:_mx}=await sb.from("gundem_secenek").select("sira").order("sira",{ascending:false}).limit(1);
+      await sb.from("gundem_secenek").insert([{ad:ilg,sira:((_mx&&_mx[0]&&_mx[0].sira)||0)+10}]); } }
+  const {data}=await sb.from("ana_gundem").select("kod").like("kod","M%");
+  let mx=0; (data||[]).forEach(r=>{ const m=String(r.kod||"").match(/^M(\d+)$/); if(m) mx=Math.max(mx,+m[1]); });
+  const {error}=await sb.from("ana_gundem").insert([{kod:"M"+(mx+1),kod_prefix:"M",konu,ilgili:ilg,kaynak_tip:"manuel",turetilmis:false}]);
+  return error?error.message:null;
+}
+function grAgBagla(el){
+  el.querySelectorAll("details.gr-band").forEach(d=>d.addEventListener("toggle",()=>{ window._grBandAcik[d.dataset.b]=d.open; }));
+  el.querySelectorAll("tr.gr-addrow").forEach(tr=>{
+    const bt=tr.querySelector(".gr-add-btn"); if(!bt) return;
+    const go=async()=>{ const ki=tr.querySelector(".gr-add-kod"), ni=tr.querySelector(".gr-add-konu"), si=tr.querySelector(".gr-add-ilg");
+      let ilg=tr.dataset.ilg;
+      if(si){ ilg=si.value; if(ilg==="__new__") ilg=prompt("İlgili kodu (ör. MK, FA):")||""; ilg=ilg.trim().toLocaleUpperCase("tr"); if(!ilg){ si.focus(); return; } }
+      if(ki&&!ki.value.trim()){ ki.focus(); return; }
+      if(!ni.value.trim()){ ni.focus(); return; }
+      bt.disabled=true; const e=await grAgEkle(ilg,ki?ki.value:"",ni.value,!!si); bt.disabled=false;
+      if(e==="") return; if(e){ alert(e); return; }
+      ni.value=""; if(ki) ki.value=""; if(si) window._grBandAcik["i:"+ilg]=true;
+      loadView(); };
+    bt.onclick=go;
+    tr.querySelectorAll("input").forEach(i=>i.onkeydown=ev=>{ if(ev.key==="Enter"){ ev.preventDefault(); go(); } });
+  });
+}
+async function grAgBlok(){
+  const [g,sc,soHtml]=await Promise.all([sb.from("ana_gundem").select("*"),sb.from("gundem_secenek").select("ad,sira,aktif"),soBlockHtml()]);
+  const el=grEl("gr-agblok"); if(!el) return;
+  if(g.error){ el.innerHTML=`<div class="load">Hata: ${esc(g.error.message)}</div>`; return; }
+  const all=g.data||[], isA=r=>/Öncelik/i.test(String(r.son_durum||""));
+  const prj=all.filter(r=>r.kaynak_tip==='prj');
+  const man=all.filter(r=>r.kaynak_tip!=='pem'&&r.kaynak_tip!=='prj'&&!isA(r)&&r.ilgili!=='MB');
+  const G={}; man.forEach(r=>{ const k=r.ilgili||"—"; (G[k]=G[k]||[]).push(r); });
+  Object.keys(G).forEach(k=>G[k].sort((a,b)=>String(a.kod).localeCompare(String(b.kod))));
+  const nrm=s=>String(s||"").toLocaleUpperCase("tr").replace(/Ç/g,"C").trim();
+  const keys=Object.keys(G).sort((a,b)=>G[b].length-G[a].length||a.localeCompare(b,"tr"));
+  const bah=keys.filter(k=>nrm(k)==="BAHCE"), rest=keys.filter(k=>nrm(k)!=="BAHCE");
+  const band=(id,bas,n,ic)=>`<details class="gr-band" data-b="${esc(id)}"${window._grBandAcik[id]?" open":""}><summary>${esc(bas)}${n!=null?" · "+n:""}</summary><div class="gr-band-ic">${ic}</div></details>`;
+  const grpTbl=k=>`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${G[k].map(r=>`<tr data-id="${r.id}"><td class="kod ged" data-f="kod" data-type="text">${esc(r.kod)}</td><td class="ged" data-f="konu" data-type="text">${esc(r.konu)}</td><td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("")}${grAgAddRow(k,false)}</tbody></table></div>`;
+  const prjAdd=`<tr class="gr-addrow" data-ilg="PRJ"><td><input class="gr-add-kod" placeholder="Kod (son 8)" style="width:10ch"></td><td colspan="5"></td><td><input class="gr-add-konu" placeholder="Yeni konu" style="width:100%;min-width:26ch"></td><td><button class="gr-add-btn" title="Ekle">+</button></td></tr>`;
+  let prjIc=prj.length?agPemPrjBlock(prj,'prj').replace(/^<h3[^>]*>[\s\S]*?<\/h3>/,""):"";
+  if(prjIc){ const i=prjIc.lastIndexOf("</tbody></table>"); prjIc=prjIc.slice(0,i)+prjAdd+prjIc.slice(i); }
+  else prjIc=`<div class="scroll gblk"><table><thead><tr><th>Kod</th><th>Proje Adı</th><th>Satış/Şantiye Notları</th><th>Adet</th><th>Durum</th><th>AÜP Tarihi</th><th>Konu</th><th></th></tr></thead><tbody>${prjAdd}</tbody></table></div>`;
+  let soB=""; if(soHtml){ const m=/<h3[^>]*>SÖ\s*·\s*(\d+)<\/h3>/.exec(soHtml); soB=band("so","SÖ",m?m[1]:null,soHtml.replace(/^\s*<h3[^>]*>[\s\S]*?<\/h3>/,"")); }
+  const secs=((sc&&!sc.error&&sc.data)||[]).filter(r=>r.aktif!==false).sort((a,b)=>(a.sira-b.sira)||String(a.ad).localeCompare(String(b.ad))).map(r=>r.ad).filter(a=>a!=="MB"&&!G[a]);
+  const yeniIc=`<div class="scroll"><table class="gnb"><thead><tr><th>İlgili</th><th>Konu</th><th></th></tr></thead><tbody><tr class="gr-addrow" data-ilg=""><td><select class="gr-add-ilg">${secs.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join("")}<option value="__new__">Diğer…</option></select></td><td><input class="gr-add-konu" placeholder="Yeni konu" style="width:100%;min-width:26ch"></td><td><button class="gr-add-btn" title="Ekle">+</button></td></tr></tbody></table></div>`;
+  el.innerHTML=`<div class="ag-wrap gr-bands">`+bah.map(k=>band("i:"+k,k,G[k].length,grpTbl(k))).join("")+band("prj","PRJ",prj.length,prjIc)
+    +rest.map(k=>band("i:"+k,k,G[k].length,grpTbl(k))).join("")+soB+band("yeni","Yeni İlgili",null,yeniIc)+`</div>`;
+  el.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
+  el.querySelectorAll(".ged").forEach(x=>x.onclick=()=>startEdit(x));
+  grAgBagla(el);
 }
 /* GIRIS-UST-ORTAK (16.10.2026, Melih): Sıkı Takip+Muhtemel tablosu, Satış/DK1 grafikleri, Sel-Arb ve cari ay kutuları
    app/giris_ust.js'te (kaynak kod/giris_ust.js) — MK Faaliyet formunun üstünde de aynısı. GRUST.render. */
@@ -4107,7 +4184,7 @@ async function boot(){
 }
 sb.auth.onAuthStateChange((_ev,s)=>{ if(!s){ state.session=null; renderLogin(); } });
 boot();
-setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; if(window._grNotKirli||(document.activeElement&&document.activeElement.id==="gr-not-ta")) return; /* GIRIS-NOT */
+setInterval(()=>{ if(!document.getElementById("view")) return; if(document.querySelector('input.cell,select.cell')) return; if(window._grNotKirli||(document.activeElement&&document.activeElement.id==="gr-not-ta")) return; /* GIRIS-NOT */ if([...document.querySelectorAll(".gr-addrow input,.gr-addrow select")].some(i=>(i.tagName==="INPUT"&&i.value.trim())||i===document.activeElement)) return; /* GIRIS-GUNDEM-BANT */
   if(state.tab==='mali' && state.maliBolum==='ob_rapor' && Date.now()-(window._obYuklendi||0)<590000) return; /* OB-YENILE-10DK (09.10.2026, Melih): ÖB Faaliyet 10 dakikada bir */
   loadView(); }, 300000);
 </script>
