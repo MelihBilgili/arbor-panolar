@@ -52,7 +52,7 @@
     <div id="marka" class="tw"></div></details>
   <div id="fyblok" style="display:none">
   <details class="blk" open><summary>Fiyat türetme</summary>
-    <div class="not">Cam Fiyat, Arbor'un ERP cam siparişlerinden (713 kayıt) kalibre edilmiş modelle hesaplanır: <b>alış = e<sup>sabit + Σ katsayı × değişken</sup> × (30 + kural €)</b>, Cam Fiyat = alış × 2,5 (KAT). <b>Kural €</b> Enes Uzun'un 16.11.2026 alış fiyatı kurallarıdır: cam katmanı 4 → 5 mm +1,5 · 5 → 6 mm +2,5 · 6 → 8 mm +3,5 €/m² (8 mm üstü +1,75 €/mm); PVB 0,38 / 0,76 / 1,14 / 1,52 mm = 3,5 / 6 / 9,5 / 12,5 €/m², akustik PVB ek +1,5 / +3 / +4,25 / +5,5; ara boşluk farkı yok; argon +2 €/m². <b>Solar kaplama</b> (Melih kuralı): alış, aynı camın Low-E karşılığının alışı +3 €/m²; seçici kaplamada (Sfg ≤ 0,40) +6 €/m². Diğer etkenler (kaplama, temper, extra clear, satine, warm edge, Tlg, Sfg, Rw+Ctr, metraj) yüzde olarak etki eder. Camların dıştan içe sırası fiyatı değiştirmez. Geçmiş siparişlerde aynı kombinasyon ya da tek farkla ayrılan kardeşi (Low-E, akustik, temper, extra clear, argon, warm edge, tek cam katmanı, boşluk) varsa bunların sapması eşit ağırlıkla düzeltme olarak eklenir (grup düzeltmesi). Marka ve kaplama adları hesaptan önce genel terime çevrilir. Aşağıdaki tablo, referans camda yalnız o etken değişirken (grup düzeltmesi hariç) fiyatın ne kadar değiştiğini gösterir. Bu bölüm yalnız MB oturumunda görünür.</div>
+    <div class="not">Cam Fiyat, Arbor'un ERP cam siparişlerinden (713 kayıt) kalibre edilmiş modelle hesaplanır: <b>alış = e<sup>sabit + Σ katsayı × değişken</sup> × (30 + kural €)</b>, Cam Fiyat = alış × 2,5 (KAT). <b>Kural €</b> Enes Uzun'un 16.11.2026 alış fiyatı kurallarıdır: cam katmanı 4 → 5 mm +1,5 · 5 → 6 mm +2,5 · 6 → 8 mm +3,5 €/m² (8 mm üstü +1,75 €/mm); PVB 0,38 / 0,76 / 1,14 / 1,52 mm = 3,5 / 6 / 9,5 / 12,5 €/m², akustik PVB ek +1,5 / +3 / +4,25 / +5,5; ara boşluk farkı yok; argon +2 €/m². <b>Solar kaplama</b> (Melih kuralı): alış, aynı camın Low-E karşılığının alışı +6 €/m²; seçici kaplamada (Sfg ≤ 0,40) +21 €/m²<!-- CAM-SOLAR-21 -->. Diğer etkenler (kaplama, temper, extra clear, satine, warm edge, Tlg, Sfg, Rw+Ctr, metraj) yüzde olarak etki eder. Camların dıştan içe sırası fiyatı değiştirmez. Geçmiş siparişlerde aynı kombinasyon ya da tek farkla ayrılan kardeşi (Low-E, akustik, temper, extra clear, argon, warm edge, tek cam katmanı, boşluk) varsa bunların sapması eşit ağırlıkla düzeltme olarak eklenir (grup düzeltmesi). Marka ve kaplama adları hesaptan önce genel terime çevrilir. Aşağıdaki tablo, referans camda yalnız o etken değişirken (grup düzeltmesi hariç) fiyatın ne kadar değiştiğini gösterir. Bu bölüm yalnız MB oturumunda görünür.</div>
     <div id="fyref" class="sat"></div>
     <div id="fytab" class="tw"></div>
     <h3>Örnek camlar (referans koşullarda)</h3>
@@ -253,8 +253,8 @@ function fiyatTablo(){
    ["Extra Clear","Extra Clear",{},{q:{xc:1}},""],
    ["Yangın dayanımı","EI30",{},{q:{fp:1}},"EI60 = EI30 × 1,1."],
    ["Warm edge","Alüminyum çıta → warm edge",{q:{we:0}},{},""],
-   ["Solar kaplama","Low-E → Solar Low-E",{},{q:{solar:1},v:{tl:0.72,sf:0.45}},"Melih kuralı: alış Low-E karşılığı +3 €/m² (Cam Fiyat +7,5)."],
-   ["Solar kaplama","Low-E → seçici solar (Sfg ≤ 0,40)",{},{q:{solar:1},v:{tl:0.70,sf:0.37}},"Melih kuralı: alış Low-E karşılığı +6 €/m² (Cam Fiyat +15)."],
+   ["Solar kaplama","Low-E → Solar Low-E",{},{q:{solar:1},v:{tl:0.72,sf:0.45}},"Melih kuralı: alış Low-E karşılığı +6 €/m² (Cam Fiyat +15)."],
+   ["Solar kaplama","Low-E → seçici solar (Sfg ≤ 0,40)",{},{q:{solar:1},v:{tl:0.70,sf:0.37}},"Melih kuralı: alış Low-E karşılığı +21 €/m² (Cam Fiyat +52,5)."],
    ["Işık geçirimi","Tlg +0,05",{},{v:{tl:0.84}},""],
    ["Solar faktör","Sfg −0,05",{},{v:{sf:0.56}},""],
    ["Ses yalıtımı","Cam Rw+Ctr +1 dB",{},{v:{rw:31}},""],
