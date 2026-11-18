@@ -323,7 +323,7 @@
     var sb=o.sb, kod=o.kod, d;
     try{ var r0=await sb.rpc("my_santiye_liste",{p_kod:kod}); if(r0.error) throw r0.error; d=r0.data||{rows:[]}; }catch(e){ el.innerHTML=""; return; }
     var rows=d.rows||[];
-    ofisBlok(d.ofis||[]); /* PEM-OFIS-MY */
+    ofisBlok(kod==="yi"?[]:(d.ofis||[])); /* PEM-OFIS-MY · PEM-OFIS-YI-YOK (18.11.2026): Yurt İçi şantiye formunda ofis stoğu PEM'leri gösterilmez */
     if(!rows.length){ el.innerHTML=""; return; }
     var B=[["prj","Projeler · 4.1 – 7.1",false],["sevk","Sevke Hazır · 8 / 8.1",false],["pem","PEM",true]];
     var ek='<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek sm">Yükleme<br>Şekli</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>';
