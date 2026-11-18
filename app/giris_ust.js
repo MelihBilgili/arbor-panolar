@@ -158,6 +158,8 @@ async function satis(o,elT,elG){
     +(body?`<div class="gru-sc"><table class="grt">${o.bolum==="ctp"?ctpTH:TH}<tbody>${body}</tbody></table></div>`:'<div class="gru-muted">Kayıt yok</div>');
   elT.querySelectorAll(".gru-nb").forEach(b=>b.onclick=()=>notAc(o,b.dataset.k,by[b.dataset.k][Number(b.dataset.id)],()=>satis(o,elT,elG)));
   /* grafikler: İcmal son 12 ay + Satış cari durum; Etüt DK1 */
+  /* GIRIS-IKI-YIL (18.11.2026, Melih): Giriş'te (o.grafik===true) grafikler son 2 yılı gösterir (24 ay + cari); MK/CTP 12 ay */
+  const NA=o.grafik===true?24:12, BAS=o.grafik===true?"son 2 yıl":"son 12 ay";
   const today=now(); today.setHours(0,0,0,0);
   const sum=(a,f)=>a.reduce((s,r)=>s+(Number(f(r))||0),0);
   const cur={so_m:sum(soR.filter(r=>/^muht/i.test(r.statu||"")),r=>r.net_eur), so_a:sum(soR.filter(r=>/^al/i.test(r.statu||"")),r=>r.net_eur),
@@ -165,7 +167,7 @@ async function satis(o,elT,elG){
   const icBy={}; ((ic&&!ic.error&&ic.data)||[]).forEach(r=>{ if(!r.is_total&&/^\d{2}\.\d{2}$/.test(String(r.donem||""))) icBy[r.donem]=r; });
   const lbl=d=>p2(d.getMonth()+1)+"."+String(d.getFullYear()).slice(2);
   const ser=[];
-  for(let i=12;i>=1;i--){ const d=new Date(today.getFullYear(),today.getMonth()-i,1), r=icBy[lbl(d)];
+  for(let i=NA;i>=1;i--){ const d=new Date(today.getFullYear(),today.getMonth()-i,1), r=icBy[lbl(d)];
     if(!r){ ser.push({x:lbl(d)}); continue; }
     const fa_a=num(r.fa_alinan_eur), f2a=num(r.fy2_alinan_eur), fa_m=num(r.fa_muht_eur), f2m=num(r.fy2_muht_eur);
     ser.push({x:lbl(d),so_m:num(r.so_muht_eur),so_a:num(r.so_alinan_eur),yd_a:(fa_a==null&&f2a==null)?null:(fa_a||0)+(f2a||0),yd_m:(fa_m==null&&f2m==null)?null:(fa_m||0)+(f2m||0)}); }
@@ -178,13 +180,13 @@ async function satis(o,elT,elG){
     const ayT={}; R.forEach(r=>{ let a; if(r.erp_damga){ a=ayOf(r.erp_damga); if(r.erp_damga!==son[a]) return; } else { const d=String(r.tarih||r.created_at||""); if(!/^\d{4}-\d{2}/.test(d)) return; a=d.slice(0,7); }
       ayT[a]=(ayT[a]||0)+n(r.dk1)+2*n(r.dk2)+3*n(r.dk3)+5*n(r.dk4); });
     const key=d=>d.getFullYear()+"-"+p2(d.getMonth()+1), ks=Object.keys(ayT).sort(), ilk=ks.length?ks[0]:key(today);
-    dkS=[]; for(let i=12;i>=0;i--){ const d=new Date(today.getFullYear(),today.getMonth()-i,1), kk=key(d); dkS.push({x:lbl(d)+(i===0?" (cari)":""),y:kk<ilk?null:(ayT[kk]||0),cur:i===0}); } }
+    dkS=[]; for(let i=NA;i>=0;i--){ const d=new Date(today.getFullYear(),today.getMonth()-i,1), kk=key(d); dkS.push({x:lbl(d)+(i===0?" (cari)":""),y:kk<ilk?null:(ayT[kk]||0),cur:i===0}); } }
   const kart=(ad,pts,v,b)=>`<div class="gru-card"><div class="gru-ct">${esc(ad)}</div><div class="gru-cv">${money(v)}${b}</div>${spark(pts,{birim:b})}</div>`;
   const kS=f=>ser.map(s=>({x:s.x,y:s[f]==null?null:s[f],cur:s.cur}));
   const c=f=>ser[ser.length-1][f];
   const dkK=dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):"";
   if(o.grafik==="mk"){ /* GIRIS-MK-GRAFIK: MK formunda yalnız YD alınan · YD muht. · Etüt DK1, tek satır */
-    elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3><div class="gru-cards">${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* MK-GRAFIK-BIRLES */}${dkK}</div>`;
+    elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — ${BAS} ve cari durum</h3><div class="gru-cards">${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* MK-GRAFIK-BIRLES */}${dkK}</div>`;
     return; }
   /* GIRIS-ISK-GRAFIK (17.11.2026, Melih): Prj grafiğinin altında YD1 (mavi) ve YD2 (turuncu) baz iskonto seyri — ay sonundaki son
      fiyat_parametre_log baz_iskonto değeri (Fiyatlandırma FR / Diğer), log öncesi aylar icmal_satir fr_isk_pct / dig_isk_pct (İcmal ile aynı kural) */
@@ -200,7 +202,7 @@ async function satis(o,elT,elG){
   const PRJ_S=[{ad:"Yurt İçi Alınan",pts:kS("so_a"),renk:"#e07b00"},{ad:"Yurt İçi Muhtemel",pts:kS("so_m"),renk:"#e07b00",kesik:true},
     {ad:"Yurt Dışı Alınan",pts:kS("yd_a"),renk:"#2e6da4"},{ad:"Yurt Dışı Muhtemel",pts:kS("yd_m"),renk:"#2e6da4",kesik:true},
     {ad:"Toplam Alınan",pts:kS("top_a"),renk:"#7b1e2b"},{ad:"Toplam Muhtemel",pts:kS("top_m"),renk:"#7b1e2b",kesik:true}];
-  elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — son 12 ay ve cari durum</h3>`
+  elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — ${BAS} ve cari durum</h3>`
     +`<div class="gru-cards">${mkart("Prj (€) — Yurt İçi · Yurt Dışı · Toplam",PRJ_S,[c("so_a"),c("so_m"),c("yd_a"),c("yd_m"),c("top_a"),c("top_m")],v=>money(v)+" €",{hK:1.7} /* GIRIS-PRJ-YUKSEK (17.11.2026, Melih): y ekseni 1,7 kat */)}${dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):""}</div>`
     +iskH;
 }
@@ -276,7 +278,8 @@ async function selArb(o,el){
   const K=[["Güncel Alacak Toplam",alacak],["Selectron'a Gönderilen Toplam",gon],["Selectron'a Borç",borc],["Selectron'a Ft Edilen Toplam",fatD],["Arbor SAS Faaliyet Kaybı Toplam",kayip]];
   if(o.grafik){ /* GIRIS-GRAFIK-KUTU */
     const aT={}; (s.data||[]).forEach(x=>{ if(x.alacak!=null) aT[x.tarih]=(aT[x.tarih]||0)+Number(x.alacak); });
-    const ozs=(oz.data||[]).filter(x=>aT[x.tarih]!=null), dl=t=>t.slice(8,10)+"."+t.slice(5,7)+"."+t.slice(2,4);
+    const t2y=(()=>{ const d=now(); d.setFullYear(d.getFullYear()-2); return d.toLocaleDateString("en-CA"); })(); /* GIRIS-IKI-YIL */
+    const ozs=(oz.data||[]).filter(x=>aT[x.tarih]!=null&&(o.grafik!==true||String(x.tarih)>=t2y)), dl=t=>t.slice(8,10)+"."+t.slice(5,7)+"."+t.slice(2,4);
     const H=ozs.map(x=>{ const a=aT[x.tarih], gg=nz(x.gonderilen), b=nz(x.borc), f=nz(x.fatura_edilen);
       return {x:dl(x.tarih),v:[a,gg,b,(f==null||Math.round(f)===0)?null:f,b==null?null:b-((gg||0)+(a||0)+(f||0))]}; });
     const sP=i=>H.map(h=>({x:h.x,y:h.v[i]})).concat([{x:"Cari",y:K[i][1],cur:true}]);
@@ -302,14 +305,14 @@ async function cari(o,el){
   const ay=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"][t.getMonth()]+" "+t.getFullYear();
   let G=null;
   if(o.grafik){ /* GIRIS-GRAFIK-KUTU: son 12 ay aylık toplam */
-    const b12=new Date(t.getFullYear(),t.getMonth()-11,1), bs=b12.getFullYear()+"-"+p2(b12.getMonth()+1)+"-01";
+    const NA=o.grafik===true?24:12 /* GIRIS-IKI-YIL */, b12=new Date(t.getFullYear(),t.getMonth()-(NA-1),1), bs=b12.getFullYear()+"-"+p2(b12.getMonth()+1)+"-01";
     const [f2,o2,t2]=await Promise.all([
       sb.from("ihracat_fatura").select("tarih,tutar,para_birimi,tutar_eur").gte("tarih",bs).lt("tarih",sn),
       sb.from("sel_odeme").select("odeme_tarihi,tutar,para_birimi,tutar_eur").gte("odeme_tarihi",bs).lt("odeme_tarihi",sn),
       sb.from("ob_tahsilat").select("tarih,tutar").gte("tarih",bs).lt("tarih",sn)]);
-    const ays=[]; for(let i=0;i<12;i++){ const d=new Date(b12.getFullYear(),b12.getMonth()+i,1); ays.push(d.getFullYear()+"-"+p2(d.getMonth()+1)); }
+    const ays=[]; for(let i=0;i<NA;i++){ const d=new Date(b12.getFullYear(),b12.getMonth()+i,1); ays.push(d.getFullYear()+"-"+p2(d.getMonth()+1)); }
     const ser=(q,k,fn)=>{ const m={}; ((q&&!q.error&&q.data)||[]).forEach(r=>{ const a=String(r[k]||"").slice(0,7); m[a]=(m[a]||0)+fn(r); });
-      return ays.map((a,i)=>({x:AY[+a.slice(5)-1]+" "+a.slice(2,4),y:m[a]||0,cur:i===11})); };
+      return ays.map((a,i)=>({x:AY[+a.slice(5)-1]+" "+a.slice(2,4),y:m[a]||0,cur:i===NA-1})); };
     const ev=r=>r.tutar_eur!=null?Number(r.tutar_eur)||0:((r.para_birimi||"EUR")==="EUR"?Number(r.tutar)||0:0);
     G=[ser(f2,"tarih",ev),ser(o2,"odeme_tarihi",ev),ser(t2,"tarih",r=>Number(r.tutar)||0)];
   }
