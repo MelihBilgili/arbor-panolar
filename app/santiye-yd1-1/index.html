@@ -565,6 +565,19 @@ document.getElementById("ay_btn").onclick=async()=>{
       msg(es.length+" açıklama güncel değil — kırmızı kutuları düzeltin.",false);
       alert("Güncelleme yapılamadı — "+es.length+" açıklama güncel değil.\n\nGeçmişe ait bir zaman (geçmiş ay/tarih) gelecekte olacakmış gibi yazılamaz; kırmızı kutulara bugünkü durumu yazın:\n\n• "+ad.slice(0,15).join("\n• ")+(ad.length>15?"\n• … ("+(ad.length-15)+" daha)":""));
       if(es[0].el) es[0].el.scrollIntoView({behavior:"smooth",block:"center"}); return; } }
+  { /* PST-GECMIS-YOK (18.11.2026, Melih): geçmiş tarihli PST işlenmişken (girilen PST ya da "Evet" ile onaylanan ERP PST'si bugünden önce) Güncelle çalışmaz */
+    const d=new Date(), bugun=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    const gec=v=>!!v && String(v).slice(0,10)<bugun, ad=r=>((r.proje_no||"")+" "+(r.proje_adi||"")).trim(), gl=[]; let gIlk=null;
+    SEVK.forEach(r=>{ const pg=document.getElementById("pstg_"+r.id);
+      if(pg && gec(r.pst_santiye)){ pg.classList.add("miss"); if(!gIlk) gIlk=pg; gl.push(ad(r)+" — PST "+trTarih(r.pst_santiye)); } });
+    SATIR.forEach(r=>{ const el=document.getElementById("blk_"+r.id);
+      if(pstGir(r)){ const pb=document.getElementById("pstb_"+r.id);
+        if(pb && gec(r.pst_santiye)){ pb.classList.add("miss"); if(!gIlk) gIlk=pb; gl.push(ad(r)+" — PST "+trTarih(r.pst_santiye)); } }
+      else if(r.pst_onay==="Evet" && gec(r.pst)){ if(el) el.classList.add("miss"); if(!gIlk) gIlk=el; gl.push(ad(r)+" — ERP PST "+trTarih(r.pst)+" onaylanmış"); } });
+    if(gl.length){
+      msg(gl.length+" projede geçmiş tarihli PST var — düzeltin.",false);
+      alert("Güncelleme yapılamadı — "+gl.length+" projede geçmiş tarihli PST var.\n\nPST bugünden önce olamaz. Girdiğiniz PST'yi ileri bir tarihe çekin; ERP PST'si geçmişse onay sorusuna \"Hayır\" deyip sebebini yazın:\n\n• "+gl.slice(0,15).join("\n• ")+(gl.length>15?"\n• … ("+(gl.length-15)+" proje daha)":""));
+      if(gIlk) gIlk.scrollIntoView({behavior:"smooth",block:"center"}); return; } }
   const b=document.getElementById("ay_btn"); b.disabled=true; msg("Aktarılıyor…",true);
   const {error}=await sb.from("pano_yayin").upsert({anahtar:PY_ANAHTAR,yayin_at:new Date().toISOString()},{onConflict:"anahtar"});
   b.disabled=false;
