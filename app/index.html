@@ -1526,7 +1526,7 @@ async function loadHazir(el){
   const hStamp='<div class="stamp">ERP: '+(st||"—")+' · Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")
     +' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)
     +' · PRJ Adet: '+Math.round(Number(a0.prj_adet)||0)+pctSpan(a0.prj_adet,a1.prj_adet)+'</div>';
-  const pemHd='<div class="aupsevkh">PEM <span style="font-weight:400;color:#5a6b7d">· Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")+' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)+'</span></div>';
+  const pemHd='<div class="aupsevkh">Sevke Hazır PEM\'ler <span style="font-weight:400;color:#5a6b7d">· Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")+' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)+'</span></div>';
   view.innerHTML=`${el?pemHd:hStamp}
     <style>.hblk table{font-size:11.5px}.hblk th,.hblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.hblk thead th{vertical-align:bottom}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{width:3ch}.h5>span{width:5ch}.h8>span{width:8ch}.h15>span{width:15ch}.h20>span{width:68ch}.h25>span{width:25ch}.hdt>span{width:12.45ch}</style>
     ${block("pem")||(el?'<div class="c" style="color:#5a6b7d;font-size:12px">Kayıt yok</div>':'')}
@@ -1551,7 +1551,7 @@ async function loadHazir(el){
 async function loadAup(){
   const view=document.getElementById("view");
   /* AUP-SEVK-BLOK (29.09.2026): ikinci blok = proje durumu 8 · 8.1 (view aup_sevk_panosu); üst damga toplamları yalnız ilk blok */
-  const [{data,error},oz,sv,yp,mt]=await Promise.all([sb.from("aup_panosu").select("*").order("aup",{ascending:true}), sb.from("aup_ozet").select("*").order("damga",{ascending:false}).limit(2), sb.from("aup_sevk_panosu").select("*").order("aup",{ascending:true}), sb.from("santiye_form_proje").select("proje_no,donem,onemli_hususlar,pst_santiye,updated_at,proje_durumu,aup,pst,mvt_onay,mvt_sebep,pst_onay,pst_sebep").order("donem",{ascending:false}).order("updated_at",{ascending:false}), sb.from("my_takip").select("tur,no,durum,hedef_yukleme,plan_hedef,yukleme_sekli,ucak_onay,aciklama,talep_durum,talep_hedef,talep_kisi").eq("tur","PRJ")]);
+  const [{data,error},oz,sv,yp,mt,ed,mf]=await Promise.all([sb.from("aup_panosu").select("*").order("aup",{ascending:true}), sb.from("aup_ozet").select("*").order("damga",{ascending:false}).limit(2), sb.from("aup_sevk_panosu").select("*").order("aup",{ascending:true}), sb.from("santiye_form_proje").select("proje_no,donem,onemli_hususlar,pst_santiye,updated_at,proje_durumu,aup,pst,mvt_onay,mvt_sebep,pst_onay,pst_sebep").order("donem",{ascending:false}).order("updated_at",{ascending:false}), sb.from("my_takip").select("tur,no,durum,hedef_yukleme,plan_hedef,yukleme_sekli,ucak_onay,aciklama,talep_durum,talep_hedef,talep_kisi").eq("tur","PRJ"), sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1), sb.rpc("my_faaliyet_liste")]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const dk=d=>{ d=String(d||""); const i=d.indexOf(" "); return i<0?d:(d.slice(0,i)+" "+d.slice(i+1,i+4)); };
   /* Hücre deseni = Hazır PEM/PRJ panosu: her hücre tek satır, sığmayan içerik yatayda kaydırılır
@@ -1597,7 +1597,13 @@ async function loadAup(){
       <td class="c ur"><span title="${esc(un)}">${esc(un)}</span></td>
     </tr>`;
   };
-  const rows=data.map(rowH).join("");
+  /* PRJ-PEM-TABLO-AD (19.11.2026, Melih): proje ve PEM tabloları şantiye / MK / MY Faaliyet formlarındaki adlarla bölünür.
+     Gelecek Ayın Sonuna Kadar Yüklenecek Projeler = MVT ≤ son ERP çekiminin ayını izleyen ayın son günü (erp-ingest SANTIYE-SINIR-GERCEK ile aynı); İleri Tarihli Projeler = sonrası (MVT'siz de buraya). */
+  const _ed=String((ed&&ed.data&&ed.data[0]&&ed.data[0].damga)||"");
+  const _lim=/^\d{6}$/.test(_ed)?(()=>{ const y=2000+Number(_ed.slice(0,2)), m=Number(_ed.slice(2,4)); const d=new Date(y,m+1,0); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); })():"9999-12-31";
+  const gData=data.filter(r=>r.mvt&&String(r.mvt).slice(0,10)<=_lim), iData=data.filter(r=>!(r.mvt&&String(r.mvt).slice(0,10)<=_lim));
+  const rowsG=gData.map(rowH).join(""), rowsI=iData.map(rowH).join("");
+  const sumAT=a=>"Proje: "+a.length+" · Adet: "+money(a.reduce((x,r)=>x+(Number(r.adet)||0),0))+" · Tutar: "+money(a.reduce((x,r)=>x+(Number(r.anlasma_fiyati)||0),0))+" €";
   /* AUP-SEVK-YP (09.10.2026): 2. tabloda PST-AÜP · Kayma · TUTAR yok; yerine Yükleme Planı = şantiye formundaki
      "Yükleme Planına İlişkin Açıklama" (santiye_form_proje.onemli_hususlar; proje_no başına en yeni dolu dönem). */
   const YPM={}; ((yp&&yp.data)||[]).forEach(f=>{ const t=String(f.onemli_hususlar||"").trim(); if(t&&!(f.proje_no in YPM)) YPM[f.proje_no]=t; });
@@ -1648,17 +1654,37 @@ async function loadAup(){
     #view table.aupmain thead th.pstd{white-space:normal;line-height:11px}
     #view .aupsevkh{font-weight:600;margin:14px 0 4px;font-size:13px}
     </style>
-    <div class="scroll aupwrap"><table class="aup aupmain">
-    <colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><th class="yp">Açıklama</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
-    <tbody>${rows}</tbody></table>
-    <div class="aupsevkh">Sevke Hazır · 8 / 8.1 <span style="font-weight:400;color:#5a6b7d">· Proje: ${sdata.length} · Adet: ${money(sAd)} · Tutar: ${money(sTu)} €</span></div>
+    <div class="scroll aupwrap">
+    <div class="aupsevkh" style="margin-top:4px">Sevke Hazır Projeler · Durum 8 / 8.1 <span style="font-weight:400;color:#5a6b7d">· Proje: ${sdata.length} · Adet: ${money(sAd)} · Tutar: ${money(sTu)} €</span></div><!-- PRJ-PEM-TABLO-AD -->
     <table class="aup aupmain"><colgroup>${AUP_COLW_SEVK.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
     <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><!-- HEDEF-TEK · PRJ-HEDEF-ACIL --><th class="yp">Yükleme Planı</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${srows||'<tr><td colspan="12" class="c">Kayıt yok</td></tr>'}</tbody></table>
-    <div id="aup-pem"></div></div>`;
+    <div class="aupsevkh">Gelecek Ayın Sonuna Kadar Yüklenecek Projeler <span style="font-weight:400;color:#5a6b7d">· MVT ≤ ${fdate(_lim)} · ${sumAT(gData)}</span></div>
+    <table class="aup aupmain">
+    <colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><th class="yp">Açıklama</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <tbody>${rowsG||'<tr><td colspan="15" class="c">Kayıt yok</td></tr>'}</tbody></table>
+    <div class="aupsevkh">İleri Tarihli Projeler <span style="font-weight:400;color:#5a6b7d">· MVT &gt; ${fdate(_lim)} · ${sumAT(iData)}</span></div>
+    <table class="aup aupmain">
+    <colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><th class="yp">Açıklama</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <tbody>${rowsI||'<tr><td colspan="15" class="c">Kayıt yok</td></tr>'}</tbody></table>
+    <div id="aup-pem"></div><div id="aup-pem-ur"></div>
+</div>`;
   aupFit();
   loadHazir(document.getElementById("aup-pem"));  /* PRJ-PEM-SEKME */
+  { /* PRJ-PEM-TABLO-AD: Üretimdeki PEM'ler (ERP durumu < 3) — MY Faaliyet ile aynı kaynak (rpc my_faaliyet_liste, blok pem; yurt dışı) */
+    const ue=document.getElementById("aup-pem-ur"), mrows=((mf&&mf.data&&mf.data.rows)||[]);
+    const pno=r=>{ const m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return m?parseFloat(m[1].replace(",",".")):0; };
+    const U=mrows.filter(r=>r.blok==="pem"&&pno(r)<3).sort((a,b)=>(pno(a)-pno(b))||String(a.tarih||"9999").localeCompare(String(b.tarih||"9999")));
+    const acl=r=>r.durum==="Acil"?'<span style="color:#b40000;font-weight:700">Acil · '+esc(r.sekil||"Kamyon")+'</span>':(r.talep==="Acil"?'<span style="color:#b26a00;font-weight:600" title="Şantiye acil talebi · MY onayı bekliyor">Acil talebi</span>':'<span class="muted">Normal</span>');
+    const hed=r=>(r.durum==="Acil"&&r.hedef)?r.hedef:(r.plan||"");
+    if(ue) ue.innerHTML='<div class="aupsevkh">Üretimdeki PEM\'ler <span style="font-weight:400;color:#5a6b7d">· ERP durumu &lt; 3 · yurt dışı · PEM: '+U.length+'</span></div>'
+      +'<style>.hblk table{font-size:11.5px}.hblk th,.hblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.hblk thead th{vertical-align:bottom}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{width:3ch}.h8>span{width:8ch}.h15>span{width:15ch}.h25>span{width:25ch}.hdt>span{width:12.45ch}.h20>span{width:24ch}</style>'
+      +'<div class="scroll hblk"><table><thead><tr><th>PEM</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin Tarihi</th><th>ERP Durumu</th><th>Hedef Yükleme</th><th>Aciliyet</th></tr></thead><tbody>'
+      +(U.map(r=>'<tr><td class="c h8"><span title="'+esc(r.no)+'">'+esc(r.kod)+'</span></td><td class="c h15"><span title="'+esc(r.proje)+'">'+esc(r.proje)+'</span></td><td class="c h25"><span title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</span></td><td class="c h3"><span>'+esc(r.adet)+'</span></td><td class="c hdt"><span>'+esc(fdate(r.tarih))+'</span></td><td class="c h20"><span title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</span></td><td class="c hdt"><span>'+esc(fdate(hed(r)))+'</span></td><td>'+acl(r)+'</td></tr>').join("")||'<tr><td colspan="8" class="c">Kayıt yok</td></tr>')
+      +'</tbody></table></div>';
+  }
 }
 /* AUP-COLW: NO · PROJE ADI · DURUM · Ad · MVT · AÜP · PST · PST-AÜP · Kayma · TUTAR € · Satış-Şantiye · Üretim
    (12px gövde yazısında 1ch ≈ 6,47px + 12px hücre dolgusu). PROJE ADI / Satış-Şantiye / Üretim
