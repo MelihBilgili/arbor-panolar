@@ -541,7 +541,7 @@ function computeAutoTier(r){
 }
 function computeAutoTier0(r){
   if(!rangeFilled(r,1,6)) return 0;
-  if(rangeFilled(r,8,11) && rangeFilled(r,13,18)) return 4; /* BEKLENIYOR-TESLIM (08.10.2026, Melih): Teslim Edildi = Teklif Bekleniyor şartları + 13-18 dolu */
+  if(rangeFilled(r,8,11) && rangeFilled(r,13,18) && (daysAgo(r.teklif_teslim_tarihi)||0)>=0) return 4; /* YD-TESLIM-GELECEK (19.11.2026, Melih): teslim tarihi bugünden ileride iken Teslim Edildi olmaz */ /* BEKLENIYOR-TESLIM (08.10.2026, Melih): Teslim Edildi = Teklif Bekleniyor şartları + 13-18 dolu */
   if(colFilled(r,13) && rangeFilled(r,8,11)) return 3; /* BEKLENIYOR-8-11 (08.10.2026, Melih): Teklif Bekleniyor için 8-11 de dolu olmalı */
   if(rangeFilled(r,8,11)) return 2;
   return 1;
@@ -778,7 +778,7 @@ function rowHTML(r,key,gz){
         else if(terminGec(r)){ uyari=" terminuyari"; ipucu=' title="İstenen Tarih, Teklif Teslim Tarihi\'nden erken — termin aşıldı"'; }
       }
       const tdc=(c.t==='num'?'net':'')+(c.f==='musteri'?'mus'+(ilgVar(r)?' ilg-var':''):''); /* YD-ILGILI */
-      return '<td class="'+tdc+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+prjCls(r,c.f,key)+'" data-f="'+c.f+'" type="text"'+ipucu+(alanYasak(c.f)?' readonly title="Bu alana kayıt yetkiniz yok" style="cursor:not-allowed;color:#6a7888;':' style="')+'width:'+c.w+'px" value="'+esc(v)+'"></td>';
+      return '<td class="'+tdc+'" style="background:'+bgv+'"><input class="cell'+req+empty+uyari+prjCls(r,c.f,key)+'" data-f="'+c.f+'" type="text"'+ipucu+(alanYasak(c.f,r)?' readonly title="'+esc(alanYasak(c.f,r))+'" style="cursor:not-allowed;color:#6a7888;':' style="')+'width:'+c.w+'px" value="'+esc(v)+'"></td>';
     }).join('')
     +(gz===1?'':pairCells(r,key,bg))
     +'' /* YD-DURUM-GRUP: Durum sütunu kaldırıldı, durum grup başlığında */
@@ -906,7 +906,7 @@ async function musOnemKontrol(ad){
 function musOnemGoster(key,val){ const s=document.querySelector('#list tr[data-i="'+key+'"] select[data-f="musteri_onem_sinifi"]'); if(s){ s.value=val||""; s.classList.toggle("filled",!!val); } }
 async function saveRow(key,f,val,el){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
-  if(alanYasak(f)){ if(el) el.value=(r[f]==null?"":r[f]); setMsg("Bu alana kayıt yetkiniz yok.",false); return; } /* ALAN-YETKI */
+  if(alanYasak(f,r)){ if(el) el.value=(r[f]==null?"":r[f]); setMsg(alanYasak(f,r)+".",false); return; } /* ALAN-YETKI · YD-TESLIM-CLAUDE */
   if(ARSIV_F.indexOf(f)>=0){ setMsg("Bu alanı Claude, müşteriye giden teklif mailinden Teklif arşivinden işler.",false); return; } /* YD-ARSIV-SECIM */
   let v=convVal(f,val);
   if(v===undefined){ m.className="msg err"; m.textContent="Tarih GG.AA.YY biçiminde olmalı."; return; }
@@ -1047,7 +1047,8 @@ let NT_HEDEF=null;
 const NT_YASAK={talebe_iliskin_notlar:["OBL"],teklif_birimi_notlari:["MN"]};
 /* ALAN-YETKI (15.10.2026, Melih): OBL Montaj Hariç Net Tutar'ı yazamaz (okuyabilir). */
 const ALAN_YASAK={net_tutar:["OBL"]};
-function alanYasak(f){ return !!ARB_EKLEYEN && (ALAN_YASAK[f]||[]).indexOf(ARB_EKLEYEN)>=0; }
+function alanYasak(f,r){ if(f==='teklif_teslim_tarihi' && r && tutarDolu(r)) return "Teklif işlendi — Teklif Teslim Tarihi yalnız Claude tarafından değiştirilir"; /* YD-TESLIM-CLAUDE (19.11.2026, Melih) */
+  return (!!ARB_EKLEYEN && (ALAN_YASAK[f]||[]).indexOf(ARB_EKLEYEN)>=0)?"Bu alana kayıt yetkiniz yok":""; }
 function ntYasak(f){ return !!ARB_EKLEYEN && (NT_YASAK[f]||[]).indexOf(ARB_EKLEYEN)>=0; }
 function ntAc(key,f){
   if(ntYasak(f)){ setMsg("Bu not alanına kayıt yetkiniz yok.",false); return; } /* NOT-YETKI */
