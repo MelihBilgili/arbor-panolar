@@ -1551,7 +1551,7 @@ async function loadHazir(el){
 async function loadAup(){
   const view=document.getElementById("view");
   /* AUP-SEVK-BLOK (29.09.2026): ikinci blok = proje durumu 8 · 8.1 (view aup_sevk_panosu); üst damga toplamları yalnız ilk blok */
-  const [{data,error},oz,sv,yp]=await Promise.all([sb.from("aup_panosu").select("*").order("aup",{ascending:true}), sb.from("aup_ozet").select("*").order("damga",{ascending:false}).limit(2), sb.from("aup_sevk_panosu").select("*").order("aup",{ascending:true}), sb.from("santiye_form_proje").select("proje_no,donem,onemli_hususlar,pst_santiye,updated_at,proje_durumu,aup,pst,mvt_onay,mvt_sebep,pst_onay,pst_sebep").order("donem",{ascending:false}).order("updated_at",{ascending:false})]);
+  const [{data,error},oz,sv,yp,mt]=await Promise.all([sb.from("aup_panosu").select("*").order("aup",{ascending:true}), sb.from("aup_ozet").select("*").order("damga",{ascending:false}).limit(2), sb.from("aup_sevk_panosu").select("*").order("aup",{ascending:true}), sb.from("santiye_form_proje").select("proje_no,donem,onemli_hususlar,pst_santiye,updated_at,proje_durumu,aup,pst,mvt_onay,mvt_sebep,pst_onay,pst_sebep").order("donem",{ascending:false}).order("updated_at",{ascending:false}), sb.from("my_takip").select("tur,no,durum,hedef_yukleme,plan_hedef,yukleme_sekli,ucak_onay,aciklama,talep_durum,talep_hedef,talep_kisi").eq("tur","PRJ")]);
   if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
   const dk=d=>{ d=String(d||""); const i=d.indexOf(" "); return i<0?d:(d.slice(0,i)+" "+d.slice(i+1,i+4)); };
   /* Hücre deseni = Hazır PEM/PRJ panosu: her hücre tek satır, sığmayan içerik yatayda kaydırılır
@@ -1568,8 +1568,17 @@ async function loadAup(){
   const scCv=(o,s)=>!o?'<span class="muted">—</span>':(o==="Evet"?'<span style="color:#0a6b3f;font-weight:600">Evet</span>':'<span title="'+esc(s||"")+'" style="color:#b40000;font-weight:700">Hayır</span>');
   const scHemen=no=>{ const f=SCM[no]; if(!f) return ""; return (scU7(f) && f.aup && String(f.aup).slice(0,10)<scBug) ? scCv(f.mvt_onay,f.mvt_sebep) : ""; };
   const scPst=no=>{ const f=SCM[no]; if(!f) return ""; if(scU7(f) && !f.pst) return f.pst_santiye?'<span title="Şantiyenin belirlediği hedef yükleme tarihi (ERP PST yok): '+fdate(f.pst_santiye)+'" style="color:#0a4f8a;font-weight:600">Belirlendi</span>':'<span class="muted">—</span>'; return scCv(f.pst_onay,f.pst_sebep); };
+  /* PRJ-HEDEF-ACIL (19.11.2026, Melih): kaynağı kalmayan "Hazırsa hemen yüklenecek mi?" / "PST talebe uygun mu?" (şantiye formu soruları 10.11'de kalktı) yerine
+     Hedef Yükleme (Acil → acil hedefi, değilse my_takip.plan_hedef, o da yoksa şantiye pst_santiye) · Aciliyet (my_takip.durum + yükleme şekli / bekleyen şantiye talebi) · Açıklama (acil açıklaması, yoksa şantiye "Yükleme Planına İlişkin Açıklama"). */
+  const MTM={}; ((mt&&mt.data)||[]).forEach(t=>{ MTM[t.no]=t; });
+  const hdHedef=no=>{ const t=MTM[no]; if(t&&t.durum==="Acil"&&t.hedef_yukleme) return t.hedef_yukleme; return (t&&t.plan_hedef)||PSM[no]||null; };
+  const hdAcil=no=>{ const t=MTM[no]; if(!t) return '<span class="muted">Normal</span>';
+    if(t.durum==="Acil"){ const sk=t.yukleme_sekli||"Kamyon"; return '<span style="color:#b40000;font-weight:700" title="'+esc("Acil · "+sk+(sk==="Uçak"?(t.ucak_onay?" · MK onaylı":" · MK onayı bekliyor"):""))+'">Acil · '+esc(sk)+'</span>'; }
+    if(t.talep_durum==="Acil") return '<span style="color:#b26a00;font-weight:600" title="'+esc("Şantiye acil talebi ("+(t.talep_kisi||"")+") · hedef "+fdate(t.talep_hedef)+" · MY onayı bekliyor")+'">Acil talebi</span>';
+    return '<span class="muted">'+esc(t.durum||"Normal")+'</span>'; };
+  const hdAck=no=>{ const t=MTM[no]; const a=(t&&t.durum==="Acil"&&t.aciklama)?String(t.aciklama).split("\n").reverse().join(" · "):""; const f=SCM[no]; return a||String((f&&f.onemli_hususlar)||"").trim(); };
   const rowH=r=>{
-    const ga=r.gyt_aup, ky=r.kayma;
+    const ga=r.gyt_aup, ky=r.kayma, ack=hdAck(r.proje_no);
     const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
     const sn=String(r.satis_santiye_notlari||""), un=String(r.uretim_notlari||"");
     return `<tr>
@@ -1580,7 +1589,7 @@ async function loadAup(){
       <td class="num ctr">${fdate(r.mvt)}</td>
       <td class="num ctr">${fdate(r.aup)}</td>
       <td class="num ctr">${fdate(r.gyt)}</td>
-      <td class="ctr">${scHemen(r.proje_no)}</td><td class="ctr">${scPst(r.proje_no)}</td>
+      <td class="num ctr">${fdate(hdHedef(r.proje_no))}</td><td class="ctr">${hdAcil(r.proje_no)}</td><td class="c yp"><span title="${esc(ack)}">${esc(ack)}</span></td>
       <td class="num pstd ${ga<0?'red':''}">${ga==null?'':ga}</td>
       <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
       <td class="num">${money(r.anlasma_fiyati)}</td>
@@ -1605,7 +1614,7 @@ async function loadAup(){
       <td class="num ctr">${fdate(r.mvt)}</td>
       <td class="num ctr">${fdate(r.aup)}</td>
       <td class="num ctr">${fdate(r.gyt)}</td>
-      <td class="num ctr">${fdate(PSM[r.proje_no])}</td>
+      <td class="num ctr">${fdate(hdHedef(r.proje_no))}</td><td class="ctr">${hdAcil(r.proje_no)}</td>
       <td class="c yp"><span title="${esc(yn)}">${esc(yn)}</span></td>
       <td class="c ss${r.satis_santiye_notlari?' snpink':''}"><span title="${esc(sn)}">${esc(sn)}</span></td>
       <td class="c ur"><span title="${esc(un)}">${esc(un)}</span></td>
@@ -1641,12 +1650,12 @@ async function loadAup(){
     </style>
     <div class="scroll aupwrap"><table class="aup aupmain">
     <colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd" title="Eğer hazırsa hemen yüklenecek mi? (şantiye formu)">Hazırsa hemen yüklenecek mi?</th><th class="ctr pstd" title="PST’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz? (şantiye formu)">PST talebe uygun mu?</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><th class="yp">Açıklama</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <div class="aupsevkh">Sevke Hazır · 8 / 8.1 <span style="font-weight:400;color:#5a6b7d">· Proje: ${sdata.length} · Adet: ${money(sAd)} · Tutar: ${money(sTu)} €</span></div>
     <table class="aup aupmain"><colgroup>${AUP_COLW_SEVK.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme<br>(Şantiye)</th><!-- HEDEF-TEK --><th class="yp">Yükleme Planı</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
-    <tbody>${srows||'<tr><td colspan="11" class="c">Kayıt yok</td></tr>'}</tbody></table>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><!-- HEDEF-TEK · PRJ-HEDEF-ACIL --><th class="yp">Yükleme Planı</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <tbody>${srows||'<tr><td colspan="12" class="c">Kayıt yok</td></tr>'}</tbody></table>
     <div id="aup-pem"></div></div>`;
   aupFit();
   loadHazir(document.getElementById("aup-pem"));  /* PRJ-PEM-SEKME */
@@ -1654,9 +1663,9 @@ async function loadAup(){
 /* AUP-COLW: NO · PROJE ADI · DURUM · Ad · MVT · AÜP · PST · PST-AÜP · Kayma · TUTAR € · Satış-Şantiye · Üretim
    (12px gövde yazısında 1ch ≈ 6,47px + 12px hücre dolgusu). PROJE ADI / Satış-Şantiye / Üretim
    07.09.2026'da %12 daraltıldı (30→26,4ch · 40→35,2ch · 67,5→59,4ch), DURUM 10→7,5ch. */
-const AUP_COLW=[51,183,61,34,64,64,64,78,64,32,44,57,240,396];  /* PRJ-SANTIYE-CEVAP: ERP PST sağına Hemen yükleme? 78px + PST onay 64px (Şantiye PST ilk bloktan çıktı; SANTIYE-PST-SUTUN 2. blokta sürer) */
+const AUP_COLW=[51,183,61,34,64,64,64,64,84,200,32,44,57,240,396];  /* PRJ-HEDEF-ACIL: Hedef Yükleme 64 · Aciliyet 84 · Açıklama 200 (eski Hemen 78 + PST onay 64 yerine) */  /* PRJ-SANTIYE-CEVAP: ERP PST sağına Hemen yükleme? 78px + PST onay 64px (Şantiye PST ilk bloktan çıktı; SANTIYE-PST-SUTUN 2. blokta sürer) */
 /* AUP-SEVK-YP: 2. tablo NO · PROJE ADI · DURUM · Ad · MVT · AÜP · PST · Yükleme Planı · Satış-Şantiye · Üretim — son üçü 240×0,7=168px */
-const AUP_COLW_SEVK=[51,183,61,34,64,64,64,64,168,168,168];  /* SANTIYE-PST-SUTUN */
+const AUP_COLW_SEVK=[51,183,61,34,64,64,64,64,84,168,168,168];  /* PRJ-HEDEF-ACIL: Aciliyet 84 */  /* SANTIYE-PST-SUTUN */
 /* AUP-FIT: tablo kutusu pencerenin altına kadar uzar — sabit 82vh sınırı altta boş bant bırakıyordu. */
 function aupFit(){
   const w=document.querySelector("#view .aupwrap"); if(!w) return;
