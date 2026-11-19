@@ -320,7 +320,7 @@ async function loadPerms(){
 const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_mkprim"]; /* MAASPRIM-PERSONEL: mali_maasprim kaldırıldı (→ Personel) */
 const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_mkprim"];
 /* ÖB Faaliyet artık Mali grubunun içinde (MK Faaliyet'in yanında) */
-/* MENU-KISA-261010 */ /* GIRIS-PANO */const TABS=[["giris","Giriş"],["aup","PRJ/PEM"],["santiye","Şantiye"],["satis","Satış"],["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
+/* MENU-KISA-261010 */ /* GIRIS-PANO */const TABS=[["giris","Giriş"],["aup","PRJ/PEM"],["santiye","Şantiye"],/* GIRIS-SATIS-BANT (19.11.2026, Melih): Satış sekmesi menüden kaldırıldı; özeti Giriş'te açılır bant, loadSatis 'Öncelik Belirle' düğmesiyle hâlâ açılır */["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
 const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
 /* MENU-DUGME: Menü = ilk 8 sekme · Mali grubunun ilk 5 panosu · Formlar · Özel · Üretim Takip. Diğer pano linkleri (Sel-Arb, MK Faaliyet, ÖB Faaliyet) kaldırıldı; kodları duruyor. */
 const MENU_MALI=[["bilanco","Bilanço"],["icmal","İcmal"],["fiyat","Fiyatlandırma"],["kredi","Kredi"],["ahsap","Ahşap"]];
@@ -482,12 +482,41 @@ async function loadGiris(){
     <div id="gr-gundem"></div>
     <div id="gr-agblok"></div><!-- GIRIS-GUNDEM-BANT -->
     <div id="gr-ust"></div>
+    <div id="gr-satis" class="gr-bands" style="margin:8px 0"></div><!-- GIRIS-SATIS-BANT -->
     <div id="gr-santiye"></div>
     <div id="gr-egitim"></div>
     <div id="gr-not" style="margin-top:16px"></div><!-- GIRIS-NOT -->
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
-  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grCfo),kor(grGundem),kor(grAgBlok),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grCfo),kor(grGundem),kor(grAgBlok),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(grSatis),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
+}
+/* GIRIS-SATIS-BANT (19.11.2026, Melih): Satış panosunun ilk bloğu (Muhtemel/Alınan özeti + Değişim + proje listeleri, satisSummary)
+   Giriş'te grafiklerin hemen altında kapalı açılır bantta; Satış sekmesi kaldırıldı. Hesap loadSatis ile birebir (KUR-DONDURMA, SATIS-AYBASLANGIC). */
+async function grSatis(){
+  const el=grEl("gr-satis"); if(!el) return;
+  const [sy,yd,base]=await Promise.all([
+    sb.from("satis_yorum").select("*").eq("kaynak","SO").eq("aktif",true),
+    sb.from("satis_yd_akis").select("*"),
+    sb.from("satis_ay_baslangic").select("*")]);
+  if(sy.error||yd.error){ el.innerHTML=`<div class="load">Satış özeti okunamadı: ${esc((sy.error||yd.error).message)}</div>`; return; }
+  const soRows=sy.data||[], ydRows=yd.data||[], baseRows=(base&&!base.error)?(base.data||[]):[];
+  const kur=await satisKur();
+  const nowIst=new Date(new Date().toLocaleString('en-US',{timeZone:'Europe/Istanbul'}));
+  const yilAy=nowIst.getFullYear()+'-'+String(nowIst.getMonth()+1).padStart(2,'0');
+  const ydAdapt=r=>({proje:r.proje,musteri:r.musteri,net_eur:netEur(r,kur)||0,pb:'EUR',ham:(r.net_tutar==null?null:Number(r.net_tutar)),hampb:r.para_birimi||'EUR',durum:r.durum});
+  const soAdapt=r=>({proje:r.proje,musteri:r.musteri,net_eur:Number(r.net_eur)||0,pb:'EUR',durum:r.durum});
+  const regions=[
+    {ad:"Yurt İçi",kaynak:"SO",cM:soRows.filter(r=>/^muht/i.test(r.statu||"")).map(soAdapt),cA:soRows.filter(r=>/^al/i.test(r.statu||"")).map(soAdapt)},
+    {ad:"Yurt Dışı 1",kaynak:"YD1",cM:ydRows.filter(r=>r.blok==='YD1'&&r.durum==='Muhtemel').map(ydAdapt),cA:ydRows.filter(r=>r.blok==='YD1'&&r.durum==='Kazandık').map(ydAdapt)},
+    {ad:"Yurt Dışı 2",kaynak:"YD2",cM:ydRows.filter(r=>r.blok==='YD2'&&r.durum==='Muhtemel').map(ydAdapt),cA:ydRows.filter(r=>r.blok==='YD2'&&r.durum==='Kazandık').map(ydAdapt)}];
+  const baseSum=(k,st)=>baseRows.filter(r=>r.kaynak===k&&r.yil_ay===yilAy&&r.statu===st&&(r.para_birimi||'EUR')==='EUR').reduce((a,r)=>a+(Number(r.net_eur)||0),0);
+  const hasBase=baseRows.some(r=>r.yil_ay===yilAy);
+  regions.forEach(rg=>{ rg.baseM=baseSum(rg.kaynak,'Muhtemel'); rg.baseA=baseSum(rg.kaynak,'Alındı');
+    rg.bLM=baseRows.filter(r=>r.kaynak===rg.kaynak&&r.yil_ay===yilAy&&r.statu==='Muhtemel'); rg.bLA=baseRows.filter(r=>r.kaynak===rg.kaynak&&r.yil_ay===yilAy&&r.statu==='Alındı'); });
+  const tM=regions.reduce((a,rg)=>a+sSum(rg.cM),0), tA=regions.reduce((a,rg)=>a+sSum(rg.cA),0);
+  const st='<style>table.ssum td.sdlist{vertical-align:top;padding:2px 6px 6px}table.ssum th.sdeg,table.ssum td.sdeg{border-left:1px dashed #cdd8e4}.sdi.sdadd .sdi-p,.sdi.sdadd .sdi-t{color:#0a6b3f}.sdi.sdrem .sdi-p,.sdi.sdrem .sdi-t{color:#b23a2e}.sdi{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0;border-bottom:1px solid #eef1f4}.sdi-p{color:#2c3542}.sdi-t{color:#516072;white-space:nowrap;text-align:right}</style>';
+  el.innerHTML=st+`<details class="gr-band" data-b="satis"${window._grBandAcik&&window._grBandAcik.satis?" open":""}><summary>SATIŞ · Muhtemel ${money(tM)} EUR · Alınan ${money(tA)} EUR</summary><div class="gr-band-ic">${satisSummary(regions,hasBase)}</div></details>`;
+  const d=el.querySelector("details.gr-band"); if(d) d.addEventListener("toggle",()=>{ window._grBandAcik=window._grBandAcik||{}; window._grBandAcik.satis=d.open; });
 }
 /* 1 — Ezan vakitleri (Diyanet yöntemi) + gündüz ortalama sıcaklık (gün doğumu–batımı saatlik ortalaması) + yağış */
 async function grVakit(){
