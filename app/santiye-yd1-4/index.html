@@ -348,11 +348,10 @@ async function anketYukle(){
   const kart=(baslik,deger,alt,c)=>'<div style="flex:1;min-width:210px;padding:10px 12px;border:1px solid #eef1f5;border-radius:8px">'
     +'<div style="font-size:11.5px;color:#5a6b7d">'+baslik+'</div><div style="font-size:22px;font-weight:700;color:'+(c||"#16324f")+'">'+deger+'</div>'
     +'<div style="font-size:11.5px;color:#5a6b7d">'+alt+'</div></div>';
-  let h='<div class="sevk" style="margin-top:14px"><h3>Müşteri Memnuniyeti</h3>'
-    +'<div style="display:flex;gap:10px;flex-wrap:wrap;padding:10px 12px">'
-    +kart("Toplam Memnuniyet Başarısı", mem==null?"—":yuz(mem), ort==null?"Yanıtlanan anket yok":"Ortalama puan "+nk(ort)+" / 4 · "+P.length+" anket", renk(mem))
-    +kart("Anket Geliş Başarısı", yuz(gel), Y.length+" yanıtlandı / "+(Y.length+B.length)+" gönderildi", renk(gel))
-    +'</div>';
+  /* ANKET-TEK-SATIR (19.11.2026, Melih): başlık ve Anket Geliş Başarısı kartı kaldırıldı; Toplam Memnuniyet Başarısı tek satır */
+  let h='<div class="sevk" style="margin-top:14px">'
+    +'<div style="padding:10px 12px;font-size:14px;color:#16324f">Toplam Memnuniyet Başarısı <b style="font-size:16px;color:'+(renk(mem)||"#16324f")+'">'+(mem==null?"—":yuz(mem))+'</b>'
+    +' <span style="font-size:12.5px;color:#5a6b7d">'+(ort==null?"Yanıtlanan anket yok":"Ortalama puan "+nk(ort)+" / 4 · "+P.length+" anket")+'</span></div>';
   if(Y.length) h+='<table><thead><tr><th>Anketi Gelen Proje</th><th>Müşteri</th><th class="c">Yanıt Tarihi</th><th class="c">Etüt</th><th class="c">Kalite</th><th class="c">Süreler</th><th class="c">Teknik/İdari</th><th class="c">SAV</th><th class="c">Tavsiye</th><th class="c">Puan</th></tr></thead><tbody>'
     +Y.map(a=>{ const p=parseFloat(a.puan); return '<tr><td>'+esc(a.proje||"—")+'</td><td>'+esc(a.yanitlayan_firma||a.firma||"—")+'</td><td class="c">'+fd(a.yanit_at)+'</td>'
       +cv(a.etut)+cv(a.kalite)+cv(a.sureler)+cv(a.yonetim)+cv(a.sav)+cv(a.tavsiye)
