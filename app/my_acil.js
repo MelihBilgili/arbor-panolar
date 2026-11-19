@@ -82,6 +82,11 @@
     var bugun=new Date().toLocaleDateString("en-CA",{timeZone:"Europe/Istanbul"});
     var tbR=anaR.filter(function(r){ return r.tarih&&String(r.tarih).slice(0,10)>=bugun; }).sort(function(a,b){ return String(a.tarih).localeCompare(String(b.tarih))||String(a.no).localeCompare(String(b.no)); });
     anaR=anaR.filter(function(r){ return tbR.indexOf(r)<0; });
+    /* MY-UCAK-UST + MY-YPB-BANT (19.11.2026, Melih): MK onayı bekleyen uçak yüklemeleri en üstte açık grupta ("UÇAK YÜKLEMESİ ONAYI BEKLENENLER");
+       kalan kesinleşmemiş satırlar (eski üst satırlar + Termini Beklenenler) tek kapalı bantta "YÜKLEME PLANLAMASI BEKLENENLER" (el._tbAcik, tr.my-tb) */
+    var ucB=function(r){ return r.sekil==="Uçak"&&!r.ucak_onay; };
+    var ucR=anaR.concat(tbR).filter(ucB);
+    anaR=anaR.concat(tbR).filter(function(r){ return !ucB(r); }); tbR=anaR; var anaR0=ucR;
     var ncol=12+(mk?1:0); /* MY-GOREV-GUN */
     /* MY-ACIL-SORUMLU (06.11.2026, Melih): Durum'un sağında Sorumlu + Görev (yalnız PEM, ERP durum no'suna göre) */
     var SG={"0":["Buse Hanım","Malzeme listesini yükle"],"0.1":["Onur Bey","Malzeme onayını ver"],"1":["Berat Bey","Termini gir"],"1.2":["Berat Bey","Termini gir"] /* MY-SORUMLU-12-BERAT (13.11.2026, Melih; MY-SORUMLU-12-SEMIH yerine) */,"1.3":["Berat Bey · Umut Bey · Semih Bey","Termini gir"],"2":["Semih Bey","Termini gir"]};
@@ -100,11 +105,11 @@
       +(rows.length?'<tr class="my-grp"><td colspan="'+ncol+'">ACİL</td></tr>':'')):''; /* GIRIS-ACIL-SAHSI (10.11.2026, Melih): Giriş'te gündemdeki acil olmayan PEM'ler en üstte */
     var h='<div class="myab"><h3>ACİL YÜKLEMELER</h3><div class="myw"><table class="mya'+(el._ksAcik?'':' ks-kapali')+(el._tbAcik?'':' tb-kapali')+'"><thead><tr>'
       +'<th>Durum</th><th>Sorumlu</th><th>Görev</th><th title="Görevin terettüp ettiği günden bu yana geçen gün">Gün</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Kesinleşen<br>Yükleme Tarihi</th><th>Yükleme<br>Şekli</th>'+(mk?'<th></th>':'')+'<th>Açıklama'+(ack?' <span style="font-weight:400">(Ekle)</span>':'')+'</th>'+'</tr></thead><tbody>'+shH
-      +anaR.concat(tbR,kesR).map(function(r,i){
+      +anaR0.concat(tbR,kesR).map(function(r,i){ var anaR=anaR0; /* MY-YPB-BANT: üst = uçak onayı bekleyenler, bant = tbR */
         var no=r.tur==="PEM"?("PEM "+r.kod):r.kod;
         var onay=(mk&&r.sekil==="Uçak"&&!r.ucak_onay)?'<button class="my-onay" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">Uçak yüklemesini onayla</button>':'';
         var cls=r.kesin?'my-ks':(tbR.indexOf(r)>=0?'my-tb':'' /* MY-SHZ-PEMBE-YOK (17.11.2026, Melih): sevke hazırlar pembe değil */);
-        var grp=((i===anaR.length&&tbR.length)?'<tr class="my-grp my-tbbas" title="Aç / kapat"><td colspan="'+ncol+'"><span class="my-ok">'+(el._tbAcik?'▾':'▸')+'</span> TERMİNİ BEKLENENLER ('+tbR.length+')</td></tr>':'')+((i===anaR.length+tbR.length&&kesR.length)?'<tr class="my-grp my-ksbas" title="Aç / kapat"><td colspan="'+ncol+'"><span class="my-ok">'+(el._ksAcik?'▾':'▸')+'</span> YÜKLENECEĞİ KESİNLEŞENLER ('+kesR.length+')</td></tr>':'');
+        var grp=((i===0&&anaR.length)?'<tr class="my-grp"><td colspan="'+ncol+'">UÇAK YÜKLEMESİ ONAYI BEKLENENLER ('+anaR.length+')</td></tr>':'')+((i===anaR.length&&tbR.length)?'<tr class="my-grp my-tbbas" title="Aç / kapat"><td colspan="'+ncol+'"><span class="my-ok">'+(el._tbAcik?'▾':'▸')+'</span> YÜKLEME PLANLAMASI BEKLENENLER ('+tbR.length+')</td></tr>':'')+((i===anaR.length+tbR.length&&kesR.length)?'<tr class="my-grp my-ksbas" title="Aç / kapat"><td colspan="'+ncol+'"><span class="my-ok">'+(el._ksAcik?'▾':'▸')+'</span> YÜKLENECEĞİ KESİNLEŞENLER ('+kesR.length+')</td></tr>':'');
         return grp+'<tr class="'+cls+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td>'+sgTd(sg(r),r)+'<td title="'+esc(r.no)+'">'+esc(no)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td>'
           +'<td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td><td><b>'+fd(r.hedef)+'</b></td><td>'+kesHtml(r)+'</td><td>'+sekilHtml(r)+'</td>'
           +(mk?'<td>'+onay+'</td>':'')+'<td class="w mack'+(ack?' my-acked':'')+'" title="'+esc(ackTers(r.aciklama))+'">'+esc(ackTers(r.aciklama))+'</td>' /* MY-ACK-SATIR / MY-ACK-YENI-UST */+'</tr>';
