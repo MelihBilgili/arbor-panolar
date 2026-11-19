@@ -256,8 +256,10 @@ let DATA={rows:[]};
 const BLOK=[
   {k:"prj", ad:"Üretimdeki Projeler · Durum 4.1 – 7.1", pem:false, not:"Sağ tıklayarak acile çevir"}, /* MY-BLOK-BASLIK (19.11.2026, Melih): başlık + satır sayısı yerine not */
   {k:"sevk",ad:"Sevke Hazır Projeler · Durum 8 / 8.1", pem:false, not:"Sağ tıklayarak acile çevir"},
-  {k:"pem", ad:"PEM", pem:true}
+  {k:"pem", ad:"Üretimdeki PEM'ler", pem:true, not:"Sağ tıklayarak acile çevir", f:r=>pemNo(r)<3}, /* MY-PEM-IKI (19.11.2026, Melih): PEM tablosu ERP durumuna göre ikiye ayrıldı */
+  {k:"pem", ad:"Sevke Hazır PEM'ler", pem:true, not:"Sağ tıklayarak acile çevir", f:r=>pemNo(r)>=3}
 ];
+function pemNo(r){ const m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return m?parseFloat(m[1].replace(",",".")):0; }
 const MYW_PEM=[64,72,133,210,44,72,84,64,230,280], MYW_PRJ=[MYW_PEM[0],MYW_PEM[1]+MYW_PEM[2]+MYW_PEM[3]].concat(MYW_PEM.slice(4)); /* MY-HIZA */
 const MYW_PRJ_AD=330; /* MY-AD-DAR (28.10.2026): Proje Adı %30 dar — PEM 190→133px, proje blokları 472→330px görünür alan (hücre hizadan dolayı geniş kalır, sağ boşluk) */
 const myCols=w=>'<colgroup>'+w.map(x=>'<col style="width:'+x+'px">').join('')+'</colgroup>', mySum=w=>w.reduce((a,b)=>a+b,0);
@@ -276,7 +278,7 @@ function talepKutu(r){ const d=r.talep+' talebi · '+(r.talep_kisi||'')+(r.talep
 function ciz(){
   const rows=DATA.rows||[];
   const html=BLOK.map(b=>{
-    const R=rows.filter(r=>r.blok===b.k);
+    const R=rows.filter(r=>r.blok===b.k&&(!b.f||b.f(r)));
     const head=b.pem
       ? '<th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th>' /* MY-PEM-TALEPTARIH: Sevk Durumu (Onur) çıktı */
       : '<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
