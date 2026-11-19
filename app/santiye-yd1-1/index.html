@@ -133,7 +133,7 @@ html,body{max-width:100vw;overflow-x:hidden}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../my_acil.js?v=261119c"></script><!-- MY-SANTIYE -->
+<script src="../my_acil.js?v=261119d"></script><!-- MY-SANTIYE -->
 <script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -369,11 +369,12 @@ async function ileriYukle(donem){
   const r=await q.order("mvt",{ascending:true}).order("proje_no",{ascending:true});
   if(r.error||!r.data||!r.data.length){ el.innerHTML=""; return; }
   const d0=r.data[0].donem, rs=r.data.filter(x=>x.donem===d0);
-  el.innerHTML='<div class="sevk" style="margin-top:14px"><h3>İleri Tarihli Projeler</h3><table><thead><tr>'
-    +'<th>Proje Kodu</th><th>Proje</th><th class="c">Proje Durumu</th><th class="c">Proje Toplamı (Ad)</th><th class="c">MVT</th><th class="c">AÜP</th><th class="c">PST</th></tr></thead><tbody>'
-    +rs.map(x=>'<tr><td>'+esc(x.proje_no||"—")+'</td><td>'+esc(x.proje_adi||"—")+'</td><td class="c">'+esc(x.proje_durumu||"—")+'</td>'
-      +'<td class="c">'+esc(x.adet==null?"—":x.adet)+'</td><td class="c">'+fd(x.mvt)+'</td><td class="c">'+fd(x.aup)+'</td><td class="c">'+fd(x.pst)+'</td></tr>').join("")
+  el.innerHTML='<div class="sevk" style="margin-top:14px"><h3>İleri Tarihli Projeler <span style="font-weight:400;font-size:12px;color:#5a6b7d">· Sağ tıklayarak acile çevir</span></h3><table><thead><tr>'
+    +'<th>Proje Kodu</th><th>Proje</th><th class="c">Proje Durumu</th><th class="c">Proje Toplamı (Ad)</th><th class="c">MVT</th><th class="c">AÜP</th><th class="c">PST</th><th class="c">Takip Durumu</th></tr></thead><tbody>'
+    +rs.map(x=>'<tr data-pno="'+esc(x.proje_no||"")+'"><td>'+esc(x.proje_no||"—")+'</td><td>'+esc(x.proje_adi||"—")+'</td><td class="c">'+esc(x.proje_durumu||"—")+'</td>'
+      +'<td class="c">'+esc(x.adet==null?"—":x.adet)+'</td><td class="c">'+fd(x.mvt)+'</td><td class="c">'+fd(x.aup)+'</td><td class="c">'+fd(x.pst)+'</td><td class="c mytakip"></td></tr>').join("")
     +'</tbody></table></div>';
+  if(window.MYACIL&&MYACIL.santiyeBirlestir) MYACIL.santiyeBirlestir(); /* SANTIYE-BIRLESIK2 (19.11.2026, Melih): İleri Tarihli Projeler de birleşik */
 }
 function onayTablo(rs){ /* SANTIYE-GELECEK (2026-11-10, Melih): Sevke Hazır ile birebir aynı tablo; Üretim Durumu grup başlığı; soru yok */
   const kod=r=>{ const v=parseFloat(String(r.proje_durumu||"").trim().split(/\s+/)[0]); return isNaN(v)?99:v; };

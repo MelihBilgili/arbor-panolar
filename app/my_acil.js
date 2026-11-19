@@ -385,9 +385,9 @@
   }
   function sBirlestir(){
     var el=S.el; if(!el||!S.rows) return;
-    if(!document.getElementById("mysb-css")){ var st=document.createElement("style"); st.id="mysb-css"; st.textContent="td.mytakip.acil{color:#c62828;font-weight:700}td.mytakip .bek{color:#9aa5b1;font-weight:400}#bloklar tr[data-pno]{cursor:context-menu}"; document.head.appendChild(st); }
+    if(!document.getElementById("mysb-css")){ var st=document.createElement("style"); st.id="mysb-css"; st.textContent="td.mytakip.acil{color:#c62828;font-weight:700}td.mytakip .bek{color:#9aa5b1;font-weight:400}#bloklar tr[data-pno],#ileri tr[data-pno]{cursor:context-menu}"; document.head.appendChild(st); }
     var set={};
-    document.querySelectorAll("#bloklar tr[data-pno]").forEach(function(tr){
+    document.querySelectorAll("#bloklar tr[data-pno], #ileri tr[data-pno]") /* SANTIYE-BIRLESIK2 */.forEach(function(tr){
       var no=tr.getAttribute("data-pno"), r=S.rows.filter(function(x){ return x.tur==="PRJ"&&x.no===no; })[0];
       var td=tr.querySelector("td.mytakip");
       if(!r){ if(td) td.textContent=""; return; }
