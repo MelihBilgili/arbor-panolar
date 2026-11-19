@@ -281,7 +281,7 @@ if (document.readyState === "loading") document.addEventListener("DOMContentLoad
 const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 /* MUSTERI-ANKET */
 const ANK_URL="https://melihbilgili.github.io/arbor-panolar/anket/?t=";
-const ANK_KRIT=[["etut","Etüt"],["kalite","Kalite"],["sureler","Süreler"],["yonetim","Teknik / İdari"]];
+const ANK_KRIT=[["etut","Etüt"],["kalite","Kalite"],["sureler","Süreler"],["yonetim","Teknik / İdari"],["ambalaj","Ambalaj / Nakliye"]]; /* ANKET-PUAN-V2 (19.11.2026): Ambalaj/Nakliye kriteri; puan DB tetikleyicisi musteri_anket_puan_trg */
 const ANK_P={"Çok memnun":4,"Memnun":3,"Memnun değil":2,"Hiç memnun değil":1};
 let ANK_PROJ={}, ANK_ROWS=[], ANK_ACIK={};
 const $=id=>document.getElementById(id);
@@ -357,6 +357,10 @@ function ankOzet(){
     +`<div>Genel puan (1–4)<b>${ort(y.map(r=>Number(r.puan)).filter(x=>!isNaN(x)))}</b></div>`;
   ANK_KRIT.forEach(([k,t])=>{ h+=`<div>${esc(t)}<b>${ort(y.map(r=>ANK_P[r[k]]).filter(Boolean))}</b></div>`; });
   h+=`<div>Tavsiye eder<b>${y.filter(r=>r.tavsiye==="Evet").length} / ${y.length}</b></div>`;
+  /* ANKET-ETIKET: yorum etiketlerinden en sık şikâyet (Olumlu hariç) */
+  const ES={}; y.forEach(r=>(r.etiket||[]).filter(e=>e!=="Olumlu").forEach(e=>{ES[e]=(ES[e]||0)+1;}));
+  const esl=Object.entries(ES).sort((a,b)=>b[1]-a[1]);
+  h+=`<div title="Yanıtlanan anketlerin yorum etiketleri (Olumlu hariç)">En sık şikâyet<b style="font-size:13px">${esl.length?esl.slice(0,4).map(([e,n])=>esc(e)+" ("+n+")").join(" · "):"—"}</b></div>`;
   $("ozet").innerHTML=h;
 }
 function ankCiz(){
@@ -364,16 +368,17 @@ function ankCiz(){
   const fd=$("f-durum").value, fa=$("f-ara").value.trim().toLocaleLowerCase("tr");
   const rows=ANK_ROWS.filter(r=>(fd?r.durum===fd:r.durum!=="İptal")&&(!fa||((r.proje||"")+" "+(r.firma||"")+" "+(r.yanitlayan_firma||"")).toLocaleLowerCase("tr").includes(fa)));
   if(!rows.length){ $("liste").innerHTML='<div class="hint">Kayıt yok.</div>'; return; }
-  const cols=14;
+  const cols=16;
   let h=`<table class="l"><thead><tr><th>Proje</th><th>Müşteri</th><th>Oluşturan</th><th>Link tarihi</th><th>Durum</th><th>Yanıt tarihi</th><th>Yanıtlayan</th>`
-    +ANK_KRIT.map(([k,t])=>`<th>${esc(t)}</th>`).join("")+`<th>SAV</th><th>Tavsiye</th><th>Puan</th><th></th></tr></thead><tbody>`;
+    +ANK_KRIT.map(([k,t])=>`<th>${esc(t)}</th>`).join("")+`<th>SAV</th><th>Tavsiye</th><th>Etiket</th><th title="0,70 × kriter ortalaması (Etüt, Kalite, Süreler, Teknik/İdari, Ambalaj/Nakliye) + 0,15 × SAV + 0,15 × Tavsiye; SAV uygulanamazsa ağırlık diğerlerine dağıtılır. 4 ana kriterden birden fazlası boşsa anket geçersiz.">Puan</th><th></th></tr></thead><tbody>`;
   rows.forEach(r=>{
     const acik=(r.aciklama&&Object.keys(r.aciklama).length)||r.sav_aciklama||r.tavsiye_aciklama||r.yorum;
     h+=`<tr class="ana" data-id="${r.id}"><td><b>${esc(r.proje)}</b></td><td>${esc(r.firma||"")}<div class="firma">${esc([r.ulke,ANK_DIL_AD[r.dil]].filter(Boolean).join(" · "))}</div></td><td>${r.kaynak==="PDF"?'<span class="pill d-I" title="PDF ile toplanan eski anket">PDF</span>':esc(r.olusturan||"")}</td><td class="c">${fdt(r.created_at)}</td>`
       +`<td class="c">${ankDurum(r.durum)}</td><td class="c">${fdt(r.yanit_at)}</td><td>${esc(r.yanitlayan_ad||"")}${r.yanitlayan_firma?`<div class="firma">${esc(r.yanitlayan_firma)}</div>`:""}</td>`
       +ANK_KRIT.map(([k])=>`<td class="c">${ankPill(r[k])}${r.aciklama&&r.aciklama[k]?" 💬":""}</td>`).join("")
       +`<td class="c">${esc(r.sav||"")}${r.sav_aciklama?" 💬":""}</td><td class="c">${esc(r.tavsiye||"")}${r.tavsiye_aciklama?" 💬":""}</td>`
-      +`<td class="n">${r.puan==null?"":String(r.puan).replace(".",",")}</td>`
+      +`<td class="c">${(r.etiket||[]).map(e=>`<span class="pill" style="background:${e==="Olumlu"?"#e3f4e8":"#fbeee6"};color:#16324f">${esc(e)}</span>`).join(" ")}</td>`
+      +`<td class="n">${r.puan==null?(r.durum==="Yanıtlandı"?'<span class="pill d-I" title="Geçersiz: 4 ana kriterden birden fazlası boş">Geçersiz</span>':""):String(r.puan).replace(".",",")}</td>`
       +`<td class="c">${r.durum==="Bekliyor"?`<button class="btn sec" data-kopya="${r.id}">Linki kopyala</button> <button class="btn sec" data-mail="${r.id}">Mail</button> <button class="btn sec red" data-iptal="${r.id}">İptal</button>`:(acik?"▾":"")}</td></tr>`;
     if(ANK_ACIK[r.id]&&r.durum==="Yanıtlandı"){
       const it=(k,v,neg)=>v?`<div class="${neg?"neg":""}"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`:"";
