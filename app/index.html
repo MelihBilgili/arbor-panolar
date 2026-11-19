@@ -1567,7 +1567,7 @@ async function loadAup(){
   const scU7=f=>/^7(\s|$)/.test(String(f.proje_durumu||"").trim());
   const scCv=(o,s)=>!o?'<span class="muted">—</span>':(o==="Evet"?'<span style="color:#0a6b3f;font-weight:600">Evet</span>':'<span title="'+esc(s||"")+'" style="color:#b40000;font-weight:700">Hayır</span>');
   const scHemen=no=>{ const f=SCM[no]; if(!f) return ""; return (scU7(f) && f.aup && String(f.aup).slice(0,10)<scBug) ? scCv(f.mvt_onay,f.mvt_sebep) : ""; };
-  const scPst=no=>{ const f=SCM[no]; if(!f) return ""; if(scU7(f) && !f.pst) return f.pst_santiye?'<span title="Şantiyenin belirlediği PST: '+fdate(f.pst_santiye)+'" style="color:#0a4f8a;font-weight:600">Belirlendi</span>':'<span class="muted">—</span>'; return scCv(f.pst_onay,f.pst_sebep); };
+  const scPst=no=>{ const f=SCM[no]; if(!f) return ""; if(scU7(f) && !f.pst) return f.pst_santiye?'<span title="Şantiyenin belirlediği hedef yükleme tarihi (ERP PST yok): '+fdate(f.pst_santiye)+'" style="color:#0a4f8a;font-weight:600">Belirlendi</span>':'<span class="muted">—</span>'; return scCv(f.pst_onay,f.pst_sebep); };
   const rowH=r=>{
     const ga=r.gyt_aup, ky=r.kayma;
     const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
@@ -1645,7 +1645,7 @@ async function loadAup(){
     <tbody>${rows}</tbody></table>
     <div class="aupsevkh">Sevke Hazır · 8 / 8.1 <span style="font-weight:400;color:#5a6b7d">· Proje: ${sdata.length} · Adet: ${money(sAd)} · Tutar: ${money(sTu)} €</span></div>
     <table class="aup aupmain"><colgroup>${AUP_COLW_SEVK.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Şantiye PST</th><th class="yp">Yükleme Planı</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme<br>(Şantiye)</th><!-- HEDEF-TEK --><th class="yp">Yükleme Planı</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${srows||'<tr><td colspan="11" class="c">Kayıt yok</td></tr>'}</tbody></table>
     <div id="aup-pem"></div></div>`;
   aupFit();
@@ -2418,7 +2418,7 @@ async function loadSantiyeOnay(){
       +`<td class="sb"><div class="cx">${esc(r.proje_no)}</div></td>`
       +`<td><div class="cx">${esc(r.proje_adi)}</div></td>`
       +`<td class="num">${r.adet==null?"—":r.adet}</td>`
-      +`<td class="num">${fdt(r.mvt)}</td><td class="num">${fdt(r.aup)}</td><td class="num">${r.pst?fdt(r.pst):(r.pst_santiye?`<span title="Şantiyenin girdiği PST" style="color:#0a4f8a;font-weight:600">${fdt(r.pst_santiye)}</span>`:"—")}</td>`
+      +`<td class="num">${fdt(r.mvt)}</td><td class="num">${fdt(r.aup)}</td><td class="num">${r.pst?fdt(r.pst):(r.pst_santiye?`<span title="Şantiyenin girdiği hedef yükleme tarihi (ERP PST yok)" style="color:#0a4f8a;font-weight:600">${fdt(r.pst_santiye)}</span>`:"—")}</td>`
       +`<td>${cevap(r.mvt_onay)}</td><td><div class="cx">${esc(r.mvt_sebep||"")}</div></td>`
       +`<td>${pstGir(r)?(r.pst_santiye?'<span style="color:#0a4f8a;font-weight:600">Belirlendi</span>':'<span class="muted">—</span>'):cevap(r.pst_onay)}</td><td><div class="cx">${esc(r.pst_sebep||"")}</div></td>`
       +`</tr>`).join("");

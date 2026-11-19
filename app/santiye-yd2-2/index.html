@@ -110,7 +110,7 @@ html,body{max-width:100vw;overflow-x:hidden}
   <div class="hinfo"><!-- SANTIYE-BANT -->
     <div class="erp">Tarihler şantiye teslimini değil, fabrika yüklemesini yansıtmaktadır.</div>
     <div><b>AÜP:</b> Ana üretim planında güncel olarak üretimin tamamlanacağı öngörülen tarih.</div>
-    <div><b>PST:</b> Şantiye taleplerine uygun olarak (MVT’ten daha erken olmamak üzere) planlanan sevk tarihi.</div>
+    <div><b>Hedef Yükleme Tarihi:</b> Şantiye taleplerine uygun olarak (MVT’ten daha erken olmamak üzere) planlanan yükleme tarihi.</div><div><b>PST:</b> ERP’deki planlanan sevk tarihi.</div><!-- HEDEF-TEK (19.11.2026, Melih): PST yalnız ERP PST'si; şantiyenin girdiği tarih Hedef Yükleme Tarihi -->
   </div>
 </div><div class="hsag"><div class="kvz" id="kvz"></div>
   <div class="topbar">
@@ -380,7 +380,7 @@ function onayTablo(rs){ /* SANTIYE-GELECEK (2026-11-10, Melih): Sevke Hazır ile
   const kod=r=>{ const v=parseFloat(String(r.proje_durumu||"").trim().split(/\s+/)[0]); return isNaN(v)?99:v; };
   const g=new Map(); rs.slice().sort((a,b)=>kod(a)-kod(b)).forEach(r=>{ const k=String(r.proje_durumu||"—").trim(); if(!g.has(k)) g.set(k,[]); g.get(k).push(r); });
   return '<div class="sevk"><h3>Gelecek Ayın Sonuna Kadar Yüklenecek Projeler <span style="font-weight:400;font-size:12px;color:#5a6b7d">· Sağ tıklayarak acile çevir</span></h3><table><thead><tr>'
-    +'<th>Proje</th><th class="c">Proje Toplamı (Ad)</th><th class="c">AÜP</th><th class="c">PST</th><th class="gen">Yükleme Planına İlişkin Açıklama</th><th class="c">Takip Durumu</th></tr></thead><tbody>'
+    +'<th>Proje</th><th class="c">Proje Toplamı (Ad)</th><th class="c">AÜP</th><th class="c">Hedef Yükleme<br>Tarihi</th><th class="gen">Yükleme Planına İlişkin Açıklama</th><th class="c">Takip Durumu</th></tr></thead><tbody>'
     +[...g].map(([k,l])=>'<tr class="grp"><td colspan="6">'+esc(k)+'</td></tr>'+l.map(sevkSatir).join("")).join("")+'</tbody></table></div>';
 }
 async function kvzYaz(damga){ /* SANTIYE-KVZ: formun dayandığı ERP çekiminin sisteme kaydedildiği an */
@@ -393,7 +393,7 @@ async function kvzYaz(damga){ /* SANTIYE-KVZ: formun dayandığı ERP çekiminin
 function sevkHazir(r){ return /^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").trim()); }
 function sevkTablo(rs){
   return '<div class="sevk"><h3>Sevke Hazır Projeler <span style="font-weight:400;font-size:12px;color:#5a6b7d">· Sağ tıklayarak acile çevir</span></h3><table><thead><tr>'
-    /* SANTIYE-SEVK-ADBASLIK */ +'<th>Proje</th><th class="c">Proje Toplamı (Ad)</th><th class="c">AÜP</th><th class="c">PST</th><th class="gen">Yükleme Planına İlişkin Açıklama</th><th class="c">Takip Durumu</th></tr></thead><tbody>'
+    /* SANTIYE-SEVK-ADBASLIK */ +'<th>Proje</th><th class="c">Proje Toplamı (Ad)</th><th class="c">AÜP</th><th class="c">Hedef Yükleme<br>Tarihi</th><th class="gen">Yükleme Planına İlişkin Açıklama</th><th class="c">Takip Durumu</th></tr></thead><tbody>'
     +rs.map(sevkSatir).join("")
     +'</tbody></table></div>';
 }
@@ -445,7 +445,7 @@ function isoTarih(t){ const m=String(t||"").trim().match(/^(\d{1,2})[\/.\-](\d{1
   if(dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d) return null;
   return y+"-"+String(mo).padStart(2,"0")+"-"+String(d).padStart(2,"0"); }
 function pstKutu(r){
-  return '<div class="soru"><div class="q"><b>PST</b> belirleyiniz:</div>'
+  return '<div class="soru"><div class="q"><b>Hedef yükleme tarihi</b> belirleyiniz:</div>'
     +'<input type="text" class="pstb" id="pstb_'+r.id+'" placeholder="GG/AA/YY" maxlength="10" inputmode="numeric" value="'+esc(trTarih(r.pst_santiye))+'"></div>';
 }
 function cevapTam(r){
@@ -480,7 +480,7 @@ function bagla(r){
   const pb=document.getElementById("pstb_"+r.id);
   if(pb) pb.onchange=async()=>{
     const v=pb.value.trim(); const iso=v?isoTarih(v):null;
-    if(v && !iso){ pb.classList.add("miss"); msg("PST GG/AA/YY biçiminde olmalı (ör. 15/11/26).",false); return; }
+    if(v && !iso){ pb.classList.add("miss"); msg("Hedef yükleme tarihi GG/AA/YY biçiminde olmalı (ör. 15/11/26).",false); return; }
     pb.classList.remove("miss"); pb.value=trTarih(iso); r.pst_santiye=iso;
     await kaydet(r.id,{pst_santiye:iso}); boya(r); };
   ["mvt","pst"].forEach(alan=>{
@@ -590,9 +590,9 @@ document.getElementById("ay_btn").onclick=async()=>{
   if(eksik || sevkAd.length){ /* SEVK-PST-ZORUNLU: iki sebep tek uyarıda */
     const liste=a=>"• "+a.slice(0,15).join("\n• ")+(a.length>15?"\n• … ("+(a.length-15)+" proje daha)":"");
     const s=[];
-    if(sevkAd.length) s.push(sevkAd.length+" projede PST seçilmemiş:\n\n"+liste(sevkAd));
+    if(sevkAd.length) s.push(sevkAd.length+" projede hedef yükleme tarihi seçilmemiş:\n\n"+liste(sevkAd));
     if(eksik) s.push(eksik+" projede \"Eğer hazırsa hemen yüklenecek mi?\" / MVT ve \"PST’nin şantiyenin talebine uygun olduğunu onaylıyor musunuz?\" sorularından birine cevap seçilmemiş (ya da \"Hayır\" cevabının sebebi yazılmamış):\n\n"+liste(eksikAd));
-    msg((sevkAd.length?sevkAd.length+" projede PST seçilmemiş. ":"")+(eksik?eksik+" projede soru cevabı (ya da 'Hayır' sebebi) eksik.":""),false);
+    msg((sevkAd.length?sevkAd.length+" projede hedef yükleme tarihi seçilmemiş. ":"")+(eksik?eksik+" projede soru cevabı (ya da 'Hayır' sebebi) eksik.":""),false);
     alert("Güncelleme yapılamadı.\n\nSebep:\n\n"+s.join("\n\n")+"\n\nKırmızı işaretli yerleri tamamlayın.");
     if(ilk) ilk.scrollIntoView({behavior:"smooth",block:"center"}); return; }
   { const es=santEskiTara(); /* SEVK-ESKI-BILGI-SANT */
@@ -604,14 +604,14 @@ document.getElementById("ay_btn").onclick=async()=>{
     const d=new Date(), bugun=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
     const gec=v=>!!v && String(v).slice(0,10)<bugun, ad=r=>((r.proje_no||"")+" "+(r.proje_adi||"")).trim(), gl=[]; let gIlk=null;
     SEVK.forEach(r=>{ const pg=document.getElementById("pstg_"+r.id);
-      if(pg && gec(r.pst_santiye)){ pg.classList.add("miss"); if(!gIlk) gIlk=pg; gl.push(ad(r)+" — PST "+trTarih(r.pst_santiye)); } });
+      if(pg && gec(r.pst_santiye)){ pg.classList.add("miss"); if(!gIlk) gIlk=pg; gl.push(ad(r)+" — Hedef yükleme "+trTarih(r.pst_santiye)); } });
     SATIR.forEach(r=>{ const el=document.getElementById("blk_"+r.id);
       if(pstGir(r)){ const pb=document.getElementById("pstb_"+r.id);
-        if(pb && gec(r.pst_santiye)){ pb.classList.add("miss"); if(!gIlk) gIlk=pb; gl.push(ad(r)+" — PST "+trTarih(r.pst_santiye)); } }
+        if(pb && gec(r.pst_santiye)){ pb.classList.add("miss"); if(!gIlk) gIlk=pb; gl.push(ad(r)+" — Hedef yükleme "+trTarih(r.pst_santiye)); } }
       else if(r.pst_onay==="Evet" && gec(r.pst)){ if(el) el.classList.add("miss"); if(!gIlk) gIlk=el; gl.push(ad(r)+" — ERP PST "+trTarih(r.pst)+" onaylanmış"); } });
     if(gl.length){
-      msg(gl.length+" projede geçmiş tarihli PST var — düzeltin.",false);
-      alert("Güncelleme yapılamadı — "+gl.length+" projede geçmiş tarihli PST var.\n\nPST bugünden önce olamaz. Girdiğiniz PST'yi ileri bir tarihe çekin; ERP PST'si geçmişse onay sorusuna \"Hayır\" deyip sebebini yazın:\n\n• "+gl.slice(0,15).join("\n• ")+(gl.length>15?"\n• … ("+(gl.length-15)+" proje daha)":""));
+      msg(gl.length+" projede geçmiş tarihli hedef yükleme tarihi ya da onaylanmış ERP PST’si var — düzeltin.",false);
+      alert("Güncelleme yapılamadı — "+gl.length+" projede geçmiş tarihli hedef yükleme tarihi ya da onaylanmış ERP PST’si var.\n\nHedef yükleme tarihi bugünden önce olamaz. Girdiğiniz tarihi ileri bir tarihe çekin; ERP PST'si geçmişse onay sorusuna \"Hayır\" deyip sebebini yazın:\n\n• "+gl.slice(0,15).join("\n• ")+(gl.length>15?"\n• … ("+(gl.length-15)+" proje daha)":""));
       if(gIlk) gIlk.scrollIntoView({behavior:"smooth",block:"center"}); return; } }
   const b=document.getElementById("ay_btn"); b.disabled=true; msg("Aktarılıyor…",true);
   const {error}=await sb.from("pano_yayin").upsert({anahtar:PY_ANAHTAR,yayin_at:new Date().toISOString()},{onConflict:"anahtar"});

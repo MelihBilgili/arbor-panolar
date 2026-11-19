@@ -67,7 +67,7 @@
     /* MY-ACIL-DURUM (06.11.2026, Melih): en solda ERP durumu; sıra önce durum (ERP durum no, küçükten büyüğe), sonra hedef yükleme tarihi */
     var dno=function(r){ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return m?parseFloat(m[1].replace(",",".")):999; };
     rows.sort(function(a,b){ return (dno(a)-dno(b))||String(a.durum_erp||"").localeCompare(String(b.durum_erp||""),"tr")||String(a.hedef||"9999").localeCompare(String(b.hedef||"9999"))||String(a.no).localeCompare(String(b.no)); });
-    var nor=(d.rows||[]).filter(function(r){ return r.durum!=="Acil"; }); /* MY-DURUM-MK-OE: Normal takiptekiler acilden ayri bantta */
+    var nor=(d.rows||[]).filter(function(r){ return r.durum!=="Acil"&&!(mod==="mk"&&r.blok==="sevk"); }); /* MY-DURUM-MK-OE: Normal takiptekiler acilden ayri bantta */ /* MK-TEKIL (19.11.2026, Melih): MK Faaliyet'te Sevke Hazır Projeler kendi tablosunda — Normal bantta tekrar yok */
     var sh=(mod==="giris"&&Array.isArray(o.sahsi))?o.sahsi:[]; /* GIRIS-ACIL-SAHSI */
     if(!rows.length&&!nor.length&&!sh.length){ el.innerHTML=""; if(o.sonra) try{ o.sonra(el); }catch(e){} return; }
     var mk=mod==="mk", gr=mod==="giris";
@@ -441,7 +441,7 @@
   async function sevkPrjBlok(el,o){
     if(!el) return; stil(); var sb=o.sb, d;
     try{ d=await liste(sb); }catch(e){ el.innerHTML='<div class="myab"><h3>SEVKE HAZIR PROJELER</h3><div style="color:#b40000">Okunamadı: '+esc(e.message||e)+'</div></div>'; return; }
-    var R=(d.rows||[]).filter(function(r){ return r.blok==="sevk"; });
+    var R=(d.rows||[]).filter(function(r){ return r.blok==="sevk"&&r.durum!=="Acil"; }); /* MK-TEKIL: acil olanlar yalnız Acil Yüklemeler tablosunda */
     if(!R.length){ el.innerHTML=""; return; }
     if(!document.getElementById("mksp-css")){ var st=document.createElement("style"); st.id="mksp-css"; st.textContent="td.mksp-tg{background:#c62828!important;color:#fff!important;font-weight:700;cursor:pointer;text-align:center}td[data-mksp]{cursor:pointer}"; document.head.appendChild(st); }
     var eksik=R.filter(function(r){ return !(r.durum==="Acil"&&r.hedef)&&!r.plan; }).length;
