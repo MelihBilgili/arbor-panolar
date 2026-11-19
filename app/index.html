@@ -2900,11 +2900,12 @@ const SA_NOTE="Tarih sütunlarındaki tutarlar o tarihteki güncel ALACAK (recei
 /* SELARB-CANLI-SUTUN (22.09.2026, Melih): donmuş aylık sütunlar (sel_arb_snapshot/sel_arb_ozet) + canlı "Bu Ay (Açık) €" sütunu (sel_arb_guncel, sel-arb formu ÖB/MK). */
 async function loadSelArb(tgt){
   const body=document.getElementById(tgt);
-  const [s,o,g,obt]=await Promise.all([
+  const [s,o,g,obt,mem]=await Promise.all([
     (async()=>{ let d=[],o=0; for(;;){ const r=await sb.from("sel_arb_snapshot").select("*").order("tarih").order("sira").order("id").range(o,o+999); if(r.error) return r; d=d.concat(r.data||[]); if((r.data||[]).length<1000) return {data:d,error:null}; o+=1000; } })()   /* SNAP-SAYFALI */,
     sb.from("sel_arb_ozet").select("*").order("tarih"),
     sb.from("sel_arb_guncel").select("*").order("sira"),
-    sb.from("sel_arb_ob_toplam").select("*")   /* SELARB-KONTRAT-PANO */
+    sb.from("sel_arb_ob_toplam").select("*"),   /* SELARB-KONTRAT-PANO */
+    sb.rpc("sel_arb_memnuniyet")   /* SELARB-MEMNUNIYET */
   ]);
   if(s.error||o.error||g.error){ body.innerHTML=`<div class="load">Hata: ${esc((s.error||o.error||g.error).message)}</div>`; return; }
   const snap=s.data||[], oz=o.data||[], guncel=g.data||[];
@@ -2928,6 +2929,12 @@ async function loadSelArb(tgt){
   const kxKey=p=>String(p||"").trim().toLocaleLowerCase("tr");
   const obBy={}, obS={}; ((obt&&!obt.error&&obt.data)||[]).forEach(x=>{ obBy[kxKey(x.proje_key)]=x; obS[x.sira]=x; });   /* SELARB-DEVIR-261001 */
   const gBy={}; guncel.forEach(x=>gBy[x.sira]=x);
+  /* SELARB-MEMNUNIYET (19.11.2026, Melih): Müşteri sağında müşteri memnuniyet anketi puanı (rpc sel_arb_memnuniyet, 4 üzerinden ortalama) */
+  const memL=(mem&&!mem.error&&mem.data)||[], memBy={}; memL.forEach(x=>memBy[x.sira]=x);
+const memFmt=v=>v==null?"":Number(v).toFixed(2).replace(".",",");
+const memRenk=v=>v==null?"":(v>=3?"#1f7a46":(v>=2.5?"#a86b00":"#b40000"));
+const memTd=(m,cls)=>m?`<td class="${cls}" style="text-align:center;font-weight:700;color:${memRenk(Number(m.puan))}" title="Müşteri memnuniyet anketi: ${m.anket_sayi} anket ortalaması (4 üzerinden)${m.son_yanit?" · son yanıt "+String(m.son_yanit).slice(8,10)+"."+String(m.son_yanit).slice(5,7)+"."+String(m.son_yanit).slice(2,4):""}">${memFmt(m.puan)}</td>`:`<td class="${cls}"></td>`;
+const memOrt=L=>{ const p=L.map(x=>Number(x.puan)).filter(x=>!isNaN(x)); return p.length?{puan:p.reduce((a,b)=>a+b,0)/p.length,anket_sayi:p.length+" proje"}:null; };
   const kxVal=(sira,proje)=>{ const g=gBy[sira]||{}, ob=obS[sira]||obBy[kxKey(g.proje||proje)]||{};
     return KXP.map(([f,ad,t])=>{ const v=t==="o"?ob[f]:g[f]; return (v==null||v==="")?null:(t==="d"||t==="t"?v:Number(v)); }); };
   const kxFmt=(v,i)=>v==null?"":KXP[i][2]==="t"?String(v):(KXP[i][2]==="d"?(String(v).slice(8,10)+"."+String(v).slice(5,7)+"."+String(v).slice(2,4)):Math.round(v).toLocaleString("tr-TR"));
@@ -2992,6 +2999,7 @@ async function loadSelArb(tgt){
     return `<tr class="${isFoot?'sa-foot':''}${show?'':' sa-hide'}"${show?'':' style="display:none"'}${(!isFoot&&h.sira!=null)?` data-sira="${h.sira}" data-proje="${esc(h[0]||"")}" title="Sağ tık: Cari hesap / Selectron faturaları"`:""}>`
       +`<td class="sa-proje"><span class="c" title="${esc(h[0]||"")}">${esc(h[0]||"")}</span></td>`
       +`<td class="sa-firma"><span class="c" title="${esc(h[1]||"")}">${esc(h[1]||"")}</span></td>`
+      +((!isFoot&&h.sira!=null)?memTd(memBy[h.sira],"sa-mem"):(h[0]==="Güncel Alacak Toplam (€)"?memTd(memOrt(memL),"sa-mem"):`<td class="sa-mem"></td>`))   /* SELARB-MEMNUNIYET */
       +KXP.map((k,i)=>`<td class="sa-kx${k[2]==="o"?" sa-kxo":""}">${esc(kxFmt(h.kx?h.kx[i]:null,i))}</td>`).join("")   /* SELARB-KONTRAT-PANO */
       +`<td class="sa-num sa-canli"${(!isFoot&&gBy[h.sira]&&gBy[h.sira].alacak_kaynak==="manuel")?' style="color:#c00" title="Manuel (maktu)"':""}>${esc(h[canliIdx]||"")}</td>`   /* SELARB-MANUEL-KIRMIZI */
       +`<td class="sa-num sa-delta">${esc(h[2+nd]||"")}</td>`
@@ -3025,7 +3033,7 @@ async function loadSelArb(tgt){
   const pyS=await sb.from("pano_yayin").select("yayin_at").eq("anahtar","sel_arb").limit(1);
   const pyAtS=(pyS&&!pyS.error&&pyS.data&&pyS.data[0])?pyS.data[0].yayin_at:null;
   body.innerHTML=`${style}<div class="stamp">Son güncelleme: ${pyAtS?dOnly(pyAtS):esc(stamp)}</div>${btn?`<div class="hint">${btn}</div>`:""}<div class="sa-wrap scroll"><table><thead>`
-    +`<tr><th rowspan="2">${esc(basliklar[0]||"Proje")}</th><th rowspan="2">${esc(basliklar[1]||"Firma")}</th>${KXP.map(k=>`<th rowspan="2" class="sa-kxh${k[2]==="o"?" sa-kxo":""}${k[1].indexOf("\n")>=0?" sa-sm":""}" title="${k[0]==="yapilacak_situ"?"Yükleme toplamı × oran (HT 1,40 · TTC 1,72) − Yapılmış Situ, otomatik; cari kaynaklı satırda Cari Ay €'ya dahil":(k[2]==="o"?"ÖB Faaliyet formundan":"Sel-Arb formundan")}">${esc(k[1]).replace(/\n/g,"<br>")}</th>`).join("")}<th rowspan="2" class="sa-num sa-canli-h">Cari Ay €</th><th rowspan="2" class="sa-num sa-dh">${esc(dlt)}</th><th colspan="${nd}" class="sa-num" style="text-align:center">Alacak €</th></tr>`
+    +`<tr><th rowspan="2">${esc(basliklar[0]||"Proje")}</th><th rowspan="2">${esc(basliklar[1]||"Firma")}</th><th rowspan="2" class="sa-memh" title="Müşteri memnuniyet anketi puanı (4 üzerinden; birden çok anket varsa ortalama)">Memnuniyet</th>${KXP.map(k=>`<th rowspan="2" class="sa-kxh${k[2]==="o"?" sa-kxo":""}${k[1].indexOf("\n")>=0?" sa-sm":""}" title="${k[0]==="yapilacak_situ"?"Yükleme toplamı × oran (HT 1,40 · TTC 1,72) − Yapılmış Situ, otomatik; cari kaynaklı satırda Cari Ay €'ya dahil":(k[2]==="o"?"ÖB Faaliyet formundan":"Sel-Arb formundan")}">${esc(k[1]).replace(/\n/g,"<br>")}</th>`).join("")}<th rowspan="2" class="sa-num sa-canli-h">Cari Ay €</th><th rowspan="2" class="sa-num sa-dh">${esc(dlt)}</th><th colspan="${nd}" class="sa-num" style="text-align:center">Alacak €</th></tr>`
     +`<tr>${dateHdrs}</tr></thead><tbody>${trs}</tbody></table></div>`;
   const tg=document.getElementById("sa-toggle");
   if(tg) tg.onclick=()=>{ const on=tg.dataset.on==="1"; document.querySelectorAll("#"+tgt+" tr.sa-hide").forEach(x=>x.style.display=on?"none":""); tg.dataset.on=on?"0":"1"; tg.textContent=on?`Boş-alacak satırları göster (${hiddenCount})`:`Boş-alacak satırları gizle (${hiddenCount})`; };
