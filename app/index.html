@@ -323,7 +323,7 @@ const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_mkprim"];
 /* MENU-KISA-261010 */ /* GIRIS-PANO */const TABS=[["giris","Giriş"],["aup","PRJ/PEM"],["santiye","Şantiye"],/* GIRIS-SATIS-BANT (19.11.2026, Melih): Satış sekmesi menüden kaldırıldı; özeti Giriş'te açılır bant, loadSatis 'Öncelik Belirle' düğmesiyle hâlâ açılır */["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
 const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
 /* MENU-DUGME: Menü = ilk 8 sekme · Mali grubunun ilk 5 panosu · Formlar · Özel · Üretim Takip. Diğer pano linkleri (Sel-Arb, MK Faaliyet, ÖB Faaliyet) kaldırıldı; kodları duruyor. */
-const MENU_MALI=[["bilanco","Bilanço"],["icmal","İcmal"],["fiyat","Fiyatlandırma"],["kredi","Kredi"],["ahsap","Ahşap"]];
+const MENU_MALI=[["bilanco","Bilanço"],["icmal","İcmal"],["fiyat","Fiyatlandırma"],["kredi","Kredi"]]; /* MALI-AHSAP-YOK (19.11.2026, Melih): Ahşap panosu menüden kaldırıldı; tablo Giriş'te GIRIS-AHSAP-BANT (loadAhsap duruyor) */
 const URETIM_TAKIP_URL="https://script.google.com/macros/s/AKfycbzMSNjvo65QreZ4W4Kq_CQujdQSCQYqj6qQbFMFy6QmxP8AZ6gWCnrJ2ehKPcWygxZ_/exec";
 function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k==='mali') return MALI_ALL.some(b=>a.includes(b))||a.includes('ob_rapor'); if(k==='ozel') return a.includes('ozel')||a.includes('gmenkul'); if(k==='formlar') return a.includes('formlar'); return a.includes(k); }
 function renderApp(){
