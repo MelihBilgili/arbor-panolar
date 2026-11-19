@@ -254,8 +254,8 @@ const $=id=>document.getElementById(id);
 const KISI=()=>((window.ARB_KISI_AL&&(ARB_KISI_AL(ARB_ROLE_EMAIL)||{}).kod)||(ARB_ACTIVE===ARB_MB_SB?"MB":"MY"));
 let DATA={rows:[]};
 const BLOK=[
-  {k:"prj", ad:"Projeler · 4.1 – 7.1", pem:false},
-  {k:"sevk",ad:"Sevke Hazır · 8 / 8.1", pem:false},
+  {k:"prj", ad:"Üretimdeki Projeler · Durum 4.1 – 7.1", pem:false, not:"Sağ tıklayarak acile çevir"}, /* MY-BLOK-BASLIK (19.11.2026, Melih): başlık + satır sayısı yerine not */
+  {k:"sevk",ad:"Sevke Hazır Projeler · Durum 8 / 8.1", pem:false, not:"Sağ tıklayarak acile çevir"},
   {k:"pem", ad:"PEM", pem:true}
 ];
 const MYW_PEM=[64,72,133,210,44,72,84,64,230,280], MYW_PRJ=[MYW_PEM[0],MYW_PEM[1]+MYW_PEM[2]+MYW_PEM[3]].concat(MYW_PEM.slice(4)); /* MY-HIZA */
@@ -288,7 +288,7 @@ function ciz(){
           +`<td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`;
       return `<tr class="${r.durum==="Acil"?'acil':''}" data-tur="${esc(r.tur)}" data-no="${esc(r.no)}">${ilk}${ekTd(r)}</tr>`;
     }).join("");
-    return `<div class="blk"><h2>${esc(b.ad)} <span class="cnt">${R.length} satır${R.filter(r=>r.durum==="Acil").length?' · '+R.filter(r=>r.durum==="Acil").length+' acil':''}</span></h2>`
+    return `<div class="blk"><h2>${esc(b.ad)} <span class="cnt">${b.not?'· '+esc(b.not):R.length+' satır'+(R.filter(r=>r.durum==="Acil").length?' · '+R.filter(r=>r.durum==="Acil").length+' acil':'')}</span></h2>`
       +`<div class="tblwrap"><table class="myt fx" style="width:${mySum(b.pem?MYW_PEM:MYW_PRJ)}px">${myCols(b.pem?MYW_PEM:MYW_PRJ)}<thead><tr>${head}${ekTh()}</tr></thead><tbody>${body||`<tr><td colspan="${b.pem?10:8}" class="mut">Kayıt yok</td></tr>`}</tbody></table></div></div>`;
   }).join("");
   $("bloklar").innerHTML=html;
