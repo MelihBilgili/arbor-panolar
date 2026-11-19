@@ -80,13 +80,11 @@ html,body{max-width:100vw;overflow-x:hidden}
     <div class="msg" id="mf"></div>
   </div>
 
-  <div class="card">
-    <div class="chd" style="padding:12px 14px 0"><h2>Sevke Hazır PEM Sevkiyat Durumu</h2><!-- OE-BASLIK-PEM --></div>
-    <span id="msg" class="msg"></span><div id="list"><div class="load">Yükleniyor…</div></div></div>
+  <!-- OE-SEVK-TABLO-YOK (19.11.2026, Melih): en alttaki "Sevke Hazır PEM Sevkiyat Durumu" tablosu kaldırıldı; load() ROWS=[] bırakır, Güncelle sevk kontrollerine takılmaz -->
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../my_acil.js?v=261119b"></script><!-- MY-FAALIYET -->
+<script src="../my_acil.js?v=261119j"></script><!-- MY-FAALIYET -->
 <script src="../santiye_foto.js?v=261119"></script><!-- OE-SORUN-ONERI -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -419,6 +417,7 @@ let ROWS=[], PSAN={rows:{},formlar:[]}; /* OE-PEM-SANTIYE (10.11.2026, Melih): P
 async function psanYukle(){ const r=await sb.rpc("pem_santiye_liste"); if(r.error){ console.warn(r.error); return; }
   const d=r.data||{}; PSAN={rows:{},formlar:d.formlar||[]}; (d.rows||[]).forEach(x=>PSAN.rows[String(x.no)]=x); }
 async function load(){
+  ROWS=[]; return; /* OE-SEVK-TABLO-YOK */
   await psanYukle();
   const [{data,error},dg,_tr]=await Promise.all([
     sb.from("hazir_pem_prj").select("*"),

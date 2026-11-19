@@ -76,6 +76,7 @@
     /* MY-KESIN-YUKLEME (06.11.2026, Melih): Kesinleşen Yükleme Tarihi (OE girer; Giriş'te MB de). Durum 3 Sevke Hazır + boş → kırmızı satır "Yükleme tarihi gir";
        tarih girilenler beyaz zeminle altta "Yükleneceği Kesinleşenler" grubunda (kesin tarihe göre). */
     var kesEd=(mod==="oe"||gr);
+    if(mod==="oe"&&el._oeAcik===undefined){ el._oeAcik=1; el._tbAcik=true; el._ksAcik=true; } /* OE-BANT-ACIK (19.11.2026, Melih): OE Faaliyet'te Yükleme Planlaması Beklenenler ve Yükleneceği Kesinleşenler açık başlar */
     var kesR=rows.filter(function(r){ return !!r.kesin; }).sort(function(a,b){ return String(a.kesin).localeCompare(String(b.kesin))||String(a.no).localeCompare(String(b.no)); });
     var anaR=rows.filter(function(r){ return !r.kesin; });
     /* MY-TERMIN-BANT (06.11.2026, Melih): AÜP/Termin bugün ya da ileri tarihli (kesinleşmemiş) satırlar "Termini Beklenenler" açılır bandında, kesinleşenlerin hemen üstünde; kapalı başlar (el._tbAcik) */
