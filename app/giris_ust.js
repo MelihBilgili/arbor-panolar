@@ -175,7 +175,7 @@ async function satis(o,elT,elG){
   ser.forEach(s=>{ s.top_a=(s.so_a==null&&s.yd_a==null)?null:(s.so_a||0)+(s.yd_a||0); s.top_m=(s.so_m==null&&s.yd_m==null)?null:(s.so_m||0)+(s.yd_m||0); });
   /* DK1: dk = dk1+2dk2+3dk3+5dk4; ayın son ERP çekimi + elle girilen; yurt içi hariç */
   let dkS=null;
-  if(dk&&!dk.error){ const n=v=>Number(v)||0, R=(dk.data||[]).filter(r=>!r.yurt_ici), ayOf=d=>"20"+d.slice(0,2)+"-"+d.slice(2,4);
+  if(dk&&!dk.error){ const n=v=>Number(v)||0, R=(dk.data||[]).filter(r=>!r.yurt_ici), ayOf=d=>{ let y=2000+Number(d.slice(0,2)), m=Number(d.slice(2,4))-1; if(m<1){m=12;y--;} return y+"-"+p2(m); } /* DK1-AY-ONCEKI (19.11.2026, Melih): ERP çekimi bir önceki ayın verisidir (261014→Eylül, 261105→Ekim) */;
     const son={}; R.forEach(r=>{ if(!r.erp_damga) return; const a=ayOf(r.erp_damga); if(!son[a]||r.erp_damga>son[a]) son[a]=r.erp_damga; });
     const ayT={}; R.forEach(r=>{ let a; if(r.erp_damga){ a=ayOf(r.erp_damga); if(r.erp_damga!==son[a]) return; } else { const d=String(r.tarih||r.created_at||""); if(!/^\d{4}-\d{2}/.test(d)) return; a=d.slice(0,7); }
       ayT[a]=(ayT[a]||0)+n(r.dk1)+2*n(r.dk2)+3*n(r.dk3)+5*n(r.dk4); });
