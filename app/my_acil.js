@@ -330,16 +330,18 @@
     var rows=d.rows||[];
     ofisBlok(kod==="yi"?[]:(d.ofis||[])); /* PEM-OFIS-MY · PEM-OFIS-YI-YOK (18.11.2026): Yurt İçi şantiye formunda ofis stoğu PEM'leri gösterilmez */
     if(!rows.length){ el.innerHTML=""; return; }
-    var B=[["prj","Projeler · 4.1 – 7.1",false],["sevk","Sevke Hazır · 8 / 8.1",false],["pem","PEM",true]];
+    /* SANTIYE-BLOK-BASLIK (19.11.2026, Melih): MY Faaliyet ile aynı başlıklar ve sıra; PEM ERP durumuna göre ikiye ayrılır */
+    var pno=function(r){ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return m?parseFloat(m[1].replace(",",".")):0; };
+    var B=[["pem","Sevke Hazır PEM'ler",true,function(r){ return pno(r)>=3; }],["pem","Üretimdeki PEM'ler",true,function(r){ return pno(r)<3; }],["sevk","Sevke Hazır Projeler · Durum 8 / 8.1",false],["prj","Üretimdeki Projeler · Durum 4.1 – 7.1",false]];
     var ek='<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek sm">Yükleme<br>Şekli</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>';
     var h='<div class="mysan"><h3>Projeleriniz ve PEM\'leriniz</h3><div class="alt">Satıra sağ tıklayarak acil ya da normal takibe alma talebinde bulunabilir, ayrıntıları görebilirsiniz. Talepler MY onayından sonra geçerli olur.</div><div class="mys-msg" id="mys-msg"></div>'
       +B.map(function(b){
-        var R=rows.filter(function(r){ return r.blok===b[0]; }); if(!R.length) return "";
+        var R=rows.filter(function(r){ return r.blok===b[0]&&(!b[3]||b[3](r)); }); if(!R.length) return "";
         var head=b[2]?'<th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th>':'<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
         /* MY-HIZA (28.10.2026): PEM'de Talep Tarihi 2. sütun; proje bloklarının son 6 sütunu PEM'in son 6 sütunuyla hizalı */
         var W=[64,72,133,210,44,72,84,64,230,280]; if(!b[2]) W=[W[0],W[1]+W[2]+W[3]].concat(W.slice(4)); /* MY-AD-DAR: Proje Adı %30 dar (PEM 190→133; proje 472→330 görünür, sağ boşluk) */
         var padAd=b[2]?'':' style="padding-right:'+(W[1]-330+7)+'px"';
-        return '<h4>'+esc(b[1])+'</h4><div class="myw"><table class="mys fx" style="width:'+W.reduce(function(a,x){return a+x;},0)+'px"><colgroup>'+W.map(function(x){ return '<col style="width:'+x+'px">'; }).join('')+'</colgroup><thead><tr>'+head+ek+'</tr></thead><tbody>'+R.map(function(r){
+        return '<h4>'+esc(b[1])+' <span style="font-weight:400;color:#5a6b7d">· Sağ tıklayarak acile çevir</span></h4><div class="myw"><table class="mys fx" style="width:'+W.reduce(function(a,x){return a+x;},0)+'px"><colgroup>'+W.map(function(x){ return '<col style="width:'+x+'px">'; }).join('')+'</colgroup><thead><tr>'+head+ek+'</tr></thead><tbody>'+R.map(function(r){
           var ac=r.durum==="Acil";
           var ilk=b[2]
             ? '<td title="'+esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'
@@ -408,17 +410,48 @@
   }
   document.addEventListener("click",function(e){ if(!e.target.closest||!e.target.closest("#mys-ctx")) sKapat(); });
   document.addEventListener("keydown",function(e){ if(e.key==="Escape") sKapat(); });
-  window.MYACIL={liste:liste,acilBlok:acilBlok,santiyeBlok:santiyeBlok,ayrinti:ayrinti,fd:fd,esc:esc,stil:stil};
+
+  /* MK-SEVK-PRJ (19.11.2026, Melih): MK Faaliyet'te Acil Yüklemeler'in üstünde yurt dışı Sevke Hazır Projeler (durum 8 / 8.1).
+     Hedef Yükleme Tarihi: acil satırda acil hedefi, değilse plan_hedef (rpc my_plan_yaz); boşsa kırmızı zemin "Tarih gir" — tıklayınca tarih kutusu. */
+  async function sevkPrjBlok(el,o){
+    if(!el) return; stil(); var sb=o.sb, d;
+    try{ d=await liste(sb); }catch(e){ el.innerHTML='<div class="myab"><h3>SEVKE HAZIR PROJELER</h3><div style="color:#b40000">Okunamadı: '+esc(e.message||e)+'</div></div>'; return; }
+    var R=(d.rows||[]).filter(function(r){ return r.blok==="sevk"; });
+    if(!R.length){ el.innerHTML=""; return; }
+    if(!document.getElementById("mksp-css")){ var st=document.createElement("style"); st.id="mksp-css"; st.textContent="td.mksp-tg{background:#c62828!important;color:#fff!important;font-weight:700;cursor:pointer;text-align:center}td[data-mksp]{cursor:pointer}"; document.head.appendChild(st); }
+    var eksik=R.filter(function(r){ return !(r.durum==="Acil"&&r.hedef)&&!r.plan; }).length;
+    el.innerHTML='<div class="myab"><h3>SEVKE HAZIR PROJELER <span style="font-weight:400;font-size:12px;color:#5a6b7d">· Durum 8 / 8.1'+(eksik?' · '+eksik+' satırda hedef yükleme tarihi girilmedi':'')+'</span></h3><div class="myw"><table class="mya"><thead><tr>'
+      +'<th>Durum</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP</th><th>Hedef<br>Yükleme Tarihi</th><th>Kesinleşen<br>Yükleme Tarihi</th><th>Takip<br>Durumu</th></tr></thead><tbody>'
+      +R.map(function(r){ var ac=r.durum==="Acil"&&r.hedef;
+        var hd=ac?'<td><b>'+fd(r.hedef)+'</b></td>':(r.plan?'<td data-mksp="1" title="Hedef yükleme tarihini değiştir">'+fd(r.plan)+'</td>':'<td class="mksp-tg" data-mksp="1">Tarih gir</td>');
+        return '<tr class="my-ks" data-no="'+esc(r.no)+'"><td class="w" style="max-width:24ch" title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</td><td title="'+esc(r.no)+'">'+esc(r.kod)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'
+          +hd+'<td>'+(r.kesin?'<b>'+fd(r.kesin)+'</b>':'')+'</td><td'+(r.durum==="Acil"?' style="color:#c62828;font-weight:700"':'')+'>'+esc(r.durum||"Normal")+'</td></tr>'; }).join("")
+      +'</tbody></table></div></div>';
+    el.querySelectorAll("td[data-mksp]").forEach(function(td){ td.addEventListener("click",function(){
+      if(td.querySelector("input")) return; var no=td.parentNode.getAttribute("data-no"), r=R.filter(function(x){ return x.no===no; })[0]; if(!r) return;
+      var es=td.innerHTML, cl=td.className, bitti=false; td.className=""; td.innerHTML='<input type="date" value="'+esc(r.plan?String(r.plan).slice(0,10):"")+'" style="font:inherit;font-size:12px">';
+      var i=td.querySelector("input"); i.focus(); try{ if(i.showPicker) i.showPicker(); }catch(e){}
+      var geri=function(){ if(bitti) return; bitti=true; td.className=cl; td.innerHTML=es; };
+      i.addEventListener("keydown",function(e){ if(e.key==="Escape"){ e.preventDefault(); geri(); } });
+      i.addEventListener("blur",function(){ setTimeout(geri,150); });
+      i.addEventListener("change",async function(){ if(bitti) return; bitti=true;
+        var x=await sb.rpc("my_plan_yaz",{p_tur:"PRJ",p_no:r.no,p_tarih:i.value||null,p_proje:r.proje||null});
+        if(x.error){ alert("Kaydedilemedi: "+x.error.message); td.className=cl; td.innerHTML=es; return; }
+        sevkPrjBlok(el,o); });
+    }); });
+  }
+  window.MYACIL={liste:liste,acilBlok:acilBlok,santiyeBlok:santiyeBlok,ayrinti:ayrinti,fd:fd,esc:esc,stil:stil,sevkPrjBlok:sevkPrjBlok};
   /* Formlarda otomatik çizim */
   var t0=Date.now();
   async function oto(){
-    var el=document.getElementById("my-acil"), es=document.getElementById("my-santiye"); if(!el&&!es) return;
+    var el=document.getElementById("my-acil"), es=document.getElementById("my-santiye"), sp=document.getElementById("mk-sevk-prj"); if(!el&&!es&&!sp) return;
     var cli=(typeof ARB_ACTIVE!=="undefined")?ARB_ACTIVE:null;
     if(!cli||document.getElementById("arb-gate")){ if(Date.now()-t0<60000) setTimeout(oto,700); return; }
     var s=null; try{ s=await cli.auth.getSession(); }catch(e){}
     if(!(s&&s.data&&s.data.session)){ if(Date.now()-t0<60000) setTimeout(oto,700); return; }
     if(es){ var skod=es.getAttribute("data-kod")||((typeof ARB_STORE!=="undefined")?String(ARB_STORE).replace(/^arbform_santiye_/,""):"");
       if(skod){ santiyeBlok(es,{sb:cli,kod:skod}); setInterval(function(){ if(!document.querySelector(".my-modal")&&!document.getElementById("mys-ctx")) santiyeBlok(es,{sb:cli,kod:skod}); },5*60*1000); } }
+    if(sp){ sevkPrjBlok(sp,{sb:cli}); setInterval(function(){ if(!sp.querySelector("input")) sevkPrjBlok(sp,{sb:cli}); },5*60*1000); } /* MK-SEVK-PRJ */
     if(!el) return;
     var mod=el.getAttribute("data-mod")||"oe";
     acilBlok(el,{sb:cli,mod:mod});

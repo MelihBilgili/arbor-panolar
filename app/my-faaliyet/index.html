@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>MY — Faaliyet Formu</title>
 <style>
+td.tgir{background:#c62828!important;color:#fff!important;font-weight:700;cursor:pointer;text-align:center} td[data-plan]{cursor:pointer} /* MY-PLAN-HEDEF */
   :root{color-scheme:light}
   *{box-sizing:border-box}
   body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
@@ -110,7 +111,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div id="bloklar"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../my_acil.js?v=261117f"></script><!-- MY-FAALIYET -->
+<script src="../my_acil.js?v=261119b"></script><!-- MY-FAALIYET -->
 <script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -253,11 +254,11 @@ MYACIL.stil();
 const $=id=>document.getElementById(id);
 const KISI=()=>((window.ARB_KISI_AL&&(ARB_KISI_AL(ARB_ROLE_EMAIL)||{}).kod)||(ARB_ACTIVE===ARB_MB_SB?"MB":"MY"));
 let DATA={rows:[]};
-const BLOK=[
-  {k:"prj", ad:"Üretimdeki Projeler · Durum 4.1 – 7.1", pem:false, not:"Sağ tıklayarak acile çevir"}, /* MY-BLOK-BASLIK (19.11.2026, Melih): başlık + satır sayısı yerine not */
-  {k:"sevk",ad:"Sevke Hazır Projeler · Durum 8 / 8.1", pem:false, not:"Sağ tıklayarak acile çevir"},
-  {k:"pem", ad:"Üretimdeki PEM'ler", pem:true, not:"Sağ tıklayarak acile çevir", f:r=>pemNo(r)<3}, /* MY-PEM-IKI (19.11.2026, Melih): PEM tablosu ERP durumuna göre ikiye ayrıldı */
-  {k:"pem", ad:"Sevke Hazır PEM'ler", pem:true, not:"Sağ tıklayarak acile çevir", f:r=>pemNo(r)>=3}
+const BLOK=[ /* MY-SIRA-261119 (19.11.2026, Melih): sıra Sevke Hazır PEM · Üretimdeki PEM · Sevke Hazır Proje · Üretimdeki Proje */
+  {k:"pem", ad:"Sevke Hazır PEM'ler", pem:true, not:"Sağ tıklayarak acile çevir", f:r=>pemNo(r)>=3, tg:true}, /* MY-PEM-IKI · MY-PLAN-HEDEF: tarihsiz satırda kırmızı "Tarih gir" */
+  {k:"pem", ad:"Üretimdeki PEM'ler", pem:true, not:"Sağ tıklayarak acile çevir", f:r=>pemNo(r)<3},
+  {k:"sevk",ad:"Sevke Hazır Projeler · Durum 8 / 8.1", pem:false, not:"Sağ tıklayarak acile çevir"}, /* MY-BLOK-BASLIK */
+  {k:"prj", ad:"Üretimdeki Projeler · Durum 4.1 – 7.1", pem:false, not:"Sağ tıklayarak acile çevir"}
 ];
 function pemNo(r){ const m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return m?parseFloat(m[1].replace(",",".")):0; }
 const MYW_PEM=[64,72,133,210,44,72,84,64,230,280], MYW_PRJ=[MYW_PEM[0],MYW_PEM[1]+MYW_PEM[2]+MYW_PEM[3]].concat(MYW_PEM.slice(4)); /* MY-HIZA */
@@ -265,9 +266,11 @@ const MYW_PRJ_AD=330; /* MY-AD-DAR (28.10.2026): Proje Adı %30 dar — PEM 190�
 const myCols=w=>'<colgroup>'+w.map(x=>'<col style="width:'+x+'px">').join('')+'</colgroup>', mySum=w=>w.reduce((a,b)=>a+b,0);
 function ekTh(){ return '<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek sm">Yükleme<br>Şekli</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>'; }
 function sekil(r){ if(!r.sekil) return ""; if(r.sekil==="Uçak") return r.ucak_onay?'<span class="ucok">Uçak</span>':'<span class="ucbek" title="MK onayı bekleniyor">Uçak</span>'; return esc(r.sekil); }
-function ekTd(r){
+function ekTd(r,b){
   const ac=r.durum==="Acil", ed=ac?' acd':'';
-  return `<td class="c${ed}" data-ed="1">${ac?fd(r.hedef):""}</td><td class="c${ed}" data-ed="1">${ac?sekil(r):""}</td>`
+  /* MY-PLAN-HEDEF (19.11.2026, Melih): acil olmayan satırda Hedef = plan_hedef (rpc my_plan_yaz); Sevke Hazır PEM'de tarihsizse kırmızı "Tarih gir" */
+  const hd=ac?`<td class="c${ed}" data-ed="1">${fd(r.hedef)}</td>`:(r.plan?`<td class="c" data-plan="1" title="Hedef yükleme tarihini değiştir">${fd(r.plan)}</td>`:(b&&b.tg?`<td class="c tgir" data-plan="1">Tarih gir</td>`:`<td class="c"></td>`));
+  return hd+`<td class="c${ed}" data-ed="1">${ac?sekil(r):""}</td>`
     +`<td class="c w30${ed}" data-ed="1"><span title="${esc(r.aciklama)}">${ac?esc(r.aciklama):""}</span></td>`
     +`<td class="c dur ${ac?'acil':''}">${esc(r.durum||"Normal")}${r.talep?talepKutu(r):''}</td>`;
 }
@@ -288,7 +291,7 @@ function ciz(){
           +`<td class="c w25"><span title="${esc(r.ekbilgi)}">${esc(r.ekbilgi)}</span></td><td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`
         : `<td class="c"><span title="${esc(r.no)}">${esc(r.kod)}</span></td><td class="c w30" style="padding-right:${MYW_PRJ[1]-MYW_PRJ_AD+7}px"><span title="${esc(r.proje)}">${esc(r.proje)}</span></td>`
           +`<td class="n">${esc(r.adet)}</td><td class="c">${fd(r.tarih)}</td>`;
-      return `<tr class="${r.durum==="Acil"?'acil':''}" data-tur="${esc(r.tur)}" data-no="${esc(r.no)}">${ilk}${ekTd(r)}</tr>`;
+      return `<tr class="${r.durum==="Acil"?'acil':''}" data-tur="${esc(r.tur)}" data-no="${esc(r.no)}">${ilk}${ekTd(r,b)}</tr>`;
     }).join("");
     return `<div class="blk"><h2>${esc(b.ad)} <span class="cnt">${b.not?'· '+esc(b.not):R.length+' satır'+(R.filter(r=>r.durum==="Acil").length?' · '+R.filter(r=>r.durum==="Acil").length+' acil':'')}</span></h2>`
       +`<div class="tblwrap"><table class="myt fx" style="width:${mySum(b.pem?MYW_PEM:MYW_PRJ)}px">${myCols(b.pem?MYW_PEM:MYW_PRJ)}<thead><tr>${head}${ekTh()}</tr></thead><tbody>${body||`<tr><td colspan="${b.pem?10:8}" class="mut">Kayıt yok</td></tr>`}</tbody></table></div></div>`;
@@ -298,9 +301,22 @@ function ciz(){
   document.querySelectorAll("#bloklar tr[data-tur]").forEach(tr=>{
     tr.addEventListener("contextmenu",ev=>{ ev.preventDefault(); menu(ev,satir(tr)); });
     tr.querySelectorAll("td[data-ed]").forEach(td=>td.addEventListener("click",()=>{ const r=satir(tr); if(r&&r.durum==="Acil") acilPencere(r,true); }));
+    tr.querySelectorAll("td[data-plan]").forEach(td=>td.addEventListener("click",ev=>{ ev.stopPropagation(); planGir(td,satir(tr)); })); /* MY-PLAN-HEDEF */
     tr.querySelectorAll("button.tonay,button.tred").forEach(bt=>bt.addEventListener("click",ev=>{ ev.stopPropagation(); talepKarar(satir(tr),bt.classList.contains("tonay"),bt); }));
   });
 }
+/* MY-PLAN-HEDEF: hücrede tarih kutusu; seçilince rpc my_plan_yaz, boşaltınca tarih silinir; Esc vazgeç */
+function planGir(td,r){ if(!r||td.querySelector("input")) return;
+  const es=td.innerHTML, cl=td.className; td.className="c"; td.innerHTML=`<input type="date" value="${esc(r.plan?String(r.plan).slice(0,10):"")}" style="font:inherit;font-size:12px;width:100%">`;
+  const i=td.querySelector("input"); i.focus(); try{ i.showPicker&&i.showPicker(); }catch(e){}
+  let bitti=false; const geri=()=>{ if(bitti) return; bitti=true; td.className=cl; td.innerHTML=es; };
+  i.addEventListener("keydown",e=>{ if(e.key==="Escape"){ e.preventDefault(); geri(); } });
+  i.addEventListener("click",e=>e.stopPropagation()); i.addEventListener("contextmenu",e=>e.stopPropagation());
+  i.addEventListener("change",async()=>{ if(bitti) return; bitti=true; const v=i.value||null;
+    const x=await sb.rpc("my_plan_yaz",{p_tur:r.tur,p_no:r.no,p_tarih:v,p_proje:r.proje||null});
+    if(x.error){ bildir("Kaydedilemedi: "+x.error.message,false); td.className=cl; td.innerHTML=es; return; }
+    bildir((r.tur==="PEM"?"PEM "+r.kod:r.kod)+" · hedef yükleme "+(v?fd(v):"silindi"),true); yukle(); });
+  i.addEventListener("blur",()=>setTimeout(geri,150)); }
 function satir(tr){ const t=tr.getAttribute("data-tur"), n=tr.getAttribute("data-no"); return (DATA.rows||[]).find(r=>r.tur===t&&r.no===n); }
 /* MY-SANTIYE-FOTO (06.11.2026): Şantiye Ziyareti bloğu — şantiye listesi MY satırlarındaki proje adları (+ serbest giriş); kod/no şantiye formunda gösterim için */
 function sfoto(){ if(!window.SFOTO) return; const g={};
