@@ -294,18 +294,27 @@ function renderCell(b,i,c){
   if(f==="proje") return '<td><input class="cell" data-f="proje" data-sap="1" data-sap-firma="firma" readonly value="'+esc(v)+'"></td>'; /* PSEL-260930 */
   return '<td><input class="cell" data-f="'+f+'" value="'+esc(v)+'"></td>';
 }
+/* MK-ONCEKI-AY (19.11.2026, Melih): prim bloklarında önceki aylara ait satırlar (ay = cekim, yoksa created_at; kaydedilmemiş yeni satır bu ay)
+   blok tablosunun altında kapalı açılır bantta "ÖNCEKİ AYLAR (n)"; aç/kapat durumu bloğa göre ONC_ACIK'ta tutulur */
+const ONC_ACIK={};
+const BU_AY=new Date().toLocaleDateString("en-CA",{timeZone:"Europe/Istanbul"}).slice(0,7);
+function oncekiAy(r){ const t=String(r.cekim||r.created_at||"").slice(0,7); return !!t && t<BU_AY; }
+document.head.insertAdjacentHTML("beforeend","<style>/* MK-ONCEKI-AY */tr.mk-oncbas td{background:#eef2f6;color:#16324f;font-weight:700;font-size:12px;letter-spacing:.3px;cursor:pointer;padding:6px 10px;user-select:none}table.onc-kapali tr.mk-onc{display:none}</style>");
 function renderBlock(b){
   const head=b.cols.map(c=>'<th>'+esc(c[1])+'</th>').join("")+'<th class="num">Prim (€)</th><th class="colp"></th>';
-  let body="";
+  let body="", onc="", nOnc=0;
   DATA[b.tur].forEach((r,i)=>{
-    body+='<tr data-i="'+i+'">'+b.cols.map(c=>renderCell(b,i,c)).join("")
+    const eski=oncekiAy(r); if(eski) nOnc++;
+    const tr='<tr data-i="'+i+'"'+(eski?' class="mk-onc"':'')+'>'+b.cols.map(c=>renderCell(b,i,c)).join("")
       +'<td class="prim" data-prim>'+eur(rowPrim(b.tur,r))+'</td>'
       +'<td class="colp"><button class="del" title="Satırı sil">✕</button></td></tr>';
+    if(eski) onc+=tr; else body+=tr;
   });
+  if(nOnc) body+='<tr class="mk-oncbas" title="Aç / kapat"><td colspan="'+(b.cols.length+2)+'"><span class="mk-ok">'+(ONC_ACIK[b.tur]?'▾':'▸')+'</span> ÖNCEKİ AYLAR ('+nOnc+')</td></tr>'+onc;
   if(!DATA[b.tur].length) body='<tr><td colspan="'+(b.cols.length+2)+'" style="color:#8a97a4;padding:12px 10px">Henüz satır yok — “+ satır” ile ekle.</td></tr>';
   return '<div class="blk '+b.cls+'" data-tur="'+b.tur+'">'
     +'<h2>'+esc(b.ad)+' <span class="formula">— '+esc(b.formula)+'</span></h2>'
-    +'<div class="tblwrap"><table><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>'
+    +'<div class="tblwrap"><table'+(ONC_ACIK[b.tur]?'':' class="onc-kapali"')+'><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>'
     +'<div class="blkfoot"><button class="btn sec addr">+ satır</button>'
     +'<span class="subt">Blok primi: <b data-bt>'+eur(blockTotal(b.tur))+'</b> · <span data-bc>'+DATA[b.tur].length+'</span> satır</span></div></div>';
 }
@@ -325,6 +334,7 @@ function render(){
         if(error){ setMsg("Silinemedi: "+error.message,false); return; } }
       DATA[tur].splice(i,1); render(); setMsg("Satır silindi.",true);
     });
+    blk.querySelectorAll("tr.mk-oncbas").forEach(g=>g.addEventListener("click",()=>{ ONC_ACIK[tur]=!ONC_ACIK[tur]; const tb=g.closest("table"); if(tb) tb.classList.toggle("onc-kapali",!ONC_ACIK[tur]); const ok=g.querySelector(".mk-ok"); if(ok) ok.textContent=ONC_ACIK[tur]?"▾":"▸"; })); /* MK-ONCEKI-AY */
     blk.querySelector(".addr").onclick=()=>{ DATA[tur].push(blankRow(b)); render(); const rows=blk.querySelectorAll("tbody input.cell"); };
   });
   refreshTotals();
