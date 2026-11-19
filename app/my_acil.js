@@ -355,9 +355,17 @@
     el.innerHTML=h;
     var bul=function(tr){ var t=tr.getAttribute("data-tur"), n=tr.getAttribute("data-no"); return rows.filter(function(r){ return r.tur===t&&r.no===n; })[0]; };
     var msg=function(t,ok){ var m=el.querySelector("#mys-msg"); if(!m) return; m.className="mys-msg "+(ok?"ok":"err"); m.textContent=t; };
+    /* SANTIYE-BIRLESIK (19.11.2026, Melih): şantiye formunun kendi proje tablolarındaki (PST / Yükleme Planı) projeler burada tekrar gösterilmez;
+       o tablolara Takip Durumu ve aynı sağ tık menüsü eklenir (sBirlestir, form render sonrası da çağrılır) */
+    S.el=el; S.rows=rows; S.sb=sb; S.yenile=function(){ santiyeBlok(el,o); }; S.msg=msg;
     el.querySelectorAll("tr[data-tur]").forEach(function(tr){
-      tr.addEventListener("contextmenu",function(ev){
-        ev.preventDefault(); sKapat(); var r=bul(tr); if(!r) return;
+      tr.addEventListener("contextmenu",function(ev){ ev.preventDefault(); var r=bul(tr); if(r) sMenu(ev,r); });
+    });
+    sBirlestir();
+  }
+  var S={};
+  function sMenu(ev,r){
+        var sb=S.sb, msg=S.msg, yen=S.yenile; sKapat();
         var m=document.createElement("div"); m.id="mys-ctx"; m.className="mys-ctx";
         var lbl=r.tur==="PEM"?"PEM "+r.kod:r.kod;
         var ops=[];
@@ -371,11 +379,28 @@
         m.style.top=Math.max(4,Math.min(ev.clientY,window.innerHeight-m.offsetHeight-6))+"px";
         m.querySelectorAll(".i[data-o]").forEach(function(i){ var op=i.getAttribute("data-o"); if(!op) return; i.onclick=function(){ sKapat();
           if(op==="ayr") return ayrinti(sb,r.tur,r.no);
-          if(op==="acil") return sAcilPencere(sb,r,function(){ santiyeBlok(el,o); },msg);
-          if(op==="normal"){ if(!confirm(lbl+" · "+r.proje+"\n\nNormal takibe alma talebi MY'ye gönderilsin mi?")) return; sTalep(sb,r,"Normal",{},function(){ santiyeBlok(el,o); },msg); }
+          if(op==="acil") return sAcilPencere(sb,r,yen,msg);
+          if(op==="normal"){ if(!confirm(lbl+" · "+r.proje+"\n\nNormal takibe alma talebi MY'ye gönderilsin mi?")) return; sTalep(sb,r,"Normal",{},yen,msg); }
         }; });
-      });
+  }
+  function sBirlestir(){
+    var el=S.el; if(!el||!S.rows) return;
+    if(!document.getElementById("mysb-css")){ var st=document.createElement("style"); st.id="mysb-css"; st.textContent="td.mytakip.acil{color:#c62828;font-weight:700}td.mytakip .bek{color:#9aa5b1;font-weight:400}#bloklar tr[data-pno]{cursor:context-menu}"; document.head.appendChild(st); }
+    var set={};
+    document.querySelectorAll("#bloklar tr[data-pno]").forEach(function(tr){
+      var no=tr.getAttribute("data-pno"), r=S.rows.filter(function(x){ return x.tur==="PRJ"&&x.no===no; })[0];
+      var td=tr.querySelector("td.mytakip");
+      if(!r){ if(td) td.textContent=""; return; }
+      set[no]=1;
+      if(td){ var ac=r.durum==="Acil"; td.className="c mytakip"+(ac?" acil":"");
+        td.innerHTML=esc(r.durum||"Normal")+(ac&&r.hedef?' · '+fd(r.hedef):'')+(r.talep?' <span class="bek">→ '+esc(r.talep)+' (MY onayı bekliyor)</span>':''); }
+      if(!tr._myctx){ tr._myctx=1; tr.addEventListener("contextmenu",function(ev){ if(ev.target.closest&&ev.target.closest("input,textarea")) return; ev.preventDefault();
+        var rr=S.rows.filter(function(x){ return x.tur==="PRJ"&&x.no===no; })[0]; if(rr) sMenu(ev,rr); }); }
     });
+    el.querySelectorAll('tr[data-tur="PRJ"]').forEach(function(tr){ tr.style.display=set[tr.getAttribute("data-no")]?"none":""; });
+    el.querySelectorAll(".myw").forEach(function(w){ var vis=[].some.call(w.querySelectorAll("tbody tr"),function(t){ return t.style.display!=="none"; });
+      w.style.display=vis?"":"none"; var h=w.previousElementSibling; if(h&&h.tagName==="H4") h.style.display=vis?"":"none"; });
+    var kalan=[].some.call(el.querySelectorAll(".myw"),function(w){ return w.style.display!=="none"; }); var k=el.firstChild; if(k){ [].forEach.call(k.querySelectorAll(":scope>h3,:scope>.alt"),function(x){ x.style.display=kalan?"":"none"; }); k.style.border=kalan?"":"0"; k.style.padding=kalan?"":"0"; k.style.background=kalan?"":"none"; } /* mesaj kutusu görünür kalır */
   }
   async function sTalep(sb,r,durum,ek,sonra,msg){
     var res=await sb.rpc("my_santiye_talep",{p_tur:r.tur,p_no:r.no,p_durum:durum,p_hedef:ek.hedef||null,p_sekil:ek.sekil||null,p_aciklama:ek.aciklama||null,p_kisi:sKisi()||null});
@@ -440,7 +465,7 @@
         sevkPrjBlok(el,o); });
     }); });
   }
-  window.MYACIL={liste:liste,acilBlok:acilBlok,santiyeBlok:santiyeBlok,ayrinti:ayrinti,fd:fd,esc:esc,stil:stil,sevkPrjBlok:sevkPrjBlok};
+  window.MYACIL={liste:liste,acilBlok:acilBlok,santiyeBlok:santiyeBlok,ayrinti:ayrinti,fd:fd,esc:esc,stil:stil,sevkPrjBlok:sevkPrjBlok,santiyeBirlestir:sBirlestir};
   /* Formlarda otomatik çizim */
   var t0=Date.now();
   async function oto(){
