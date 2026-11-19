@@ -721,7 +721,7 @@ async function grAgBlok(){
   let soB=""; if(soHtml){ const m=/<h3[^>]*>SÖ\s*·\s*(\d+)<\/h3>/.exec(soHtml); soB=band("so","SÖ",m?m[1]:null,soHtml.replace(/^\s*<h3[^>]*>[\s\S]*?<\/h3>/,"")); }
   const secs=((sc&&!sc.error&&sc.data)||[]).filter(r=>r.aktif!==false).sort((a,b)=>(a.sira-b.sira)||String(a.ad).localeCompare(String(b.ad))).map(r=>r.ad).filter(a=>a!=="MB"&&!G[a]);
   const yeniIc=`<div class="scroll"><table class="gnb"><thead><tr><th>İlgili</th><th>Konu</th><th></th></tr></thead><tbody><tr class="gr-addrow" data-ilg=""><td><select class="gr-add-ilg">${secs.map(a=>`<option value="${esc(a)}">${esc(a)}</option>`).join("")}<option value="__new__">Diğer…</option></select></td><td><input class="gr-add-konu" placeholder="Yeni konu" style="width:100%;min-width:26ch"></td><td><button class="gr-add-btn" title="Ekle">+</button></td></tr></tbody></table></div>`;
-  el.innerHTML=`<div class="ag-wrap gr-bands">`+bah.map(k=>band("i:"+k,k,G[k].length,grpTbl(k))).join("")+band("prj","PRJ",prj.length,prjIc)
+  el.innerHTML=`<div class="ag-wrap gr-bands">`+bah.map(k=>band("i:"+k,k,G[k].length,grpTbl(k))).join("")/* GIRIS-PRJ-BANT-YOK (19.11.2026, Melih): PRJ bandı gösterilmez */
     +rest.map(k=>band("i:"+k,k,G[k].length,grpTbl(k))).join("")+soB+band("yeni","Yeni İlgili",null,yeniIc)+`</div>`;
   el.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
   el.querySelectorAll(".ged").forEach(x=>x.onclick=()=>startEdit(x));
