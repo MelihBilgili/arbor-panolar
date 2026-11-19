@@ -483,12 +483,13 @@ async function loadGiris(){
     <div id="gr-agblok"></div><!-- GIRIS-GUNDEM-BANT -->
     <div id="gr-ust"></div>
     <div id="gr-satis" class="gr-bands" style="margin:8px 0"></div><!-- GIRIS-SATIS-BANT -->
+    <div id="gr-ahsap" class="gr-bands" style="margin:0 0 8px"></div><!-- GIRIS-AHSAP-BANT -->
     <div id="gr-santiye"></div>
     <div id="gr-egitim"></div>
     <div id="gr-not" style="margin-top:16px"></div><!-- GIRIS-NOT -->
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
-  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grCfo),kor(grGundem),kor(grAgBlok),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(grSatis),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grCfo),kor(grGundem),kor(grAgBlok),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(grSatis),kor(grAhsap),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
 }
 /* GIRIS-SATIS-BANT (19.11.2026, Melih): Satış panosunun ilk bloğu (Muhtemel/Alınan özeti + Değişim + proje listeleri, satisSummary)
    Giriş'te grafiklerin hemen altında kapalı açılır bantta; Satış sekmesi kaldırıldı. Hesap loadSatis ile birebir (KUR-DONDURMA, SATIS-AYBASLANGIC). */
@@ -517,6 +518,14 @@ async function grSatis(){
   const st='<style>table.ssum td.sdlist{vertical-align:top;padding:2px 6px 6px}table.ssum th.sdeg,table.ssum td.sdeg{border-left:1px dashed #cdd8e4}.sdi.sdadd .sdi-p,.sdi.sdadd .sdi-t{color:#0a6b3f}.sdi.sdrem .sdi-p,.sdi.sdrem .sdi-t{color:#b23a2e}.sdi{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:2px 0;border-bottom:1px solid #eef1f4}.sdi-p{color:#2c3542}.sdi-t{color:#516072;white-space:nowrap;text-align:right}</style>';
   el.innerHTML=st+`<details class="gr-band" data-b="satis"${window._grBandAcik&&window._grBandAcik.satis?" open":""}><summary>SATIŞ · Muhtemel ${money(tM)} EUR · Alınan ${money(tA)} EUR</summary><div class="gr-band-ic">${satisSummary(regions,hasBase)}</div></details>`;
   const d=el.querySelector("details.gr-band"); if(d) d.addEventListener("toggle",()=>{ window._grBandAcik=window._grBandAcik||{}; window._grBandAcik.satis=d.open; });
+}
+/* GIRIS-AHSAP-BANT (19.11.2026, Melih): Ahşap panosundaki tablo (loadAhsap) Giriş'te Satış bandının hemen altında kapalı açılır bantta; Mali › Ahşap da duruyor */
+async function grAhsap(){
+  const el=grEl("gr-ahsap"); if(!el) return;
+  const ac=!!(window._grBandAcik&&window._grBandAcik.ahsap);
+  el.innerHTML=`<details class="gr-band" data-b="ahsap"${ac?" open":""}><summary>AHŞAP · Alım fiyatları (€/m3)</summary><div class="gr-band-ic" id="gr-ahsap-ic"><div class="load">Yükleniyor…</div></div></details>`;
+  const d=el.querySelector("details.gr-band"); if(d) d.addEventListener("toggle",()=>{ window._grBandAcik=window._grBandAcik||{}; window._grBandAcik.ahsap=d.open; });
+  await loadAhsap("gr-ahsap-ic");
 }
 /* 1 — Ezan vakitleri (Diyanet yöntemi) + gündüz ortalama sıcaklık (gün doğumu–batımı saatlik ortalaması) + yağış */
 async function grVakit(){
