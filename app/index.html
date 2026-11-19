@@ -329,7 +329,9 @@ function tabVisible(k){ const a=state.allowed; if(a===null) return true; if(k===
 function renderApp(){
   const vis = TABS.filter(t=> tabVisible(t[0]) );
   if(!vis.length){ app.innerHTML=`<div class="login"><h2>Arbor Panolar</h2><p>Bu hesap için tanımlı bir bölüm yok. Yöneticiyle görüşün.</p><button class="btn" id="lo">Çıkış</button></div>`; document.getElementById("lo").onclick=doLogout; return; }
-  if(!vis.some(t=>t[0]===state.tab)) state.tab=vis[0][0];
+  /* GIRIS-ONC-SATIS-ACIK (19.11.2026, Melih): Satış menüden kalktı ama "Öncelik Belirle" ile açılabilsin — gizli sekme geçerli sayılır */
+  const GIZLI_TAB=[["satis","Satış"]], gzl=GIZLI_TAB.find(t=>t[0]===state.tab&&tabVisible(t[0]));
+  if(!gzl&&!vis.some(t=>t[0]===state.tab)) state.tab=vis[0][0];
   /* MENU-DUGME: menü öğeleri */
   const ust=vis.filter(t=>t[0]!=="mali"&&t[0]!=="formlar"&&t[0]!=="ozel"), malOk=vis.some(t=>t[0]==="mali");
   const mBtn=(k,ad,akt)=>`<button data-t="${k}" class="${akt?'active':''}">${esc(ad)}</button>`;
@@ -338,7 +340,7 @@ function renderApp(){
   mnHTML+=`<div class="mnsep"></div>`+vis.filter(t=>t[0]==="formlar"||t[0]==="ozel").map(t=>mBtn(t[0],t[1],state.tab===t[0])).join("")
     +`<a href="${URETIM_TAKIP_URL}" target="_blank" rel="noopener" title="Üretim Takip uygulamasını yeni sekmede aç">Üretim Takip ↗</a>`;
   const malAd=(MENU_MALI.find(m=>m[0]===state.maliBolum)||MENU_MALI[0])[1];
-  const curAd=state.tab==="mali"?"Mali · "+malAd:((vis.find(t=>t[0]===state.tab)||[])[1]||"");
+  const curAd=state.tab==="mali"?"Mali · "+malAd:((vis.find(t=>t[0]===state.tab)||gzl||[])[1]||"");
   app.innerHTML = `
    <header>
      <div class="mnbar" style="position:relative"><!-- MENU-DUGME URETIM-TAKIP-LINK -->
