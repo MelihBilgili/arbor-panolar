@@ -4,7 +4,8 @@
    Erişim: yazma my.form@ + int@; okuma + mk.form@; şantiye formu rolü yalnız kendi formunun kayıtlarını (rpc santiye_foto_liste) okur.
    SFOTO.form(el,{sb,kisi,secenek})  : MY Faaliyet — yeni ziyaret + açık kayıtlar (sağ tık / uzun bas → Kapandı)
    SFOTO.santiyeBlok(el,{sb,kod})    : şantiye formu üstü (#santiye-foto, otomatik) — salt-okur
-   SFOTO.mkRozet(sb,el)              : MK Faaliyet › Tıkanmış Şantiyeler — şantiye adına göre 📷 rozet + galeri */
+   SFOTO.mkRozet(sb,el)              : MK Faaliyet › Tıkanmış Şantiyeler — şantiye adına göre 📷 rozet + galeri
+   SFOTO.oeBlok(el,{sb})             : OE Faaliyet — Açılacak / İşlenen Sorun ve Öneriler (#oe-sorun, otomatik; OE-SORUN-ONERI 19.11.2026) */
 (function(){
   if(window.SFOTO) return;
   var BK="santiye-foto";
@@ -201,15 +202,67 @@
     document.body.appendChild(d);
     gridCiz(d.querySelector("#sfo_gk"),sb,rows,{});
   }
-  window.SFOTO={form:form,santiyeBlok:santiyeBlok,mkRozet:mkRozet,galeri:galeri,stil:stil};
+
+  /* ---------- OE-SORUN-ONERI (19.11.2026, Melih): OE Faaliyet — Şantiye Ziyareti kayıtlarının kopyası.
+     SÖ numarası boş → "Açılacak Sorun ve Öneriler" (kart + SÖ No kutusu); SÖ numarası işlenince → "İşlenen Sorun ve Öneriler"
+     bandında (kapalı başlar) tek satır, tıklayınca kart açılır. Veri rpc oe_sorun_liste / oe_sorun_so_yaz. ---------- */
+  function oeStil(){
+    if(document.getElementById("oesor-css")) return;
+    var s=document.createElement("style"); s.id="oesor-css";
+    s.textContent=".oesor .kart .so{display:flex;gap:6px;align-items:center;margin-top:7px}.oesor .kart .so input{flex:1;font:inherit;font-size:13px;border:1px solid #cdd6df;border-radius:6px;padding:5px 7px;min-width:0}"
+     +".oesor .kart .so button{border:0;border-radius:6px;padding:6px 10px;font:inherit;font-size:12.5px;font-weight:700;background:#2e7d54;color:#fff;cursor:pointer}"
+     +".oesor .kart .dk{display:inline-block;font-size:11px;font-weight:700;padding:0 6px;border-radius:4px;background:#eceff3;color:#5a6b7d;margin-left:4px}"
+     +".oesor .isl{margin-top:14px;border:1px solid #e3e9f0;border-radius:8px}.oesor .isl>h4{margin:0;padding:8px 10px;cursor:pointer;user-select:none;background:#f4f7fa;border-radius:8px}"
+     +".oesor .isl>h4:before{content:'▾ ';color:#5a6b7d}.oesor .isl.kapali>h4:before{content:'▸ '}.oesor .isl.kapali>.il{display:none}"
+     +".oesor .il .sat{border-top:1px solid #eef1f5}.oesor .il .sat>.ss{display:flex;gap:10px;padding:7px 10px;cursor:pointer;font-size:12.5px;align-items:baseline}.oesor .il .sat>.ss:hover{background:#f6f9fc}"
+     +".oesor .il .sat>.ss:before{content:'▸';color:#5a6b7d}.oesor .il .sat.acik>.ss:before{content:'▾'}.oesor .il .sat>.dt{display:none;padding:0 10px 10px}.oesor .il .sat.acik>.dt{display:block}"
+     +".oesor .il .ss b{color:#16324f;white-space:nowrap}.oesor .il .ss .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#3a4756}";
+    document.head.appendChild(s);
+  }
+  async function oeBlok(el,o){
+    if(!el) return; stil(); oeStil();
+    var sb=o.sb, r=await sb.rpc("oe_sorun_liste");
+    if(r.error){ el.innerHTML='<div class="sfo oesor"><h3>Açılacak Sorun ve Öneriler</h3><div class="ic"><div class="bos">Okunamadı: '+esc(r.error.message)+'</div></div></div>'; return; }
+    var rows=r.data||[], ac=rows.filter(function(x){ return !x.so_no; }), is=rows.filter(function(x){ return !!x.so_no; });
+    if(!rows.length){ el.innerHTML=""; return; }
+    var U=await imzala(sb,rows.map(function(x){ return x.yol; }));
+    var kart=function(x,soKutu){ var h=kartHtml(x,U[x.yol],true);
+      if(x.durum&&x.durum!=="Açık") h=h.replace('</div><div','</div><div').replace(/(<div class="m">)/,'$1<span class="dk">MY: '+esc(x.durum)+'</span> ');
+      if(soKutu) h=h.replace(/<\/div>$/,'<div class="so"><input data-so="'+x.id+'" placeholder="SÖ No" value=""><button type="button" data-sob="'+x.id+'">İşle</button></div><div class="msg" data-som="'+x.id+'"></div></div>');
+      else h=h.replace(/<\/div>$/,'<div class="m">SÖ No: <b>'+esc(x.so_no)+'</b>'+(x.so_isleyen?' · '+esc(x.so_isleyen):'')+(x.so_at?' · '+fd(String(x.so_at).slice(0,10)):'')+' <a href="#" data-sosil="'+x.id+'" style="color:#b40000;margin-left:6px">SÖ No\'yu sil</a></div></div>');
+      return h; };
+    var islAcik=el._islAcik, acikSat=el._acikSat||{};
+    el.innerHTML='<div class="sfo oesor'+(el._kapali?' kapali':'')+'"><h3>Açılacak Sorun ve Öneriler <span class="cnt">('+ac.length+') · MY şantiye ziyaretlerinden; SÖ numarası işlenince aşağıya iner</span></h3><div class="ic">'
+      +(ac.length?'<div class="grid">'+ac.map(function(x){ return kart(x,true); }).join("")+'</div>':'<div class="bos">SÖ numarası bekleyen kayıt yok.</div>')
+      +'<div class="isl'+(islAcik?'':' kapali')+'"><h4>İşlenen Sorun ve Öneriler <span class="bos">('+is.length+')</span></h4><div class="il">'
+      +(is.length?is.map(function(x){ return '<div class="sat'+(acikSat[x.id]?' acik':'')+'" data-id="'+x.id+'"><div class="ss"><b>SÖ '+esc(x.so_no)+'</b><b>'+esc(x.santiye)+'</b><span>'+fd(x.tarih)+'</span><span class="t">'+esc(x.sorun||x.aciklama||"")+'</span></div><div class="dt"><div class="grid">'+kart(x,false)+'</div></div></div>'; }).join(""):'<div class="bos" style="padding:8px 10px">Henüz işlenen yok.</div>')
+      +'</div></div></div></div>';
+    var kutu=el.firstChild;
+    kutu.querySelector("h3").onclick=function(){ el._kapali=!el._kapali; kutu.classList.toggle("kapali"); };
+    kutu.querySelector(".isl>h4").onclick=function(){ el._islAcik=!el._islAcik; this.parentNode.classList.toggle("kapali"); };
+    kutu.querySelectorAll(".sat>.ss").forEach(function(ss){ ss.onclick=function(){ var s=ss.parentNode, id=s.getAttribute("data-id"); s.classList.toggle("acik"); acikSat[id]=s.classList.contains("acik"); el._acikSat=acikSat; }; });
+    kutu.querySelectorAll("img[data-u]").forEach(function(i){ i.onclick=function(){ buyuk(i.getAttribute("data-u")); }; });
+    var isle=async function(id,deger){
+      var m=kutu.querySelector('[data-som="'+id+'"]');
+      var x=await sb.rpc("oe_sorun_so_yaz",{p_id:+id,p_so:deger});
+      if(x.error){ if(m){ m.className="msg err"; m.textContent="Kaydedilemedi: "+x.error.message; } else alert("Kaydedilemedi: "+x.error.message); return; }
+      oeBlok(el,o); };
+    kutu.querySelectorAll("button[data-sob]").forEach(function(b){ var id=b.getAttribute("data-sob"), inp=kutu.querySelector('input[data-so="'+id+'"]');
+      var git=function(){ var v=inp.value.trim(); if(!v){ var m=kutu.querySelector('[data-som="'+id+'"]'); m.className="msg err"; m.textContent="SÖ numarasını yazınız."; return; } b.disabled=true; isle(id,v); };
+      b.onclick=git; inp.addEventListener("keydown",function(e){ if(e.key==="Enter"){ e.preventDefault(); git(); } }); });
+    kutu.querySelectorAll("a[data-sosil]").forEach(function(a){ a.onclick=function(e){ e.preventDefault(); e.stopPropagation(); if(confirm("SÖ numarası silinsin ve kayıt Açılacak Sorun ve Öneriler'e geri dönsün mü?")) isle(a.getAttribute("data-sosil"),""); }; });
+  }
+  window.SFOTO={form:form,santiyeBlok:santiyeBlok,mkRozet:mkRozet,galeri:galeri,stil:stil,oeBlok:oeBlok};
   /* Şantiye formlarında otomatik çizim (#santiye-foto) */
   var t0=Date.now();
   async function oto(){
-    var es=document.getElementById("santiye-foto"); if(!es) return;
+    var es=document.getElementById("santiye-foto"), oe=document.getElementById("oe-sorun"); /* OE-SORUN-ONERI */ if(!es&&!oe) return;
     var cli=(typeof ARB_ACTIVE!=="undefined")?ARB_ACTIVE:null;
     if(!cli||document.getElementById("arb-gate")){ if(Date.now()-t0<60000) setTimeout(oto,700); return; }
     var s=null; try{ s=await cli.auth.getSession(); }catch(e){}
     if(!(s&&s.data&&s.data.session)){ if(Date.now()-t0<60000) setTimeout(oto,700); return; }
+    if(oe){ oeBlok(oe,{sb:cli}); setInterval(function(){ if(!oe.contains(document.activeElement)) oeBlok(oe,{sb:cli}); },5*60*1000); }
+    if(!es) return;
     var kod=es.getAttribute("data-kod")||((typeof ARB_STORE!=="undefined")?String(ARB_STORE).replace(/^arbform_santiye_/,""):"");
     if(kod) santiyeBlok(es,{sb:cli,kod:kod});
   }
