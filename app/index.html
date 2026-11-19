@@ -586,7 +586,7 @@ async function grPrimSart(){
     (r.kisiler||[]).forEach(kd=>{ (KF[kd]=KF[kd]||[]).push(!!(s&&s>=due)); }); });
   /* ETUT-PRIM-DK1 (19.11.2026, Melih): Etüt personelinin önerilen primi. Yol-yemek hariç ödenen etüt prim toplamı her ay DK1 toplamıyla
      orantılı değişir: Hedef = (önceki ödeme ayı Σ(ödenen − yol-yemek)) × DK1(bu ödeme ayı) / DK1(önceki ödeme ayı); k = Hedef / Σ TH Öneri;
-     kişi = TH Öneri × k + Yol-Yemek → Uyarı sütununa. DK1 ayı = ERP damgasının bir önceki ayı (DK1-AY-ONCEKI). Önceki ay satırı TH Öneri'nin
+     kişi = TH Öneri × k + Yol-Yemek, 100 TL katına yuvarlanır (ETUT-PRIM-YUZ) → Uyarı sütununa. DK1 ayı = ERP damgasının bir önceki ayı (DK1-AY-ONCEKI). Önceki ay satırı TH Öneri'nin
      kopyasıysa (formdan otomatik yazılan) ödenmiş sayılmaz. */
   const EUY={}, ETH={};
   try{ const mpBy={}; MP.forEach(m=>mpBy[m.id]=m); const nn=v=>Number(v)||0;
@@ -599,7 +599,7 @@ async function grPrimSart(){
     let net=0, thT=0; E.forEach(e=>{ const m=mpBy[e.maas_prim_id], v=AY[m.id+"|"+kPrev]; if(v!=null&&v!=="") net+=Number(v)-nn(m.yol_yemek); thT+=nn(e.th_oneri); });
     if(dkAy[kCur]&&dkAy[kPrev]&&net>0&&thT>0){ const hedef=net*dkAy[kCur]/dkAy[kPrev], k=hedef/thT, f=v=>Math.round(v).toLocaleString("tr-TR");
       E.forEach(e=>{ const m=mpBy[e.maas_prim_id], th=nn(e.th_oneri), yy=nn(m.yol_yemek); ETH[m.kisi_kod]=th;
-        EUY[m.kisi_kod]=`Önerilen ödeme: ${f(th*k+yy)} TL (TH ${f(th)} × ${k.toLocaleString("tr-TR",{maximumFractionDigits:3})} + Yol-Yemek ${f(yy)}; DK1 ${f(dkAy[kPrev])}→${f(dkAy[kCur])} dk)`; }); } }catch(_){}
+        EUY[m.kisi_kod]=`Önerilen ödeme: ${f(Math.round((th*k+yy)/100)*100)} TL (TH ${f(th)} × ${k.toLocaleString("tr-TR",{maximumFractionDigits:3})} + Yol-Yemek ${f(yy)}; DK1 ${f(dkAy[kPrev])}→${f(dkAy[kCur])} dk)`; }); } }catch(_){}
   const kBy={}; K.forEach(r=>kBy[r.kod]=r);
   const L=MP.filter(m=>m.kisi_kod&&kBy[m.kisi_kod]&&kBy[m.kisi_kod].aktif!==false)
     .filter(m=>son12(m.id)||/prim/i.test(String(m.prim_notu||"")))
