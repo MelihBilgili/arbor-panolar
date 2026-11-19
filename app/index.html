@@ -561,9 +561,11 @@ async function grPrimSart(){
     sb.from("form_takip").select("form_key,gunc_sikligi,son_guncelleme"),
     sb.from("mk_ay_islendi").select("*").order("id",{ascending:false}).limit(1),
     sb.from("form_erisim").select("yol,ad,sira,kisiler,herkes"),
-    sb.rpc("yd_temas_uyari")]); /* YD-TEMAS-GECIKME (12.11.2026): ilk temas iletim + 1-7 doldurma gecikmesi, 1 iş günü = 9 saat */
+    sb.rpc("yd_temas_uyari"),
+    sb.from("etut_personel").select("kisa,th_oneri,maas_prim_id"),
+    sb.from("etut_dk").select("erp_damga,tarih,created_at,dk1,dk2,dk3,dk4,yurt_ici")]); /* ETUT-PRIM-DK1 */ /* YD-TEMAS-GECIKME (12.11.2026): ilk temas iletim + 1-7 doldurma gecikmesi, 1 iş günü = 9 saat */
   const D=r=>(r&&!r.error)?(r.data||[]):[];
-  const [K,MP,AYR,PY,FT,MKA,FE,YU]=R.map(D); const UY={}; YU.forEach(x=>{ UY[x.kisi_kod]=x.uyari; });
+  const [K,MP,AYR,PY,FT,MKA,FE,YU,EP,EDK]=R.map(D); const UY={}; YU.forEach(x=>{ UY[x.kisi_kod]=x.uyari; });
   const AY={}; AYR.forEach(x=>{ AY[x.kisi_id+"|"+x.yil+"-"+x.ay]=x.tutar; });
   let PM=t0.getMonth(), PYr=t0.getFullYear(); if(PM===0){PM=12;PYr--;}
   const back=(y,m,n)=>{ let mm=m-n, yy=y; while(mm<=0){mm+=12;yy--;} return {y:yy,m:mm}; };
@@ -582,13 +584,29 @@ async function grPrimSart(){
     const canli= key==="mk_prim"?mkAt : key==="onur_sevk"?pyBy.oe_sevk : pyBy[key];
     const a=frmD(t.son_guncelleme), b=frmD(canli), s=(a&&b)?(a>b?a:b):(a||b);
     (r.kisiler||[]).forEach(kd=>{ (KF[kd]=KF[kd]||[]).push(!!(s&&s>=due)); }); });
+  /* ETUT-PRIM-DK1 (19.11.2026, Melih): Etüt personelinin önerilen primi. Yol-yemek hariç ödenen etüt prim toplamı her ay DK1 toplamıyla
+     orantılı değişir: Hedef = (önceki ödeme ayı Σ(ödenen − yol-yemek)) × DK1(bu ödeme ayı) / DK1(önceki ödeme ayı); k = Hedef / Σ TH Öneri;
+     kişi = TH Öneri × k + Yol-Yemek → Uyarı sütununa. DK1 ayı = ERP damgasının bir önceki ayı (DK1-AY-ONCEKI). Önceki ay satırı TH Öneri'nin
+     kopyasıysa (formdan otomatik yazılan) ödenmiş sayılmaz. */
+  const EUY={}, ETH={};
+  try{ const mpBy={}; MP.forEach(m=>mpBy[m.id]=m); const nn=v=>Number(v)||0;
+    const dkAy={}, son={}, R2=EDK.filter(r=>!r.yurt_ici), ayOf=d=>{ let y=2000+Number(d.slice(0,2)), m=Number(d.slice(2,4))-1; if(m<1){m=12;y--;} return y+"-"+m; };
+    R2.forEach(r=>{ if(!r.erp_damga) return; const a=ayOf(r.erp_damga); if(!son[a]||r.erp_damga>son[a]) son[a]=r.erp_damga; });
+    R2.forEach(r=>{ let a; if(r.erp_damga){ a=ayOf(r.erp_damga); if(r.erp_damga!==son[a]) return; } else { const d=String(r.tarih||r.created_at||""); if(!/^\d{4}-\d{2}/.test(d)) return; a=Number(d.slice(0,4))+"-"+Number(d.slice(5,7)); }
+      dkAy[a]=(dkAy[a]||0)+nn(r.dk1)+2*nn(r.dk2)+3*nn(r.dk3)+5*nn(r.dk4); });
+    const p1=back(PYr,PM,1), kCur=PYr+"-"+PM, kPrev=p1.y+"-"+p1.m;
+    const E=EP.filter(e=>e.maas_prim_id&&mpBy[e.maas_prim_id]);
+    let net=0, thT=0; E.forEach(e=>{ const m=mpBy[e.maas_prim_id], v=AY[m.id+"|"+kPrev]; if(v!=null&&v!=="") net+=Number(v)-nn(m.yol_yemek); thT+=nn(e.th_oneri); });
+    if(dkAy[kCur]&&dkAy[kPrev]&&net>0&&thT>0){ const hedef=net*dkAy[kCur]/dkAy[kPrev], k=hedef/thT, f=v=>Math.round(v).toLocaleString("tr-TR");
+      E.forEach(e=>{ const m=mpBy[e.maas_prim_id], th=nn(e.th_oneri), yy=nn(m.yol_yemek); ETH[m.kisi_kod]=th;
+        EUY[m.kisi_kod]=`Önerilen ödeme: ${f(th*k+yy)} TL (TH ${f(th)} × ${k.toLocaleString("tr-TR",{maximumFractionDigits:3})} + Yol-Yemek ${f(yy)}; DK1 ${f(dkAy[kPrev])}→${f(dkAy[kCur])} dk)`; }); } }catch(_){}
   const kBy={}; K.forEach(r=>kBy[r.kod]=r);
   const L=MP.filter(m=>m.kisi_kod&&kBy[m.kisi_kod]&&kBy[m.kisi_kod].aktif!==false)
     .filter(m=>son12(m.id)||/prim/i.test(String(m.prim_notu||"")))
     .filter(m=>{ const f=KF[m.kisi_kod]||[], ek=PRIM_SART_EK[m.kisi_kod]; /* PRIM-SART-FORMSUZ: aylık formu olmayan prim alan şartı sağlamış sayılır */
       return f.every(Boolean)&&(!ek||ek({t0,due})); })
-    .filter(m=>{ const v=AY[m.id+"|"+PYr+"-"+PM]; return v==null||v===""; }) /* PRIM-SART-ODENMIS-YOK: önceki ay primi dolu olan gösterilmez */
-    .map(m=>({kod:m.kisi_kod, ad:kBy[m.kisi_kod].tam_ad||m.kisi, uy:UY[m.kisi_kod]||"", yy:m.yol_yemek, pa:AY[m.id+"|"+PYr+"-"+PM], av:avgOf(m.id)}))
+    .filter(m=>{ const v=AY[m.id+"|"+PYr+"-"+PM]; return v==null||v===""||(ETH[m.kisi_kod]!=null&&Number(v)===ETH[m.kisi_kod]); }) /* PRIM-SART-ODENMIS-YOK: önceki ay primi dolu olan gösterilmez */
+    .map(m=>({kod:m.kisi_kod, ad:kBy[m.kisi_kod].tam_ad||m.kisi, uy:[UY[m.kisi_kod],EUY[m.kisi_kod]].filter(Boolean).join(" · "), yy:m.yol_yemek, pa:AY[m.id+"|"+PYr+"-"+PM], av:avgOf(m.id)}))
     .sort((a,b)=>String(a.ad).localeCompare(String(b.ad),"tr"));
   const n=v=>(v==null||v==="")?'<span class="gr-muted">—</span>':Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0});
   const rows=L.length?L.map(x=>`<tr><td>${(x.kod==="ÖB"||x.kod==="MK")/* GIRIS-MK-PRIM-POP */?`<a href="#" class="gr-obprim" data-kod="${esc(x.kod)}" title="${x.kod==="MK"?"MK Faaliyet primleri":"ÖB Performans Primi"}" style="color:#1d5fa8;text-decoration:underline;cursor:pointer">${esc(x.ad)}</a>`:esc(x.ad)}</td><td class="n">${n(x.yy)}</td><td class="n">${n(x.av)}</td><td style="color:#b40000;font-size:11px;white-space:normal;min-width:220px;max-width:460px">${x.uy?esc(x.uy):""}</td></tr>`).join("")
