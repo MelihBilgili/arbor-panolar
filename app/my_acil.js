@@ -40,6 +40,7 @@
      +"table.mya tr.my-ksbas td{cursor:pointer;user-select:none}table.mya.ks-kapali tr.my-ks{display:none}"
      +"table.mya tr.my-tbbas td{cursor:pointer;user-select:none}table.mya.tb-kapali tr.my-tb{display:none}" /* MY-TERMIN-BANT */ /* MY-KESIN-BANT */
      +".my-kg{color:#b40000;font-weight:700;margin-right:5px}input.my-kes{font:inherit;font-size:11.5px;border:1px solid #d9a3b6;border-radius:4px;padding:0 3px;background:#fff;color:#1c2430}input.my-kes:disabled{opacity:.6}"
+     +".my-kz{display:inline-block;background:#c62828;color:#fff;font-weight:600;border-radius:3px;padding:0 4px;font-size:11px}input.my-kes{width:92px}input.my-kes.kz{background:#c62828;color:#fff;border-color:#c62828}input.my-kes.kz::-webkit-calendar-picker-indicator{filter:invert(1)}" /* KES-GGAA-OE */
      +"input.my-ack{font:inherit;font-size:12px;width:30ch;border:1px solid #d9a3b6;border-radius:4px;padding:1px 6px;background:#fff;color:#1c2430}input.my-ack:focus{outline:none;border-color:#b0003a}input.my-ack:disabled{opacity:.6}"
      +"table.mya td.w.mack{white-space:nowrap;min-width:30ch;max-width:52ch;overflow:hidden;text-overflow:ellipsis} /* MY-TEK-SATIR (10.11.2026, Melih): satirlar tek satir, en yeni aciklama basta, tamami hover */"+"table.mya.nr-kapali tr.my-nr{display:none}table.mya tr.my-nr td{background:#fff;border-bottom-color:#e6eaef}table.mya tr.my-nrbas td{cursor:pointer;user-select:none}table.mya tr.my-sh td{background:#fff;border-bottom-color:#e6eaef}table.mya tr.my-sh button.del{border:0;background:none;color:#9aa5b1;cursor:pointer;font-size:12px;padding:0 2px}table.mya tr.my-sh button.del:hover{color:#b40000}"; /* MY-DURUM-MK-OE */ /* MY-ACK-SATIR (06.11.2026, Melih/OE): açıklama kayıtları alt alta, tamamı görünür */
     document.head.appendChild(s);
@@ -75,7 +76,7 @@
     var ack=gr||mod==="oe"; /* MY-ACIKLAMA-OE (06.11.2026, Melih): Açıklama Ekle sütunu OE Faaliyet'te de (rpc my_aciklama_ekle onur.form@ → "OE" önekli) */
     /* MY-KESIN-YUKLEME (06.11.2026, Melih): Kesinleşen Yükleme Tarihi (OE girer; Giriş'te MB de). Durum 3 Sevke Hazır + boş → kırmızı satır "Yükleme tarihi gir";
        tarih girilenler beyaz zeminle altta "Yükleneceği Kesinleşenler" grubunda (kesin tarihe göre). */
-    var kesEd=(mod==="oe"||gr);
+    var kesEd=(mod==="oe"); /* KES-GGAA-OE (20.11.2026, Melih): Kesinleşen Yükleme Tarihi yalnız OE Faaliyet'te girilir, diğer yerlerde salt-okur */
     if(mod==="oe"&&el._oeAcik===undefined){ el._oeAcik=1; el._tbAcik=true; el._ksAcik=true; } /* OE-BANT-ACIK (19.11.2026, Melih): OE Faaliyet'te Yükleme Planlaması Beklenenler ve Yükleneceği Kesinleşenler açık başlar */
     var kesR=rows.filter(function(r){ return !!r.kesin; }).sort(function(a,b){ return String(a.kesin).localeCompare(String(b.kesin))||String(a.no).localeCompare(String(b.no)); });
     var anaR=rows.filter(function(r){ return !r.kesin; });
@@ -95,8 +96,8 @@
     var shz=function(r){ var n=dno(r); return n===3||n===8; }; var kesOE=function(r){ return !!r.no&&!r.kesin&&shz(r)&&r.g_tip!=="MO"; }; /* MY-OE-ENGEL: OE notunun anlamı sunucuda (my-oe-engel) okunur */ /* MY-KESIN-OE-GOREV */ /* MY-SEVKE-HAZIR-8 (10.11.2026, Melih): PEM 3 ve PRJ 8 Sevke Hazir -> kirmizi + Yukleme tarihi gir */
     var kesHtml=function(r){
       var kz=!r.kesin&&shz(r);
-      if(kesEd) return (kz?'<span class="my-kg">Yükleme tarihi gir</span>':'')+'<input type="date" class="my-kes" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" value="'+esc(r.kesin?String(r.kesin).slice(0,10):"")+'">';
-      return r.kesin?'<b>'+fd(r.kesin)+'</b>':(kz?'<span class="my-kg">Yükleme tarihi gir</span>':'');
+      if(kesEd) return '<input type="date" class="my-kes'+(kz?' kz':'')+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'" value="'+esc(r.kesin?String(r.kesin).slice(0,10):"")+'">';
+      return r.kesin?'<b>'+fd(r.kesin)+'</b>':(kz?'<span class="my-kz">gg.aa.yy</span>':''); /* KES-GGAA-OE: "Yükleme tarihi gir" yerine kırmızı zemin beyaz gg.aa.yy */
     }; /* MY-ACIKLAMA-EKLE (28.10.2026): Giriş panosunda "Açıklama Ekle" sütunu (yalnız MB) */
     var shH=sh.length?('<tr class="my-grp"><td colspan="'+ncol+'">ŞAHSİ PEM\'LER ('+sh.length+')</td></tr>'+sh.map(function(r){ var e=r.erp||{}, g=sg({tur:"PEM",durum_erp:e.durum,tarih:e.termin});
       return '<tr class="my-sh" data-id="'+esc(r.id)+'" data-tur="PEM" data-no="'+esc(r.kod)+'"><td class="w" style="max-width:24ch" title="'+esc(e.durum)+'">'+esc(e.durum)+'</td>'+sgTd(g)+'<td>PEM '+esc(r.kod)+'</td>'

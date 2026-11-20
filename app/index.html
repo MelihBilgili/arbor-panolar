@@ -181,7 +181,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="giris_ust.js?v=261118a"></script><!-- GIRIS-IKI-YIL · GIRIS-UST-ORTAK · GIRIS-CARI-TAMSAYI · GIRIS-SELARB-TEK-EKSEN · GIRIS-YUKLEME-FT · GIRIS-GRAFIK-BIRLES · GIRIS-YEKSEN-15 · GIRIS-ALACAK-PEMBE · GIRIS-ALACAK-GRAFIK-YOK -->
-<script src="my_acil.js?v=261120b"></script><!-- MY-FAALIYET · GIRIS-YPB-ACIK -->
+<script src="my_acil.js?v=261120c"></script><!-- MY-FAALIYET · GIRIS-YPB-ACIK · KES-GGAA-OE -->
 <script src="situ_yukleme.js?v=261110"></script><!-- SITU-YUKLEME -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -639,7 +639,7 @@ async function grPrimSart(){
     let net=0, thT=0; E.forEach(e=>{ const m=mpBy[e.maas_prim_id], v=AY[m.id+"|"+kPrev]; if(v!=null&&v!=="") net+=Number(v)-nn(m.yol_yemek); thT+=nn(e.th_oneri); });
     if(dkAy[kCur]&&dkAy[kPrev]&&net>0&&thT>0){ const hedef=net*dkAy[kCur]/dkAy[kPrev], k=hedef/thT, f=v=>Math.round(v).toLocaleString("tr-TR");
       E.forEach(e=>{ const m=mpBy[e.maas_prim_id], th=nn(e.th_oneri), yy=nn(m.yol_yemek); ETH[m.kisi_kod]=th;
-        EUY[m.kisi_kod]=`Önerilen: ${f(Math.round((th*k+yy)/100)*100)} TL (TH ${f(th)} × ${k.toLocaleString("tr-TR",{maximumFractionDigits:3})} + Yol-Yemek ${f(yy)})` /* ETUT-PRIM-DK1-METIN-YOK (19.11.2026): DK1 ibaresi yazılmaz */; }); } }catch(_){}
+        EUY[m.kisi_kod]=`Önerilen: ${f(Math.round((th*k+yy)/100)*100)} TL (TH ${f(th)} × ${k.toLocaleString("tr-TR",{minimumFractionDigits:1,maximumFractionDigits:1})} + Yol-Yemek)` /* ETUT-PRIM-METIN-KISA (20.11.2026, Melih): katsayı tek ondalık, Yol-Yemek tutarsız */ /* ETUT-PRIM-DK1-METIN-YOK (19.11.2026): DK1 ibaresi yazılmaz */; }); } }catch(_){}
   const kBy={}; K.forEach(r=>kBy[r.kod]=r);
   const L=MP.filter(m=>m.kisi_kod&&kBy[m.kisi_kod]&&kBy[m.kisi_kod].aktif!==false)
     .filter(m=>son12(m.id)||/prim/i.test(String(m.prim_notu||"")))
