@@ -377,7 +377,13 @@ async function listeKur(){
     if(C.rwc==null){ const e2=m2.get(nrmAd2(C.c))||[]; if(e2.length) C.rwc=e2[0].rwc; } });
   /* URUN-KONFIG-SADE: mükerrer cam engeli — aynı ad (boşluk/Akustik/Ar We farkı yok sayılır) + aynı Ug tek satır; sertifika camı önce, listede ilk sıradaki kalır */
   const gor=new Set(CAM.map(C=>nrmAd(C.c)+"|"+C.ug));
-  LISTE=G.filter(x=>{ const k=nrmAd(x.c)+"|"+x.ug; if(gor.has(k)) return false; gor.add(k); return true; }).concat(CAM);
+  /* URUN-KONFIG-HESAP (20.11.2026, Melih "a"): hesaplayıcı kombinasyonları (cam_konfig, kaynak ≠ Cam Listesi, tek cam hariç) da değerlendirilir; Cam Fiyat modelden (marka/terim nötr, CAM-TERIM-ONAY) */
+  let H=window._HSP||null;
+  if(!H){ H=[]; try{ for(let f0=0;;f0+=1000){ const q=await ARB_ACTIVE.from("cam_konfig").select("kaynak,kombinasyon,yapi,ug,lt,g,rw,ctr,kalinlik").neq("kaynak","Cam Listesi").neq("yapi","Tek").eq("aktif",true).order("id").range(f0,f0+999); if(q.error||!q.data) break; H=H.concat(q.data); if(q.data.length<1000) break; } }catch(e){} window._HSP=H; }
+  const GH=H.map(r=>{ const ug=nn(r.ug), lt=nn(r.lt), rwc=nn(r.rw)!=null&&nn(r.ctr)!=null?nn(r.rw)+nn(r.ctr):null, k=nn(r.kalinlik);
+    return {c:String(r.kombinasyon||"").trim(),komb:r.kombinasyon,k:k>0?k:null,g:nn(r.g),tl:lt==null?null:Math.round(lt*1000)/10,ug,y:r.yapi||yapiAd(r.kombinasyon),rwc,db:{},liste:true,hsp:r.kaynak}; })
+    .filter(x=>x.c&&(x.ug!=null||x.rwc!=null));
+  LISTE=G.concat(GH).filter(x=>{ const k=nrmAd(x.c)+"|"+x.ug; if(gor.has(k)) return false; gor.add(k); return true; }).concat(CAM);
 }
 const sertMi=(S,C)=>!C.liste&&(C.db[S.s]!=null||(C.ref&&S.uw[C.ref]!=null));
 function satirlar(genis){
@@ -437,7 +443,7 @@ function camFiyat(C){
     satin:q.sat,temper:tp,acoustic:q.ac,extraclear:q.xc,fireproof:q.fp,argon:q.ar,we,karolaj:0,egrisel:0,l_ortm2:Math.log(Math.min(Math.max(m2/adet,0.05),4)),
     tl:v.tl,rwctr:v.rw,sf:v.sf,l_m2:Math.log(Math.min(Math.max(m2,0.2),300)),kucuk_m2:0,kucuk_adet:0};
   /* CAM-KURAL (17.11.2026): fiyat ../cam/ DB.fiyat (EU kuralları + simetri + kardeş havuzu) */ const qr=Object.assign({},q,{c:q.c.slice().reverse()}),_d=t=>{const a=perfM(qr,t),b=perfM(q,t);return a==null||b==null?0:a-b;},vr=qr.c.join("/")!==q.c.join("/")?{tl:v.tl==null?null:v.tl+_d("tl"),sf:v.sf==null?null:v.sf+_d("sf"),rw:v.rw==null?null:v.rw+_d("rw")}:null;
-  C._fy=CAMM.DB.fiyat(Object.assign({},q,{tp}),v,{frm:"duz",ort:m2/adet,m2,adet},vr,q.solar?(()=>{const qL=Object.assign({},q,{solar:0,coat:"",lowe:1});return {tl:perfM(qL,"tl"),sf:perfM(qL,"sf")};})():null).unit*CAMM.KAT; /* CAM-SOLAR-KURAL */ return C._fy;
+  C._fy=CAMM.DB.fiyat(Object.assign({},q,{tp}),v,{frm:"duz",ort:m2/adet,m2,adet},vr,q.solar?(()=>{const qL=Object.assign({},q,{solar:0,coat:"",lowe:q.rf?q.lowe:1}); /* CAM-TERIM-ONAY */return {tl:perfM(qL,"tl"),sf:perfM(qL,"sf")};})():null).unit*CAMM.KAT; /* CAM-SOLAR-KURAL */ return C._fy;
 }
 let SORT={k:"fiyat",d:1}; /* URUN-KONFIG-FIYAT-SIRA: sıralama sabit, cam fiyatı artan */
 const KOL=[
@@ -489,7 +495,7 @@ function ciz(){
     const uwTxt=r.uwG==null?"–":(r.uwUst?"≤ ":"")+f(r.uwG,2); /* URUN-KONFIG-LISTE: Uw camın Ug'sine bağlı — tahmini değil */
     const ufTxt=r.uf==null?"–":(typeof r.uf==="number"?f(r.uf,2):esc(r.uf));
     return '<tr data-i="'+i+'" class="'+(yakin?"yakin":"")+(r.sert?" sert":"")+'" title="'+(r.sert?"Sertifikadaki cam":"")+'"><td class="l seri" title="'+esc(r.S.a)+'">'+esc(sAd(r))+'</td>'
-      +'<td class="l cam">'+esc(r.C.c)+'</td><td class="fy" title="'+(r.C._baz?esc(VARY_AD[r.C._vt]+" varyantı: ana cam fiyatı + "+f(r.C._ek,2)+" €/m²"):"Cam Fiyatlandırma modeli: düz, 10 adet / 10 m²")+'">'+(camFiyat(r.C)==null?(CAMM?"–":"…"):f(camFiyat(r.C),2))+'</td><td class="l">'+r.C.y+'</td>'
+      +'<td class="l cam"'+(r.C.hsp?' title="Hesaplayıcı: '+esc(r.C.hsp)+'"':'')+'>'+esc(r.C.c)+'</td><td class="fy" title="'+(r.C._baz?esc(VARY_AD[r.C._vt]+" varyantı: ana cam fiyatı + "+f(r.C._ek,2)+" €/m²"):"Cam Fiyatlandırma modeli: düz, 10 adet / 10 m²")+'">'+(camFiyat(r.C)==null?(CAMM?"–":"…"):f(camFiyat(r.C),2))+'</td><td class="l">'+r.C.y+'</td>'
       +'<td class="'+(r.asim?"kal-asim":"")+'" title="'+(r.asim?"Serinin max cam kalınlığını aşıyor":"")+'">'+f(r.C.k,1)+(r.asim?" ⚠":"")+'</td>'
       +'<td class="'+bad("ug")+'">'+f(r.C.ug,2)+'</td><td class="'+(r.est?"est":"")+(uwHesap(r.S,r.C)==null?bad("uw"):"")+'" title="'+(r.est?"Serinin "+(r.uwUst?"daha yüksek Ug'li":"aynı Ug'li")+" sertifika camının Uw'si"+(r.uwUst?" (üst sınır)":"")+"":"")+'">'+uwTxt+'</td>'+(function(){ const v=uwHesap(r.S,r.C); return '<td class="'+(v!=null&&h.uw!=null&&v>h.uw?"bad":"")+'" title="'+(v==null?"Bu seri için geometri/Uf yok":esc(uwHesapTip(r.S,r.C)))+'">'+(v==null?"–":f(v,2))+'</td>'; })()
       +'<td class="'+bad("tl")+'">'+(r.C.tl==null?"–":r.C.tl)+'</td>'+(function(){ const v=tlwHesap(r.S,r.C); return '<td title="'+(v==null?"":esc(tlwTip(r.S,r.C)))+'">'+(v==null?"–":f(v,0))+'</td>'; })()+'<td class="'+bad("g")+'">'+(r.C.g==null?"–":f(r.C.g*100,0))+'</td>'+(function(){ const v=swHesap(r.S,r.C); return '<td title="'+(v==null?"":esc(swTip(r.S,r.C)))+'">'+(v==null?"–":f(v*100,0))+'</td>'; })()+'<td>'+(r.C.rwc==null?"–":r.C.rwc)+'</td><td class="'+bad("db")+'" title="'+(r.dbK?esc("Sertifika camı: "+r.dbK.c+" · cam Rw+Ctr "+r.dbK.rwc+" dB (bu cam "+r.C.rwc+" dB)"+(r.dbAlt?" — alt sınır":"")):"")+'">'+(r.db==null?"–":(r.dbAlt?"≥ ":"")+r.db)+'</td>'

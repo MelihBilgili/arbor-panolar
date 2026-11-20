@@ -292,7 +292,7 @@ function hesapla(){
   const u={frm:ka&&eg?"ke":ka?"karolaj":eg?"egrisel":"duz",ort:m2/ad,m2,adet:ad}, v={tl,sf,rw};
   const qr=Object.assign({},q,{c:q.c.slice().reverse()}),_d=t=>{const a=perfM(qr,t),b=perfM(q,t);return a==null||b==null?0:a-b;};
   const vr=qr.c.join("/")!==q.c.join("/")?{tl:tl==null?null:tl+_d("tl"),sf:sf==null?null:sf+_d("sf"),rw:rw==null?null:rw+_d("rw")}:null;
-  const Z=M.DB.fiyat(Object.assign({},q,{tp:q.tp?1:0}),v,u,vr,q.solar?(()=>{const qL=Object.assign({},q,{solar:0,coat:"",lowe:1});return {tl:perfM(qL,"tl"),sf:perfM(qL,"sf")};})():null), fy=Z.unit*M.KAT, K=M.DB.kural;
+  const Z=M.DB.fiyat(Object.assign({},q,{tp:q.tp?1:0}),v,u,vr,q.solar?(()=>{const qL=Object.assign({},q,{solar:0,coat:"",lowe:q.rf?q.lowe:1}); /* CAM-TERIM-ONAY */return {tl:perfM(qL,"tl"),sf:perfM(qL,"sf")};})():null), fy=Z.unit*M.KAT, K=M.DB.kural;
   out.innerHTML='<div class="sat"><b>Model okuması:</b> camlar '+esc(q.c.join(" / "))+' · toplam cam '+f(q.tg,1)+' mm · boşluk '+q.cu+' mm · '+esc(etiket(F))+'</div>'
    +'<div class="sat"><b>Tlg</b> '+f(tl,2)+' · <b>Sfg</b> '+f(sf,2)+' · <b>Cam Rw+Ctr</b> '+f(rw,0)+' dB'+(tah.length?' <span class="g">('+tah.join(", ")+' Cam Listesi\'ndeki en yakın camlardan tahmin)</span>':'')+'</div>'
    +'<div class="sat big">Cam Fiyat: <b>'+f(fy,2)+' €/m²</b>'+(Z.g?' <span class="g">(grup düzeltmesi ×'+f(Math.exp(Z.adj),3)+', '+f(Z.n,1)+' sipariş ağırlığı — kendi ve kardeş kombinasyonlar)</span>':'')+'</div>'
