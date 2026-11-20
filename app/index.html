@@ -589,7 +589,7 @@ async function grOzel(){
    Şart = Personel › "Aylık Güncellenecek Formlar"daki formlarının HEPSİ bu ayın son tarihinde (ayın ilk iş günü) ya da sonra
    güncellenmiş (FRM_FK ve canlı damgalar loadRef ile aynı). Aylık formu olmayan prim alanlar şartı sağlamış sayılır (PRIM-SART-FORMSUZ, 06.11.2026; ek şart PRIM_SART_EK'e).
    Sütunlar = Personel tablosunun 2 · 8 · 12 · 13. sütunları: Ad Soyad · Yol-Yemek · önceki ay prim · son 12 ay ort. prim. */
-const PRIM_SART_EK={}; /* PRIM-SART-BASLIK-SADE (09.11.2026): başlıkta ay yok */ /* PRIM-SART-ONCEKI-AY-YOK (09.11.2026, Melih): önceki ay (Ekim 2026) prim sütunu çıkarıldı */
+const PRIM_SART_EK={}; const PRIM_SART_DAHIL=["BÖ"]; /* PRIM-SART-BASLIK-SADE (09.11.2026): başlıkta ay yok */ /* PRIM-SART-ONCEKI-AY-YOK (09.11.2026, Melih): önceki ay (Ekim 2026) prim sütunu çıkarıldı */
 async function grPrimSart(){
   const t0=grNow(); t0.setHours(0,0,0,0);
   if(t0<new Date(2026,10,1)) return "";
@@ -647,7 +647,11 @@ async function grPrimSart(){
       return f.every(Boolean)&&(!ek||ek({t0,due})); })
     .filter(m=>{ const v=AY[m.id+"|"+PYr+"-"+PM]; return v==null||v===""||(ETH[m.kisi_kod]!=null&&Number(v)===ETH[m.kisi_kod]); }) /* PRIM-SART-ODENMIS-YOK: önceki ay primi dolu olan gösterilmez */
     .map(m=>({kod:m.kisi_kod, ad:kBy[m.kisi_kod].tam_ad||m.kisi, uy:[UY[m.kisi_kod],EUY[m.kisi_kod]].filter(Boolean).join(" · "), yy:m.yol_yemek, pa:AY[m.id+"|"+PYr+"-"+PM], av:avgOf(m.id)}))
-    .sort((a,b)=>String(a.ad).localeCompare(String(b.ad),"tr"));
+    ;
+  /* PRIM-SART-DAHIL (20.11.2026, Melih): bu kişiler Personel panosunda satırı olmasa da her zaman listelenir */
+  PRIM_SART_DAHIL.forEach(kd=>{ if(!kBy[kd]||kBy[kd].aktif===false||L.some(x=>x.kod===kd)) return; const m=MP.find(x=>x.kisi_kod===kd);
+    L.push({kod:kd, ad:kBy[kd].tam_ad||kd, uy:[UY[kd],EUY[kd]].filter(Boolean).join(" · "), yy:m?m.yol_yemek:null, pa:null, av:m?avgOf(m.id):null}); });
+  L.sort((a,b)=>String(a.ad).localeCompare(String(b.ad),"tr"));
   const n=v=>(v==null||v==="")?'<span class="gr-muted">—</span>':Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0});
   const rows=L.length?L.map(x=>`<tr><td>${(x.kod==="ÖB"||x.kod==="MK")/* GIRIS-MK-PRIM-POP */?`<a href="#" class="gr-obprim" data-kod="${esc(x.kod)}" title="${x.kod==="MK"?"MK Faaliyet primleri":"ÖB Performans Primi"}" style="color:#1d5fa8;text-decoration:underline;cursor:pointer">${esc(x.ad)}</a>`:esc(x.ad)}</td><td class="n">${n(x.yy)}</td><td class="n">${n(x.av)}</td><td style="color:#b40000;font-size:11px;white-space:normal;min-width:220px;max-width:460px">${x.uy?esc(x.uy):""}</td></tr>`).join("")
     :`<tr><td colspan="4" class="gr-muted">Bu ay şartı sağlayan henüz yok</td></tr>`;
