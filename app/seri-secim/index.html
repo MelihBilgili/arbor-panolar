@@ -225,22 +225,22 @@ const $=id=>document.getElementById(id);
 })();
 /* SERI_VERI — kaynak: UW ve dB tablosu.xls (09.10.2026). Tablo 1: cam × seri Rw+Ctr; Tablo 2: seri Uf/ψg/Uw (Ug 1,1 çift 24 mm; Ug 0,7 üçlü 36 mm; Ug 0,6 üçlü 44 mm).
    uw anahtarları: d = Ug 1,1 çift (4/16/4), t36 = Ug 0,7 üçlü (4/12/4/12/4), t44 = Ug 0,6 üçlü (4/16/4/16/4). */
-const SERI=[
+const SERI=[ /* URUN-KONFIG-MAKSCAM-261119 (20.11.2026, MKB talebi, Melih onayı): maks cam = teknik sunum "Cam Kalınlıklarına Göre Seri Seçimleri"; sabit/kanat ayrı olanlarda kanat (küçük) değer, sabit maxNot'ta. Önceki: 78s 40, 90s 52, 68f/68f Bal.Door/68m 52, 78t (+Top/Side, 78t-a Bal.Door) 44, 78a Top/Side 44, 78a 52.28 */
   {s:"68s",a:"Simplist",max:31,uf:1.40,p2:0.032,p3:null,uw:{d:1.30}},
-  {s:"78s",a:"Simplist",max:40,uf:1.28,p2:0.032,p3:0.03,uw:{d:1.24,t36:0.96}},
-  {s:"90s",a:"Simplist",max:52,uf:1.15,p2:0.032,p3:0.03,uw:{d:1.20,t36:0.92,t44:0.85}},
+  {s:"78s",a:"Simplist",max:42,uf:1.28,p2:0.032,p3:0.03,uw:{d:1.24,t36:0.96}},
+  {s:"90s",a:"Simplist",max:54,uf:1.15,p2:0.032,p3:0.03,uw:{d:1.20,t36:0.92,t44:0.85}},
   {s:"58f",a:"Flat",max:52,maxNot:"51-52 mm (Enes Uzun, 27.10.2026)",uf:"1,4853; 1,4814; 1,5538",p2:0.035,p3:0.03,uw:{d:1.40,t36:0.97}}, /* URUN-KONFIG-EU-TERMAL (27.10.2026, Melih): 58f Uf FTI test değerleri (ahşap ayrımı kalktı) */
-  {s:"68f",a:"Flat",max:52,uf:1.30,p2:0.035,p3:0.032,uw:{d:1.27,t36:0.99,t44:0.93}},
-  {s:"68f Bal.Door",a:"Flat",max:52,uf:"1,37; 1,37; 1,37; 3,627",p2:0.035,p3:0.032,uw:{d:1.36}},
+  {s:"68f",a:"Flat",max:55,maxNot:"Sabit 60 / Kanat 55 mm — teknik sunum (Melike Başaran, Enes Uzun teyidi, 20.11.2026)",uf:1.30,p2:0.035,p3:0.032,uw:{d:1.27,t36:0.99,t44:0.93}},
+  {s:"68f Bal.Door",a:"Flat",max:55,maxNot:"Sabit 60 / Kanat 55 mm — teknik sunum (Melike Başaran, Enes Uzun teyidi, 20.11.2026)",uf:"1,37; 1,37; 1,37; 3,627",p2:0.035,p3:0.032,uw:{d:1.36}},
   {s:"90f",a:"Flat",max:52,uf:"0,86; 0,86; 1,02; 0,86",p2:0.032,p3:0.028,uw:{}}, /* URUN-KONFIG-90F-P2 (04.11.2026, Melih): çift cam ψg 0,032 (90s ile aynı); maks cam EU'dan bekleniyor */ /* URUN-KONFIG-90F-MAX (05.11.2026): Enes Uzun maili — 90f maks cam 52 mm (90s ile aynı) */ /* URUN-KONFIG-90F (04.11.2026, Melih): PHI sertifikası 1024 (2145wi04, 31.12.2026) — Head/Jamb (OH1/OJ1) 122 mm Uf 0,86, Bottom (OB1) 122 mm Uf 1,02, ψg 0,028 (44 mm üçlü, Swisspacer Ultimate); çift cam ψg ve maks cam belgede yok. Hesap 1230×1480 ve Ug 0,90 için sertifikadaki Uw 0,97 ile tutuyor. */
-  {s:"68m",a:"Minima",max:52,uf:1.20,p2:0.035,p3:0.032,uw:{d:1.22,t36:0.94,t44:0.87}},
-  {s:"78t",a:"Casement",max:44,uf:"1,2090; 1,3850; 1,30; 1,30",p2:0.033,p3:0.032,uw:{d:1.21}}, /* URUN-KONFIG-EU-AF (03.11.2026): Enes Uzun 03.11 tablosu — 78t = 78t Top Swing değerleri, 78a = 78a Side Hung değerleri, 78t-a Bal.Door kesit Af/Uf */
-  {s:"78t Top Swing",a:"Casement",max:44,uf:"1,2090; 1,3850; 1,30; 1,30",p2:0.033,p3:0.032,uw:{d:1.21}},
-  {s:"78t Side Hung",a:"Casement",max:44,uf:"1,2090; 1,3850; 1,30; 1,30",p2:0.033,p3:0.032,uw:{d:1.21}},
-  {s:"78a Top Swing",a:"Casement",max:44,uf:"1,3987; 1,7407; 1,3392; 1,3392",p2:0.033,p3:0.032,uw:{d:1.28}},
-  {s:"78a Side Hung",a:"Casement",max:44,uf:"1,3906; 1,7413; 1,3424; 1,3424",p2:0.033,p3:0.032,uw:{d:1.28}},
-  {s:"78t-a Bal.Door",a:"Casement",max:44,uf:"1,1940; 1,9980; 1,3060; 1,3060",p2:0.033,p3:0.032,uw:{d:1.26}},
-  {s:"78a",a:"Casement",max:52.28,uf:"1,3906; 1,7413; 1,3424; 1,3424",p2:0.033,p3:0.032,uw:{d:1.28}},
+  {s:"68m",a:"Minima",max:55,maxNot:"Sabit 60 / Kanat 55 mm — teknik sunum (Melike Başaran, Enes Uzun teyidi, 20.11.2026)",uf:1.20,p2:0.035,p3:0.032,uw:{d:1.22,t36:0.94,t44:0.87}},
+  {s:"78t",a:"Casement",max:46,maxNot:"Sabit 60 / Kanat 46 mm — teknik sunum (Melike Başaran, Enes Uzun teyidi, 20.11.2026)",uf:"1,2090; 1,3850; 1,30; 1,30",p2:0.033,p3:0.032,uw:{d:1.21}}, /* URUN-KONFIG-EU-AF (03.11.2026): Enes Uzun 03.11 tablosu — 78t = 78t Top Swing değerleri, 78a = 78a Side Hung değerleri, 78t-a Bal.Door kesit Af/Uf */
+  {s:"78t Top Swing",a:"Casement",max:46,maxNot:"Sabit 60 / Kanat 46 mm — teknik sunum (Melike Başaran, Enes Uzun teyidi, 20.11.2026)",uf:"1,2090; 1,3850; 1,30; 1,30",p2:0.033,p3:0.032,uw:{d:1.21}},
+  {s:"78t Side Hung",a:"Casement",max:46,maxNot:"Sabit 60 / Kanat 46 mm — teknik sunum (Melike Başaran, Enes Uzun teyidi, 20.11.2026)",uf:"1,2090; 1,3850; 1,30; 1,30",p2:0.033,p3:0.032,uw:{d:1.21}},
+  {s:"78a Top Swing",a:"Casement",max:48,maxNot:"Sabit 60 / Kanat 48 mm — teknik sunum (Melike Başaran, Enes Uzun teyidi, 20.11.2026)",uf:"1,3987; 1,7407; 1,3392; 1,3392",p2:0.033,p3:0.032,uw:{d:1.28}},
+  {s:"78a Side Hung",a:"Casement",max:48,maxNot:"Sabit 60 / Kanat 48 mm — teknik sunum (Melike Başaran, Enes Uzun teyidi, 20.11.2026)",uf:"1,3906; 1,7413; 1,3424; 1,3424",p2:0.033,p3:0.032,uw:{d:1.28}},
+  {s:"78t-a Bal.Door",a:"Casement",max:46,maxNot:"Sabit 60 / Kanat 46 (78t; 78a 48) mm — teknik sunum (Melike Başaran, Enes Uzun teyidi, 20.11.2026)",uf:"1,1940; 1,9980; 1,3060; 1,3060",p2:0.033,p3:0.032,uw:{d:1.26}},
+  {s:"78a",a:"Casement",max:48,maxNot:"Sabit 60 / Kanat 48 mm — teknik sunum (Melike Başaran, Enes Uzun teyidi, 20.11.2026)",uf:"1,3906; 1,7413; 1,3424; 1,3424",p2:0.033,p3:0.032,uw:{d:1.28}},
   {s:"58e Kurtağızlı",a:"Klasik",max:31,uf:null,p2:null,p3:null,uw:{}},
   {s:"68k",a:"Klasik",max:44,uf:1.40,p2:0.032,p3:0.03,uw:{d:1.27,t36:0.98,t44:0.91}},
   {s:"68p",a:"Klasik",max:31,uf:"1,1957; 2,7689; 1,2705; 1,1781; 1,1013; 1,1274; 1,1006",p2:0.032,p3:0.03,uw:{d:1.33}},
