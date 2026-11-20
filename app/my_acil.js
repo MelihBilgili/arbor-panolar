@@ -418,7 +418,7 @@
     m.innerHTML='<div class="box" style="max-width:460px"><button class="x" title="Kapat">×</button>'
       +'<h4>Acile çevirme talebi · '+esc(r.tur==="PEM"?"PEM "+r.kod:r.kod)+'</h4><div class="mut" style="margin-bottom:10px">'+esc(r.proje)+'</div>'
       +'<label class="mys-fl">Açıklama<textarea id="ms_ac" rows="3"></textarea></label>'
-      +'<label class="mys-fl">Hedef Yükleme Tarihi<input id="ms_hd" type="date" value="'+esc(hd)+'"></label>'
+      +'<label class="mys-fl">Şantiyede İstenen Tarih<input id="ms_hd" type="date" value=""></label>' /* SANTIYE-ISTENEN-B (20.11.2026, Melih): hedef = istenen − nakliye süresi (rpc nakliye_hedef) */
       +'<label class="mys-fl">Yükleme Şekli<select id="ms_sk"><option selected>Kamyon</option><option>Uçak</option></select></label>'
       +'<div class="mut" style="font-size:11.5px;margin:4px 0 10px">Talep MY onayına gönderilir; onaylanınca satır acil takibe alınır.</div>'
       +'<div style="display:flex;gap:8px;justify-content:flex-end"><button class="mys-btn sec" id="ms_vz">Vazgeç</button><button class="mys-btn" id="ms_ok">Talebi gönder</button></div></div>';
@@ -427,9 +427,12 @@
     m.addEventListener("click",function(e){ if(e.target===m||e.target.classList.contains("x")) kapat(); });
     m.querySelector("#ms_vz").onclick=kapat;
     m.querySelector("#ms_ok").onclick=async function(){
-      var hedef=m.querySelector("#ms_hd").value, sekil=m.querySelector("#ms_sk").value, aciklama=m.querySelector("#ms_ac").value.trim();
-      if(!hedef){ alert("Hedef yükleme tarihini giriniz."); return; }
+      var ist=m.querySelector("#ms_hd").value, sekil=m.querySelector("#ms_sk").value, aciklama=m.querySelector("#ms_ac").value.trim();
+      if(!ist){ alert("Şantiyede istenen tarihi giriniz."); return; }
       var b=m.querySelector("#ms_ok"); b.disabled=true; b.textContent="Gönderiliyor…";
+      var nh=await sb.rpc("nakliye_hedef",{p_istenen:ist,p_no:r.no,p_form:(typeof FORM_KODU!=="undefined"?FORM_KODU:null)});
+      if(nh.error||!nh.data){ b.disabled=false; b.textContent="Talebi gönder"; alert("Hedef yükleme hesaplanamadı: "+((nh.error&&nh.error.message)||"")); return; }
+      var hedef=String(nh.data).slice(0,10); aciklama=(aciklama?aciklama+" · ":"")+"Şantiyede istenen: "+fd(ist);
       var ok=await sTalep(sb,r,"Acil",{hedef:hedef,sekil:sekil,aciklama:aciklama},sonra,msg);
       if(ok) kapat(); else { b.disabled=false; b.textContent="Talebi gönder"; }
     };
@@ -475,23 +478,23 @@
     try{ var x0=await sb.rpc("yi_sevk_pem_liste"); if(x0.error) throw x0.error; R=x0.data||[]; }catch(e){ el.innerHTML=""; return; }
     if(!R.length){ el.innerHTML=""; return; }
     if(!document.getElementById("mksp-css")){ var st=document.createElement("style"); st.id="mksp-css"; st.textContent="td.mksp-tg{background:#c62828!important;color:#fff!important;font-weight:700;cursor:pointer;text-align:center}td[data-mksp]{cursor:pointer}"; document.head.appendChild(st); }
-    var tarihli=function(r){ return (r.durum==="Acil"&&r.hedef)||r.plan; };
+    var tarihli=function(r){ return (r.durum==="Acil"&&r.hedef)||r.istenen; }; /* SANTIYE-ISTENEN-B: EB şantiyede istenen tarihi girer, hedef = istenen − nakliye (my_plan_yaz p_istenen) */
     var eksik=R.filter(function(r){ return !tarihli(r); }).length;
-    el.innerHTML='<div class="myab" style="margin-bottom:14px"><h3>SEVKE HAZIR PEM\'LER <span style="font-weight:400;font-size:12px;color:#5a6b7d">· Yurt içi'+(eksik?' · '+eksik+' satırda hedef yükleme tarihi girilmedi':'')+'</span></h3><div class="myw"><table class="mya"><thead><tr>'
-      +'<th>PEM</th><th>Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin<br>Tarihi</th><th>Hedef<br>Yükleme Tarihi</th></tr></thead><tbody>'
+    el.innerHTML='<div class="myab" style="margin-bottom:14px"><h3>SEVKE HAZIR PEM\'LER <span style="font-weight:400;font-size:12px;color:#5a6b7d">· Yurt içi'+(eksik?' · '+eksik+' satırda şantiyede istenen tarih girilmedi':'')+'</span></h3><div class="myw"><table class="mya"><thead><tr>'
+      +'<th>PEM</th><th>Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin<br>Tarihi</th><th>Şantiyede<br>İstenen Tarih</th></tr></thead><tbody>'
       +R.map(function(r){ var ac=r.durum==="Acil"&&r.hedef;
-        var hd=ac?'<td><b>'+fd(r.hedef)+'</b></td>':(r.plan?'<td data-mksp="1" title="Hedef yükleme tarihini değiştir">'+fd(r.plan)+'</td>':'<td class="mksp-tg" data-mksp="1">Tarih gir</td>');
+        var hd=ac?'<td title="Acil hedef yükleme tarihi"><b>'+fd(r.hedef)+'</b></td>':(r.istenen?'<td data-mksp="1" title="Şantiyede istenen tarihi değiştir · Hedef yükleme '+fd(r.plan)+'">'+fd(r.istenen)+'</td>':'<td class="mksp-tg" data-mksp="1">Tarih gir</td>');
         return '<tr class="my-ks" data-no="'+esc(r.no)+'"><td title="'+esc(r.no+' · '+(r.durum_erp||''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td><td class="w" style="max-width:32ch" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" style="max-width:46ch" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'+hd+'</tr>'; }).join("")
       +'</tbody></table></div></div>';
     el.querySelectorAll("td[data-mksp]").forEach(function(td){ td.addEventListener("click",function(){
       if(td.querySelector("input")) return; var no=td.parentNode.getAttribute("data-no"), r=R.filter(function(x){ return x.no===no; })[0]; if(!r) return;
-      var es=td.innerHTML, cl=td.className, bitti=false; td.className=""; td.innerHTML='<input type="date" value="'+esc(r.plan?String(r.plan).slice(0,10):"")+'" style="font:inherit;font-size:12px">';
+      var es=td.innerHTML, cl=td.className, bitti=false; td.className=""; td.innerHTML='<input type="date" value="'+esc(r.istenen?String(r.istenen).slice(0,10):"")+'" style="font:inherit;font-size:12px">';
       var i=td.querySelector("input"); i.focus(); try{ if(i.showPicker) i.showPicker(); }catch(e){}
       var geri=function(){ if(bitti) return; bitti=true; td.className=cl; td.innerHTML=es; };
       i.addEventListener("keydown",function(e){ if(e.key==="Escape"){ e.preventDefault(); geri(); } });
       i.addEventListener("blur",function(){ setTimeout(geri,150); });
       i.addEventListener("change",async function(){ if(bitti) return; bitti=true;
-        var x=await sb.rpc("my_plan_yaz",{p_tur:"PEM",p_no:r.no,p_tarih:i.value||null,p_proje:r.proje||null});
+        var x=await sb.rpc("my_plan_yaz",{p_tur:"PEM",p_no:r.no,p_tarih:null,p_proje:r.proje||null,p_istenen:i.value||null});
         if(x.error){ alert("Kaydedilemedi: "+x.error.message); td.className=cl; td.innerHTML=es; return; }
         yiSevkPemBlok(el,o); });
     }); });
