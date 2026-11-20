@@ -312,6 +312,9 @@ async function yukle(){
   SATIR = SATIR.filter(x=>x.donem===donem);
   /* SANTIYE-SON-CEKIM (2026-11-10): yalnız dönemin en son ERP çekimindeki projeler; önceki çekimden kalan (artık kapsamda olmayan) satırlar gösterilmez */
   { const md=SATIR.reduce((m,x)=>(x.erp_damga||"")>m?x.erp_damga:m,""); SATIR=SATIR.filter(x=>(x.erp_damga||"")===md); }
+  /* SANTIYE-SEVKEDILEN-YOK (20.11.2026, Melih): 9 Sevk Edildi ve üstü (9.1 numune dahil) satırlar formda gösterilmez — trg_santiye_erp_guncel bunların erp_damga'sını da güncelliyor */
+  SATIR = SATIR.filter(x=>{ const v=parseFloat(String(x.proje_durumu||"").trim().split(/\s+/)[0]); return isNaN(v)||v<9; });
+  if(!SATIR.length){ box.innerHTML=""; ileriYukle(donem); kvzYaz(null); document.getElementById("ay_btn").disabled=true; return; }
   const d0 = SATIR[0].erp_tarih;
   kvzYaz(SATIR[0].erp_damga);
   /* SANTIYE-SEVK-BLOK: 8 / 8.1 durumundakiler soru almaz → üstte tablo; onay kontrolüne girmez */
