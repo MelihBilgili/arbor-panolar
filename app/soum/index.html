@@ -1712,16 +1712,52 @@ function kfUygula(){ const K=S.kf, el=$("pnAlan"); if(!K||!el||!el.dataset.kurul
     if(!e.dataset.kfb){ e.dataset.kfb=1; e.addEventListener("input",()=>{ if(!S.kf) return; if(id==="pn_vr"){ KF[7][1].forEach(x=>delete S.kf[x[1]]); delete S.kf.vr_var; } else delete S.kf[id]; }); } }); }
 /* SOUM-261118-SAYIM (18.11.2026, Melike Başaran): "Proje bilgileri" penceresinde "Sayım" sekmesi (ayrıca üstte "Sayım" düğmesi). Sütunlar Sayım.xlsx başlıkları;
    son satıra yazılınca altına yeni boş satır eklenir. Formu kaydet JSON'una (sayim) ve Etüt Tutanak PDF'ine girer. Montaj tipi: İç/Dış/Tünel montaj seçimi. */
-const SAYIM=[["poz","Poz No."],["cephe","Cephe"],["bina","Bina"],["kat","Kat"],["tip","Tipoloji"],["adet","Adet"],["db","dB"],["pmr","PMR"],["sde","Sde-Sdb"],["cuisine","Cuisine"],["kk","Kanat Kısıtlayıcı"]];
+const SAYIM0=[["poz","Poz No."],["cephe","Cephe"],["bina","Bina"],["kat","Kat"],["tip","Tipoloji"],["adet","Adet"],["db","dB"]], SYEK0=[["pmr","PMR"],["sde","Sde-Sdb"],["cuisine","Cuisine"],["kk","Kanat Kısıtlayıcı"]];
+/* SOUM-261120-MKB2-SY (20.11.2026, Melike Başaran): Sayım başlıkları alttaki hücrelere göre ortalı; Cephe/Bina/Kat başlıkları değiştirilebilir (Pozlar Facade/Building başlığına da o ad yazılır);
+   PMR / Sde-Sdb / Cuisine / Kanat Kısıtlayıcı başlıkları değiştirilebilir ve "+" ile çoğaltılabilir — dolu hücreler 3 · Pozlar'da eşleşen Pencad ekstra malzemesinin tikine yazılır,
+   başlık bir ekstra malzemeyle eşleşmezse başlığın altında "hangi ekstra malzeme?" seçimi çıkar; Poz No. Pencad poz numaralarında yoksa, Adet Pencad adedinden farklıysa uyarı (hücre kırmızı). */
+const syEkL=()=>{ const B=BAS(); if(!Array.isArray(B.syEk)) B.syEk=SYEK0.map(([k,t])=>({k,ad:t})); return B.syEk; };
+const syAd=(k,t)=>{ const v=String(((BAS().syAd)||{})[k]||"").trim(); return v||t; };
+const SAYIMg=()=>SAYIM0.concat(syEkL().map(x=>[x.k,x.ad]));
+const SAYIM=new Proxy([],{get:(o,p)=>{ const L=SAYIMg(); const v=L[p]; return typeof v==="function"?v.bind(L):v; }});
+const SY_DUZ=["cephe","bina","kat"];
+function syEkEs(x){ const B=BAS(), M=B.syMap||{}; if(M[x.k]!=null){ const e=(S.ekstra||[]).find(e=>String(e.kod)===String(M[x.k])); if(e) return e; }
+  const n=nrmTxt(x.ad||""); if(!n) return null; const E=S.ekstra||[];
+  const kur={pmr:/pmr|z kol/,kk:/kisitlayici|limitor|fa183/,sde:/\bsde\b|sdb|salle|banyo|buzlu|satine/,cuisine:/cuisine|mutfak/}; let re=null;
+  if(/pmr/.test(n)) re=kur.pmr; else if(/kisitlayici|limiteur|restrictor/.test(n)) re=kur.kk; else if(/cuisine|mutfak/.test(n)) re=kur.cuisine; else if(/sde|sdb/.test(n)) re=kur.sde;
+  return E.find(e=>re?re.test(nrmTxt(e.ad+" "+e.kod)):nrmTxt(e.ad).includes(n))||null; }
+const syEvet=v=>{ v=String(v||"").trim(); return !!v&&!/^(0|-|yok|hayir|non|no)$/i.test(nrmTxt(v)); };
+function syEkUygula(){ if(!S.poz||!S.poz.length||!(S.ekstra||[]).length) return; const nk=x=>nrmTxt(String(x)).replace(/\s+/g,"");
+  const bul=v=>{ const k=nk(v); return S.poz.findIndex(p=>[p.no,p.kod,p.kodPdf].some(x=>x!=null&&x!==""&&(nk(x)===k||nk(String(x).split(/\s+-\s+/)[0])===k))); };
+  syEkL().forEach(x=>{ const R=(S.sayim||[]).filter(r=>String(r.poz||"").trim()&&syEvet(r[x.k])); if(!R.length) return; const e=syEkEs(x); if(!e) return;
+    const T=[...new Set(R.map(r=>bul(r.poz)).filter(i=>i>=0))]; if(T.length) e.tik=T.sort((a,b)=>a-b); }); }
+function syUyari(kutu){ const u=kutu&&kutu.parentNode&&kutu.parentNode.querySelector("[data-syuy]"); if(!u) return; const tb=kutu.querySelector("tbody"); if(tb) tb.querySelectorAll("input[data-sy]").forEach(i=>{ i.style.background=""; i.title=""; });
+  if(!S.poz||!S.poz.length){ u.innerHTML=""; return; } const nk=x=>nrmTxt(String(x)).replace(/\s+/g,""), T=x=>String(x||"").trim(), L=[];
+  const bul=v=>{ const k=nk(v); return S.poz.findIndex(p=>[p.no,p.kod,p.kodPdf].some(x=>x!=null&&x!==""&&(nk(x)===k||nk(String(x).split(/\s+-\s+/)[0])===k))); };
+  const top={}; (S.sayim||[]).forEach((r,i)=>{ if(!r||!T(r.poz)) return; const j=bul(r.poz); if(j<0){ L.push("Poz No. «"+esc(T(r.poz))+"» Pencad raporundaki poz numaralarında yok."); const c=tb&&tb.querySelector('[data-sy="'+i+'"][data-syk="poz"]'); if(c){ c.style.background="#ffd6d6"; c.title="Pencad'de yok"; } return; }
+    if(T(r.adet)){ top[j]=top[j]||{n:0,i:[]}; top[j].n+=+String(r.adet).replace(",",".")||0; top[j].i.push(i); } });
+  Object.keys(top).forEach(j=>{ const p=S.poz[j], a=top[j].n; if(Math.abs(a-(+p.F||0))>1e-9){ L.push("Poz "+esc(p.no)+" ("+esc(p.kod)+"): Sayım adedi "+fN(a,0)+", Pencad adedi "+fN(+p.F||0,0)+"."); top[j].i.forEach(i=>{ const c=tb&&tb.querySelector('[data-sy="'+i+'"][data-syk="adet"]'); if(c){ c.style.background="#ffd6d6"; c.title="Pencad adedi "+(p.F||0); } }); } });
+  syEkL().forEach(x=>{ if(!(S.sayim||[]).some(r=>r&&syEvet(r[x.k]))) return; if(!syEkEs(x)) L.push("«"+esc(x.ad||"(başlıksız)")+"» sütunu bir Pencad ekstra malzemesiyle eşleşmedi; başlığın altından hangi ekstra malzeme olduğunu seçiniz."); });
+  u.innerHTML=L.length?'<div style="margin-top:6px;padding:6px 8px;background:#fff3f3;border:1px solid #f0b4b4;border-radius:6px;color:#b00020;font-size:12px">'+L.map(x=>'• '+x).join("<br>")+'</div>':""; }
 S.sayim=[];
 const sayimDolu=r=>!!r&&SAYIM.some(([k])=>String(r[k]||"").trim());
 function sayimKur(kutu){ if(!kutu) return; S.sayim=(S.sayim||[]).filter(sayimDolu);
   const sat=(r,i)=>'<tr><td style="padding:2px 4px;color:#6b7c8d">'+(i+1)+'</td>'+SAYIM.map(([k])=>'<td style="padding:2px"><input data-sy="'+i+'" data-syk="'+k+'" value="'+esc(r[k]||"")+'" style="width:100%;min-width:'+(k==="tip"?"12ch":"7ch")+';padding:3px 5px;border:1px solid #cdd6df;border-radius:4px;font:inherit;font-size:12px"></td>').join("")+'</tr>';
-  kutu.innerHTML='<table style="border-collapse:collapse;width:100%;font-size:12px"><thead><tr style="background:#f2f5f8;text-align:left"><th style="padding:4px"></th>'+SAYIM.map(([,t])=>'<th style="padding:4px;white-space:nowrap">'+esc(t)+'</th>').join("")+'</tr><tr style="background:#f2f5f8"><th class="mini" style="padding:2px 4px" title="Excel gibi başlık filtresi">▼</th>'+SAYIM.map(([k])=>'<th style="padding:2px"><select data-syf="'+k+'" style="width:100%;font-size:11px;padding:1px"><option value="">(Tümü)</option></select></th>').join("")+'</tr></thead>' /* SOUM-261118-SYFILTRE */+'<tbody>'+S.sayim.concat([{}]).map(sat).join("")+'</tbody></table>';
+  const EKK=syEkL().map(x=>x.k), Es=S.ekstra||[];
+  const thH=([k,t])=>{ const ek=EKK.includes(k), x=ek?syEkL().find(y=>y.k===k):null; if(!ek&&!SY_DUZ.includes(k)) return '<th style="padding:4px;white-space:nowrap;text-align:center">'+esc(t)+'</th>';
+    const v=ek?x.ad:syAd(k,t), es=ek&&Es.length&&(S.sayim||[]).some(r=>r&&syEvet(r[k]))?syEkEs(x):null, mp=(BAS().syMap||{})[k];
+    return '<th style="padding:4px;text-align:center;vertical-align:top"><input data-syh="'+k+'" value="'+esc(v)+'" placeholder="'+esc(ek?"Başlık":t)+'" title="Başlık değiştirilebilir" style="width:100%;min-width:7ch;text-align:center;font-weight:bold;font-size:12px;border:1px dashed #b8c4cf;border-radius:4px;background:#fff;padding:2px">'
+      +(ek&&Es.length?'<select data-sym="'+k+'" title="Bu sütun hangi Pencad ekstra malzemesi?" style="width:100%;font-size:10px;margin-top:2px'+((S.sayim||[]).some(r=>r&&syEvet(r[k]))&&!es?';background:#ffd6d6':'')+'"><option value="">'+(es&&mp==null?'oto: '+esc(String(es.ad).slice(0,18)):'— ekstra malzeme?')+'</option>'+Es.map(e=>'<option value="'+esc(e.kod)+'"'+(String(mp)===String(e.kod)?' selected':'')+'>'+esc(String(e.ad).slice(0,30))+'</option>').join("")+'</select>':'')+'</th>'; };
+  kutu.innerHTML='<table style="border-collapse:collapse;width:100%;font-size:12px"><thead><tr style="background:#f2f5f8;text-align:center"><th style="padding:4px"><button type="button" data-syek title="PMR / Sde-Sdb / Cuisine / Kanat Kısıtlayıcı gibi yeni ekstra malzeme sütunu ekle" style="border:0;border-radius:4px;background:#16324f;color:#fff;cursor:pointer;padding:1px 6px">+</button></th>'+SAYIM.map(thH).join("")+'</tr><tr style="background:#f2f5f8"><th class="mini" style="padding:2px 4px" title="Excel gibi başlık filtresi">▼</th>'+SAYIM.map(([k])=>'<th style="padding:2px"><select data-syf="'+k+'" style="width:100%;font-size:11px;padding:1px"><option value="">(Tümü)</option></select></th>').join("")+'</tr></thead>' /* SOUM-261118-SYFILTRE */+'<tbody>'+S.sayim.concat([{}]).map(sat).join("")+'</tbody></table>';
   const tb=kutu.querySelector("tbody");
   const bag=sc=>sc.querySelectorAll("[data-sy]").forEach(inp=>inp.oninput=()=>{ const i=+inp.dataset.sy; S.sayim[i]=S.sayim[i]||{}; S.sayim[i][inp.dataset.syk]=inp.value;
     if(i===tb.rows.length-1&&String(inp.value).trim()){ tb.insertAdjacentHTML("beforeend",sat({},i+1)); bag(tb.rows[tb.rows.length-1]); } });
-  bag(tb); syFiltreKur(kutu); }
+  bag(tb); syFiltreKur(kutu);
+  { if(!kutu.parentNode.querySelector("[data-syuy]")) kutu.insertAdjacentHTML("afterend",'<div data-syuy></div>'); const yen=()=>{ syEkUygula(); syUyari(kutu); };
+    kutu.querySelectorAll("[data-syh]").forEach(h=>h.onchange=()=>{ const k=h.dataset.syh, v=h.value.trim(), x=syEkL().find(y=>y.k===k); if(x){ x.ad=v; } else { const B=BAS(); B.syAd=B.syAd||{}; B.syAd[k]=v; } sayimKur(kutu); sayimPoz(); });
+    kutu.querySelectorAll("[data-sym]").forEach(sl=>sl.onchange=()=>{ const B=BAS(); B.syMap=B.syMap||{}; if(sl.value) B.syMap[sl.dataset.sym]=sl.value; else delete B.syMap[sl.dataset.sym]; yen(); try{ pozCiz(); hesapla(); }catch(e){} sayimKur(kutu); });
+    const pb=kutu.querySelector("[data-syek]"); if(pb) pb.onclick=()=>{ const L=syEkL(); let n=1; while(L.some(y=>y.k==="ek"+n)) n++; L.push({k:"ek"+n,ad:""}); sayimKur(kutu); const h=kutu.querySelector('[data-syh="ek'+n+'"]'); if(h) h.focus(); };
+    tb.addEventListener("change",()=>{ syUyari(kutu); }); kutu.addEventListener("focusout",e=>{ if(e.target&&e.target.dataset&&e.target.dataset.sy!=null){ syEkUygula(); syUyari(kutu); } }); syUyari(kutu); } }
 /* SOUM-261118-SYFILTRE (18.11.2026, Melike Başaran): Sayım sekmesinde Excel gibi başlık filtreleri — her sütunda (Tümü) / değerler / (Boş); seçilen filtre sarı.
    Yalnız görünümü süzer (veri, Formu kaydet ve PDF değişmez); yazma için son boş satır her zaman görünür. */
 S.syF={};
@@ -1732,16 +1768,17 @@ function syFiltreKur(kutu){ kutu.querySelectorAll("[data-syf]").forEach(s=>{ con
     s.innerHTML='<option value="">(Tümü)</option>'+V.map(v=>'<option value="'+esc(v)+'"'+(v===f?' selected':'')+'>'+esc(v)+'</option>').join("")+'<option value="\u0001"'+(f==="\u0001"?' selected':'')+'>(Boş)</option>'; s.style.background=f?"#fff3c4":""; };
   doldur(); s.onfocus=doldur; s.onmousedown=doldur; s.onchange=()=>{ S.syF[k]=s.value; s.style.background=s.value?"#fff3c4":""; syFiltre(kutu); }; }); syFiltre(kutu); }
 function sayimTablo(){ const R=(S.sayim||[]).filter(sayimDolu); if(!R.length) return "";
-  return '<h2>Sayım</h2><table><thead><tr>'+SAYIM.map(([,t])=>'<th>'+esc(t)+'</th>').join("")+'</tr></thead><tbody>'+R.map(r=>'<tr>'+SAYIM.map(([k])=>'<td>'+esc(r[k]||"")+'</td>').join("")+'</tr>').join("")+'</tbody></table>'; }
+  return '<h2>Sayım</h2><table><thead><tr>'+SAYIM.map(([k,t])=>'<th>'+esc(SY_DUZ.includes(k)?syAd(k,t):t)+'</th>').join("") /* SOUM-261120-MKB2-SY */+'</tr></thead><tbody>'+R.map(r=>'<tr>'+SAYIM.map(([k])=>'<td>'+esc(r[k]||"")+'</td>').join("")+'</tr>').join("")+'</tbody></table>'; }
 /* SOUM-261118-SAYIMPOZ (18.11.2026, Melike Başaran): Sayım'da Cephe/Bina/Kat dolu satırlar, Poz No. ile eşleşen pozun 3 · Pozlar Facade/Building hücresine yazılır
    (Keşif Sayım Excel'iyle aynı kural: FR Façade / Bâtiment / Étage tek sütun; EN Facade + Building / Floor). Pencere kapanınca ve Pencad okununca uygulanır. */
-function sayimPoz(){ if(!S.poz||!S.poz.length) return; const T=x=>String(x||"").trim(), nk=x=>nrmTxt(String(x)).replace(/\s+/g,"");
+function sayimPoz(){ if(!S.poz||!S.poz.length) return; { const n=JSON.stringify((S.ekstra||[]).map(e=>e.tik)); syEkUygula(); if(JSON.stringify((S.ekstra||[]).map(e=>e.tik))!==n){ pozCiz(); hesapla(); } } /* SOUM-261120-MKB2-SY */ const T=x=>String(x||"").trim(), nk=x=>nrmTxt(String(x)).replace(/\s+/g,"");
   const R=(S.sayim||[]).filter(r=>T(r.poz)&&(T(r.cephe)||T(r.bina)||T(r.kat))); if(!R.length) return;
   const bul=r=>{ const k=nk(r.poz); return S.poz.findIndex(p=>[p.no,p.kod,p.kodPdf].some(x=>x!=null&&x!==""&&(nk(x)===k||nk(String(x).split(/\s+-\s+/)[0])===k))); };
   const M=R.map(r=>({s:{cep:T(r.cephe),bina:T(r.bina),kat:T(r.kat)},i:bul(r)})).filter(x=>x.i>=0); if(!M.length) return;
   const vC=M.some(x=>x.s.cep), vB=M.some(x=>x.s.bina), vK=M.some(x=>x.s.kat), en=EN();
   M.forEach(({s,i})=>{ const p=S.poz[i]; if(en){ if(s.cep) p.facade=s.cep; if(s.bina||s.kat) p.bina=[s.bina,s.kat].filter(Boolean).join(" / "); } else p.facade=[s.cep,s.bina,s.kat].filter(Boolean).join(" / "); });
-  if(en){ if(vC) BAS().fac="Facade"; if(vB||vK) BAS().bina=[vB&&"Building",vK&&"Floor"].filter(Boolean).join(" / "); } else BAS().fac=[vC&&"Façade",vB&&"Bâtiment",vK&&"Étage"].filter(Boolean).join(" / ");
+  const sA=(k,d)=>{ const v=String(((BAS().syAd)||{})[k]||"").trim(); return v||d; }; /* SOUM-261120-MKB2-SY: değiştirilen Cephe/Bina/Kat başlığı Pozlar başlığına */
+  if(en){ if(vC) BAS().fac=sA("cephe","Facade"); if(vB||vK) BAS().bina=[vB&&sA("bina","Building"),vK&&sA("kat","Floor")].filter(Boolean).join(" / "); } else BAS().fac=[vC&&sA("cephe","Façade"),vB&&sA("bina","Bâtiment"),vK&&sA("kat","Étage")].filter(Boolean).join(" / ");
   pozCiz(); hesapla(); }
 const kfSecim=(id,v)=>{ v=String(v||"").trim(); const SL=id==="pn_bina"?BINA:MONTAJ; /* SOUM-261120-BINA */ const o=!v||SL.includes(v)?SL:[v].concat(SL); return '<select data-kf="'+id+'" style="display:block;width:100%;padding:4px 6px;border:1px solid #cdd6df;border-radius:5px;font:inherit"><option value="">—</option>'+o.map(x=>'<option'+(x===v?' selected':'')+'>'+esc(x)+'</option>').join("")+'</select>'; };
 function kfAc(klasor,sekme,odak){ const el=$("pnAlan"), kur=el&&el.dataset.kuruldu, K=S.kf||{}, y=S.ydSec||null, X=(S.kesif&&S.kesif.pn)||{};
