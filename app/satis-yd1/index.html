@@ -450,7 +450,6 @@ const COLS=[
  {f:'kemer_karolaj',h:'Kemer/Karolaj',w:47,t:'sel',opts:['Yalnız kemer','Yalnız karolaj','Hiçbiri','Hepsi']},
  {f:'sartname_ahsap',h:'Şartname Ahşap?',w:49,t:'sel',opts:['Evet','Hayır']},
  {f:'teklif_birimi_notlari',h:'Teklif Birimi Notları',w:90,t:'note'},
- {f:'oncelik',h:'Öncelik',w:30,t:'sel',opts:['1','2','3']},
  {f:'teklif_teslim_tarihi',h:'Teklif Teslim Tarihi',w:62,t:'date'},
  {f:'agac',h:'Ağaç',w:55,t:'sel',opts:['ÇAM DKD','ÇAM KKK-20cm','ÇAM KKK-70cm','İROKO DKD','LAREKS DKD','MERANTİ DKD','MEŞE DKD','ACCOYA','OKALİPTUS DKD','OKALİPTUS KKK','SAPELLİ DKD']},
  {f:'iskonto_yuzde',h:'İskonto %',w:29,t:'text'},
@@ -525,12 +524,12 @@ async function sikiDegis(r){
 function newDraftRow(){ const rec={blok:BLOK}; COLS.forEach(c=>{ rec[c.f]=""; }); rec.para_birimi="EUR"; /* PB-EUR-VARSAYILAN (15.10.2026, Melih) */ rec.durum=null; rec.son_takip_notlari=null; rec.son_takip_tarihi=null; return rec; }
 function getRow(key){ return key==="draft"?DRAFT:ROWS[+key]; }
 function colFilled(r,idx){
-  if(idx>=1&&idx<=18){ const c=COLS[idx-1]; const v=r[c.f]; return v!=null && String(v).trim()!==""; }
+  if(idx>=1&&idx<=17){ const c=COLS[idx-1]; /* YD-ONCELIK-YOK (20.11.2026, Melih): Öncelik sütunu kaldırıldı, 14-21 → 13-20 */ const v=r[c.f]; return v!=null && String(v).trim()!==""; }
   const log=tkParseLog(r.son_takip_notlari,r.son_takip_tarihi), last=tkLatest(log);
   const noteOk=!!(last.n && String(last.n).trim());
-  if(idx===19) return !!last.t && noteOk;
-  if(idx===20) return !!(last.g||last.e) && noteOk; /* YD-GOREVLI */
-  if(idx===21) return noteOk;
+  if(idx===18) return !!last.t && noteOk;
+  if(idx===19) return !!(last.g||last.e) && noteOk; /* YD-GOREVLI */
+  if(idx===20) return noteOk;
   return false;
 }
 function rangeFilled(r,a,b){ for(let k=a;k<=b;k++){ if(!colFilled(r,k)) return false; } return true; }
@@ -542,9 +541,8 @@ function computeAutoTier(r){
 }
 function computeAutoTier0(r){
   if(!rangeFilled(r,1,6)) return 0;
-  if(rangeFilled(r,8,11) && rangeFilled(r,13,18) && (daysAgo(r.teklif_teslim_tarihi)||0)>=0) return 4; /* YD-TESLIM-GELECEK (19.11.2026, Melih): teslim tarihi bugünden ileride iken Teslim Edildi olmaz */ /* BEKLENIYOR-TESLIM (08.10.2026, Melih): Teslim Edildi = Teklif Bekleniyor şartları + 13-18 dolu */
-  if(colFilled(r,13) && rangeFilled(r,8,11)) return 3; /* BEKLENIYOR-8-11 (08.10.2026, Melih): Teklif Bekleniyor için 8-11 de dolu olmalı */
-  if(rangeFilled(r,8,11)) return 2;
+  if(rangeFilled(r,8,11) && rangeFilled(r,13,17) && (daysAgo(r.teklif_teslim_tarihi)||0)>=0) return 4; /* YD-TESLIM-GELECEK (19.11.2026, Melih): teslim tarihi bugünden ileride iken Teslim Edildi olmaz */ /* BEKLENIYOR-TESLIM (08.10.2026, Melih): Teslim Edildi = Teklif Bekleniyor şartları + 13-18 dolu */
+  if(rangeFilled(r,8,11)) return 3; /* BEKLENIYOR-8-11 (08.10.2026, Melih): Teklif Bekleniyor için 8-11 de dolu olmalı */ /* YD-ONCELIK-YOK: öncelik şartı yok; İncelendi yalnız ilgili kartı eksikse (ILG-ZORUNLU) */
   return 1;
 }
 /* YD-DURUM-KURAL: açılışta her satır için — ilk 6 sütun eksikse 1-3 arası (Talebi Geldi/İncelendi/Bekleniyor) durum boşaltılır;
@@ -562,8 +560,8 @@ async function durumDuzelt(r){
   }
   await maybeAutoAdvance(r);
 }
-function state5Ready(r){ return rangeFilled(r,1,6)&&rangeFilled(r,8,11)&&colFilled(r,13)&&rangeFilled(r,14,18); }
-function state6to11Ready(r){ return rangeFilled(r,19,21); }
+function state5Ready(r){ return rangeFilled(r,1,6)&&rangeFilled(r,8,11)&&rangeFilled(r,13,17); }
+function state6to11Ready(r){ return rangeFilled(r,18,20); }
 async function maybeAutoAdvance(r){
   const cur=DURUM_SIRA[r.durum]||0;
   if(cur>=5) return false;
@@ -742,10 +740,9 @@ function eksikBos(r,f,key){
   const i=COLS.findIndex(c=>c.f===f)+1; if(i<1) return false;
   const bos=r[f]==null||String(r[f]).trim()==="";
   if(!r.durum || r.durum==="Teklif Talebi Geldi") return bos && ((i>=1&&i<=6)||(i>=8&&i<=11)); /* YD-EKSIK-BOS2 (05.10.2026, Melih): "Teklif Talebi Geldi"de de boşlar pembe */
-  if(r.durum==="Teklif İncelendi" && f==="oncelik") return bos; /* ONC-PEMBE-BOS (07.10.2026, Melih): öncelik belirlenmişse pembe değil; takılma sebebi Müşteri hücresinde (ILG-ZORUNLU) */
   { /* EKSIK-DURUM-PEMBE (08.10.2026, Melih): durumun gerektirdiği boş hücre pembe — İncelendi 1-11, Bekleniyor 1-13, teslim ve sonrası 1-18 (7 ve 12 not sütunları hariç) */
     const ileri=["Teklif Teslim Edildi","Revizyon İstendi","Takip Bekleniyor","Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"];
-    const ust=r.durum==="Teklif İncelendi"?11:(r.durum==="Teklif Bekleniyor"?13:(ileri.indexOf(r.durum)>=0?18:0));
+    const ust=r.durum==="Teklif İncelendi"?11:(r.durum==="Teklif Bekleniyor"?12:(ileri.indexOf(r.durum)>=0?17:0)); /* YD-ONCELIK-YOK */
     if(ust && i<=ust && i!==7 && i!==12) return bos;
   }
   return false;
@@ -753,7 +750,7 @@ function eksikBos(r,f,key){
 /* YD-IKI-TABLO (16.11.2026, Melih): tablo ikiye ayrıldı — 1) durumu boş / Teklif Talebi Geldi / Teklif İncelendi / Teklif Bekleniyor (tkYasak):
    Ağaç, İskonto %, Net Tutar, Para Birimi ve takip sütunları yok, not sütunları geniş; 2) diğer durumlar: Gelen/İstenen Tarih,
    Talebe İlişkin Notlar, Şartname Ahşap?, Teklif Birimi Notları, Öncelik yok, Takip Notları geniş. Veri ve COLS değişmedi. */
-const YD_GIZ={1:['agac','iskonto_yuzde','net_tutar','para_birimi'],2:['gelen_tarih','istenen_tarih','talebe_iliskin_notlar','sartname_ahsap','teklif_birimi_notlari','oncelik']};
+const YD_GIZ={1:['agac','iskonto_yuzde','net_tutar','para_birimi'],2:['gelen_tarih','istenen_tarih','talebe_iliskin_notlar','sartname_ahsap','teklif_birimi_notlari']};
 const YD_NOT_W={1:{talebe_iliskin_notlar:300,teklif_birimi_notlari:300},2:{}};
 const YD_TK_W={2:432}; /* YD-DURUM-GRUP: iki tablonun toplam eni eşit */
 function ydCols(g){ return COLS.filter(c=>YD_GIZ[g].indexOf(c.f)<0).map(c=>YD_NOT_W[g][c.f]?Object.assign({},c,{w:YD_NOT_W[g][c.f]}):c); }
@@ -771,7 +768,7 @@ function rowHTML(r,key,gz){
       if(c.t==='note'){ const sat=ntSatirlar(r[c.f]); /* YD-NOT-EKLE: son not görünür, hover'da tümü alt alta */
         return '<td style="background:'+bgv+'"><div class="ntcell" style="width:'+c.w+'px"><div class="ntlast ntClick'+(ntYasak(c.f)?' ntkilit':'')+'" data-row="'+key+'" data-nf="'+c.f+'" title="'+esc(sat.join("\n"))+'"><span title="'+esc(sat.join("\n"))+'">'+esc(sat[0]||"")+'</span></div></div></td>'; } /* NT-HOVER-TUM: span'a da tum notlar; ARB-HOVERTITLE span'a yalniz son notu yaziyordu */
       if(c.t==='area') return '<td style="background:'+bgv+'"><textarea class="cell'+req+empty+'" data-f="'+c.f+'" rows="1" style="width:'+c.w+'px" title="'+esc(v)+'">'+esc(v)+'</textarea></td>';
-      if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; const ihAl=(c.f==='ihale'&&String(v)==='Alındı')?' ihale-al':''; const kilit=c.f==='oncelik'?' disabled title="Öncelik Arbor panosundan (Satış › Öncelik Belirlenmesi Gerekenler) belirlenir"':'';  /* YD-ONCELIK-PANO */ return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+ihAl+'" data-f="'+c.f+'"'+kilit+' style="width:'+c.w+'px">'+opts+'</select></td>'; }
+      if(c.t==='sel'){ const opts='<option value=""></option>'+c.opts.map(o=>'<option'+(String(v)===o?' selected':'')+'>'+esc(o)+'</option>').join(''); const filled=String(v).trim()!==""?" filled":""; const ihAl=(c.f==='ihale'&&String(v)==='Alındı')?' ihale-al':''; const kilit='';  /* YD-ONCELIK-PANO */ return '<td style="background:'+bgv+'"><select class="cell'+req+empty+filled+ihAl+'" data-f="'+c.f+'"'+kilit+' style="width:'+c.w+'px">'+opts+'</select></td>'; }
       let uyari="",ipucu="";
       if(c.f==='teklif_teslim_tarihi'){
         if(terminBos(r)){ uyari=" terminbos"; ipucu=' title="Teklif Bekleniyor — Teklif Teslim Tarihi girilmemiş"'; }
@@ -926,7 +923,7 @@ async function saveRow(key,f,val,el){
     if(tier>=1 && tier<=4 && !rangeFilled(r,1,6)){ el.value=r.durum||""; setMsg("Bu durum için ilk 6 sütun (Proje, Müşteri, Müşteri Önem Sınıfı, Gelen Tarih, İstenen Tarih, İhale?) dolu olmalı.",false); return; }
     if((tier===3||tier===4) && (DURUM_SIRA[r.durum]||0)<3 && !ilgTam(r)){ el.value=r.durum||""; setMsg("Teklif Bekleniyor'a geçmek için Müşteri hücresindeki proje ilgilisi kartı (Ad Soyad, E-posta, Telefon) tam doldurulmalı.",false); return; } /* ILG-ZORUNLU */
     if(tier===3 && !rangeFilled(r,8,11)){ el.value=r.durum||""; setMsg("Teklif Bekleniyor için Adet, Ürün Tipi / Serisi, Kemer/Karolaj ve Şartname Ahşap dolu olmalı.",false); return; } /* BEKLENIYOR-8-11 */
-    if(tier===5 && !state5Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için 1-6, 8-11, 13 ve 14-18 sütunlarının hepsi dolu olmalı.",false); return; }
+    if(tier===5 && !state5Ready(r)){ el.value=r.durum||""; setMsg("Bu durum için 1-6, 8-11 ve 13-17 sütunlarının hepsi dolu olmalı.",false); return; }
     if(tier>=6 && !state6to11Ready(r) && ["Muhtemel","Kazandık","Üretimde","Kaybettik","Müşteri İşi Alamadı"].indexOf(v)<0){ /* DURUM-SAGTIK2: takip şartı yok */ el.value=r.durum||""; setMsg("Bu durum için Takip Tarihi/Görevli/Takip Notları alanları dolu olmalı.",false); return; }
   }
   if(key==="draft"){
@@ -975,7 +972,6 @@ async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muht
   rec.net_tutar=null; rec.net_tutar_eur=null; rec.eur_kur=null; rec.kur_tarihi=null;
   rec.teklif_teslim_tarihi=null; /* revize teklif henüz teslim edilmedi — pano "Verilen (Ad.)" sayımı şişmesin */
   { const d=new Date(); rec.gelen_tarih=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); rec.istenen_tarih=rec.gelen_tarih; /* REV-ISTENEN-TARIH (2026-10-01, Melih): İstenen Tarih de geçiş günü */ } /* REV-GELEN-TARIH (2026-10-01, Melih): revizyon kopyasının Gelen Tarih'i = Revizyon İstendi'ye geçirildiği gün (yerel tarih) */
-  rec.oncelik=1; /* revizyon her zaman en yüksek öncelik (Melih, 2026-09-18) — kolon smallint */
   const eskiNot=String(r.talebe_iliskin_notlar||"").trim();
   rec.talebe_iliskin_notlar = ntYeniDeger(eskiNot,"Revizyon");  /* YD-NOT-EKLE */ /* REV-NOT-TALEP (15.10.2026, Melih): revizyon notu Talebe İlişkin Notlar'a (önceden Teklif Birimi Notları) */
   rec.durum=rangeFilled(rec,1,6)?((ilgTam(r)&&rangeFilled(rec,8,11))?"Teklif Bekleniyor":"Teklif İncelendi"):null; /* ILG-ZORUNLU */ /* BEKLENIYOR-8-11 */ /* YD-DURUM-KURAL: öncelik 1 belli → Teklif Bekleniyor */
@@ -985,7 +981,7 @@ async function revizyonKopyasi(r,kaynakId){ /* MUHTEMEL-REV-INS: kaynakId = Muht
   const {data,error}=await sb.from("satis_yd_akis").insert(rec).select();
   if(error){ m.className="msg err"; m.textContent="Revizyon kopyası oluşturulamadı: "+error.message; return false; }
   ROWS.push(data[0]);
-  m.className="msg ok"; m.textContent="Revizyon kopyası oluşturuldu ✓ (tutar boş · Öncelik 1 · "+(rec.durum||"durumsuz")+")"; /* BEKLENIYOR-8-11 */
+  m.className="msg ok"; m.textContent="Revizyon kopyası oluşturuldu ✓ (tutar boş · "+(rec.durum||"durumsuz")+")"; /* BEKLENIYOR-8-11 */
   sums();
   return true;
 }
@@ -1274,7 +1270,7 @@ function ctxNeden(r,v){
   if(v==="İptal") return "";
   if(v==="Revizyon İstendi"){
     if(["Teklif Teslim Edildi","Takip Bekleniyor","Muhtemel"].indexOf(r.durum)<0) return "Revizyon yalnız Teklif Teslim Edildi, Takip Bekleniyor veya Muhtemel satırda";
-    if(r.durum!=="Muhtemel" && !state5Ready(r)) return "1-6, 8-11 ve 13-18. sütunlar dolu olmalı"; /* MUHTEMEL-REV-SERBEST (15.10.2026, Melih): Muhtemel satırda sütun şartı aranmaz (eski satırlarda tarih/öncelik boş) */
+    if(r.durum!=="Muhtemel" && !state5Ready(r)) return "1-6, 8-11 ve 13-17. sütunlar dolu olmalı"; /* MUHTEMEL-REV-SERBEST (15.10.2026, Melih): Muhtemel satırda sütun şartı aranmaz (eski satırlarda tarih/öncelik boş) */
     if(r.durum==="Muhtemel" && ROWS.some(x=>x.muhtemel_kaynak_id===r.id)) return "Bu Muhtemel satırın açık bir revizyon kopyası var";
     if(r.durum==="Muhtemel"){ const g=mhGuncel(r); if(g && g.id!==r.id) return "Projenin güncel Muhtemel satırı #"+g.id+" — revizyon oradan açılır"; } /* MUHTEMEL-TEK */
     return "";

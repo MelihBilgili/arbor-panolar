@@ -479,7 +479,7 @@ async function loadGiris(){
   </style>
   <div class="gr">
     <div id="gr-vakit" class="gr-bxs"><span class="gr-muted">Vakitler yükleniyor…</span></div>
-    <div id="gr-ozel" class="gr-bxs" style="margin:2px 0 8px"></div><div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin:0 0 8px"><button id="gr-onc" class="gr-onc">Öncelik Belirle</button><button id="gr-cfo" class="gr-onc gr-cfo" disabled>Cam Fiyat Onayı Ver</button><!-- GIRIS-CAM-ONAY --></div><!-- GIRIS-ONCELIK-BTN --><!-- GIRIS-BTN-ALT (17.11.2026, Melih): Öncelik Belirle + Cam Fiyat Onayı Ver yaklaşan özel günlerin altında -->
+    <div id="gr-ozel" class="gr-bxs" style="margin:2px 0 8px"></div><div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin:0 0 8px"><button id="gr-cfo" class="gr-onc gr-cfo" disabled>Cam Fiyat Onayı Ver</button><!-- GIRIS-CAM-ONAY --></div><!-- GIRIS-ONCELIK-BTN: kaldırıldı (YD-ONCELIK-YOK 20.11.2026) --><!-- GIRIS-BTN-ALT (17.11.2026, Melih): Cam Fiyat Onayı Ver yaklaşan özel günlerin altında -->
     <div id="gr-my"></div><!-- MY-FAALIYET / MY-ACIL-GUNDEM-UST: Acil yüklemeler MB gündemin hemen üstünde -->
     <div id="gr-gundem"></div>
     <div id="gr-agblok"></div><!-- GIRIS-GUNDEM-BANT -->
@@ -491,7 +491,7 @@ async function loadGiris(){
     <div id="gr-not" style="margin-top:16px"></div><!-- GIRIS-NOT -->
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
-  await Promise.all([kor(grVakit),kor(grOzel),kor(grOnc),kor(grCfo),kor(grGundem),kor(grAgBlok),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(grSatis),kor(grAhsap),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grCfo),kor(grGundem),kor(grAgBlok),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(grSatis),kor(grAhsap),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
 }
 /* GIRIS-SATIS-BANT (19.11.2026, Melih): Satış panosunun ilk bloğu (Muhtemel/Alınan özeti + Değişim + proje listeleri, satisSummary)
    Giriş'te grafiklerin hemen altında kapalı açılır bantta; Satış sekmesi kaldırıldı. Hesap loadSatis ile birebir (KUR-DONDURMA, SATIS-AYBASLANGIC). */
@@ -849,19 +849,7 @@ async function grNot(){
   ta.onblur=kaydet;
 }
 
-/* GIRIS-ONCELIK-BTN (22.10.2026, Melih): takvim kutularının solunda "Öncelik Belirle" düğmesi; basınca Satış panosu açılır
-   ve "Öncelik Belirlenmesi Gerekenler" bloğuna kaydırılır. Satış'taki o blokta satır varsa kırmızı zemin/beyaz yazı, yoksa beyaz/gri.
-   Sayım pipelineTables ile aynı: durum='Teklif İncelendi' ve ilgili kartı (Ad, E-posta, Telefon) tam. */
-async function grOnc(){
-  const b=grEl("gr-onc"); if(!b) return;
-  b.onclick=()=>{ state.tab="satis"; renderApp();
-    let n=0; const t=setInterval(()=>{ n++; const h=[...document.querySelectorAll("#view h3.sec")].find(x=>/^Öncelik Belirlenmesi Gerekenler/.test(x.textContent));
-      if(h){ clearInterval(t); h.scrollIntoView({block:"start"}); } else if(n>40) clearInterval(t); },150); };
-  const {data,error}=await sb.from("satis_yd_akis").select("ilgili_ad,ilgili_mail,ilgili_tel").eq("durum","Teklif İncelendi");
-  const say=error?0:(data||[]).filter(r=>["ilgili_ad","ilgili_mail","ilgili_tel"].every(k=>String(r[k]||"").trim())).length;
-  b.classList.toggle("gr-onc-var",say>0);
-  b.title=say?(say+" teklifte öncelik belirlenmesi gerekiyor"):"Öncelik belirlenecek teklif yok";
-}
+/* GIRIS-ONCELIK-BTN: "Öncelik Belirle" düğmesi kaldırıldı (YD-ONCELIK-YOK, 20.11.2026, Melih) */
 /* GIRIS-CAM-ONAY (06.11.2026, Melih): "Öncelik Belirle"nin sağında "Cam Fiyat Onayı Ver". Ürün Konfigürasyonu'nda "Onaysız Kullanmayınız"
    çıkan talepler (cam_fiyat_onay durum='bekliyor'; edge cam-fiyat-onay WhatsApp'ı da atar). Bekleyen yoksa düğme pasif. Pencere: talep metni +
    "Pencad Fiyatını Onayla" / "Hesaplanan Fiyatı Onayla" → durum pencad/hesaplanan; talep edenin formunda "Cam Fiyat Onayınız Var" belirir. */
@@ -1195,18 +1183,7 @@ async function soBlockHtml(){
 }
 
 /* ---------- SATIŞ (Yurt İçi=satis_yorum/SO · Yurt Dışı 1/2=satis_yd_akis) — birleşik ---------- */
-/* YD-ONCELIK-PANO (2026-09-23, Melih): öncelik artık panodan seçilir — "Öncelik Belirlenmesi Gerekenler"
-   bloklarında seçim kutusu; satis_yd_akis.oncelik yazılır ve durum "Teklif Bekleniyor" olur (formdaki
-   computeAutoTier ile aynı: 1-6 + 8-11 + Öncelik dolu → Teklif Bekleniyor). YD1/YD2 formlarında Öncelik salt-okur. */
-if(!window.__ydOncBound){ window.__ydOncBound=true;
-  document.addEventListener('change',async e=>{
-    const el=e.target; if(!el||!el.classList||!el.classList.contains('ydonc')) return;
-    const v=el.value; if(!v) return; el.disabled=true;
-    const {error}=await sb.from("satis_yd_akis").update({oncelik:Number(v),durum:"Teklif Bekleniyor"}).eq("id",Number(el.dataset.id)).eq("durum","Teklif İncelendi");
-    if(error){ el.disabled=false; alert("Öncelik kaydedilemedi: "+error.message); return; }
-    const y=window.scrollY; await loadSatis(); window.scrollTo(0,y);
-  });
-}
+/* YD-ONCELIK-PANO: kaldırıldı — Yurt dışı satışta öncelik kavramı yok (YD-ONCELIK-YOK, 20.11.2026, Melih) */
 let satisSikiRows=[]; /* SATIS-SIKI-BLOK */
 async function loadSatis(){
   const view=document.getElementById("view");
@@ -1363,8 +1340,7 @@ function pipelineTables(ydRows, today){
   /* YD-ILG-EKSIK-PANO (08.10.2026, Melih): proje ilgilisi kartı (Ad, E-posta, Telefon) eksik "Teklif İncelendi" satırı Öncelik bloğunda değil
      Eksik Kaydedilmiş bloğunda görünür; Müşteri hücresi kırmızı (formdaki ILG-ZORUNLU ile aynı kural) */
   const ilgTamP=r=>['ilgili_ad','ilgili_mail','ilgili_tel'].every(k=>String(r[k]||'').trim());
-  const eksik=sorted.filter(r=>!r.durum||r.durum==='Teklif Talebi Geldi'||(r.durum==='Teklif İncelendi'&&!ilgTamP(r)));
-  const oncelik=sorted.filter(r=>r.durum==='Teklif İncelendi'&&ilgTamP(r));
+  const eksik=sorted.filter(r=>!r.durum||r.durum==='Teklif Talebi Geldi'||r.durum==='Teklif İncelendi'); /* YD-ONCELIK-YOK: Öncelik bloğu yok, İncelendi eksik sayılır */
   const hazirlik=sorted.filter(r=>r.durum==='Teklif Bekleniyor');
   /* Takiptekiler: Teklif Teslim Tarihi'ne göre eskiden yeniye sıralanır (tarihi olmayanlar en sona) */
   /* SATIS-SIKI-BLOK (19.10.2026, Melih): "Takiptekiler" yerine "Sıkı Takip Edilecekler" — yalnız yd_siki_takip (aktif) listesindeki
@@ -1421,11 +1397,8 @@ function pipelineTables(ydRows, today){
   /* YD-EKSIK-ONEM: Eksik bloklarına Müşteri Önem Sınıfı sütunu (Müşteri'den sonra) */
   const C1E=[].concat(C1.slice(0,2),[{h:'Müşteri Önem Sınıfı',f:'musteri_onem_sinifi'}],C1.slice(2)).map(c=>{ const f=c.f||({'Gelen Tarih':'gelen_tarih','İstenen Tarih':'istenen_tarih'})[c.h];
     return EKSIK_F.includes(f)?Object.assign({},c,{cls:r=>(r.net_tutar!=null&&String(r.net_tutar).trim()!==''&&f!=='musteri')?'':(  /* TUTAR-PEMBE-SADE */((!r.durum||r.durum==='Teklif Talebi Geldi')&&(r[f]==null||String(r[f]).trim()===''))||(f==='musteri'&&!ilgTamP(r)))?'eksikbos':'' /* YD-EKSIK-BOS2 */ /* YD-ILG-EKSIK-PANO */}):c; });
-  setTimeout(()=>oncSutDar(0),0); /* ONC-SUTUN-DAR */
+  /* ONC-SUTUN-DAR: Öncelik bloğu kaldırıldı (YD-ONCELIK-YOK) */
   return two('Eksik Kaydedilmiş Teklif Talepleri',eksik,C1E)
-    +two('Öncelik Belirlenmesi Gerekenler',oncelik,C1.map(c=>{ const ONC_K={talebe_iliskin_notlar:0.5*0.65,teklif_birimi_notlari:0.65}; if(!(c.f in ONC_K)) return c; /* ONC-NOT-YARIM (19.10.2026, Melih): Öncelik Belirlenmesi Gerekenler'de Talebe İlişkin Notlar sütunu doğal genişliğinin yarısı (bloğa göre, kaydırmalı) */ /* ONC-NOT-DAR35 (19.10.2026, Melih): Talebe İlişkin Notlar ve Teklif Birimi Notları ayrıca %35 dar */
-      const fk=c.f, mx={}; oncelik.forEach(r=>{ const L=String(r[fk]||'').length; mx[r.blok]=Math.max(mx[r.blok]||0,L); });
-      return Object.assign({},c,{html:r=>{ const v=String(r[fk]||''); const w=Math.max(8,Math.ceil((mx[r.blok]||0)*0.85*ONC_K[fk])); return `<div class="cx" title="${esc(v)}" style="width:${w}ch">${esc(v)}</div>`; }}); }).map((c,i)=>Object.assign({},c,{wcls:'oc'+(i+1)})).concat([{h:'Öncelik',wcls:'oncsec',html:r=>`<select class="ydonc" data-id="${r.id}" title="Öncelik seç — forma yazılır, satır Teklif Hazırlığında'ya geçer"><option value=""></option>${['1','2','3'].map(o=>`<option${String(r.oncelik||'')===o?' selected':''}>${o}</option>`).join('')}</select>`}]))
     +two('Teklif Hazırlığında',hazirlik,C2)
     +two('Takip Edilecekler',takiptekiler,C4); /* SATIS-SIKI-BLOK */ /* TAKIP-EDILECEK-BLOK */
 }
