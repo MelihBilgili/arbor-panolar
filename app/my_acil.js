@@ -87,7 +87,7 @@
        kalan kesinleşmemiş satırlar (eski üst satırlar + Termini Beklenenler) tek kapalı bantta "YÜKLEME PLANLAMASI BEKLENENLER" (el._tbAcik, tr.my-tb) */
     var ucB=function(r){ return r.sekil==="Uçak"&&!r.ucak_onay; };
     var ucR=anaR.concat(tbR).filter(ucB);
-    anaR=anaR.concat(tbR).filter(function(r){ return !ucB(r); }); tbR=anaR; var anaR0=ucR;
+    anaR=anaR.concat(tbR).filter(function(r){ return !ucB(r); }); tbR=anaR; var anaR0=ucR; if(gr) tbR=[]; /* GIRIS-YPB-GIZLI (20.11.2026, Melih): Giriş panosunda Yükleme Planlaması Beklenenler bandı gösterilmez */
     var ncol=12+(mk?1:0); /* MY-GOREV-GUN */
     /* MY-ACIL-SORUMLU (06.11.2026, Melih): Durum'un sağında Sorumlu + Görev (yalnız PEM, ERP durum no'suna göre) */
     var SG={"0":["Buse Hanım","Malzeme listesini yükle"],"0.1":["Onur Bey","Malzeme onayını ver"],"1":["Berat Bey","Termini gir"],"1.2":["Berat Bey","Termini gir"] /* MY-SORUMLU-12-BERAT (13.11.2026, Melih; MY-SORUMLU-12-SEMIH yerine) */,"1.3":["Berat Bey · Umut Bey · Semih Bey","Termini gir"],"2":["Semih Bey","Termini gir"]};
