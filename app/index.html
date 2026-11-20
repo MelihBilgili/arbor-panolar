@@ -639,6 +639,7 @@ async function grPrimSart(){
     let net=0, thT=0; E.forEach(e=>{ const m=mpBy[e.maas_prim_id], v=AY[m.id+"|"+kPrev]; if(v!=null&&v!=="") net+=Number(v)-nn(m.yol_yemek); thT+=nn(e.th_oneri); });
     if(dkAy[kCur]&&dkAy[kPrev]&&net>0&&thT>0){ const hedef=net*dkAy[kCur]/dkAy[kPrev], k=hedef/thT, f=v=>Math.round(v).toLocaleString("tr-TR");
       E.forEach(e=>{ const m=mpBy[e.maas_prim_id], th=nn(e.th_oneri), yy=nn(m.yol_yemek); ETH[m.kisi_kod]=th;
+        if(!(th>0)){ EUY[m.kisi_kod]="Önerilen: Etüt formunda TH Öneri girilmemiş"; return; } /* ETUT-PRIM-TH-BOS (20.11.2026) */
         EUY[m.kisi_kod]=`Önerilen: ${f(Math.round((th*k+yy)/100)*100)} TL (TH ${f(th)} × ${k.toLocaleString("tr-TR",{minimumFractionDigits:1,maximumFractionDigits:1})} + Yol-Yemek)` /* ETUT-PRIM-METIN-KISA (20.11.2026, Melih): katsayı tek ondalık, Yol-Yemek tutarsız */ /* ETUT-PRIM-DK1-METIN-YOK (19.11.2026): DK1 ibaresi yazılmaz */; }); } }catch(_){}
   const kBy={}; K.forEach(r=>kBy[r.kod]=r);
   const L=MP.filter(m=>m.kisi_kod&&kBy[m.kisi_kod]&&kBy[m.kisi_kod].aktif!==false)
