@@ -589,7 +589,7 @@ async function grOzel(){
    Şart = Personel › "Aylık Güncellenecek Formlar"daki formlarının HEPSİ bu ayın son tarihinde (ayın ilk iş günü) ya da sonra
    güncellenmiş (FRM_FK ve canlı damgalar loadRef ile aynı). Aylık formu olmayan prim alanlar şartı sağlamış sayılır (PRIM-SART-FORMSUZ, 06.11.2026; ek şart PRIM_SART_EK'e).
    Sütunlar = Personel tablosunun 2 · 8 · 12 · 13. sütunları: Ad Soyad · Yol-Yemek · önceki ay prim · son 12 ay ort. prim. */
-const PRIM_SART_EK={}; const PRIM_SART_DAHIL=["BÖ"]; /* PRIM-SART-BASLIK-SADE (09.11.2026): başlıkta ay yok */ /* PRIM-SART-ONCEKI-AY-YOK (09.11.2026, Melih): önceki ay (Ekim 2026) prim sütunu çıkarıldı */
+const GR_AYAD=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]; const PRIM_SART_EK={}; const PRIM_SART_DAHIL=["BÖ"]; /* PRIM-SART-BASLIK-SADE (09.11.2026): başlıkta ay yok */ /* PRIM-SART-ONCEKI-AY-YOK (09.11.2026, Melih): önceki ay (Ekim 2026) prim sütunu çıkarıldı */
 async function grPrimSart(){
   const t0=grNow(); t0.setHours(0,0,0,0);
   if(t0<new Date(2026,10,1)) return "";
@@ -628,7 +628,7 @@ async function grPrimSart(){
      orantılı değişir: Hedef = (önceki ödeme ayı Σ(ödenen − yol-yemek)) × DK1(bu ödeme ayı) / DK1(önceki ödeme ayı); k = Hedef / Σ TH Öneri;
      kişi = TH Öneri × k + Yol-Yemek, 100 TL katına yuvarlanır (ETUT-PRIM-YUZ) → Uyarı sütununa. DK1 ayı = ERP damgasının bir önceki ayı (DK1-AY-ONCEKI). Önceki ay satırı TH Öneri'nin
      kopyasıysa (formdan otomatik yazılan) ödenmiş sayılmaz. */
-  const EUY={}, ETH={};
+  const EUY={}, ETH={}, EVAL={};
   try{ const mpBy={}; MP.forEach(m=>mpBy[m.id]=m); const nn=v=>Number(v)||0;
     const dkAy={}, son={}, R2=EDK.filter(r=>!r.yurt_ici), ayOf=d=>{ let y=2000+Number(d.slice(0,2)), m=Number(d.slice(2,4))-1; if(m<1){m=12;y--;} return y+"-"+m; };
     R2.forEach(r=>{ if(!r.erp_damga) return; const a=ayOf(r.erp_damga); if(!son[a]||r.erp_damga>son[a]) son[a]=r.erp_damga; });
@@ -640,6 +640,7 @@ async function grPrimSart(){
     if(dkAy[kCur]&&dkAy[kPrev]&&net>0&&thT>0){ const hedef=net*dkAy[kCur]/dkAy[kPrev], k=hedef/thT, f=v=>Math.round(v).toLocaleString("tr-TR");
       E.forEach(e=>{ const m=mpBy[e.maas_prim_id], th=nn(e.th_oneri), yy=nn(m.yol_yemek); ETH[m.kisi_kod]=th;
         if(!(th>0)){ EUY[m.kisi_kod]="Önerilen: Etüt formunda TH Öneri girilmemiş"; return; } /* ETUT-PRIM-TH-BOS (20.11.2026) */
+        EVAL[m.kisi_kod]={kisi_id:m.id,ad:m.kisi,tutar:Math.round((th*k+yy)/100)*100};
         EUY[m.kisi_kod]=`Önerilen: ${f(Math.round((th*k+yy)/100)*100)} TL (TH ${f(th)} × ${k.toLocaleString("tr-TR",{minimumFractionDigits:1,maximumFractionDigits:1})} + Yol-Yemek)` /* ETUT-PRIM-METIN-KISA (20.11.2026, Melih): katsayı tek ondalık, Yol-Yemek tutarsız */ /* ETUT-PRIM-DK1-METIN-YOK (19.11.2026): DK1 ibaresi yazılmaz */; }); } }catch(_){}
   const kBy={}; K.forEach(r=>kBy[r.kod]=r);
   const L=MP.filter(m=>m.kisi_kod&&kBy[m.kisi_kod]&&kBy[m.kisi_kod].aktif!==false)
@@ -653,10 +654,12 @@ async function grPrimSart(){
   PRIM_SART_DAHIL.forEach(kd=>{ if(!kBy[kd]||kBy[kd].aktif===false||L.some(x=>x.kod===kd)) return; const m=MP.find(x=>x.kisi_kod===kd);
     L.push({kod:kd, ad:kBy[kd].tam_ad||kd, uy:[UY[kd],EUY[kd]].filter(Boolean).join(" · "), yy:m?m.yol_yemek:null, pa:null, av:m?avgOf(m.id):null}); });
   L.sort((a,b)=>String(a.ad).localeCompare(String(b.ad),"tr"));
+  /* ETUT-PRIM-ISLE (20.11.2026, Melih): Uyarı başlığındaki düğme, tabloda görünen önerilen etüt primlerini Personel › önceki ay (PYr-PM) prim hücresine yazar */
+  window._grEtutIsle={yil:PYr,ay:PM,L:L.filter(x=>EVAL[x.kod]).map(x=>EVAL[x.kod])};
   const n=v=>(v==null||v==="")?'<span class="gr-muted">—</span>':Number(v).toLocaleString("tr-TR",{maximumFractionDigits:0});
   const rows=L.length?L.map(x=>`<tr><td>${(x.kod==="ÖB"||x.kod==="MK")/* GIRIS-MK-PRIM-POP */?`<a href="#" class="gr-obprim" data-kod="${esc(x.kod)}" title="${x.kod==="MK"?"MK Faaliyet primleri":"ÖB Performans Primi"}" style="color:#1d5fa8;text-decoration:underline;cursor:pointer">${esc(x.ad)}</a>`:esc(x.ad)}</td><td class="n">${n(x.yy)}</td><td class="n">${n(x.av)}</td><td style="color:#b40000;font-size:11px;white-space:normal;min-width:220px;max-width:460px">${x.uy?esc(x.uy):""}</td></tr>`).join("")
     :`<tr><td colspan="4" class="gr-muted">Bu ay şartı sağlayan henüz yok</td></tr>`;
-  return `<div class="scroll"><table class="grt"><thead><tr><th>Prim şartını sağlayan</th><th class="n">Yol-Yemek (TL)</th><th class="n">Son 12 Ay Ort. Prim (TL)</th><th>Uyarı</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  return `<div class="scroll"><table class="grt"><thead><tr><th>Prim şartını sağlayan</th><th class="n">Yol-Yemek (TL)</th><th class="n">Son 12 Ay Ort. Prim (TL)</th><th>Uyarı${window._grEtutIsle.L.length?` <button type="button" id="gr-etut-isle" style="margin-left:8px;font-size:11px;padding:2px 8px;cursor:pointer" title="Önerilen etüt primlerini Personel panosunda ${GR_AYAD[PM-1]} ${PYr} prim sütununa yazar">Önerilenleri ${GR_AYAD[PM-1]} primine işle</button>`:""}</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 /* GIRIS-ACIL-SAHSI (10.11.2026, Melih): Giriş'te ayrı PEM tablosu yok; Acil yüklemeler tablosunun en üstünde "ŞAHSİ PEM'LER" grubu =
    ana_gundem'deki acil olmayan PEM'ler (Konu tıklayınca düzenlenir, ✕ gündemden siler). Acil blok yalnız buradan çizilir. */
@@ -713,6 +716,13 @@ async function grGundem(){
   el.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
   el.querySelectorAll(".ged").forEach(x=>x.onclick=()=>startEdit(x));
   el.querySelectorAll("a.gr-obprim").forEach(a=>a.onclick=ev=>{ ev.preventDefault(); grObPrimPop(a.dataset.kod); }); /* GIRIS-OB-PRIM-POP */
+  { const bt=document.getElementById("gr-etut-isle"); if(bt) bt.onclick=async()=>{ const J=window._grEtutIsle; if(!J||!J.L.length) return; /* ETUT-PRIM-ISLE */
+      const ozet=J.L.map(x=>x.ad+": "+x.tutar.toLocaleString("tr-TR")+" TL").join("\n");
+      if(!confirm(`Personel panosunda ${GR_AYAD[J.ay-1]} ${J.yil} prim sütununa yazılacak:\n\n${ozet}\n\nOnaylıyor musunuz?`)) return;
+      bt.disabled=true; bt.textContent="İşleniyor…";
+      const {error}=await sb.from("maas_prim_ay").upsert(J.L.map(x=>({kisi_id:x.kisi_id,yil:J.yil,ay:J.ay,tutar:x.tutar})),{onConflict:"kisi_id,yil,ay"});
+      if(error){ alert("Hata: "+error.message); bt.disabled=false; bt.textContent="Tekrar dene"; return; }
+      alert(J.L.length+" kişinin primi işlendi."); location.reload(); }; }
   grAgBagla(el); /* GIRIS-GUNDEM-BANT: MB ekleme satırı */
   try{ if(window.SITUYK) SITUYK.render(document.getElementById("gr-situyk"),{sb:sb,kim:()=>"MB"}); }catch(e){}   /* SITU-YUKLEME */
 }
