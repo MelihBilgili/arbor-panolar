@@ -112,6 +112,7 @@ const CSS=`
 .gru-graf .gru-h{grid-column:1/-1;margin-bottom:0}
 .gru-graf .gru-card,.gru-graf .gru-box{min-width:0;margin:0}
 .gru-graf .gru-svg{max-width:100%;height:auto}
+@media (min-width:1100px){.gru-giris .gru-graf{grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,.75fr);grid-template-rows:auto min-content 1fr}.gru-giris .gru-graf .gru-h{grid-row:1}.gru-giris .gru-o-prj{grid-column:1;grid-row:2/span 2}.gru-giris .gru-o-sel{grid-column:2;grid-row:2/span 2}.gru-giris .gru-o-cari{grid-column:3;grid-row:2/span 2}.gru-giris .gru-o-etut{grid-column:4;grid-row:2}.gru-giris .gru-o-isk{grid-column:4;grid-row:3}} /* GIRIS-4SUTUN (23.11.2026, Melih): Giriş'te Etüt DK1 ve Baz İskonto 4. sütunda üst üste */
 @media (max-width:900px){.gru-graf{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.gru-graf{grid-template-columns:minmax(0,1fr)}}`;
 function css(){ if(document.getElementById("gru-css")) return; const st=document.createElement("style"); st.id="gru-css"; st.textContent=CSS; document.head.appendChild(st); }
@@ -334,7 +335,7 @@ async function egitim(o,el){
 }
 async function render(kap,o){
   if(!kap||!o||!o.sb) return; css(); KUR=null; YK=(o.grafik===true)?1.5:1; /* GIRIS-YEKSEN-15 */
-  kap.classList.add("gru");
+  kap.classList.add("gru"); kap.classList.toggle("gru-giris",o.grafik===true); /* GIRIS-4SUTUN */
   kap.innerHTML=(o.grafik===true/* GIRIS-GRAFIK-UST (23.11.2026, Melih): Giriş'te grafikler Sıkı Takip tablosunun üstünde */?'<div class="gru-graf"><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div></div><div class="gru-t"></div>':'<div class="gru-t"></div><div class="gru-graf"><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div></div>')+'<div class="gru-e"></div>'; /* GRAFIK-UCLU (10.11.2026, Melih): grafikler yan yana üçer (gru-graf grid) */
   /* MK-GRAFIK-UST (29.10.2026, Melih): o.ustKap verilirse grafikler (Satış/DK1 kartları · Sel-Arb · cari ay) o kaba, tablo kap'ta kalır */
   const U=o.ustKap; if(U){ U.classList.add("gru"); U.innerHTML='<div class="gru-graf"><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div></div>'; ['.gru-graf'].forEach(c=>{ const x=kap.querySelector(c); if(x) x.remove(); }); }
@@ -343,7 +344,8 @@ async function render(kap,o){
   await Promise.all([kor(()=>satis(o,q(".gru-t"),q(".gru-g"))),kor(()=>selArb(o,q(".gru-s"))),kor(()=>cari(o,q(".gru-c")))]);
   /* GRAFIK-SIRA (23.11.2026, Melih): Giriş = Prj · Selectron · Cari ay · Etüt DK1 · Baz İskonto; MK = YD Prj · Selectron · Cari ay · Etüt DK1 */
   try{ const g=q(".gru-g"), cs=g?g.querySelectorAll(".gru-cards"):[], c0=cs[0]?cs[0].children:[], ord=(el,n)=>{ if(el) el.style.order=n; };
-    ord(c0[0],1); ord(q(".gru-o-sel"),2); ord(q(".gru-o-cari"),3); ord(c0[1],4); if(cs[1]) [...cs[1].children].forEach(x=>ord(x,5)); }catch(_){}
+    ord(c0[0],1); ord(q(".gru-o-sel"),2); ord(q(".gru-o-cari"),3); ord(c0[1],4); if(cs[1]) [...cs[1].children].forEach(x=>ord(x,5));
+    if(c0[0]) c0[0].classList.add("gru-o-prj"); if(c0[1]) c0[1].classList.add("gru-o-etut"); if(cs[1]) [...cs[1].children].forEach(x=>x.classList.add("gru-o-isk")); /* GIRIS-4SUTUN */ }catch(_){}
 }
 /* GRAFIK-TIK-DEGER (02.11.2026, Melih): grafikte tıklanan noktaya en yakın ay/değer(ler) küçük kutuda gösterilir; çok serili grafikte o aydaki tüm seriler */
 function tikKur(){ if(window.__gruTik) return; window.__gruTik=true;
