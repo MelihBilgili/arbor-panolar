@@ -282,7 +282,7 @@ if (document.readyState === "loading") document.addEventListener("DOMContentLoad
 const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 /* MUSTERI-ANKET */
 const ANK_URL="https://melihbilgili.github.io/arbor-panolar/anket/?t=";
-const ANK_KRIT=[["etut","Etüt"],["kalite","Kalite"],["sureler","Süreler"],["yonetim","Teknik yön."],["idari","İdari yön."],["ambalaj","Ambalaj / Nakliye"]]; /* ANKET-IDARI-AYRI (23.11.2026): Teknik ve İdari yönetim ayrı; 23.11 öncesi yanıtlarda Teknik yön. = eski birleşik madde, İdari boş */ /* ANKET-PUAN-V2 (19.11.2026): Ambalaj/Nakliye kriteri; puan DB tetikleyicisi musteri_anket_puan_trg */
+const ANK_KRIT=[["etut","Etüt"],["kalite","Kalite"],["sureler","Süreler"],["yonetim","Şantiye yön."],["idari","İdari yön."],["ambalaj","Ambalaj / Nakliye"]]; /* ANKET-GESTION-TRAVAUX: Teknik yön. → Şantiye yön. */ /* ANKET-IDARI-AYRI (23.11.2026): Teknik ve İdari yönetim ayrı; 23.11 öncesi yanıtlarda Teknik yön. = eski birleşik madde, İdari boş */ /* ANKET-PUAN-V2 (19.11.2026): Ambalaj/Nakliye kriteri; puan DB tetikleyicisi musteri_anket_puan_trg */
 const ANK_P={"Çok memnun":4,"Memnun":3,"Memnun değil":2,"Hiç memnun değil":1};
 let ANK_PROJ={}, ANK_ROWS=[], ANK_ACIK={};
 const $=id=>document.getElementById(id);
@@ -371,7 +371,7 @@ function ankCiz(){
   if(!rows.length){ $("liste").innerHTML='<div class="hint">Kayıt yok.</div>'; return; }
   const cols=16;
   let h=`<table class="l"><thead><tr><th>Proje</th><th>Müşteri</th><th>Oluşturan</th><th>Link tarihi</th><th>Durum</th><th>Yanıt tarihi</th><th>Yanıtlayan</th>`
-    +ANK_KRIT.map(([k,t])=>`<th>${esc(t)}</th>`).join("")+`<th>SAV</th><th>Tavsiye</th><th>Etiket</th><th title="0,70 × kriter ortalaması (Etüt, Kalite, Süreler, Teknik yön., İdari yön., Ambalaj/Nakliye) + 0,15 × SAV + 0,15 × Tavsiye; SAV uygulanamazsa ağırlık diğerlerine dağıtılır. 4 ana kriterden birden fazlası boşsa anket geçersiz.">Puan</th><th></th></tr></thead><tbody>`;
+    +ANK_KRIT.map(([k,t])=>`<th>${esc(t)}</th>`).join("")+`<th>SAV</th><th>Tavsiye</th><th>Etiket</th><th title="0,70 × kriter ortalaması (Etüt, Kalite, Süreler, Şantiye yön., İdari yön., Ambalaj/Nakliye) + 0,15 × SAV + 0,15 × Tavsiye; SAV uygulanamazsa ağırlık diğerlerine dağıtılır. 4 ana kriterden birden fazlası boşsa anket geçersiz.">Puan</th><th></th></tr></thead><tbody>`;
   rows.forEach(r=>{
     const acik=(r.aciklama&&Object.keys(r.aciklama).length)||r.sav_aciklama||r.tavsiye_aciklama||r.yorum;
     h+=`<tr class="ana" data-id="${r.id}"><td><b>${esc(r.proje)}</b></td><td>${esc(r.firma||"")}<div class="firma">${esc([r.ulke,ANK_DIL_AD[r.dil]].filter(Boolean).join(" · "))}</div></td><td>${r.kaynak==="PDF"?'<span class="pill d-I" title="PDF ile toplanan eski anket">PDF</span>':esc(r.olusturan||"")}</td><td class="c">${fdt(r.created_at)}</td>`
