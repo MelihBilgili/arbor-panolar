@@ -12,7 +12,7 @@
   header h1{font-size:17px;margin:0;font-weight:700}
   header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
   .wrap{max-width:none;margin:0;padding:14px 20px 70px} /* MK-TAM-EKRAN (19.11.2026, Melih): ekranın tamamı kullanılır (eski max-width:1120px ortalı) */
-  @media (min-width:1100px){ #gr-ust-graf .gru-graf{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,1.25fr) minmax(0,.75fr)!important} #gr-ust-graf .gru-o-etut{grid-column:3} /* MK-SEL-GENIS: 2. grafik %10 geniş · MK-CARI-GENIS (23.11.2026): 3. grafik %25 geniş, Etüt altında; 1-2. grafik genişliği aynı */ } /* MK-TAM-EKRAN: 4 grafik tek sırada */
+  @media (min-width:1100px){ #gr-ust-graf .gru-graf{grid-template-columns:repeat(3,minmax(0,max-content))!important;grid-template-rows:auto min-content 1fr} #gr-ust-graf .gru-h{grid-row:1} #gr-ust-graf .gru-mk:not(.gru-o-sel):not(.gru-o-cari){grid-column:1;grid-row:2/span 2} #gr-ust-graf .gru-o-sel{grid-column:2;grid-row:2/span 2} #gr-ust-graf .gru-o-cari{grid-column:3;grid-row:2} #gr-ust-graf .gru-o-etut{grid-column:3;grid-row:3} /* MK-SEL-GENIS · MK-CARI-GENIS (23.11.2026, Melih): sütunlar grafik genişliğinde (Prj 330 · Selectron %10 · Cari ay 1,375 kat), Etüt Cari ayın hemen altında (boşluksuz: Prj/Selectron 2 satır kaplar, 3. satır 1fr) */ } /* MK-TAM-EKRAN: 4 grafik tek sırada */
   .blk{background:#fff;border:1px solid #dde3ea;border-radius:10px;margin-bottom:16px;overflow:hidden}
   .blk>h2{font-size:14px;margin:0;padding:10px 14px;color:#fff}
   .blk .formula{font-size:11.5px;color:#eaf1f8;font-weight:400}
@@ -70,8 +70,8 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </header>
 <div class="wrap">
   <div id="mk-linkler" style="margin:0 0 14px;display:flex;flex-wrap:wrap;gap:6px"><a href="../sel-arb/" target="_blank" class="mkl">Sel-Arb</a><a href="../satis-yd1/" target="_blank" class="mkl">Yurt Dışı Satış 1</a><a href="../satis-yd2/" target="_blank" class="mkl">Yurt Dışı Satış 2</a><a href="../musteriler/" target="_blank" class="mkl">Müşteriler</a><a href="../santiye-yd1-1/" target="_blank" class="mkl">YD Şantiye 1.1</a><a href="../santiye-yd1-2/" target="_blank" class="mkl">YD Şantiye 1.2</a><a href="../santiye-yd1-3/" target="_blank" class="mkl">YD Şantiye 1.3</a><a href="../santiye-yd1-4/" target="_blank" class="mkl">YD Şantiye 1.4</a><a href="../santiye-yd2-1/" target="_blank" class="mkl">YD Şantiye 2.1</a><a href="../santiye-yd2-2/" target="_blank" class="mkl">YD Şantiye 2.2</a><a href="../cam-listesi/" target="_blank" class="mkl">Cam Listesi</a><a href="../cam-konfig/" target="_blank" class="mkl">Cam Konfigürasyon</a><a href="../teklif/" target="_blank" class="mkl">Ürün Fiyatlandırma</a><a href="../seri-secim/" target="_blank" class="mkl">Ürün Konfigürasyonu</a></div><!-- MK-FORM-LINKLER (16.10.2026): MK'nin yetkili oldugu formlar (form_erisim, kisiler MK + herkese acik); form eklenince guncelle -->
-  <div style="display:flex;gap:16px;align-items:flex-start;margin:0 0 16px"><div id="gr-ust-graf" style="flex:3 1 0;min-width:0"></div><div id="situ-yk" style="flex:1 1 0;min-width:320px;overflow:auto"></div></div><!-- MK-GRAFIK-ALT (03.11.2026): Giriş grafikleri form linklerinin altında · SITU-YUKLEME (10.11.2026): grafiklerin sağında Situ Yapılmamış Yüklemeler -->
-  <div id="mk-sevk-prj"></div><!-- MK-SEVK-PRJ (19.11.2026, Melih): yurt dışı Sevke Hazır Projeler, Hedef Yükleme Tarihi MK girer (app/my_acil.js) -->
+  <div id="gr-ust-graf" style="margin:0 0 16px"></div><!-- SITU-SEVK-YAN (23.11.2026, Melih): Situ tablosu Sevke Hazır tablosunun sağında --><!-- MK-GRAFIK-ALT (03.11.2026): Giriş grafikleri form linklerinin altında · SITU-YUKLEME (10.11.2026): grafiklerin sağında Situ Yapılmamış Yüklemeler -->
+  <div style="display:flex;gap:16px;align-items:flex-start;margin:0 0 16px"><div id="mk-sevk-prj" style="flex:3 1 0;min-width:0"></div><div id="situ-yk" style="flex:1 1 0;min-width:320px;overflow:auto"></div></div><!-- MK-SEVK-PRJ (19.11.2026, Melih): yurt dışı Sevke Hazır Projeler, Hedef Yükleme Tarihi MK girer (app/my_acil.js) -->
   <div id="my-acil" data-mod="mk"></div><!-- MY-FAALIYET: Acil yüklemeler + Uçak onayı (app/my_acil.js) -->
   <div id="gr-ust" style="margin:0 0 16px"></div><!-- GIRIS-UST-ORTAK: Giriş panosundaki Sıkı Takip … cari ay bloğu -->
   <div class="aybar">
@@ -117,7 +117,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../giris_ust.js?v=261123c"></script><!-- GIRIS-UST-ORTAK · GIRIS-ALACAK-GRAFIK-YOK -->
+<script src="../giris_ust.js?v=261123d"></script><!-- GIRIS-UST-ORTAK · GIRIS-ALACAK-GRAFIK-YOK -->
 <script src="../my_acil.js?v=261120d"></script><!-- MY-FAALIYET -->
 <script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script src="../situ_yukleme.js?v=261110"></script><!-- SITU-YUKLEME -->
