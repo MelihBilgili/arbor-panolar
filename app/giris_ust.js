@@ -186,7 +186,7 @@ async function satis(o,elT,elG){
   const c=f=>ser[ser.length-1][f];
   const dkK=dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):"";
   if(o.grafik==="mk"){ /* GIRIS-MK-GRAFIK: MK formunda yalnız YD alınan · YD muht. · Etüt DK1, tek satır */
-    elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — ${BAS} ve cari durum</h3><div class="gru-cards">${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* MK-GRAFIK-BIRLES */}${dkK}</div>`;
+    elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — ${BAS} ve cari durum</h3><div class="gru-cards">${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* MK-GRAFIK-BIRLES */}${dkK.replace('class="gru-card"','class="gru-card gru-o-etut"')/* MK-CARI-GENIS: Etüt Cari ayın altında */}</div>`;
     return; }
   /* GIRIS-ISK-GRAFIK (17.11.2026, Melih): Prj grafiğinin altında YD1 (mavi) ve YD2 (turuncu) baz iskonto seyri — ay sonundaki son
      fiyat_parametre_log baz_iskonto değeri (Fiyatlandırma FR / Diğer), log öncesi aylar icmal_satir fr_isk_pct / dig_isk_pct (İcmal ile aynı kural) */
@@ -318,7 +318,7 @@ async function cari(o,el){
   }
   const K=[["Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar",eur(ft),"OE Faaliyet"],["Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler",eur(od),"ÖB Faaliyet"],["Yurt Dışı Birimlerin müşterilerden yaptığı Tahsilat",thT,"ÖB Faaliyet"]];
   if(G){ /* MK-GRAFIK-BIRLES / GIRIS-GRAFIK-BIRLES + CARI-TEK-GRAFIK (29.10.2026): faturalar + ödemeler + tahsilat tek grafikte */ /* GIRIS-CARI-TAMSAYI (15.11.2026, Melih): Giriş'te bu kartın tutarları tam sayı */
-    el.innerHTML=`<div class="gru-boxes">`+mkart(ay,[{ad:o.grafik===true?"Selectron'un yükleme faturaları":"Selectron'un YD birimlerine kestiği faturalar"/* GIRIS-YUKLEME-FT (15.11.2026, Melih) */,pts:G[0]},{ad:"YD birimlerden Selectron'a ödemeler",pts:G[1]},{ad:"YD birimlerin müşterilerden tahsilatı",pts:G[2]}],[eur(ft),eur(od),thT],o.grafik===true?(v=>v==null?"—":Math.round(v).toLocaleString("tr-TR")+" €"):f,o.grafik===true?{hK:1.7,hEk:46}:{}/* GRAFIK-ESIT-BOY: Giriş'te Prj ile aynı boy (lejant 6−3 satır) */).replace('class="gru-card gru-mk"','class="gru-box gru-box3 gru-gr gru-mk gru-o-cari"')+`</div>`;
+    el.innerHTML=`<div class="gru-boxes">`+mkart(ay,[{ad:o.grafik===true?"Selectron'un yükleme faturaları":"Selectron'un YD birimlerine kestiği faturalar"/* GIRIS-YUKLEME-FT (15.11.2026, Melih) */,pts:G[0]},{ad:"YD birimlerden Selectron'a ödemeler",pts:G[1]},{ad:"YD birimlerin müşterilerden tahsilatı",pts:G[2]}],[eur(ft),eur(od),thT],o.grafik===true?(v=>v==null?"—":Math.round(v).toLocaleString("tr-TR")+" €"):f,o.grafik===true?{hK:1.7,hEk:46}:{wK:1.25/* MK-CARI-GENIS (23.11.2026, Melih): MK'da %25 geniş */}/* GRAFIK-ESIT-BOY: Giriş'te Prj ile aynı boy (lejant 6−3 satır) */).replace('class="gru-card gru-mk"','class="gru-box gru-box3 gru-gr gru-mk gru-o-cari"')+`</div>`;
     return; }
   el.innerHTML=`<div class="gru-boxes">${K.map(([a,v,kay])=>`<div class="gru-box gru-box3 gru-gr" title="${esc(ay)} · ${kay}"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${f(v)}</div>${G?bars(G[K.findIndex(k=>k[0]===a)]):""}</div>`).join("")}</div>`;
 }
