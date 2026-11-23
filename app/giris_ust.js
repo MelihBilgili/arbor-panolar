@@ -61,7 +61,7 @@ function bars(pts,opt){
 const MRENK=["#2e6da4","#e07b00","#0a6b57","#b23a2e"];
 function multi(S,opt){
   /* SELARB-FT-SAG (09.11.2026): s.sag=true olan seri kendi ölçeğiyle sağ eksende (küçük değerler düz çizgi görünmesin); s.renk seri rengi */
-  opt=opt||{}; const anySag=S.some(s=>s.sag), W=330+(anySag?34:0),H=Math.round(72*YK*(opt.hK||1))+24+(opt.hEk||0) /* GIRIS-PRJ-YUKSEK: opt.hK yükseklik katı · GRAFIK-ESIT-BOY: opt.hEk ek px (lejant satırı farkı) */,L=40,R=anySag?40:6,T=8,B=16, birim=opt.birim||" €";
+  opt=opt||{}; const anySag=S.some(s=>s.sag), W=Math.round((330+(anySag?34:0))*(opt.wK||1)) /* MK-SEL-GENIS: opt.wK genişlik katı */,H=Math.round(72*YK*(opt.hK||1))+24+(opt.hEk||0) /* GIRIS-PRJ-YUKSEK: opt.hK yükseklik katı · GRAFIK-ESIT-BOY: opt.hEk ek px (lejant satırı farkı) */,L=40,R=anySag?40:6,T=8,B=16, birim=opt.birim||" €";
   const vs=[], vR=[]; S.forEach(s=>s.pts.forEach(p=>{ if(p.y!=null) (s.sag?vR:vs).push(p.y); }));
   if(!vs.length&&vR.length){ vR.forEach(v=>vs.push(v)); }
   if(!vs.length) return '<div class="gru-muted">Veri yok</div>';
@@ -285,7 +285,7 @@ async function selArb(o,el){
     const sP=i=>H.map(h=>({x:h.x,y:h.v[i]})).concat([{x:"Cari",y:K[i][1],cur:true}]);
     { /* MK-GRAFIK-BIRLES / GIRIS-GRAFIK-BIRLES: Güncel Alacak ayrı, diğer 4 kutu tek grafikte (MK + Giriş) */
       el.innerHTML=`<div class="gru-boxes">`/* GIRIS-ALACAK-GRAFIK-YOK (10.11.2026): ayrı Güncel Alacak kutusu+grafiği kaldırıldı (Giriş + MK); değer Selectron kartında */
-        +mkart("Selectron",[1,2,3,4,0].map(i=>({ad:K[i][0],pts:sP(i),renk:i===1?"#1f9d55":(i===3?"#2e6da4":(i===0?"#e83e8c":undefined)),sag:false/* GIRIS-SELARB-TEK-EKSEN (15.11.2026, Melih): Giriş'te tek eksen · MK-SELARB-KOPYA (23.11.2026, Melih): MK'da da Giriş'teki kopyası */})),/* SELARB-GON-YESIL · SELARB-FT-SAG · GIRIS-ALACAK-PEMBE (09.11.2026): Güncel Alacak pembe çizgi */[1,2,3,4,0].map(i=>K[i][1]),v=>v==null?"—":money(v)+" €",{hK:1.7,hEk:14}/* GRAFIK-ESIT-BOY (23.11.2026, Melih): Prj grafiği ile aynı boy (lejant 6−5 satır) */).replace('class="gru-card gru-mk"','class="gru-box gru-mk gru-o-sel"')+`</div>`;
+        +mkart("Selectron",[1,2,3,4,0].map(i=>({ad:K[i][0],pts:sP(i),renk:i===1?"#1f9d55":(i===3?"#2e6da4":(i===0?"#e83e8c":undefined)),sag:false/* GIRIS-SELARB-TEK-EKSEN (15.11.2026, Melih): Giriş'te tek eksen · MK-SELARB-KOPYA (23.11.2026, Melih): MK'da da Giriş'teki kopyası */})),/* SELARB-GON-YESIL · SELARB-FT-SAG · GIRIS-ALACAK-PEMBE (09.11.2026): Güncel Alacak pembe çizgi */[1,2,3,4,0].map(i=>K[i][1]),v=>v==null?"—":money(v)+" €",{hK:1.7,hEk:14,wK:o.grafik==="mk"?1.1:1/* MK-SEL-GENIS (23.11.2026, Melih): MK'da %10 geniş */}/* GRAFIK-ESIT-BOY (23.11.2026, Melih): Prj grafiği ile aynı boy (lejant 6−5 satır) */).replace('class="gru-card gru-mk"','class="gru-box gru-mk gru-o-sel"')+`</div>`;
       return; }
     el.innerHTML=`<div class="gru-boxes">${K.map(([a,v],i)=>`<div class="gru-box"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${v==null?"—":money(v)+" €"}</div>${spark(sP(i))}</div>`).join("")}</div>`;
     return; }
