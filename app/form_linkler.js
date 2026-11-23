@@ -86,6 +86,7 @@
       +".arb-bsag button.arb-gunc{background:#f2b84b!important}.arb-bsag button.arb-gunc:hover{background:#f7cd77!important}"
       +".arb-bsag .arb-damga{color:#cfe0f0!important;font-size:12px!important;white-space:nowrap;margin:0!important;padding:0!important;background:none!important;border:0!important}"
       +".arb-bsag [data-arb-bant]{display:inline-flex;align-items:center;margin:0!important;padding:0!important}"
+      +".arb-bsag .arb-gecik{background:#c62828!important;color:#fff!important;border-radius:7px;padding:5px 11px;font:700 12.5px 'Segoe UI',system-ui,sans-serif;white-space:nowrap;margin:0!important}" /* FORM-GECIKME-KUTU */
       +"@media print{.arb-hlp{display:none}}";
     document.head.appendChild(s);
   }
@@ -120,13 +121,26 @@
     var sag=document.createElement("div"); sag.className="arb-bsag"; h.appendChild(sag);
     var dmg=null, kendi=false, k=damgaKaynak(bu), btn=null;
     function tazele(){ if(!kendi||!dmg) return; damgaOku(k).then(function(v){ if(v!==undefined) dmg.textContent="Son güncelleme: "+fd(v); }); }
+    /* FORM-GECIKME-KUTU (23.11.2026, Melih): ayın 2. iş gününden itibaren aylık güncellemesi yapılmamış formda Güncelle düğmesinin solunda
+       kırmızı "Geciken Güncelleme N İş Günü" kutusu; kaynak rpc form_gecikme_tek (Formlar panosu Geciken ölçütüyle aynı); güncelleme olunca kaybolur. */
+    var gk=null;
+    function gecikmeOku(){
+      if(!CLI||!btn) return;
+      try{ CLI.rpc("form_gecikme_tek",{p_yol:bu}).then(function(r){
+        var n=(r&&!r.error&&r.data!=null)?Number(r.data):0;
+        if(n>0){ if(!gk){ gk=document.createElement("span"); gk.className="arb-gecik"; }
+          gk.textContent="Geciken Güncelleme "+n+" İş Günü"; if(gk.parentNode!==sag||gk.nextSibling!==btn) sag.insertBefore(gk,btn); }
+        else if(gk&&gk.parentNode) gk.parentNode.removeChild(gk);
+      }); }catch(e){}
+    }
     function yerlestir(){
       [].slice.call(document.querySelectorAll("[data-arb-bant]")).forEach(function(e){ if(!sag.contains(e)) sag.insertBefore(e,btn||dmg||null); });
       if(!btn){
         btn=[].slice.call(document.querySelectorAll("button")).filter(function(b){
           return !b.closest("table")&&!b.closest("#arb-menu")&&!b.closest(".arb-hlp")&&/^(aylık )?güncelle$/.test(tx(b)); })[0]||null;
         if(btn){ btn.classList.add("arb-gunc"); sag.insertBefore(btn,dmg||null);
-          btn.addEventListener("click",function(){ [4000,10000,25000].forEach(function(t){ setTimeout(tazele,t); }); }); }
+          btn.addEventListener("click",function(){ [4000,10000,25000,60000].forEach(function(t){ setTimeout(function(){ tazele(); gecikmeOku(); },t); }); });
+          gecikmeOku(); }
       }
       if(!dmg){
         var st=document.getElementById("stamp");

@@ -441,9 +441,15 @@ document.getElementById("ayBtn").onclick=async()=>{
   const m=document.getElementById("ayMsg"), btn=document.getElementById("ayBtn");
   if(!onayKapi()) return;
   if(!(await obNotVar())){ alert("Güncelleme yapılamadı.\n\nÖnce Özgül Bedestenci için geçen ayın performans notunu (0-10) seçmelisiniz."); document.getElementById("obNot").scrollIntoView({block:"center"}); return; } /* OB-PRIM */
-  if(!confirm('"'+DONEM+'" ayı için güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\nYalnızca güncelleme için basın; düzeltme/revizyon için BASMAYIN.\n\nOnaylıyor musunuz?')) return;
+  /* MK-AY-AYRI (23.11.2026, Melih): atlanmış aylar ayrı ayrı işaretlenir (rpc mk_ay_guncelle) — her dönemin primi o ayın satırlarından,
+     gecikme kesintisi (%1/iş günü) o dönemin son tarihinden (ayın ilk iş günü) hesaplanır. */
+  const on=await sb.rpc("mk_ay_guncelle",{p_onizleme:true});
+  if(on.error){ alert("Güncelleme yapılamadı.\n\nSebep: "+on.error.message+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); return; }
+  const AYL=on.data||[];
+  const ozet=AYL.map(x=>"• "+x.prim_ay_ad+" primi ("+x.ay+" güncellemesi): "+x.geciken+" iş günü gecikme → %"+x.kesinti+" kesinti").join("\n");
+  if(!confirm((AYL.length>1?AYL.length+" ay için ayrı ayrı":'"'+DONEM+'" ayı için')+' güncelleme işaretlenecek ve Melih\'e mail atılacak.\n\n'+ozet+'\n\nYalnızca güncelleme için basın; düzeltme/revizyon için BASMAYIN.\n\nOnaylıyor musunuz?')) return;
   btn.disabled=true; m.className="msg"; m.textContent="İşaretleniyor…";
-  const {error}=await sb.from("mk_ay_islendi").insert({ay:DONEM});
+  const gr=await sb.rpc("mk_ay_guncelle",{p_onizleme:false}); const error=gr.error, AYS=gr.data||[];
   if(error){ btn.disabled=false; m.className="msg err"; m.textContent="Hata: "+error.message; alert("Güncelleme yapılamadı.\n\nSebep: ay işaretlenemedi — "+error.message+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); return; } /* GUNC-HATA-UYARI */
   /* Şantiye MK durumunu panoya aktar: her şantiye için güncel MK → 'son', önceki 'son' → 'geçmiş' (yalnız MK) */
   let snapNote="";
@@ -452,13 +458,13 @@ document.getElementById("ayBtn").onclick=async()=>{
     else{ snapNote=" · "+(sr.data||0)+" şantiye panoya aktarıldı"; }
   }catch(e){ snapNote=" (şantiye aktarımı hatası)"; }
   let note="";
-  try{ const r=await sb.functions.invoke("mk-faaliyet-mail",{body:{ay:DONEM}});
+  try{ const r=await sb.functions.invoke("mk-faaliyet-mail",{body:{ay:AYS.length?AYS.map(x=>x.ay).join(" + "):DONEM,aylar:AYS}});
     if(r.error){ note=" (mail gönderilemedi: "+(r.error.message||r.error)+")"; }
   }catch(e){ note=" (mail gönderilemedi)"; }
-  if(!(snapNote.indexOf("hata")>-1||note)) alert("Güncelleme başarıyla tamamlandı.\n\n"+DONEM+" ayı işaretlendi"+snapNote+"."); /* GUNC-BASARI-UYARI */
+  if(!(snapNote.indexOf("hata")>-1||note)) alert("Güncelleme başarıyla tamamlandı.\n\n"+(AYS.length?AYS.map(x=>x.ay).join(" ve "):DONEM)+" işaretlendi"+snapNote+"."); /* GUNC-BASARI-UYARI */
   if(snapNote.indexOf("hata")>-1||note) alert("Güncelleme tamamlanamadı — ay işaretlendi ancak:\n\n• "+[snapNote,note].filter(x=>x&&(x.indexOf("hata")>-1||x.indexOf("gönderilemedi")>-1)).map(x=>x.replace(/^[\s(·]+|\)$/g,"")).join("\n• ")+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); /* GUNC-HATA-UYARI */
   sLoadAkis(); onaySifirla();
-  btn.disabled=false; m.className="msg ok"; m.textContent="✓ "+DONEM+" ayı işaretlendi."+snapNote+note;
+  btn.disabled=false; m.className="msg ok"; m.textContent="✓ "+(AYS.length?AYS.map(x=>x.ay).join(" ve "):DONEM)+" işaretlendi."+snapNote+note;
 };
 /* ===== Tıkanmış Şantiyeler — MK durum girişi (santiye_durum_log, kim='MK') ===== */
 function sMsg(t,ok){ const m=document.getElementById("s_msg"); m.className="msg "+(ok?"ok":"err"); m.style.color=ok?"#2e7d54":"#b40000"; m.textContent=t; if(ok) setTimeout(()=>{m.textContent="";},3000); }
@@ -798,7 +804,7 @@ try{ if(window.SITUYK) SITUYK.render(document.getElementById("situ-yk"),{sb:sb,k
 })();
 </script>
 <!-- /ARBOR-DRAGSCROLL -->
-<!-- FORM-LINKLER --><script src="../form_linkler.js?v=261105"></script><!-- FORM-MENU -->
+<!-- FORM-LINKLER --><script src="../form_linkler.js?v=261123g"></script><!-- FORM-MENU -->
 </body>
 </html<!-- ARB-EXCEL-BTN -->
 <script>

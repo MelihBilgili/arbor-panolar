@@ -3877,9 +3877,10 @@ const mkEur=n=>(Number(n)||0).toLocaleString("tr-TR",{maximumFractionDigits:2})+
 const MKP_COLS=`<colgroup><col class="w35"><col class="w35"><col class="w35"><col class="w12"><col class="w12"><col class="w12"></colgroup>`;
 async function loadMkPrim(tgt){
   const body=document.getElementById(tgt||"view");
-  const [f,ai]=await Promise.all([
+  const [f,ai,mka]=await Promise.all([
     sb.from("mk_faaliyet").select("*").eq("aktif",true).order("id",{ascending:false}),
-    sb.from("mk_ay_islendi").select("created_at").order("created_at",{ascending:false}).limit(1)
+    sb.from("mk_ay_islendi").select("created_at").order("created_at",{ascending:false}).limit(1),
+    sb.from("mk_ay_islendi").select("ay,prim_ay,son_tarih,geciken_is_gunu,kesinti_yuzde,prim_brut,prim_net,created_at").not("prim_ay","is",null).order("id",{ascending:false}).limit(12) /* MK-AY-AYRI */
   ]);
   if(f.error){ body.innerHTML=`<div class="load">Hata: ${esc(f.error.message)}</div>`; return; }
   const rows=f.data||[]; const byT={memnuniyet:[],ts:[],fr:[],diger:[]}; rows.forEach(r=>{ (byT[r.tur]=byT[r.tur]||[]).push(r); });
@@ -3922,7 +3923,11 @@ async function loadMkPrim(tgt){
   <table class="mkp mkptop">${MKP_COLS}<tbody><tr>
     <td colspan="5">Son güncelleme: ${gunc} · Toplam prim (4 kriter)</td>
     <td class="num"><div class="cx num">${mkEur(grand)}</div></td>
-  </tr></tbody></table>${html}`;
+  </tr></tbody></table>${(()=>{ /* MK-AY-AYRI (23.11.2026, Melih): her güncelleme dönemi ayrı prim + gecikme kesintisi (%1/iş günü) */
+    const R=(mka&&!mka.error&&mka.data)||[]; if(!R.length) return "";
+    const AYA=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"], pa=x=>{ const p=String(x||"").split("-"); return p.length===2?AYA[+p[1]-1]+" "+p[0]:x; };
+    return `<table class="mkp" style="width:auto;table-layout:auto;margin:0 0 10px"><thead><tr><th>Güncelleme dönemi</th><th>Prim ayı</th><th>Son tarih</th><th>Güncelleme</th><th class="num">Geciken (iş günü)</th><th class="num">Kesinti</th><th class="num">Brüt prim</th><th class="num">Net prim</th></tr></thead><tbody>`
+      +R.map(r=>`<tr><td>${esc(r.ay)}</td><td>${esc(pa(r.prim_ay))}</td><td>${fdate(r.son_tarih)}</td><td>${dOnly(r.created_at)}</td><td class="num">${r.geciken_is_gunu||0}</td><td class="num">%${r.kesinti_yuzde||0}</td><td class="num">${mkEur(r.prim_brut)}</td><td class="num"><b>${mkEur(r.prim_net)}</b></td></tr>`).join("")+`</tbody></table>`; })()}${html}`;
 }
 
 /* ---------- ŞANTİYE — owner salt-okur: tarihli DURUM LOG akışı (ÖB+MK tek form yazar). ---------- */
