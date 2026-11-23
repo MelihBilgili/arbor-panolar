@@ -711,7 +711,7 @@ async function grGundem(){
       pem=pem.filter(r=>{ const n=Number(r.kod); return !(sv[n]||/sevk edildi/i.test(sd[n]||"") /* GIRIS-SEVK-EDILDI: "3 Sevke Hazır" gizlenmez */); }); } }catch(e){}
   const mbRows=mb.map(r=>`<tr data-id="${r.id}"><td class="kod ged" data-f="kod" data-type="text">${esc(r.kod)}</td><td class="ged" data-f="konu" data-type="text">${esc(r.konu)}</td><td><button class="del" title="Kapat (sil)" data-id="${r.id}">✕</button></td></tr>`).join("");
   el.innerHTML=`<div class="ag-wrap">`
-    +(`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">`+(`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${mbRows}${grAgAddRow("MB",false)}</tbody></table></div>`)+(primH||"")+`<div id="gr-situyk"></div></div>`)   /* SITU-YUKLEME: Prim şartını sağlayan sağında */
+    +(`<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">`+(`<div class="scroll"><table class="gnb"><thead><tr><th>Kod</th><th>Konu</th><th></th></tr></thead><tbody>${mbRows}${grAgAddRow("MB",false)}</tbody></table></div>`)+`<div style="display:flex;flex-direction:column;gap:16px;min-width:0">`+(primH||"")+`<div id="gr-situyk"></div></div></div>`)   /* SITU-YUKLEME · GIRIS-SITU-ALT (23.11.2026, Melih): Situ tablosu Prim şartını sağlayan tablosunun altında */
     +`</div>`; /* GIRIS-ACIL-SAHSI: PEM tablosu Acil yüklemelere birleşti */
   grAcilSahsi(pem);
   el.querySelectorAll(".del").forEach(b=>b.onclick=()=>delGundem(b.dataset.id));
