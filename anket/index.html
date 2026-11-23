@@ -33,7 +33,7 @@
   @media(max-width:600px){.g2{grid-template-columns:1fr}}
   /* Matris: her konu bir sütun, her memnuniyet düzeyi bir satır */
   .mx{overflow-x:auto;-webkit-overflow-scrolling:touch}
-  table.m{border-collapse:collapse;width:100%;min-width:560px;table-layout:fixed}
+  table.m{border-collapse:collapse;width:100%;min-width:640px;table-layout:fixed}
   table.m col.lb{width:150px}
   table.m th,table.m td{border:1px solid var(--bord);padding:7px 6px;text-align:center;vertical-align:middle}
   table.m thead th{background:#f6f8f7;font-size:12.5px;font-weight:600;color:#24323f;line-height:1.3}
@@ -92,16 +92,17 @@
   var Q=new URLSearchParams(location.search);
   var token=(Q.get("t")||"").trim();
   var app=document.getElementById("app");
-  /* Sıra: 1. Etüt (yeni, ilk) · 2. Kalite · 3. Süreler · 4. Teknik ve idari yönetim (ambalaj/koruma maddesi kaldırıldı) */
-  var KK=["etut","kalite","sureler","yonetim"];
+  /* Sıra: 1. Etüt (yeni, ilk) · 2. Kalite · 3. Süreler · 4. Teknik yönetim · 5. İdari yönetim (ambalaj/koruma maddesi kaldırıldı) */
+  /* ANKET-IDARI-AYRI (23.11.2026): Teknik ve idari yönetim iki ayrı madde (yonetim = teknik, idari = yeni sütun); başa "resmi belge değildir" notu */
+  var KK=["etut","kalite","sureler","yonetim","idari"];
   var NV=["ts","s","i","ti"];
   var T={
    fr:{site:"WWW.FENETREENBOIS.FR",url:"https://fenetreenbois.fr/",logo:"FENÊTRES EN BOIS",tarih:"fr-FR",
      baslik:"ENQUÊTE DE SATISFACTION CLIENT",alt:"Votre expérience nous aide à progresser.",yuk:"Chargement…",
-     intro:"Chère cliente, cher client,<br>Dans le but d'améliorer continuellement la qualité de nos produits et de nos services, nous vous invitons à répondre à cette courte enquête. Votre avis est essentiel pour nous.",
+     intro:"Chère cliente, cher client,<br>Dans le but d'améliorer continuellement la qualité de nos produits et de nos services, nous vous invitons à répondre à cette courte enquête. Votre avis est essentiel pour nous.<br><br><i>Cette enquête n'est pas un document officiel ; elle sert uniquement à améliorer nos services. Aucune signature n'est requise.</i>",
      s1:"INFORMATIONS GÉNÉRALES",proje:"Nom du projet / chantier",teslim:"Date de livraison",tph:"jj/mm/aaaa",
      s2:"ÉVALUATION DES PRESTATIONS",q2:"Pour chaque prestation, cochez votre niveau de satisfaction",
-     k:[["Phase d'études","plans, validations techniques, échanges avec le bureau d'études"],["Qualité des menuiseries","finitions, esthétique, conformité"],["Respect des délais","livraison / fabrication"],["Gestion technique et administrative","mails, devis, réactivité"]],
+     k:[["Phase d'études","plans, validations techniques, échanges avec le bureau d'études"],["Qualité des menuiseries","finitions, esthétique, conformité"],["Respect des délais","livraison / fabrication"],["Gestion technique","suivi de chantier, coordination, réponses aux questions techniques"],["Gestion administrative","devis, factures, e-mails, réactivité"]],
      n:["Très satisfait","Satisfait","Insatisfait","Très insatisfait"],expl:"Si insatisfait : merci de préciser la raison",neden:"Raison (obligatoire)",
      s3:"SERVICE APRÈS-VENTE (SAV) ET SUIVI",q3:"Le traitement de vos demandes de SAV ou de modifications techniques a-t-il été satisfaisant ?",
      sav:["Oui, tout à fait","En partie","Non, pas du tout","Non applicable (pas de SAV)"],savx:"Merci de préciser ce qui n'a pas été satisfaisant",
@@ -114,10 +115,10 @@
      hata:"Erreur. Merci de réessayer.",bag:"Erreur de connexion. Merci de réessayer."},
    en:{site:"WWW.WOODENWINDOWSCOMPANY.CO.UK",url:"https://woodenwindowscompany.co.uk/",logo:"WOODEN WINDOWS",tarih:"en-GB",
      baslik:"CUSTOMER SATISFACTION SURVEY",alt:"Your experience helps us improve.",yuk:"Loading…",
-     intro:"Dear customer,<br>In order to continuously improve the quality of our products and services, we invite you to answer this short survey. Your opinion is essential to us.",
+     intro:"Dear customer,<br>In order to continuously improve the quality of our products and services, we invite you to answer this short survey. Your opinion is essential to us.<br><br><i>This survey is not an official document; it is only intended to help us improve our services. No signature is required.</i>",
      s1:"GENERAL INFORMATION",proje:"Project / site name",teslim:"Delivery date",tph:"dd/mm/yyyy",
      s2:"SERVICE EVALUATION",q2:"For each item, please tick your level of satisfaction",
-     k:[["Design phase","shop drawings, technical approvals, communication with the design office"],["Quality of the joinery","finishes, appearance, compliance"],["Meeting lead times","delivery / manufacturing"],["Technical and administrative management","emails, quotations, responsiveness"]],
+     k:[["Design phase","shop drawings, technical approvals, communication with the design office"],["Quality of the joinery","finishes, appearance, compliance"],["Meeting lead times","delivery / manufacturing"],["Technical management","site follow-up, coordination, answers to technical questions"],["Administrative management","quotations, invoices, emails, responsiveness"]],
      n:["Very satisfied","Satisfied","Dissatisfied","Very dissatisfied"],expl:"If dissatisfied: please state the reason",neden:"Reason (required)",
      s3:"AFTER-SALES SERVICE AND FOLLOW-UP",q3:"Were your after-sales or technical change requests handled satisfactorily?",
      sav:["Yes, completely","Partly","No, not at all","Not applicable (no after-sales)"],savx:"Please specify what was not satisfactory",
@@ -130,10 +131,10 @@
      hata:"Error. Please try again.",bag:"Connection error. Please try again."},
    de:{site:"WWW.HOLZFENSTERTUEREN.DE",url:"https://holzfenstertueren.de/",logo:"HOLZ FENSTER",tarih:"de-DE",
      baslik:"KUNDENZUFRIEDENHEITSUMFRAGE",alt:"Ihre Erfahrung hilft uns, besser zu werden.",yuk:"Wird geladen…",
-     intro:"Sehr geehrte Kundin, sehr geehrter Kunde,<br>um die Qualität unserer Produkte und Dienstleistungen kontinuierlich zu verbessern, bitten wir Sie, an dieser kurzen Umfrage teilzunehmen. Ihre Meinung ist uns sehr wichtig.",
+     intro:"Sehr geehrte Kundin, sehr geehrter Kunde,<br>um die Qualität unserer Produkte und Dienstleistungen kontinuierlich zu verbessern, bitten wir Sie, an dieser kurzen Umfrage teilzunehmen. Ihre Meinung ist uns sehr wichtig.<br><br><i>Diese Umfrage ist kein offizielles Dokument; sie dient ausschließlich der Verbesserung unserer Leistungen. Eine Unterschrift ist nicht erforderlich.</i>",
      s1:"ALLGEMEINE ANGABEN",proje:"Projekt / Baustelle",teslim:"Liefertermin",tph:"TT.MM.JJJJ",
      s2:"BEWERTUNG DER LEISTUNGEN",q2:"Bitte kreuzen Sie für jede Leistung Ihre Zufriedenheit an",
-     k:[["Planungsphase","Werkpläne, technische Freigaben, Abstimmung mit dem Planungsbüro"],["Qualität der Fenster und Türen","Verarbeitung, Optik, Konformität"],["Termintreue","Lieferung / Fertigung"],["Technische und kaufmännische Abwicklung","E-Mails, Angebote, Reaktionsfähigkeit"]],
+     k:[["Planungsphase","Werkpläne, technische Freigaben, Abstimmung mit dem Planungsbüro"],["Qualität der Fenster und Türen","Verarbeitung, Optik, Konformität"],["Termintreue","Lieferung / Fertigung"],["Technische Abwicklung","Baustellenbetreuung, Koordination, Beantwortung technischer Fragen"],["Kaufmännische Abwicklung","Angebote, Rechnungen, E-Mails, Reaktionsfähigkeit"]],
      n:["Sehr zufrieden","Zufrieden","Unzufrieden","Sehr unzufrieden"],expl:"Falls unzufrieden: bitte Grund angeben",neden:"Grund (Pflichtfeld)",
      s3:"KUNDENDIENST UND BETREUUNG",q3:"Wurden Ihre Kundendienst- oder technischen Änderungsanfragen zufriedenstellend bearbeitet?",
      sav:["Ja, voll und ganz","Teilweise","Nein, überhaupt nicht","Nicht zutreffend (kein Kundendienst)"],savx:"Bitte erläutern Sie, was nicht zufriedenstellend war",
@@ -146,10 +147,10 @@
      hata:"Fehler. Bitte versuchen Sie es erneut.",bag:"Verbindungsfehler. Bitte versuchen Sie es erneut."},
    tr:{site:"WWW.ARBOR.COM.TR",url:"https://www.arbor.com.tr/",logo:"AHŞAP PENCERE",tarih:"tr-TR",
      baslik:"MÜŞTERİ MEMNUNİYET ANKETİ",alt:"Deneyiminiz gelişmemize yardımcı oluyor.",yuk:"Yükleniyor…",
-     intro:"Değerli müşterimiz,<br>Ürün ve hizmetlerimizin kalitesini sürekli iyileştirmek amacıyla sizi bu kısa ankete katılmaya davet ediyoruz. Görüşleriniz bizim için çok değerlidir.",
+     intro:"Değerli müşterimiz,<br>Ürün ve hizmetlerimizin kalitesini sürekli iyileştirmek amacıyla sizi bu kısa ankete katılmaya davet ediyoruz. Görüşleriniz bizim için çok değerlidir.<br><br><i>Bu anket resmi bir belge değildir; yalnız hizmetlerimizi iyileştirmek içindir. İmza gerekmez.</i>",
      s1:"GENEL BİLGİLER",proje:"Proje / şantiye adı",teslim:"Teslim tarihi",tph:"gg.aa.yyyy",
      s2:"HİZMETLERİN DEĞERLENDİRİLMESİ",q2:"Her konu için memnuniyet düzeyinizi işaretleyiniz",
-     k:[["Etüt aşaması","uygulama çizimleri, teknik onaylar, etüt ekibiyle iletişim"],["Doğramaların kalitesi","işçilik, görünüm, şartnameye uygunluk"],["Sürelere uyum","teslimat / üretim"],["Teknik ve idari yönetim","e-postalar, teklifler, hızlı dönüş"]],
+     k:[["Etüt aşaması","uygulama çizimleri, teknik onaylar, etüt ekibiyle iletişim"],["Doğramaların kalitesi","işçilik, görünüm, şartnameye uygunluk"],["Sürelere uyum","teslimat / üretim"],["Teknik yönetim","şantiye takibi, koordinasyon, teknik sorulara dönüş"],["İdari yönetim","teklifler, faturalar, e-postalar, hızlı dönüş"]],
      n:["Çok memnunum","Memnunum","Memnun değilim","Hiç memnun değilim"],expl:"Memnun değilseniz lütfen nedenini yazınız",neden:"Neden (zorunlu)",
      s3:"SATIŞ SONRASI HİZMET VE TAKİP",q3:"Satış sonrası hizmet veya teknik değişiklik talepleriniz tatmin edici şekilde karşılandı mı?",
      sav:["Evet, tamamen","Kısmen","Hayır, hiç","Uygulanamaz (satış sonrası talep olmadı)"],savx:"Lütfen neyin tatmin edici olmadığını belirtiniz",
