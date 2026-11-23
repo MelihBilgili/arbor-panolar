@@ -1269,7 +1269,7 @@ function ctxNeden(r,v){
   if(r.durum===v) return "Satır zaten bu durumda";
   if(v==="İptal") return "";
   if(v==="Revizyon İstendi"){
-    if(["Teklif Teslim Edildi","Takip Bekleniyor","Muhtemel"].indexOf(r.durum)<0) return "Revizyon yalnız Teklif Teslim Edildi, Takip Bekleniyor veya Muhtemel satırda";
+    if(["Teklif Teslim Edildi","Takip Bekleniyor","Muhtemel","Kazandık"].indexOf(r.durum)<0) return "Revizyon yalnız Teklif Teslim Edildi, Takip Bekleniyor, Muhtemel veya Kazandık satırda"; /* REV-KAZANDIK (23.11.2026, Melih — MN talebi): Kazandık satırda revize talebi → özgün Revizyon İstendi, kopya Teklif Bekleniyor */
     if(r.durum!=="Muhtemel" && !state5Ready(r)) return "1-6, 8-11 ve 13-17. sütunlar dolu olmalı"; /* MUHTEMEL-REV-SERBEST (15.10.2026, Melih): Muhtemel satırda sütun şartı aranmaz (eski satırlarda tarih/öncelik boş) */
     if(r.durum==="Muhtemel" && ROWS.some(x=>x.muhtemel_kaynak_id===r.id)) return "Bu Muhtemel satırın açık bir revizyon kopyası var";
     if(r.durum==="Muhtemel"){ const g=mhGuncel(r); if(g && g.id!==r.id) return "Projenin güncel Muhtemel satırı #"+g.id+" — revizyon oradan açılır"; } /* MUHTEMEL-TEK */
