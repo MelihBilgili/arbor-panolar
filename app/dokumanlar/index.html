@@ -279,6 +279,7 @@ $("res").addEventListener("click",async e=>{
   const a=e.target.closest("a[data-nr]"); if(!a) return;
   e.preventDefault();
   const r=ROWS.find(x=>x.nr===+a.dataset.nr); if(!r) return;
+  if(typeof DOK_DINAMIK!=="undefined"&&DOK_DINAMIK[r.nr]) return dokDinamikAc(r); /* DOK-TERMIN-DINAMIK */
   const w=window.open("about:blank","_blank");
   const {data,error}=await sb.storage.from("dokumanlar").createSignedUrl(r.depo_yolu,3600);
   if(error||!data){ if(w) w.close(); alert("Dosya açılamadı: "+((error&&error.message)||"")); return; }
@@ -499,6 +500,35 @@ $("bkKart").addEventListener("click",async e=>{ const el=e.target.closest("[data
 $("temizle").addEventListener("click",()=>bkCiz());
 (function(){ const s=document.createElement("style"); s.textContent=".bk-t{width:auto}.bk-t td.bk-ad{white-space:normal;min-width:260px;max-width:460px}.bk-t td{text-align:left}.so-v.bk-w{color:#0b6b48}.so-v.bk-od{color:#7a4b00}"; document.head.appendChild(s); })();
 (function bkBekle(){ if(!ROWS.length) return setTimeout(bkBekle,300); if($("f_tur").value==="Broşür-Katalog") $("bkKart").open=true; bkCiz(); })();
+/* DOK-TERMIN-DINAMIK (23.11.2026, Melih): Prozessphasen (9007) indirilirken süreler Fiyatlandırma panosundan (fiyat_termin, rpc dok_termin) okunur;
+   şablon dokumanlar/_sablon/<nr>.pdf (süre satırları boş), metin pdf-lib ile yazılır. Okunamazsa kayıtlı dosya açılır. */
+var DOK_DINAMIK={9007:{sablon:"_sablon/9007.pdf",bolge:"yd2",ad:"9007-ARBOR Prozessphasen.pdf",alanlar:[
+  {s:0,cx:372.93,y:176.9,pt:7.9,t:"{v} Wochen \u2013 Fertigung",sira:1,alan:"numune",vars:"3"},
+  {s:0,cx:662.70,y:176.3,pt:7.9,t:"{v} Wochen \u2013 Fertigung",sira:4,alan:"ic_68",vars:"9"}]}};
+function _dokJs(u){ return new Promise((ok,no)=>{ const e=document.createElement("script"); e.src=u; e.onload=ok; e.onerror=()=>no(new Error("yüklenemedi: "+u)); document.head.appendChild(e); }); }
+async function dokDinamikAc(r){
+  const c=DOK_DINAMIK[r.nr]; const w=window.open("about:blank","_blank");
+  try{
+    if(!window.PDFLib) await _dokJs("https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js");
+    if(!window.fontkit) await _dokJs("https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js");
+    const [sd,td]=await Promise.all([sb.storage.from("dokumanlar").download(c.sablon), sb.rpc("dok_termin",{p_bolge:c.bolge})]);
+    if(sd.error) throw sd.error; if(td.error) throw td.error;
+    const T={}; (td.data||[]).forEach(x=>T[x.sira]=x);
+    const doc=await PDFLib.PDFDocument.load(await sd.data.arrayBuffer());
+    doc.registerFontkit(window.fontkit);
+    const fr=await fetch("https://cdn.jsdelivr.net/gh/googlefonts/opensans@main/fonts/ttf/OpenSans-Regular.ttf"); if(!fr.ok) throw new Error("font "+fr.status);
+    const f=await doc.embedFont(await fr.arrayBuffer(),{subset:true});
+    c.alanlar.forEach(a=>{ const x=T[a.sira], v=(x&&x[a.alan]!=null&&String(x[a.alan]).trim())||a.vars, t=a.t.replace("{v}",v);
+      const p=doc.getPage(a.s), wd=f.widthOfTextAtSize(t,a.pt);
+      p.drawText(t,{x:a.cx-wd/2,y:a.y,size:a.pt,font:f,color:PDFLib.rgb(0,0,0)}); });
+    const file=new File([await doc.save()],c.ad,{type:"application/pdf"}), u=URL.createObjectURL(file);
+    if(w) w.location=u; else location.href=u;
+  }catch(e){ console.error("DOK-TERMIN-DINAMIK",e);
+    const {data}=await sb.storage.from("dokumanlar").createSignedUrl(r.depo_yolu,3600);
+    if(data){ if(w) w.location=data.signedUrl; else location.href=data.signedUrl; } else if(w) w.close();
+    alert("Güncel süreler eklenemedi, kayıtlı sürüm açıldı: "+((e&&e.message)||e)); }
+}
+
 yukle();
 /* DOK-YUKLE (22.10.2026): OneDrive düğmesi + sürükle-bırak yükleme + zorunlu ön-dolu form */
 $("odBtn").href=OD_LINK;
