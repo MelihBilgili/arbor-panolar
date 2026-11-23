@@ -71,7 +71,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <div class="wrap">
   <div id="mk-linkler" style="margin:0 0 14px;display:flex;flex-wrap:wrap;gap:6px"><a href="../sel-arb/" target="_blank" class="mkl">Sel-Arb</a><a href="../satis-yd1/" target="_blank" class="mkl">Yurt Dışı Satış 1</a><a href="../satis-yd2/" target="_blank" class="mkl">Yurt Dışı Satış 2</a><a href="../musteriler/" target="_blank" class="mkl">Müşteriler</a><a href="../santiye-yd1-1/" target="_blank" class="mkl">YD Şantiye 1.1</a><a href="../santiye-yd1-2/" target="_blank" class="mkl">YD Şantiye 1.2</a><a href="../santiye-yd1-3/" target="_blank" class="mkl">YD Şantiye 1.3</a><a href="../santiye-yd1-4/" target="_blank" class="mkl">YD Şantiye 1.4</a><a href="../santiye-yd2-1/" target="_blank" class="mkl">YD Şantiye 2.1</a><a href="../santiye-yd2-2/" target="_blank" class="mkl">YD Şantiye 2.2</a><a href="../cam-listesi/" target="_blank" class="mkl">Cam Listesi</a><a href="../cam-konfig/" target="_blank" class="mkl">Cam Konfigürasyon</a><a href="../teklif/" target="_blank" class="mkl">Ürün Fiyatlandırma</a><a href="../seri-secim/" target="_blank" class="mkl">Ürün Konfigürasyonu</a></div><!-- MK-FORM-LINKLER (16.10.2026): MK'nin yetkili oldugu formlar (form_erisim, kisiler MK + herkese acik); form eklenince guncelle -->
   <div id="gr-ust-graf" style="margin:0 0 16px"></div><!-- SITU-SEVK-YAN (23.11.2026, Melih): Situ tablosu Sevke Hazır tablosunun sağında --><!-- MK-GRAFIK-ALT (03.11.2026): Giriş grafikleri form linklerinin altında · SITU-YUKLEME (10.11.2026): grafiklerin sağında Situ Yapılmamış Yüklemeler -->
-  <div id="mk-sevk-prj"></div><!-- MK-SEVK-PRJ (19.11.2026, Melih): yurt dışı Sevke Hazır Projeler, Hedef Yükleme Tarihi MK girer (app/my_acil.js) -->
+  <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin:0 0 16px"><div id="mk-sevk-prj" style="flex:3 1 600px;min-width:0"></div><div id="situ-yk" style="flex:1 1 320px;min-width:320px;overflow:auto"></div></div><!-- SITU-SEVK-YAN2 (23.11.2026, Melih): Situ tablosu Sevke Hazır tablosunun sağında (SITU-PRIM-ALT geçersiz) --><!-- MK-SEVK-PRJ (19.11.2026, Melih): yurt dışı Sevke Hazır Projeler, Hedef Yükleme Tarihi MK girer (app/my_acil.js) -->
   <div id="my-acil" data-mod="mk"></div><!-- MY-FAALIYET: Acil yüklemeler + Uçak onayı (app/my_acil.js) -->
   <div id="gr-ust" style="margin:0 0 16px"></div><!-- GIRIS-UST-ORTAK: Giriş panosundaki Sıkı Takip … cari ay bloğu -->
   <div class="aybar">
@@ -79,7 +79,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <span class="msg" id="ayMsg"></span>
   </div>
   <div id="blocks"></div>
-  <div id="situ-yk" style="margin:0 0 16px;overflow:auto"></div><!-- SITU-PRIM-ALT (23.11.2026, Melih): Situ tablosu prim bloklarının altında -->
+  
   <span class="msg" id="msg"></span>
 
     <div id="sa1wrap"><!-- SELARB-TEK-KAYNAK: alacaklar bloğu KALDIRILDI (21.09.2026) — güncel alacaklar Sel-Arb formunda (app/sel-arb/); veri arbor_alacak_kalem'de duruyor -->
