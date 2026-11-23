@@ -558,7 +558,7 @@ async function gorselSinif(url){
   let arched=false; const ust0=C.slice().sort((a,b)=>a.y0-b.y0)[0];
   if(ust0){ const w=ust0.x1-ust0.x0+1, h=ust0.y1-ust0.y0+1, id=B.indexOf(ust0), tY=f=>{ const x=Math.round(ust0.x0+f*(w-1)); for(let y=ust0.y0;y<=ust0.y1;y++) if(L[y*W+x]===id&&T[y*W+x]===1) return y; return null; }; /* SOUM-261116-GORSEL: yalnız cam (mavi) pikseli; üst profildeki kırmızı menteşe işareti/gri profil kemer sayılmaz */
     const v=[0.12,0.3,0.5,0.7,0.88].map(tY); if(v.every(x=>x!=null)){ const es=Math.max(4,0.05*h), art=v.every((x,i)=>!i||x>=v[i-1]-1), azl=v.every((x,i)=>!i||x<=v[i-1]+1); arched=(v[2]<Math.min(v[0],v[4])-es&&v[1]<v[0]&&v[3]<v[4])||(Math.abs(v[0]-v[4])>es&&(art||azl)); } }
-  const r={kanat:kanatlar.length,arched,ust:false,alt:false,tip:"",en:"",tr:"",sabitN:sabitler.length};
+  const r={kanat:kanatlar.length,arched,ust:false,alt:false,tip:"",en:"",tr:"",sabitN:sabitler.length,vas:kanatlar.filter(o=>o.s.t==="ucgen"&&o.s.ust&&!o.s.alt&&!o.s.sol&&!o.s.sag).length}; /* SOUM-261123-MKB3: vasistas kanat sayısı */
   if(!C.length){ let n=0,a=W,b2=-1,c=Hh,e=-1; for(let i=0;i<N;i++) if(T[i]>=2){ n++; const x=i%W,y=(i-x)/W; if(x<a)a=x; if(x>b2)b2=x; if(y<c)c=y; if(y>e)e=y; }
     if(n>=20&&(b2-a)>0.35*W&&(e-c)>0.35*Hh) return Object.assign(r,{kanat:1,tip:"kapi",en:"Single door",tr:"Tek kanatlı kapı"}); return null; }
   const arti=sabitler.some(o=>o.s.t==="arti");
@@ -937,6 +937,12 @@ function ekCeviri(ad,en){ const n=nrmTxt(ad), r=(a,b)=>en?a:b;
   if(/kapi kapatici/.test(n)&&/gizli/.test(n)) return r("Concealed Door Closer","Ferme-porte encastré");
   if(/kanat secici/.test(n)) return r("Sash Selector","Sélecteur de vantail");
   if(/kapi stoper/.test(n)) return r("Door Stopper","Butée de porte");
+  if(/inox kol/.test(n)&&/pencere/.test(n)) return r("Stainless steel window handle","Poignée inox pour fenêtre"); /* SOUM-261123-MKB3 (23.11.2026, Melike Başaran) */
+  if(/inox kol/.test(n)&&/kapi/.test(n)) return r("Stainless steel door handle","Poignée inox pour porte");
+  if(/duman tahliye/.test(n)&&/kontrol panel/.test(n)) return r("Smoke ventilation control panel","Boîtier de contrôle désenfumage");
+  if(/duman tahliye/.test(n)) return r("Motorised smoke ventilation","Désenfumage");
+  if(/vasistas manuel|\bf200\b/.test(n)) return r("Manual fanlight opener","Ferme imposte");
+  if(/\bz kol\b|pmr kol/.test(n)) return r("PRM handle","Poignée PMR");
   if(/\bhorn\b/.test(n)) return r("Horn","Corne");
   if(/ventlock/.test(n)) return r("Locking Ventlock","Ventlock verrouillable");
   return ""; }
@@ -1080,7 +1086,9 @@ const ekstraPozda=(e,p)=>e.pozda?(p.kodlar||[]).includes(e.kod):ekstraPozAdet(e,
 const ekTik=(e,i)=>e.tik?e.tik.includes(i):(S.poz[i]?ekstraPozda(e,S.poz[i]):false); /* SOUM-EKSTRA-MOD */
 const kisitMi=e=>/^Fa183/i.test(String(e.kod))||/kisitlayici|limitor/.test(nrmTxt(e.ad)); /* SOUM-261113-KANAT */
 const kanatMi=e=>kisitMi(e)||/pencere kilid|entrebailleur|stop+er|kapi stop|door stop|butoir|kapi kapatici|ferme porte|door closer|mentese|paumelle|hinge/.test(nrmTxt(e.ad)); /* SOUM-261118-MENTESE (18.11.2026, Melike Başaran): Gizli Menteşe (tek/çift açılım) ve Maco Ekstra Menteşe de kanat sayısı kadar */ /* SOUM-KANAT-ELLE (16.11.2026, Melike Başaran): kapı stoperi ve kapı kapatıcı da kanat sayısı kadar */
-const ekAg=(e,i)=>{ const p=S.poz[i]; if(!p) return 0; if(!kanatMi(e)) return 1; if(e.ag&&e.ag[i]!=null) return e.ag[i]; return p.kanat>0?p.kanat:(p.iki?2:1); }; /* SOUM-261118-MENTESE: ekstra malzeme × poz kanat çarpanı elle (e.ag[poz]) */ /* SOUM-261118-DUZ: kapı kapatıcı vb. kanat sayısı kadar; görselden 0 kanat okunursa 1 (Fransız 2) */ /* kanat kısıtlayıcı: pozun görselinden sayılan kanat sayısı (görsel okunamazsa 1 / Fransız 2) */
+const inoxPenMi=e=>{ const n=nrmTxt(e.ad); return /inox kol/.test(n)&&/pencere/.test(n); }, vasMi=e=>/vasistas manuel|\bf200\b/.test(nrmTxt(e.ad)); /* SOUM-261123-MKB3 (23.11.2026, Melike Başaran): İnox Kol (pencere) kanat sayısı kadar, Fransız açılımda 1; Vasistas manuel açılım f200 vasistas kanat sayısı kadar */
+const ekAgOzel=(e,p)=>{ const t=(p.acPdf||"")+" "+(p.acikPdf||""), n=nrmTxt(t); if(inoxPenMi(e)){ const fr=(p.gs&&p.gs.tip==="fransiz")||/\bFr\./.test(t)||/fransiz|cift kanat/.test(n); return fr?1:(p.kanat>0?p.kanat:(p.iki?2:1)); } if(p.gs){ if(p.gs.vas!=null) return p.gs.vas; return (p.gs.tip==="vasistas"||p.gs.tip==="giyotinGor")?1:0; } return /vasistas/.test(n)?1:0; };
+const ekAg=(e,i)=>{ const p=S.poz[i]; if(!p) return 0; if(inoxPenMi(e)||vasMi(e)) return (e.ag&&e.ag[i]!=null)?e.ag[i]:ekAgOzel(e,p); if(!kanatMi(e)) return 1; if(e.ag&&e.ag[i]!=null) return e.ag[i]; return p.kanat>0?p.kanat:(p.iki?2:1); }; /* SOUM-261118-MENTESE: ekstra malzeme × poz kanat çarpanı elle (e.ag[poz]) */ /* SOUM-261118-DUZ: kapı kapatıcı vb. kanat sayısı kadar; görselden 0 kanat okunursa 1 (Fransız 2) */ /* kanat kısıtlayıcı: pozun görselinden sayılan kanat sayısı (görsel okunamazsa 1 / Fransız 2) */
 const ekAdet=e=>(e.tik||[]).reduce((a,i)=>a+((S.poz[i]&&S.poz[i].F)||0)*ekAg(e,i),0);
 /* SOUM-261113-ADET (13.11.2026, Melike Başaran): 4 · Pencad ekstra malzemeleri miktarı = Pozlar'daki tikli pozların adet toplamı (metre birimli kalemde Pencad miktarı), elle düzeltilebilir;
    miktar Pencad'den farklıysa tutar = Pencad birim fiyatı × miktar */
@@ -1089,7 +1097,7 @@ const eMik=e=>e.mikElle!=null?e.mikElle:(ekTur(e)==="sove"&&e.soveMod)?soveMl(e)
 const eBF=e=>e.fiyat!=null?e.fiyat:(e.miktar?(e.tutar||0)/e.miktar:0);
 const eTut=e=>{ const m=eMik(e); return (m==null||(e.miktar!=null&&Math.abs(m-e.miktar)<1e-9))?(e.tutar||0):eBF(e)*m; };
 function ekstraPozAdet(e,p){ const n=nrmTxt(e.ad);
-  if(/hoppe|kol/.test(n)) return 1; if(/kisitlayici|limitor/.test(n)) return p.of?(p.kanat>0?p.kanat:(p.iki?2:1)):0; if(/eker/.test(n)) return p.ozl.bAlu&&!p.pf?p.L/1000:0; return 0; }
+  if(inoxPenMi(e)||vasMi(e)) return ekAgOzel(e,p); /* SOUM-261123-MKB3 */ if(/hoppe|kol/.test(n)) return 1; if(/kisitlayici|limitor/.test(n)) return p.of?(p.kanat>0?p.kanat:(p.iki?2:1)):0; if(/eker/.test(n)) return p.ozl.bAlu&&!p.pf?p.L/1000:0; return 0; }
 function ozetCiz(){
   const h=H, sat=[];
   const kx=EN()?" × kur "+frN(h.K,2):"";
@@ -1565,8 +1573,8 @@ function pdfYap(Y){ Y=Y&&Y.yakala?Y:null; /* SOUM-PROJE-MAIL: Y.yakala → HTML 
   const eu=v=>typeof v==="number"?dP(n2(v)):esc(v), en=EN();
   /* SOUM-UK: PDF sütunları dile göre; İngilizcede boş Building / Fixing / Resistance class gösterilmez */
   const bosmu=f=>S.poz.every(p=>!String(f(p)==null?"":f(p)).trim());
-  const PK=(en?[["no","No"],["bina",basAd("bina","Building"),bosmu(p=>p.bina)],["ref","Ref."],["fac",basAd("fac","Fixing"),bosmu(p=>p.facade)],["img","Outside View"],["L","W (mm)"],["H","H (mm)"],["F","Qty (pc)"],["S","Area (m²)"],["P","Perimeter (m)"],["rc","Resistance class"],/* SOUM-RC-GORUN (16.11.2026, Melike Başaran): Resistance class PDF ve Excel'de her zaman görünür */ /* SOUM-261113-PDFCAM: cam sütunu (Vitrage / Glazing specification) PDF'te yok */["ug","Ug"],["rw","Rw (dB)"],["uw","Average Uw (W/m²K)"],["sg","Sfg"],["tl","Tlg (%)"],["Q","Unit Price"],["R","Total Price"],["not","Notes"]]
-    :[["no","No"],["fac",basAd("fac","Facade"),bosmu(p=>p.facade)],["img","Vue Interne"],["L","L (mm)"],["H","H (mm)"],["F","Unité (pc)"],["S","Surface (m2)"],["P","Pourtour (m)"],["rc","Classe de résistance"],/* SOUM-FR-RC (16.11.2026, Melike Başaran): Fransızcada da RC sütunu her zaman */["ug","Ug"],["rw","RW+Ctr (dB)"],["uw","Uw moyen (W/m2K)"],["sg","Sfg"],["tl","Tlg (%)"],["Q","Prix Unitaire"],["R","Prix Total"],["not","Notes"]]).filter(k=>!k[2]);
+  const PK=(en?[["no","No"],["bina",basAd("bina","Building"),bosmu(p=>p.bina)],["ref","Ref."],["fac",basAd("fac","Fixing"),bosmu(p=>p.facade)],["img","Outside View"],["L","W (mm)"],["H","H (mm)"],["F","Qty (pc)"],["S","Area (m²)"],["P","Perimeter (m)"],["rc","Resistance<br>class"],/* SOUM-261123-MKB3: başlık iki satır */ /* SOUM-RC-GORUN (16.11.2026, Melike Başaran): Resistance class PDF ve Excel'de her zaman görünür */ /* SOUM-261113-PDFCAM: cam sütunu (Vitrage / Glazing specification) PDF'te yok */["ug","Ug"],["rw","Rw (dB)"],["uw","Average Uw (W/m²K)"],["sg","Sfg"],["tl","Tlg (%)"],["Q","Unit Price"],["R","Total Price"],["not","Notes"]]
+    :[["no","No"],["fac",basAd("fac","Facade"),bosmu(p=>p.facade)],["img","Vue Interne"],["L","L (mm)"],["H","H (mm)"],["F","Unité (pc)"],["S","Surface (m2)"],["P","Pourtour (m)"],["rc","Classe de<br>résistance"],/* SOUM-FR-RC (16.11.2026, Melike Başaran): Fransızcada da RC sütunu her zaman */["ug","Ug"],["rw","RW+Ctr (dB)"],["uw","Uw moyen (W/m2K)"],["sg","Sfg"],["tl","Tlg (%)"],["Q","Prix Unitaire"],["R","Prix Total"],["not","Notes"]]).filter(k=>!k[2]);
   const PV={no:p=>p.no,bina:p=>esc(p.bina||""),ref:p=>'<b>'+esc(refAd(p))+'</b>',fac:p=>'<div>'+esc(facadeAd(p))+'</div>',img:p=>(p.img?'<img src="'+p.img.url+'">':'')+(en?'':'<b>'+esc(p.kod)+'</b>'),L:p=>p.L,H:p=>p.H,F:p=>p.F||0,S:p=>dN(p.L*p.H/1e6,2),P:p=>dN((p.L+p.H)*2/1000,1),
     rc:p=>esc(p.rc||""),cam:p=>esc(camMetin(p)).replace(/\n/g,"<br>"),ug:p=>dN(p.ug,1),rw:p=>esc(p.rw==null?"":p.rw),uw:p=>dN(uwDeger(p),2),sg:p=>dN(p.sg,2),tl:p=>esc(p.tl==null?"":p.tl),Q:p=>dP(n2(p.Q)),R:p=>dP(p.R),not:p=>esc(notMetin(p)).replace(/\n/g,"<br>")};
   const PC={fac:"fac",img:"vue",Q:"pr",R:"pr",not:"not",cam:"cm"}; const EQK=k=>/^(L|H|F|S|P|rc|ug|rw|uw|sg|tl)$/.test(k); /* SOUM-261123-ESITKOL */
@@ -1601,7 +1609,7 @@ function pdfYap(Y){ Y=Y&&Y.yakala?Y:null; /* SOUM-PROJE-MAIL: Y.yakala → HTML 
   +'</style></head><body>'
   +'<div class="antet"><img src="'+(DIL()==="en"?window.SOUM_IMG.logoEn:window.SOUM_IMG.logo)+'"><div class="t"><b>'+esc(antet()[0])+'</b><br>'+antet().slice(1).map(esc).join("<br>")+'</div></div>'
   +'<h1>'+tt("OFFRE COMMERCIALE","COMMERCIAL OFFER")+'</h1>'
-  +'<table class="ust"><tr><th style="width:38%">CLIENT</th><th style="width:22%">'+tt("PROJET","PROJECT")+'</th><th style="width:13.33%">REF</th><th style="width:13.33%">'+tt("PAR","BY")+'</th><th style="width:13.33%">DATE</th></tr><tr><td>'+nl([$("f_ilgili").value,$("f_firma").value,$("f_madres").value].filter(Boolean).join("\n"))+'</td><td>'+nl([$("f_proje").value,$("f_padres").value].filter(Boolean).join("\n"))+'</td><td>'+esc($("f_ref").value)+'</td><td>'+esc(parAd($("f_par").value))+'</td><td>'+tar.toLocaleDateString(DIL()==="en"?"en-GB":"tr-TR")+'</td></tr></table>'
+  +'<table class="ust"><tr><th style="width:30%">CLIENT</th><th style="width:30%">'+tt("PROJET","PROJECT")+'</th><th style="width:13.33%">REF</th><th style="width:13.33%">'+tt("PAR","BY")+'</th><th style="width:13.33%">DATE</th></tr><tr><td>'+nl([$("f_ilgili").value,$("f_firma").value,$("f_madres").value].filter(Boolean).join("\n"))+'</td><td>'+nl([$("f_proje").value,$("f_padres").value].filter(Boolean).join("\n"))+'</td><td>'+esc($("f_ref").value)+'</td><td>'+esc(parAd($("f_par").value))+'</td><td>'+tar.toLocaleDateString(DIL()==="en"?"en-GB":"tr-TR")+'</td></tr></table>'
   +'<table class="ana'+(en?' en':'')+'"><thead><tr>'+PK.map(k=>'<th'+(k[0]==="Q"||k[0]==="R"?' class="pr"':(EQK(k[0])?' class="eq"':''))+'>'+k[1]+'</th>').join("")+'</tr></thead><tbody>'+satir
   +'<tr><td colspan="'+iF+'" style="text-align:left;color:#2B4714;font-weight:bold">TOTAL</td><td><b>'+fN(h.adet,0)+'</b></td><td colspan="'+(PK.length-iF-1)+'" style="text-align:left">'+tt("unités","units")+'</td></tr></tbody></table>'
   +'<div class="alt">'+glosHtml()+'<table class="blok">'+blok+'</table></div>'
