@@ -28,7 +28,7 @@ function netEur(r,k){ if(r.net_tutar_eur!=null){ const d=Number(r.net_tutar_eur)
 /* GIRIS-YEKSEN-15 (09.11.2026, Melih): Giriş'te (o.grafik===true) tüm grafiklerin y ekseni %50 uzun; MK/CTP aynı */
 let YK=1;
 function spark(pts,opt){
-  opt=opt||{}; const W=244,H=Math.round(54*YK)+24,L=40,R=6,T=8,B=16, birim=opt.birim||" €";
+  opt=opt||{}; const W=Math.round(244*(opt.wK||1)) /* MK-SAG-DAR: opt.wK */,H=Math.round(54*YK)+24,L=40,R=6,T=8,B=16, birim=opt.birim||" €";
   const vs=pts.filter(p=>p.y!=null).map(p=>p.y);
   if(!vs.length) return '<div class="gru-muted">Veri yok</div>';
   let mn=Math.min(0,Math.min.apply(null,vs)), mx=Math.max.apply(null,vs); if(mx===mn) mx=mn+1;
@@ -182,10 +182,10 @@ async function satis(o,elT,elG){
       ayT[a]=(ayT[a]||0)+n(r.dk1)+2*n(r.dk2)+3*n(r.dk3)+5*n(r.dk4); });
     const key=d=>d.getFullYear()+"-"+p2(d.getMonth()+1), ks=Object.keys(ayT).sort(), ilk=ks.length?ks[0]:key(today);
     dkS=[]; for(let i=NA;i>=0;i--){ const d=new Date(today.getFullYear(),today.getMonth()-i,1), kk=key(d); dkS.push({x:lbl(d)+(i===0?" (cari)":""),y:kk<ilk?null:(ayT[kk]||0),cur:i===0}); } }
-  const kart=(ad,pts,v,b)=>`<div class="gru-card"><div class="gru-ct">${esc(ad)}</div><div class="gru-cv">${money(v)}${b}</div>${spark(pts,{birim:b})}</div>`;
+  const kart=(ad,pts,v,b,wK)=>`<div class="gru-card"><div class="gru-ct">${esc(ad)}</div><div class="gru-cv">${money(v)}${b}</div>${spark(pts,{birim:b,wK})}</div>`;
   const kS=f=>ser.map(s=>({x:s.x,y:s[f]==null?null:s[f],cur:s.cur}));
   const c=f=>ser[ser.length-1][f];
-  const dkK=dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk"):"";
+  const dkK=dkS?kart("Etüt DK1 (dk)",dkS,dkS[dkS.length-1].y," dk",o.grafik==="mk"?0.8:1/* MK-SAG-DAR (23.11.2026, Melih): MK'da %20 dar */):"";
   if(o.grafik==="mk"){ /* GIRIS-MK-GRAFIK: MK formunda yalnız YD alınan · YD muht. · Etüt DK1, tek satır */
     elG.innerHTML=`<h3 class="gru-h">Satış ve Etüt DK1 — ${BAS} ve cari durum</h3><div class="gru-cards">${mkart("Yurt Dışı Prj (€)",[{ad:"Alınan",pts:kS("yd_a")},{ad:"Muhtemel",pts:kS("yd_m")}],[c("yd_a"),c("yd_m")],v=>money(v)+" €")/* MK-GRAFIK-BIRLES */}${dkK.replace('class="gru-card"','class="gru-card gru-o-etut"')/* MK-CARI-GENIS: Etüt Cari ayın altında */}</div>`;
     return; }
@@ -319,7 +319,7 @@ async function cari(o,el){
   }
   const K=[["Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar",eur(ft),"OE Faaliyet"],["Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler",eur(od),"ÖB Faaliyet"],["Yurt Dışı Birimlerin müşterilerden yaptığı Tahsilat",thT,"ÖB Faaliyet"]];
   if(G){ /* MK-GRAFIK-BIRLES / GIRIS-GRAFIK-BIRLES + CARI-TEK-GRAFIK (29.10.2026): faturalar + ödemeler + tahsilat tek grafikte */ /* GIRIS-CARI-TAMSAYI (15.11.2026, Melih): Giriş'te bu kartın tutarları tam sayı */
-    el.innerHTML=`<div class="gru-boxes">`+mkart(ay,[{ad:o.grafik===true?"Selectron'un yükleme faturaları":"Selectron'un YD birimlerine kestiği faturalar"/* GIRIS-YUKLEME-FT (15.11.2026, Melih) */,pts:G[0]},{ad:"YD birimlerden Selectron'a ödemeler",pts:G[1]},{ad:"YD birimlerin müşterilerden tahsilatı",pts:G[2]}],[eur(ft),eur(od),thT],o.grafik===true?(v=>v==null?"—":Math.round(v).toLocaleString("tr-TR")+" €"):f,o.grafik===true?{hK:1.7,hEk:46}:{wK:1.375/* MK-CARI-GENIS (23.11.2026, Melih): MK'da %25 geniş, sonra +%10 (1,25×1,1) */}/* GRAFIK-ESIT-BOY: Giriş'te Prj ile aynı boy (lejant 6−3 satır) */).replace('class="gru-card gru-mk"','class="gru-box gru-box3 gru-gr gru-mk gru-o-cari"')+`</div>`;
+    el.innerHTML=`<div class="gru-boxes">`+mkart(ay,[{ad:o.grafik===true?"Selectron'un yükleme faturaları":"Selectron'un YD birimlerine kestiği faturalar"/* GIRIS-YUKLEME-FT (15.11.2026, Melih) */,pts:G[0]},{ad:"YD birimlerden Selectron'a ödemeler",pts:G[1]},{ad:"YD birimlerin müşterilerden tahsilatı",pts:G[2]}],[eur(ft),eur(od),thT],o.grafik===true?(v=>v==null?"—":Math.round(v).toLocaleString("tr-TR")+" €"):f,o.grafik===true?{hK:1.7,hEk:46}:{wK:1.1/* MK-CARI-GENIS (23.11.2026, Melih): MK'da 1,25×1,1 geniş · MK-SAG-DAR: sonra %20 dar (1,375×0,8) */}/* GRAFIK-ESIT-BOY: Giriş'te Prj ile aynı boy (lejant 6−3 satır) */).replace('class="gru-card gru-mk"','class="gru-box gru-box3 gru-gr gru-mk gru-o-cari"')+`</div>`;
     return; }
   el.innerHTML=`<div class="gru-boxes">${K.map(([a,v,kay])=>`<div class="gru-box gru-box3 gru-gr" title="${esc(ay)} · ${kay}"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${f(v)}</div>${G?bars(G[K.findIndex(k=>k[0]===a)]):""}</div>`).join("")}</div>`;
 }
