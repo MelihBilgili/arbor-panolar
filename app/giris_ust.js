@@ -61,7 +61,7 @@ function bars(pts,opt){
 const MRENK=["#2e6da4","#e07b00","#0a6b57","#b23a2e"];
 function multi(S,opt){
   /* SELARB-FT-SAG (09.11.2026): s.sag=true olan seri kendi ölçeğiyle sağ eksende (küçük değerler düz çizgi görünmesin); s.renk seri rengi */
-  opt=opt||{}; const anySag=S.some(s=>s.sag), W=330+(anySag?34:0),H=Math.round(72*YK*(opt.hK||1))+24 /* GIRIS-PRJ-YUKSEK: opt.hK yükseklik katı */,L=40,R=anySag?40:6,T=8,B=16, birim=opt.birim||" €";
+  opt=opt||{}; const anySag=S.some(s=>s.sag), W=330+(anySag?34:0),H=Math.round(72*YK*(opt.hK||1))+24+(opt.hEk||0) /* GIRIS-PRJ-YUKSEK: opt.hK yükseklik katı · GRAFIK-ESIT-BOY: opt.hEk ek px (lejant satırı farkı) */,L=40,R=anySag?40:6,T=8,B=16, birim=opt.birim||" €";
   const vs=[], vR=[]; S.forEach(s=>s.pts.forEach(p=>{ if(p.y!=null) (s.sag?vR:vs).push(p.y); }));
   if(!vs.length&&vR.length){ vR.forEach(v=>vs.push(v)); }
   if(!vs.length) return '<div class="gru-muted">Veri yok</div>';
@@ -285,7 +285,7 @@ async function selArb(o,el){
     const sP=i=>H.map(h=>({x:h.x,y:h.v[i]})).concat([{x:"Cari",y:K[i][1],cur:true}]);
     { /* MK-GRAFIK-BIRLES / GIRIS-GRAFIK-BIRLES: Güncel Alacak ayrı, diğer 4 kutu tek grafikte (MK + Giriş) */
       el.innerHTML=`<div class="gru-boxes">`/* GIRIS-ALACAK-GRAFIK-YOK (10.11.2026): ayrı Güncel Alacak kutusu+grafiği kaldırıldı (Giriş + MK); değer Selectron kartında */
-        +mkart("Selectron",[1,2,3,4,0].map(i=>({ad:K[i][0],pts:sP(i),renk:i===1?"#1f9d55":(i===3?"#2e6da4":(i===0?"#e83e8c":undefined)),sag:o.grafik!==true&&i===3/* GIRIS-SELARB-TEK-EKSEN (15.11.2026, Melih): Giriş'te tek eksen, "sağ eksen" yazısı yok */})),/* SELARB-GON-YESIL · SELARB-FT-SAG · GIRIS-ALACAK-PEMBE (09.11.2026): Güncel Alacak pembe çizgi */[1,2,3,4,0].map(i=>K[i][1]),v=>v==null?"—":money(v)+" €").replace('class="gru-card gru-mk"','class="gru-box gru-mk"')+`</div>`;
+        +mkart("Selectron",[1,2,3,4,0].map(i=>({ad:K[i][0],pts:sP(i),renk:i===1?"#1f9d55":(i===3?"#2e6da4":(i===0?"#e83e8c":undefined)),sag:false/* GIRIS-SELARB-TEK-EKSEN (15.11.2026, Melih): Giriş'te tek eksen · MK-SELARB-KOPYA (23.11.2026, Melih): MK'da da Giriş'teki kopyası */})),/* SELARB-GON-YESIL · SELARB-FT-SAG · GIRIS-ALACAK-PEMBE (09.11.2026): Güncel Alacak pembe çizgi */[1,2,3,4,0].map(i=>K[i][1]),v=>v==null?"—":money(v)+" €",{hK:1.7,hEk:14}/* GRAFIK-ESIT-BOY (23.11.2026, Melih): Prj grafiği ile aynı boy (lejant 6−5 satır) */).replace('class="gru-card gru-mk"','class="gru-box gru-mk gru-o-sel"')+`</div>`;
       return; }
     el.innerHTML=`<div class="gru-boxes">${K.map(([a,v],i)=>`<div class="gru-box"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${v==null?"—":money(v)+" €"}</div>${spark(sP(i))}</div>`).join("")}</div>`;
     return; }
@@ -318,7 +318,7 @@ async function cari(o,el){
   }
   const K=[["Selectron'un Yurt Dışı Birimlerine Kestiği Faturalar",eur(ft),"OE Faaliyet"],["Yurt Dışı Birimlerden Selectron'a Yapılan Ödemeler",eur(od),"ÖB Faaliyet"],["Yurt Dışı Birimlerin müşterilerden yaptığı Tahsilat",thT,"ÖB Faaliyet"]];
   if(G){ /* MK-GRAFIK-BIRLES / GIRIS-GRAFIK-BIRLES + CARI-TEK-GRAFIK (29.10.2026): faturalar + ödemeler + tahsilat tek grafikte */ /* GIRIS-CARI-TAMSAYI (15.11.2026, Melih): Giriş'te bu kartın tutarları tam sayı */
-    el.innerHTML=`<div class="gru-boxes">`+mkart(ay,[{ad:o.grafik===true?"Selectron'un yükleme faturaları":"Selectron'un YD birimlerine kestiği faturalar"/* GIRIS-YUKLEME-FT (15.11.2026, Melih) */,pts:G[0]},{ad:"YD birimlerden Selectron'a ödemeler",pts:G[1]},{ad:"YD birimlerin müşterilerden tahsilatı",pts:G[2]}],[eur(ft),eur(od),thT],o.grafik===true?(v=>v==null?"—":Math.round(v).toLocaleString("tr-TR")+" €"):f).replace('class="gru-card gru-mk"','class="gru-box gru-box3 gru-gr gru-mk"')+`</div>`;
+    el.innerHTML=`<div class="gru-boxes">`+mkart(ay,[{ad:o.grafik===true?"Selectron'un yükleme faturaları":"Selectron'un YD birimlerine kestiği faturalar"/* GIRIS-YUKLEME-FT (15.11.2026, Melih) */,pts:G[0]},{ad:"YD birimlerden Selectron'a ödemeler",pts:G[1]},{ad:"YD birimlerin müşterilerden tahsilatı",pts:G[2]}],[eur(ft),eur(od),thT],o.grafik===true?(v=>v==null?"—":Math.round(v).toLocaleString("tr-TR")+" €"):f,o.grafik===true?{hK:1.7,hEk:46}:{}/* GRAFIK-ESIT-BOY: Giriş'te Prj ile aynı boy (lejant 6−3 satır) */).replace('class="gru-card gru-mk"','class="gru-box gru-box3 gru-gr gru-mk gru-o-cari"')+`</div>`;
     return; }
   el.innerHTML=`<div class="gru-boxes">${K.map(([a,v,kay])=>`<div class="gru-box gru-box3 gru-gr" title="${esc(ay)} · ${kay}"><div class="gru-ct">${esc(a)}</div><div class="gru-cv">${f(v)}</div>${G?bars(G[K.findIndex(k=>k[0]===a)]):""}</div>`).join("")}</div>`;
 }
@@ -335,12 +335,15 @@ async function egitim(o,el){
 async function render(kap,o){
   if(!kap||!o||!o.sb) return; css(); KUR=null; YK=(o.grafik===true)?1.5:1; /* GIRIS-YEKSEN-15 */
   kap.classList.add("gru");
-  kap.innerHTML='<div class="gru-t"></div><div class="gru-graf"><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div></div><div class="gru-e"></div>'; /* GRAFIK-UCLU (10.11.2026, Melih): grafikler yan yana üçer (gru-graf grid) */
+  kap.innerHTML=(o.grafik===true/* GIRIS-GRAFIK-UST (23.11.2026, Melih): Giriş'te grafikler Sıkı Takip tablosunun üstünde */?'<div class="gru-graf"><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div></div><div class="gru-t"></div>':'<div class="gru-t"></div><div class="gru-graf"><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div></div>')+'<div class="gru-e"></div>'; /* GRAFIK-UCLU (10.11.2026, Melih): grafikler yan yana üçer (gru-graf grid) */
   /* MK-GRAFIK-UST (29.10.2026, Melih): o.ustKap verilirse grafikler (Satış/DK1 kartları · Sel-Arb · cari ay) o kaba, tablo kap'ta kalır */
   const U=o.ustKap; if(U){ U.classList.add("gru"); U.innerHTML='<div class="gru-graf"><div class="gru-g"></div><div class="gru-s"></div><div class="gru-c"></div></div>'; ['.gru-graf'].forEach(c=>{ const x=kap.querySelector(c); if(x) x.remove(); }); }
   const q=c=>kap.querySelector(c)||(U&&U.querySelector(c)), kor=p=>Promise.resolve().then(p).catch(e=>{ try{ console.warn("GRUST:",e); }catch(_){} });
   if(o.bolum==="ctp"){ await Promise.all([kor(()=>satis(o,q(".gru-t"),q(".gru-g"))),kor(()=>egitim(o,q(".gru-e")))]); return; } /* CTP-FAALIYET */
   await Promise.all([kor(()=>satis(o,q(".gru-t"),q(".gru-g"))),kor(()=>selArb(o,q(".gru-s"))),kor(()=>cari(o,q(".gru-c")))]);
+  /* GRAFIK-SIRA (23.11.2026, Melih): Giriş = Prj · Selectron · Cari ay · Etüt DK1 · Baz İskonto; MK = YD Prj · Selectron · Cari ay · Etüt DK1 */
+  try{ const g=q(".gru-g"), cs=g?g.querySelectorAll(".gru-cards"):[], c0=cs[0]?cs[0].children:[], ord=(el,n)=>{ if(el) el.style.order=n; };
+    ord(c0[0],1); ord(q(".gru-o-sel"),2); ord(q(".gru-o-cari"),3); ord(c0[1],4); if(cs[1]) [...cs[1].children].forEach(x=>ord(x,5)); }catch(_){}
 }
 /* GRAFIK-TIK-DEGER (02.11.2026, Melih): grafikte tıklanan noktaya en yakın ay/değer(ler) küçük kutuda gösterilir; çok serili grafikte o aydaki tüm seriler */
 function tikKur(){ if(window.__gruTik) return; window.__gruTik=true;
