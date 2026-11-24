@@ -106,6 +106,17 @@
   .ank-lb{margin:8px 12px;padding:8px 10px;background:#eef7f1;border:1px solid #bfe0cc;border-radius:8px;font-size:12.5px}
   .ank-lb input{flex:1;font:inherit;font-size:12.5px;border:1px solid #bfe0cc;border-radius:6px;padding:4px 8px;background:#fff}
   .ank-not{font-size:12px;color:#5a6b7d;padding:7px 12px 9px}.ank-not a{color:#1d5fa8}
+  /* SANTIYE-ALT-BANT (24.11.2026, Melih): Ofis Stoğu PEM'leri ve Toplam Memnuniyet açılır bant (kapalı başlar) */
+  details.sbant{background:#fff;border:1px solid #dde3ea;border-radius:10px;margin:14px 0 0;overflow-x:auto}
+  details.sbant>summary{cursor:pointer;list-style:none;padding:0}
+  details.sbant>summary::-webkit-details-marker{display:none}
+  details.sbant>summary h3{margin:0;padding:8px 12px;font-size:13.5px;color:#16324f}
+  details.sbant>summary h3::before{content:"▸";display:inline-block;width:14px;color:#5a6b7d}
+  details.sbant[open]>summary h3{border-bottom:1px solid #eef1f5}
+  details.sbant[open]>summary h3::before{content:"▾"}
+  details.sbant .myw{padding:6px 12px 10px}
+  /* YI-ANKET-SAG (24.11.2026, Melih): Yurt İçi'nde memnuniyet Sevke Hazır PEM'lerin sağında (app/my_acil.js #yi-ust) */
+  #yi-ust .myab{margin-bottom:0!important} #yi-ust details.sbant{margin-top:0} #yi-ust .myw{overflow-x:auto}
   .hidden{display:none}
   .empty{background:#fff;border:1px solid #dde3ea;border-radius:10px;padding:22px;text-align:center;color:#7a8896;font-size:13px}
   #rolLbl{display:flex;align-items:center}
@@ -146,13 +157,13 @@ html,body{max-width:100vw;overflow-x:hidden}
 
   <div id="bloklar"><div class="empty">Yükleniyor…</div></div>
   <div id="ileri"></div><!-- SANTIYE-ILERI: MVT sınırından sonraki projeler, salt-okur -->
-  <div id="anket"></div><!-- SANTIYE-ANKET: bu şantiyenin projelerine ait müşteri memnuniyet anketleri -->
-  <div id="my-ofis"></div><!-- PEM-OFIS-MY: ofis stoğu PEM'leri, tüm şantiye formlarında ortak (app/my_acil.js) -->
+  <div id="my-ofis"></div><!-- PEM-OFIS-MY: ofis stoğu PEM'leri, tüm şantiye formlarında ortak (app/my_acil.js) · SANTIYE-ALT-BANT (24.11.2026, Melih): Memnuniyetin üstünde, açılır bant -->
+  <div id="anket"></div><!-- SANTIYE-ANKET: bu şantiyenin projelerine ait müşteri memnuniyet anketleri · SANTIYE-ALT-BANT: açılır bant -->
 
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../my_acil.js?v=261124c"></script><!-- MY-SANTIYE -->
+<script src="../my_acil.js?v=261124e"></script><!-- MY-SANTIYE -->
 <script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -378,9 +389,10 @@ async function anketYukle(){
   const gel=L.length?Y.length/L.length:null;
   const mem=(ort==null||gel==null)?null:(ort/4)*gel;
   /* ANKET-TEK-SATIR (19.11.2026, Melih): başlık ve Anket Geliş Başarısı kartı kaldırıldı; Toplam Memnuniyet Başarısı tek satır */
-  let h='<div class="sevk" style="margin-top:14px">'
+  const ankAcik=!!el.querySelector("details[open]"); /* SANTIYE-ALT-BANT: yeniden çizimde açık/kapalı korunur */
+  let h='<details class="sevk sbant"'+(ankAcik||ANK_SON||FORM_KODU==="yi"/* YI-ANKET-SAG: Yurt İçi'nde açık başlar */?' open':'')+'><summary>'
     +'<h3>Toplam Memnuniyet Başarısı <span style="color:'+(renk(mem)||"inherit")+'">'+(mem==null?"—":yuz(mem))+'</span>' /* ANKET-H3 (19.11.2026, Melih): İleri Tarihli Projeler başlığıyla aynı biçim */
-    +' <span style="font-weight:400;font-size:12px;color:#5a6b7d">· '+(ort==null?"Yanıtlanan anket yok":"Ortalama puan "+nk(ort)+" / 4 ("+yuz(ort/4)+") × anket geliş oranı "+yuz(gel)+" ("+Y.length+" / "+L.length+")")+'</span></h3>';
+    +' <span style="font-weight:400;font-size:12px;color:#5a6b7d">· '+(ort==null?"Yanıtlanan anket yok":"Ortalama puan "+nk(ort)+" / 4 ("+yuz(ort/4)+") × anket geliş oranı "+yuz(gel)+" ("+Y.length+" / "+L.length+")")+'</span></h3></summary>';
   if(ANK_SON) h+='<div class="ank-lb"><b>'+esc(ANK_SON.proje)+'</b> — müşteri anket linki'+(ANK_SON.kop?' <span style="color:#1f7a46">(kopyalandı)</span>':'')
     +'<div style="display:flex;gap:6px;margin-top:5px"><input readonly value="'+esc(ankLink(ANK_SON))+'" onclick="this.select()"><button class="ank-btn" data-kopya="'+esc(ankLink(ANK_SON))+'">Linki kopyala</button></div></div>';
   if(Y.length) h+='<table><thead><tr><th>Anketi Gelen Proje</th><th>Müşteri</th><th class="c">Yanıt Tarihi</th><th class="c">Etüt</th><th class="c">Kalite</th><th class="c">Süreler</th><th class="c" title="23.11.2026 öncesi yanıtlarda birleşik Teknik/İdari; ANKET-GESTION-TRAVAUX">Şantiye yön.</th><th class="c">İdari</th><th class="c">SAV</th><th class="c">Tavsiye</th><th class="c">Puan</th><th class="c"></th></tr></thead><tbody>'
@@ -396,7 +408,7 @@ async function anketYukle(){
     +G.map(a=>'<tr><td>'+esc(a.proje)+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+esc(a.ulke||"")+'</td><td class="c">'+fd(a.aup)+'</td><td class="c">'+btn(a.proje)+'</td></tr>').join("")
     +'</tbody></table>';
   h+='<div class="ank-not">AÜP\'si 2026 öncesi projeler için anket linki <a href="../memnuniyet/" target="_blank">Müşteri Memnuniyet formundan</a> oluşturulabilir.</div>';
-  el.innerHTML=h+'</div>';
+  el.innerHTML=h+'</details>';
   el.querySelectorAll("button[data-kopya]").forEach(b=>b.onclick=async()=>{ const o=b.textContent; b.textContent=(await ankKopya(b.dataset.kopya))?"Kopyalandı ✓":"Kopyalanamadı"; setTimeout(()=>b.textContent=o,1800); });
   el.querySelectorAll("button[data-ank]").forEach(b=>b.onclick=async()=>{
     const p=b.dataset.ank; if(!confirm(p+" için müşteri anket linki oluşturulsun mu?\n\nLink bir kez doldurulabilir; aynı projede başka kişiye anket gerekiyorsa ayrı link oluşturun.")) return;
@@ -712,6 +724,7 @@ anketYukle(); /* SANTIYE-ANKET */
 
 
 <!-- FORM-LINKLER --><script src="../form_linkler.js?v=261105"></script><!-- FORM-MENU -->
+
 
 
 
