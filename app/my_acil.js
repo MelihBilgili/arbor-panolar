@@ -306,23 +306,31 @@
      +".mys-ctx .i{padding:7px 12px;cursor:pointer}.mys-ctx .i:hover{background:#eef4fb}.mys-ctx .i.pas{color:#9aa5b1;cursor:default}.mys-ctx .i.pas:hover{background:none}"
      +".mys-fl{display:block;font-size:12px;color:#5a6b7d;margin:0 0 8px}.mys-fl textarea,.mys-fl input,.mys-fl select{display:block;width:100%;font:inherit;font-size:13px;color:#1c2430;border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;margin-top:3px;box-sizing:border-box}"
      +".mys-btn{border:0;border-radius:8px;padding:8px 14px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;background:#2e7d54;color:#fff}.mys-btn.sec{background:#e3edf7;color:#16324f;font-weight:600}"
+     +"table.mys tr.grp td{background:#f3f7fb;color:#16324f;font-weight:700;font-size:12px;padding:5px 7px;cursor:default}table.mys .gh{font-weight:400;color:#5a6b7d;font-size:11px}" /* SANTIYE-TEK-SERIT */
+     +".mys-q{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:#dbe7f3;color:#16324f;font-size:11px;font-weight:700;cursor:help;position:relative;vertical-align:1px;margin-left:5px;outline:none}"
+     +".mys-q:hover::after,.mys-q:focus::after{content:attr(data-tip);position:absolute;left:22px;top:-6px;z-index:60;width:360px;background:#16324f;color:#fff;font-weight:400;font-size:11.5px;line-height:1.45;padding:7px 10px;border-radius:6px;white-space:normal;box-shadow:0 4px 14px rgba(0,0,0,.2)}" /* SANTIYE-SORU-IKON */
      +".mys-msg{font-size:12.5px;font-weight:600;min-height:16px;margin:4px 0}.mys-msg.ok{color:#2e7d54}.mys-msg.err{color:#b40000}";
     document.head.appendChild(s);
   }
+  /* SANTIYE-TEK-SERIT (24.11.2026, Melih): şantiye formlarında PEM, proje ve ofis tabloları aynı 10 sütun genişliği —
+     PEM · Talep/Müşteri Onay · Proje Adı · Yükleme Şekli · Ek Bilgi · Adet · Termin/AÜP · Hedef/Şantiyede İstenen · Açıklama (2 kat) · Takip */
+  var SW=[64,72,133,64,210,44,72,110,460,280];
+  function swCol(){ return '<colgroup>'+SW.map(function(x){ return '<col style="width:'+x+'px">'; }).join('')+'</colgroup>'; }
+  function swTop(){ return SW.reduce(function(a,x){return a+x;},0); }
   function sKapat(){ var m=document.getElementById("mys-ctx"); if(m) m.remove(); }
   /* PEM-OFIS-MY (10.11.2026, Melih): ofis stoğu PEM'lerinin tek sorumlusu MY — tüm şantiye formlarında sayfanın en altında ortak, salt-okur tablo */
   function ofisBlok(R){
     var el=document.getElementById("my-ofis");
     if(!el){ var w=document.querySelector(".wrap")||document.body; el=document.createElement("div"); el.id="my-ofis"; w.appendChild(el); }
     if(!R.length){ el.innerHTML=""; return; }
-    var W=[64,72,190,250,44,72,260,90];
-    el.innerHTML='<div class="mysan" style="margin-top:22px"><h3>Ofis Stoğu PEM\'leri</h3><div class="alt">Ofis stoklarının sorumlusu MY\'dir; bu tablo tüm şantiye formlarında ortaktır ve bilgi içindir.</div>'
-      +'<div class="myw"><table class="mys fx" style="width:'+W.reduce(function(a,x){return a+x;},0)+'px"><colgroup>'+W.map(function(x){ return '<col style="width:'+x+'px">'; }).join('')+'</colgroup>'
-      +'<thead><tr><th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th><th class="ek">Sevk Durumu</th><th class="ek sm">Takip<br>Durumu</th></tr></thead><tbody>'
+    /* SANTIYE-TEK-SERIT (24.11.2026, Melih): ofis bloğu üstteki PEM tablosuyla aynı sütunlar; açıklama metni "?" içinde */
+    el.innerHTML='<div class="mysan" style="margin-top:22px"><h3>Ofis Stoğu PEM\'leri<span class="mys-q" tabindex="0" data-tip="Ofis stoklarının sorumlusu MY\'dir; bu tablo tüm şantiye formlarında ortaktır ve bilgi içindir.">?</span></h3>'
+      +'<div class="myw"><table class="mys fx" style="width:'+swTop()+'px">'+swCol()
+      +'<thead><tr><th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th class="sm">Yükleme<br>Şekli</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th><th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek">Sevk Durumu</th><th class="ek sm">Takip<br>Durumu</th></tr></thead><tbody>'
       +R.map(function(r){ var ac=r.durum==="Acil";
         return '<tr class="'+(ac?'acil':'')+'" style="cursor:default"><td title="'+esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td>'
-          +'<td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'
-          +'<td class="w" title="'+esc(r.sevk_durumu)+'">'+esc(r.sevk_durumu)+'</td><td class="dur '+(ac?'acil':'')+'">'+esc(r.durum||"Normal")+'</td></tr>';
+          +'<td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td>'+sekilHtml(r)+'</td><td class="w" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'
+          +'<td>'+(ac?fd(r.hedef):'')+'</td><td class="w" title="'+esc(r.sevk_durumu)+'">'+esc(r.sevk_durumu)+'</td><td class="dur '+(ac?'acil':'')+'">'+esc(r.durum||"Normal")+'</td></tr>';
       }).join("")+'</tbody></table></div></div>';
   }
   async function santiyeBlok(el,o){
@@ -335,25 +343,30 @@
     /* SANTIYE-BLOK-BASLIK (19.11.2026, Melih): MY Faaliyet ile aynı başlıklar ve sıra; PEM ERP durumuna göre ikiye ayrılır */
     var pno=function(r){ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return m?parseFloat(m[1].replace(",",".")):0; };
     var B=[["pem","Sevke Hazır PEM'ler",true,function(r){ return pno(r)>=3; }],["pem","Üretimdeki PEM'ler",true,function(r){ return pno(r)<3; }],["sevk","Sevke Hazır Projeler · Durum 8 / 8.1",false],["prj","Üretimdeki Projeler · Durum 4.1 – 7.1",false]];
-    var ek='<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek sm">Yükleme<br>Şekli</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>';
-    var h='<div class="mysan"><h3>Projeleriniz ve PEM\'leriniz</h3><div class="alt">Satıra sağ tıklayarak acil ya da normal takibe alma talebinde bulunabilir, ayrıntıları görebilirsiniz. Talepler MY onayından sonra geçerli olur.</div><div class="mys-msg" id="mys-msg"></div>'
-      +B.map(function(b){
-        var R=rows.filter(function(r){ return r.blok===b[0]&&(!b[3]||b[3](r)); }); if(!R.length) return "";
-        var head=b[2]?'<th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th>':'<th>NO</th><th>PROJE ADI</th><th>Ad</th><th>AÜP</th>';
-        /* MY-HIZA (28.10.2026): PEM'de Talep Tarihi 2. sütun; proje bloklarının son 6 sütunu PEM'in son 6 sütunuyla hizalı */
-        var W=[64,72,133,210,44,72,84,64,230,280]; if(!b[2]) W=[W[0],W[1]+W[2]+W[3]].concat(W.slice(4)); /* MY-AD-DAR: Proje Adı %30 dar (PEM 190→133; proje 472→330 görünür, sağ boşluk) */
-        var padAd=b[2]?'':' style="padding-right:'+(W[1]-330+7)+'px"';
-        return '<h4>'+esc(b[1])+' <span style="font-weight:400;color:#5a6b7d">· Sağ tıklayarak acile çevir</span></h4><div class="myw"><table class="mys fx" style="width:'+W.reduce(function(a,x){return a+x;},0)+'px"><colgroup>'+W.map(function(x){ return '<col style="width:'+x+'px">'; }).join('')+'</colgroup><thead><tr>'+head+ek+'</tr></thead><tbody>'+R.map(function(r){
-          var ac=r.durum==="Acil";
-          var ilk=b[2]
-            ? '<td title="'+esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'
-            : '<td title="'+esc(r.no)+'">'+esc(r.kod)+'</td><td class="w"'+padAd+' title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>';
-          var dur=esc(r.durum||"Normal")+(r.talep?' <span class="bek" title="MY onayı bekleniyor">→ '+esc(r.talep)+' (MY onayı bekliyor)</span>':'');
-          return '<tr class="'+(ac?'acil':'')+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">'+ilk
-            +'<td>'+(ac?fd(r.hedef):'')+'</td><td>'+sekilHtml(r)+'</td><td class="w" title="'+esc(r.aciklama)+'">'+(ac?esc(r.aciklama):'')+'</td>'
-            +'<td class="dur '+(ac?'acil':'')+'" title="'+esc(String(r.durum||'Normal')+(r.talep?' → '+r.talep+' (MY onayı bekliyor)':''))+'">'+dur+'</td></tr>';
-        }).join("")+'</tbody></table></div>';
-      }).join("")+'</div>';
+    /* SANTIYE-TEK-SERIT (24.11.2026, Melih): tüm PEM'ler tek başlıklı tabloda, Sevke Hazır / Üretimdeki grup satırı; Yükleme Şekli Ek Bilgi'nin solunda;
+       Açıklama 2 kat genişlik; projeler (formda olmayanlar) aynı sütunlarda — Proje No · Müşteri Onay Tarihi · Proje Adı (Şekil+Ek Bilgi genişliği dahil) */
+    var on={}, pn=rows.filter(function(r){ return r.tur==="PRJ"; }).map(function(r){ return r.no; });
+    if(pn.length){ try{ var ro=await sb.rpc("santiye_onay_tarihi",{p_nolar:pn}); (ro.data||[]).forEach(function(x){ on[x.proje_no]=x.onay; }); }catch(e){} } /* PRJ-ONAY-TARIHI */
+    var ek='<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>';
+    var HP='<th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th class="sm">Yükleme<br>Şekli</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th>'+ek;
+    var HJ='<th>Proje No</th><th class="sm">Müşteri<br>Onay Tarihi</th><th colspan="3">Proje Adı</th><th>Adet</th><th class="sm">AÜP</th>'+ek;
+    var satir=function(r,gi){
+      var ac=r.durum==="Acil", pem=r.tur==="PEM";
+      var ilk=pem
+        ? '<td title="'+esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td><td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td>'+sekilHtml(r)+'</td><td class="w" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'
+        : '<td title="'+esc(r.no)+'">'+esc(r.kod)+'</td><td>'+fd(on[r.no]||"")+'</td><td class="w" colspan="3" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>';
+      var dur=esc(r.durum||"Normal")+(r.talep?' <span class="bek" title="MY onayı bekleniyor">→ '+esc(r.talep)+' (MY onayı bekliyor)</span>':'');
+      return '<tr class="'+(ac?'acil':'')+'" data-g="'+gi+'" data-tur="'+esc(r.tur)+'" data-no="'+esc(r.no)+'">'+ilk
+        +'<td>'+(ac?fd(r.hedef):'')+'</td><td class="w" title="'+esc(r.aciklama)+'">'+(ac?esc(r.aciklama):'')+'</td>'
+        +'<td class="dur '+(ac?'acil':'')+'" title="'+esc(String(r.durum||'Normal')+(r.talep?' → '+r.talep+' (MY onayı bekliyor)':''))+'">'+dur+'</td></tr>';
+    };
+    var tablo=function(head,bl){
+      var body=bl.map(function(b){ var gi=B.indexOf(b); var R=rows.filter(function(r){ return r.blok===b[0]&&(!b[3]||b[3](r)); }); if(!R.length) return "";
+        return '<tr class="grp" data-gb="'+gi+'"><td colspan="10">'+esc(b[1])+' <span class="gh">· Sağ tıklayarak acile çevir</span></td></tr>'+R.map(function(r){ return satir(r,gi); }).join(""); }).join("");
+      return body?'<div class="myw" style="margin-top:6px"><table class="mys fx" style="width:'+swTop()+'px">'+swCol()+'<thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>':'';
+    };
+    var h='<div class="mysan"><h3>Projeleriniz ve PEM\'leriniz<span class="mys-q" tabindex="0" data-tip="Satıra sağ tıklayarak acil ya da normal takibe alma talebinde bulunabilir, ayrıntıları görebilirsiniz. Talepler MY onayından sonra geçerli olur.">?</span></h3><div class="mys-msg" id="mys-msg"></div>'
+      +tablo(HP,[B[0],B[1]])+tablo(HJ,[B[2],B[3]])+'</div>';
     el.innerHTML=h;
     var bul=function(tr){ var t=tr.getAttribute("data-tur"), n=tr.getAttribute("data-no"); return rows.filter(function(r){ return r.tur===t&&r.no===n; })[0]; };
     var msg=function(t,ok){ var m=el.querySelector("#mys-msg"); if(!m) return; m.className="mys-msg "+(ok?"ok":"err"); m.textContent=t; };
@@ -400,8 +413,9 @@
         var rr=S.rows.filter(function(x){ return x.tur==="PRJ"&&x.no===no; })[0]; if(rr) sMenu(ev,rr); }); }
     });
     el.querySelectorAll('tr[data-tur="PRJ"]').forEach(function(tr){ tr.style.display=set[tr.getAttribute("data-no")]?"none":""; });
-    el.querySelectorAll(".myw").forEach(function(w){ var vis=[].some.call(w.querySelectorAll("tbody tr"),function(t){ return t.style.display!=="none"; });
-      w.style.display=vis?"":"none"; var h=w.previousElementSibling; if(h&&h.tagName==="H4") h.style.display=vis?"":"none"; });
+    el.querySelectorAll(".myw").forEach(function(w){ var vis=[].some.call(w.querySelectorAll("tbody tr[data-tur]"),function(t){ return t.style.display!=="none"; });
+      w.style.display=vis?"":"none"; var h=w.previousElementSibling; if(h&&h.tagName==="H4") h.style.display=vis?"":"none";
+      w.querySelectorAll("tr.grp[data-gb]").forEach(function(g){ var gb=g.getAttribute("data-gb"); g.style.display=[].some.call(w.querySelectorAll('tr[data-g="'+gb+'"]'),function(t){ return t.style.display!=="none"; })?"":"none"; }); }); /* SANTIYE-TEK-SERIT */
     var kalan=[].some.call(el.querySelectorAll(".myw"),function(w){ return w.style.display!=="none"; }); var k=el.firstChild; if(k){ [].forEach.call(k.querySelectorAll(":scope>h3,:scope>.alt"),function(x){ x.style.display=kalan?"":"none"; }); k.style.border=kalan?"":"0"; k.style.padding=kalan?"":"0"; k.style.background=kalan?"":"none"; } /* mesaj kutusu görünür kalır */
   }
   async function sTalep(sb,r,durum,ek,sonra,msg){
@@ -499,7 +513,7 @@
         yiSevkPemBlok(el,o); });
     }); });
   }
-  window.MYACIL={liste:liste,acilBlok:acilBlok,santiyeBlok:santiyeBlok,ayrinti:ayrinti,fd:fd,esc:esc,stil:stil,sevkPrjBlok:sevkPrjBlok,santiyeBirlestir:sBirlestir,yiSevkPemBlok:yiSevkPemBlok};
+  window.MYACIL={liste:liste,acilBlok:acilBlok,santiyeBlok:santiyeBlok,ayrinti:ayrinti,fd:fd,esc:esc,stil:stil,sevkPrjBlok:sevkPrjBlok,santiyeBirlestir:sBirlestir,SW:SW,yiSevkPemBlok:yiSevkPemBlok};
   /* Formlarda otomatik çizim */
   var t0=Date.now();
   async function oto(){
