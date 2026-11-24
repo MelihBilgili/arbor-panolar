@@ -152,7 +152,7 @@ html,body{max-width:100vw;overflow-x:hidden}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../my_acil.js?v=261124b"></script><!-- MY-SANTIYE -->
+<script src="../my_acil.js?v=261124c"></script><!-- MY-SANTIYE -->
 <script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -455,7 +455,7 @@ function prjTablo(SV,DG){
   if(SV.length) b+='<tr class="grp g1"><td colspan="10">Sevke Hazır Projeler'+gh+'</td></tr>'+SV.map(sevkSatir).join("");
   if(DG.length) b+='<tr class="grp g1"><td colspan="10">Gelecek Ayın Sonuna Kadar Yüklenecek Projeler'+gh+'</td></tr>'+[...g].map(([k,l])=>'<tr class="grp"><td colspan="10">'+esc(k)+'</td></tr>'+l.map(sevkSatir).join("")).join("");
   return '<div class="prjw"><table class="prjt" style="width:'+SW.reduce((a,x)=>a+x,0)+'px"><colgroup>'+SW.map(x=>'<col style="width:'+x+'px">').join("")+'</colgroup><thead><tr>'
-    +'<th>Proje No</th><th class="sm">Müşteri<br>Onay Tarihi</th><th colspan="3">Proje Adı</th><th>Adet</th><th class="sm">AÜP</th><th class="ek sm">Şantiyede<br>İstenen Tarih</th><th class="ek">Yükleme Planına İlişkin Açıklama</th><th class="ek sm">Takip<br>Durumu</th></tr></thead><tbody>'
+    +'<th>Proje No</th><th class="sm">Proje<br>Onay Tarihi</th><!-- PRJ-ONAY-BASLIK (24.11.2026, Melih) --><th colspan="3">Proje Adı</th><th>Adet</th><th class="sm">AÜP</th><th class="ek sm">Şantiyede<br>İstenen Tarih</th><th class="ek">Yükleme Planına İlişkin Açıklama</th><th class="ek sm">Takip<br>Durumu</th></tr></thead><tbody>'
     +b+'</tbody></table></div>';
 }
 function sevkSatir(r){ /* SANTIYE-GELECEK: Sevke Hazır ve Gelecek Ay tabloları aynı satır biçimi · SANTIYE-TEK-SERIT */
@@ -710,6 +710,7 @@ anketYukle(); /* SANTIYE-ANKET */
 
 
 <!-- FORM-LINKLER --><script src="../form_linkler.js?v=261105"></script><!-- FORM-MENU -->
+
 
 
 
