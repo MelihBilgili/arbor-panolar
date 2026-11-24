@@ -658,7 +658,7 @@ async function revizeAc(r){ if(!r||!r.form_yolu) return; if(!await formAc(r)) re
   $("f_ref").value=kok?kok+"-"+n:"-"+n; $("f_revize").value="1"; $("f_revnot").value=""; $("f_tarih").value=new Date().toISOString().slice(0,10); /* SOUM-REV-TARIH (16.11.2026, Melike Başaran): revizyonda tarih bugün */
   /* SOUM-ISK-ONAY (24.11.2026, Melih): aynı proje + müşteri için son tekliften bu yana 35 günden az geçtiyse son teklifin iskonto çarpanı korunur, değilse ilk kez hazırlanan teklif gibi hesaplanır */
   { const np=nrmTxt(r.proje), nf=nrmTxt(r.firma), son=ARSIV.concat([r]).filter(x=>x.iskonto!=null&&nrmTxt(x.proje)===np&&nrmTxt(x.firma)===nf).sort((a,b)=>new Date(b.olusturma)-new Date(a.olusturma))[0], e=$("f_kat");
-    S.iskId=null; S.iskAcik=""; e.readOnly=false; if($("iskPanel")) $("iskPanel").dataset.acik="";
+    S.iskId=null; S.iskAcik=""; S.fyBek=null; e.readOnly=false; if($("iskPanel")) $("iskPanel").dataset.acik="";
     if(son&&Date.now()-new Date(son.olusturma).getTime()<35*864e5){ e.value=iskF(+son.iskonto); e.dataset.elle="devir"; } else delete e.dataset.elle;
     S.rev={birim:H.birim||null,X2:e.dataset.elle?+son.iskonto:null}; }
   revGoster(); pozCiz(); hesapla(); notDoldur(); revNotYaz();
@@ -1029,7 +1029,7 @@ function par(k,def){ const r=S.par[k]; if(!r) return def; return ppct($("f_bolge
 function pick(arr,x){ for(const [lim,v] of arr){ if(x<=lim) return v; } return arr[arr.length-1][1]; }
 let H={};
 function hesapla(){
-  if(!S.poz.length) return; (S.ekstra||[]).forEach(kapamaAd); /* SOUM-261118-DUZ */
+  if(!S.poz.length) return; (S.ekstra||[]).forEach(kapamaAd); /* SOUM-261118-DUZ */ sinifZorla(); /* SOUM-FIYAT-ONAY */
   const fr=$("f_bolge").value==="fr";
   const brutPoz=S.poz.reduce((a,p)=>a+(p.brut||0)*(p.F||0),0), brut=brutPoz+S.ekstraTop;
   const sinif=$("f_sinif").value, musk=sinif==="1"?par("s1_iskonto",0.14):sinif==="2"?par("s2_iskonto",0.05):0;
@@ -1074,7 +1074,7 @@ function hesapla(){
   /* SOUM-PRORATA (27.10.2026, Melih): Insertion süresi (saat) varsayılanı = (Livré sur chantier (insertion hariç, €) × 0,3 × 0,1) / 35,5, 0,1 saate yuvarlanır, elle değiştirilebilir;
      Insertion tutarı = süre × 35,5 €/saat (İngilizcede × kur), toplamın içinde; Prorata = oran × Livré sur chantier, ayrı satır */
   const taban=HT+(montDahil?pose:0)+(petit?transport:0)+(proto?proto.tutar:0)+ekL.reduce((a,x)=>a+x.tutar,0);
-  const se=$("f_ins_sure"); if(!se.dataset.elle) se.value=frN(Math.round(taban/K*0.3*0.1/35.5*10)/10,1);
+  const se=$("f_ins_sure"); S.insOto=Math.round(taban/K*0.3*0.1/35.5*10)/10; /* SOUM-FIYAT-ONAY */ if(!se.dataset.elle) se.value=frN(S.insOto,1);
   const insS=+String(se.value||"").replace(",",".")||0, ins=n2(insS*35.5*K), insAd=tt("Heures d'insertion ("+frN(insS,1).replace(/,0$/,"")+" h)","Insertion hours ("+dN(insS,1).replace(/\.0$/,"")+" h)");
   $("f_ins_tut").value=ins?fP(ins):"";
   let toplam=taban; /* SOUM-INDIRIM (12.11.2026, Melike Başaran): Insertion toplamda değil, opsiyon (f_op_ins Yok → hiç yok); Prorata altında Remise/Discount = Livré sur chantier'ın
@@ -1513,48 +1513,87 @@ $("f_kat").oninput=()=>{ const e=$("f_kat"); if(e.dataset.elle==="bekliyor") ret
 function iskF(v){ return v==null||isNaN(v)?"":String(+(+v).toFixed(8)).replace(".",","); }
 function iskKisi(){ try{ return (typeof ARB_EMAIL!=="undefined"&&window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null; }catch(e){ return null; } }
 function iskKod(){ const k=iskKisi(); return k&&k.kod?k.kod:(typeof ARB_EMAIL!=="undefined"&&ARB_EMAIL==="int@arbor.com.tr"?"MB":""); }
-function iskKilitli(){ const m=($("f_kat")||{dataset:{}}).dataset.elle||""; return m==="1"||m==="bekliyor"; }
-function iskKapi(f){ return function(){ if(iskKilitli()){ const m=$("f_kat").dataset.elle; durum(m==="bekliyor"?"Özel iskonto talebi yönetim onayı bekliyor; onaylanana kadar PDF / Excel / Projeyi mail at kapalı.":"Elle girilen iskonto çarpanı için önce <b>Özel İskonto İçin Yönetim Onayı İste</b>'ye basınız ya da <b>Hesaplanan İskontoya Dön</b>'ünüz.","hata"); $("f_kat").scrollIntoView({block:"center"}); return; } return f.apply(this,arguments); }; }
+/* SOUM-FIYAT-ONAY (24.11.2026, Melih): fiyatı düşüren elle değişiklikler de yönetim onayına bağlı — poz brüt fiyatının Pencad'in altına
+   indirilmesi, eksi ek fiyat (Ekstra sütunu), ekstra malzeme çarpanının 1'in altı, Insertion süresinin hesaplananın altı. Onaylanan liste S.fyOnay,
+   bekleyen S.fyBek (imza = değişiklik satırları); onaysız değişiklik varken PDF / Excel / Projeyi mail at kapalı. Talep iskonto talebiyle aynı kayıt
+   (soum_iskonto_onay.degisiklikler). Müşteri sınıfı müşteri listesinden gelir, değiştirilemez (int@ hariç). */
+function fyListe(){ const L=[]; if(!S.poz||!S.poz.length) return L;
+  S.poz.forEach((p,i)=>{ const pn=String(p.kod||p.no||(i+1));
+    if(p.brutPdf!=null&&(+p.brut||0)<p.brutPdf-0.005) L.push("Poz "+pn+" brüt "+frN(p.brutPdf,2)+" → "+frN(p.brut,2)+" €");
+    if(p.ekF!=null&&p.ekF<0) L.push("Poz "+pn+" "+ekfAd()+" "+frN(p.ekF,2)+" €"); });
+  (S.ekstra||[]).forEach(e=>{ const c=+e.carpan||1; if(c<1) L.push("Ekstra "+String(e.ad||e.kod||"").slice(0,40)+" çarpanı "+frN(c,2)); });
+  const se=$("f_ins_sure"); if(se&&se.dataset.elle&&S.insOto!=null){ const v=+String(se.value||"").replace(",",".")||0; if(v<S.insOto-1e-9) L.push("Insertion süresi "+frN(S.insOto,1)+" → "+frN(v,1)+" saat"); }
+  return L; }
+function fyImza(){ return fyListe().join(" | "); }
+function fyAcik(){ const i=fyImza(); return !!i&&i!==(S.fyOnay||"")&&i!==(S.fyBek||""); }
+function fyBekliyor(){ const i=fyImza(); return !!S.fyBek&&i===S.fyBek; }
+function sinifZorla(){ const sel=$("f_sinif"); if(!sel) return; const mb=iskKod()==="MB"; sel.disabled=!mb; sel.title=mb?"":"Müşteri sınıfı müşteri listesinden gelir; değiştirilemez";
+  if(mb||!S.sinifL||!S.sinifL.length) return; const fn=nrmTxt($("f_firma").value);
+  const s=S.sinifL.find(x=>nrmTxt(x.ad)===fn)||S.sinifL.find(x=>fn&&nrmTxt(x.ad).startsWith(fn.split(" ")[0])&&fn.includes(nrmTxt(x.ad).split(" ")[0]));
+  sel.value=s?String(s.sinif%2===1?1:2):"0"; }
+function fyGeriAl(){ S.poz.forEach(p=>{ if(p.brutPdf!=null&&(+p.brut||0)<p.brutPdf-0.005){ p.brut=p.brutPdf; p.brutElle=0; } if(p.ekF!=null&&p.ekF<0) p.ekF=null; });
+  (S.ekstra||[]).forEach(e=>{ if((+e.carpan||1)<1) e.carpan=1; });
+  const se=$("f_ins_sure"); if(se&&se.dataset.elle&&S.insOto!=null&&(+String(se.value||"").replace(",",".")||0)<S.insOto) delete se.dataset.elle;
+  if(S.fyBek&&S.iskId&&($("f_kat").dataset.elle||"")!=="bekliyor") SB.functions.invoke("soum-iskonto-onay",{body:{islem:"iptal",id:S.iskId}}).then(iskBantYenile).catch(()=>{});
+  if(($("f_kat").dataset.elle||"")!=="bekliyor"){ S.fyBek=null; if(!S.fyOnay) S.iskId=null; }
+  pozCiz(); hesapla(); durum("Fiyatı düşüren elle değişiklikler geri alındı.","ok"); }
+function iskKilitli(){ const m=($("f_kat")||{dataset:{}}).dataset.elle||""; return m==="1"||m==="bekliyor"||fyAcik()||fyBekliyor(); }
+function iskKapi(f){ return function(){ if(iskKilitli()){ const m=$("f_kat").dataset.elle;
+  durum(m==="bekliyor"||fyBekliyor()?"Özel iskonto / fiyat talebi yönetim onayı bekliyor; onaylanana kadar PDF / Excel / Projeyi mail at kapalı.":"Elle girilen iskonto ya da fiyat değişikliği için önce <b>Yönetim Onayı İste</b>'ye basınız ya da değişikliği geri alınız.","hata"); $("f_kat").scrollIntoView({block:"center"}); return; } return f.apply(this,arguments); }; }
 function iskUI(){ if(S.iskSessiz) return; const e=$("f_kat"), P=$("iskPanel"); if(!e||!P) return;
   let m=e.dataset.elle||""; const v=+String(e.value).replace(",",".");
   if(m==="1"&&S.iskHes!=null&&isFinite(v)&&Math.abs(v-S.iskHes)<0.00005&&P.dataset.acik!=="1"){ delete e.dataset.elle; m=""; }
-  const kilit=m==="1"||m==="bekliyor", kirmizi=m==="bekliyor"||(m==="1"&&P.dataset.acik==="1");
+  const FL=fyListe(), fyA=fyAcik(), fyB=fyBekliyor(), iste=m==="1"||(fyA&&m!=="bekliyor");
+  const kilit=iste||m==="bekliyor"||fyA||fyB, kirmizi=m==="bekliyor"||(m==="1"&&P.dataset.acik==="1");
   e.style.color=kirmizi?"#c62828":""; e.style.fontWeight=kirmizi?"800":""; e.readOnly=kirmizi;
-  ["btnExcel","btnPdf","btnProjeMail"].forEach(id=>{ const b=$(id); if(!b) return; b.disabled=kilit; b.style.opacity=kilit?".45":""; b.style.cursor=kilit?"not-allowed":""; b.title=kilit?"Özel iskonto yönetim onayına bağlı":""; });
-  const anah=m+"|"+(P.dataset.acik||"")+"|"+(S.iskId||"")+"|"+frN(S.iskHes,2); if(P.dataset.anah===anah) return; P.dataset.anah=anah;
-  const kutu="background:#fff;border:1px solid #e3b4b4;border-radius:8px;padding:8px;box-shadow:0 6px 18px rgba(0,0,0,.15);margin-top:4px;font-size:12px;width:380px";
+  ["btnExcel","btnPdf","btnProjeMail"].forEach(id=>{ const b=$(id); if(!b) return; b.disabled=kilit; b.style.opacity=kilit?".45":""; b.style.cursor=kilit?"not-allowed":""; b.title=kilit?"Özel iskonto / fiyat yönetim onayına bağlı":""; });
   const bt=(k,t,c)=>'<button type="button" class="btn" data-isk="'+k+'" style="margin:3px 4px 2px 0;padding:5px 10px;font-size:12px;background:'+c+'">'+t+'</button>';
-  if(m==="1") P.innerHTML='<div style="'+kutu+'">'+(P.dataset.acik==="1"
-      ?'<label for="iskAcik" style="color:#c62828;font-weight:700;white-space:normal">Özel iskonto açıklaması (zorunlu)</label><textarea id="iskAcik" rows="3" style="width:100%"></textarea><div>'+bt("gonder","Talebi gönder","#c62828")+bt("don","Hesaplanan İskontoya Dön","#16324f")+'</div>'
-      :bt("iste","Özel İskonto İçin Yönetim Onayı İste","#c62828")+bt("don","Hesaplanan İskontoya Dön","#16324f"))
+  const liste=FL.length?'<div class="mini" style="white-space:normal;margin:3px 0"><b>Fiyat değişiklikleri:</b> '+FL.map(esc).join(" · ")+'</div>':'';
+  /* sağ altta sabit kutu: Pozlar / ekstra tablosundayken de görünür */
+  let K=$("fyKutu"); if(!K){ K=document.createElement("div"); K.id="fyKutu"; K.style.cssText="position:fixed;right:16px;bottom:16px;z-index:60;max-width:420px;background:#fff;border:2px solid #c62828;border-radius:10px;padding:10px 12px;box-shadow:0 8px 24px rgba(0,0,0,.2);font-size:12.5px;display:none"; document.body.appendChild(K); }
+  const kAnah=(fyA?"a":"")+(fyB?"b":"")+"|"+FL.join("|"); if(K.dataset.anah!==kAnah){ K.dataset.anah=kAnah;
+    if(fyA){ K.innerHTML='<b style="color:#c62828">Onaysız fiyat değişikliği</b><div style="margin:4px 0">'+FL.map(x=>'<div>'+esc(x)+'</div>').join("")+'</div>'+bt("iste","Yönetim Onayı İste","#c62828")+bt("fygeri","Değişiklikleri Geri Al","#16324f")+'<div class="mini">Onay alınmadan PDF / Excel / Projeyi mail at kapalı.</div>'; K.style.display=""; }
+    else if(fyB){ K.innerHTML='<b style="color:#c62828">Fiyat değişikliği yönetim onayı bekliyor</b> (talep #'+(S.iskId||"?")+')'+'<div style="margin:4px 0">'+FL.map(x=>'<div>'+esc(x)+'</div>').join("")+'</div>'+bt("fygeri","Değişiklikleri Geri Al","#16324f"); K.style.display=""; }
+    else { K.innerHTML=""; K.style.display="none"; }
+    K.querySelectorAll("[data-isk]").forEach(b=>b.onclick=()=>iskEylem(b.dataset.isk,b)); }
+  const anah=m+"|"+(P.dataset.acik||"")+"|"+(S.iskId||"")+"|"+frN(S.iskHes,2)+"|"+(iste?1:0)+"|"+FL.join("|"); if(P.dataset.anah===anah) return; P.dataset.anah=anah;
+  const kutu="background:#fff;border:1px solid #e3b4b4;border-radius:8px;padding:8px;box-shadow:0 6px 18px rgba(0,0,0,.15);margin-top:4px;font-size:12px;width:380px";
+  const adIste=m==="1"?"Özel İskonto İçin Yönetim Onayı İste":"Fiyat Değişikliği İçin Yönetim Onayı İste";
+  const donB=(m==="1"||m==="bekliyor"?bt("don","Hesaplanan İskontoya Dön","#16324f"):"")+(fyA||fyB?bt("fygeri","Fiyat Değişikliklerini Geri Al","#16324f"):"");
+  if(iste) P.innerHTML='<div style="'+kutu+'">'+liste+(P.dataset.acik==="1"
+      ?'<label for="iskAcik" style="color:#c62828;font-weight:700;white-space:normal">Özel iskonto / fiyat açıklaması (zorunlu)</label><textarea id="iskAcik" rows="3" style="width:100%"></textarea><div>'+bt("gonder","Talebi gönder","#c62828")+donB+'</div>'
+      :bt("iste",adIste,"#c62828")+donB)
     +'<div class="mini" style="margin-top:3px;white-space:normal">Hesaplanan çarpan '+frN(S.iskHes,2)+'. Onay alınmadan PDF / Excel / Projeyi mail at kapalı.</div></div>';
-  else if(m==="bekliyor") P.innerHTML='<div style="'+kutu+'"><b style="color:#c62828">Yönetim onayı bekleniyor</b> (talep #'+(S.iskId||"?")+')'+(S.iskAcik?'<div class="mini" style="white-space:pre-wrap;margin:3px 0">'+esc(S.iskAcik)+'</div>':'')+'<div>'+bt("don","Hesaplanan İskontoya Dön","#16324f")+'</div></div>';
+  else if(m==="bekliyor"||fyB) P.innerHTML='<div style="'+kutu+'"><b style="color:#c62828">Yönetim onayı bekleniyor</b> (talep #'+(S.iskId||"?")+')'+liste+(S.iskAcik?'<div class="mini" style="white-space:pre-wrap;margin:3px 0">'+esc(S.iskAcik)+'</div>':'')+'<div>'+donB+'</div></div>';
   else if(m==="onay") P.innerHTML='<div class="mini" style="color:#0b5d2a;font-weight:700;margin-top:2px">Yönetim onaylı</div>';
   else if(m==="devir") P.innerHTML='<div class="mini" style="color:#16324f;margin-top:2px;white-space:nowrap">Son tekliften devralındı (35 gün)</div>';
   else P.innerHTML="";
   P.querySelectorAll("[data-isk]").forEach(b=>b.onclick=()=>iskEylem(b.dataset.isk,b)); }
 function iskEylem(k,b){ const P=$("iskPanel");
-  if(k==="iste"){ P.dataset.acik="1"; iskUI(); const a=$("iskAcik"); if(a) a.focus(); return; }
+  if(k==="iste"){ P.dataset.acik="1"; P.dataset.anah=""; iskUI(); $("f_kat").scrollIntoView({block:"center"}); const a=$("iskAcik"); if(a) a.focus(); return; }
   if(k==="don") return iskDon();
+  if(k==="fygeri") return fyGeriAl();
   if(k==="gonder") return iskTalepGonder(b); }
 function iskDon(){ const e=$("f_kat"), P=$("iskPanel"); if(!e) return;
   if(e.dataset.elle==="bekliyor"&&S.iskId) SB.functions.invoke("soum-iskonto-onay",{body:{islem:"iptal",id:S.iskId}}).then(iskBantYenile).catch(()=>{});
+  if(e.dataset.elle==="bekliyor") S.fyBek=null;
   delete e.dataset.elle; e.readOnly=false; S.iskId=null; S.iskAcik=""; S.indElle=null; if(P) P.dataset.acik=""; hesapla(); iskBantYenile(); }
-async function iskTalepGonder(b){ const a=$("iskAcik"), t=String((a&&a.value)||"").trim(); if(!t){ if(a){ a.style.outline="2px solid #b00020"; a.focus(); } durum("Özel iskonto için açıklama yazınız.","hata"); return; }
+async function iskTalepGonder(b){ const a=$("iskAcik"), t=String((a&&a.value)||"").trim(); if(!t){ if(a){ a.style.outline="2px solid #b00020"; a.focus(); } durum("Özel iskonto / fiyat için açıklama yazınız.","hata"); return; }
   if(!S.poz.length||!H||H.X2==null){ durum("Önce Pencad raporunu okutunuz.","hata"); return; }
-  if(b) b.disabled=true; durum("İskonto onay talebi gönderiliyor…");
+  if(b) b.disabled=true; durum("Onay talebi gönderiliyor…");
+  const m=$("f_kat").dataset.elle||"", FL=fyListe();
   const body={islem:"talep",kisi_kod:iskKod(),kisi_ad:(iskKisi()||{}).ad||"",proje:$("f_proje").value,firma:$("f_firma").value,ilgili:$("f_ilgili").value,ref:$("f_ref").value,yd_satir_id:(S.ydSec&&S.ydSec.id)||null,
-    para_birimi:EN()?"GBP":"EUR",kur:H.K,brut:n2(H.brut),hesaplanan:S.iskHes,talep:H.X2,toplam:n2(H.genel),aciklama:t,onceki_id:S.iskId||null};
+    para_birimi:EN()?"GBP":"EUR",kur:H.K,brut:n2(H.brut),hesaplanan:S.iskHes,talep:H.X2,toplam:n2(H.genel),aciklama:t,onceki_id:S.iskId||null,degisiklikler:FL};
   try{ const {data,error}=await SB.functions.invoke("soum-iskonto-onay",{body}); if(error||!data||!data.ok) throw new Error((data&&data.hata)||(error&&error.message)||"bilinmeyen hata");
-    S.iskId=data.id; S.iskAcik=t; $("iskPanel").dataset.acik=""; $("f_kat").dataset.elle="bekliyor"; hesapla(); iskBantYenile();
-    durum("Özel iskonto talebi yönetime iletildi (#"+data.id+"). Onaylanana kadar PDF / Excel / Projeyi mail at kapalı; <b>Formu kaydet</b> ile formu arşive alabilirsiniz.","ok");
-  }catch(e){ if(b) b.disabled=false; durum("İskonto onay talebi gönderilemedi: "+esc(e.message||e),"hata"); } }
-async function iskKontrol(){ const e=$("f_kat"); if(!e||e.dataset.elle!=="bekliyor"||!S.iskId) return;
-  const r=await SB.from("soum_iskonto_onay").select("id,durum,talep,onay_carpan").eq("id",S.iskId).maybeSingle(); if(r.error||!r.data||r.data.durum==="bekliyor") return; const d=r.data;
-  if(d.durum==="onaylandi"){ e.value=iskF(d.talep); e.dataset.elle="onay"; durum("Özel iskonto talebiniz onaylandı (çarpan "+iskF(d.talep)+"). PDF / Excel / Projeyi mail at açıldı.","ok"); }
-  else if(d.durum==="yeni"){ e.value=iskF(d.onay_carpan); e.dataset.elle="onay"; S.indElle=null; durum("Yönetim yeni iskonto çarpanı belirledi: <b>"+iskF(d.onay_carpan)+"</b>. PDF / Excel / Projeyi mail at açıldı.","ok"); }
-  else { delete e.dataset.elle; S.iskId=null; S.iskAcik=""; durum("İskonto talebi iptal edilmiş; hesaplanan iskontoya dönüldü.","uyari"); }
-  e.readOnly=false; hesapla(); iskBantYenile(); if(d.durum!=="iptal") SB.functions.invoke("soum-iskonto-onay",{body:{islem:"goruldu",id:d.id}}).catch(()=>{}); }
+    S.iskId=data.id; S.iskAcik=t; S.fyBek=FL.length?FL.join(" | "):null; $("iskPanel").dataset.acik=""; if(m==="1"||m==="bekliyor") $("f_kat").dataset.elle="bekliyor"; hesapla(); iskBantYenile();
+    durum("Onay talebi yönetime iletildi (#"+data.id+"). Onaylanana kadar PDF / Excel / Projeyi mail at kapalı; <b>Formu kaydet</b> ile formu arşive alabilirsiniz.","ok");
+  }catch(e){ if(b) b.disabled=false; durum("Onay talebi gönderilemedi: "+esc(e.message||e),"hata"); } }
+async function iskKontrol(){ const e=$("f_kat"); if(!e||!S.iskId||(e.dataset.elle!=="bekliyor"&&!S.fyBek)) return;
+  const r=await SB.from("soum_iskonto_onay").select("id,durum,talep,onay_carpan").eq("id",S.iskId).maybeSingle(); if(r.error||!r.data||r.data.durum==="bekliyor") return; const d=r.data, bek=e.dataset.elle==="bekliyor";
+  if(d.durum==="onaylandi"){ if(bek){ e.value=iskF(d.talep); e.dataset.elle="onay"; } if(S.fyBek) S.fyOnay=S.fyBek; durum("Özel iskonto / fiyat talebiniz onaylandı. PDF / Excel / Projeyi mail at açıldı.","ok"); }
+  else if(d.durum==="yeni"){ e.value=iskF(d.onay_carpan); e.dataset.elle="onay"; S.indElle=null; if(S.fyBek) S.fyOnay=S.fyBek; durum("Yönetim yeni iskonto çarpanı belirledi: <b>"+iskF(d.onay_carpan)+"</b>. PDF / Excel / Projeyi mail at açıldı.","ok"); }
+  else { if(bek) delete e.dataset.elle; S.iskId=null; S.iskAcik=""; durum("Onay talebi iptal edilmiş.","uyari"); }
+  S.fyBek=null; e.readOnly=false; hesapla(); iskBantYenile(); if(d.durum!=="iptal") SB.functions.invoke("soum-iskonto-onay",{body:{islem:"goruldu",id:d.id}}).catch(()=>{}); }
 async function iskBantYenile(){ const el=$("iskBant"); if(!el) return; const kod=iskKod(); if(!kod){ el.textContent=""; return; }
   try{ const r=await SB.from("soum_iskonto_onay").select("id",{count:"exact",head:true}).eq("durum","bekliyor").eq("kisi_kod",kod); const n=r.error?0:(r.count||0);
     el.textContent=n?"Onay bekleyen "+n+" adet iskonto talebiniz var":""; }catch(e){} }
@@ -1620,7 +1659,7 @@ async function formKaydet(){ if(revEksik()) return; /* SOUM-REVIZE-ARSIV */
     (S.pcKayit||[]).forEach(k=>{ if(!pencad.some(x=>x.ad===k.ad)) pencad.push(k); }); /* SOUM-261120-PCINDIR */
     const alan={}; document.querySelectorAll("#sonuc input[id],#sonuc select[id],#sonuc textarea[id]").forEach(e=>{ if(e.type==="file"||e.type==="checkbox") return; alan[e.id]={v:e.value,e:e.dataset.elle||""}; });
     const grup={}; FORM_GRUP.forEach(g=>grup[g]=[...document.querySelectorAll("#"+g+" input:checked")].map(x=>x.value));
-    const J={v:1,kayit:z.toISOString(),S:{poz:S.poz,ekstra:S.ekstra.map(e=>Object.assign({},e)),ekstraTop:S.ekstraTop,pdfTop:S.pdfTop,of:S.of?{top:S.of.top,ekstra:S.of.ekstra}:null,dpgf:S.dpgf,cctpAdres:S.cctpAdres,adetTop:S.adetTop,baslik:S.baslik,psi:S.psi,yd:S.yd,firma:S.firma,bas:S.bas||{},rev:S.rev||null,indElle:S.indElle==null?null:S.indElle,isk:{id:S.iskId||null,acik:S.iskAcik||""},uwMod:S.uwMod||"avg",dip:S.dip||null},alan,grup,pnot,pencad,notGorsel:S.notGorsel||{notlar:[],etut:[]},kf:S.kf||null,sayim:(S.sayim||[]).filter(sayimDolu),ydSec:S.ydSec||null}; /* SOUM-261118-NGKORU */ /* SOUM-261118-SAYIM */ /* SOUM-NOT-GORSEL / SOUM-KESIF-FORM */ /* SOUM-REMISE-ELLE / SOUM-UW-MOD / SOUM-DIPNOT */
+    const J={v:1,kayit:z.toISOString(),S:{poz:S.poz,ekstra:S.ekstra.map(e=>Object.assign({},e)),ekstraTop:S.ekstraTop,pdfTop:S.pdfTop,of:S.of?{top:S.of.top,ekstra:S.of.ekstra}:null,dpgf:S.dpgf,cctpAdres:S.cctpAdres,adetTop:S.adetTop,baslik:S.baslik,psi:S.psi,yd:S.yd,firma:S.firma,bas:S.bas||{},rev:S.rev||null,indElle:S.indElle==null?null:S.indElle,isk:{id:S.iskId||null,acik:S.iskAcik||"",fyOnay:S.fyOnay||null,fyBek:S.fyBek||null},uwMod:S.uwMod||"avg",dip:S.dip||null},alan,grup,pnot,pencad,notGorsel:S.notGorsel||{notlar:[],etut:[]},kf:S.kf||null,sayim:(S.sayim||[]).filter(sayimDolu),ydSec:S.ydSec||null}; /* SOUM-261118-NGKORU */ /* SOUM-261118-SAYIM */ /* SOUM-NOT-GORSEL / SOUM-KESIF-FORM */ /* SOUM-REMISE-ELLE / SOUM-UW-MOD / SOUM-DIPNOT */
     const tar=$("f_tarih").value?new Date($("f_tarih").value+"T12:00:00"):z, yy=tar.toISOString().slice(2,10).replace(/-/g,"");
     const ad=("Form_"+$("f_proje").value+"_"+$("f_firma").value+"_"+yy+(EN()?"_EN":"")+(revNo()?"_Revizyon-"+revNo():"")).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,"_")+".json", yol=kok+"_"+dosyaTem(ad);
     const up=await SB.storage.from("soum-teklif").upload(yol,new Blob([JSON.stringify(J)],{type:"application/json"}),{upsert:false,contentType:"application/json"}); if(up.error) throw up.error;
@@ -1638,7 +1677,7 @@ async function formAc(r){ if(!r||!r.form_yolu) return; durum("Kayıtlı form aç
     durum("Kayıtlı form açıldı: <b>"+esc(r.proje||r.dosya_adi||"")+"</b> · "+esc(new Date(r.olusturma).toLocaleString("tr-TR"))+". Değişiklikten sonra yeniden <b>Formu kaydet</b>'e basınız (arşivdeki kaydın yerine geçer).","ok"); $("sonuc").scrollIntoView({behavior:"smooth"}); return true; }
   catch(e){ console.error(e); durum("Form açılamadı: "+esc(e.message||e),"hata"); } }
 function formYukle(J){ const X=J.S||{};
-  Object.assign(S,{poz:X.poz||[],ekstra:X.ekstra||[],ekstraTop:X.ekstraTop||0,pdfTop:X.pdfTop==null?null:X.pdfTop,of:X.of||null,dpgf:X.dpgf||null,cctpAdres:X.cctpAdres||"",adetTop:X.adetTop==null?null:X.adetTop,baslik:X.baslik||[],psi:X.psi==null?null:X.psi,yd:X.yd||null,firma:X.firma||null,bas:X.bas||{},rev:X.rev||null,indElle:X.indElle==null?null:X.indElle,iskId:(X.isk&&X.isk.id)||null,iskAcik:(X.isk&&X.isk.acik)||"",uwMod:X.uwMod||"avg",dip:X.dip||null,kesif:null,rapor:null,pnotKayit:J.pnot||[],pcKayit:J.pencad||[],notGorsel:J.notGorsel||{notlar:[],etut:[]},kf:J.kf||null,sayim:J.sayim||[],ydSec:J.ydSec||null}); /* SOUM-261118-NGKORU */ /* SOUM-261118-SAYIM */ ngCiz(); /* SOUM-NOT-GORSEL */ kfAc(false); /* SOUM-261120-MKB2-KF */
+  Object.assign(S,{poz:X.poz||[],ekstra:X.ekstra||[],ekstraTop:X.ekstraTop||0,pdfTop:X.pdfTop==null?null:X.pdfTop,of:X.of||null,dpgf:X.dpgf||null,cctpAdres:X.cctpAdres||"",adetTop:X.adetTop==null?null:X.adetTop,baslik:X.baslik||[],psi:X.psi==null?null:X.psi,yd:X.yd||null,firma:X.firma||null,bas:X.bas||{},rev:X.rev||null,indElle:X.indElle==null?null:X.indElle,iskId:(X.isk&&X.isk.id)||null,iskAcik:(X.isk&&X.isk.acik)||"",fyOnay:(X.isk&&X.isk.fyOnay)||null,fyBek:(X.isk&&X.isk.fyBek)||null,uwMod:X.uwMod||"avg",dip:X.dip||null,kesif:null,rapor:null,pnotKayit:J.pnot||[],pcKayit:J.pencad||[],notGorsel:J.notGorsel||{notlar:[],etut:[]},kf:J.kf||null,sayim:J.sayim||[],ydSec:J.ydSec||null}); /* SOUM-261118-NGKORU */ /* SOUM-261118-SAYIM */ ngCiz(); /* SOUM-NOT-GORSEL */ kfAc(false); /* SOUM-261120-MKB2-KF */
   S.dosya=[]; dosyaCiz(); $("kokDurum").textContent="";
   $("sonuc").style.display="";
   const pl=sec=>S.poz.map((p,i)=>'<label style="display:block;margin:2px 0;white-space:normal"><input type="checkbox" value="'+i+'" style="width:auto;margin-right:5px">'+p.no+' · '+esc(p.kod)+' ('+p.L+'×'+p.H+(sec?' · '+(p.F||0)+' adet':'')+')</label>').join("")||'<span class="mini">Yok</span>';

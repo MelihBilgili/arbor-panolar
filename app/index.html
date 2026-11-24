@@ -933,7 +933,7 @@ async function isoAc(L){
       +satir("Talep eden",es(o.kisi_ad||o.kisi_kod||"–")+' · '+new Date(o.created_at).toLocaleString("tr-TR",{dateStyle:"short",timeStyle:"short"}))
       +satir("Brüt tutar (Pencad)",tl(o.brut,"EUR"))+satir("Otomatik hesaplanan iskonto",ck(o.hesaplanan)+yz(o.hesaplanan))
       +satir("Talep edilen iskonto",'<b class="isoK">'+ck(o.talep)+yz(o.talep)+'</b>')+satir("Teklif toplamı (talep ile)",tl(o.toplam,o.para_birimi))
-      +satir("Açıklama",'<span style="white-space:pre-wrap">'+es(o.aciklama||"–")+'</span>')+'</table>'+gecmis(G[i])
+      +(Array.isArray(o.degisiklikler)&&o.degisiklikler.length?satir("Fiyat değişiklikleri",'<span class="isoK" style="font-size:13px">'+o.degisiklikler.map(es).join("<br>")+'</span>'):'') /* SOUM-FIYAT-ONAY */+satir("Açıklama",'<span style="white-space:pre-wrap">'+es(o.aciklama||"–")+'</span>')+'</table>'+gecmis(G[i])
       +'<div class="cfoB"><button data-k="onaylandi">Talep Edilen İskontoyu Onayla</button><button data-k="yeniac">Yeni İskonto Belirle</button>'
       +'<span class="isoY" style="display:none"><input class="isoI" inputmode="decimal" placeholder="çarpan, ör. 0,52" value="'+ck(o.hesaplanan)+'"> <span class="isoYz"></span> <button data-k="yeni">Kaydet</button></span><span class="cfoS"></span></div></div>').join("")+'</div>';
   document.body.appendChild(p);
