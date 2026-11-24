@@ -328,14 +328,16 @@
     if(!R.length){ el.innerHTML=""; return; }
     hlpEkle("hlp-ofis","Ofis Stoğu PEM'leri: Ofis stoklarının sorumlusu MY'dir; bu tablo tüm şantiye formlarında ortaktır ve bilgi içindir.");
     /* SANTIYE-TEK-SERIT (24.11.2026, Melih): ofis bloğu üstteki PEM tablosuyla aynı sütunlar; açıklama metni "?" içinde */
-    el.innerHTML='<div class="mysan" style="margin-top:22px"><h3>Ofis Stoğu PEM\'leri</h3>'
+    /* SANTIYE-ALT-BANT (24.11.2026, Melih): açılır bant (kapalı başlar; yeniden çizimde açık/kapalı korunur) — CSS details.sbant şantiye şablonunda */
+    var ofAcik=!!el.querySelector("details[open]");
+    el.innerHTML='<details class="mysan sbant"'+(ofAcik?' open':'')+'><summary><h3>Ofis Stoğu PEM\'leri <span style="font-weight:400;font-size:12px;color:#5a6b7d">('+R.length+')</span></h3></summary>'
       +'<div class="myw"><table class="mys fx" style="width:'+swTop()+'px">'+swCol()
       +'<thead><tr><th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th class="sm">Yükleme<br>Şekli</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th><th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek">Sevk Durumu</th><th class="ek sm">Takip<br>Durumu</th></tr></thead><tbody>'
       +R.map(function(r){ var ac=r.durum==="Acil";
         return '<tr class="'+(ac?'acil':'')+'" style="cursor:default"><td title="'+esc(r.no+(r.durum_erp?' · '+r.durum_erp:''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td>'
           +'<td class="w" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td>'+sekilHtml(r)+'</td><td class="w" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td class="n">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'
           +'<td>'+(ac?fd(r.hedef):'')+'</td><td class="w" title="'+esc(r.sevk_durumu)+'">'+esc(r.sevk_durumu)+'</td><td class="dur '+(ac?'acil':'')+'">'+esc(r.durum||"Normal")+'</td></tr>';
-      }).join("")+'</tbody></table></div></div>';
+      }).join("")+'</tbody></table></div></details>';
   }
   async function santiyeBlok(el,o){
     if(!el) return; o=o||{}; stil(); sStil();
@@ -528,7 +530,11 @@
     var s=null; try{ s=await cli.auth.getSession(); }catch(e){}
     if(!(s&&s.data&&s.data.session)){ if(Date.now()-t0<60000) setTimeout(oto,700); return; }
     if(es){ var skod=es.getAttribute("data-kod")||((typeof ARB_STORE!=="undefined")?String(ARB_STORE).replace(/^arbform_santiye_/,""):"");
-      if(skod==="yi"){ var yp=document.getElementById("yi-sevk-pem"); if(!yp){ yp=document.createElement("div"); yp.id="yi-sevk-pem"; es.parentNode.insertBefore(yp,es.nextSibling); }
+      if(skod==="yi"){ var yp=document.getElementById("yi-sevk-pem"); if(!yp){ /* YI-ANKET-SAG (24.11.2026, Melih): Yurt İçi formunda Toplam Memnuniyet, Sevke Hazır PEM'lerin sağında; iki sütun ekran genişliğini aşmaz */
+          var yr=document.createElement("div"); yr.id="yi-ust"; yr.style.cssText="display:flex;gap:12px;align-items:flex-start;width:100%;margin-bottom:14px";
+          es.parentNode.insertBefore(yr,es.nextSibling);
+          yp=document.createElement("div"); yp.id="yi-sevk-pem"; yp.style.cssText="flex:1 1 0;min-width:0"; yr.appendChild(yp);
+          var an=document.getElementById("anket"); if(an){ an.style.cssText="flex:1 1 0;min-width:0"; yr.appendChild(an); } }
         yiSevkPemBlok(yp,{sb:cli}); setInterval(function(){ if(!yp.querySelector("input")) yiSevkPemBlok(yp,{sb:cli}); },5*60*1000); } /* YI-SEVK-PEM */
       if(skod){ santiyeBlok(es,{sb:cli,kod:skod}); setInterval(function(){ if(!document.querySelector(".my-modal")&&!document.getElementById("mys-ctx")) santiyeBlok(es,{sb:cli,kod:skod}); },5*60*1000); } }
     if(sp){ sevkPrjBlok(sp,{sb:cli}); setInterval(function(){ if(!sp.querySelector("input")) sevkPrjBlok(sp,{sb:cli}); },5*60*1000); } /* MK-SEVK-PRJ */
