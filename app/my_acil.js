@@ -317,14 +317,18 @@
   var SW=[64,72,133,64,210,44,72,110,460,280];
   function swCol(){ return '<colgroup>'+SW.map(function(x){ return '<col style="width:'+x+'px">'; }).join('')+'</colgroup>'; }
   function swTop(){ return SW.reduce(function(a,x){return a+x;},0); }
+  /* SANTIYE-SORU-IKON (24.11.2026, Melih): blok açıklamaları formun başlığındaki "?" (arb-hlp) penceresine taşınır */
+  function hlpEkle(id,txt){ var n=0; (function f(){ var p=document.querySelector(".arb-hlp-pop"); if(!p){ if(n++<40) setTimeout(f,250); return; }
+    if(document.getElementById(id)) return; var d=document.createElement("div"); d.id=id; d.className="sub"; d.textContent=txt; p.appendChild(d); })(); }
   function sKapat(){ var m=document.getElementById("mys-ctx"); if(m) m.remove(); }
   /* PEM-OFIS-MY (10.11.2026, Melih): ofis stoğu PEM'lerinin tek sorumlusu MY — tüm şantiye formlarında sayfanın en altında ortak, salt-okur tablo */
   function ofisBlok(R){
     var el=document.getElementById("my-ofis");
     if(!el){ var w=document.querySelector(".wrap")||document.body; el=document.createElement("div"); el.id="my-ofis"; w.appendChild(el); }
     if(!R.length){ el.innerHTML=""; return; }
+    hlpEkle("hlp-ofis","Ofis Stoğu PEM'leri: Ofis stoklarının sorumlusu MY'dir; bu tablo tüm şantiye formlarında ortaktır ve bilgi içindir.");
     /* SANTIYE-TEK-SERIT (24.11.2026, Melih): ofis bloğu üstteki PEM tablosuyla aynı sütunlar; açıklama metni "?" içinde */
-    el.innerHTML='<div class="mysan" style="margin-top:22px"><h3>Ofis Stoğu PEM\'leri<span class="mys-q" tabindex="0" data-tip="Ofis stoklarının sorumlusu MY\'dir; bu tablo tüm şantiye formlarında ortaktır ve bilgi içindir.">?</span></h3>'
+    el.innerHTML='<div class="mysan" style="margin-top:22px"><h3>Ofis Stoğu PEM\'leri</h3>'
       +'<div class="myw"><table class="mys fx" style="width:'+swTop()+'px">'+swCol()
       +'<thead><tr><th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th class="sm">Yükleme<br>Şekli</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th><th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek">Sevk Durumu</th><th class="ek sm">Takip<br>Durumu</th></tr></thead><tbody>'
       +R.map(function(r){ var ac=r.durum==="Acil";
@@ -360,12 +364,13 @@
         +'<td>'+(ac?fd(r.hedef):'')+'</td><td class="w" title="'+esc(r.aciklama)+'">'+(ac?esc(r.aciklama):'')+'</td>'
         +'<td class="dur '+(ac?'acil':'')+'" title="'+esc(String(r.durum||'Normal')+(r.talep?' → '+r.talep+' (MY onayı bekliyor)':''))+'">'+dur+'</td></tr>';
     };
+    hlpEkle("hlp-mys","Projeleriniz ve PEM'leriniz: Satıra sağ tıklayarak acil ya da normal takibe alma talebinde bulunabilir, ayrıntıları görebilirsiniz. Talepler MY onayından sonra geçerli olur.");
     var tablo=function(head,bl){
       var body=bl.map(function(b){ var gi=B.indexOf(b); var R=rows.filter(function(r){ return r.blok===b[0]&&(!b[3]||b[3](r)); }); if(!R.length) return "";
         return '<tr class="grp" data-gb="'+gi+'"><td colspan="10">'+esc(b[1])+' <span class="gh">· Sağ tıklayarak acile çevir</span></td></tr>'+R.map(function(r){ return satir(r,gi); }).join(""); }).join("");
       return body?'<div class="myw" style="margin-top:6px"><table class="mys fx" style="width:'+swTop()+'px">'+swCol()+'<thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>':'';
     };
-    var h='<div class="mysan"><h3>Projeleriniz ve PEM\'leriniz<span class="mys-q" tabindex="0" data-tip="Satıra sağ tıklayarak acil ya da normal takibe alma talebinde bulunabilir, ayrıntıları görebilirsiniz. Talepler MY onayından sonra geçerli olur.">?</span></h3><div class="mys-msg" id="mys-msg"></div>'
+    var h='<div class="mysan"><h3>Projeleriniz ve PEM\'leriniz</h3><div class="mys-msg" id="mys-msg"></div>'
       +tablo(HP,[B[0],B[1]])+tablo(HJ,[B[2],B[3]])+'</div>';
     el.innerHTML=h;
     var bul=function(tr){ var t=tr.getAttribute("data-tur"), n=tr.getAttribute("data-no"); return rows.filter(function(r){ return r.tur===t&&r.no===n; })[0]; };
