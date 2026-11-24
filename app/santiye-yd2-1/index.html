@@ -374,11 +374,13 @@ async function anketYukle(){
   const renk=v=>v==null?"":(v>=0.75?"#1f7a46":(v>=0.6?"#a86b00":"#b40000"));
   const cv=v=>{ if(!v) return '<td class="c">—</td>'; const k=/değil/i.test(v)?' style="color:#b40000;font-weight:600"':(/Çok memnun|Tamamen/.test(v)?' style="color:#1f7a46"':"");
     return '<td class="c"'+k+'>'+esc(v)+'</td>'; };
-  const mem=ort==null?null:ort/4;
+  /* ANKET-BASARI-GELIS (24.11.2026, Melih): Toplam Memnuniyet Başarısı = (ortalama puan / 4) × anket geliş oranı (yanıtlanan / gönderilen, İptal hariç) */
+  const gel=L.length?Y.length/L.length:null;
+  const mem=(ort==null||gel==null)?null:(ort/4)*gel;
   /* ANKET-TEK-SATIR (19.11.2026, Melih): başlık ve Anket Geliş Başarısı kartı kaldırıldı; Toplam Memnuniyet Başarısı tek satır */
   let h='<div class="sevk" style="margin-top:14px">'
     +'<h3>Toplam Memnuniyet Başarısı <span style="color:'+(renk(mem)||"inherit")+'">'+(mem==null?"—":yuz(mem))+'</span>' /* ANKET-H3 (19.11.2026, Melih): İleri Tarihli Projeler başlığıyla aynı biçim */
-    +' <span style="font-weight:400;font-size:12px;color:#5a6b7d">· '+(ort==null?"Yanıtlanan anket yok":"Ortalama puan "+nk(ort)+" / 4 · "+P.length+" anket")+'</span></h3>';
+    +' <span style="font-weight:400;font-size:12px;color:#5a6b7d">· '+(ort==null?"Yanıtlanan anket yok":"Ortalama puan "+nk(ort)+" / 4 ("+yuz(ort/4)+") × anket geliş oranı "+yuz(gel)+" ("+Y.length+" / "+L.length+")")+'</span></h3>';
   if(ANK_SON) h+='<div class="ank-lb"><b>'+esc(ANK_SON.proje)+'</b> — müşteri anket linki'+(ANK_SON.kop?' <span style="color:#1f7a46">(kopyalandı)</span>':'')
     +'<div style="display:flex;gap:6px;margin-top:5px"><input readonly value="'+esc(ankLink(ANK_SON))+'" onclick="this.select()"><button class="ank-btn" data-kopya="'+esc(ankLink(ANK_SON))+'">Linki kopyala</button></div></div>';
   if(Y.length) h+='<table><thead><tr><th>Anketi Gelen Proje</th><th>Müşteri</th><th class="c">Yanıt Tarihi</th><th class="c">Etüt</th><th class="c">Kalite</th><th class="c">Süreler</th><th class="c" title="23.11.2026 öncesi yanıtlarda birleşik Teknik/İdari; ANKET-GESTION-TRAVAUX">Şantiye yön.</th><th class="c">İdari</th><th class="c">SAV</th><th class="c">Tavsiye</th><th class="c">Puan</th><th class="c"></th></tr></thead><tbody>'
@@ -710,6 +712,7 @@ anketYukle(); /* SANTIYE-ANKET */
 
 
 <!-- FORM-LINKLER --><script src="../form_linkler.js?v=261105"></script><!-- FORM-MENU -->
+
 
 
 
