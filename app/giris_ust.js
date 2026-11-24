@@ -87,6 +87,7 @@ const CSS=`
 .gru{font-size:12.5px;color:#16324f}
 .gru-svg{cursor:pointer}.gru-pop{position:fixed;z-index:9999;background:#fff;border:1px solid #9fb3c8;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.18);padding:5px 9px;font-size:12px;color:#16324f;white-space:nowrap;pointer-events:none}
 .gru h3.gru-h{margin:16px 0 6px;font-size:13.5px;font-weight:700;color:#16324f}
+.gru details.gru-bant{border:1px solid #dfe5ec;border-radius:6px;margin:12px 0 6px;background:#fff}.gru details.gru-bant>summary{cursor:pointer;list-style:none;padding:5px 10px;background:#f6f9fc;border-radius:6px}.gru details.gru-bant>summary::-webkit-details-marker{display:none}.gru details.gru-bant>summary h3.gru-h{margin:0;display:inline}.gru details.gru-bant>summary h3.gru-h::before{content:"▸ ";color:#5a6b7d}.gru details.gru-bant[open]>summary{border-bottom:1px solid #e6ebf1;border-radius:6px 6px 0 0}.gru details.gru-bant[open]>summary h3.gru-h::before{content:"▾ "}.gru details.gru-bant>.gru-sc,.gru details.gru-bant>.gru-muted{margin:6px 8px 8px} /* GIRIS-SIKI-BANT */
 .gru-muted{color:#7b8794;font-weight:400}
 .gru .gru-sc{overflow-x:auto;max-height:none}
 .gru table.grt{border-collapse:collapse;font-size:11.5px;width:auto;min-width:0;display:table;background:#fff}
@@ -155,8 +156,10 @@ async function satis(o,elT,elG){
   const ctpSo=r=>`<tr><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td></td><td></td><td></td><td></td><td class="w2" title="${esc(r.durum||"")}">${esc(r.durum||"")}</td><td><button class="gru-nb" data-k="so" data-id="${r.id}" title="Durum notu (Yurt İçi Satış formuna yazılır)">+ Not</button></td></tr>`;
   const body=o.bolum==="ctp"?muh.map(x=>x.t==="yd"?ctpYd(x.r):ctpSo(x.r)).join(""):siki.map(r=>ydS(r)).join("")+muh.map((x,i)=>{ const c=(i===0&&siki.length)?"gru-ayr":""; return x.t==="yd"?ydS(x.r,c):soS(x.r,c); }).join("");
   const by={yd:{},so:{}}; ydR.forEach(r=>by.yd[r.id]=r); soR.forEach(r=>by.so[r.id]=r);
-  elT.innerHTML=(o.bolum==="ctp"?`<h3 class="gru-h">Alınan &gt; 75.000 € <span class="gru-muted">(${muh.length})</span></h3>`:`<h3 class="gru-h">Sıkı Takip Edilecekler <span class="gru-muted">(${siki.length})</span> ve Muhtemel &gt; 500.000 <span class="gru-muted">(${muh.length})</span></h3>`)
-    +(body?`<div class="gru-sc"><table class="grt">${o.bolum==="ctp"?ctpTH:TH}<tbody>${body}</tbody></table></div>`:'<div class="gru-muted">Kayıt yok</div>');
+  /* GIRIS-SIKI-BANT (24.11.2026, Melih): Giriş panosunda (o.grafik===true) Sıkı Takip + Muhtemel tablosu açılır bant (kapalı başlar, yeniden çizimde açık/kapalı korunur); MK/CTP'de değişmez */
+  const sikiBant=o.grafik===true, sikiAcik=sikiBant&&!!elT.querySelector("details.gru-bant[open]");
+  elT.innerHTML=(sikiBant?'<details class="gru-bant"'+(sikiAcik?' open':'')+'><summary>':'')+(o.bolum==="ctp"?`<h3 class="gru-h">Alınan &gt; 75.000 € <span class="gru-muted">(${muh.length})</span></h3>`:`<h3 class="gru-h">Sıkı Takip Edilecekler <span class="gru-muted">(${siki.length})</span> ve Muhtemel &gt; 500.000 <span class="gru-muted">(${muh.length})</span></h3>`)+(sikiBant?'</summary>':'')
+    +(body?`<div class="gru-sc"><table class="grt">${o.bolum==="ctp"?ctpTH:TH}<tbody>${body}</tbody></table></div>`:'<div class="gru-muted">Kayıt yok</div>')+(sikiBant?'</details>':'');
   elT.querySelectorAll(".gru-nb").forEach(b=>b.onclick=()=>notAc(o,b.dataset.k,by[b.dataset.k][Number(b.dataset.id)],()=>satis(o,elT,elG)));
   /* grafikler: İcmal son 12 ay + Satış cari durum; Etüt DK1 */
   /* GIRIS-IKI-YIL (18.11.2026, Melih): Giriş'te (o.grafik===true) grafikler son 2 yılı gösterir (24 ay + cari); MK/CTP 12 ay */
