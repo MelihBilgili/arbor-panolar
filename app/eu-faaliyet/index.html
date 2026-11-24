@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><script>/* SERT-YENILE */(function(){try{var K='sy:'+location.pathname;function taze(){try{var t=+sessionStorage.getItem(K)||0;if(Date.now()-t<10000)return;sessionStorage.setItem(K,Date.now());}catch(e){}var u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.toString());}var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(n&&n.transferSize===0)taze();addEventListener('pageshow',function(e){if(e.persisted)taze();});document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('download'))return;var h=a.getAttribute('href')||'';if(/^(#|javascript:|mailto:|tel:)/i.test(h))return;var u=new URL(a.href,location.href);if(u.origin!==location.origin||!/(\/|\.html?)$/i.test(u.pathname))return;u.searchParams.set('v',Date.now());a.href=u.toString();},true);}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EU — Faaliyet Formu</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  html,body{max-width:100vw;overflow-x:hidden}
+  /* FORM-GUNCELLE-AD (29.09.2026): formlardaki "Aylık Güncelle" düğmesi "Güncelle" oldu */
+  /* APP-MENU-STICKY (29.09.2026): üst menü kaydırmada sabit; clip kaydırma kabı oluşturmaz, sticky çalışır */
+  @supports (overflow:clip){html,body{overflow-x:clip}}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:13px}
+  header{background:#16324f;color:#fff;padding:0;position:sticky;top:0;z-index:100}
+  .topbar{display:flex;align-items:center;gap:14px;padding:8px 14px}
+  .topbar h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.5px}
+  .tabs{display:flex;gap:2px;padding:4px 6px 0;flex-wrap:wrap}
+  .tabs button{background:transparent;color:#cfe0f0;border:0;padding:3px 9px;font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent}
+  .tabs button.active{color:#fff;border-bottom-color:#fff;background:rgba(255,255,255,.08)}
+  /* MENU-DUGME (14.11.2026, Melih): pano linkleri üst şeritten Menü düğmesinin altına taşındı */
+  .mnbar{display:flex;align-items:center;gap:10px;padding:4px 8px}
+  .mnbtn{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:5px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer}
+  .mnbtn:hover{background:rgba(255,255,255,.18)}
+  .mncur{color:#cfe0f0;font-size:12px;font-weight:600}
+  .mnlist{display:none;position:absolute;top:100%;left:6px;background:#fff;border:1px solid #d3e0ee;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.18);padding:4px 0;min-width:190px;z-index:200;max-height:85vh;overflow:auto}
+  .mnlist.open{display:block}
+  .mnlist button,.mnlist a{display:block;width:100%;text-align:left;background:none;border:0;padding:5px 14px;font-size:12px;color:#16324f;cursor:pointer;text-decoration:none;font-weight:500}
+  .mnlist button:hover,.mnlist a:hover{background:#eef4fb}
+  .mnlist button.active{background:#16324f;color:#fff}
+  .mnlist .mnsep{border-top:1px solid #eef1f5;margin:4px 0}
+  .mnlist .mngrp{padding:4px 14px 1px;font-size:10px;color:#8a97a4;font-weight:700;letter-spacing:.04em}
+  .tabs a.tlink{color:#cfe0f0;padding:3px 9px;font-size:11px;font-weight:600;text-decoration:none;border-bottom:2px solid transparent;margin-left:auto} .tabs a.tlink:hover{color:#fff} /* URETIM-TAKIP-LINK */
+  .spacer{flex:1}
+  .who{font-size:12px;color:#cfe0f0}
+  .btn{background:#2e7d54;color:#fff;border:0;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}
+  .btn.sec{background:#e3edf7;color:#16324f}
+  .wrap{padding:6px 8px}
+  .login{max-width:360px;margin:9vh auto;background:#fff;border:1px solid #dde3ea;border-radius:12px;padding:24px}
+  .login h2{margin:0 0 4px;color:#16324f;font-size:19px}
+  .login p{margin:0 0 16px;color:#7a8794;font-size:12.5px}
+  .login input{width:100%;padding:10px;border:1px solid #cdd6df;border-radius:8px;font-size:14px;margin-bottom:10px}
+  .login .btn{width:100%}
+  .msg{font-size:12px;margin-top:10px;min-height:16px}
+  .msg.err{color:#b40000}.msg.ok{color:#2e7d54}
+  .scroll{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #dde3ea;border-radius:8px;max-height:82vh;background:#fff;width:max-content;max-width:100%}
+  table{border-collapse:collapse;width:auto;font-size:12px}
+  thead th{position:sticky;top:0;background:#16324f;color:#fff;font-weight:600;font-size:10.5px;padding:3px 6px;text-align:left;white-space:nowrap;z-index:2;vertical-align:bottom}
+  thead th.thsm{font-size:9.5px;letter-spacing:-.1px}
+  thead th .thw{display:inline-block;max-width:14ch;white-space:normal;line-height:11px;vertical-align:bottom}
+  /* Sayısal başlık iki-üç satıra sarınca sağa dayalı satırlar kaymış görünüyordu ("FR" / "İsk." / "(%)")
+     → sarılan başlık satırları ortalanır; veri hücreleri sağa dayalı kalır. */
+  thead th.num .thw{text-align:center}
+  td{border-bottom:1px solid #eef1f5;padding:2px 6px;vertical-align:middle;line-height:16px;white-space:nowrap}
+  tbody tr:nth-child(even){background:#fbfcfe}
+  tbody tr:hover td{background:#eef6ff}
+  td.red{background:#ffe1e1;color:#b40000;font-weight:700}
+  .grp td{background:#e8eef5;font-weight:700;color:#16324f;position:sticky;left:0}
+  .kod{font-weight:700;color:#16324f;white-space:nowrap}
+  .gnb .kod,.gnb .grp td{font-weight:400}
+  .ed{border:1px dashed transparent;border-radius:4px;padding:2px 4px;min-width:60px;cursor:text}
+  .ed:hover{border-color:#b7c6d6;background:#fffef2}
+  input.cell,select.cell{font:inherit;border:1px solid #86a6c6;border-radius:4px;padding:2px 4px;width:100%}
+  .saveflash{outline:2px solid #2e7d54;transition:outline .1s}
+  .hint{font-size:10.5px;color:#8a97a4;margin:2px 2px;max-width:min(100%,120ch)}
+  .stamp{font-size:11px;color:#0a6b3f;font-weight:700;margin:1px 2px 4px}
+  .malibar{display:flex;gap:4px;flex-wrap:wrap;margin:1px 2px 6px}
+  .malitab{background:#eef4fb;color:#16324f;border:1px solid #d3e0ee;border-radius:14px;padding:2px 10px;font-size:11px;font-weight:600;cursor:pointer}
+  .malitab.active{background:#16324f;color:#fff;border-color:#16324f}
+  .skpi{display:flex;gap:6px;flex-wrap:wrap;margin:4px 2px 6px}
+  .skpi div{background:#f4f6f8;border:1px solid #e2e6ea;border-radius:7px;padding:3px 9px;font-size:11.5px}
+  .skpi b{display:block;font-size:13px;color:#16324f}
+  table.stbl th.obh{background:#fdf4d6;color:#8a6100}table.stbl th.mkh{background:#e2efda;color:#2e6b2e}
+  table.stbl td.sb{font-weight:700}table.stbl td.snum{white-space:nowrap;color:#9c0006;font-weight:600}
+  tr.sold td:first-child{border-left:3px solid #d93025}
+  td.scmp .cur{white-space:pre-wrap}td.scmp .prev{color:#8a8a8a;font-size:11px;font-style:italic;margin-top:2px}td.scmp.empty{color:#bbb;text-align:center}
+  .sbdg{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;margin-bottom:2px}
+  .sbdg.snew{background:#e7f0ff;color:#0b57d0}.sbdg.chg{background:#fff0e0;color:#b25a00}.sbdg.same{background:#eef1f4;color:#667}.sbdg.none{background:#fde8e8;color:#9c0006}
+  .num{text-align:right;white-space:nowrap}
+  .snpink{background:#ffd9ec} .itot td{background:#eef4fb;font-weight:700}
+  thead th.num{text-align:right}
+  table.aup{width:auto}
+  table.aup th,table.aup td{white-space:nowrap}
+  table.aup th.note,table.aup td.note{white-space:normal;min-width:160px;max-width:34ch}
+  table.aup th.ss,table.aup th.ur{white-space:nowrap}
+  table.aupmain thead th:nth-child(n+4):nth-child(-n+10){text-align:right}
+  table.aup td.ss>.cx{display:block;width:40ch;white-space:normal;overflow-wrap:anywhere}
+  table.aup td.ur>.cx{display:block;width:67.5ch;white-space:normal;overflow-wrap:anywhere}
+  table.aup td.ss,table.aup td.ur{white-space:normal;vertical-align:top}
+  table.aup th.pstd{font-size:9.5px;padding-left:2px;padding-right:2px}
+  table.aup td.pstd{padding-left:2px;padding-right:2px;width:1%}
+  table.so{width:auto}
+  table.so th,table.so td{white-space:nowrap}
+  table.so td.c7>.cx,table.so td.c15>.cx,table.so td.c20>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.aup td.ss>.cx::-webkit-scrollbar,table.aup td.ur>.cx::-webkit-scrollbar,table.so td.c7>.cx::-webkit-scrollbar,table.so td.c15>.cx::-webkit-scrollbar,table.so td.c20>.cx::-webkit-scrollbar{display:none}
+  table.so td.c7>.cx{width:7ch}table.so td.c15>.cx{width:15ch}table.so td.c20>.cx{width:60ch}
+  table.sat{width:auto}
+  table.sat th,table.sat td{white-space:nowrap}
+  table.sat td>.cx,table.sat th>.cw{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.sat td>.cx::-webkit-scrollbar,table.sat th>.cw::-webkit-scrollbar{display:none}
+  /* Muhtemel/Alınan blokları: dört sütun da sabit genişlik → bütün bloklar (boş olanlar dahil)
+     yatayda birebir hizalı, sağ dikey sınırlar da aynı hizada. Başlıkta da aynı genişlik (span.cw). */
+  table.sat .sc1{width:21.25ch}table.sat .sc2{width:20ch}table.sat .sc3{width:10ch;text-align:right}table.sat .sc4{width:50.7ch}
+  /* Takiptekiler bloğu (tk1..tk15): daraltılmış sütun genişlikleri + başlıkların 2-3 satıra sarması */
+  table.sat td.tk1>.cx,table.sat th.tk1>.cw{width:12ch}
+  table.sat td.tk2>.cx,table.sat th.tk2>.cw{width:8.5ch}
+  table.sat td.tk3>.cx,table.sat th.tk3>.cw{width:7.5ch}
+  table.sat td.tk4>.cx,table.sat th.tk4>.cw{width:5ch}
+  table.sat td.tk5>.cx,table.sat th.tk5>.cw{width:8ch}
+  table.sat td.tk6>.cx,table.sat th.tk6>.cw{width:7.5ch}
+  table.sat td.tk7>.cx,table.sat th.tk7>.cw{width:8.5ch}
+  table.sat td.tk8>.cx,table.sat th.tk8>.cw{width:7ch}
+  table.sat td.tk9>.cx,table.sat th.tk9>.cw{width:6.5ch}
+  table.sat td.tk10>.cx,table.sat th.tk10>.cw{width:7.5ch}
+  table.sat td.tk11>.cx,table.sat th.tk11>.cw{width:13ch}
+  table.sat td.tk12>.cx,table.sat th.tk12>.cw{width:8.5ch}
+  table.sat td.tk13>.cx,table.sat th.tk13>.cw{width:7.5ch}
+  table.sat td.tk14>.cx,table.sat th.tk14>.cw{width:34ch}
+  table.sat td.tk15>.cx,table.sat th.tk15>.cw{width:7.5ch}
+  table.sat th[class^="tk"]>.cw{white-space:normal;overflow-x:visible;overflow-wrap:break-word;word-break:normal;line-height:1.2;display:block;vertical-align:bottom}
+  table.sat td.tk11,table.sat th.tk11,table.sat td.tk11>.cx{text-align:right}
+  table.aup thead th{vertical-align:bottom}
+  table.aup td.t-proje>.cx,table.aup td.t-mus>.cx,table.aup td.t-agac>.cx,table.aup td.t-ihale>.cx,table.aup td.t-durum>.cx,table.aup td.t-not>.cx{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.aup td.t-proje>.cx::-webkit-scrollbar,table.aup td.t-mus>.cx::-webkit-scrollbar,table.aup td.t-agac>.cx::-webkit-scrollbar,table.aup td.t-ihale>.cx::-webkit-scrollbar,table.aup td.t-durum>.cx::-webkit-scrollbar,table.aup td.t-not>.cx::-webkit-scrollbar{display:none}
+  table.aup td.t-proje>.cx{width:12.5ch}table.aup td.t-mus>.cx{width:13.33ch}table.aup td.t-agac>.cx{width:10ch}table.aup td.t-ihale>.cx{width:10ch}table.aup td.t-durum>.cx{width:14ch}table.aup td.t-not>.cx{width:42.5ch}
+  .addbar{display:flex;gap:6px;margin:0 0 8px;flex-wrap:nowrap;align-items:center}
+  .addbar input{border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;font:inherit;min-width:0}
+  .addbar select#ag-ilgili{flex:none;border:1px solid #cdd6df;border-radius:6px;padding:6px 6px;font:inherit;background:#fff}
+  .addbar input#ag-konu{flex:1;min-width:0}
+  .addbar .btn{flex:none;white-space:nowrap;padding:6px 12px}
+  .load{padding:30px;text-align:center;color:#8a97a4}
+  .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:14px;padding:0 4px}
+  .flow{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:6px 9px;margin-bottom:6px;line-height:1.5;width:max-content;max-width:min(100%,110ch)}
+  .step{display:inline-block;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:3px 8px;font-weight:600;color:#16324f}
+  .arr{color:#2e7d54;font-weight:700;margin:0 3px}
+  h3.sec{margin:8px 2px 3px;color:#16324f;font-size:12px}
+  .flow p{margin:0 0 7px}.flow p:last-child{margin:0}
+  .tag{display:inline-block;background:#16324f;color:#fff;font-size:10px;font-weight:700;border-radius:5px;padding:1px 7px;margin-left:6px;vertical-align:middle}
+  .tag.ok{background:#2e7d54}
+  .muted{color:#7a8794;font-size:11.5px}
+  .sybox{background:#fff;border:1px solid #dde3ea;border-radius:8px;padding:4px 10px;margin:3px 0 6px;width:max-content;max-width:min(100%,110ch)}
+  .syrow{font-size:13px;color:#1c2430;padding:3px 0;border-bottom:1px solid #f0f3f7}
+  .syrow:last-child{border-bottom:0}
+  table.tks{border-collapse:collapse;width:auto;font-size:11.5px;margin:2px 0 8px}
+  table.tks th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px;padding:3px 6px;text-align:center;white-space:nowrap}
+  table.tks td{border-bottom:1px solid #eef1f5;padding:2px 6px;white-space:nowrap;line-height:16px}
+  table.tks tr.grp td{font-weight:700;background:#eef3f8;border-top:2px solid #cdd8e4}
+  table.ssum{border-collapse:collapse;width:auto;min-width:420px;font-size:12px;margin:2px 0 8px;background:#fff}
+  table.ssum th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px;padding:3px 12px;text-align:right;white-space:nowrap}
+  table.ssum th:first-child{text-align:left}
+  table.ssum td{padding:2px 12px;border-bottom:1px solid #eef1f5;color:#1c2430;line-height:16px}
+  table.ssum td.num{text-align:right;white-space:nowrap}
+  table.ssum tr.stot td{font-weight:700;background:#eef4fb;border-bottom:2px solid #cdd8e4}
+  table.ssum tr.sreg td{font-weight:600}
+  table.ssum tr.sdet td{padding-top:0;padding-bottom:4px;font-size:11px;line-height:1.45}
+  table.ssum tr.sdet .sdrow{display:flex;justify-content:space-between;align-items:baseline;gap:14px;white-space:nowrap}
+  table.ssum tr.sdet .sdp{text-align:left}
+  table.ssum tr.sdet .sdv{text-align:right;flex:none}
+  .dl{font-size:12px;color:#6a7888;font-weight:600}
+  .pin{background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:5px 10px;font-size:11px;color:#16324f;margin:0 2px 6px;line-height:1.45;width:max-content;max-width:min(100%,110ch)}
+  .secH{margin:10px 2px 4px;color:#16324f;font-size:12.5px;font-weight:700;border-left:3px solid #16324f;padding-left:8px;width:max-content;max-width:100%}
+  .law{background:#fff;border:1px solid #dde3ea;border-radius:8px;margin-bottom:4px;padding:5px 9px;display:flex;gap:9px;align-items:flex-start;width:max-content;max-width:min(100%,110ch)}
+  .law:hover{background:#fafcff}
+  .lno{font-weight:700;color:#fff;background:#16324f;border-radius:6px;min-width:34px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;flex:none;padding:0 4px}
+  .lno.ek{background:#b8863a}
+  .lbody{flex:1;min-width:0}
+  .ltitle{font-weight:700;color:#1c2430}
+  .ldate{font-size:10.5px;color:#93a1b0;font-weight:600;margin-left:6px}
+  .ltext{color:#3a4756;line-height:1.55;margin-top:3px}
+  .ltext .sub{display:block;margin-top:3px;color:#4a5867}
+  .lhead{cursor:pointer;display:flex;align-items:center;gap:6px}
+  .lcaret{color:#93a1b0;font-size:9px;flex:none;transition:transform .15s}
+  .law.open .lcaret{transform:rotate(90deg)}
+  .law:not(.open) .ltext{display:none}
+  .lx{color:#c0392b;cursor:pointer;font-weight:700;font-size:14px;line-height:1;flex:none;margin-left:8px;padding:2px 5px;border-radius:5px}
+  .lx:hover{color:#fff;background:#c0392b}
+</style>
+<style>/* EU-FAALIYET: form başlığı (pano üst şeridi yok) */ header{padding:12px 16px!important;position:static} header h1{font-size:17px;margin:0;font-weight:700} header .sub{font-size:12px;color:#cfe0f0;margin-top:3px} #view{padding:8px 10px}</style>
+</head>
+<body>
+<!-- EU-FAALIYET (24.11.2026, Melih): eski PRJ/PEM panosu. Rol eu.form@arbor.com.tr, giriş kişisel kodla (EU, CTP). -->
+<header>
+  <h1>EU — Faaliyet Formu</h1>
+  <div class="sub">Sevke hazır projeler, gelecek ay ve ileri tarihli projeler, sevke hazır ve üretimdeki PEM'ler. ERP PST tarihleri Hedef Yükleme tarihlerine göre düzeltilir.</div>
+</header>
+<div id="view"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
+   kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
+   proje · proje_adi · musteri · firma alanlarına (fiyat_musteri_sinif'te ad) uygulanır — tek kaynak: kod/_arb_ad_yazim.js */
+(function(){
+  if(window.ARB_AD) return;
+  var AKR=("SCI SAS SARL SA SASU EURL SNC SEM SPL SPLA ZAC PEM PST MVT AÜP OE ÖB MK MB EU UK USA TR FR AŞ LTD LLC PLC GMBH AG BV NV SPA SRL "+
+    "HLM OPH OPAC EHPAD CHU CROUS RATP SNCF IDF ICF HQE BBC CA ILM FCAI CLC CBC LCB BAT BTP TRT KDV SGDB SVM LMP RBKC MTC GTM NHS PVC "+
+    "ARGE ARB YD SÖ TOKİ İBB İTÜ ODTÜ ENSA ESSEC ENS HEC IUT CFA RTE EDF GDF CCI CMA SEMIIC SAEM SPIE CPAM CAF UGC ARS KYK TMO SGK TCDD İSKİ AVM ÖSYM THY PTT MSB TBMM YTÜ MSGSÜ").split(" ");
+  var AK={}; AKR.forEach(function(w){ AK[w]=1; });
+  var KUCUK={ST:1,MR:1,DR:1,SR:1,JR:1,MRS:1,MS:1};           /* sesli harfsiz ama kısaltma sayılmayanlar → St, Mr … */
+  var TRH=/[ğĞşŞıİçÇöÖüÜ]/, SESLI=/[aeiouyàâäéèêëîïôöùûüÿıAEIOUYÀÂÄÉÈÊËÎÏÔÖÙÛÜŸİ]/, ROMA=/^(I{1,3}|IV|VI{0,3}|IX|XI{0,3}|XIV|XV)$/;
+  function up(w,tr){ return tr?w.toLocaleUpperCase("tr"):w.toUpperCase(); }
+  function lo(w,tr){ return tr?w.toLocaleLowerCase("tr"):w.toLowerCase(); }
+  var OLAGAN={};  /* karışık metinde büyük yazılsa da kısaltma sayılmayan sık kelimeler */
+  ("LE LA LES DE DU DES SUR SOUS AUX AU ET EN UN UNE THE OF AND FOR ON IN AT TO VON DER DIE DAS UND IM AM ZUM ZUR VE İLE EVİ BEY HAN KAT LOT VIA DEL DI DA LOS EL SAN SUD NORD EST OUEST").split(" ").forEach(function(w){ OLAGAN[w]=1; });
+  function kelime(w,karisik,tr){
+    if(/\d/.test(w)) return w;                                   /* rakamlı (P19, I3F, 68s) aynen */
+    var U=up(w,tr);
+    if(AK[U]) return U;
+    if(w.length===1) return U;                                   /* tek harf (Lot F, Y Blok) */
+    if(ROMA.test(U)) return U;                                   /* III. Faz */
+    if(!SESLI.test(w) && !KUCUK[U]) return U;                    /* sesli harfsiz: SVM, LMP, RBKC */
+    if(karisik && w===U && w.length<=3 && !OLAGAN[U]) return U;                /* karışık yazılmış metinde büyük yazılmış kısa kelime = kısaltma */
+    var l=lo(w,tr); return up(l.charAt(0),tr)+l.slice(1);
+  }
+  window.ARB_AD=function(s){
+    if(s==null||typeof s!=="string") return s;
+    var t=s.replace(/\s+/g," ").trim(); if(!t) return t;
+    var harf=t.replace(/[^\p{L}]/gu,""), karisik=harf!==harf.toUpperCase()&&harf!==harf.toLowerCase(), tr=TRH.test(t);  /* Türkçe harf içeren metin → tr yerel ayarı (YAPI → Yapı) */
+    return t.replace(/[\p{L}\p{M}\p{N}]+/gu,function(w){ return kelime(w,karisik,tr); });
+  };
+  var ALAN={proje:1,proje_adi:1,musteri:1,firma:1};
+  function donus(o,tablo){
+    if(Array.isArray(o)){ for(var i=0;i<o.length;i++) donus(o[i],tablo); return o; }
+    if(o&&typeof o==="object"){ for(var k in o){ if(typeof o[k]==="string"&&(ALAN[k]||(k==="ad"&&tablo==="fiyat_musteri_sinif"))) o[k]=window.ARB_AD(o[k]); } }
+    return o;
+  }
+  window.ARB_AD_DONUS=donus;
+  var of=window.fetch.bind(window);
+  window.fetch=function(u,o){
+    var url=String((u&&u.url)||u||""), m=url.match(/\/rest\/v1\/([A-Za-z0-9_]+)/), tablo=m?m[1]:null;
+    if(!tablo) return of(u,o);
+    try{ var me=((o&&o.method)||"GET").toUpperCase();
+      if(o&&typeof o.body==="string"&&/^(POST|PATCH|PUT)$/.test(me)&&tablo!=="rpc"){ o=Object.assign({},o,{body:JSON.stringify(donus(JSON.parse(o.body),tablo))}); } }catch(e){}
+    return of(u,o).then(function(r){
+      var ct=r.headers.get("content-type")||"";
+      if(!r.ok||ct.indexOf("json")<0) return r;
+      return r.clone().text().then(function(t){ if(!t) return r;
+        try{ return new Response(JSON.stringify(donus(JSON.parse(t),tablo)),{status:r.status,statusText:r.statusText,headers:r.headers}); }catch(e){ return r; } });
+    });
+  };
+})();
+</script>
+<script>
+/* ARB-KOD-GIRIS (23.09.2026): forma giris = kisisel 6 haneli kod (App > Referans > Kisiler > Sifre).
+   form-giris edge fonksiyonu kodu dogrular, yetkiyi form_erisim'den kontrol eder, rolu otomatik secer ve
+   rol hesabi icin tek kullanimlik token doner; burada verifyOtp ile oturum acilir. Rol hesaplarinin parolasi yoktur. */
+window.ARB_FORM_YOL=(function(){ var m=/\/app\/([^\/]+)\//.exec(location.pathname); return m?m[1]+"/":""; })();
+window.ARB_KOD_GIRIS=async function(cli,kod){
+  kod=String(kod==null?"":kod).replace(/\D/g,"");
+  if(kod.length!==6) return {error:{message:"Kod 6 haneli olmal\u0131d\u0131r."}};
+  try{
+    var r=await fetch("https://zehysygpqxqmrzangvuc.supabase.co/functions/v1/form-giris",{method:"POST",cache:"no-store",
+      headers:{"Content-Type":"application/json",apikey:"sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc"},
+      body:JSON.stringify({form:window.ARB_FORM_YOL,kod:kod})});
+    var j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok||!j.ok||!j.token_hash) return {error:{message:j.hata||"Kod hatal\u0131."}};
+    var v=await cli.auth.verifyOtp({token_hash:j.token_hash,type:"magiclink"});
+    if(v.error) return {error:{message:"Giri\u015f a\u00e7\u0131lamad\u0131: "+v.error.message}};
+    try{ localStorage.setItem("arb_kisi_"+window.ARB_FORM_YOL,JSON.stringify({kod:j.kisi,ad:j.ad,rol:j.rol})); }catch(e){}
+    return {error:null,data:j};
+  }catch(e){ return {error:{message:"Ba\u011flant\u0131 hatas\u0131."}}; }
+};
+window.ARB_KISI_AL=function(em){ try{ var k=JSON.parse(localStorage.getItem("arb_kisi_"+window.ARB_FORM_YOL)||"null"); return (k&&(!em||k.rol===em))?k:null; }catch(e){ return null; } };
+</script>
+<script>
+/* ===== ARBOR FORM KAPISI (2026-08-20) — anon erisim kapali, rol hesabiyla giris ===== */
+const ARB_ROLE_EMAIL = "eu.form@arbor.com.tr";
+const ARB_STORE = "arbform_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
+const ARB_MB = "int@arbor.com.tr";
+/* panolarin varsayilan oturumu (ayni origin, varsayilan storageKey) */
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+var ARB_ACTIVE = ARB_GATE_SB;
+/* form kodu kendi createClient cagirsa bile aktif oturumlu istemci doner */
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(msg){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:310px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:3px">Arbor — Form Girisi</div>'
+    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:10px">Kişisel giriş kodunuzu giriniz. Rolünüz koda göre otomatik belirlenir.</div>'
+    +'<input id="arb-pw" type="password" placeholder="6 haneli giriş kodu" autocomplete="off" inputmode="numeric" maxlength="6" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giris</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px">'+(msg||"")+'</div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var pw=document.getElementById("arb-pw").value;
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giris yapiliyor...";
+    var r=await ARB_KOD_GIRIS(ARB_GATE_SB,pw);
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent=((r.error&&r.error.message)||"Kod hatalı."); return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  if(em!==ARB_ROLE_EMAIL){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(em===ARB_ROLE_EMAIL || em===ARB_MB){ (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script>
+/* FORM-ENGEL-IZ (2026-09-22): güncelleme düğmesi bir kontrol yüzünden durdurulursa (uyarı penceresi) form_engel'e kayıt → Formlar panosunda uyarı */
+(function(){ var FK="eu_faaliyet", oa=window.alert.bind(window);
+  window.alert=function(m){ try{ var t=String(m==null?"":m);
+    if(/G[üu]ncelle(me)?\s+(yap[ıi]la|tamamlana)/i.test(t) && typeof ARB_ACTIVE!=="undefined" && ARB_ACTIVE)
+      ARB_ACTIVE.from("form_engel").insert({form_key:FK, mesaj:t.slice(0,600)}).then(function(){},function(){});
+  }catch(e){} return oa(m); };
+})();
+</script>
+<script type="text/plain" id="arbmain">
+/* EU-FAALIYET (24.11.2026, Melih): PRJ/PEM panosunun tamamı bu forma taşındı (pano kaldırıldı). Kod app/index.html loadAup/loadHazir'dan aynen;
+   veri tek salt-okur RPC eu_faaliyet_veri() (rol eu.form@ tabloları RLS ile okuyamaz). Kullanıcılar EU · CTP (form_erisim). */
+const REAL=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+let EUV={};
+function euQ(n){ const p={then:(a,b)=>Promise.resolve({data:(EUV[n]||[]),error:null}).then(a,b)}; ["select","order","limit","eq"].forEach(m=>p[m]=()=>p); return p; }
+const sb={from:euQ, rpc:n=>Promise.resolve({data:EUV[n],error:null}), functions:{invoke:async()=>({data:{ok:false}})}};
+const state={tab:"aup"}; window.__sevkCanliCalisti=true;  /* sevk özet üretimi (edge) panoda kalır; form salt-okur */
+function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function money(n){ if(n==null||n==="") return ""; const v=Math.round(Number(n)); return isNaN(v)?"":v.toLocaleString("tr-TR"); }
+function fmtDamga(dg){ return (dg&&dg.length>=6)? dg.slice(4,6)+"."+dg.slice(2,4)+"."+dg.slice(0,2) : "—"; }
+function dOnly(iso){ if(!iso) return "—"; const d=new Date(iso); return isNaN(d)?"—":String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+String(d.getFullYear()).slice(2); }
+async function erpStamp(){ const {data}=await sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1); return data&&data[0]?fmtDamga(data[0].damga):"—"; }
+function pctSpan(a,b){ a=Number(a)||0; b=Number(b)||0; if(!b) return ""; const v=Math.round((a-b)/Math.abs(b)*100); return ' <span style="color:'+(v>=0?'#0a6b3f':'#b23a2e')+'">('+(v>=0?'+':'−')+Math.abs(v)+'%)</span>'; }
+function fdate(s){ if(!s) return ""; s=String(s).trim();
+  const m=s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);  /* DD.MM.YYYY / DD.MM.YY — new Date() bunu ABD MM/DD sanıp kaydırıyor, elle parse et */
+  if(m){ const g=+m[1],ay=+m[2]; if(g>=1&&g<=31&&ay>=1&&ay<=12){ const y=m[3].length<=2?m[3]:m[3].slice(-2); return String(g).padStart(2,'0')+"."+String(ay).padStart(2,'0')+"."+String(y).padStart(2,'0'); } }
+  const d=new Date(s); if(isNaN(d)) return esc(s); return String(d.getDate()).padStart(2,'0')+"."+String(d.getMonth()+1).padStart(2,'0')+"."+String(d.getFullYear()).slice(2); }
+/* ---------- HAZIR PEM/PRJ ---------- */
+/* PRJ-PEM-SEKME (09.10.2026): ayrı sekme yok; loadAup() PEM bloğunu loadHazir(el) ile kendi altına çizer. */
+async function loadHazir(el){
+  const view=el||document.getElementById("view");
+  const [{data,error},erpRes,ozRes,dgRes,adRes,oeRes]=await Promise.all([
+    sb.from("hazir_pem_prj").select("*"),
+    sb.from("hazir_erp").select("tur,kalem_key,erp"),
+    /* SEVK-CANLI-OZET (07.09.2026): "Sevk Durum Değişimi" artık GÜNCELLE düğmesine
+       basılmasını beklemez. onceki<>guncel olan satırda CANLI özet (canli_ozet) gösterilir;
+       satır düğmeden bu yana değişmemişse son düğme özeti (degisim_ozet). Bayat satır varsa
+       aşağıda sevk-degisim-ozet fonksiyonu mod:"canli" ile bir kez çağrılıp pano tazelenir. */
+    sb.from("sevk_durumu_onur").select("tur,kalem_key,degisim_ozet,canli_ozet,canli_kaynak,onceki,guncel"),
+    sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1),
+    sb.from("pano_adet_ozet").select("damga,pem_adet,prj_adet").limit(2),
+    /* HAZIR-IKI-DAMGA: sevk durumu damgası = OE formundaki GÜNCELLE düğmesine son basılma
+       (pano_yayin.oe_sevk). sevk_durumu_onur.updated_at KULLANILMAZ — o satır-bazlı otomatik
+       kayıttır (hücreye yazma), düğmeye basma değil. */
+    sb.from("pano_yayin").select("yayin_at").eq("anahtar","oe_sevk").limit(1)
+  ]);
+  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const erpMap={}; (erpRes.data||[]).forEach(r=>{ erpMap[String(r.tur).toUpperCase()+"|"+r.kalem_key]=r.erp||{}; });
+  const trm=v=>String(v==null?"":v).trim();
+  const sevkSig=r=>trm(r.onceki)+" >>> "+trm(r.guncel);   /* edge fn ile birebir aynı imza */
+  const ozMap={}; let sevkBayat=0;
+  (ozRes.data||[]).forEach(r=>{
+    const k=String(r.tur).toUpperCase()+"|"+r.kalem_key;
+    const degisti = trm(r.onceki) && trm(r.onceki)!==trm(r.guncel);
+    ozMap[k] = !trm(r.onceki) ? "" : (degisti ? (r.canli_ozet||"") : (r.degisim_ozet||r.canli_ozet||""));
+    if(trm(r.guncel) && trm(r.onceki) && trm(r.canli_kaynak)!==sevkSig(r) && !(!degisti && trm(r.degisim_ozet))) sevkBayat++;
+  });
+  /* Filtre (her ingest sonrası otomatik geçerli):
+     1) Termin tarihi (PEM) / AÜP tarihi (PRJ) BOŞ olan kalemler gösterilmez.
+     2) Bu tarih, panonun güncelleme tarihinden (son ERP damgası) geriye doğru 10 gün içindeyse gösterilmez. */
+  const _dmg=String((dgRes&&dgRes.data&&dgRes.data[0]&&dgRes.data[0].damga)||"");
+  const _ref=/^\d{6}$/.test(_dmg)? new Date(2000+Number(_dmg.slice(0,2)),Number(_dmg.slice(2,4))-1,Number(_dmg.slice(4,6))) : new Date();
+  _ref.setHours(23,59,59,999);
+  const _cut=new Date(_ref); _cut.setHours(0,0,0,0); _cut.setDate(_cut.getDate()-10);
+  const filt=(data||[]).filter(r=>{
+    const dt=r.hazir_tarihi; if(!dt) return false;
+    const d=new Date(dt); if(isNaN(d)) return false;
+    return !(d>=_cut);
+  });
+  const digits=s=>String(s==null?"":s).replace(/\D/g,"");
+  const lastN=(s,n)=>{ const d=digits(s); return d.slice(-n); };
+  const ev=(tur,no,k)=>{ const e=erpMap[tur+"|"+no]||{}; return e[k]!=null?String(e[k]):""; };
+  const block=tip=>{
+    const T=tip==="pem"?"PEM":"PRJ";
+    const rowsX=filt.filter(r=>String(r.tur||"").toUpperCase()===T);
+    if(!rowsX.length) return "";
+    const noteCol=tip==="pem"?"ekbilgi":"notlar", dcol=tip==="pem"?"termin":"aup";
+    const noteHd=tip==="pem"?"Ek Bilgi":"Satış/Şantiye Notları", dateHd=tip==="pem"?"Termin Tarihi":"AÜP Tarihi";
+    const kodW="h8";  /* PEM+PRJ kod aynı genişlik → son 4 sütun hizalı (6d) */
+    const sorted=[...rowsX].sort((a,b)=>(ev(T,a.no,dcol)||"99999999").localeCompare(ev(T,b.no,dcol)||"99999999"));
+    const body=sorted.map(r=>{
+      const kod=lastN(r.no,tip==="pem"?5:8);
+      const proje=ev(T,r.no,"proje")||String(r.proje_adi||"");
+      /* PRJ notu ERP Prj.xlsx "SATIŞ/ŞANTİYE NOTLARI" alanından (hazir_pem_prj.satis_notu) gelir. */
+      const note=ev(T,r.no,noteCol)||(tip==="pem"?String(r.ek_bilgi||""):String(r.satis_notu||""));
+      let adet=ev(T,r.no,"adet")||(r.adet==null?"":String(r.adet));
+      if(adet!==""&&isFinite(parseFloat(adet))) adet=String(Math.round(parseFloat(adet)));
+      const dt=ev(T,r.no,dcol)||r.hazir_tarihi||"";
+      const onur=r.onur_guncel||"", oz=ozMap[T+"|"+r.no]||"";
+      return `<tr>`
+        +`<td class="c ${kodW}"><span title="${esc(kod)}">${esc(kod)}</span></td>`
+        +`<td class="c h15"><span title="${esc(proje)}">${esc(proje)}</span></td>`
+        +`<td class="c h25"><span title="${esc(note)}">${esc(note)}</span></td>`
+        +`<td class="c h3"><span>${esc(adet)}</span></td>`
+        +`<td class="c hdt"><span title="${esc(dt)}">${esc(fdate(dt)||dt)}</span></td>`
+        +`<td class="c h20"><span title="${esc(onur)}">${esc(onur)}</span></td>`
+        +`<td class="c h20"><span title="${esc(oz)}">${esc(oz)}</span></td>`
+        +`</tr>`;
+    }).join("");
+    /* Blok başlığı (h3 "PEM"/"PRJ") YOK — blok kimliği ilk sütun başlığında: PEM / Proje.
+       Adetler damga satırında (PEM Adet / PRJ Adet). */
+    const kodHd=tip==="pem"?"PEM":"Proje";
+    const heads=`<th>${kodHd}</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>${dateHd}</th><th>Sevk Durumu (Onur)</th><th>Sevk Durum Değişimi</th>`;
+    return `<div class="scroll hblk"><table><thead><tr>${heads}</tr></thead><tbody>${body}</tbody></table></div>`;
+  };
+  const st=await erpStamp();
+  const a0=(adRes&&adRes.data&&adRes.data[0])||{}, a1=(adRes&&adRes.data&&adRes.data[1])||{};
+  const oeAt=(oeRes&&oeRes.data&&oeRes.data[0])?oeRes.data[0].yayin_at:null;
+  const hStamp='<div class="stamp">ERP: '+(st||"—")+' · Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")
+    +' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)
+    +' · PRJ Adet: '+Math.round(Number(a0.prj_adet)||0)+pctSpan(a0.prj_adet,a1.prj_adet)+'</div>';
+  const pemHd='<div class="aupsevkh">Sevke Hazır PEM\'ler <span style="font-weight:400;color:#5a6b7d">· Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")+' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)+'</span></div>';
+  view.innerHTML=`${el?pemHd:hStamp}
+    <style>.hblk table{font-size:11.5px}.hblk th,.hblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.hblk thead th{vertical-align:bottom}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{width:3ch}.h5>span{width:5ch}.h8>span{width:8ch}.h15>span{width:15ch}.h20>span{width:68ch}.h25>span{width:25ch}.hdt>span{width:12.45ch}</style>
+    ${block("pem")||(el?'<div class="c" style="color:#5a6b7d;font-size:12px">Kayıt yok</div>':'')}
+    ${el?'':block("prj")}`;
+  /* Bayat satır varsa canlı özetleri bir kez üret, sonra panoyu tazele (idempotent: fonksiyon
+     yalnız imzası değişmiş satırlar için LLM çağırır, hepsi güncelse hiç çağırmaz). */
+  if(sevkBayat && !window.__sevkCanliCalisti){
+    window.__sevkCanliCalisti=true;
+    const s=document.createElement("span");
+    s.style.cssText="color:#8a6100;font-weight:600;margin-left:8px";
+    s.textContent="· sevk değişim özetleri üretiliyor…";
+    const stEl=view.querySelector(".stamp,.aupsevkh"); if(stEl) stEl.appendChild(s);
+    try{
+      const {data,error}=await sb.functions.invoke("sevk-degisim-ozet",{body:{mod:"canli"}});
+      if(error||(data&&data.ok===false)) s.textContent="· özet üretilemedi";
+      else { if(state.tab==='aup') return loadAup(); } /* MENU-DUGME */
+    }catch(e){ s.textContent="· özet üretilemedi"; }
+  }
+}
+
+/* ---------- AÜP (salt-okur) ---------- */
+async function loadAup(){
+  const view=document.getElementById("view");
+  /* AUP-SEVK-BLOK (29.09.2026): ikinci blok = proje durumu 8 · 8.1 (view aup_sevk_panosu); üst damga toplamları yalnız ilk blok */
+  const [{data,error},oz,sv,yp,mt,ed,mf]=await Promise.all([sb.from("aup_panosu").select("*").order("aup",{ascending:true}), sb.from("aup_ozet").select("*").order("damga",{ascending:false}).limit(2), sb.from("aup_sevk_panosu").select("*").order("aup",{ascending:true}), sb.from("santiye_form_proje").select("proje_no,donem,onemli_hususlar,pst_santiye,updated_at,proje_durumu,aup,pst,mvt_onay,mvt_sebep,pst_onay,pst_sebep").order("donem",{ascending:false}).order("updated_at",{ascending:false}), sb.from("my_takip").select("tur,no,durum,hedef_yukleme,plan_hedef,yukleme_sekli,ucak_onay,aciklama,talep_durum,talep_hedef,talep_kisi").eq("tur","PRJ"), sb.from("erp_yukleme").select("damga").order("damga",{ascending:false}).limit(1), sb.rpc("my_faaliyet_liste")]);
+  if(error){ view.innerHTML=`<div class="load">Hata: ${esc(error.message)}</div>`; return; }
+  const dk=d=>{ d=String(d||""); const i=d.indexOf(" "); return i<0?d:(d.slice(0,i)+" "+d.slice(i+1,i+4)); };
+  /* Hücre deseni = Hazır PEM/PRJ panosu: her hücre tek satır, sığmayan içerik yatayda kaydırılır
+     (scrollbar gizli), tam metin title ile hover'da görünür. Metin KIRPILMAZ — sütun genişliği
+     kadarı görünür, gerisi kaydırılarak okunur. */
+  /* SANTIYE-PST-SUTUN (19.10.2026): Şantiye PST = santiye_form_proje.pst_santiye (proje_no başına en yeni dolu dönem). */
+  const PSM={}; ((yp&&yp.data)||[]).forEach(f=>{ if(f.pst_santiye&&!(f.proje_no in PSM)) PSM[f.proje_no]=f.pst_santiye; });
+  /* PRJ-SANTIYE-CEVAP (19.10.2026, Melih): ilk blokta Şantiye PST yerine şantiye formu cevapları — proje_no başına en yeni dönem satırı.
+     "Hemen yüklenecek mi?" = mvt_onay, yalnız formda bu soru soruluyorsa (7 Üretim + AÜP geçmiş; şantiye formu URETIM7-SORU ile aynı kural).
+     PST onayı = pst_onay; 7 Üretim + ERP PST boşsa formda PST girilir → "Belirlendi" (PST-BELIRLE). Hayır → kırmızı, sebep hover'da. */
+  const SCM={}; ((yp&&yp.data)||[]).forEach(f=>{ if(!(f.proje_no in SCM)) SCM[f.proje_no]=f; });
+  const scBug=(()=>{ const b=new Date(); return b.getFullYear()+"-"+String(b.getMonth()+1).padStart(2,"0")+"-"+String(b.getDate()).padStart(2,"0"); })();
+  const scU7=f=>/^7(\s|$)/.test(String(f.proje_durumu||"").trim());
+  const scCv=(o,s)=>!o?'<span class="muted">—</span>':(o==="Evet"?'<span style="color:#0a6b3f;font-weight:600">Evet</span>':'<span title="'+esc(s||"")+'" style="color:#b40000;font-weight:700">Hayır</span>');
+  const scHemen=no=>{ const f=SCM[no]; if(!f) return ""; return (scU7(f) && f.aup && String(f.aup).slice(0,10)<scBug) ? scCv(f.mvt_onay,f.mvt_sebep) : ""; };
+  const scPst=no=>{ const f=SCM[no]; if(!f) return ""; if(scU7(f) && !f.pst) return f.pst_santiye?'<span title="Şantiyenin belirlediği hedef yükleme tarihi (ERP PST yok): '+fdate(f.pst_santiye)+'" style="color:#0a4f8a;font-weight:600">Belirlendi</span>':'<span class="muted">—</span>'; return scCv(f.pst_onay,f.pst_sebep); };
+  /* PRJ-HEDEF-ACIL (19.11.2026, Melih): kaynağı kalmayan "Hazırsa hemen yüklenecek mi?" / "PST talebe uygun mu?" (şantiye formu soruları 10.11'de kalktı) yerine
+     Hedef Yükleme (Acil → acil hedefi, değilse my_takip.plan_hedef, o da yoksa şantiye pst_santiye) · Aciliyet (my_takip.durum + yükleme şekli / bekleyen şantiye talebi) · Açıklama (acil açıklaması, yoksa şantiye "Yükleme Planına İlişkin Açıklama"). */
+  const MTM={}; ((mt&&mt.data)||[]).forEach(t=>{ MTM[t.no]=t; });
+  const hdHedef=no=>{ const t=MTM[no]; if(t&&t.durum==="Acil"&&t.hedef_yukleme) return t.hedef_yukleme; return (t&&t.plan_hedef)||PSM[no]||null; };
+  const hdAcil=no=>{ const t=MTM[no]; if(!t) return '<span class="muted">Normal</span>';
+    if(t.durum==="Acil"){ const sk=t.yukleme_sekli||"Kamyon"; return '<span style="color:#b40000;font-weight:700" title="'+esc("Acil · "+sk+(sk==="Uçak"?(t.ucak_onay?" · MK onaylı":" · MK onayı bekliyor"):""))+'">Acil · '+esc(sk)+'</span>'; }
+    if(t.talep_durum==="Acil") return '<span style="color:#b26a00;font-weight:600" title="'+esc("Şantiye acil talebi ("+(t.talep_kisi||"")+") · hedef "+fdate(t.talep_hedef)+" · MY onayı bekliyor")+'">Acil talebi</span>';
+    return '<span class="muted">'+esc(t.durum||"Normal")+'</span>'; };
+  const hdAck=no=>{ const t=MTM[no]; const a=(t&&t.durum==="Acil"&&t.aciklama)?String(t.aciklama).split("\n").reverse().join(" · "):""; const f=SCM[no]; return a||String((f&&f.onemli_hususlar)||"").trim(); };
+  const rowH=r=>{
+    const ga=r.gyt_aup, ky=r.kayma, ack=hdAck(r.proje_no);
+    const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
+    const sn=String(r.satis_santiye_notlari||""), un=String(r.uretim_notlari||"");
+    return `<tr>
+      <td class="c kod a6"><span title="${esc(r.proje_no)}">${esc(String(r.proje_no||"").slice(-6))}</span></td>
+      <td class="c a30"><span title="${esc(pad)}">${esc(pad)}</span></td>
+      <td class="c a10"><span title="${esc(dur)}">${esc(dk(r.proje_durumu))}</span></td>
+      <td class="num">${esc(r.adet)}</td>
+      <td class="num ctr">${fdate(r.mvt)}</td>
+      <td class="num ctr">${fdate(r.aup)}</td>
+      <td class="num ctr">${fdate(r.gyt)}</td>
+      <td class="num ctr">${fdate(hdHedef(r.proje_no))}</td><td class="ctr">${hdAcil(r.proje_no)}</td><td class="c yp"><span title="${esc(ack)}">${esc(ack)}</span></td>
+      <td class="num pstd ${ga<0?'red':''}">${ga==null?'':ga}</td>
+      <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
+      <td class="num">${money(r.anlasma_fiyati)}</td>
+      <td class="c ss${r.satis_santiye_notlari?' snpink':''}"><span title="${esc(sn)}">${esc(sn)}</span></td>
+      <td class="c ur"><span title="${esc(un)}">${esc(un)}</span></td>
+    </tr>`;
+  };
+  /* PRJ-PEM-TABLO-AD (19.11.2026, Melih): proje ve PEM tabloları şantiye / MK / MY Faaliyet formlarındaki adlarla bölünür.
+     Gelecek Ayın Sonuna Kadar Yüklenecek Projeler = MVT ≤ son ERP çekiminin ayını izleyen ayın son günü (erp-ingest SANTIYE-SINIR-GERCEK ile aynı); İleri Tarihli Projeler = sonrası (MVT'siz de buraya). */
+  const _ed=String((ed&&ed.data&&ed.data[0]&&ed.data[0].damga)||"");
+  const _lim=/^\d{6}$/.test(_ed)?(()=>{ const y=2000+Number(_ed.slice(0,2)), m=Number(_ed.slice(2,4)); const d=new Date(y,m+1,0); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); })():"9999-12-31";
+  const gData=data.filter(r=>r.mvt&&String(r.mvt).slice(0,10)<=_lim), iData=data.filter(r=>!(r.mvt&&String(r.mvt).slice(0,10)<=_lim));
+  const rowsG=gData.map(rowH).join(""), rowsI=iData.map(rowH).join("");
+  const sumAT=a=>"Proje: "+a.length+" · Adet: "+money(a.reduce((x,r)=>x+(Number(r.adet)||0),0))+" · Tutar: "+money(a.reduce((x,r)=>x+(Number(r.anlasma_fiyati)||0),0))+" €";
+  /* AUP-SEVK-YP (09.10.2026): 2. tabloda PST-AÜP · Kayma · TUTAR yok; yerine Yükleme Planı = şantiye formundaki
+     "Yükleme Planına İlişkin Açıklama" (santiye_form_proje.onemli_hususlar; proje_no başına en yeni dolu dönem). */
+  const YPM={}; ((yp&&yp.data)||[]).forEach(f=>{ const t=String(f.onemli_hususlar||"").trim(); if(t&&!(f.proje_no in YPM)) YPM[f.proje_no]=t; });
+  /* AUP-YP-TOHUM (12.10.2026): şantiye formunda açıklama yoksa, kaldırılan Hazır PEM/PRJ panosundaki OE sevk durumu (bir defalık kopya, aup_yp_tohum) gösterilir. */
+  /* AUP-YP-YALNIZ-FORM (14.11.2026, Melih): Yükleme Planı yalnız şantiye formlarındaki "Yükleme Planına İlişkin Açıklama"dan; aup_yp_tohum yedeği gösterilmez (tablo duruyor). */
+  const rowS=r=>{
+    const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
+    const sn=String(r.satis_santiye_notlari||""), un=String(r.uretim_notlari||""), yn=YPM[r.proje_no]||"";
+    return `<tr>
+      <td class="c kod a6"><span title="${esc(r.proje_no)}">${esc(String(r.proje_no||"").slice(-6))}</span></td>
+      <td class="c a30"><span title="${esc(pad)}">${esc(pad)}</span></td>
+      <td class="c a10"><span title="${esc(dur)}">${esc(dk(r.proje_durumu))}</span></td>
+      <td class="num">${esc(r.adet)}</td>
+      <td class="num ctr">${fdate(r.mvt)}</td>
+      <td class="num ctr">${fdate(r.aup)}</td>
+      <td class="num ctr">${fdate(r.gyt)}</td>
+      <td class="num ctr">${fdate(hdHedef(r.proje_no))}</td><td class="ctr">${hdAcil(r.proje_no)}</td>
+      <td class="c yp"><span title="${esc(yn)}">${esc(yn)}</span></td>
+      <td class="c ss${r.satis_santiye_notlari?' snpink':''}"><span title="${esc(sn)}">${esc(sn)}</span></td>
+      <td class="c ur"><span title="${esc(un)}">${esc(un)}</span></td>
+    </tr>`;
+  };
+  const sdata=(sv&&sv.data)||[], srows=sdata.map(rowS).join("");
+  const sAd=sdata.reduce((a,r)=>a+(Number(r.adet)||0),0), sTu=sdata.reduce((a,r)=>a+(Number(r.anlasma_fiyati)||0),0);
+  const st=await erpStamp();
+  const o0=(oz.data&&oz.data[0])||{}, o1=(oz.data&&oz.data[1])||{};
+  const pct=(a,b)=>{ a=Number(a)||0; b=Number(b)||0; if(!b) return ""; const v=Math.round((a-b)/Math.abs(b)*100); return ' <span style="color:'+(v>=0?'#0a6b3f':'#b23a2e')+'">('+(v>=0?'+':'−')+Math.abs(v)+'%)</span>'; };
+  const gk=Number(o0.global_kayma||0).toFixed(1).replace(".",",");
+  const stamp='<div class="stamp">Son güncelleme: '+(st||"—")+' · Adet: '+money(o0.toplam_adet)+pct(o0.toplam_adet,o1.toplam_adet)+' · Tutar: '+money(o0.toplam_tutar)+' €'+pct(o0.toplam_tutar,o1.toplam_tutar)+' · Global kayma: '+gk+' gün</div>';
+  view.innerHTML=`${stamp}
+    <style>
+    #view table.aupmain td,#view table.aupmain th{white-space:nowrap;padding:2px 6px;line-height:16px}
+    #view table.aupmain td.c>span{display:block;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+    #view table.aupmain td.c>span::-webkit-scrollbar{display:none}
+    #view table.aupmain td.ss,#view table.aupmain td.ur,#view table.aupmain td.yp{white-space:nowrap;vertical-align:middle}
+    /* AUP-COLFIX (07.09.2026): sütun genişlikleri artık span'ın ch genişliğinden DEĞİL, colgroup'tan
+       gelir. Sebep: span'a ch genişliği verilse bile Chrome hücrenin max-content'ini metnin tam
+       genişliğinden hesaplıyor ve tablo, kapsayıcı genişliğine kadar orantılı yayılıyordu — bu
+       yüzden DURUM ile Ad arasında kullanılmayan boşluk kalıyordu. table-layout:fixed + width:1px
+       (bkz. CLAUDE.md "Sabit sütunlu tablolarda kural") ile tablo tam colgroup toplamı kadar olur. */
+    #view table.aupmain{table-layout:fixed;width:1px}
+    #view table.aupmain td.c>span{width:100%}
+    /* MVT · AÜP · PST sütunları ortalanır (07.09.2026, Melih). */
+    #view table.aupmain td.ctr,#view table.aupmain thead th.ctr{text-align:center}
+    /* AUP-SEVK-TH-SOL (12.10.2026): Yükleme Planı · Satış-Şantiye Notu · Üretim Notu başlıkları sola yaslı. */
+    #view table.aupmain thead th.yp,#view table.aupmain thead th.ss,#view table.aupmain thead th.ur{text-align:left}
+    /* PST-AÜP başlığı iki satıra sarılır (fixed düzende nowrap olsaydı kırpılırdı). */
+    #view table.aupmain thead th.pstd{white-space:normal;line-height:11px}
+    #view .aupsevkh{font-weight:600;margin:14px 0 4px;font-size:13px}
+    </style>
+    <div class="scroll aupwrap">
+    <div class="aupsevkh" style="margin-top:4px">Sevke Hazır Projeler · Durum 8 / 8.1 <span style="font-weight:400;color:#5a6b7d">· Proje: ${sdata.length} · Adet: ${money(sAd)} · Tutar: ${money(sTu)} €</span></div><!-- PRJ-PEM-TABLO-AD -->
+    <table class="aup aupmain"><colgroup>${AUP_COLW_SEVK.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><!-- HEDEF-TEK · PRJ-HEDEF-ACIL --><th class="yp">Yükleme Planı</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <tbody>${srows||'<tr><td colspan="12" class="c">Kayıt yok</td></tr>'}</tbody></table>
+    <div class="aupsevkh">Gelecek Ayın Sonuna Kadar Yüklenecek Projeler <span style="font-weight:400;color:#5a6b7d">· MVT ≤ ${fdate(_lim)} · ${sumAT(gData)}</span></div>
+    <table class="aup aupmain">
+    <colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><th class="yp">Açıklama</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <tbody>${rowsG||'<tr><td colspan="15" class="c">Kayıt yok</td></tr>'}</tbody></table>
+    <div class="aupsevkh">İleri Tarihli Projeler <span style="font-weight:400;color:#5a6b7d">· MVT &gt; ${fdate(_lim)} · ${sumAT(iData)}</span></div>
+    <table class="aup aupmain">
+    <colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><th class="yp">Açıklama</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <tbody>${rowsI||'<tr><td colspan="15" class="c">Kayıt yok</td></tr>'}</tbody></table>
+    <div id="aup-pem"></div><div id="aup-pem-ur"></div>
+</div>`;
+  aupFit();
+  loadHazir(document.getElementById("aup-pem"));  /* PRJ-PEM-SEKME */
+  { /* PRJ-PEM-TABLO-AD: Üretimdeki PEM'ler (ERP durumu < 3) — MY Faaliyet ile aynı kaynak (rpc my_faaliyet_liste, blok pem; yurt dışı) */
+    const ue=document.getElementById("aup-pem-ur"), mrows=((mf&&mf.data&&mf.data.rows)||[]);
+    const pno=r=>{ const m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return m?parseFloat(m[1].replace(",",".")):0; };
+    const U=mrows.filter(r=>r.blok==="pem"&&pno(r)<3).sort((a,b)=>(pno(a)-pno(b))||String(a.tarih||"9999").localeCompare(String(b.tarih||"9999")));
+    const acl=r=>r.durum==="Acil"?'<span style="color:#b40000;font-weight:700">Acil · '+esc(r.sekil||"Kamyon")+'</span>':(r.talep==="Acil"?'<span style="color:#b26a00;font-weight:600" title="Şantiye acil talebi · MY onayı bekliyor">Acil talebi</span>':'<span class="muted">Normal</span>');
+    const hed=r=>(r.durum==="Acil"&&r.hedef)?r.hedef:(r.plan||"");
+    if(ue) ue.innerHTML='<div class="aupsevkh">Üretimdeki PEM\'ler <span style="font-weight:400;color:#5a6b7d">· ERP durumu &lt; 3 · yurt dışı · PEM: '+U.length+'</span></div>'
+      +'<style>.hblk table{font-size:11.5px}.hblk th,.hblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.hblk thead th{vertical-align:bottom}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{width:3ch}.h8>span{width:8ch}.h15>span{width:15ch}.h25>span{width:25ch}.hdt>span{width:12.45ch}.h20>span{width:24ch}</style>'
+      +'<div class="scroll hblk"><table><thead><tr><th>PEM</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin Tarihi</th><th>ERP Durumu</th><th>Hedef Yükleme</th><th>Aciliyet</th></tr></thead><tbody>'
+      +(U.map(r=>'<tr><td class="c h8"><span title="'+esc(r.no)+'">'+esc(r.kod)+'</span></td><td class="c h15"><span title="'+esc(r.proje)+'">'+esc(r.proje)+'</span></td><td class="c h25"><span title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</span></td><td class="c h3"><span>'+esc(r.adet)+'</span></td><td class="c hdt"><span>'+esc(fdate(r.tarih))+'</span></td><td class="c h20"><span title="'+esc(r.durum_erp)+'">'+esc(r.durum_erp)+'</span></td><td class="c hdt"><span>'+esc(fdate(hed(r)))+'</span></td><td>'+acl(r)+'</td></tr>').join("")||'<tr><td colspan="8" class="c">Kayıt yok</td></tr>')
+      +'</tbody></table></div>';
+  }
+}
+/* AUP-COLW: NO · PROJE ADI · DURUM · Ad · MVT · AÜP · PST · PST-AÜP · Kayma · TUTAR € · Satış-Şantiye · Üretim
+   (12px gövde yazısında 1ch ≈ 6,47px + 12px hücre dolgusu). PROJE ADI / Satış-Şantiye / Üretim
+   07.09.2026'da %12 daraltıldı (30→26,4ch · 40→35,2ch · 67,5→59,4ch), DURUM 10→7,5ch. */
+const AUP_COLW=[51,183,61,34,64,64,64,64,84,200,32,44,57,240,396];  /* PRJ-HEDEF-ACIL: Hedef Yükleme 64 · Aciliyet 84 · Açıklama 200 (eski Hemen 78 + PST onay 64 yerine) */  /* PRJ-SANTIYE-CEVAP: ERP PST sağına Hemen yükleme? 78px + PST onay 64px (Şantiye PST ilk bloktan çıktı; SANTIYE-PST-SUTUN 2. blokta sürer) */
+/* AUP-SEVK-YP: 2. tablo NO · PROJE ADI · DURUM · Ad · MVT · AÜP · PST · Yükleme Planı · Satış-Şantiye · Üretim — son üçü 240×0,7=168px */
+const AUP_COLW_SEVK=[51,183,61,34,64,64,64,64,84,168,168,168];  /* PRJ-HEDEF-ACIL: Aciliyet 84 */  /* SANTIYE-PST-SUTUN */
+/* AUP-FIT: tablo kutusu pencerenin altına kadar uzar — sabit 82vh sınırı altta boş bant bırakıyordu. */
+function aupFit(){
+  const w=document.querySelector("#view .aupwrap"); if(!w) return;
+  w.style.maxHeight=Math.max(240,Math.round(window.innerHeight-w.getBoundingClientRect().top-10))+"px";
+}
+window.addEventListener("resize",()=>{ if(document.querySelector("#view .aupwrap")) aupFit(); });
+
+
+(async function(){
+  const v=document.getElementById("view"); v.innerHTML='<div class="load">Yükleniyor…</div>';
+  const r=await REAL.rpc("eu_faaliyet_veri");
+  if(r.error){ v.innerHTML='<div class="load">Hata: '+esc(r.error.message)+'</div>'; return; }
+  EUV=r.data||{}; await loadAup();
+})();
+</script>
+<!-- FORM-LINKLER --><script src="../form_linkler.js?v=261123g"></script><!-- FORM-MENU -->
+</body>
+</html>

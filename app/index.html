@@ -320,7 +320,7 @@ async function loadPerms(){
 const MALI_BOLUM=["kredi","ahsap","sel_arb","mali_mkprim"]; /* MAASPRIM-PERSONEL: mali_maasprim kaldırıldı (→ Personel) */
 const MALI_ALL=["kredi","ahsap","sel_arb","bilanco","icmal","mali_mkprim"];
 /* ÖB Faaliyet artık Mali grubunun içinde (MK Faaliyet'in yanında) */
-/* MENU-KISA-261010 */ /* GIRIS-PANO */const TABS=[["giris","Giriş"],["aup","PRJ/PEM"],/* SANTIYE-KREDI-YOK (19.11.2026, Melih): Şantiye ve Kredi panoları menüden kaldırıldı; loadSantiyeOnay/kredi kodu duruyor *//* GIRIS-SATIS-BANT (19.11.2026, Melih): Satış sekmesi menüden kaldırıldı; özeti Giriş'te açılır bant, loadSatis 'Öncelik Belirle' düğmesiyle hâlâ açılır */["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
+/* MENU-KISA-261010 */ /* GIRIS-PANO */const TABS=[["giris","Giriş"],/* PRJ-PEM-KALDIR (24.11.2026, Melih): PRJ/PEM panosu kaldırıldı, içeriği EU Faaliyet formunda (app/eu-faaliyet/); loadAup/loadHazir kodu duruyor *//* SANTIYE-KREDI-YOK (19.11.2026, Melih): Şantiye ve Kredi panoları menüden kaldırıldı; loadSantiyeOnay/kredi kodu duruyor *//* GIRIS-SATIS-BANT (19.11.2026, Melih): Satış sekmesi menüden kaldırıldı; özeti Giriş'te açılır bant, loadSatis 'Öncelik Belirle' düğmesiyle hâlâ açılır */["ref","Personel"],["prosedur","Prosedürler"],["egitim","Eğitim"],["mali","Mali"],["formlar","Formlar"],["ozel","Özel"]];
 const TAB_OBRAPOR=["obrapor","ÖB Faaliyet"];
 /* MENU-DUGME: Menü = ilk 8 sekme · Mali grubunun ilk 5 panosu · Formlar · Özel · Üretim Takip. Diğer pano linkleri (Sel-Arb, MK Faaliyet, ÖB Faaliyet) kaldırıldı; kodları duruyor. */
 const MENU_MALI=[["bilanco","Bilanço"],["icmal","İcmal"],["fiyat","Fiyatlandırma"]]; /* SANTIYE-KREDI-YOK */ /* MALI-AHSAP-YOK (19.11.2026, Melih): Ahşap panosu menüden kaldırıldı; tablo Giriş'te GIRIS-AHSAP-BANT (loadAhsap duruyor) */
@@ -360,7 +360,7 @@ function renderApp(){
 function loadView(){
   if(state.tab==='giris') loadGiris();
   else if(state.tab==='gundem') loadGundem();
-  else if(state.tab==='hazir'){ state.tab='aup'; loadAup(); }  /* PRJ-PEM-SEKME: eski sekme anahtarı */
+  else if(state.tab==='hazir'||state.tab==='aup'){ state.tab='giris'; loadGiris(); }  /* PRJ-PEM-KALDIR */
   else if(state.tab==='santiye') loadSantiyeOnay();
   else if(state.tab==='satis') loadSatis();
   else if(state.tab==='ref') loadRef();
@@ -369,7 +369,7 @@ function loadView(){
   else if(state.tab==='mali') loadMali();
   else if(state.tab==='formlar') loadFormlar();
   else if(state.tab==='ozel') loadOzel();
-  else loadAup();
+  else loadGiris();  /* PRJ-PEM-KALDIR */
 }
 function fmtDamga(dg){ return (dg&&dg.length>=6)? dg.slice(4,6)+"."+dg.slice(2,4)+"."+dg.slice(0,2) : "—"; }
 function dOnly(iso){ if(!iso) return "—"; const d=new Date(iso); return isNaN(d)?"—":String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+"."+String(d.getFullYear()).slice(2); }
@@ -2570,6 +2570,7 @@ async function loadFormlar(){
     {ad:"MK Faaliyet",         who:"MK",tam:"Mehmet Konak",      url:"mk-prim/",     sik:"Her ayın ilk iş günü"},
     {ad:"MY Faaliyet",         who:"MY · MK",tam:"Muhammer Yazla · Mehmet Konak", url:"my-faaliyet/", sik:"Süresiz"}, /* MY-FAALIYET (28.10.2026) */
     {ad:"CTP Faaliyet",        who:"CTP",tam:"Cenk Tolga Pınarbaşı", url:"ctp-faaliyet/", sik:"Süresiz"}, /* CTP-FAALIYET (16.10.2026) */
+    {ad:"EU Faaliyet",         who:"EU · CTP",tam:"Enes Uzun · Cenk Tolga Pınarbaşı", url:"eu-faaliyet/", sik:"Süresiz"}, /* EU-FAALIYET (24.11.2026): eski PRJ/PEM panosu */
     /* SELARB-FORM: Güncel Alacak (€) — ÖB + MK düzenler, ay sonu pg_cron ile SEL-ARB'a sütun olur */
     {ad:"Sel-Arb",             who:"ÖB · MK",tam:"Özgül Bedestenci · Mehmet Konak",url:"sel-arb/",sik:"Her ayın ilk iş günü"},
     {ad:"Yurt İçi Satış",      who:"SO",tam:"Sinan Oran",        url:"so/",          sik:"Süresiz"},
