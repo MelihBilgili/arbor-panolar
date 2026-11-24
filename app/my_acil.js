@@ -353,7 +353,7 @@
     if(pn.length){ try{ var ro=await sb.rpc("santiye_onay_tarihi",{p_nolar:pn}); (ro.data||[]).forEach(function(x){ on[x.proje_no]=x.onay; }); }catch(e){} } /* PRJ-ONAY-TARIHI */
     var ek='<th class="ek sm">Hedef<br>Yükleme Tarihi</th><th class="ek">Açıklama</th><th class="ek sm">Takip<br>Durumu</th>';
     var HP='<th>PEM</th><th class="sm">Talep<br>Tarihi</th><th>Proje Adı</th><th class="sm">Yükleme<br>Şekli</th><th>Ek Bilgi</th><th>Adet</th><th class="sm">Termin<br>Tarihi</th>'+ek;
-    var HJ='<th>Proje No</th><th class="sm">Müşteri<br>Onay Tarihi</th><th colspan="3">Proje Adı</th><th>Adet</th><th class="sm">AÜP</th>'+ek;
+    var HJ='<th>Proje No</th><th class="sm">Proje<br>Onay Tarihi</th>'/* PRJ-ONAY-BASLIK (24.11.2026, Melih) */+'<th colspan="3">Proje Adı</th><th>Adet</th><th class="sm">AÜP</th>'+ek;
     var satir=function(r,gi){
       var ac=r.durum==="Acil", pem=r.tur==="PEM";
       var ilk=pem
