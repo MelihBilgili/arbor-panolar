@@ -1522,7 +1522,7 @@ function fyListe(){ const L=[]; if(!S.poz||!S.poz.length) return L;
     if(p.brutPdf!=null&&(+p.brut||0)<p.brutPdf-0.005) L.push("Poz "+pn+" brüt "+frN(p.brutPdf,2)+" → "+frN(p.brut,2)+" €");
     if(p.ekF!=null&&p.ekF<0) L.push("Poz "+pn+" "+ekfAd()+" "+frN(p.ekF,2)+" €"); });
   (S.ekstra||[]).forEach(e=>{ const c=+e.carpan||1; if(c<1) L.push("Ekstra "+String(e.ad||e.kod||"").slice(0,40)+" çarpanı "+frN(c,2)); });
-  const se=$("f_ins_sure"); if(se&&se.dataset.elle&&S.insOto!=null){ const v=+String(se.value||"").replace(",",".")||0; if(v<S.insOto-1e-9) L.push("Insertion süresi "+frN(S.insOto,1)+" → "+frN(v,1)+" saat"); }
+  /* SOUM-INS-SERBEST (24.11.2026, Melih): Insertion süresi kullanıcı tarafından serbestçe düzenlenir, onaya bağlı değil */
   return L; }
 function fyImza(){ return fyListe().join(" | "); }
 function fyAcik(){ const i=fyImza(); return !!i&&i!==(S.fyOnay||"")&&i!==(S.fyBek||""); }
@@ -1533,7 +1533,6 @@ function sinifZorla(){ const sel=$("f_sinif"); if(!sel) return; const mb=iskKod(
   sel.value=s?String(s.sinif%2===1?1:2):"0"; }
 function fyGeriAl(){ S.poz.forEach(p=>{ if(p.brutPdf!=null&&(+p.brut||0)<p.brutPdf-0.005){ p.brut=p.brutPdf; p.brutElle=0; } if(p.ekF!=null&&p.ekF<0) p.ekF=null; });
   (S.ekstra||[]).forEach(e=>{ if((+e.carpan||1)<1) e.carpan=1; });
-  const se=$("f_ins_sure"); if(se&&se.dataset.elle&&S.insOto!=null&&(+String(se.value||"").replace(",",".")||0)<S.insOto) delete se.dataset.elle;
   if(S.fyBek&&S.iskId&&($("f_kat").dataset.elle||"")!=="bekliyor") SB.functions.invoke("soum-iskonto-onay",{body:{islem:"iptal",id:S.iskId}}).then(iskBantYenile).catch(()=>{});
   if(($("f_kat").dataset.elle||"")!=="bekliyor"){ S.fyBek=null; if(!S.fyOnay) S.iskId=null; }
   pozCiz(); hesapla(); durum("Fiyatı düşüren elle değişiklikler geri alındı.","ok"); }
