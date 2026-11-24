@@ -250,13 +250,13 @@ const dE=v=>v==null||isNaN(v)?"–":dN(v,2)+" €";
 /* SOUM-UK (27.10.2026, Melih): İngilizce teklif £ (brüt € × kur, varsayılan 0,87), sütunlar Building/Ref./Resistance class/glazing birleşik, Rw başlığı,
    kapsam kalemleri (denizlik, menfez yuvası, menfez, iç denizlik tahtası, pervaz) formdan dahil/hariç; çizim "Outside View" (Pencad çizimi aynen: UK'de menteşe/kol ve iç/dış gösterimi birlikte ters, birbirini nötrler). */
 const EN=()=>DIL()==="en";
-const kur=()=>{ const e=document.getElementById("f_kur"); const v=e?+String(e.value).replace(",","."):0; return v>0?v:(S.kur&&S.kur.v)||0.87; };
+const kur=()=>(S.kur&&S.kur.v)||0.87; /* SOUM-KUR-SABIT (24.11.2026, Melih): € → £ kuru yalnız ECB / kur önbelleğinden, elle değiştirilemez (kayıtlı formdaki elle kur da yok sayılır) */
 /* SOUM-UK-KUR (27.10.2026, Melih): € → £ paritesi internetten güncel — edge arb-kur (ECB / frankfurter.app); olmazsa kur_son önbelleği (günlük), o da yoksa 0,87. Elle değiştirilebilir. */
 async function kurAl(){ let o=null;
   try{ const r=await SB.functions.invoke("arb-kur",{body:{}}); const d=r&&r.data; if(d&&d.ok&&d.rates&&d.rates.GBP>0) o={v:+d.rates.GBP,tarih:d.tarih,kaynak:"ECB (güncel)"}; }catch(e){}
   if(!o){ try{ const r=await SB.from("kur_son").select("oran,kur_tarihi").eq("para_birimi","GBP").maybeSingle(); if(r&&r.data&&+r.data.oran>0) o={v:+r.data.oran,tarih:r.data.kur_tarihi,kaynak:"kur önbelleği"}; }catch(e){} }
   S.kur=o||{v:0.87,tarih:null,kaynak:"varsayılan (kur alınamadı)"}; kurYaz(); }
-function kurYaz(){ const e=$("f_kur"); if(!e) return; if(!e.dataset.elle&&S.kur) e.value=frN(S.kur.v,4);
+function kurYaz(){ const e=$("f_kur"); if(!e) return; delete e.dataset.elle; e.readOnly=true; e.style.background="#f2f4f7"; e.title="Kur otomatik (ECB); değiştirilemez"; if(S.kur) e.value=frN(S.kur.v,4); /* SOUM-KUR-SABIT */
   const h=$("f_kur_h"); if(h&&S.kur) h.textContent="Kur: 1 € = "+frN(S.kur.v,4)+" £ · "+S.kur.kaynak+(S.kur.tarih?" · "+S.kur.tarih.split("-").reverse().join("."):"")+(e.dataset.elle?" · elle değiştirildi":""); }
 /* SOUM-UK-TERMIN (27.10.2026, Melih; Fransızca teklifte de "Délai de fabrication"): üretim süresi Ürün Fiyatlandırma'nın Termin (MVT) tablosundan — fiyat_termin, bölge Fransa → yd1, diğer → yd2;
    sütun: projede 68p/78t/78a varsa "68p/78t/78a içeren", yoksa "Std. dışı cam"; satır toplam adede göre (aralığı aşan adette son satır). */
@@ -1503,7 +1503,7 @@ function enGoster(){ const en=EN(), a=$("enAlan"), dn=$("f_k_den"); a.style.disp
 $("f_revize").onchange=()=>{ revGoster(); pozCiz(); hesapla(); }; $("f_revnot").oninput=revNotYaz; /* SOUM-REVIZE-ARSIV */
 $("f_ins_sure").oninput=()=>{ $("f_ins_sure").dataset.elle=1; hesapla(); }; $("f_insSifirla").onclick=e=>{ e.preventDefault(); delete $("f_ins_sure").dataset.elle; hesapla(); };
 $("f_pror").oninput=()=>{ hesapla(); notDoldur(); };
-$("f_kur").oninput=()=>{ $("f_kur").dataset.elle=1; hesapla(); }; $("f_kurSifirla").onclick=e=>{ e.preventDefault(); delete $("f_kur").dataset.elle; kurAl().then(hesapla); };
+$("f_kur").oninput=()=>{ kurYaz(); }; /* SOUM-KUR-SABIT */ $("f_kurSifirla").onclick=e=>{ e.preventDefault(); delete $("f_kur").dataset.elle; kurAl().then(hesapla); };
 $("f_uretim").oninput=()=>{ $("f_uretim").dataset.elle=1; notDoldur(); }; $("f_uretimSifirla").onclick=e=>{ e.preventDefault(); delete $("f_uretim").dataset.elle; uretimYaz(); notDoldur(); };
 $("f_kat").oninput=()=>{ const e=$("f_kat"); if(e.dataset.elle==="bekliyor") return; S.iskId=null; e.dataset.elle="1"; hesapla(); }; $("f_katSifirla").onclick=e=>{ if(e) e.preventDefault(); iskDon(); }; /* SOUM-ISK-ONAY */
 /* SOUM-ISK-ONAY (24.11.2026, Melih): standart dışı iskonto yönetim onayına bağlı. f_kat dataset.elle: ""=hesaplanan · "devir"=revizyonda aynı proje+müşterinin
