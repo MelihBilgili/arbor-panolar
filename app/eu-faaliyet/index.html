@@ -322,8 +322,8 @@ if (document.readyState === "loading") document.addEventListener("DOMContentLoad
 const REAL=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
 let EUV={};
 function euQ(n){ const p={then:(a,b)=>Promise.resolve({data:(EUV[n]||[]),error:null}).then(a,b)}; ["select","order","limit","eq"].forEach(m=>p[m]=()=>p); return p; }
-const sb={from:euQ, rpc:n=>Promise.resolve({data:EUV[n],error:null}), functions:{invoke:async()=>({data:{ok:false}})}};
-const state={tab:"aup"}; window.__sevkCanliCalisti=true;  /* sevk özet üretimi (edge) panoda kalır; form salt-okur */
+const sb={from:euQ, rpc:n=>Promise.resolve({data:EUV[n],error:null}), functions:{invoke:async(n,o)=>{ const r=await REAL.functions.invoke(n,o); if(!r.error&&!(r.data&&r.data.ok===false)){ const q=await REAL.rpc("eu_faaliyet_veri"); if(!q.error) EUV=q.data||{}; } return r; }}};
+const state={tab:"aup"};  /* EU-FAALIYET-OZET: bayat "Sevk Durum Değişimi" satırı varsa canlı özet (edge sevk-degisim-ozet, ARB_OK @arbor.com.tr) bir kez üretilir, veri yeniden okunur */
 function esc(s){ return (s==null?"":String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function money(n){ if(n==null||n==="") return ""; const v=Math.round(Number(n)); return isNaN(v)?"":v.toLocaleString("tr-TR"); }
 function fmtDamga(dg){ return (dg&&dg.length>=6)? dg.slice(4,6)+"."+dg.slice(2,4)+"."+dg.slice(0,2) : "—"; }
