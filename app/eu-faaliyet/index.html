@@ -372,9 +372,7 @@ async function loadHazir(el){
   _ref.setHours(23,59,59,999);
   const _cut=new Date(_ref); _cut.setHours(0,0,0,0); _cut.setDate(_cut.getDate()-10);
   const filt=(data||[]).filter(r=>{
-    const dt=r.hazir_tarihi; if(!dt) return false;
-    const d=new Date(dt); if(isNaN(d)) return false;
-    return true;  /* EU-PEM-10GUN-YOK (25.11.2026, Melih): "son ERP damgasından 10 gün içindeki tarih gösterilmez" şartı kaldırıldı (_cut artık kullanılmıyor) */
+    return true;  /* EU-PEM-TARIHSIZ (25.11.2026, Melih): hazır tarihi boş/geçersiz PEM'ler de gösterilir (tarih sütunu boş kalır) */  /* EU-PEM-10GUN-YOK (25.11.2026, Melih): "son ERP damgasından 10 gün içindeki tarih gösterilmez" şartı kaldırıldı (_cut artık kullanılmıyor) */
   });
   const digits=s=>String(s==null?"":s).replace(/\D/g,"");
   const lastN=(s,n)=>{ const d=digits(s); return d.slice(-n); };
