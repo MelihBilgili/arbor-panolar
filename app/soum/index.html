@@ -686,7 +686,7 @@ function pnotCiz(){ try{ pcCiz(); }catch(_e){} kesifOku(); const el=$("pnDosya")
 
 /* ---------------- yorumlama kuralları ---------------- */
 /* SOUM-261125-MKB8 (25.11.2026, Melike Başaran): Notes 1. satırında seri (aile) adından sonra malzeme — EN: 68s, 78s, 90s, 78t, 68p → timber; 78a, 78t-a, 58f, 68f → alu-clad. FR: aynı kural bois / bois-aluminium, SIMPLIST hariç. Alüminyum eşik yazılan pozda ayrıca denizlik satırı yazılmaz. */
-const AILEK=(s,en)=>{ s=String(s||"").toLowerCase(); const a=/^(78a|78t-a|58f|68f)/.test(s), t=!a&&/^(68s|78s|90s|78t|68p)/.test(s); return a?(en?"alu-clad":"bois-aluminium"):t?(en?"timber":"bois"):""; };
+const AILEK=(s,en)=>{ s=String(s||"").toLowerCase(); const a=/^(78a|78t-a|58f|68f)/.test(s), t=!a&&/^(68s|78s|90s|78t|68p)/.test(s); return a?(en?"alu-clad":"Bois Alu"):t?(en?"timber":"Bois"):""; }; /* SOUM-261125-MKB9: FR Bois Alu / Bois (25.11.2026, Melike Başaran) */
 const DEN_EN=/^(Exterior Alu sill|Exterior timber sill|Interior timber sill|Timber sill)$/i, DEN_FR=/^(Bavette Alu|Bavette Bois|Tablette intérieure bois|Pièce d'appui bois)$/i;
 const AILE=s=>/^(68s|78s|90s)/.test(s)?"SIMPLIST":/^(58f|68f)/.test(s)?"FLAT":/^68m/.test(s)?"MINIMA":/^(78t|78a)/.test(s)?"CASEMENT":/^(68k|68p|58e|56)/.test(s)?"KLASIK":"";
 function agacFr(a){ a=String(a||""); const t=nrmTxt(a); const tur=/cam/.test(t)?"Pin":/mese/.test(t)?"Chêne":/okaliptus/.test(t)?"Eucalyptus":/lareks/.test(t)?"Mélèze":/meranti/.test(t)?"Meranti":/iroko/.test(t)?"Iroko":/sapelli/.test(t)?"Sapelli":/accoya/.test(t)?"Accoya":a.split(/\s/)[0];
