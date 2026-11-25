@@ -685,6 +685,9 @@ function pnotCiz(){ try{ pcCiz(); }catch(_e){} kesifOku(); const el=$("pnDosya")
   el.querySelectorAll("[data-pnk]").forEach(a=>a.onclick=async ev=>{ ev.preventDefault(); const k=K[+a.dataset.pnk]; try{ const r=await SB.storage.from("soum-teklif").download(k.yol); if(r.error) throw r.error; indirBlob(r.data,k.ad); }catch(e){ alert("Dosya indirilemedi: "+(e.message||e)); } }); }
 
 /* ---------------- yorumlama kuralları ---------------- */
+/* SOUM-261125-MKB8 (25.11.2026, Melike Başaran): Notes 1. satırında seri (aile) adından sonra malzeme — EN: 68s, 78s, 90s, 78t, 68p → timber; 78a, 78t-a, 58f, 68f → alu-clad. FR: aynı kural bois / bois-aluminium, SIMPLIST hariç. Alüminyum eşik yazılan pozda ayrıca denizlik satırı yazılmaz. */
+const AILEK=(s,en)=>{ s=String(s||"").toLowerCase(); const a=/^(78a|78t-a|58f|68f)/.test(s), t=!a&&/^(68s|78s|90s|78t|68p)/.test(s); return a?(en?"alu-clad":"bois-aluminium"):t?(en?"timber":"bois"):""; };
+const DEN_EN=/^(Exterior Alu sill|Exterior timber sill|Interior timber sill|Timber sill)$/i, DEN_FR=/^(Bavette Alu|Bavette Bois|Tablette intérieure bois|Pièce d'appui bois)$/i;
 const AILE=s=>/^(68s|78s|90s)/.test(s)?"SIMPLIST":/^(58f|68f)/.test(s)?"FLAT":/^68m/.test(s)?"MINIMA":/^(78t|78a)/.test(s)?"CASEMENT":/^(68k|68p|58e|56)/.test(s)?"KLASIK":"";
 function agacFr(a){ a=String(a||""); const t=nrmTxt(a); const tur=/cam/.test(t)?"Pin":/mese/.test(t)?"Chêne":/okaliptus/.test(t)?"Eucalyptus":/lareks/.test(t)?"Mélèze":/meranti/.test(t)?"Meranti":/iroko/.test(t)?"Iroko":/sapelli/.test(t)?"Sapelli":/accoya/.test(t)?"Accoya":a.split(/\s/)[0];
   const k=/dkd/.test(t)?"DKD":/kkk/.test(t)?"KKK":""; return (tur+" "+k).trim(); }
@@ -752,7 +755,7 @@ function pozYorumla(p,dp){
      eşiksiz = çıkışı olmayan (dışta korkuluk/küpeşte, ahşap profil) "(PF-SACC)"; denizlikli ve teras/balkona çıkışlı "(PF-ACC)". */
   const pf=!sabit&&p.h>1800;
   const akustik=/Akustik/i.test(A.Cam||"");
-  let t=AILE(p.seri)+" "+agacFr(A["Ağaç Türü"])+". "+(pf?"PF":"Fenêtre")+" "+(iki?"2 vantaux":"1 vantail")+" "+(ob?"OB":of?"OF":"");
+  let t=AILE(p.seri)+(AILE(p.seri)!=="SIMPLIST"&&AILEK(p.seri,false)?" "+AILEK(p.seri,false):"")/* SOUM-261125-MKB8 */+" "+agacFr(A["Ağaç Türü"])+". "+(pf?"PF":"Fenêtre")+" "+(iki?"2 vantaux":"1 vantail")+" "+(ob?"OB":of?"OF":"");
   const ek=[]; if(sabit) ek.push("allège fixe"); if(ozl.esik) ek.push("seuil PMR");
   let s=t.trim(); if(ek.length) s+=" avec "+ek.join(" et ");
   const nm=nrmTxt(m), gePl=/geplast butonlu panjur/.test(nm), mmM=/panjur motoru manuel motorlu/.test(nm); /* SOUM-261119-VRFR (19.11.2026, Melike Başaran) */
@@ -935,14 +938,14 @@ function notEn(p){ const f=p.nf||{}, o=p.ozl, t=(p.acPdf||"")+" "+(p.acikPdf||""
   const kp=!bk&&/kapi/.test(nrmTxt(p.acPdf)); /* SOUM-EN-KAPI (05.11.2026, Melike Başaran): Açılım'da Kapı → window yerine door */
   const KL=kp&&p.gs&&Array.isArray(p.gs.kl)&&p.gs.kl.length>1&&p.gs.kl.every(k=>k.en)&&new Set(p.gs.kl.map(k=>k.en)).size>1?p.gs.kl:null, bz=KL&&KL.reduce((a,b)=>b.a>a.a?b:a), dk=KL?[...new Set(KL.filter(k=>k!==bz&&k.en!==bz.en).map(k=>k.en))]:[]; /* SOUM-261123-MKB5 (23.11.2026, Melike Başaran): Açılımda Kapı → yalnız en büyük alanlı kanat door; farklı tipteki diğer kanatlar window olarak ayrı satır */
   const tip=bk?(tip0?tip0.replace(/window/i,"balcony door"):"balcony door"):KL?bz.en.replace(/window/i,"door"):kp?(tip0?tip0.replace(/window/i,m=>m[0]==="W"?"Door":"door"):"Door"):tip0;
-  const s=[f.aile,agacEn3(f.agac),(/kemerli/.test(n)||(p.gs&&p.gs.arched))?"Arched":"",tip].filter(Boolean).join(" "); /* SOUM-EN-DUZ (05.11.2026, Melike Başaran): Arched tipten önce ("KLASIK Oak DKD Arched Sash Window"); eşik "Aluminum door threshold"; menfez "Trickle vent" */
+  const s=[f.aile,AILEK(p.seri,true)/* SOUM-261125-MKB8 */,agacEn3(f.agac),(/kemerli/.test(n)||(p.gs&&p.gs.arched))?"Arched":"",tip].filter(Boolean).join(" "); /* SOUM-EN-DUZ (05.11.2026, Melike Başaran): Arched tipten önce ("KLASIK Oak DKD Arched Sash Window"); eşik "Aluminum door threshold"; menfez "Trickle vent" */
   const sat=[s].concat(dk); const gyok=G?/^(sabit|giyotin|giyotinGor)$/.test(G.tip):(gy||sbt||sga||hb);
   if(G?G.tip==="giyotinGor":vg) sat.push("Bottom sash inward tilt"); if(yon&&!gyok) sat.push(yon.charAt(0).toUpperCase()+yon.slice(1));
   if(G){ if(G.tip==="giyotinGor") sat.push("Upper sash fixed"); if(G.ust&&!usAd) sat.push("Fixed fanlight"); if(G.alt&&!usAd) sat.push("Bottom sash fixed"); }
   else { if(/alt sabit/.test(n)) sat.push("Bottom sash fixed"); if(/ust sabit/.test(n)) sat.push("Upper sash fixed"); } if(o.esik) sat.push("Aluminum door threshold"); if(p.pf){ const PT={STD:"Aluminum door threshold"}[p.pfTip]; if(PT) sat.push(PT); } /* SOUM-261118-EKTIK (18.11.2026, Melike Başaran): Pencad'den okunan denizlik (PF SACC/ACC) ayrı satır yazılmaz; denizlik yalnız Denizlik (çoklu) seçiminden */ /* SOUM-PF-NOT (16.11.2026, Melike Başaran): PF tipi Standart → alu eşik, SACC → denizlik, ACC → alüminyum denizlik notu */ { const SV={ic:"Interior window jamb",dis:"Exterior window jamb"}, DN={alu:"Exterior Alu sill",ahs:"Exterior timber sill",ic:"Interior timber sill"}, PV={ic:"Interior timber trim",dis:"Exterior Timber trim"}; kSecL("sove").forEach(v=>SV[v]&&sat.push(SV[v])); if(!/door/i.test(tip)||p.pf) kSecL("den").forEach(v=>DN[v]&&sat.push(DN[v])); /* SOUM-KAPI-DENYOK (06.11.2026, Melike Başaran): notta door geçen pozda denizlik satırı yok */ kSecL("pervaz").forEach(v=>PV[v]&&sat.push(PV[v])); } /* SOUM-KAPSAM-COK: çoklu seçim */ /* SOUM-EN-KAPSAM2: söve/denizlik/pervaz notu formdaki seçimden, tüm pozlarda */
   if(o.menfez&&kapsam("myuva")) sat.push("Trickle vent");
   const eks=[]; (S.ekstra||[]).filter(e=>e.mod==="birim"&&!firinMi(e)&&!denMi(e)&&!macoMi(e)&&ekTik(e,S.poz.indexOf(p))).forEach(e=>{ const x=ekKonAd(e,true)||stokEn(e.ad); if(!eks.includes(x)) eks.push(x); }); /* SOUM-261120-MKB2-EK */
-  return [...new Set(sat.concat(notEk(p,true,true),eks))].join("\n"); }
+  const LL=[...new Set(sat.concat(notEk(p,true,true),eks))]; return (LL.some(x=>/threshold/i.test(x))?LL.filter(x=>!DEN_EN.test(x)):LL).join("\n"); } /* SOUM-261125-MKB8: eşik varsa denizlik satırı yok */
 /* SOUM-NOT2 (27.10.2026, Melih): notlara Satine cam (Vitrage Satiné / Satin glass), EI30/EI60 cam, pozun Pencad ekstra malzemeleri (dahil olanlar; Özet Extra Malzemeler
    poz bazlı olmadığından pozlara ekstraPozAdet kuralıyla dağıtılır: kol her ürün, kısıtlayıcı OF, eker alu denizlikli pencere) ve İngilizcede geçerli PAS 24 sertifikası (soum_pas24: seri × ürün tipi × açılım). */
 /* SOUM-261118-EKAD (18.11.2026, Melike Başaran): Pencad ekstra malzemelerinin Notes adları (İngilizce / Fransızca) */
@@ -1019,7 +1022,7 @@ function frGs(p,L){ const G=p.gs; if(!G||!G.tip||G.tip==="kapi"||!L||!L.length) 
   if(!yeni) return L; s=s.replace(m[0],yeni);
   const ekle=t=>{ if(s.includes(t)) return; s=/ avec /.test(s)?s.replace(" avec "," avec "+t+" et "):s.replace(/\.?$/," avec "+t+"."); };
   if(G.ust) ekle("imposte fixe"); if(G.alt) ekle("allège fixe"); if(G.solS&&G.sagS) ekle("fixes latéraux"); else if(G.solS) ekle("fixe latéral gauche"); else if(G.sagS) ekle("fixe latéral droit"); /* SOUM-YAN-SABIT */ return [s].concat(L.slice(1)); }
-function notMetin(p){ if(p.notElle!=null) return p.notElle; if(DIL()==="en"&&p.nf) return notEn(p); const mt=$("f_mont").value==="1"?"Mortaise entrée d'air + Pose":"Mortaise entrée d'air"; return frPf(p,frDen(p,frGs(p,p.notSat))).map(x=>x==="MORTAISE"?mt:x).concat(notEk(p,false)).join("\n"); }
+function notMetin(p){ if(p.notElle!=null) return p.notElle; if(DIL()==="en"&&p.nf) return notEn(p); const mt=$("f_mont").value==="1"?"Mortaise entrée d'air + Pose":"Mortaise entrée d'air"; const LF=frPf(p,frDen(p,frGs(p,p.notSat))).map(x=>x==="MORTAISE"?mt:x).concat(notEk(p,false)); return (LF.some(x=>/seuil/i.test(x))?LF.filter(x=>!DEN_FR.test(x)):LF).join("\n"); } /* SOUM-261125-MKB8 */
 const FACADE_EN={"Tunnel au nu intérieur":"In reveal, flush inside","App. Int.":"Internal face fix","App. Ext.":"External face fix","Feuillure":"Rebate"};
 const facadeAd=p=>DIL()==="en"?(FACADE_EN[p.facade]||p.facade):p.facade;
 
