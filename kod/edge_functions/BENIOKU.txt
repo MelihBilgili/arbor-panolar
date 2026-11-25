@@ -1,0 +1,4 @@
+EDGE-KAYNAK-GITHUB (Melih 13.11.2026; ilk toplu kopya 25.11.2026)
+Supabase edge fonksiyon kaynaklarının kopyası (asıl: OneDrive Arbor/kod/edge_functions/ ve kod/edge_*.ts).
+OneDrive erişilemediğinde okumak içindir; deploy Supabase'e yapılır. Sırlar kaynakta yoktur (Deno.env / sistem_anahtar).
+Edge kaynağı değişince OneDrive ile birlikte buraya da kopyalanır.
