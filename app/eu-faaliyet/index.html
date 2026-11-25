@@ -374,7 +374,7 @@ async function loadHazir(el){
   const filt=(data||[]).filter(r=>{
     const dt=r.hazir_tarihi; if(!dt) return false;
     const d=new Date(dt); if(isNaN(d)) return false;
-    return !(d>=_cut);
+    return true;  /* EU-PEM-10GUN-YOK (25.11.2026, Melih): "son ERP damgasından 10 gün içindeki tarih gösterilmez" şartı kaldırıldı (_cut artık kullanılmıyor) */
   });
   const digits=s=>String(s==null?"":s).replace(/\D/g,"");
   const lastN=(s,n)=>{ const d=digits(s); return d.slice(-n); };
