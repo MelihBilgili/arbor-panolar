@@ -433,7 +433,7 @@ async function loadHazir(el){
   const hStamp='<div class="stamp">ERP: '+(st||"—")+' · Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")
     +' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)
     +' · PRJ Adet: '+Math.round(Number(a0.prj_adet)||0)+pctSpan(a0.prj_adet,a1.prj_adet)+'</div>';
-  const pemHd='<div class="myab" style="margin:14px 0 0"><h3>SEVKE HAZIR PEM\'LER <span style="font-weight:400;font-size:12px;color:#5a6b7d">· Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")+' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)+'</span></h3></div>'
+  const pemHd='<div class="myab" style="margin:14px 0 0"><h3>SEVKE HAZIR PEM\'LER <span style="font-weight:400;font-size:12px;color:#5a6b7d">· PEM Adet: '/* EU-PEM-OE-DAMGA-YOK (25.11.2026, Melih) */+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)+'</span></h3></div>'
     /* EU-SEVK-PEM-FORMAT: table.mya biçimi (app/my_acil.js stil() ile aynı) */
     +'<style>.myab{font-family:\'Segoe UI\',system-ui,sans-serif}.myab h3{margin:0 0 6px;font-size:13.5px;color:#b0003a;font-weight:700}#aup-pem .myw{overflow-x:auto;margin-bottom:14px}table.mya{border-collapse:collapse;font-size:12px;width:auto}table.mya th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px;text-align:left;padding:3px 7px;white-space:nowrap;vertical-align:bottom;line-height:12px}table.mya td{padding:3px 7px;white-space:nowrap;line-height:16px;color:#1c2430}table.mya td.w{overflow:hidden;text-overflow:ellipsis}table.mya tr.my-ks td{background:#fff;border-bottom:1px solid #e6eaef}</style>';
   view.innerHTML=`${el?pemHd:hStamp}
