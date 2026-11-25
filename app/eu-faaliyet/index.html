@@ -181,7 +181,7 @@
 <!-- EU-FAALIYET (24.11.2026, Melih): eski PRJ/PEM panosu. Rol eu.form@arbor.com.tr, giriş kişisel kodla (EU, CTP). -->
 <header>
   <h1>EU — Faaliyet Formu</h1>
-  <div class="sub">Sevke hazır projeler, gelecek ay ve ileri tarihli projeler, sevke hazır ve üretimdeki PEM'ler. ERP PST tarihleri Hedef Yükleme tarihlerine göre düzeltilir.</div>
+  <div class="sub">Sevke hazır projeler, gelecek ay ve ileri tarihli projeler, sevke hazır ve üretimdeki PEM'ler. PST tarihleri Hedef Yükleme tarihlerine göre düzeltilir.</div>
 </header>
 <div id="view"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -490,18 +490,24 @@ async function loadAup(){
     if(t.talep_durum==="Acil") return '<span style="color:#b26a00;font-weight:600" title="'+esc("Şantiye acil talebi ("+(t.talep_kisi||"")+") · hedef "+fdate(t.talep_hedef)+" · MY onayı bekliyor")+'">Acil talebi</span>';
     return '<span class="muted">'+esc(t.durum||"Normal")+'</span>'; };
   const hdAck=no=>{ const t=MTM[no]; const a=(t&&t.durum==="Acil"&&t.aciklama)?String(t.aciklama).split("\n").reverse().join(" · "):""; const f=SCM[no]; return a||String((f&&f.onemli_hususlar)||"").trim(); };
+  /* EU-PST-RENK (25.11.2026, Melih): PST ile Hedef Yükleme arasında 5 iş gününden fazla fark → PST hücresi kırmızı zemin beyaz yazı;
+     AÜP ile Hedef Yükleme arasında 3 iş gününden fazla fark → tüm satır pembe. İş günü = Pzt–Cum (tatiller sayılmaz); hedef boşsa renk yok. */
+  const isG=(a,b)=>{ if(!a||!b) return null; let x=new Date(String(a).slice(0,10)+"T00:00:00"), y=new Date(String(b).slice(0,10)+"T00:00:00"); if(isNaN(x)||isNaN(y)) return null;
+    if(x>y){ const t=x; x=y; y=t; } let n=0; const d=new Date(x); while(d<y){ d.setDate(d.getDate()+1); const g=d.getDay(); if(g!==0&&g!==6) n++; } return n; };
+  const pstK=r=>{ const f=isG(r.gyt,hdHedef(r.proje_no)); return f!=null&&f>5?' pstk':''; };
+  const aupP=r=>{ const f=isG(r.aup,hdHedef(r.proje_no)); return f!=null&&f>3?' class="aupp"':''; };
   const rowH=r=>{
     const ga=r.gyt_aup, ky=r.kayma, ack=hdAck(r.proje_no);
     const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
     const sn=String(r.satis_santiye_notlari||""), un=String(r.uretim_notlari||"");
-    return `<tr>
+    return `<tr${aupP(r)}>
       <td class="c kod a6"><span title="${esc(r.proje_no)}">${esc(String(r.proje_no||"").slice(-6))}</span></td>
       <td class="c a30"><span title="${esc(pad)}">${esc(pad)}</span></td>
       <td class="c a10"><span title="${esc(dur)}">${esc(dk(r.proje_durumu))}</span></td>
       <td class="num">${esc(r.adet)}</td>
       <td class="num ctr">${fdate(r.mvt)}</td>
       <td class="num ctr">${fdate(r.aup)}</td>
-      <td class="num ctr">${fdate(r.gyt)}</td>
+      <td class="num ctr${pstK(r)}">${fdate(r.gyt)}</td>
       <td class="num ctr">${fdate(hdHedef(r.proje_no))}</td><td class="ctr">${hdAcil(r.proje_no)}</td><td class="c yp"><span title="${esc(ack)}">${esc(ack)}</span></td>
       <td class="num pstd ${ga<0?'red':''}">${ga==null?'':ga}</td>
       <td class="num ${ky>=3?'red':''}">${ky==null?'':ky}</td>
@@ -525,14 +531,14 @@ async function loadAup(){
   const rowS=r=>{
     const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
     const sn=String(r.satis_santiye_notlari||""), un=String(r.uretim_notlari||""), yn=YPM[r.proje_no]||"";
-    return `<tr>
+    return `<tr${aupP(r)}>
       <td class="c kod a6"><span title="${esc(r.proje_no)}">${esc(String(r.proje_no||"").slice(-6))}</span></td>
       <td class="c a30"><span title="${esc(pad)}">${esc(pad)}</span></td>
       <td class="c a10"><span title="${esc(dur)}">${esc(dk(r.proje_durumu))}</span></td>
       <td class="num">${esc(r.adet)}</td>
       <td class="num ctr">${fdate(r.mvt)}</td>
       <td class="num ctr">${fdate(r.aup)}</td>
-      <td class="num ctr">${fdate(r.gyt)}</td>
+      <td class="num ctr${pstK(r)}">${fdate(r.gyt)}</td>
       <td class="num ctr">${fdate(hdHedef(r.proje_no))}</td><td class="ctr">${hdAcil(r.proje_no)}</td>
       <td class="c yp"><span title="${esc(yn)}">${esc(yn)}</span></td>
       <td class="c ss${r.satis_santiye_notlari?' snpink':''}"><span title="${esc(sn)}">${esc(sn)}</span></td>
@@ -566,21 +572,24 @@ async function loadAup(){
     /* PST-AÜP başlığı iki satıra sarılır (fixed düzende nowrap olsaydı kırpılırdı). */
     #view table.aupmain thead th.pstd{white-space:normal;line-height:11px}
     #view .aupsevkh{font-weight:600;margin:14px 0 4px;font-size:13px}
+    /* EU-PST-RENK */
+    #view table.aupmain tr.aupp td{background:#fde4ec}
+    #view table.aupmain td.pstk,#view table.aupmain tr.aupp td.pstk{background:#c62828;color:#fff;font-weight:600}
     </style>
     <div class="scroll aupwrap">
     <div class="aupsevkh" style="margin-top:4px">Sevke Hazır Projeler · Durum 8 / 8.1 <span style="font-weight:400;color:#5a6b7d">· Proje: ${sdata.length} · Adet: ${money(sAd)} · Tutar: ${money(sTu)} €</span></div><!-- PRJ-PEM-TABLO-AD -->
     <table class="aup aupmain"><colgroup>${AUP_COLW_SEVK.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><!-- HEDEF-TEK · PRJ-HEDEF-ACIL --><th class="yp">Yükleme Planı</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><!-- HEDEF-TEK · PRJ-HEDEF-ACIL --><th class="yp">Yükleme Planı</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${srows||'<tr><td colspan="12" class="c">Kayıt yok</td></tr>'}</tbody></table>
     <div class="aupsevkh">Gelecek Ayın Sonuna Kadar Yüklenecek Projeler <span style="font-weight:400;color:#5a6b7d">· MVT ≤ ${fdate(_lim)} · ${sumAT(gData)}</span></div>
     <table class="aup aupmain">
     <colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><th class="yp">Açıklama</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><th class="yp">Açıklama</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${rowsG||'<tr><td colspan="15" class="c">Kayıt yok</td></tr>'}</tbody></table>
     <div class="aupsevkh">İleri Tarihli Projeler <span style="font-weight:400;color:#5a6b7d">· MVT &gt; ${fdate(_lim)} · ${sumAT(iData)}</span></div>
     <table class="aup aupmain">
     <colgroup>${AUP_COLW.map(w=>'<col style="width:'+w+'px">').join("")}</colgroup>
-    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">ERP PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><th class="yp">Açıklama</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
+    <thead><tr><th>NO</th><th>PROJE ADI</th><th>DURUM</th><th>Ad</th><th class="ctr">MVT</th><th class="ctr">AÜP</th><th class="ctr">PST</th><th class="ctr pstd">Hedef Yükleme</th><th class="ctr">Aciliyet</th><th class="yp">Açıklama</th><th class="pstd">PST-AÜP</th><th>Kayma</th><th>TUTAR €</th><th class="ss">Satış-Şantiye Notu</th><th class="ur">Üretim Notu</th></tr></thead>
     <tbody>${rowsI||'<tr><td colspan="15" class="c">Kayıt yok</td></tr>'}</tbody></table>
     <div id="aup-pem"></div><div id="aup-pem-ur"></div>
 </div>`;
