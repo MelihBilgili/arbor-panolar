@@ -408,6 +408,25 @@ async function loadHazir(el){
     }).join("");
     /* Blok başlığı (h3 "PEM"/"PRJ") YOK — blok kimliği ilk sütun başlığında: PEM / Proje.
        Adetler damga satırında (PEM Adet / PRJ Adet). */
+    /* EU-SEVK-PEM-FORMAT (25.11.2026, Melih): EU formunda Sevke Hazır PEM tablosu Yurt İçi şantiye formundaki biçimde (app/my_acil.js yiSevkPemBlok, table.mya):
+       PEM · Talep Tarihi · Proje Adı · Ek Bilgi · Adet · Termin Tarihi · Hedef Yükleme Tarihi (+ OE sevk sütunları); salt-okur. Talep/hedef = eu_faaliyet_veri.pem_ek */
+    if(tip==="pem"&&el){
+      const PX={}; ((EUV&&EUV.pem_ek)||[]).forEach(x=>{ PX[x.no]=x; });
+      const rs=sorted.map(r=>{
+        const x=PX[r.no]||{}, kod=lastN(r.no,5);
+        const proje=ev(T,r.no,"proje")||String(r.proje_adi||"");
+        const note=ev(T,r.no,noteCol)||String(r.ek_bilgi||"");
+        let adet=ev(T,r.no,"adet")||(r.adet==null?"":String(r.adet)); if(adet!==""&&isFinite(parseFloat(adet))) adet=String(Math.round(parseFloat(adet)));
+        const dt=ev(T,r.no,dcol)||r.hazir_tarihi||"";
+        const ac=x.durum==="Acil"&&x.hedef, hd=ac?x.hedef:(x.plan||"");
+        const hdTd=ac?'<td title="Acil hedef yükleme tarihi"><b>'+fdate(hd)+'</b></td>':'<td title="'+esc(x.istenen?"Şantiyede istenen "+fdate(x.istenen):"")+'">'+fdate(hd)+'</td>';
+        const onur=r.onur_guncel||"", oz=ozMap[T+"|"+r.no]||"";
+        return '<tr class="my-ks"><td title="'+esc(r.no)+'">'+esc(kod)+'</td><td>'+fdate(x.talep_tarihi)+'</td><td class="w" style="max-width:32ch" title="'+esc(proje)+'">'+esc(proje)+'</td>'
+          +'<td class="w" style="max-width:46ch" title="'+esc(note)+'">'+esc(note)+'</td><td style="text-align:right">'+esc(adet)+'</td><td>'+esc(fdate(dt)||dt)+'</td>'+hdTd
+          +'<td class="w" style="max-width:46ch" title="'+esc(onur)+'">'+esc(onur)+'</td><td class="w" style="max-width:46ch" title="'+esc(oz)+'">'+esc(oz)+'</td></tr>';
+      }).join("");
+      return '<div class="myw"><table class="mya"><thead><tr><th>PEM</th><th>Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin<br>Tarihi</th><th>Hedef<br>Yükleme Tarihi</th><th>Sevk Durumu<br>(OE)</th><th>Sevk Durum<br>Değişimi</th></tr></thead><tbody>'+rs+'</tbody></table></div>';
+    }
     const kodHd=tip==="pem"?"PEM":"Proje";
     const heads=`<th>${kodHd}</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>${dateHd}</th><th>Sevk Durumu (Onur)</th><th>Sevk Durum Değişimi</th>`;
     return `<div class="scroll hblk"><table><thead><tr>${heads}</tr></thead><tbody>${body}</tbody></table></div>`;
@@ -418,7 +437,9 @@ async function loadHazir(el){
   const hStamp='<div class="stamp">ERP: '+(st||"—")+' · Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")
     +' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)
     +' · PRJ Adet: '+Math.round(Number(a0.prj_adet)||0)+pctSpan(a0.prj_adet,a1.prj_adet)+'</div>';
-  const pemHd='<div class="aupsevkh">Sevke Hazır PEM\'ler <span style="font-weight:400;color:#5a6b7d">· Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")+' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)+'</span></div>';
+  const pemHd='<div class="myab" style="margin:14px 0 0"><h3>SEVKE HAZIR PEM\'LER <span style="font-weight:400;font-size:12px;color:#5a6b7d">· Sevk durumu (OE): '+(oeAt?dOnly(oeAt):"—")+' · PEM Adet: '+Math.round(Number(a0.pem_adet)||0)+pctSpan(a0.pem_adet,a1.pem_adet)+'</span></h3></div>'
+    /* EU-SEVK-PEM-FORMAT: table.mya biçimi (app/my_acil.js stil() ile aynı) */
+    +'<style>.myab{font-family:\'Segoe UI\',system-ui,sans-serif}.myab h3{margin:0 0 6px;font-size:13.5px;color:#b0003a;font-weight:700}#aup-pem .myw{overflow-x:auto;margin-bottom:14px}table.mya{border-collapse:collapse;font-size:12px;width:auto}table.mya th{background:#16324f;color:#fff;font-weight:600;font-size:10.5px;text-align:left;padding:3px 7px;white-space:nowrap;vertical-align:bottom;line-height:12px}table.mya td{padding:3px 7px;white-space:nowrap;line-height:16px;color:#1c2430}table.mya td.w{overflow:hidden;text-overflow:ellipsis}table.mya tr.my-ks td{background:#fff;border-bottom:1px solid #e6eaef}</style>';
   view.innerHTML=`${el?pemHd:hStamp}
     <style>.hblk table{font-size:11.5px}.hblk th,.hblk td{white-space:nowrap;padding:2px 6px;border-bottom:1px solid #eef1f5;line-height:16px}.hblk thead th{vertical-align:bottom}.hblk .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}.hblk .c>span::-webkit-scrollbar{display:none}.h3>span{width:3ch}.h5>span{width:5ch}.h8>span{width:8ch}.h15>span{width:15ch}.h20>span{width:68ch}.h25>span{width:25ch}.hdt>span{width:12.45ch}</style>
     ${block("pem")||(el?'<div class="c" style="color:#5a6b7d;font-size:12px">Kayıt yok</div>':'')}
