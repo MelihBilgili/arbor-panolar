@@ -545,9 +545,9 @@ async function grVakit(){
   const el=grEl("gr-vakit"); if(!el) return;
   const P=[];
   const c=s=>String(s||"").slice(0,5), D=Array.isArray(dy)?dy.find(x=>x&&x.MiladiTarihKisa===tr):null, T=ez0&&ez0.data&&ez0.data.timings;
-  /* GIRIS-VAKIT-BASHARF */
-  if(D) P.push("İ "+c(D.Imsak)+" · G "+c(D.Gunes)+" · Ö "+c(D.Ogle)+" · İ "+c(D.Ikindi)+" · A "+c(D.Aksam)+" · Y "+c(D.Yatsi));
-  else P.push(T?("İ "+c(T.Fajr)+" · G "+c(T.Sunrise)+" · Ö "+c(T.Dhuhr)+" · İ "+c(T.Asr)+" · A "+c(T.Maghrib)+" · Y "+c(T.Isha)):"Ezan vakitleri alınamadı");
+  /* GIRIS-VAKIT-BASHARF */ /* GIRIS-VAKIT-SAAT */
+  if(D) P.push([D.Imsak,D.Gunes,D.Ogle,D.Ikindi,D.Aksam,D.Yatsi].map(c).join(" · "));
+  else P.push(T?[T.Fajr,T.Sunrise,T.Dhuhr,T.Asr,T.Maghrib,T.Isha].map(c).join(" · "):"Ezan vakitleri alınamadı");
   if(hv&&hv.hourly&&hv.daily){
     const sr=String(hv.daily.sunrise[0]||""), ss=String(hv.daily.sunset[0]||"");
     const v=hv.hourly.time.map((x,i)=>[String(x),hv.hourly.temperature_2m[i]]).filter(a=>a[1]!=null&&(!sr||a[0]>=sr.slice(0,13))&&(!ss||a[0]<=ss)).map(a=>a[1]);
