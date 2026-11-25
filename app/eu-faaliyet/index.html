@@ -420,12 +420,10 @@ async function loadHazir(el){
         const dt=ev(T,r.no,dcol)||r.hazir_tarihi||"";
         const ac=x.durum==="Acil"&&x.hedef, hd=ac?x.hedef:(x.plan||"");
         const hdTd=ac?'<td title="Acil hedef yükleme tarihi"><b>'+fdate(hd)+'</b></td>':'<td title="'+esc(x.istenen?"Şantiyede istenen "+fdate(x.istenen):"")+'">'+fdate(hd)+'</td>';
-        const onur=r.onur_guncel||"", oz=ozMap[T+"|"+r.no]||"";
         return '<tr class="my-ks"><td title="'+esc(r.no)+'">'+esc(kod)+'</td><td>'+fdate(x.talep_tarihi)+'</td><td class="w" style="max-width:32ch" title="'+esc(proje)+'">'+esc(proje)+'</td>'
-          +'<td class="w" style="max-width:46ch" title="'+esc(note)+'">'+esc(note)+'</td><td style="text-align:right">'+esc(adet)+'</td><td>'+esc(fdate(dt)||dt)+'</td>'+hdTd
-          +'<td class="w" style="max-width:46ch" title="'+esc(onur)+'">'+esc(onur)+'</td><td class="w" style="max-width:46ch" title="'+esc(oz)+'">'+esc(oz)+'</td></tr>';
+          +'<td class="w" style="max-width:46ch" title="'+esc(note)+'">'+esc(note)+'</td><td style="text-align:right">'+esc(adet)+'</td><td>'+esc(fdate(dt)||dt)+'</td>'+hdTd+'</tr>';  /* EU-PEM-SEVK-CIKAR (25.11.2026, Melih): Sevk Durumu (OE) ve Sevk Durum Değişimi sütunları çıkarıldı */
       }).join("");
-      return '<div class="myw"><table class="mya"><thead><tr><th>PEM</th><th>Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin<br>Tarihi</th><th>Hedef<br>Yükleme Tarihi</th><th>Sevk Durumu<br>(OE)</th><th>Sevk Durum<br>Değişimi</th></tr></thead><tbody>'+rs+'</tbody></table></div>';
+      return '<div class="myw"><table class="mya"><thead><tr><th>PEM</th><th>Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin<br>Tarihi</th><th>Hedef<br>Yükleme Tarihi</th></tr></thead><tbody>'+rs+'</tbody></table></div>';
     }
     const kodHd=tip==="pem"?"PEM":"Proje";
     const heads=`<th>${kodHd}</th><th>Proje Adı</th><th>${noteHd}</th><th>Adet</th><th>${dateHd}</th><th>Sevk Durumu (Onur)</th><th>Sevk Durum Değişimi</th>`;
