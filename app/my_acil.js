@@ -68,7 +68,7 @@
     /* MY-ACIL-DURUM (06.11.2026, Melih): en solda ERP durumu; sıra önce durum (ERP durum no, küçükten büyüğe), sonra hedef yükleme tarihi */
     var dno=function(r){ var m=/^\s*(\d+(?:[.,]\d+)?)/.exec(String(r.durum_erp||"")); return m?parseFloat(m[1].replace(",",".")):999; };
     rows.sort(function(a,b){ return (dno(a)-dno(b))||String(a.durum_erp||"").localeCompare(String(b.durum_erp||""),"tr")||String(a.hedef||"9999").localeCompare(String(b.hedef||"9999"))||String(a.no).localeCompare(String(b.no)); });
-    var nor=(d.rows||[]).filter(function(r){ return r.durum!=="Acil"&&!(mod==="mk"&&r.blok==="sevk"); }); /* MY-DURUM-MK-OE: Normal takiptekiler acilden ayri bantta */ /* MK-TEKIL (19.11.2026, Melih): MK Faaliyet'te Sevke Hazır Projeler kendi tablosunda — Normal bantta tekrar yok */
+    var nor=(mod==="ctp"?[]:(d.rows||[])).filter(function(r){ return r.durum!=="Acil"&&!(mod==="mk"&&r.blok==="sevk"); }); /* EU-CTP-KOPYA (25.11.2026, Melih): CTP'de Normal takiptekiler bandı yok — aynı satırlar EU içeriğinin tablolarında */ /* MY-DURUM-MK-OE: Normal takiptekiler acilden ayri bantta */ /* MK-TEKIL (19.11.2026, Melih): MK Faaliyet'te Sevke Hazır Projeler kendi tablosunda — Normal bantta tekrar yok */
     var sh=(mod==="giris"&&Array.isArray(o.sahsi))?o.sahsi:[]; /* GIRIS-ACIL-SAHSI */
     if(!rows.length&&!nor.length&&!sh.length){ el.innerHTML=""; if(o.sonra) try{ o.sonra(el); }catch(e){} return; }
     var mk=mod==="mk", gr=mod==="giris";

@@ -491,7 +491,7 @@ async function loadAup(){
   const isG=(a,b)=>{ if(!a||!b) return null; let x=new Date(String(a).slice(0,10)+"T00:00:00"), y=new Date(String(b).slice(0,10)+"T00:00:00"); if(isNaN(x)||isNaN(y)) return null;
     if(x>y){ const t=x; x=y; y=t; } let n=0; const d=new Date(x); while(d<y){ d.setDate(d.getDate()+1); const g=d.getDay(); if(g!==0&&g!==6) n++; } return n; };
   const pstK=r=>{ const f=isG(r.gyt,hdHedef(r.proje_no)); return f!=null&&f>5?' pstk':''; };
-  const aupP=r=>{ const f=isG(r.aup,hdHedef(r.proje_no)); return f!=null&&f>3?' class="aupp"':''; };
+  const aupP=r=>{ if(/^8(\.1)?(\s|$)/.test(String(r.proje_durumu||"").trim())) return ''; const f=isG(r.aup,hdHedef(r.proje_no)); return f!=null&&f>3?' class="aupp"':''; };  /* EU-AUP-PEMBE-SHZ-YOK (25.11.2026, Melih): sevke hazır (8 / 8.1) satırlar pembe olmaz */
   const rowH=r=>{
     const ga=r.gyt_aup, ky=r.kayma, ack=hdAck(r.proje_no);
     const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
@@ -527,7 +527,7 @@ async function loadAup(){
   const rowS=r=>{
     const pad=String(r.proje_adi||""), dur=String(r.proje_durumu||"");
     const sn=String(r.satis_santiye_notlari||""), un=String(r.uretim_notlari||""), yn=YPM[r.proje_no]||"";
-    return `<tr${aupP(r)}>
+    return `<tr>
       <td class="c kod a6"><span title="${esc(r.proje_no)}">${esc(String(r.proje_no||"").slice(-6))}</span></td>
       <td class="c a30"><span title="${esc(pad)}">${esc(pad)}</span></td>
       <td class="c a10"><span title="${esc(dur)}">${esc(dk(r.proje_durumu))}</span></td>
@@ -616,7 +616,7 @@ const AUP_COLW=[51,183,61,34,64,64,64,64,84,200,32,44,57,240,396];  /* PRJ-HEDEF
 const AUP_COLW_SEVK=[51,183,61,34,64,64,64,64,84,168,168,168];  /* PRJ-HEDEF-ACIL: Aciliyet 84 */  /* SANTIYE-PST-SUTUN */
 /* AUP-FIT: tablo kutusu pencerenin altına kadar uzar — sabit 82vh sınırı altta boş bant bırakıyordu. */
 function aupFit(){
-  const w=document.querySelector("#view .aupwrap"); if(!w) return;
+  const w=document.querySelector("#view .aupwrap"); if(!w) return; if(window.EU_GOMULU){ w.style.maxHeight="none"; return; }  /* EU-CTP-KOPYA */
   w.style.maxHeight=Math.max(240,Math.round(window.innerHeight-w.getBoundingClientRect().top-10))+"px";
 }
 window.addEventListener("resize",()=>{ if(document.querySelector("#view .aupwrap")) aupFit(); });
@@ -626,7 +626,17 @@ window.addEventListener("resize",()=>{ if(document.querySelector("#view .aupwrap
   const v=document.getElementById("view"); v.innerHTML='<div class="load">Yükleniyor…</div>';
   const r=await REAL.rpc("eu_faaliyet_veri");
   if(r.error){ v.innerHTML='<div class="load">Hata: '+esc(r.error.message)+'</div>'; return; }
-  EUV=r.data||{}; await loadAup();
+  EUV=r.data||{};
+  if(window.EU_GOMULU){ /* EU-CTP-KOPYA (25.11.2026, Melih): CTP Faaliyet bu kodu çalıştırır; Acil Yüklemeler bloğunda olan acil satırlar tekrar gösterilmez */
+    const ML=EUV.my_faaliyet_liste||{}, R=ML.rows||[], AC={};
+    R.forEach(x=>{ if(x.durum==="Acil") AC[String(x.tur).toUpperCase()+"|"+x.no]=1; });
+    const yok=(t,n)=>!AC[t+"|"+n];
+    EUV.my_faaliyet_liste=Object.assign({},ML,{rows:R.filter(x=>x.durum!=="Acil")});
+    EUV.aup_panosu=(EUV.aup_panosu||[]).filter(x=>yok("PRJ",x.proje_no));
+    EUV.aup_sevk_panosu=(EUV.aup_sevk_panosu||[]).filter(x=>yok("PRJ",x.proje_no));
+    EUV.hazir_pem_prj=(EUV.hazir_pem_prj||[]).filter(x=>yok(String(x.tur||"").toUpperCase(),x.no));
+  }
+  await loadAup();
 })();
 </script>
 <!-- FORM-LINKLER --><script src="../form_linkler.js?v=261123g"></script><!-- FORM-MENU -->

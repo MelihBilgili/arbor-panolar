@@ -72,10 +72,11 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <div class="wrap">
   <div id="my-acil" data-mod="ctp"></div><!-- CTP-ACIL-GRAFIK (14.11.2026, Melih): Giriş'teki Acil Yüklemeler bloğu, salt-okur (app/my_acil.js) -->
   <div id="gr-ust"></div>
+  <div id="euv"><div id="view"></div></div><!-- EU-CTP-KOPYA (25.11.2026, Melih): EU Faaliyet formunun tüm içeriği (tek kaynak app/eu-faaliyet, çalışma anında okunur); acil satırlar yukarıdaki Acil Yüklemeler'de olduğu için tekrar gösterilmez -->
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../giris_ust.js?v=261123a"></script><!-- GIRIS-UST-ORTAK -->
-<script src="../my_acil.js?v=261120d"></script><!-- CTP-ACIL-GRAFIK -->
+<script src="../my_acil.js?v=261125c"></script><!-- CTP-ACIL-GRAFIK -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
    kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
@@ -212,6 +213,23 @@ const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_pu
 /* CTP-FAALIYET: not ekleyen = giriş kodunun kişisi, yoksa CTP (MB oturumunda MB) */
 if(window.GRUST) GRUST.render(document.getElementById("gr-ust"),{sb:sb,bolum:"ctp",ekleyen:()=>((window.ARB_KISI_AL&&(ARB_KISI_AL(ARB_ROLE_EMAIL)||{}).kod)||(ARB_ACTIVE===ARB_MB_SB?"MB":"CTP"))});
 else document.getElementById("gr-ust").textContent="İçerik yüklenemedi.";
+/* EU-CTP-KOPYA (25.11.2026, Melih): EU Faaliyet sayfasının stil ve ana kodu çalışma anında okunur, #euv içinde (kapsamlı CSS) çalıştırılır — kod kopyası yok */
+(async function(){
+  const v=document.getElementById("view"); if(!v) return;
+  v.innerHTML='<div style="padding:20px;color:#8a97a4">EU içeriği yükleniyor…</div>';
+  try{
+    const t=await (await fetch("../eu-faaliyet/index.html",{cache:"no-store"})).text();
+    const d=new DOMParser().parseFromString(t,"text/html");
+    const css=(d.querySelector("head style")||{}).textContent||"";
+    const st=document.createElement("style"); st.id="euv-css";
+    st.textContent="#euv{font-size:13px;margin-top:8px}#euv{"+css+"}#euv table{min-width:0;display:table}#euv #view{padding:0}";
+    document.head.appendChild(st);
+    const kod=(d.getElementById("arbmain")||{}).textContent||"";
+    if(!kod) throw new Error("EU kodu bulunamadı");
+    window.EU_GOMULU=true;
+    (0,eval)("(function(){"+kod+"\n})()");
+  }catch(e){ v.innerHTML='<div style="padding:20px;color:#b40000">EU içeriği yüklenemedi: '+String(e&&e.message||e).replace(/</g,"&lt;")+'</div>'; }
+})();
 </script>
 <!-- FORM-LINKLER --><script src="../form_linkler.js?v=261123g"></script><!-- FORM-MENU -->
 </body>
