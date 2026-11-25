@@ -588,6 +588,10 @@ function ykForm(f,d){
    +'<div><label class="zor" for="y_gec">Geçerlilik tarihi</label><input type="date" id="y_gec" value="'+esc(o.gecerlilik||"")+'">'
    +'<label style="display:flex;gap:6px;align-items:center;margin-top:4px;white-space:normal"><input type="checkbox" id="y_sur" style="width:auto"'+(o.gecerlilik?'':' checked')+'> Süresiz</label></div>'
    +'<div><label class="zor" for="y_web">Web</label><select id="y_web"><option'+(o.web?' selected':'')+'>Seçili</option><option'+(o.web?'':' selected')+'>Seçili değil</option></select></div>'
+   +'<div class="tam" id="y_skDiv"><label class="zor" for="y_skar">Sürüm durumu</label><select id="y_skar"><option value="">— seçin —</option>'
+   +'<option value="yeni_belge">a. Yeni belge (önceki sürümü yok)</option><option value="yeni_surum">b. Var olan bir dokümanın yeni sürümü (eskisi arşive alınır)</option></select>'
+   +'<div id="y_onkDiv" style="display:none;margin-top:4px"><label class="zor" for="y_onk">Yerine geçtiği doküman (aynı dil)</label><select id="y_onk"></select></div>'
+   +'<div id="y_skNot" style="font-size:12px;color:#9a3a00;margin-top:3px;white-space:normal"></div></div>'
    +'</div><div class="hata" id="y_hata"></div>'
    +'<div class="alt"><button class="btn2" id="y_vaz">Vazgeç</button><button class="btn" id="y_onay">Onayla ve OneDrive\'a kaydet</button></div>');
   const dl=()=>{ const a=$("y_ana").value, al=$("y_aile").value.trim();
@@ -606,6 +610,16 @@ function ykForm(f,d){
   $("y_vaz").onclick=async()=>{ if(!confirm("Yükleme iptal edilsin mi? Dosya kaydedilmeyecek.")) return;
     const yol=YK.yol; kapat(); try{ await fn({islem:"iptal",yol}); }catch(_){} };
   $("y_onay").onclick=()=>ykKaydet();
+  /* DOK-SURUM-ZORUNLU (25.11.2026, Melih): her yeni dokümanda sürüm ilişkisi açıkça seçilir; net değilse kaydedilmez (edge + DB tetikleyicisi dok_surum_kapi_trg) */
+  const skGuncelle=()=>{ const dl=$("y_dil").value, ad=$("y_ad").value.trim().toLowerCase(), k=$("y_skar").value, cur=$("y_onk").value;
+    const kel=s=>new Set(String(s||"").toLowerCase().split(/[^0-9a-zà-ÿçğıöşü]+/i).filter(w=>w.length>2));
+    const ka=kel(ad), puan=r=>{ if(String(r.ad||"").trim().toLowerCase()===ad) return 1e6; let n=0; kel(r.ad).forEach(w=>{ if(ka.has(w)) n++; }); return n; };
+    const ayni=ROWS.filter(r=>r.dil===dl&&String(r.ad||"").trim().toLowerCase()===ad);
+    const liste=ROWS.filter(r=>r.dil===dl).map(r=>[puan(r),r]).sort((a,b)=>b[0]-a[0]||b[1].nr-a[1].nr).map(x=>x[1]);
+    $("y_onk").innerHTML='<option value="">— seçin —</option>'+liste.map(r=>'<option value="'+r.nr+'"'+(String(r.nr)===cur?' selected':'')+'>Nr '+r.nr+' · '+esc(r.ad)+(r.rev?' · '+esc(r.rev):'')+'</option>').join("");
+    $("y_onkDiv").style.display=k==="yeni_surum"?"":"none";
+    $("y_skNot").textContent=!dl?"Önce dili seçin.":ayni.length?("Aynı ad ve dilde "+ayni.map(r=>"Nr "+r.nr).join(", ")+" var. Yeni sürümse b'yi seçip onu işaretleyin; farklı bir belgeyse ayırt edici bir ad verin."):""; };
+  $("y_skar").onchange=skGuncelle; $("y_dil").addEventListener("change",skGuncelle); $("y_ad").addEventListener("input",skGuncelle); skGuncelle();
 }
 async function ykKaydet(){
   const v=id=>$(id).value.trim();
@@ -614,14 +628,18 @@ async function ykKaydet(){
   ["y_ad","y_ana","y_dil","y_tur","y_alt","y_web"].forEach(id=>{ if(!v(id)) eks.push(id); });
   if(v("y_ana")&&v("y_ana")!=="Genel"&&!v("y_aile")) eks.push("y_aile");
   if(!v("y_gec")&&!$("y_sur").checked) eks.push("y_gec");
-  if(eks.length){ eks.forEach(id=>$(id).classList.add("eksik")); $("y_hata").textContent="Kırmızı alanları doldurun (geçerlilik için tarih girin ya da Süresiz işaretleyin)."; return; }
+  if(!v("y_skar")) eks.push("y_skar"); else if(v("y_skar")==="yeni_surum"&&!v("y_onk")) eks.push("y_onk");
+  if(!eks.length&&v("y_skar")==="yeni_belge"){ const ay=ROWS.filter(r=>r.dil===v("y_dil")&&String(r.ad||"").trim().toLowerCase()===v("y_ad").toLowerCase());
+    if(ay.length){ $("y_ad").classList.add("eksik"); $("y_skar").classList.add("eksik"); $("y_hata").textContent="Aynı ad ve dilde "+ay.map(r=>"Nr "+r.nr).join(", ")+" var: yeni sürümse b'yi seçin, değilse ayırt edici bir ad verin."; return; } }
+  if(eks.length){ eks.forEach(id=>$(id).classList.add("eksik")); $("y_hata").textContent="Kırmızı alanları doldurun (geçerlilik için tarih girin ya da Süresiz işaretleyin; sürüm durumunu seçin)."; return; }
   const alanlar={ad:v("y_ad"),ana:v("y_ana"),aile:v("y_aile"),seri:v("y_seri"),rev:v("y_rev"),dil:v("y_dil"),tur:v("y_tur"),alt_kategori:v("y_alt"),
-    gecerlilik:$("y_sur").checked?"":v("y_gec"),web:v("y_web")==="Seçili"};
+    gecerlilik:$("y_sur").checked?"":v("y_gec"),web:v("y_web")==="Seçili",
+    surum_karar:v("y_skar"),onceki_nr:v("y_skar")==="yeni_surum"?+v("y_onk"):null};
   const b=$("y_onay"); b.disabled=true; b.textContent="Kaydediliyor…"; $("y_hata").textContent="";
   try{
     const r=await fn({islem:"kaydet",yol:YK.yol,orijinal:YK.ad,alanlar});
     kapat();
-    toast("Kaydedildi: Nr "+r.nr+" · "+r.dosya+(r.onedrive==="kuyrukta"?" — OneDrive'a ve döküm listesine birkaç dakika içinde eklenir.":" — OneDrive aktarımı başlatılamadı ("+r.onedrive+")."),10000);
+    toast("Kaydedildi: Nr "+r.nr+" · "+r.dosya+(r.onceki_nr?" (Nr "+r.onceki_nr+" arşive alındı)":"")+(r.onedrive==="kuyrukta"?" — OneDrive'a ve döküm listesine birkaç dakika içinde eklenir.":" — OneDrive aktarımı başlatılamadı ("+r.onedrive+")."),10000);
     await yukle();
   }catch(e){ b.disabled=false; b.textContent="Onayla ve OneDrive'a kaydet"; $("y_hata").textContent="Kaydedilemedi: "+e.message; }
 }
