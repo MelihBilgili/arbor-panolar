@@ -414,7 +414,7 @@ async function anketYukle(){
   el.innerHTML=h+'</details>';
   /* YI-ANKET-ILK-DAR (26.11.2026, Melih): Yurt İçi'nde memnuniyet tablolarının ilk sütunu (proje) %30 dar; taşan ad üç nokta, tamamı üzerine gelince */
   if(FORM_KODU==="yi"){ const dar=()=>el.querySelectorAll("details.sbant table").forEach(t=>{ if(t.dataset.dar) return; const th=t.querySelector("tr>th"); if(!th||!th.offsetWidth) return;
-      const w=Math.round(th.offsetWidth*0.686); /* YI-ANKET-ILK-GENIS (26.11.2026): %100 genişletme, 0,343×2 */ t.dataset.dar="1";
+      const w=Math.round(th.offsetWidth*0.823); /* YI-ANKET-ILK-GENIS2 (26.11.2026): %20 daha geniş, 0,686×1,2 */ t.dataset.dar="1";
       t.style.width="auto"; t.querySelectorAll("th.c,td.c").forEach(x=>x.style.width="auto"); /* YI-ANKET-ILK-DAR-FIX: .sevk table width:100% ve %1 sütunlar ilk sütunu boşlukla şişiriyordu */
       t.querySelectorAll("tr").forEach(tr=>{ const c=tr.cells[0]; if(!c) return; c.style.minWidth="0"; if(!c.title) c.title=c.textContent; c.innerHTML='<div style="width:'+w+'px;max-width:'+w+'px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c.innerHTML+'</div>'; }); });
     dar(); setTimeout(dar,600); setTimeout(dar,2000); const d=el.querySelector("details.sbant"); if(d) d.addEventListener("toggle",dar); }
