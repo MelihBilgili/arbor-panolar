@@ -54,7 +54,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <body>
 <header>
   <h1>ÖB — Faaliyet Formu</h1>
-  <div class="sub">Haftalık faaliyetler kaydedilir. Buraya takipteki işler, tedarikçi giderleri ve tıkanmış şantiyeler işlenir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak Güncelle düğmesine basılmadıkça aktarılmaz.</div>
+  <div class="sub">Haftalık faaliyetler kaydedilir. Buraya tedarikçi giderleri, tıkanmış şantiyeler ve yurt dışı alacak bilgileri işlenir.<br>Girilen bilgiler anında kaydedilir, formda kalıcılığı sağlanır ancak Güncelle düğmesine basılmadıkça aktarılmaz.</div>
 </header>
 <div class="wrap">
   <div id="msg" class="msg"></div>
@@ -68,20 +68,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <span class="hint" style="margin:0;align-self:center">ÖB Faaliyet ve Sel-Arb formlarının ortalaması alınır</span>
   </div>
 
-  <div class="grp">
-    <div class="ghd"><h2>Takipteki İşler</h2>
-      <button class="iadd" id="iAdd">+ Yeni İş Ekle</button>
-    </div>
-    <div class="hint" style="margin:0 2px 6px">Tasarım işleri için öncelik derecesi seçilmelidir. Birden çok iş için aynı öncelik derecesi seçilebilir.</div>
-    <div id="iList"><div class="load">Yükleniyor…</div></div>
-  </div>
-
-  <div class="grp" id="afWrap">
-    <div class="ghd"><h2>Aylık Faaliyet</h2>
-      <span class="hint" style="margin:0">Kapanan aya ilişkin tespitler haftalık form kayıtlarından üretilir; son bölümü siz doldurursunuz.</span>
-    </div>
-    <div id="afBox" class="afbox"><div class="load">Yükleniyor…</div></div>
-  </div>
+  <!-- OB-TAKIP-AF-CIKAR (26.11.2026, Melih): Takipteki İşler ve Aylık Faaliyet blokları formdan çıkarıldı; kod ölü olarak duruyor, veriler (ob_isler, ob_aylik_faaliyet) silinmedi. -->
 
   <div class="grp"><h2>Dépenses — Tedarikçi Giderleri</h2>
     <div class="ibtns">
@@ -445,19 +432,17 @@ async function haftalikGuncelle(){
 /* GÜNCELLEME — formdaki bütün bloklar: blok onayları + ÖB'nin aylık yorumu şart. */
 async function aylikGuncelle(){
   if(!onayKapi()) return;
-  if(!afYorumKapi()) return;
+  /* OB-TAKIP-AF-CIKAR: aylık yorum kapısı kaldırıldı */
   if(!(await ddKapi())) return; /* DEVLET-DESTEK */
   const eksik=await selArbBosVar();
   const selArbOk=eksik.length===0;
   const selLine = selArbOk
     ? "\n• SEL-ARB aylık kapatma: bu dönem ödemeler + kesilen faturalar toplama eklenecek (güncel alacaklar Sel-Arb formundan gelir)."
     : "\n• SEL-ARB kapatma ATLANACAK — eksik alan var: "+eksik.join(", ")+" (ilgili blokları tamamlayın).";
-  if(!confirm("Güncelleme ("+afDonemAd()+"):\n\n• Kapanan ayın faaliyet tespitleri yeniden üretilecek (yorumunuz korunur).\n• Dépenses giderleri panoya aktarılacak."+selLine+"\n\nDevam?")) return;
+  if(!confirm("Güncelleme ("+afDonemAd()+"):\n\n• Dépenses giderleri panoya aktarılacak."+selLine+"\n\nDevam?")) return;
   const btn=document.getElementById("iMonth"); btn.disabled=true; msg("Aylık aktarım yapılıyor…",true);
   let notlar=[];
-  try{ const {data:ad,error:ae}=await sb.functions.invoke("ob-degisim-ozet",{body:{mod:"aylik"}});
-    notlar.push((ae||!(ad&&ad.ok))?("Aylık tespit hatası: "+((ae&&ae.message)||(ad&&ad.error)||"bilinmiyor")):(ad.note||"aylık tespitler üretildi"));
-  }catch(e){ notlar.push("Aylık tespit hatası: "+e); }
+  /* OB-TAKIP-AF-CIKAR: ob-degisim-ozet (aylık tespit) çağrısı kaldırıldı */
   const _now=new Date().toISOString();
   try{ const _dr=await sb.from("depenses_yayin").update({yayin_at:_now,updated_at:_now}).eq("id",1); notlar.push(_dr.error?("Dépenses aktarım hatası: "+_dr.error.message):"Dépenses panoya aktarıldı"); }catch(e){ notlar.push("Dépenses aktarım hatası: "+e); } /* GUNC-HATA-UYARI */
   try{ const _pr=await sb.from("pano_yayin").upsert({anahtar:"ob_rapor",yayin_at:_now,updated_at:_now},{onConflict:"anahtar"}); if(_pr.error) notlar.push("Son güncelleme tarihi yazılamadı (hata): "+_pr.error.message); }catch(e){ notlar.push("Son güncelleme tarihi yazılamadı (hata): "+e); }
@@ -472,9 +457,9 @@ async function aylikGuncelle(){
   if(!hata) onaySifirla();
   btn.disabled=false; msg(notlar.join(" · "),!hata);
   if(!hata) alert("Güncelleme başarıyla tamamlandı.\n\n• "+notlar.join("\n• ")); /* GUNC-BASARI-UYARI */
-  if(hata) alert("Güncelleme tamamlanamadı.\n\nSebep:\n• "+notlar.filter(n=>n.toLowerCase().indexOf("hata")>-1).join("\n• ")+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); /* GUNC-HATA-UYARI */ loadDep(); loadAF(false);
+  if(hata) alert("Güncelleme tamamlanamadı.\n\nSebep:\n• "+notlar.filter(n=>n.toLowerCase().indexOf("hata")>-1).join("\n• ")+"\n\nTekrar deneyin; sorun sürerse Melih'e bildirin."); /* GUNC-HATA-UYARI */ loadDep();
 }
-document.getElementById("iAdd").onclick=addIsler;
+/* OB-TAKIP-AF-CIKAR: iAdd düğmesi yok */
 /* HAFTALIK-DUGME-KALDIRILDI: "iWeek" artık DOM'da yok; bağlama koruma altında (hatasız no-op). */
 (function(){ const w=document.getElementById("iWeek"); if(w) w.onclick=haftalikGuncelle; })();
 document.getElementById("iMonth").onclick=aylikGuncelle;
@@ -540,7 +525,7 @@ function afYorumKapi(){
   if(ta){ ta.style.borderColor="#c62828"; ta.scrollIntoView({block:"center"}); ta.focus(); }
   return false;
 }
-loadAF();
+/* OB-TAKIP-AF-CIKAR: loadAF() çağrısı kaldırıldı */
 
 /* ===== Dépenses (depenses_kalem) — Melih'in Dépenses panosunun tek kaynağı ===== */
 const DAY=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
@@ -756,7 +741,7 @@ $$("s_btn").onclick=async()=>{
   sLoadAkis();
 };
 
-loadIsler();
+/* OB-TAKIP-AF-CIKAR: loadIsler() çağrısı kaldırıldı */
 loadDep();
 sLoadListe(); loadSelArbListe(); sLoadAkis();
 
