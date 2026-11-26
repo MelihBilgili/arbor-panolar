@@ -2362,7 +2362,7 @@ function loadProsedur(){
     const items=PROS.filter(d=>d.sec===s && !hidden.includes(d.no)).sort((a,b)=>dnum(b.tarih)-dnum(a.tarih));
     if(!items.length) return;
     sec+=`<div class="secH">${esc(SECS[s])}</div>`;
-    items.forEach(d=>{ sec+=`<div class="law" data-no="${esc(d.no)}"><div class="lno${d.ek?' ek':''}">${esc(d.no)}</div><div class="lbody"><div class="lhead"><span class="lcaret">▶</span><span class="ltitle">${esc(String(d.ad||"").replace(/\b(\d{1,2})\.(\d{1,2})\.\d{2}(\d{2})\b/g,"$1.$2.$3"))}</span><span class="ldate">(${esc(String(d.tarih||"").replace(/\b(\d{1,2})\.(\d{1,2})\.\d{2}(\d{2})\b/g,"$1.$2.$3"))})</span></div><div class="ltext">${d.metin}</div></div><div class="lx" title="İptal (gizle)">✕</div></div>`; });
+    items.forEach(d=>{ sec+=`<div class="law" data-no="${esc(d.no)}"><div class="lno${d.ek?' ek':''}">${esc(d.no)}</div><div class="lbody"><div class="lhead"><span class="lcaret">▶</span><span class="ltitle">${esc(String(d.ad||"").replace(/\b(\d{1,2})\.(\d{1,2})\.\d{2}(\d{2})\b/g,"$1.$2.$3"))}</span><span class="ldate">(${esc(String(d.tarih||"").replace(/\b(\d{1,2})\.(\d{1,2})\.\d{2}(\d{2})\b/g,"$1.$2.$3"))})</span></div><div class="ltext lerp"></div></div><div class="lx" title="İptal (gizle)">✕</div></div>`; });
   });
   view.innerHTML=`<style>
     #view .secH{margin:9px 0 3px;font-size:12px}
@@ -2373,7 +2373,39 @@ function loadProsedur(){
     #view .law .lno{font-size:11px;padding:0 5px;line-height:16px}
     #view .law .lcaret{font-size:9px}
     #view .law .ltext{font-size:12px;line-height:1.35;padding:2px 0 4px}
+    #view .law .erpd{margin:2px 0 6px}
+    #view .law .erph{font-size:11px;color:#6b7785;margin-bottom:1px}
   </style><div class="stamp">Son Güncelleme: 16.11.26</div><!-- PROS-261116 -->${sec}`;
+  /* PROS-ERP-ORIJINAL (26.11.2026, Melih): hover = işlenmiş kural metni (d.metin); tıklayınca açılan = ERP duyurusunun orijinali
+     (app/prosedur-duyuru.json ← kod\_duyuru_erp_json.py; eşleşme: tarih alanındaki GG.AA.YYYY damgaları ±1 gün + ekleyen adı/baş harfleri; çok aday varsa metne en çok benzeyen) */
+  const PMAP={}; PROS.forEach(d=>PMAP[d.no]=d);
+  let tip=document.getElementById("pros-tip"); if(!tip){ tip=document.createElement("div"); tip.id="pros-tip"; document.body.appendChild(tip); }
+  tip.style.cssText="position:fixed;display:none;z-index:9999;max-width:560px;background:#fff;border:1px solid #c9d2de;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.15);padding:7px 9px;font-size:12px;line-height:1.4;color:#1d2733;pointer-events:none";
+  const tipYer=e=>{ const w=tip.offsetWidth,h=tip.offsetHeight; let x=e.clientX+14,y=e.clientY+14; if(x+w>innerWidth-6) x=Math.max(6,innerWidth-w-6); if(y+h>innerHeight-6) y=Math.max(6,e.clientY-h-10); tip.style.left=x+"px"; tip.style.top=y+"px"; };
+  const fold=x=>String(x||"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+  const ini=x=>fold(x).split(" ").filter(Boolean).map(w=>w[0]).join("");
+  const kel=x=>new Set(fold(String(x||"").replace(/<[^>]*>/g," ")).split(" ").filter(w=>w.length>3));
+  const erpBul=(d,D)=>{ const t=String(d.tarih||"");
+    const ds=[...t.matchAll(/(\d{1,2})\.(\d{1,2})\.(\d{4})/g)].map(m=>Date.UTC(+m[3],+m[2]-1,+m[1]));
+    const ad=t.split("·").map(x=>x.trim()).filter(x=>x&&!/\d/.test(x)&&!/^rev/i.test(x)).map(x=>{ const p=x.match(/\(([^)]*)\)/); return (p?p[1]:x).replace(/duyurusu|talimat[ıi]/gi,"").trim(); }).filter(Boolean);
+    const adOk=r=>!ad.length||ad.some(n=>{ const f=fold(n); return f===fold(r.ekleyen)||(f.length<=3&&f.replace(/ /g,"")===ini(r.ekleyen)); });
+    const gun=r=>{ const q=String(r.tarih).split("-"); return Date.UTC(+q[0],+q[1]-1,+q[2]); };
+    let c=D.filter(r=>adOk(r)&&ds.includes(gun(r)));
+    if(!c.length) c=D.filter(r=>adOk(r)&&ds.some(x=>Math.abs(x-gun(r))<=864e5));
+    if(c.length>1){ const k=kel(d.ad+" "+d.metin); const sk=r=>{ let n=0; kel(r.duyuru).forEach(w=>{ if(k.has(w)) n++; }); return n; };
+      const ds2=ds.slice().sort((a,b)=>b-a); const ayni=new Set(); /* revizyonlu: her tarih için en iyisi */
+      c=ds2.map(x=>c.filter(r=>Math.abs(gun(r)-x)<=864e5).sort((a,b)=>sk(b)-sk(a))[0]).filter(r=>r&&!ayni.has(r)&&ayni.add(r)); }
+    return c; };
+  const erpHtml=c=>c.length?c.map(r=>`<div class="erpd"><div class="erph">ERP duyurusu · ${esc(String(r.tarih).split("-").reverse().join("."))} · ${esc(r.ekleyen)}</div><div style="white-space:pre-wrap">${esc(String(r.duyuru).replace(/_x000d_/gi,"").replace(/\r/g,""))}</div></div>`).join(""):`<div class="muted">ERP'de bu maddenin duyurusu yok (talimat ya da elle eklenmiş kural).</div>`;
+  let ERPD=null; const erpYukle=()=>ERPD||(ERPD=fetch("prosedur-duyuru.json?v="+Date.now()).then(r=>r.ok?r.json():{satirlar:[]}).then(j=>j.satirlar||[]).catch(()=>[]));
+  view.querySelectorAll(".law").forEach(law=>{
+    const d=PMAP[law.dataset.no], hd=law.querySelector(".lhead"), lt=law.querySelector(".lerp");
+    hd.addEventListener("mouseenter",e=>{ if(!d) return; tip.innerHTML=d.metin; tip.style.display="block"; tipYer(e); });
+    hd.addEventListener("mousemove",tipYer);
+    hd.addEventListener("mouseleave",()=>{ tip.style.display="none"; });
+    law.addEventListener("click",()=>{ if(!law.classList.contains("open")||lt.dataset.ok) return; lt.innerHTML='<span class="muted">Yükleniyor…</span>';
+      erpYukle().then(D=>{ lt.innerHTML=erpHtml(erpBul(d,D)); lt.dataset.ok=1; }); });
+  });
   view.querySelectorAll(".law").forEach(law=>{
     const tog=()=>law.classList.toggle("open");
     const head=law.querySelector(".lhead"), no=law.querySelector(".lno");
