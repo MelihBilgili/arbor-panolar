@@ -440,6 +440,7 @@ const DISPLAY_SIRA={}; DISPLAY_ORDER.forEach((d,i)=>DISPLAY_SIRA[d]=i+1);
 const COLS=[
  {f:'proje',h:'Proje',w:112,t:'text',req:1},
  {f:'musteri',h:'Müşteri',w:80,t:'text',req:1},
+ ...(BLOK==="YD2"?[{f:'ulke',h:'Ülke',w:50,t:'text'}]:[]), /* SOUM-PARA-ULKE (26.11.2026, Melih): YD2 projesinin ülkesi — Teklif Hazırlama para birimi (İngiltere GBP, diğer EUR) */
  {f:'musteri_onem_sinifi',h:'Müşteri Önem Sınıfı',w:35,t:'sel',opts:['1. Sınıf ya da Ciro: >500 m€','2. Sınıf ya da Ciro: 101-500 m€','Ciro: 11-100 m€','Ciro: <10 m€']},
  {f:'gelen_tarih',h:'Gelen Tarih',w:53,t:'date'},
  {f:'istenen_tarih',h:'İstenen Tarih',w:53,t:'date'},

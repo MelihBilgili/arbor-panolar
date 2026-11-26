@@ -259,7 +259,7 @@ const dN=(v,d)=>v==null||isNaN(v)?"":(+v).toLocaleString(DIL()==="en"?"en-GB":"t
 const dE=v=>v==null||isNaN(v)?"–":dN(v,2)+" €";
 /* SOUM-UK (27.10.2026, Melih): İngilizce teklif £ (brüt € × kur, varsayılan 0,87), sütunlar Building/Ref./Resistance class/glazing birleşik, Rw başlığı,
    kapsam kalemleri (denizlik, menfez yuvası, menfez, iç denizlik tahtası, pervaz) formdan dahil/hariç; çizim "Outside View" (Pencad çizimi aynen: UK'de menteşe/kol ve iç/dış gösterimi birlikte ters, birbirini nötrler). */
-const EN=()=>DIL()==="en";
+const EN=()=>DIL()==="en"; /* SOUM-PARA-ULKE (26.11.2026, Melih): para birimi dilden ayrı — İngilizce teklifte GBP yalnız ülke İngiltere ise (YD2 satırı ulke); ülke başka ise EUR; ülke boşsa GBP, ancak müşteri sınıfı 5-6 (Almanya) ise EUR. Fransızca teklif her zaman EUR. */ const ULKE_UK=/\b(ingiltere|birlesik krallik|united kingdom|uk|gb|great britain|england|scotland|wales|iskocya|galler|kuzey irlanda|northern ireland|london|londra)\b/; const GBP=()=>{ if(!EN()) return false; const y=S.ydSec||S.yd, u=nrmTxt(y&&y.ulke); if(u) return ULKE_UK.test(u); const fn=nrmTxt(($("f_firma")||{}).value), L=S.sinifL||[]; const sn=L.find(x=>nrmTxt(x.ad)===fn)||L.find(x=>fn&&nrmTxt(x.ad).startsWith(fn.split(" ")[0])&&fn.includes(nrmTxt(x.ad).split(" ")[0])); return !(sn&&(+sn.sinif===5||+sn.sinif===6)); }; 
 const kur=()=>(S.kur&&S.kur.v)||0.87; /* SOUM-KUR-SABIT (24.11.2026, Melih): € → £ kuru yalnız ECB / kur önbelleğinden, elle değiştirilemez (kayıtlı formdaki elle kur da yok sayılır) */
 /* SOUM-UK-KUR (27.10.2026, Melih): € → £ paritesi internetten güncel — edge arb-kur (ECB / frankfurter.app); olmazsa kur_son önbelleği (günlük), o da yoksa 0,87. Elle değiştirilebilir. */
 async function kurAl(){ let o=null;
@@ -277,8 +277,8 @@ function uretimHafta(){ const T=(S.termin||[]).filter(r=>(r.bolge||"yd1")===($("
   const v=+String(k68?sat.ic_68:(sat.std_disi||sat.ic_68)).replace(",","."); return v>0?{v,sat,k68,adet}:null; }
 function uretimYaz(){ const e=$("f_uretim"); if(!e||e.dataset.elle) return; const u=uretimHafta(); e.value=u?String(u.v):"10";
   e.title=u?"Termin tablosu: "+u.sat.aralik+" · "+(u.k68?"68p/78t/78a içeren":"Std. dışı cam")+" · toplam "+u.adet+" adet":"Termin tablosu okunamadı; varsayılan 10"; }
-const fP=v=>v==null||isNaN(v)?"–":(+v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+(EN()?" £":" €");
-const dP=v=>v==null||isNaN(v)?"–":EN()?"£"+dN(v,2):dN(v,2)+" €";
+const fP=v=>v==null||isNaN(v)?"–":(+v).toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})+(GBP()?" £":" €"); /* SOUM-PARA-ULKE */
+const dP=v=>v==null||isNaN(v)?"–":GBP()?"£"+dN(v,2):dN(v,2)+" €"; const pE=(v,d)=>GBP()?"£"+dN(v,d):dN(v,d)+" €";
 const fN=(v,d)=>v==null||isNaN(v)?"–":(+v).toLocaleString("tr-TR",{minimumFractionDigits:d,maximumFractionDigits:d});
 const frN=(v,d)=>v==null||isNaN(v)?"":(+v).toFixed(d).replace(".",",");
 const nrmTxt=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ı/g,"i").replace(/[^a-z0-9]+/g," ").trim();
@@ -1055,7 +1055,7 @@ function hesapla(){
   if(!$("f_kat").dataset.elle) $("f_kat").value=frN(katR,2);
   const X2=+String($("f_kat").value).replace(",",".")||katR; S.iskHes=katR; /* SOUM-ISK-ONAY */
   uretimYaz(); kurYaz();
-  const K=EN()?kur():1;
+  const K=GBP()?kur():1; /* SOUM-PARA-ULKE */
   let HT=0, m2=0, adet=0, vitMl=0;
   S.poz.forEach((p,i)=>{ p.ekB=0; p.ekFm=[]; }); (S.ekstra||[]).filter(e=>e.mod==="birim").forEach(e=>{ const n=ekAdet(e); if(n>0) (e.tik||[]).forEach(i=>{ const pp=S.poz[i]; if(!pp) return; const c=+e.carpan||1, cx=c!==1?" × "+frN(c,2):"", ad=String(e.ad||"").slice(0,28);
     if(ekerMi(e)||kapamaMi(e)){ const bf=e.fiyat!=null?e.fiyat:(e.miktar?(e.tutar||0)/e.miktar:0), lm=(ekTur(e)==="sove"&&e.soveMod==="wh"?pp.L+2*pp.H:pp.L)/1000*(ekerMi(e)?ekAg(e,i):1), v=lm*bf*c; pp.ekB+=v; pp.ekFm.push(ad+": "+frN(lm,2)+" m × "+frN(bf,2)+cx+" = "+frN(v,2)); }
@@ -1140,7 +1140,7 @@ function ekstraPozAdet(e,p){ const n=nrmTxt(e.ad);
   if(inoxPenMi(e)||vasMi(e)) return ekAgOzel(e,p); /* SOUM-261123-MKB3 */ if(/hoppe|kol/.test(n)) return 1; if(/kisitlayici|limitor/.test(n)) return p.of?(p.kanat>0?p.kanat:(p.iki?2:1)):0; if(/eker/.test(n)) return p.ozl.bAlu&&!p.pf?p.L/1000:0; return 0; }
 function ozetCiz(){
   const h=H, sat=[];
-  const kx=EN()?" × kur "+frN(h.K,2):"";
+  const kx=GBP()?" × kur "+frN(h.K,2):"";
   sat.push([tt("Fourniture / Bureau d'étude 12% / transport","Supply / design office 12% / transport"),h.HT,"Pozlar toplamı"]);
   if(h.montDahil) sat.push([tt("Pose","Installation"),h.pose,fN(h.m2,2)+" m² × "+h.birim+" €/m²"+kx+(h.mf.length?" · "+h.mf.join(" · "):"")+" (departman "+h.dep+")"]);
   if(h.petit) sat.push([tt("Livraison en petit porteur","Delivery by small truck"),h.transport,h.kamyon+" kamyon × 2 × 1.000 €"+kx]);
@@ -1153,8 +1153,8 @@ function ozetCiz(){
     op.push([tt("Option Remplacement vitrage cassé sur chantier ("+cn+" vitrages)","Option: replacement of broken glazing on site ("+cn+" units)"),ct,"HT × %2 · "+cn+" cam (≤5.000 € 10, ≤10.000 € 20, üstü 30)","cam"]); }
   (h.ekO||[]).forEach(x=>op.push([tt("Option "+x.ad,x.ad.replace(/^Extra:/,"Option:")),x.tutar,fE(x.e.tutar)+" × "+frN(h.X2,2)+(+x.e.carpan!==1?" × "+x.e.carpan:"")+kx+" (Pencad ekstra, Opsiyon)","ek"]));
   if(h.mv!=null) op.push([tt("Option MV Passage OB à OF ("+h.obAdet+"-u)","Option: deduction for inward opening instead of tilt & turn ("+h.obAdet+" u)"),h.mv,"(Pencad toplamı − ekstralar − OF'ye geçiş toplamı) × "+frN(h.X2,2)+" × 2"+kx,"mv"]);
-  op.push([tt("Option Poignée PMR","Option: accessible (PRM) handle"),tt(frN(210.12*h.X2,2).replace(/\B(?=(\d{3})+(?!\d))/g,".")+" € / unité","£"+dN(210.12*h.X2*h.K,2)+" / unit"),"210,12 € × "+frN(h.X2,2)+kx,"pmr"]);
-  op.push([tt("Option Cage Métallique","Option: metal crate"),tt("3250 € / unité","£"+dN(3250*h.K,2)+" / unit"),"3.250 €"+kx,"cage"]); op.push([tt("Option Manitou","Option: telehandler (Manitou)"),h.adet/50*3000*h.K,"adet / 50 × 3.000 €"+kx,"manitou"]); /* SOUM-ETUT */ op.push([tt("Option Grue et échafaudage","Option: crane and scaffolding"),tt("Non Compris","Not included"),"","grue"]);
+  op.push([tt("Option Poignée PMR","Option: accessible (PRM) handle"),tt(frN(210.12*h.X2,2).replace(/\B(?=(\d{3})+(?!\d))/g,".")+" € / unité",pE(210.12*h.X2*h.K,2)+" / unit"),"210,12 € × "+frN(h.X2,2)+kx,"pmr"]);
+  op.push([tt("Option Cage Métallique","Option: metal crate"),tt("3250 € / unité",pE(3250*h.K,2)+" / unit"),"3.250 €"+kx,"cage"]); op.push([tt("Option Manitou","Option: telehandler (Manitou)"),h.adet/50*3000*h.K,"adet / 50 × 3.000 €"+kx,"manitou"]); /* SOUM-ETUT */ op.push([tt("Option Grue et échafaudage","Option: crane and scaffolding"),tt("Non Compris","Not included"),"","grue"]);
   H.sat=sat; H.op=op.filter(o=>{ const e=document.getElementById("f_op_"+o[3]); return !e||e.value==="1"; }); const op0=op; /* SOUM-OPSIYON-SEC: Hayır seçilen opsiyon Excel/PDF/özette yok */ if(!EN()) H.op.forEach(o=>{ o[0]=String(o[0]).replace(/^Option (?!PV )/,"Option PV "); }); /* SOUM-ETUT: Fransızcada tüm opsiyonlar "Option PV …" */
   $("ozet").innerHTML='<table><tbody>'+sat.map(s=>'<tr><td class="l">'+esc(s[0])+'</td><td class="num b">'+fP(s[1])+'</td><td class="l mini">'+esc(s[2])+'</td></tr>').join("")
     +(function(){ const dS='<tr><td class="l" style="font-weight:800">Maktu indirim</td><td class="num" style="color:#c00;font-weight:800">− <input id="f_remise" class="n" value="'+esc(frN(h.ind,2))+'" style="width:10ch;color:#c00;font-weight:800'+(S.indElle!=null?';background:#fff3c4':'')+'" title="Tutar girilirse maktu indirim yapılmaz; aynı toplamı veren iskonto çarpanı hesaplanıp İskonto çarpanı kutusuna yazılır (yönetim onayı gerekir). Boş bırakılırsa kurala döner."></td><td class="l mini">'+(S.indElle!=null?'Maktu indirim iskontoya çevrildi (kural: '+fP(h.indOto)+') · <a href="#" id="f_remiseOto">kurala dön</a>':(h.tdYok?'Şantiyeye ulaşım':'Genel toplam')+' son '+(String(h.adm).length-1)+' hanesi sıfır olacak şekilde')+'</td></tr>'; /* SOUM-REMISE-ELLE: formda satır her zaman görünür */
@@ -1262,7 +1262,7 @@ async function excelYap(){ if(xlYasakMi()) return; /* SOUM-XL-YETKI */ if(revEks
   const visW=KO.filter(k=>!k[3]).reduce((a,k)=>a+k[2],0), oran=visW/234.7;
   const ince={style:"thin",color:{argb:"FF000000"}}, kenar={top:ince,left:ince,bottom:ince,right:ince};
   const st=(c,o)=>{ const x=ws.getCell(c); if(o.v!==undefined) x.value=o.v; x.font=Object.assign({name:"Arial",size:12},o.f||{}); x.alignment=Object.assign({vertical:"middle",horizontal:"center",wrapText:true},o.a||{}); if(o.fill) x.fill={type:"pattern",pattern:"solid",fgColor:{argb:o.fill}}; if(o.b!==false) x.border=kenar; if(o.nf) x.numFmt=o.nf; return x; };
-  const EUR='#,##0.00 "€"', PB=en?'"£"#,##0.00':EUR;
+  const EUR='#,##0.00 "€"', PB=GBP()?'"£"#,##0.00':EUR;
   /* başlık */
   /* SOUM-ANTET (20.10.2026): antet resim değil hücre — A1:G1 yeşil zemin + logo, H1:son sütun şirket bilgisi (beyaz, sağa yaslı), altta açık yeşil şerit */
   ws.getRow(1).height=78; ws.mergeCells("A1:G1"); ws.mergeCells("H1:"+LAST+"1");
@@ -1286,7 +1286,7 @@ async function excelYap(){ if(xlYasakMi()) return; /* SOUM-XL-YETKI */ if(revEks
   /* iskonto çarpanı (iç) + İngilizcede kur */
   ws.mergeCells(IC(3)+"2:"+IC(5)+"2"); st(IC(2)+"2",{v:"İskonto Çarpanı",f:{size:16,bold:true,color:{argb:"FFFF6600"}}}); st(IC(3)+"2",{v:H.X2,f:{size:22,bold:true,color:{argb:"FFFF6600"}},nf:"0.00"});
   const XK="$"+IC(3)+"$2", KK="$"+IC(3)+"$3";
-  if(en){ ws.mergeCells(IC(3)+"3:"+IC(5)+"3"); st(IC(2)+"3",{v:"Kur € → £",f:{size:16,bold:true,color:{argb:"FFFF6600"}}}); st(IC(3)+"3",{v:H.K,f:{size:22,bold:true,color:{argb:"FFFF6600"}},nf:"0.00"}); }
+  if(GBP()){ ws.mergeCells(IC(3)+"3:"+IC(5)+"3"); st(IC(2)+"3",{v:"Kur € → £",f:{size:16,bold:true,color:{argb:"FFFF6600"}}}); st(IC(3)+"3",{v:H.K,f:{size:22,bold:true,color:{argb:"FFFF6600"}},nf:"0.00"}); }
   /* sütun başlıkları */
   KO.forEach((k,i)=>{ const c=ws.getCell(5,i+1); c.value=k[1]; c.font={name:"Arial",size:12,color:{argb:YESIL}}; c.alignment={vertical:"middle",horizontal:"center",wrapText:true}; c.border=kenar; if(k[0]==="Q"||k[0]==="R") c.fill={type:"pattern",pattern:"solid",fgColor:{argb:ACIK}}; });
   ws.mergeCells(C("n1")+"5:"+C("n2")+"5"); ws.getRow(5).height=46.5;
@@ -1305,7 +1305,7 @@ async function excelYap(){ if(xlYasakMi()) return; /* SOUM-XL-YETKI */ if(revEks
     c("cam",camMetin(p),en?{alignment:{vertical:"middle",horizontal:"left",wrapText:true},font:{name:"Arial",size:12}}:undefined); c("camU",""); c("pan",panMetin(p)); /* SOUM-261124-MKB7 */
     c("ug",p.ug,{numFmt:"0.0"}); c("rw",p.rw); c("uw",uwDeger(p),{numFmt:"0.00"}); c("sg",p.sg,{numFmt:"0.00"}); c("tl",p.tl);
     const B=IC(4)+r, Q=C("Q")+r;
-    c("Q",{formula:B+"*"+XK+(en?"*"+KK:"")+(+p.ekF?"+"+(+p.ekF):""),result:p.Q},{numFmt:PB,font:{name:"Arial",size:16},fill:{type:"pattern",pattern:"solid",fgColor:{argb:ACIK}}});
+    c("Q",{formula:B+"*"+XK+(GBP()?"*"+KK:"")+(+p.ekF?"+"+(+p.ekF):""),result:p.Q},{numFmt:PB,font:{name:"Arial",size:16},fill:{type:"pattern",pattern:"solid",fgColor:{argb:ACIK}}});
     c("R",{formula:F+"*ROUND("+Q+",2)",result:p.R},{numFmt:PB,font:{name:"Arial",size:16},fill:{type:"pattern",pattern:"solid",fgColor:{argb:ACIK}}});
     ws.mergeCells(C("n1")+r+":"+C("n2")+r); c("n1",notMetin(p),{alignment:{vertical:"middle",horizontal:"left",wrapText:true},font:{name:"Arial",size:16}});
     cAt(IC(0),p.seri,{font:{name:"Arial",size:12}}); cAt(IC(2),{formula:F+"*"+Sx,result:(p.F||0)*p.L*p.H/1e6},{numFmt:"0.00",font:{name:"Arial",size:12}});
@@ -1323,7 +1323,7 @@ async function excelYap(){ if(xlYasakMi()) return; /* SOUM-XL-YETKI */ if(revEks
   const cQ=C("Q"), cR=C("R"), cN1=C("n1"), cN2=C("n2");
   let r=rt; const satirlar=[];
   satirlar.push({t:H.sat[0][0],f:"SUM("+cR+r0+":"+cR+rl+")",v:H.HT,ana:true});
-  H.sat.slice(1).forEach(s=>{ let f=null; if(s[3]==="vitro") f=IC(3)+rt+(en?"*"+KK:""); satirlar.push({t:s[0],v:s[1],f,tip:s[3],pr:s[4]}); });
+  H.sat.slice(1).forEach(s=>{ let f=null; if(s[3]==="vitro") f=IC(3)+rt+(GBP()?"*"+KK:""); satirlar.push({t:s[0],v:s[1],f,tip:s[3],pr:s[4]}); });
   const ilk=r; satirlar.forEach((s,k)=>{ const rr=r+k; ws.getRow(rr).height=s.t.length>60?80:s.t.length>30?64:48.6;
     st(cR+rr,{v:s.f?{formula:s.f,result:s.v}:n2(s.v),nf:PB,f:{size:18,bold:true},fill:ACIK}); ws.mergeCells(cN1+rr+":"+cN2+rr); st(cN1+rr,{v:s.t,f:{size:18,bold:true,color:{argb:YESIL}},a:{horizontal:"left"}});
     if(s.pr&&(s.tip==="proto"||s.tip==="temoin")){ const L=(s.pr.L||[s.pr]).map(x=>x.p), im=L.filter(p=>p.img); ws.getRow(rr).height=130; ws.getCell(cN1+rr).value=tt((s.pr.fr||"PV Prototype + Transport + Pose")+"\n"+L.map(p=>p.kod).join(" + ")+" ("+L.length+"-u)",(s.pr.en||"Mock-up + transport + installation")+"\n"+L.map(p=>refAd(p)).join(" + ")+" ("+L.length+" u)"); ws.getCell(cN1+rr).alignment={vertical:"middle",horizontal:"left",wrapText:true,indent:im.length?Math.min(8*im.length,24):0}; /* SOUM-PROTO-YAN: çizim solda, metin sağda; SOUM-261125-MKB3B: tüm prototip çizimleri yan yana */
@@ -1522,7 +1522,7 @@ async function nkGonder(sessiz){ const t=$("nk_metin"), d=$("nk_durum"); if(!t) 
   try{ const q=await SB.from("soum_notes_gerekce").insert(L.map(g=>({kisi_kod:k?k.kod:"",kisi_ad:k?k.ad:"",proje:pr,poz:"Genel",gerekce:g}))); if(q.error) throw q.error; t.value=""; if(d) d.textContent=L.length+" madde iletildi (Melike Başaran'a mail ile gider)."; }
   catch(e){ if(d) d.textContent="İletilemedi: "+(e.message||e); } } /* SOUM-261126-MKB9-NOT: formun altındaki Notes geri bildirim alanı → soum_notes_gerekce (haftalık rapor maili) */
 if($("nk_gonder")) $("nk_gonder").onclick=()=>nkGonder(false);
-function enGoster(){ const en=EN(), a=$("enAlan"), dn=$("f_k_den"); a.style.display=""; [...a.children].forEach(c=>{ c.style.display=(en||c.contains(dn))?"":"none"; }); } /* SOUM-261113-DEN (13.11.2026, Melike Başaran): Denizlik seçimi Fransızcada da görünür */
+function enGoster(){ const en=EN(), a=$("enAlan"), dn=$("f_k_den"); a.style.display=""; [...a.children].forEach(c=>{ c.style.display=((en&&(GBP()||!c.contains($("f_kur"))))||c.contains(dn))?"":"none"; }); /* SOUM-PARA-ULKE: EUR'lu İngilizce teklifte kur alanı yok */ } /* SOUM-261113-DEN (13.11.2026, Melike Başaran): Denizlik seçimi Fransızcada da görünür */
 ["f_dil","f_bolge","f_sinif","f_reno","f_mont","f_disi","f_dep","f_petit","f_proto","f_temoin","f_vitro","f_k_den","f_k_pervaz","f_k_sove","f_pas","f_op_ins","f_op_cam","f_op_mv","f_op_pmr","f_op_cage","f_op_manitou","f_op_grue"].forEach(id=>$(id).onchange=()=>{ if(id==="f_dil") enGoster(); hesapla(); if(id==="f_proto"||id==="f_temoin"||id==="f_bolge") notDoldur(); if(id==="f_disi"&&$("f_disi").value==="1") alert("Duvar dışı montaj seçildi — Eker eklendi mi?"); /* SOUM-ETUT */ });
 $("f_revize").onchange=()=>{ revGoster(); pozCiz(); hesapla(); }; $("f_revnot").oninput=revNotYaz; /* SOUM-REVIZE-ARSIV */
 $("f_ins_sure").oninput=()=>{ $("f_ins_sure").dataset.elle=1; hesapla(); }; $("f_insSifirla").onclick=e=>{ e.preventDefault(); delete $("f_ins_sure").dataset.elle; hesapla(); };
@@ -1551,7 +1551,7 @@ function fyListe(){ const L=[]; if(!S.poz||!S.poz.length) return L;
 function fyImza(){ return fyListe().join(" | "); }
 function fyAcik(){ const i=fyImza(); return !!i&&i!==(S.fyOnay||"")&&i!==(S.fyBek||""); }
 function fyBekliyor(){ const i=fyImza(); return !!S.fyBek&&i===S.fyBek; }
-/* SOUM-DILBOLGE-ZORLA (26.11.2026, Melih): Teklif dili, bölge ve para birimi elle seçilemez; formu belirler. YD1 → Fransızca / Fransa / EUR, YD2 → İngilizce / Diğer ülkeler / GBP (YD seçimi ya da Pencad eşleşmesi); YD yoksa müşteri listesindeki sınıftan (1-2 Fransa, 3-4 İngiltere). Kayıtlı form açılınca da düzeltilir. */ function dilBolgeZorla(){ const d=$("f_dil"), b=$("f_bolge"); if(!d||!b) return false; const blok=String((S.ydSec&&S.ydSec.blok)||(S.yd&&S.yd.blok)||"").toUpperCase(); let bl=null, dl=null; if(blok==="YD1"){ bl="fr"; dl="fr"; } else if(blok==="YD2"){ bl="du"; dl="en"; } else if(S.sinifL&&S.sinifL.length){ const fn=nrmTxt($("f_firma").value); const s=S.sinifL.find(x=>nrmTxt(x.ad)===fn)||S.sinifL.find(x=>fn&&nrmTxt(x.ad).startsWith(fn.split(" ")[0])&&fn.includes(nrmTxt(x.ad).split(" ")[0])); if(s){ bl=s.sinif<=2?"fr":"du"; dl=(s.sinif===3||s.sinif===4)?"en":"fr"; } } const dD=!!dl&&d.value!==dl, bD=!!bl&&b.value!==bl; if(dl) d.value=dl; if(bl) b.value=bl; d.disabled=b.disabled=true; d.title=b.title="Teklif dili, bölge ve para birimi YD1/YD2 seçiminden (yoksa müşteri listesinden) gelir; değiştirilemez"; if(dD&&typeof enGoster==="function") enGoster(); if(bD&&typeof notDoldur==="function"&&S.poz&&S.poz.length) notDoldur(); return dD||bD; } setTimeout(()=>{ try{ dilBolgeZorla(); }catch(e){} },0); /* SOUM-DILBOLGE-ZORLA */ function sinifZorla(){ const sel=$("f_sinif"); if(!sel) return; const mb=iskKod()==="MB"; sel.disabled=!mb; sel.title=mb?"":"Müşteri sınıfı müşteri listesinden gelir; değiştirilemez";
+/* SOUM-DILBOLGE-ZORLA (26.11.2026, Melih): Teklif dili, bölge ve para birimi elle seçilemez; formu belirler. YD1 → Fransızca / Fransa / EUR, YD2 → İngilizce / Diğer ülkeler / GBP (YD seçimi ya da Pencad eşleşmesi); YD yoksa müşteri listesindeki sınıftan (1-2 Fransa, 3-4 İngiltere). Kayıtlı form açılınca da düzeltilir. */ function dilBolgeZorla(){ const d=$("f_dil"), b=$("f_bolge"); if(!d||!b) return false; const blok=String((S.ydSec&&S.ydSec.blok)||(S.yd&&S.yd.blok)||"").toUpperCase(); let bl=null, dl=null; if(blok==="YD1"){ bl="fr"; dl="fr"; } else if(blok==="YD2"){ bl="du"; dl="en"; } else if(S.sinifL&&S.sinifL.length){ const fn=nrmTxt($("f_firma").value); const s=S.sinifL.find(x=>nrmTxt(x.ad)===fn)||S.sinifL.find(x=>fn&&nrmTxt(x.ad).startsWith(fn.split(" ")[0])&&fn.includes(nrmTxt(x.ad).split(" ")[0])); if(s){ bl=s.sinif<=2?"fr":"du"; dl=(s.sinif===3||s.sinif===4)?"en":"fr"; } } const dD=!!dl&&d.value!==dl, bD=!!bl&&b.value!==bl; if(dl) d.value=dl; if(bl) b.value=bl; d.disabled=b.disabled=true; d.title=b.title="Teklif dili, bölge ve para birimi YD1/YD2 seçiminden (yoksa müşteri listesinden) gelir; YD2'de para birimi YD2 formundaki Ülke'den (İngiltere GBP, diğer EUR); değiştirilemez"; if(typeof enGoster==="function") enGoster(); if(bD&&typeof notDoldur==="function"&&S.poz&&S.poz.length) notDoldur(); return dD||bD; } setTimeout(()=>{ try{ dilBolgeZorla(); }catch(e){} },0); /* SOUM-DILBOLGE-ZORLA */ function sinifZorla(){ const sel=$("f_sinif"); if(!sel) return; const mb=iskKod()==="MB"; sel.disabled=!mb; sel.title=mb?"":"Müşteri sınıfı müşteri listesinden gelir; değiştirilemez";
   if(mb||!S.sinifL||!S.sinifL.length) return; const fn=nrmTxt($("f_firma").value);
   const s=S.sinifL.find(x=>nrmTxt(x.ad)===fn)||S.sinifL.find(x=>fn&&nrmTxt(x.ad).startsWith(fn.split(" ")[0])&&fn.includes(nrmTxt(x.ad).split(" ")[0]));
   sel.value=s?String(s.sinif%2===1?1:2):"0"; }
@@ -1606,7 +1606,7 @@ async function iskTalepGonder(b){ const a=$("iskAcik"), t=String((a&&a.value)||"
   if(b) b.disabled=true; durum("Onay talebi gönderiliyor…");
   const m=$("f_kat").dataset.elle||"", FL=fyListe();
   const body={islem:"talep",kisi_kod:iskKod(),kisi_ad:(iskKisi()||{}).ad||"",proje:$("f_proje").value,firma:$("f_firma").value,ilgili:$("f_ilgili").value,ref:$("f_ref").value,yd_satir_id:(S.ydSec&&S.ydSec.id)||null,
-    para_birimi:EN()?"GBP":"EUR",kur:H.K,brut:n2(H.brut),hesaplanan:S.iskHes,talep:H.X2,toplam:n2(H.genel),aciklama:t,onceki_id:S.iskId||null,degisiklikler:FL};
+    para_birimi:GBP()?"GBP":"EUR",kur:H.K,brut:n2(H.brut),hesaplanan:S.iskHes,talep:H.X2,toplam:n2(H.genel),aciklama:t,onceki_id:S.iskId||null,degisiklikler:FL};
   try{ const {data,error}=await SB.functions.invoke("soum-iskonto-onay",{body}); if(error||!data||!data.ok) throw new Error((data&&data.hata)||(error&&error.message)||"bilinmeyen hata");
     S.iskId=data.id; S.iskAcik=t; S.fyBek=FL.length?FL.join(" | "):null; $("iskPanel").dataset.acik=""; if(m==="1"||m==="bekliyor") $("f_kat").dataset.elle="bekliyor"; hesapla(); iskBantYenile();
     durum("Onay talebi yönetime iletildi (#"+data.id+"). Onaylanana kadar PDF / Excel / Projeyi mail at kapalı; <b>Formu kaydet</b> ile formu arşive alabilirsiniz.","ok");
@@ -1648,7 +1648,7 @@ async function arsivKaydet(ad,buf,tar){
     const k=(typeof ARB_EMAIL!=="undefined"&&window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null;
     const rec={...duzBilgi(),proje:$("f_proje").value,firma:$("f_firma").value,ilgili:$("f_ilgili").value,ref:$("f_ref").value,
       dil:DIL(),bolge:$("f_bolge").value,tarih:tar.toISOString().slice(0,10),par:$("f_par").value,hazirlayan:$("f_haz").value,revize:($("f_revize")||{}).value==="1",
-      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:EN()?"GBP":"EUR",iskonto:H.X2,agac:arsivAgac(),net_montaj_haric:arsivNet(),yd_satir_id:(S.ydSec&&S.ydSec.id)||null,dosya_adi:ad,depo_yolu:yol};
+      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:GBP()?"GBP":"EUR",iskonto:H.X2,agac:arsivAgac(),net_montaj_haric:arsivNet(),yd_satir_id:(S.ydSec&&S.ydSec.id)||null,dosya_adi:ad,depo_yolu:yol};
     const r=await SB.from("soum_teklif").insert(rec); if(r.error) throw r.error;
     $("durum").insertAdjacentHTML("beforeend",' <span class="mini">· Teklif arşivine kaydedildi.</span>'); if($("arsivIc").style.display!=="none") arsivYukle();
   }catch(e){ console.warn("arşiv",e); $("durum").insertAdjacentHTML("beforeend",' <span class="mini" style="color:#b00020">· Arşive kaydedilemedi: '+esc(e.message||e)+'</span>'); } }
@@ -1690,7 +1690,7 @@ async function formKaydet(){ if(revEksik()) return; /* SOUM-REVIZE-ARSIV */ nkGo
     const k=(typeof ARB_EMAIL!=="undefined"&&window.ARB_KISI_AL&&ARB_KISI_AL(ARB_EMAIL))||null;
     const rec={...duzBilgi(),proje:$("f_proje").value,firma:$("f_firma").value,ilgili:$("f_ilgili").value,ref:$("f_ref").value,
       dil:DIL(),bolge:$("f_bolge").value,tarih:tar.toISOString().slice(0,10),par:$("f_par").value,hazirlayan:$("f_haz").value,revize:($("f_revize")||{}).value==="1",
-      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:EN()?"GBP":"EUR",iskonto:H.X2,agac:arsivAgac(),net_montaj_haric:arsivNet(),yd_satir_id:(S.ydSec&&S.ydSec.id)||null,dosya_adi:ad,form_yolu:yol};
+      poz_adet:S.poz.length,urun_adet:H.adet,m2:n2(H.m2),toplam:n2(H.toplam),para_birimi:GBP()?"GBP":"EUR",iskonto:H.X2,agac:arsivAgac(),net_montaj_haric:arsivNet(),yd_satir_id:(S.ydSec&&S.ydSec.id)||null,dosya_adi:ad,form_yolu:yol};
     const K0=S.kaynak, uzr=!!(K0&&K0.id&&String(K0.ref||"")===String(rec.ref||"")); if(uzr) rec.kaynak_id=K0.id; /* SOUM-261123-UZERINE (23.11.2026, Melike Başaran): aynı form (aynı Ref) yeniden kaydedilince arşivde yeni satır görünmez, önceki kaydın yerine geçer (eski sürüm veritabanında kalır, listede gizlenir); başkası düzenlediyse Düzenleyen'de görünür */
     const r=await SB.from("soum_teklif").insert(rec).select("id").single(); if(r.error) throw r.error;
     if(rec.duzenleyen) duzBildir(rec,J); /* SOUM-DUZENLEYEN */ S.kaynak={formNo:(uzr&&(K0.formNo||K0.id))||(r.data&&r.data.id),id:r.data&&r.data.id,olusturan:rec.olusturan_kisi,toplam:rec.toplam,iskonto:rec.iskonto,J,ref:rec.ref||""};
@@ -1781,8 +1781,8 @@ function dipCiz(){ const el=$("dipnot"); if(!el) return; const T=dipSec();
 function dipMetin(){ const T=dipSec(), cap=x=>x.charAt(0).toUpperCase()+x.slice(1), d=DIP.filter((x,i)=>T[i]).map(x=>x[0]), h=DIP.filter((x,i)=>!T[i]).map(x=>x[0]);
   if(!(H&&H.opIns)) h.push("heures d'insertion"); if(!(H&&H.pror)) h.push("proratas");
   return (d.length?["Compris : "+d.join(", ")+"."]:[]).concat(h.length?["Non compris : "+h.join(", ")+"."]:[]); }
-function sartGruplar(){ const en=EN(), SR=en?window.SOUM_SART_EN:window.SOUM_SART, vrVar=S.poz.some(p=>p.ozl.panjur), K=en?kur():1;
-  const kasa=en?"£"+dN(3250*K,0):"3 250 €", ur=String(($("f_uretim")||{}).value||"").trim()||"10";
+function sartGruplar(){ const en=EN(), SR=en?window.SOUM_SART_EN:window.SOUM_SART, vrVar=S.poz.some(p=>p.ozl.panjur), K=GBP()?kur():1;
+  const kasa=en?pE(3250*K,0):"3 250 €", ur=String(($("f_uretim")||{}).value||"").trim()||"10";
   return SR.gruplar.map(g=>({t:g.t,b:g.b.filter(b=>!b.vr||vrVar).map(b=>{ let m=b.m.map(t=>t.replace("{KASA}",kasa).replace("{URETIM}",ur));
     if(!en&&m.some(t=>/^Compris :/.test(t))) return {t:b.t,m:m.filter(t=>!/^(Non c|C)ompris :/.test(t)).concat(dipMetin())}; /* SOUM-DIPNOT */
     /* SOUM-INDIRIM: insertion opsiyon, hariçlerde kalır */ if(!en&&H&&H.pror) m=m.map(t=>t.replace(" proratas,","")); if(!en&&H&&H.opIns) m=m.map(t=>t.replace(" heures d'insertion,","")); /* SOUM-ETUT */
