@@ -111,7 +111,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div id="bloklar"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../my_acil.js?v=261126b"></script><!-- MY-FAALIYET -->
+<script src="../my_acil.js?v=261126c"></script><!-- MY-FAALIYET -->
 <script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -272,7 +272,7 @@ function ekTd(r,b){
   /* PEM-GECMIS-SEBEP (26.11.2026, Melih): hedef yükleme tarihi geçmiş PEM'de tarih kırmızı (şantiyede istenen varsa o, yoksa hedef); tıklayınca yeni şantiyede istenen tarih + zorunlu sebep */
   const bg=MYACIL.bugunIso(), tA=r.istenen||r.hedef, tN=r.istenen||r.plan, gA=r.tur==="PEM"&&ac&&r.hedef&&String(tA).slice(0,10)<bg, gN=r.tur==="PEM"&&!ac&&r.plan&&String(tN).slice(0,10)<bg; /* PEM-GECMIS-ISTENEN */
   const kz='style="color:#c62828;font-weight:700"';
-  if(gA||gN){ const tt=`Şantiyede istenen tarih (${fd(gA?tA:tN)}) geçti, yükleme yapılmadı — tıklayıp yeni şantiyede istenen tarihi ve sebebini girin`;
+  if(gA||gN){ const tt=`Şantiyede istenen tarih (${fd(gA?tA:tN)}) geçti, yükleme yapılmadı — tıklayıp şantiyede istenen yeni tarihi ve sebebini girin`;
     const v=r.istenen?fd(r.istenen):fd(gA?r.hedef:r.plan);
     var hd0=gA?`<td class="c${ed}" data-ed="1" ${kz} title="${esc(tt)}">${v}</td>`:`<td class="c" data-gec="1" ${kz} title="${esc(tt)}">${v}</td>`; }
   const hd=(gA||gN)?hd0:ac?`<td class="c${ed}" data-ed="1">${fd(r.hedef)}</td>`:(r.plan?`<td class="c" data-plan="1" title="Hedef yükleme tarihini değiştir">${fd(r.plan)}</td>`:(b&&b.tg?`<td class="c tgir" data-plan="1">Tarih gir</td>`:`<td class="c"></td>`));
@@ -388,7 +388,7 @@ function acilPencere(r,duzenle){
     <h4>${duzenle?"Acil bilgileri":"Acile çevir"} · ${esc(r.tur==="PEM"?"PEM "+r.kod:r.kod)}</h4><div class="mut" style="margin-bottom:10px">${esc(r.proje)}</div>
     <label class="fl">Açıklama<textarea id="ma_ac" rows="3">${esc(duzenle?(r.aciklama||""):"")}</textarea></label>
     ${gec?`<div style="font-size:12px;margin-bottom:8px;color:#c62828;font-weight:700">Şantiyede istenen tarih geçti (${fd(r.istenen||r.hedef)}), yükleme yapılmadı · hedef yükleme ${fd(r.hedef)}</div>
-    <label class="fl">Yeni Şantiyede İstenen Tarih<input id="ma_ist" type="date" min="${MYACIL.bugunIso()}"></label>
+    <label class="fl">Şantiyede İstenen Yeni Tarih<input id="ma_ist" type="date" min="${MYACIL.bugunIso()}"></label>
     <label class="fl">Tarih değişikliğinin sebebi (zorunlu)<textarea id="ma_sb" rows="2"></textarea></label>`:''}
     <label class="fl">Hedef Yükleme Tarihi${gec?' (şantiyede istenen tarihten nakliye süresi düşülerek hesaplanır)':''}<input id="ma_hd" type="date" value="${esc(hd)}"${gec?' readonly':''}></label>
     <label class="fl">Yükleme Şekli<select id="ma_sk"><option${sk==="Kamyon"?" selected":""}>Kamyon</option><option${sk==="Uçak"?" selected":""}>Uçak</option></select></label>
@@ -405,7 +405,7 @@ function acilPencere(r,duzenle){
     let ist=null, sbp=null;
     if(gec){ ist=m.querySelector("#ma_ist").value; sbp=m.querySelector("#ma_sb").value.trim(); const eski=String(r.hedef).slice(0,10);
       if(hedef===eski && !ist){ /* tarih değişmiyor */ }
-      else { if(!ist){ alert("Yeni şantiyede istenen tarihi giriniz."); return; }
+      else { if(!ist){ alert("Şantiyede istenen yeni tarihi giriniz."); return; }
         if(ist<MYACIL.bugunIso()){ alert("Şantiyede istenen tarih bugünden önce olamaz."); return; }
         if(!sbp){ m.querySelector("#ma_sb").focus(); alert("Tarih değişikliğinin sebebini yazınız."); return; } } }
     if(!hedef){ alert("Hedef yükleme tarihini giriniz."); return; }
