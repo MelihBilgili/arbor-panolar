@@ -415,7 +415,7 @@ async function modelYukle(){
     const t=await (await fetch("../cam/index.html",{cache:"no-store"})).text();
     const ln=a=>{ const i=t.indexOf(a); if(i<0) throw new Error(a); const j=t.indexOf("\n",i); return t.slice(i,j<0?t.length:j); };
     const seg=(a,b)=>{ const i=t.indexOf(a); if(i<0) throw new Error(a); const j=t.indexOf(b,i); if(j<0) throw new Error(b); return t.slice(i,j+b.length); };
-    const code=[ln("const DB="),seg("const CAMF=(function(){","return{feats,catRow,coat,low};})();"),ln("const LISTE_SNAP="),ln("const GADJ_NF="),ln("const KAT="),ln("const SEC_COAT=")].join("\n");
+    const code=[t.slice(t.indexOf("const DB="),t.indexOf("const CAMF=(function(){")) /* CAM-MODEL-DB-BLOK (26.11.2026): DB.fiyat artık çok satırlı */,seg("const CAMF=(function(){","return{feats,catRow,coat,low};})();"),ln("const LISTE_SNAP="),ln("const GADJ_NF="),ln("const KAT="),ln("const SEC_COAT=")].join("\n");
     CAMM=new Function(code+"\nreturn {DB,CAMF,LISTE_SNAP,GADJ_NF,KAT,SEC_COAT,SEC_K};")();
     let liste=CAMM.LISTE_SNAP;
     try{ const q=await ARB_ACTIVE.from("cam_listesi").select("sira,kombinasyon,ug,tl,rw,ctr,rw_ctr,sf,kalinlik,satis_eur").order("sira"); if(!q.error&&q.data&&q.data.length) liste=q.data; }catch(e){}
