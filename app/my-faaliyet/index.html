@@ -111,7 +111,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div id="bloklar"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../my_acil.js?v=261126a"></script><!-- MY-FAALIYET -->
+<script src="../my_acil.js?v=261126b"></script><!-- MY-FAALIYET -->
 <script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -270,9 +270,9 @@ function ekTd(r,b){
   const ac=r.durum==="Acil", ed=ac?' acd':'';
   /* MY-PLAN-HEDEF (19.11.2026, Melih): acil olmayan satırda Hedef = plan_hedef (rpc my_plan_yaz); Sevke Hazır PEM'de tarihsizse kırmızı "Tarih gir" */
   /* PEM-GECMIS-SEBEP (26.11.2026, Melih): hedef yükleme tarihi geçmiş PEM'de tarih kırmızı (şantiyede istenen varsa o, yoksa hedef); tıklayınca yeni şantiyede istenen tarih + zorunlu sebep */
-  const bg=MYACIL.bugunIso(), gA=r.tur==="PEM"&&ac&&r.hedef&&String(r.hedef).slice(0,10)<bg, gN=r.tur==="PEM"&&!ac&&r.plan&&String(r.plan).slice(0,10)<bg;
+  const bg=MYACIL.bugunIso(), tA=r.istenen||r.hedef, tN=r.istenen||r.plan, gA=r.tur==="PEM"&&ac&&r.hedef&&String(tA).slice(0,10)<bg, gN=r.tur==="PEM"&&!ac&&r.plan&&String(tN).slice(0,10)<bg; /* PEM-GECMIS-ISTENEN */
   const kz='style="color:#c62828;font-weight:700"';
-  if(gA||gN){ const tt=`Hedef yükleme tarihi (${fd(gA?r.hedef:r.plan)}) geçti — tıklayıp yeni şantiyede istenen tarihi ve sebebini girin`;
+  if(gA||gN){ const tt=`Şantiyede istenen tarih (${fd(gA?tA:tN)}) geçti, yükleme yapılmadı — tıklayıp yeni şantiyede istenen tarihi ve sebebini girin`;
     const v=r.istenen?fd(r.istenen):fd(gA?r.hedef:r.plan);
     var hd0=gA?`<td class="c${ed}" data-ed="1" ${kz} title="${esc(tt)}">${v}</td>`:`<td class="c" data-gec="1" ${kz} title="${esc(tt)}">${v}</td>`; }
   const hd=(gA||gN)?hd0:ac?`<td class="c${ed}" data-ed="1">${fd(r.hedef)}</td>`:(r.plan?`<td class="c" data-plan="1" title="Hedef yükleme tarihini değiştir">${fd(r.plan)}</td>`:(b&&b.tg?`<td class="c tgir" data-plan="1">Tarih gir</td>`:`<td class="c"></td>`));
@@ -383,11 +383,11 @@ function acilPencere(r,duzenle){
   const m=document.createElement("div"); m.className="my-modal";
   const hd=(duzenle&&r.hedef)?String(r.hedef).slice(0,10):(r.tarih?String(r.tarih).slice(0,10):"");
   const sk=(duzenle&&r.sekil)?r.sekil:"Kamyon";
-  const gec=duzenle&&r.tur==="PEM"&&r.hedef&&String(r.hedef).slice(0,10)<MYACIL.bugunIso(); /* PEM-GECMIS-SEBEP */
+  const gec=duzenle&&r.tur==="PEM"&&r.hedef&&String(r.istenen||r.hedef).slice(0,10)<MYACIL.bugunIso(); /* PEM-GECMIS-SEBEP · PEM-GECMIS-ISTENEN */
   m.innerHTML=`<div class="box" style="max-width:460px"><button class="x" title="Kapat">×</button>
     <h4>${duzenle?"Acil bilgileri":"Acile çevir"} · ${esc(r.tur==="PEM"?"PEM "+r.kod:r.kod)}</h4><div class="mut" style="margin-bottom:10px">${esc(r.proje)}</div>
     <label class="fl">Açıklama<textarea id="ma_ac" rows="3">${esc(duzenle?(r.aciklama||""):"")}</textarea></label>
-    ${gec?`<div style="font-size:12px;margin-bottom:8px;color:#c62828;font-weight:700">Hedef yükleme tarihi geçti (${fd(r.hedef)})${r.istenen?' · şantiyede istenen '+fd(r.istenen):''}</div>
+    ${gec?`<div style="font-size:12px;margin-bottom:8px;color:#c62828;font-weight:700">Şantiyede istenen tarih geçti (${fd(r.istenen||r.hedef)}), yükleme yapılmadı · hedef yükleme ${fd(r.hedef)}</div>
     <label class="fl">Yeni Şantiyede İstenen Tarih<input id="ma_ist" type="date" min="${MYACIL.bugunIso()}"></label>
     <label class="fl">Tarih değişikliğinin sebebi (zorunlu)<textarea id="ma_sb" rows="2"></textarea></label>`:''}
     <label class="fl">Hedef Yükleme Tarihi${gec?' (şantiyede istenen tarihten nakliye süresi düşülerek hesaplanır)':''}<input id="ma_hd" type="date" value="${esc(hd)}"${gec?' readonly':''}></label>
@@ -410,9 +410,10 @@ function acilPencere(r,duzenle){
         if(!sbp){ m.querySelector("#ma_sb").focus(); alert("Tarih değişikliğinin sebebini yazınız."); return; } } }
     if(!hedef){ alert("Hedef yükleme tarihini giriniz."); return; }
     const b=m.querySelector("#ma_ok"); b.disabled=true; b.textContent="Kaydediliyor…";
+    if(gec&&ist&&sbp){ /* PEM-GECMIS-ISTENEN: sebep önce yazılır; sunucu tetikleyicisi sebepsiz tarih değişikliğini reddeder */
+      const t=await sb.rpc("my_tarih_sebep",{p_tur:r.tur,p_no:r.no,p_sebep:sbp,p_eski:String(r.hedef).slice(0,10),p_yeni:hedef,p_istenen:ist});
+      if(t.error){ b.disabled=false; b.textContent="Kaydet"; bildir("Sebep kaydedilemedi: "+t.error.message,false); return; } }
     if(!(await yaz(r,"Acil",{hedef,sekil,aciklama}))){ b.disabled=false; b.textContent=duzenle?"Kaydet":"Acile çevir"; return; }
-    if(gec&&ist&&sbp){ const t=await sb.rpc("my_tarih_sebep",{p_tur:r.tur,p_no:r.no,p_sebep:sbp,p_eski:String(r.hedef).slice(0,10),p_yeni:hedef,p_istenen:ist});
-      if(t.error) bildir("Sebep kaydedilemedi: "+t.error.message,false); }
     kapat(); await yukle();
     const lbl=(r.tur==="PEM"?"PEM "+r.kod:r.kod);
     if(duzenle) bildir(lbl+" acil bilgileri kaydedildi",true);

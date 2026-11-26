@@ -500,8 +500,8 @@
   function gecmisPencere(sb,r,sonra){ stil();
     var m=document.createElement("div"); m.className="my-modal";
     m.innerHTML='<div class="box" style="max-width:460px"><button class="x" title="Kapat">×</button>'
-      +'<h4>Hedef yükleme tarihi geçmiş · PEM '+esc(r.kod)+'</h4><div class="mut" style="margin-bottom:10px">'+esc(r.proje)+'</div>'
-      +'<div style="font-size:12px;margin-bottom:10px">Hedef yükleme: <b style="color:#c62828">'+fd(r.plan)+'</b>'+(r.istenen?' · Şantiyede istenen: <b style="color:#c62828">'+fd(r.istenen)+'</b>':'')+'</div>'
+      +'<h4>Şantiyede istenen tarihi geçmiş · PEM '+esc(r.kod)+'</h4><div class="mut" style="margin-bottom:10px">'+esc(r.proje)+'</div>'
+      +'<div style="font-size:12px;margin-bottom:10px">'+(r.istenen?'Şantiyede istenen: <b style="color:#c62828">'+fd(r.istenen)+'</b> · ':'')+'Hedef yükleme: <b>'+fd(r.plan)+'</b></div>'
       +'<label class="mys-fl">Yeni Şantiyede İstenen Tarih<input id="mg_ist" type="date" min="'+bugunIso()+'"></label>'
       +'<label class="mys-fl">Değişikliğin sebebi (zorunlu)<textarea id="mg_sb" rows="3"></textarea></label>'
       +'<div class="mut" style="font-size:11.5px;margin:4px 0 10px">Hedef yükleme tarihi, şantiyede istenen tarihten nakliye süresi düşülerek hesaplanır.</div>'
@@ -529,13 +529,13 @@
     try{ var x0=await sb.rpc("yi_sevk_pem_liste"); if(x0.error) throw x0.error; R=x0.data||[]; }catch(e){ el.innerHTML=""; return; }
     if(!R.length){ el.innerHTML=""; return; }
     if(!document.getElementById("mksp-css")){ var st=document.createElement("style"); st.id="mksp-css"; st.textContent="td.mksp-tg{background:#c62828!important;color:#fff!important;font-weight:700;cursor:pointer;text-align:center}td[data-mksp]{cursor:pointer}"; document.head.appendChild(st); }
-    var bg=bugunIso(), gec=function(r){ return !(r.durum==="Acil"&&r.hedef)&&r.plan&&String(r.plan).slice(0,10)<bg; }; /* PEM-GECMIS-SEBEP */
+    var bg=bugunIso(), gec=function(r){ var t=r.istenen||r.plan; return !(r.durum==="Acil"&&r.hedef)&&t&&String(t).slice(0,10)<bg; }; /* PEM-GECMIS-SEBEP · PEM-GECMIS-ISTENEN: şantiyede istenen (yoksa hedef) geçti */
     var tarihli=function(r){ return (r.durum==="Acil"&&r.hedef)||r.istenen; }; /* SANTIYE-ISTENEN-B: EB şantiyede istenen tarihi girer, hedef = istenen − nakliye (my_plan_yaz p_istenen) */
     var eksik=R.filter(function(r){ return !tarihli(r); }).length;
     el.innerHTML='<div class="myab" style="margin-bottom:14px"><h3>SEVKE HAZIR PEM\'LER <span style="font-weight:400;font-size:12px;color:#5a6b7d">· Yurt içi'+(eksik?' · '+eksik+' satırda şantiyede istenen tarih girilmedi':'')+'</span></h3><div class="myw"><table class="mya"><thead><tr>'
       +'<th>PEM</th><th>Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin<br>Tarihi</th><th style="min-width:112px">Şantiyede<br>İstenen Tarih</th></tr></thead><tbody>'
       +R.map(function(r){ var ac=r.durum==="Acil"&&r.hedef;
-        var hd=ac?'<td title="Acil hedef yükleme tarihi"><b>'+fd(r.hedef)+'</b></td>':(gec(r)?'<td data-mksp="1" data-gec="1" style="color:#c62828;font-weight:700" title="Hedef yükleme tarihi ('+fd(r.plan)+') geçti — tıklayıp yeni şantiyede istenen tarihi ve sebebini girin">'+(r.istenen?fd(r.istenen):fd(r.plan))+'</td>'
+        var hd=ac?'<td title="Acil hedef yükleme tarihi"><b>'+fd(r.hedef)+'</b></td>':(gec(r)?'<td data-mksp="1" data-gec="1" style="color:#c62828;font-weight:700" title="Şantiyede istenen tarih ('+fd(r.istenen||r.plan)+') geçti, yükleme yapılmadı — tıklayıp yeni şantiyede istenen tarihi ve sebebini girin">'+(r.istenen?fd(r.istenen):fd(r.plan))+'</td>'
           :r.istenen?'<td data-mksp="1" title="Şantiyede istenen tarihi değiştir · Hedef yükleme '+fd(r.plan)+'">'+fd(r.istenen)+'</td>':'<td class="mksp-tg" data-mksp="1">Tarih gir</td>');
         return '<tr class="my-ks" data-no="'+esc(r.no)+'"><td title="'+esc(r.no+' · '+(r.durum_erp||''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td><td class="w" style="max-width:29ch" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" style="max-width:46ch" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'+hd+'</tr>'; }).join("")
       +'</tbody></table></div></div>';
