@@ -571,8 +571,8 @@
           yp=document.createElement("div"); yp.id="yi-sevk-pem"; yp.style.cssText="flex:0 0 auto"; yr.appendChild(yp); /* YI-UST-SAG (26.11.2026, Melih): PEM tablosu doğal genişliğinde, kaydırmasız */
           var an=document.getElementById("anket"), il=document.getElementById("ileri"); /* YI-ILERI-SAG (26.11.2026, Melih): İleri Tarihli Projeler memnuniyetin altında, sağ sütunda */
           var sg=document.createElement("div"); sg.id="yi-sag"; sg.style.cssText="flex:1 1 360px;min-width:360px;display:flex;flex-direction:column;align-items:flex-end;gap:12px"; yr.style.flexWrap="wrap"; /* YI-SAG-SAR (26.11.2026): yer yetmezse sağ sütun PEM tablosunun altına iner */ yr.appendChild(sg);
-          if(an){ an.style.cssText="min-width:0;overflow-x:auto"; sg.appendChild(an); }
-          if(il){ il.style.cssText="min-width:0;overflow-x:auto"; sg.appendChild(il); }
+          if(an){ an.style.cssText="min-width:0;max-width:100%;overflow-x:auto"; sg.appendChild(an); }
+          if(il){ il.style.cssText="min-width:0;max-width:100%;overflow-x:auto"; sg.appendChild(il); } /* YI-SAG-TASMA (26.11.2026): sağ sütundan taşan blok sola (PEM tablosunun üstüne) taşmaz, kendi içinde kayar */
           /* YI-UST-SAG: şerit sayfa kutusunun sağına taşar, ekranın sağ kenarına kadar uzanır; memnuniyet bloğu sağa yaslı */
           var yg=function(){ var l=yr.getBoundingClientRect().left; yr.style.width=Math.max(300,document.documentElement.clientWidth-l-12)+"px"; }; yg(); window.addEventListener("resize",yg); }
         yiSevkPemBlok(yp,{sb:cli}); setInterval(function(){ if(!yp.querySelector("input")) yiSevkPemBlok(yp,{sb:cli}); },5*60*1000); } /* YI-SEVK-PEM */
