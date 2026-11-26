@@ -441,7 +441,7 @@
     m.innerHTML='<div class="box" style="max-width:460px"><button class="x" title="Kapat">×</button>'
       +'<h4>Acile çevirme talebi · '+esc(r.tur==="PEM"?"PEM "+r.kod:r.kod)+'</h4><div class="mut" style="margin-bottom:10px">'+esc(r.proje)+'</div>'
       +'<label class="mys-fl">Açıklama<textarea id="ms_ac" rows="3"></textarea></label>'
-      +'<label class="mys-fl">Şantiyede İstenen Tarih<input id="ms_hd" type="date" value=""></label>' /* SANTIYE-ISTENEN-B (20.11.2026, Melih): hedef = istenen − nakliye süresi (rpc nakliye_hedef) */
+      +'<label class="mys-fl">Şantiyede İstenen Tarih<input id="ms_hd" type="date" value="" min="'+bugunIso()+'"></label>' /* SANTIYE-ISTENEN-B (20.11.2026, Melih): hedef = istenen − nakliye süresi (rpc nakliye_hedef) */
       +'<label class="mys-fl">Yükleme Şekli<select id="ms_sk"><option selected>Kamyon</option><option>Uçak</option></select></label>'
       +'<div class="mut" style="font-size:11.5px;margin:4px 0 10px">Talep MY onayına gönderilir; onaylanınca satır acil takibe alınır.</div>'
       +'<div style="display:flex;gap:8px;justify-content:flex-end"><button class="mys-btn sec" id="ms_vz">Vazgeç</button><button class="mys-btn" id="ms_ok">Talebi gönder</button></div></div>';
@@ -452,6 +452,7 @@
     m.querySelector("#ms_ok").onclick=async function(){
       var ist=m.querySelector("#ms_hd").value, sekil=m.querySelector("#ms_sk").value, aciklama=m.querySelector("#ms_ac").value.trim();
       if(!ist){ alert("Şantiyede istenen tarihi giriniz."); return; }
+      if(ist<bugunIso()){ alert("Şantiyede istenen tarih bugünden önce olamaz."); return; } /* ISTENEN-GECMIS-YASAK */
       var b=m.querySelector("#ms_ok"); b.disabled=true; b.textContent="Gönderiliyor…";
       var nh=await sb.rpc("nakliye_hedef",{p_istenen:ist,p_no:r.no,p_form:(typeof FORM_KODU!=="undefined"?FORM_KODU:null)});
       if(nh.error||!nh.data){ b.disabled=false; b.textContent="Talebi gönder"; alert("Hedef yükleme hesaplanamadı: "+((nh.error&&nh.error.message)||"")); return; }
@@ -542,12 +543,13 @@
     el.querySelectorAll("td[data-mksp]").forEach(function(td){ td.addEventListener("click",function(){
       if(td.querySelector("input")) return; var no=td.parentNode.getAttribute("data-no"), r=R.filter(function(x){ return x.no===no; })[0]; if(!r) return;
       if(td.getAttribute("data-gec")){ gecmisPencere(sb,r,function(){ yiSevkPemBlok(el,o); }); return; } /* PEM-GECMIS-SEBEP */
-      var es=td.innerHTML, cl=td.className, bitti=false; td.className=""; td.innerHTML='<input type="date" value="'+esc(r.istenen?String(r.istenen).slice(0,10):"")+'" style="font:inherit;font-size:12px">';
+      var es=td.innerHTML, cl=td.className, bitti=false; td.className=""; td.innerHTML='<input type="date" min="'+bugunIso()+'" value="'+esc(r.istenen?String(r.istenen).slice(0,10):"")+'" style="font:inherit;font-size:12px">';
       var i=td.querySelector("input"); i.focus(); try{ if(i.showPicker) i.showPicker(); }catch(e){}
       var geri=function(){ if(bitti) return; bitti=true; td.className=cl; td.innerHTML=es; };
       i.addEventListener("keydown",function(e){ if(e.key==="Escape"){ e.preventDefault(); geri(); } });
       i.addEventListener("blur",function(){ setTimeout(geri,150); });
       i.addEventListener("change",async function(){ if(bitti) return; bitti=true;
+        if(i.value && i.value<bugunIso()){ alert("Şantiyede istenen tarih bugünden önce olamaz."); td.className=cl; td.innerHTML=es; return; } /* ISTENEN-GECMIS-YASAK */
         var x=await sb.rpc("my_plan_yaz",{p_tur:"PEM",p_no:r.no,p_tarih:null,p_proje:r.proje||null,p_istenen:i.value||null});
         if(x.error){ alert("Kaydedilemedi: "+x.error.message); td.className=cl; td.innerHTML=es; return; }
         yiSevkPemBlok(el,o); });

@@ -163,7 +163,7 @@ html,body{max-width:100vw;overflow-x:hidden}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../my_acil.js?v=261126f"></script><!-- MY-SANTIYE -->
+<script src="../my_acil.js?v=261126g"></script><!-- MY-SANTIYE -->
 <script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -350,7 +350,9 @@ async function yukle(){
   ileriYukle(donem);
   SV.push(...DG);  /* SANTIYE-GELECEK: iki tablo aynı kurallar (PST zorunlu, açıklama) */
   SV.forEach(r=>{ const pg=document.getElementById("pstg_"+r.id);
-    if(pg) pg.onchange=async()=>{ pg.classList.remove("miss"); r.santiye_istenen=pg.value||null; await kaydet(r.id,{santiye_istenen:r.santiye_istenen}); }; });
+    if(pg) pg.min=ISTENEN_BG(); /* ISTENEN-GECMIS-YASAK (26.11.2026, Melih): geçmiş tarih girilemez (sunucu da reddeder) */
+    if(pg) pg.onchange=async()=>{ if(pg.value && pg.value<ISTENEN_BG()){ pg.classList.add("miss"); alert("Şantiyede istenen tarih bugünden önce olamaz."); pg.value=r.santiye_istenen?String(r.santiye_istenen).slice(0,10):""; return; }
+      pg.classList.remove("miss"); r.santiye_istenen=pg.value||null; await kaydet(r.id,{santiye_istenen:r.santiye_istenen}); }; });
   SV.forEach(r=>{ const hu=document.getElementById("hus_"+r.id);
     if(hu) hu.onchange=async()=>{ r.onemli_hususlar=hu.value.trim()||null; await kaydet(r.id,{onemli_hususlar:r.onemli_hususlar}); }; });
   SATIR = [];   /* SANTIYE-GELECEK: soru kalmadı */
@@ -411,7 +413,7 @@ async function anketYukle(){
   el.innerHTML=h+'</details>';
   /* YI-ANKET-ILK-DAR (26.11.2026, Melih): Yurt İçi'nde memnuniyet tablolarının ilk sütunu (proje) %30 dar; taşan ad üç nokta, tamamı üzerine gelince */
   if(FORM_KODU==="yi"){ const dar=()=>el.querySelectorAll("details.sbant table").forEach(t=>{ if(t.dataset.dar) return; const th=t.querySelector("tr>th"); if(!th||!th.offsetWidth) return;
-      const w=Math.round(th.offsetWidth*0.49); /* YI-ANKET-ILK-DAR2 (26.11.2026): ikinci %30 daraltma, 0,7×0,7 */ t.dataset.dar="1";
+      const w=Math.round(th.offsetWidth*0.343); /* YI-ANKET-ILK-DAR3 (26.11.2026): üçüncü %30 daraltma, 0,7×0,7×0,7 */ t.dataset.dar="1";
       t.querySelectorAll("tr").forEach(tr=>{ const c=tr.cells[0]; if(!c) return; if(!c.title) c.title=c.textContent; c.innerHTML='<div style="width:'+w+'px;max-width:'+w+'px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c.innerHTML+'</div>'; }); });
     dar(); const d=el.querySelector("details.sbant"); if(d) d.addEventListener("toggle",dar); }
   el.querySelectorAll("button[data-kopya]").forEach(b=>b.onclick=async()=>{ const o=b.textContent; b.textContent=(await ankKopya(b.dataset.kopya))?"Kopyalandı ✓":"Kopyalanamadı"; setTimeout(()=>b.textContent=o,1800); });
@@ -473,6 +475,7 @@ function sevkTablo(rs){
 /* SANTIYE-TEK-SERIT (24.11.2026, Melih): Sevke Hazır Projeler ve Gelecek Ayın Sonuna Kadar Yüklenecek Projeler tek başlıklı tabloda grup satırı;
    sütunlar PEM tablosuyla hizalı: Proje No · Müşteri Onay Tarihi · Proje Adı (Yükleme Şekli + Ek Bilgi genişliği dahil) · Adet · AÜP · Şantiyede İstenen · Açıklama · Takip */
 let ONAY={};
+const ISTENEN_BG=()=>{ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }; /* ISTENEN-GECMIS-YASAK */
 function prjTablo(SV,DG){
   if(!SV.length && !DG.length) return "";
   const SW=(window.MYACIL&&MYACIL.SW)||[64,72,133,64,210,44,72,110,460,280];
@@ -572,6 +575,7 @@ function bagla(r){
   if(pb) pb.onchange=async()=>{
     const v=pb.value.trim(); const iso=v?isoTarih(v):null;
     if(v && !iso){ pb.classList.add("miss"); msg("Şantiyede istenen tarih GG/AA/YY biçiminde olmalı (ör. 15/11/26).",false); return; }
+    if(iso && iso<ISTENEN_BG()){ pb.classList.add("miss"); msg("Şantiyede istenen tarih bugünden önce olamaz.",false); alert("Şantiyede istenen tarih bugünden önce olamaz."); return; } /* ISTENEN-GECMIS-YASAK */
     pb.classList.remove("miss"); pb.value=trTarih(iso); r.santiye_istenen=iso;
     await kaydet(r.id,{santiye_istenen:iso}); boya(r); };
   ["mvt","pst"].forEach(alan=>{
