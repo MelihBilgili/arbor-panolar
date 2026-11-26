@@ -46,6 +46,7 @@
   input.cell,select.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:0 7px;height:26px;line-height:24px;display:block;width:100%;background:transparent}
   select.cell{padding-bottom:0}
   select[data-f="musteri_onem_sinifi"],select[data-f="ihale"],select[data-f="agac"]{padding-left:2px}
+  tr.kar-kilit td>*, tr.kar-kilit td.mus{pointer-events:none} tr.kar-kilit input:disabled, tr.kar-kilit select:disabled{color:#6b0000;opacity:1;background:transparent} /* YD1-KAROLAJ-KILIT */
   select[data-f="ihale"].ihale-al{color:#1e8e3e;font-weight:700} select[data-f="ihale"] option{color:#000;font-weight:400} /* IHALE-ALINDI-YESIL ihale-bold-v2 */
   input.cell:focus,select.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
   td.net input{text-align:right}
@@ -756,13 +757,17 @@ const YD_NOT_W={1:{talebe_iliskin_notlar:300,teklif_birimi_notlari:300},2:{}};
 const YD_TK_W={2:432}; /* YD-DURUM-GRUP: iki tablonun toplam eni eşit */
 function ydCols(g){ return COLS.filter(c=>YD_GIZ[g].indexOf(c.f)<0).map(c=>YD_NOT_W[g][c.f]?Object.assign({},c,{w:YD_NOT_W[g][c.f]}):c); }
 function ydGrup(r){ return tkYasak(r)?1:2; }
+/* YD1-KAROLAJ-KILIT (26.11.2026, Melih): YD1'de Kemer/Karolaj "Yalnız karolaj" ya da "Hepsi" seçili satır, durum boş / Teklif Talebi Geldi / Teklif İncelendi / Teklif Bekleniyor iken tüm satır kırmızı ve değiştirilemez (sağ tık, not, ilgili kartı dahil). Melih (int@) kilitten muaf. */
+const KAR_BG="#f19a9a";
+function karolajKirmizi(r){ return BLOK==="YD1" && !!r && !!r.id && (r.kemer_karolaj==="Yalnız karolaj"||r.kemer_karolaj==="Hepsi") && (!r.durum || ((DURUM_SIRA[r.durum]||99)<=3)); }
+function karolajKilit(r){ return karolajKirmizi(r) && window.ARB_EM!=="int@arbor.com.tr"; }
 function rowHTML(r,key,gz){
   gz=gz||ydGrup(r); const GC=ydCols(gz);
-  const bg = key==="draft" ? "" : (DURUM_BG[durumGor(r)]||""); /* SIKI-TAKIP */
+  const bg = key==="draft" ? "" : (karolajKirmizi(r) ? KAR_BG : (DURUM_BG[durumGor(r)]||"")); /* SIKI-TAKIP */ /* YD1-KAROLAJ-KILIT */
   const bgv=bg||'transparent';
   const ttAge=daysAgo(r.teklif_teslim_tarihi);
   const durumWarn=(r.durum==="Teklif Bekleniyor" && ttAge!==null && ttAge>15) ? " durum-warn" : "";
-  return '<tr data-i="'+key+'" style="background:'+bgv+'">'+GC.map(c=>{
+  return '<tr data-i="'+key+'"'+(key!=="draft"&&karolajKilit(r)?' class="kar-kilit" title="Karolajlı proje — Teklif Bekleniyor aşamasına kadar satır değiştirilemez"':'')+' style="background:'+bgv+'">'+GC.map(c=>{
       if(ARSIV_F.indexOf(c.f)>=0){ const v=dispVal(r,c); const ek=(c.t==='num'?' style="text-align:right;':' style="')+'cursor:pointer;width:'+c.w+'px"'; /* YD-ARSIV-SECIM */
         return '<td class="'+(c.t==='num'?'net':'')+'" style="background:'+bgv+'"><input readonly class="cell arsClick'+(String(v).trim()?' filled':'')+(eksikBos(r,c.f,key)?' eksikbos':'')+'" data-row="'+key+'" type="text" title="Claude, müşteriye giden teklif mailinden Teklif arşivinden işler"'+ek+' value="'+esc(v)+'"></td>'; }
       const v=dispVal(r,c), req=c.req?" req":"", empty=(c.req&&!String(v).trim()&&!tutarDolu(r)?" bad":"")+(eksikBos(r,c.f,key)?" eksikbos":"");
@@ -813,6 +818,7 @@ function render(){
       if(el.tagName==='SELECT') el.classList.toggle('filled', !!el.value);
     });
   });
+  list.querySelectorAll("tr.kar-kilit input, tr.kar-kilit select, tr.kar-kilit textarea").forEach(e=>{ e.disabled=true; }); /* YD1-KAROLAJ-KILIT */
   list.querySelectorAll(".tkClick").forEach(b=>b.onclick=()=>tkStartEntry(b.dataset.row));  /* YD-EKLE-TIKLA */
   list.querySelectorAll(".arsClick").forEach(b=>b.onclick=()=>arsAc(b.dataset.row)); /* YD-ARSIV-SECIM */
   list.querySelectorAll(".ntClick").forEach(b=>b.onclick=()=>ntAc(b.dataset.row,b.dataset.nf));  /* YD-NOT-EKLE */
@@ -905,6 +911,7 @@ async function musOnemKontrol(ad){
 function musOnemGoster(key,val){ const s=document.querySelector('#list tr[data-i="'+key+'"] select[data-f="musteri_onem_sinifi"]'); if(s){ s.value=val||""; s.classList.toggle("filled",!!val); } }
 async function saveRow(key,f,val,el){
   const r=getRow(key); if(!r) return; const m=document.getElementById("msg");
+  if(key!=="draft" && karolajKilit(r)){ if(el) el.value=(r[f]==null?"":r[f]); setMsg("Karolajlı proje — bu aşamada satır değiştirilemez.",false); return; } /* YD1-KAROLAJ-KILIT */
   if(alanYasak(f,r)){ if(el) el.value=(r[f]==null?"":r[f]); setMsg(alanYasak(f,r)+".",false); return; } /* ALAN-YETKI · YD-TESLIM-CLAUDE */
   if(ARSIV_F.indexOf(f)>=0){ setMsg("Bu alanı Claude, müşteriye giden teklif mailinden Teklif arşivinden işler.",false); return; } /* YD-ARSIV-SECIM */
   let v=convVal(f,val);
@@ -1049,6 +1056,7 @@ function alanYasak(f,r){ if(f==='teklif_teslim_tarihi' && r && tutarDolu(r)) ret
   return (!!ARB_EKLEYEN && (ALAN_YASAK[f]||[]).indexOf(ARB_EKLEYEN)>=0)?"Bu alana kayıt yetkiniz yok":""; }
 function ntYasak(f){ return !!ARB_EKLEYEN && (NT_YASAK[f]||[]).indexOf(ARB_EKLEYEN)>=0; }
 function ntAc(key,f){
+  { const rk=getRow(key); if(key!=="draft" && karolajKilit(rk)){ setMsg("Karolajlı proje — bu aşamada satır değiştirilemez.",false); return; } } /* YD1-KAROLAJ-KILIT */
   if(ntYasak(f)){ setMsg("Bu not alanına kayıt yetkiniz yok.",false); return; } /* NOT-YETKI */
   const r=getRow(key); if(!r) return; const c=COLS.find(x=>x.f===f); NT_HEDEF={key:key,f:f};
   document.getElementById("nt-baslik").textContent=(c?c.h:"Not")+" — Ekle";
@@ -1329,7 +1337,7 @@ async function ctxNedenNotu(r,v){
   Object.assign(r,payload); return true;
 }
 function ctxAc(i,x,y){
-  ctxKapat(); const r=ROWS[i]; if(!r||!r.id) return;
+  ctxKapat(); const r=ROWS[i]; if(!r||!r.id) return; if(karolajKilit(r)){ setMsg("Karolajlı proje — bu aşamada satır değiştirilemez.",false); return; } /* YD1-KAROLAJ-KILIT */
   const m=document.createElement("div"); m.id="ctx-menu";
   m.innerHTML=CTX_SEC.filter(([et,v])=>v!=="__ac"||r.durum==="İptal").map(([et,v])=>{ const n=ctxNeden(r,v); const et2=(v==="__siki"&&sikiListede(r))?"Sıkı Takipten Çıkar":et; /* SIKI-TAKIP */ return '<button type="button" data-v="'+esc(v)+'" class="'+(n?'off':'')+(v==="__sil"?' ctx-sil':'')+'"'+(n?' title="'+esc(n)+'"':'')+'>'+esc(et2)+'</button>'; }).join('');
   document.body.appendChild(m);
