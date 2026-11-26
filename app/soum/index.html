@@ -1044,7 +1044,7 @@ function par(k,def){ const r=S.par[k]; if(!r) return def; return ppct($("f_bolge
 function pick(arr,x){ for(const [lim,v] of arr){ if(x<=lim) return v; } return arr[arr.length-1][1]; }
 let H={};
 function hesapla(){
-  if(!S.poz.length) return; (S.ekstra||[]).forEach(kapamaAd); /* SOUM-261118-DUZ */ sinifZorla(); /* SOUM-FIYAT-ONAY */ (S.ekstra||[]).forEach(e=>{ e.carpan=2.5; }); /* SOUM-EK-CARPAN-25: kayıtlı formlarda da 2,5 */
+  if(!S.poz.length) return; (S.ekstra||[]).forEach(kapamaAd); /* SOUM-261118-DUZ */ sinifZorla(); dilBolgeZorla(); /* SOUM-FIYAT-ONAY */ /* SOUM-DILBOLGE-ZORLA */ (S.ekstra||[]).forEach(e=>{ e.carpan=2.5; }); /* SOUM-EK-CARPAN-25: kayıtlı formlarda da 2,5 */
   const fr=$("f_bolge").value==="fr";
   const brutPoz=S.poz.reduce((a,p)=>a+(p.brut||0)*(p.F||0),0), brut=brutPoz+S.ekstraTop;
   const sinif=$("f_sinif").value, musk=sinif==="1"?par("s1_iskonto",0.14):sinif==="2"?par("s2_iskonto",0.05):0;
@@ -1551,7 +1551,7 @@ function fyListe(){ const L=[]; if(!S.poz||!S.poz.length) return L;
 function fyImza(){ return fyListe().join(" | "); }
 function fyAcik(){ const i=fyImza(); return !!i&&i!==(S.fyOnay||"")&&i!==(S.fyBek||""); }
 function fyBekliyor(){ const i=fyImza(); return !!S.fyBek&&i===S.fyBek; }
-function sinifZorla(){ const sel=$("f_sinif"); if(!sel) return; const mb=iskKod()==="MB"; sel.disabled=!mb; sel.title=mb?"":"Müşteri sınıfı müşteri listesinden gelir; değiştirilemez";
+/* SOUM-DILBOLGE-ZORLA (26.11.2026, Melih): Teklif dili, bölge ve para birimi elle seçilemez; formu belirler. YD1 → Fransızca / Fransa / EUR, YD2 → İngilizce / Diğer ülkeler / GBP (YD seçimi ya da Pencad eşleşmesi); YD yoksa müşteri listesindeki sınıftan (1-2 Fransa, 3-4 İngiltere). Kayıtlı form açılınca da düzeltilir. */ function dilBolgeZorla(){ const d=$("f_dil"), b=$("f_bolge"); if(!d||!b) return false; const blok=String((S.ydSec&&S.ydSec.blok)||(S.yd&&S.yd.blok)||"").toUpperCase(); let bl=null, dl=null; if(blok==="YD1"){ bl="fr"; dl="fr"; } else if(blok==="YD2"){ bl="du"; dl="en"; } else if(S.sinifL&&S.sinifL.length){ const fn=nrmTxt($("f_firma").value); const s=S.sinifL.find(x=>nrmTxt(x.ad)===fn)||S.sinifL.find(x=>fn&&nrmTxt(x.ad).startsWith(fn.split(" ")[0])&&fn.includes(nrmTxt(x.ad).split(" ")[0])); if(s){ bl=s.sinif<=2?"fr":"du"; dl=(s.sinif===3||s.sinif===4)?"en":"fr"; } } const dD=!!dl&&d.value!==dl, bD=!!bl&&b.value!==bl; if(dl) d.value=dl; if(bl) b.value=bl; d.disabled=b.disabled=true; d.title=b.title="Teklif dili, bölge ve para birimi YD1/YD2 seçiminden (yoksa müşteri listesinden) gelir; değiştirilemez"; if(dD&&typeof enGoster==="function") enGoster(); if(bD&&typeof notDoldur==="function"&&S.poz&&S.poz.length) notDoldur(); return dD||bD; } setTimeout(()=>{ try{ dilBolgeZorla(); }catch(e){} },0); /* SOUM-DILBOLGE-ZORLA */ function sinifZorla(){ const sel=$("f_sinif"); if(!sel) return; const mb=iskKod()==="MB"; sel.disabled=!mb; sel.title=mb?"":"Müşteri sınıfı müşteri listesinden gelir; değiştirilemez";
   if(mb||!S.sinifL||!S.sinifL.length) return; const fn=nrmTxt($("f_firma").value);
   const s=S.sinifL.find(x=>nrmTxt(x.ad)===fn)||S.sinifL.find(x=>fn&&nrmTxt(x.ad).startsWith(fn.split(" ")[0])&&fn.includes(nrmTxt(x.ad).split(" ")[0]));
   sel.value=s?String(s.sinif%2===1?1:2):"0"; }
