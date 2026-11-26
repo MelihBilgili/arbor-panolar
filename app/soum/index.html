@@ -1715,8 +1715,19 @@ function formYukle(J){ const X=J.S||{};
 $("arsivBas").onclick=()=>{ const ic=$("arsivIc"), ac=ic.style.display==="none"; ic.style.display=ac?"":"none"; $("arsivBas").firstChild.textContent=(ac?"▾":"▸")+" Teklif arşivi "; if(ac&&!ARSIV.length) arsivYukle(); };
 $("arsivYenile").onclick=arsivYukle; $("arsivAra").oninput=arsivCiz;
 setTimeout(dipCiz,0); /* SOUM-DIPNOT */
-veriYukle().then(eks=>{ durum(eks.length?"Yüklenemeyen veri: "+eks.join(", ")+".":"Proje klasörünü (ya da dosyaları) seçip <b>Oku</b>'ya basınız.",eks.length?"uyari":""); });
+veriYukle().then(eks=>{ setTimeout(ydUrlAc,0); /* SOUM-YD-AC */ durum(eks.length?"Yüklenemeyen veri: "+eks.join(", ")+".":"Proje klasörünü (ya da dosyaları) seçip <b>Oku</b>'ya basınız.",eks.length?"uyari":""); });
 
+async function ydUrlAc(){ /* SOUM-YD-AC (26.11.2026, Melih): YD1/YD2 formunda satıra sağ tık → "Teklifi Teklif Hazırlama'da aç" bu sayfayı ?teklif=<soum_teklif id>&yd=<satış satırı id> ile açar; satıra işlenmiş arşiv kaydı (yoksa satıra bağlı en son kayıt) yüklenir, indirme düğmelerine kaydırılır; formu olmayan (yalnız Excel) kayıtta Excel indirilir. */
+  const q=new URLSearchParams(location.search), tid=q.get("teklif"), yid=q.get("yd"); if(!tid&&!yid) return;
+  try{ let r=null;
+    if(tid){ const a=await SB.from("soum_teklif").select("*").eq("id",tid).maybeSingle(); if(a.error) throw a.error; r=a.data; }
+    if(!r&&yid){ const a=await SB.from("soum_teklif").select("*").eq("yd_satir_id",yid).order("olusturma",{ascending:false}).limit(1); if(a.error) throw a.error; r=(a.data||[])[0]||null; }
+    if(!r){ durum("Bu satış satırına bağlı kayıtlı teklif bulunamadı (Teklif arşivinde yok).","uyari"); return; }
+    if(r.form_yolu){ await arsivYukle(); if(await formAc(r)){ $("durum").insertAdjacentHTML("beforeend",' <span class="mini">· Satış formundan açıldı (F-'+esc(formNo(r)||r.id)+'). İndirmek için <b>Excel\'i indir</b> / <b>PDF oluştur</b>.</span>'); setTimeout(()=>{ const b=$("btnPdf"); if(b) b.scrollIntoView({behavior:"smooth",block:"center"}); },600); } return; }
+    if(r.depo_yolu&&!xlYasakMi()){ const d=await SB.storage.from("soum-teklif").download(r.depo_yolu); if(d.error) throw d.error; const a=document.createElement("a"); a.href=URL.createObjectURL(d.data); a.download=r.dosya_adi||"teklif.xlsx"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },2000);
+      durum("Bu teklifin kayıtlı formu yok; arşivdeki Excel'i indirildi: <b>"+esc(r.dosya_adi||"")+"</b>.","uyari"); return; }
+    durum("Bu teklifin kayıtlı formu yok"+(r.depo_yolu?"; Excel'i indirme yetkiniz yok.":"."),"uyari");
+  }catch(e){ console.error(e); durum("Teklif açılamadı: "+esc(e.message||e),"hata"); } }
 /* ---------------- PDF (SOUM-PDF, 20.10.2026): Offre sayfasının yazdırma görünümü → tarayıcının "PDF olarak kaydet"i (vektör metin, A4) ---------------- */
 function pdfYap(Y){ Y=Y&&Y.yakala?Y:null; /* SOUM-PROJE-MAIL: Y.yakala → HTML yakalanır, pencere açılmaz */ if(revEksik()) return; /* SOUM-REVIZE-ARSIV */
   if(!S.poz.length) return;
