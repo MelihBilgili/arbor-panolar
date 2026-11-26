@@ -457,13 +457,13 @@ async function ileriYukle(donem){
       +'<td class="c">'+esc(x.adet==null?"—":x.adet)+'</td><td class="c">'+fd(x.mvt)+'</td><td class="c">'+fd(x.aup)+'</td><td class="c">'+fd(x.pst)+'</td><td class="c mytakip"></td></tr>').join("")
     +'</tbody></table></div>';
   if(window.MYACIL&&MYACIL.santiyeBirlestir) MYACIL.santiyeBirlestir(); /* SANTIYE-BIRLESIK2 (19.11.2026, Melih): İleri Tarihli Projeler de birleşik */
-  /* YI-ILERI-SUTUN (26.11.2026, Melih): Yurt İçi'nde İleri Tarihli Projeler — 1. sütun %50 dar, 2. %10 geniş, 3. (Proje Durumu) yok, 4. %60 dar; taşan metin üç nokta, tamamı üzerine gelince */
+  /* YI-ILERI-SUTUN (26.11.2026, Melih): Yurt İçi'nde İleri Tarihli Projeler — 1. sütun %50 dar, 2. %10 geniş, 3. (Proje Durumu) ve MVT yok, 4. %60 dar; taşan metin üç nokta, tamamı üzerine gelince */
   if(FORM_KODU==="yi"){ const t=el.querySelector("table"); let n=0;
     const ayar=()=>{ if(!t||t.dataset.ayar) return; const h=t.rows[0]&&t.rows[0].cells; if(!h||!h[0].offsetWidth){ if(n++<10) setTimeout(ayar,300); return; }
       const ic=c=>{ const s=getComputedStyle(c); return c.offsetWidth-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight); }; /* içerik genişliği (dolgu hariç) */
       const w1=Math.round(ic(h[0])*0.5), w2=Math.round(ic(h[1])*1.1), w4=Math.round(ic(h[3])*0.4); t.dataset.ayar="1";
       const sar=(c,w)=>{ if(!c.title) c.title=c.textContent; c.innerHTML='<div style="width:'+w+'px;max-width:'+w+'px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c.innerHTML+'</div>'; c.style.minWidth="0"; };
-      [...t.rows].forEach(r=>{ if(r.cells.length<4) return; r.deleteCell(2); const k=r.cells[0]; if(/^PRJ-/.test(k.textContent)){ k.title=k.textContent; k.textContent=k.textContent.slice(-6); } /* YI-ILERI-KOD: Sevke Hazır tablosundaki gibi kısa proje no, tamamı üzerine gelince */ sar(r.cells[0],w1); r.cells[1].innerHTML='<div style="width:'+w2+'px">'+r.cells[1].innerHTML+'</div>'; sar(r.cells[2],w4); });
+      [...t.rows].forEach(r=>{ if(r.cells.length<5) return; r.deleteCell(2); r.deleteCell(3); /* YI-ILERI-MVT-YOK (26.11.2026): MVT sütunu yok */ const k=r.cells[0]; if(/^PRJ-/.test(k.textContent)){ k.title=k.textContent; k.textContent=k.textContent.slice(-6); } /* YI-ILERI-KOD: Sevke Hazır tablosundaki gibi kısa proje no, tamamı üzerine gelince */ sar(r.cells[0],w1); r.cells[1].innerHTML='<div style="width:'+w2+'px">'+r.cells[1].innerHTML+'</div>'; sar(r.cells[2],w4); });
       t.style.width="auto"; t.querySelectorAll("th.c,td.c").forEach(x=>x.style.width="auto"); };
     ayar(); }
 }
