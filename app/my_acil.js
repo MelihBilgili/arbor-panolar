@@ -570,7 +570,7 @@
           es.parentNode.insertBefore(yr,es.nextSibling);
           yp=document.createElement("div"); yp.id="yi-sevk-pem"; yp.style.cssText="flex:0 0 auto"; yr.appendChild(yp); /* YI-UST-SAG (26.11.2026, Melih): PEM tablosu doğal genişliğinde, kaydırmasız */
           var an=document.getElementById("anket"), il=document.getElementById("ileri"); /* YI-ILERI-SAG (26.11.2026, Melih): İleri Tarihli Projeler memnuniyetin altında, sağ sütunda */
-          var sg=document.createElement("div"); sg.id="yi-sag"; sg.style.cssText="flex:0 1 auto;min-width:0;margin-left:auto;display:flex;flex-direction:column;gap:12px"; yr.appendChild(sg);
+          var sg=document.createElement("div"); sg.id="yi-sag"; sg.style.cssText="flex:1 1 360px;min-width:360px;display:flex;flex-direction:column;align-items:flex-end;gap:12px"; yr.style.flexWrap="wrap"; /* YI-SAG-SAR (26.11.2026): yer yetmezse sağ sütun PEM tablosunun altına iner */ yr.appendChild(sg);
           if(an){ an.style.cssText="min-width:0;overflow-x:auto"; sg.appendChild(an); }
           if(il){ il.style.cssText="min-width:0;overflow-x:auto"; sg.appendChild(il); }
           /* YI-UST-SAG: şerit sayfa kutusunun sağına taşar, ekranın sağ kenarına kadar uzanır; memnuniyet bloğu sağa yaslı */
