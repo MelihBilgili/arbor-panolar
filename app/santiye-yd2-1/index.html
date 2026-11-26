@@ -163,7 +163,7 @@ html,body{max-width:100vw;overflow-x:hidden}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../my_acil.js?v=261126h"></script><!-- MY-SANTIYE -->
+<script src="../my_acil.js?v=261126i"></script><!-- MY-SANTIYE -->
 <script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -402,12 +402,12 @@ async function anketYukle(){
       +cv(a.etut)+cv(a.kalite)+cv(a.sureler)+cv(a.yonetim)+cv(a.idari)/* ANKET-IDARI-AYRI */+cv(a.sav)+cv(a.tavsiye)
       +'<td class="c" style="font-weight:700;color:'+renk(isNaN(p)?null:p/4)+'">'+(isNaN(p)?"—":nk(p))+'</td></tr>'; }).join("")
     +'</tbody></table>';
-  if(B.length) h+='<table style="margin-top:6px"><thead><tr><th>Anketi Beklenen Proje</th><th>Müşteri</th><th class="c">Gönderim Tarihi</th><th class="c"></th></tr></thead><tbody>'
-    +B.map(a=>'<tr'+ank(adBul(a.proje)&&adBul(a.proje).proje)+'><td>'+esc(a.proje||"—")+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+fd(a.created_at)+'</td><td class="c">'
-      +(a.token?'<button class="ank-btn sec" data-kopya="'+esc(ankLink(a))+'">Linki kopyala</button>':'')+'</td></tr>').join("")
-    +'</tbody></table>';
-  if(G.length) h+='<table style="margin-top:6px"><thead><tr><th>Anketi Gönderilmemiş Proje (sağ tıkla link oluştur)</th><th>Müşteri</th><th class="c">Ülke</th><th class="c">AÜP</th></tr></thead><tbody>'
-    +G.map(a=>'<tr'+ank(a.proje)+'><td>'+esc(a.proje)+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+esc(a.ulke||"")+'</td><td class="c">'+fd(a.aup)+'</td></tr>').join("")
+  /* ANKET-BG-TEK (26.11.2026, Melih): Beklenen ve Gönderilmemiş tek tabloda iki grup (sütunlar hizalı); Ülke ve Linki kopyala sütunları kalktı, link kopyalama sağ tıkta */
+  if(B.length||G.length) h+='<table style="margin-top:6px"><tbody>'
+    +(B.length?'<tr><th>Anketi Beklenen Proje (sağ tıkla linki kopyala)</th><th>Müşteri</th><th class="c">Gönderim Tarihi</th></tr>'
+      +B.map(a=>'<tr'+ank(adBul(a.proje)&&adBul(a.proje).proje)+(a.token?' data-link="'+esc(ankLink(a))+'"':'')+'><td>'+esc(a.proje||"—")+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+fd(a.created_at)+'</td></tr>').join(""):'')
+    +(G.length?'<tr><th>Anketi Gönderilmemiş Proje (sağ tıkla link oluştur)</th><th>Müşteri</th><th class="c">AÜP</th></tr>'
+      +G.map(a=>'<tr'+ank(a.proje)+'><td>'+esc(a.proje)+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+fd(a.aup)+'</td></tr>').join(""):'')
     +'</tbody></table>';
   h+='<div class="ank-not">AÜP\'si 2026 öncesi projeler için anket linki <a href="../memnuniyet/" target="_blank">Müşteri Memnuniyet formundan</a> oluşturulabilir.</div>';
   el.innerHTML=h+'</details>';
@@ -427,14 +427,16 @@ async function anketYukle(){
     await anketYukle();
     const lb=el.querySelector(".ank-lb"); if(lb) lb.scrollIntoView({block:"nearest"}); };
   const ankKapat=()=>{ const m=document.getElementById("ank-ctx"); if(m) m.remove(); };
-  el.querySelectorAll("tr[data-ank]").forEach(tr=>tr.addEventListener("contextmenu",ev=>{ ev.preventDefault(); ev.stopPropagation(); ankKapat();
+  el.querySelectorAll("tr[data-ank],tr[data-link]").forEach(tr=>tr.addEventListener("contextmenu",ev=>{ ev.preventDefault(); ev.stopPropagation(); ankKapat();
     const m=document.createElement("div"); m.id="ank-ctx";
     m.style.cssText="position:fixed;z-index:100001;background:#fff;border:1px solid #c9d6e3;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:4px 0;font-size:13px;min-width:190px";
-    m.innerHTML='<div style="padding:5px 12px 6px;font-size:11px;color:#5a6b7d;border-bottom:1px solid #eef1f5">'+esc(tr.dataset.ank)+'</div><div class="ank-ci" style="padding:7px 12px;cursor:pointer">Anket linki oluştur</div>';
+    m.innerHTML='<div style="padding:5px 12px 6px;font-size:11px;color:#5a6b7d;border-bottom:1px solid #eef1f5">'+esc(tr.dataset.ank||tr.cells[0].textContent)+'</div>'
+      +(tr.dataset.link?'<div class="ank-ci" data-i="kopya" style="padding:7px 12px;cursor:pointer">Linki kopyala</div>':'')
+      +(tr.dataset.ank?'<div class="ank-ci" data-i="olustur" style="padding:7px 12px;cursor:pointer">Anket linki oluştur</div>':'');
     document.body.appendChild(m);
     m.style.left=Math.max(4,Math.min(ev.clientX,innerWidth-m.offsetWidth-6))+"px"; m.style.top=Math.max(4,Math.min(ev.clientY,innerHeight-m.offsetHeight-6))+"px";
-    const i=m.querySelector(".ank-ci"); i.onmouseenter=()=>i.style.background="#eef4fb"; i.onmouseleave=()=>i.style.background="";
-    i.onclick=()=>{ ankKapat(); ankOlustur(tr.dataset.ank); };
+    m.querySelectorAll(".ank-ci").forEach(i=>{ i.onmouseenter=()=>i.style.background="#eef4fb"; i.onmouseleave=()=>i.style.background="";
+      i.onclick=async()=>{ ankKapat(); if(i.dataset.i==="kopya"){ const ok=await ankKopya(tr.dataset.link); alert(ok?"Anket linki kopyalandı.":"Link kopyalanamadı:\n"+tr.dataset.link); } else ankOlustur(tr.dataset.ank); }; });
     setTimeout(()=>{ document.addEventListener("click",ankKapat,{once:true}); window.addEventListener("scroll",ankKapat,{once:true,capture:true}); },0);
   }));
 }

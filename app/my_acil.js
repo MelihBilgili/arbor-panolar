@@ -568,8 +568,10 @@
       if(skod==="yi"){ var yp=document.getElementById("yi-sevk-pem"); if(!yp){ /* YI-ANKET-SAG (24.11.2026, Melih): Yurt İçi formunda Toplam Memnuniyet, Sevke Hazır PEM'lerin sağında; iki sütun ekran genişliğini aşmaz */
           var yr=document.createElement("div"); yr.id="yi-ust"; yr.style.cssText="display:flex;gap:12px;align-items:flex-start;width:100%;margin-bottom:14px";
           es.parentNode.insertBefore(yr,es.nextSibling);
-          yp=document.createElement("div"); yp.id="yi-sevk-pem"; yp.style.cssText="flex:1 1 0;min-width:0"; yr.appendChild(yp);
-          var an=document.getElementById("anket"); if(an){ an.style.cssText="flex:1 1 0;min-width:0"; yr.appendChild(an); } }
+          yp=document.createElement("div"); yp.id="yi-sevk-pem"; yp.style.cssText="flex:0 0 auto"; yr.appendChild(yp); /* YI-UST-SAG (26.11.2026, Melih): PEM tablosu doğal genişliğinde, kaydırmasız */
+          var an=document.getElementById("anket"); if(an){ an.style.cssText="flex:0 1 auto;min-width:0;margin-left:auto;overflow-x:auto"; yr.appendChild(an); }
+          /* YI-UST-SAG: şerit sayfa kutusunun sağına taşar, ekranın sağ kenarına kadar uzanır; memnuniyet bloğu sağa yaslı */
+          var yg=function(){ var l=yr.getBoundingClientRect().left; yr.style.width=Math.max(300,document.documentElement.clientWidth-l-12)+"px"; }; yg(); window.addEventListener("resize",yg); }
         yiSevkPemBlok(yp,{sb:cli}); setInterval(function(){ if(!yp.querySelector("input")) yiSevkPemBlok(yp,{sb:cli}); },5*60*1000); } /* YI-SEVK-PEM */
       if(skod){ santiyeBlok(es,{sb:cli,kod:skod}); setInterval(function(){ if(!document.querySelector(".my-modal")&&!document.getElementById("mys-ctx")) santiyeBlok(es,{sb:cli,kod:skod}); },5*60*1000); } }
     if(sp){ sevkPrjBlok(sp,{sb:cli}); setInterval(function(){ if(!sp.querySelector("input")) sevkPrjBlok(sp,{sb:cli}); },5*60*1000); } /* MK-SEVK-PRJ */
