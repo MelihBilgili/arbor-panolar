@@ -463,7 +463,7 @@ async function ileriYukle(donem){
       const ic=c=>{ const s=getComputedStyle(c); return c.offsetWidth-parseFloat(s.paddingLeft)-parseFloat(s.paddingRight); }; /* içerik genişliği (dolgu hariç) */
       const w1=Math.round(ic(h[0])*0.5), w2=Math.round(ic(h[1])*1.1), w4=Math.round(ic(h[3])*0.4); t.dataset.ayar="1";
       const sar=(c,w)=>{ if(!c.title) c.title=c.textContent; c.innerHTML='<div style="width:'+w+'px;max-width:'+w+'px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c.innerHTML+'</div>'; c.style.minWidth="0"; };
-      [...t.rows].forEach(r=>{ if(r.cells.length<4) return; r.deleteCell(2); sar(r.cells[0],w1); r.cells[1].innerHTML='<div style="width:'+w2+'px">'+r.cells[1].innerHTML+'</div>'; sar(r.cells[2],w4); });
+      [...t.rows].forEach(r=>{ if(r.cells.length<4) return; r.deleteCell(2); const k=r.cells[0]; if(/^PRJ-/.test(k.textContent)){ k.title=k.textContent; k.textContent=k.textContent.slice(-6); } /* YI-ILERI-KOD: Sevke Hazır tablosundaki gibi kısa proje no, tamamı üzerine gelince */ sar(r.cells[0],w1); r.cells[1].innerHTML='<div style="width:'+w2+'px">'+r.cells[1].innerHTML+'</div>'; sar(r.cells[2],w4); });
       t.style.width="auto"; t.querySelectorAll("th.c,td.c").forEach(x=>x.style.width="auto"); };
     ayar(); }
 }
