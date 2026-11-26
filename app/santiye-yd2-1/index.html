@@ -406,8 +406,9 @@ async function anketYukle(){
   if(B.length||G.length) h+='<table style="margin-top:6px"><tbody>'
     +(B.length?'<tr><th>Anketi Beklenen Proje (sağ tıkla linki kopyala)</th><th>Müşteri</th><th class="c">Gönderim Tarihi</th></tr>'
       +B.map(a=>'<tr'+ank(adBul(a.proje)&&adBul(a.proje).proje)+(a.token?' data-link="'+esc(ankLink(a))+'"':'')+'><td>'+esc(a.proje||"—")+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+fd(a.created_at)+'</td></tr>').join(""):'')
-    +(G.length?'<tr><th>Anketi Gönderilmemiş Proje (sağ tıkla link oluştur)</th><th>Müşteri</th><th class="c">AÜP</th></tr>'
-      +G.map(a=>'<tr'+ank(a.proje)+'><td>'+esc(a.proje)+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+fd(a.aup)+'</td></tr>').join(""):'')
+    /* ANKET-G-BANT (26.11.2026, Melih): Anketi Gönderilmemiş grubu açılır bant, kapalı başlar (başlığa tıkla) */
+    +(G.length?'<tr class="ank-gg" style="cursor:pointer" title="Aç / kapat"><th>'+(window.ANK_G_ACIK?'▾':'▸')+' Anketi Gönderilmemiş Proje ('+G.length+') (sağ tıkla link oluştur)</th><th>Müşteri</th><th class="c">AÜP</th></tr>'
+      +G.map(a=>'<tr class="ank-g"'+(window.ANK_G_ACIK?'':' style="display:none"')+ank(a.proje)+'><td>'+esc(a.proje)+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+fd(a.aup)+'</td></tr>').join(""):'')
     +'</tbody></table>';
   h+='<div class="ank-not">AÜP\'si 2026 öncesi projeler için anket linki <a href="../memnuniyet/" target="_blank">Müşteri Memnuniyet formundan</a> oluşturulabilir.</div>';
   el.innerHTML=h+'</details>';
@@ -417,6 +418,8 @@ async function anketYukle(){
       t.style.width="auto"; t.querySelectorAll("th.c,td.c").forEach(x=>x.style.width="auto"); /* YI-ANKET-ILK-DAR-FIX: .sevk table width:100% ve %1 sütunlar ilk sütunu boşlukla şişiriyordu */
       t.querySelectorAll("tr").forEach(tr=>{ const c=tr.cells[0]; if(!c) return; c.style.minWidth="0"; if(!c.title) c.title=c.textContent; c.innerHTML='<div style="width:'+w+'px;max-width:'+w+'px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c.innerHTML+'</div>'; }); });
     dar(); setTimeout(dar,600); setTimeout(dar,2000); const d=el.querySelector("details.sbant"); if(d) d.addEventListener("toggle",dar); }
+  el.querySelectorAll("tr.ank-gg").forEach(g=>g.onclick=()=>{ window.ANK_G_ACIK=!window.ANK_G_ACIK; const ac=window.ANK_G_ACIK; /* ANKET-G-BANT */
+    el.querySelectorAll("tr.ank-g").forEach(r=>r.style.display=ac?"":"none"); const c=g.cells[0], d=c.querySelector("div")||c; d.innerHTML=d.innerHTML.replace(/^[▸▾]/,ac?"▾":"▸"); });
   el.querySelectorAll("button[data-kopya]").forEach(b=>b.onclick=async()=>{ const o=b.textContent; b.textContent=(await ankKopya(b.dataset.kopya))?"Kopyalandı ✓":"Kopyalanamadı"; setTimeout(()=>b.textContent=o,1800); });
   /* ANKET-SAGTIK-LINK (26.11.2026, Melih): "Link oluştur" düğmeleri kalktı; proje satırına sağ tıklayınca link oluşturulur */
   const ankOlustur=async p=>{ if(!confirm(p+" için müşteri anket linki oluşturulsun mu?\n\nLink bir kez doldurulabilir; aynı projede başka kişiye anket gerekiyorsa ayrı link oluşturun.")) return;
