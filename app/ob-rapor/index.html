@@ -70,15 +70,20 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 
   <!-- OB-TAKIP-AF-CIKAR (26.11.2026, Melih): Takipteki İşler ve Aylık Faaliyet blokları formdan çıkarıldı; kod ölü olarak duruyor, veriler (ob_isler, ob_aylik_faaliyet) silinmedi. -->
 
-  <div class="grp"><h2>Dépenses — Tedarikçi Giderleri</h2>
+  <!-- OB-DUZEN-261126 (26.11.2026, Melih): Tedarikçi Giderleri | Tıkanmış Şantiyeler yan yana; ödeme|fatura, DPGF|Situations, PV|Tahsilat yan yana -->
+  <style>.obyan{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}.obyan>*{flex:1 1 440px;min-width:0}.obyan>.grp{margin-top:10px}
+  .ydbox{display:inline-flex!important;flex:none!important;gap:8px;align-items:baseline;white-space:nowrap;margin-top:8px;padding:5px 12px!important}
+  .ydbox .ydv{font-size:14px!important;margin-top:0!important}.ydbox .ydn{margin-top:0!important}</style>
+  <div class="obyan">
+  <div class="grp" style="flex:0 1 auto"><h2>Tedarikçi Giderleri</h2>
     <div class="ibtns">
       <span class="hint" style="margin:0;align-self:center">Yeni gider ayı:</span>
       <select id="dYil" class="dsel" title="Yeni kaydın yılı"></select>
       <select id="dAy" class="dsel" title="Yeni kaydın ayı"></select>
       <button class="iadd" id="dAdd">+ Tedarikçi Ekle</button>
     </div>
-    <!-- YD-FT-GEREKEN (2026-09-25) --><div style="display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap">
-      <div id="dList" style="flex:1 1 440px;min-width:0"><div class="load">Yükleniyor…</div></div>
+    <!-- YD-FT-GEREKEN (2026-09-25) --><div>
+      <div id="dList" style="min-width:0"><div class="load">Yükleniyor…</div></div>
       <div id="ydBox" class="ydbox"></div>
     </div>
   </div>
@@ -104,6 +109,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <textarea id="s_durum" class="dsel" style="width:100%;min-height:60px" placeholder="Bu tarihteki durum / gelişme…"></textarea>
     <div id="s_akis"></div>
   </div>
+  </div><!-- /obyan -->
 
   <!-- === Yurt Dışı Alacak — Blok 2 & 3 (sel_odeme / arbor_kesilen_fatura) — SEL-ARB'a "Güncelle" (Yurt Dışı Alacak formu) ile aktarılır === -->
   <div id="sa23wrap">
@@ -124,6 +130,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     #sa23wrap .del:hover{color:#8e0000}
     #sa23wrap .msg{font-size:12.5px;min-height:17px;margin-top:6px}#sa23wrap .msg.ok{color:#0a6b3f;font-weight:600}#sa23wrap .msg.err{color:#b40000;font-weight:600}
    </style>
+   <div class="obyan">
    <div class="card">
     <div class="chd"><h2>Yurt Dışı Birimlerden Selectron’a Yapılan Ödemeler <span class="cnt" id="c2"></span></h2>
       <span id="a2"></span></div>
@@ -141,6 +148,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     </tr></thead><tbody id="t3"><tr><td colspan="6">Yükleniyor…</td></tr></tbody></table></div>
     <div class="msg" id="m3"></div>
    </div>
+   </div><!-- /obyan -->
 
    <!-- DEVLET-DESTEK (2026-09-24, Melih): Devlet Destek Başvuruları bloğu (devlet_destek). İade edilen tutar aylık toplamı ÖB primine esas (%1, sonuç tarihinin ayı; DD-PRIM-1YUZDE 02.10.2026). -->
    <div class="card" id="ddCard">
@@ -158,25 +166,29 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
     <div class="chd"><h2>DPGF's  -  Situations  -  Avenants - PV's de Réception</h2><span id="a5"></span></div>
     <div class="hint" style="margin:0 2px 6px">Yeni kayıt için en üstteki boş satırı doldurun. Tarih = hazırlanma tarihi (boş bırakılırsa bugün). Tutarlar € cinsindendir.</div>
     <div><!-- OB-AVENANT: tablolar alt alta -->
-     <div style="margin-bottom:12px"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">DPGF <span class="cnt" id="c5"></span></h3>
+     <div class="obyan"><div style="margin-bottom:12px"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">DPGF <span class="cnt" id="c5"></span></h3>
       <div class="scroll"><table style="min-width:520px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th>Correspondence</th><th style="width:110px">Tutar (€)</th><th class="x"></th></tr></thead><tbody id="t5"></tbody></table></div></div>
      <div style="margin-bottom:12px"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">Situations <span class="cnt" id="c6"></span></h3>
-      <div class="scroll"><table style="min-width:760px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th style="width:80px">İlerleme No</th><th style="width:110px">Dönem</th><th style="width:110px">Tutar (€)</th><th style="width:140px">Onay Durumu</th><th class="x"></th></tr></thead><tbody id="t6"></tbody></table></div></div>
+      <div class="scroll"><table style="min-width:760px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th style="width:80px">İlerleme No</th><th style="width:110px">Dönem</th><th style="width:110px">Tutar (€)</th><th style="width:140px">Onay Durumu</th><th class="x"></th></tr></thead><tbody id="t6"></tbody></table></div></div></div><!-- /obyan DPGF|Situations -->
      <div><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">TS <span class="cnt" id="c7"></span></h3><!-- OB-TS-261006 -->
       <div class="scroll"><table style="min-width:1145px"><thead><tr><th style="width:72px">Tarih</th><th style="width:95px">No</th><th style="width:170px">Proje</th><th style="width:230px">İçerik</th><th style="width:175px">Açıklama</th><!-- OB-TS-ACIKLAMA-261006 --><th style="width:120px">Tutar (€, KDV hariç)</th><th style="width:110px" title="Bu TS'in bağlı olduğu situation; Avenant geldi için zorunlu">İlerleme No (Situ)</th><!-- OB-TS-SITU-NO --><th style="width:140px">Durum</th><th class="x"></th></tr></thead><tbody id="t7"></tbody></table></div></div>
-     <div style="margin-top:12px"><h3 style="font-size:13px;margin:0 0 5px;color:#16324f">PV's de Réception <span class="cnt" id="c9"></span></h3><!-- OB-PVR (01.10.2026): Tutar = Sel-Arb kontrat tutarı (trigger) -->
-      <div class="scroll"><table style="min-width:620px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th style="width:130px">Tutar (€)</th><th>Açıklama</th><th class="x"></th></tr></thead><tbody id="t9"></tbody></table></div></div>
     </div>
     <div class="msg" id="m5"></div>
    </div>
 
    <!-- OB-TAHSILAT-260930 (Melih): Tahsilat bloğu (ob_tahsilat). Proje bazlı toplam Sel-Arb formunun Tahsilat sütununa gider (view sel_arb_ob_toplam). -->
+   <div class="obyan">
+   <div class="card" id="pvCard">
+    <div class="chd"><h2>PV's de Réception <span class="cnt" id="c9"></span></h2></div><!-- OB-PVR (01.10.2026): Tutar = Sel-Arb kontrat tutarı (trigger) -->
+      <div class="scroll"><table style="min-width:620px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th style="width:130px">Tutar (€)</th><th>Açıklama</th><th class="x"></th></tr></thead><tbody id="t9"></tbody></table></div>
+   </div>
    <div class="card" id="thCard">
     <div class="chd"><h2>Tahsilat <span class="cnt" id="c8"></span></h2></div>
     <div class="hint" style="margin:0 2px 6px">Yeni tahsilat için en üstteki boş satırı doldurun. Tutarlar € cinsindendir; proje bazlı toplam Sel-Arb formunda Tahsilat sütununda görünür.</div>
     <div class="scroll"><table style="min-width:620px"><thead><tr><th style="width:72px">Tarih</th><th>Proje</th><th>Açıklama</th><th style="width:110px">Tutar (€)</th><th class="x"></th></tr></thead><tbody id="t8"></tbody></table></div>
     <div class="msg" id="m8"></div>
    </div>
+   </div><!-- /obyan PV|Tahsilat -->
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -549,21 +561,25 @@ async function loadDep(){
   try{ zgHesap(); ydHesap(); }catch(e){} /* ZG-PUAN / YD-FT-GEREKEN */
 }
 /* Dépenses ay-accordion: cari ay varsayılan açık, geçmiş aylar gizli; başlığa tıkla aç/kapat */
-let DOPEN=null;
+let DOPEN=null, DESKI=false; /* OB-DEP-IKI-SATIR */
 function renderDep(){
   const keys=[...new Set(DROWS.map(r=>r.yil*100+r.ay))].sort((a,b)=>b-a);
   const _now=new Date(); const CURKEY=String(_now.getFullYear()*100+(_now.getMonth()+1));
-  if(DOPEN===null){ DOPEN=new Set([CURKEY]); }   /* ilk render: yalnız cari ay açık */
+  if(DOPEN===null){ DOPEN=new Set(); }   /* OB-DEP-IKI-SATIR: ilk açılışta yalnız iki toplam satırı */
   let h='<table class="itbl"><thead><tr><th>Ay</th><th>Tedarikçi</th><th style="text-align:right">Tutar (€)</th><th></th></tr></thead><tbody>';
-  keys.forEach(k=>{
+  /* OB-DEP-IKI-SATIR (26.11.2026, Melih): son ay + "Daha eski" iki satır; eski satır açılınca aylar görünür */
+  keys.forEach((k,ki)=>{
     const yil=Math.floor(k/100), ay=k%100, ks=String(k);
+    const eski=ki>0, gor=!eski||DESKI;
+    if(ki===1){ const ek=keys.slice(1), et=DROWS.filter(r=>ek.indexOf(r.yil*100+r.ay)>-1).reduce((a,r)=>a+(Number(r.tutar)||0),0);
+      h+='<tr class="dtot deski" style="cursor:pointer" title="Eski ayları aç/kapat"><td colspan="2"><span style="display:inline-block;width:14px;color:#8a6100">'+(DESKI?"▾":"▸")+'</span>Daha eski <span style="font-weight:400;color:#8a97a4">('+DAY[ay-1]+' '+yil+' ve öncesi, '+ek.length+' ay)</span></td><td style="text-align:right">'+dEur(et)+'</td><td></td></tr>'; }
     const rs=DROWS.filter(r=>r.yil===yil&&r.ay===ay);
     const top=rs.reduce((a,r)=>a+(Number(r.tutar)||0),0);
     const acik=DOPEN.has(ks);
-    h+='<tr class="dtot dhead" data-mk="'+ks+'" style="cursor:pointer" title="Ayı aç/kapat"><td colspan="2"><span class="dcaret" style="display:inline-block;width:14px;color:#8a6100">'+(acik?"▾":"▸")+'</span>'+DAY[ay-1]+' '+yil+' <span style="font-weight:400;color:#8a97a4">('+rs.length+' tedarikçi)</span></td>'
+    h+='<tr class="dtot dhead" data-mk="'+ks+'" style="cursor:pointer'+(gor?'':';display:none')+(eski?';font-weight:600;background:#fffbf1':'')+'" title="Ayı aç/kapat"><td colspan="2"><span class="dcaret" style="display:inline-block;width:14px;color:#8a6100'+(eski?';margin-left:14px':'')+'">'+(acik?"▾":"▸")+'</span>'+(eski?'':'Son ay · ')+DAY[ay-1]+' '+yil+' <span style="font-weight:400;color:#8a97a4">('+rs.length+' tedarikçi)</span></td>'
       +'<td style="text-align:right">'+dEur(top)+'</td><td></td></tr>';
     rs.forEach(r=>{
-      h+='<tr data-id="'+r.id+'" data-mk="'+ks+'"'+(acik?'':' style="display:none"')+'>'
+      h+='<tr data-id="'+r.id+'" data-mk="'+ks+'"'+(acik&&gor?'':' style="display:none"')+'>'
         +'<td style="color:#8a97a4;white-space:nowrap">'+DAY[ay-1].slice(0,3)+' '+String(yil).slice(2)+'</td>'
         +'<td><input class="ic" data-f="tedarikci" value="'+esc(r.tedarikci)+'" placeholder="Tedarikçi adı"></td>'
         +'<td style="text-align:right"><input class="ic" data-f="tutar" type="number" step="0.01" value="'+esc(r.tutar)+'" placeholder="0"></td>'
@@ -575,6 +591,7 @@ function renderDep(){
   const list=document.getElementById("dList"); list.innerHTML=h;
   list.querySelectorAll("[data-f]").forEach(el=>{ el.addEventListener("change",()=>saveDep(+el.closest("tr").dataset.id,el.dataset.f,el.value)); });
   list.querySelectorAll(".ddel").forEach(b=>b.onclick=()=>delDep(+b.closest("tr").dataset.id));
+  list.querySelectorAll("tr.deski").forEach(hd=>hd.addEventListener("click",()=>{ DESKI=!DESKI; renderDep(); }));
   list.querySelectorAll("tr.dhead").forEach(hd=>hd.addEventListener("click",e=>{
     if(e.target.closest("input,button,select")) return;
     const k=hd.dataset.mk; if(DOPEN.has(k)) DOPEN.delete(k); else DOPEN.add(k);
@@ -595,6 +612,7 @@ async function addDep(){
   const {data,error}=await sb.from("depenses_kalem").insert({yil:dYil(),ay:dAy(),tedarikci:"",tutar:0}).select();
   if(error){ msg(error.message,false); return; }
   if(DOPEN) DOPEN.add(String(data[0].yil*100+data[0].ay));   /* eklenen ay açık kalsın */
+  { const mx=Math.max(...DROWS.map(r=>r.yil*100+r.ay),0); if(data[0].yil*100+data[0].ay<mx) DESKI=true; } /* OB-DEP-IKI-SATIR */
   DROWS.unshift(data[0]); renderDep();   /* yeni satır kendi ayının en üstünde */
   const tr=document.querySelector('#dList tr[data-id="'+data[0].id+'"]');
   const inp=tr&&tr.querySelector('input[data-f="tedarikci"]'); if(inp){ inp.focus(); tr.scrollIntoView({block:"center"}); }
