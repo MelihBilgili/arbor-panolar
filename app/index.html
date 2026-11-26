@@ -336,11 +336,11 @@ function renderApp(){
   const ust=vis.filter(t=>t[0]!=="mali"&&t[0]!=="formlar"&&t[0]!=="ozel"), malOk=vis.some(t=>t[0]==="mali");
   const mBtn=(k,ad,akt)=>`<button data-t="${k}" class="${akt?'active':''}">${esc(ad)}</button>`;
   let mnHTML=ust.map(t=>mBtn(t[0],t[1],state.tab===t[0])).join("");
-  if(malOk) mnHTML+=`<div class="mnsep"></div><div class="mngrp">MALİ</div>`+MENU_MALI.map(m=>mBtn("mali:"+m[0],m[1],state.tab==="mali"&&state.maliBolum===m[0])).join("");
+  if(malOk) mnHTML+=`<div class="mnsep"></div>`/* MENU-MALI-ADSIZ (26.11.2026, Melih): Mali grup adı menüden kaldırıldı */+MENU_MALI.map(m=>mBtn("mali:"+m[0],m[1],state.tab==="mali"&&state.maliBolum===m[0])).join("");
   mnHTML+=`<div class="mnsep"></div>`+vis.filter(t=>t[0]==="formlar"||t[0]==="ozel").map(t=>mBtn(t[0],t[1],state.tab===t[0])).join("")
     +`<a href="${URETIM_TAKIP_URL}" target="_blank" rel="noopener" title="Üretim Takip uygulamasını yeni sekmede aç">Üretim Takip ↗</a>`;
   const malAd=(MENU_MALI.find(m=>m[0]===state.maliBolum)||MENU_MALI[0])[1];
-  const curAd=state.tab==="mali"?"Mali · "+malAd:((vis.find(t=>t[0]===state.tab)||gzl||[])[1]||"");
+  const curAd=state.tab==="mali"?malAd:((vis.find(t=>t[0]===state.tab)||gzl||[])[1]||"");
   app.innerHTML = `
    <header>
      <div class="mnbar" style="position:relative"><!-- MENU-DUGME URETIM-TAKIP-LINK -->
