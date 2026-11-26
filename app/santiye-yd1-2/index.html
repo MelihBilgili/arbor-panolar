@@ -163,7 +163,7 @@ html,body{max-width:100vw;overflow-x:hidden}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../my_acil.js?v=261124e"></script><!-- MY-SANTIYE -->
+<script src="../my_acil.js?v=261126a"></script><!-- MY-SANTIYE -->
 <script src="../santiye_foto.js?v=261106"></script><!-- MY-SANTIYE-FOTO -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -377,7 +377,7 @@ async function anketYukle(){
   const Y=L.filter(a=>a.durum==="Yanıtlandı"), B=L.filter(a=>a.durum!=="Yanıtlandı"), G=A.filter(a=>!a.anket_sayi);
   const AD={}; A.forEach(a=>{ AD[ankNrm(a.proje)]=a; });
   const adBul=p=>AD[ankNrm(p)];
-  const btn=p=>'<button class="ank-btn" data-ank="'+esc(p)+'">Link oluştur</button>';
+  const ank=p=>p?' data-ank="'+esc(p)+'" title="Sağ tıklayarak müşteri anket linki oluştur" style="cursor:context-menu"':''; /* ANKET-SAGTIK-LINK */
   const P=Y.map(a=>parseFloat(a.puan)).filter(x=>!isNaN(x));
   const ort=P.length?P.reduce((s,x)=>s+x,0)/P.length:null;
   const yuz=x=>"%"+Math.round(x*100);
@@ -395,31 +395,40 @@ async function anketYukle(){
     +' <span style="font-weight:400;font-size:12px;color:#5a6b7d">· '+(ort==null?"Yanıtlanan anket yok":"Ortalama puan "+nk(ort)+" / 4 ("+yuz(ort/4)+") × anket geliş oranı "+yuz(gel)+" ("+Y.length+" / "+L.length+")")+'</span></h3></summary>';
   if(ANK_SON) h+='<div class="ank-lb"><b>'+esc(ANK_SON.proje)+'</b> — müşteri anket linki'+(ANK_SON.kop?' <span style="color:#1f7a46">(kopyalandı)</span>':'')
     +'<div style="display:flex;gap:6px;margin-top:5px"><input readonly value="'+esc(ankLink(ANK_SON))+'" onclick="this.select()"><button class="ank-btn" data-kopya="'+esc(ankLink(ANK_SON))+'">Linki kopyala</button></div></div>';
-  if(Y.length) h+='<table><thead><tr><th>Anketi Gelen Proje</th><th>Müşteri</th><th class="c">Yanıt Tarihi</th><th class="c">Etüt</th><th class="c">Kalite</th><th class="c">Süreler</th><th class="c" title="23.11.2026 öncesi yanıtlarda birleşik Teknik/İdari; ANKET-GESTION-TRAVAUX">Şantiye yön.</th><th class="c">İdari</th><th class="c">SAV</th><th class="c">Tavsiye</th><th class="c">Puan</th><th class="c"></th></tr></thead><tbody>'
-    +Y.map(a=>{ const p=parseFloat(a.puan); return '<tr><td>'+esc(a.proje||"—")+'</td><td>'+esc(a.yanitlayan_firma||a.firma||"—")+'</td><td class="c">'+fd(a.yanit_at)+'</td>'
+  if(Y.length) h+='<table><thead><tr><th>Anketi Gelen Proje</th><th>Müşteri</th><th class="c">Yanıt Tarihi</th><th class="c">Etüt</th><th class="c">Kalite</th><th class="c">Süreler</th><th class="c" title="23.11.2026 öncesi yanıtlarda birleşik Teknik/İdari; ANKET-GESTION-TRAVAUX">Şantiye yön.</th><th class="c">İdari</th><th class="c">SAV</th><th class="c">Tavsiye</th><th class="c">Puan</th></tr></thead><tbody>'
+    +Y.map(a=>{ const p=parseFloat(a.puan); return '<tr'+ank(adBul(a.proje)&&adBul(a.proje).proje)+'><td>'+esc(a.proje||"—")+'</td><td>'+esc(a.yanitlayan_firma||a.firma||"—")+'</td><td class="c">'+fd(a.yanit_at)+'</td>'
       +cv(a.etut)+cv(a.kalite)+cv(a.sureler)+cv(a.yonetim)+cv(a.idari)/* ANKET-IDARI-AYRI */+cv(a.sav)+cv(a.tavsiye)
-      +'<td class="c" style="font-weight:700;color:'+renk(isNaN(p)?null:p/4)+'">'+(isNaN(p)?"—":nk(p))+'</td><td class="c">'+(adBul(a.proje)?btn(adBul(a.proje).proje):'')+'</td></tr>'; }).join("")
+      +'<td class="c" style="font-weight:700;color:'+renk(isNaN(p)?null:p/4)+'">'+(isNaN(p)?"—":nk(p))+'</td></tr>'; }).join("")
     +'</tbody></table>';
   if(B.length) h+='<table style="margin-top:6px"><thead><tr><th>Anketi Beklenen Proje</th><th>Müşteri</th><th class="c">Gönderim Tarihi</th><th class="c"></th></tr></thead><tbody>'
-    +B.map(a=>'<tr><td>'+esc(a.proje||"—")+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+fd(a.created_at)+'</td><td class="c">'
-      +(a.token?'<button class="ank-btn sec" data-kopya="'+esc(ankLink(a))+'">Linki kopyala</button> ':'')+(adBul(a.proje)?btn(adBul(a.proje).proje):'')+'</td></tr>').join("")
+    +B.map(a=>'<tr'+ank(adBul(a.proje)&&adBul(a.proje).proje)+'><td>'+esc(a.proje||"—")+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+fd(a.created_at)+'</td><td class="c">'
+      +(a.token?'<button class="ank-btn sec" data-kopya="'+esc(ankLink(a))+'">Linki kopyala</button>':'')+'</td></tr>').join("")
     +'</tbody></table>';
-  if(G.length) h+='<table style="margin-top:6px"><thead><tr><th>Anketi Gönderilmemiş Proje (AÜP 2026 ve sonrası)</th><th>Müşteri</th><th class="c">Ülke</th><th class="c">AÜP</th><th class="c"></th></tr></thead><tbody>'
-    +G.map(a=>'<tr><td>'+esc(a.proje)+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+esc(a.ulke||"")+'</td><td class="c">'+fd(a.aup)+'</td><td class="c">'+btn(a.proje)+'</td></tr>').join("")
+  if(G.length) h+='<table style="margin-top:6px"><thead><tr><th>Anketi Gönderilmemiş Proje (sağ tıkla link oluştur)</th><th>Müşteri</th><th class="c">Ülke</th><th class="c">AÜP</th></tr></thead><tbody>'
+    +G.map(a=>'<tr'+ank(a.proje)+'><td>'+esc(a.proje)+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+esc(a.ulke||"")+'</td><td class="c">'+fd(a.aup)+'</td></tr>').join("")
     +'</tbody></table>';
   h+='<div class="ank-not">AÜP\'si 2026 öncesi projeler için anket linki <a href="../memnuniyet/" target="_blank">Müşteri Memnuniyet formundan</a> oluşturulabilir.</div>';
   el.innerHTML=h+'</details>';
   el.querySelectorAll("button[data-kopya]").forEach(b=>b.onclick=async()=>{ const o=b.textContent; b.textContent=(await ankKopya(b.dataset.kopya))?"Kopyalandı ✓":"Kopyalanamadı"; setTimeout(()=>b.textContent=o,1800); });
-  el.querySelectorAll("button[data-ank]").forEach(b=>b.onclick=async()=>{
-    const p=b.dataset.ank; if(!confirm(p+" için müşteri anket linki oluşturulsun mu?\n\nLink bir kez doldurulabilir; aynı projede başka kişiye anket gerekiyorsa ayrı link oluşturun.")) return;
-    b.disabled=true; b.textContent="Oluşturuluyor…";
+  /* ANKET-SAGTIK-LINK (26.11.2026, Melih): "Link oluştur" düğmeleri kalktı; proje satırına sağ tıklayınca link oluşturulur */
+  const ankOlustur=async p=>{ if(!confirm(p+" için müşteri anket linki oluşturulsun mu?\n\nLink bir kez doldurulabilir; aynı projede başka kişiye anket gerekiyorsa ayrı link oluşturun.")) return;
     let kisi=null; try{ const k=window.ARB_KISI_AL&&typeof ARB_ROLE_EMAIL!=="undefined"?ARB_KISI_AL(ARB_ROLE_EMAIL):null; kisi=k&&k.kod||null; }catch(e){}
     const x=await sb.rpc("santiye_anket_olustur",{p_form:FORM_KODU,p_proje:p,p_kisi:kisi});
-    if(x.error||!x.data){ b.disabled=false; b.textContent="Link oluştur"; alert("Link oluşturulamadı: "+((x.error&&x.error.message)||"")); return; }
+    if(x.error||!x.data){ alert("Link oluşturulamadı: "+((x.error&&x.error.message)||"")); return; }
     ANK_SON=x.data; ANK_SON.kop=await ankKopya(ankLink(ANK_SON));
     await anketYukle();
-    const lb=el.querySelector(".ank-lb"); if(lb) lb.scrollIntoView({block:"nearest"});
-  });
+    const lb=el.querySelector(".ank-lb"); if(lb) lb.scrollIntoView({block:"nearest"}); };
+  const ankKapat=()=>{ const m=document.getElementById("ank-ctx"); if(m) m.remove(); };
+  el.querySelectorAll("tr[data-ank]").forEach(tr=>tr.addEventListener("contextmenu",ev=>{ ev.preventDefault(); ev.stopPropagation(); ankKapat();
+    const m=document.createElement("div"); m.id="ank-ctx";
+    m.style.cssText="position:fixed;z-index:100001;background:#fff;border:1px solid #c9d6e3;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.18);padding:4px 0;font-size:13px;min-width:190px";
+    m.innerHTML='<div style="padding:5px 12px 6px;font-size:11px;color:#5a6b7d;border-bottom:1px solid #eef1f5">'+esc(tr.dataset.ank)+'</div><div class="ank-ci" style="padding:7px 12px;cursor:pointer">Anket linki oluştur</div>';
+    document.body.appendChild(m);
+    m.style.left=Math.max(4,Math.min(ev.clientX,innerWidth-m.offsetWidth-6))+"px"; m.style.top=Math.max(4,Math.min(ev.clientY,innerHeight-m.offsetHeight-6))+"px";
+    const i=m.querySelector(".ank-ci"); i.onmouseenter=()=>i.style.background="#eef4fb"; i.onmouseleave=()=>i.style.background="";
+    i.onclick=()=>{ ankKapat(); ankOlustur(tr.dataset.ank); };
+    setTimeout(()=>{ document.addEventListener("click",ankKapat,{once:true}); window.addEventListener("scroll",ankKapat,{once:true,capture:true}); },0);
+  }));
 }
 async function ileriYukle(donem){
   const el=document.getElementById("ileri"); if(!el) return;

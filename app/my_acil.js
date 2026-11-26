@@ -315,6 +315,8 @@
   /* SANTIYE-TEK-SERIT (24.11.2026, Melih): şantiye formlarında PEM, proje ve ofis tabloları aynı 10 sütun genişliği —
      PEM · Talep/Müşteri Onay · Proje Adı · Yükleme Şekli · Ek Bilgi · Adet · Termin/AÜP · Hedef/Şantiyede İstenen · Açıklama (2 kat) · Takip */
   var SW=[64,72,133,64,210,44,72,110,460,280];
+  /* YI-GENISLIK (26.11.2026, Melih): Yurt İçi şantiye formunda Proje Adı ~%10 dar (133→120, proje tablosunda 3 sütunluk alan 407→366; Ek Bilgi 210→182), Şantiyede İstenen %40 geniş (110→154) */
+  if(/\/santiye-yi\//.test(location.pathname)){ SW[2]=120; SW[4]=182; SW[7]=154; }
   function swCol(){ return '<colgroup>'+SW.map(function(x){ return '<col style="width:'+x+'px">'; }).join('')+'</colgroup>'; }
   function swTop(){ return SW.reduce(function(a,x){return a+x;},0); }
   /* SANTIYE-SORU-IKON (24.11.2026, Melih): blok açıklamaları formun başlığındaki "?" (arb-hlp) penceresine taşınır */
@@ -492,6 +494,34 @@
     }); });
   }
 
+  /* PEM-GECMIS-SEBEP (26.11.2026, Melih): hedef yükleme tarihi geçmiş PEM'de yeni şantiyede istenen tarih + sebep (zorunlu) penceresi;
+     rpc my_plan_yaz p_sebep (sunucu da sebepsiz değişikliği reddeder). Yurt İçi şantiye formu ve MY Faaliyet ortak. */
+  function bugunIso(){ var d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function gecmisPencere(sb,r,sonra){ stil();
+    var m=document.createElement("div"); m.className="my-modal";
+    m.innerHTML='<div class="box" style="max-width:460px"><button class="x" title="Kapat">×</button>'
+      +'<h4>Hedef yükleme tarihi geçmiş · PEM '+esc(r.kod)+'</h4><div class="mut" style="margin-bottom:10px">'+esc(r.proje)+'</div>'
+      +'<div style="font-size:12px;margin-bottom:10px">Hedef yükleme: <b style="color:#c62828">'+fd(r.plan)+'</b>'+(r.istenen?' · Şantiyede istenen: <b style="color:#c62828">'+fd(r.istenen)+'</b>':'')+'</div>'
+      +'<label class="mys-fl">Yeni Şantiyede İstenen Tarih<input id="mg_ist" type="date" min="'+bugunIso()+'"></label>'
+      +'<label class="mys-fl">Değişikliğin sebebi (zorunlu)<textarea id="mg_sb" rows="3"></textarea></label>'
+      +'<div class="mut" style="font-size:11.5px;margin:4px 0 10px">Hedef yükleme tarihi, şantiyede istenen tarihten nakliye süresi düşülerek hesaplanır.</div>'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end"><button class="mys-btn sec" id="mg_vz">Vazgeç</button><button class="mys-btn" id="mg_ok">Kaydet</button></div></div>';
+    document.body.appendChild(m);
+    var kapat=function(){ m.remove(); };
+    m.addEventListener("click",function(e){ if(e.target===m||e.target.classList.contains("x")) kapat(); });
+    m.querySelector("#mg_vz").onclick=kapat;
+    m.querySelector("#mg_ok").onclick=async function(){
+      var ist=m.querySelector("#mg_ist").value, sb2=m.querySelector("#mg_sb").value.trim();
+      if(!ist){ alert("Yeni şantiyede istenen tarihi giriniz."); return; }
+      if(ist<bugunIso()){ alert("Şantiyede istenen tarih bugünden önce olamaz."); return; }
+      if(!sb2){ m.querySelector("#mg_sb").focus(); alert("Tarih değişikliğinin sebebini yazınız."); return; }
+      var b=m.querySelector("#mg_ok"); b.disabled=true; b.textContent="Kaydediliyor…";
+      var x=await sb.rpc("my_plan_yaz",{p_tur:r.tur||"PEM",p_no:r.no,p_tarih:null,p_proje:r.proje||null,p_istenen:ist,p_sebep:sb2});
+      if(x.error){ b.disabled=false; b.textContent="Kaydet"; alert("Kaydedilemedi: "+x.error.message); return; }
+      kapat(); if(sonra) sonra(x.data);
+    };
+    setTimeout(function(){ var t=m.querySelector("#mg_ist"); if(t) t.focus(); },50);
+  }
   /* YI-SEVK-PEM (19.11.2026, Melih): Yurt İçi şantiye formunda yurt içi Sevke Hazır PEM'ler (rpc yi_sevk_pem_liste);
      Hedef Yükleme Tarihi = my_takip.plan_hedef (rpc my_plan_yaz, EB); boşsa kırmızı zemin "Tarih gir". */
   async function yiSevkPemBlok(el,o){
@@ -499,16 +529,19 @@
     try{ var x0=await sb.rpc("yi_sevk_pem_liste"); if(x0.error) throw x0.error; R=x0.data||[]; }catch(e){ el.innerHTML=""; return; }
     if(!R.length){ el.innerHTML=""; return; }
     if(!document.getElementById("mksp-css")){ var st=document.createElement("style"); st.id="mksp-css"; st.textContent="td.mksp-tg{background:#c62828!important;color:#fff!important;font-weight:700;cursor:pointer;text-align:center}td[data-mksp]{cursor:pointer}"; document.head.appendChild(st); }
+    var bg=bugunIso(), gec=function(r){ return !(r.durum==="Acil"&&r.hedef)&&r.plan&&String(r.plan).slice(0,10)<bg; }; /* PEM-GECMIS-SEBEP */
     var tarihli=function(r){ return (r.durum==="Acil"&&r.hedef)||r.istenen; }; /* SANTIYE-ISTENEN-B: EB şantiyede istenen tarihi girer, hedef = istenen − nakliye (my_plan_yaz p_istenen) */
     var eksik=R.filter(function(r){ return !tarihli(r); }).length;
     el.innerHTML='<div class="myab" style="margin-bottom:14px"><h3>SEVKE HAZIR PEM\'LER <span style="font-weight:400;font-size:12px;color:#5a6b7d">· Yurt içi'+(eksik?' · '+eksik+' satırda şantiyede istenen tarih girilmedi':'')+'</span></h3><div class="myw"><table class="mya"><thead><tr>'
-      +'<th>PEM</th><th>Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin<br>Tarihi</th><th>Şantiyede<br>İstenen Tarih</th></tr></thead><tbody>'
+      +'<th>PEM</th><th>Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin<br>Tarihi</th><th style="min-width:112px">Şantiyede<br>İstenen Tarih</th></tr></thead><tbody>'
       +R.map(function(r){ var ac=r.durum==="Acil"&&r.hedef;
-        var hd=ac?'<td title="Acil hedef yükleme tarihi"><b>'+fd(r.hedef)+'</b></td>':(r.istenen?'<td data-mksp="1" title="Şantiyede istenen tarihi değiştir · Hedef yükleme '+fd(r.plan)+'">'+fd(r.istenen)+'</td>':'<td class="mksp-tg" data-mksp="1">Tarih gir</td>');
-        return '<tr class="my-ks" data-no="'+esc(r.no)+'"><td title="'+esc(r.no+' · '+(r.durum_erp||''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td><td class="w" style="max-width:32ch" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" style="max-width:46ch" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'+hd+'</tr>'; }).join("")
+        var hd=ac?'<td title="Acil hedef yükleme tarihi"><b>'+fd(r.hedef)+'</b></td>':(gec(r)?'<td data-mksp="1" data-gec="1" style="color:#c62828;font-weight:700" title="Hedef yükleme tarihi ('+fd(r.plan)+') geçti — tıklayıp yeni şantiyede istenen tarihi ve sebebini girin">'+(r.istenen?fd(r.istenen):fd(r.plan))+'</td>'
+          :r.istenen?'<td data-mksp="1" title="Şantiyede istenen tarihi değiştir · Hedef yükleme '+fd(r.plan)+'">'+fd(r.istenen)+'</td>':'<td class="mksp-tg" data-mksp="1">Tarih gir</td>');
+        return '<tr class="my-ks" data-no="'+esc(r.no)+'"><td title="'+esc(r.no+' · '+(r.durum_erp||''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td><td class="w" style="max-width:29ch" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" style="max-width:46ch" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'+hd+'</tr>'; }).join("")
       +'</tbody></table></div></div>';
     el.querySelectorAll("td[data-mksp]").forEach(function(td){ td.addEventListener("click",function(){
       if(td.querySelector("input")) return; var no=td.parentNode.getAttribute("data-no"), r=R.filter(function(x){ return x.no===no; })[0]; if(!r) return;
+      if(td.getAttribute("data-gec")){ gecmisPencere(sb,r,function(){ yiSevkPemBlok(el,o); }); return; } /* PEM-GECMIS-SEBEP */
       var es=td.innerHTML, cl=td.className, bitti=false; td.className=""; td.innerHTML='<input type="date" value="'+esc(r.istenen?String(r.istenen).slice(0,10):"")+'" style="font:inherit;font-size:12px">';
       var i=td.querySelector("input"); i.focus(); try{ if(i.showPicker) i.showPicker(); }catch(e){}
       var geri=function(){ if(bitti) return; bitti=true; td.className=cl; td.innerHTML=es; };
@@ -520,7 +553,7 @@
         yiSevkPemBlok(el,o); });
     }); });
   }
-  window.MYACIL={liste:liste,acilBlok:acilBlok,santiyeBlok:santiyeBlok,ayrinti:ayrinti,fd:fd,esc:esc,stil:stil,sevkPrjBlok:sevkPrjBlok,santiyeBirlestir:sBirlestir,SW:SW,yiSevkPemBlok:yiSevkPemBlok};
+  window.MYACIL={liste:liste,acilBlok:acilBlok,santiyeBlok:santiyeBlok,ayrinti:ayrinti,fd:fd,esc:esc,stil:stil,sevkPrjBlok:sevkPrjBlok,santiyeBirlestir:sBirlestir,SW:SW,yiSevkPemBlok:yiSevkPemBlok,gecmisPencere:gecmisPencere,bugunIso:bugunIso};
   /* Formlarda otomatik çizim */
   var t0=Date.now();
   async function oto(){
