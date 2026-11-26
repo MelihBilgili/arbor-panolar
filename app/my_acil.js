@@ -524,7 +524,7 @@
   }
   /* YI-SEVK-PEM (19.11.2026, Melih): Yurt İçi şantiye formunda yurt içi Sevke Hazır PEM'ler (rpc yi_sevk_pem_liste);
      Hedef Yükleme Tarihi = my_takip.plan_hedef (rpc my_plan_yaz, EB); boşsa kırmızı zemin "Tarih gir". */
-  async function yiSevkPemBlok(el,o){
+  async function yiSevkPemBlok /* YI-ISTENEN-ORTA (26.11.2026, Melih): Şantiyede İstenen başlığı ve hücreleri ortalı */(el,o){
     if(!el) return; stil(); var sb=o.sb, R;
     try{ var x0=await sb.rpc("yi_sevk_pem_liste"); if(x0.error) throw x0.error; R=x0.data||[]; }catch(e){ el.innerHTML=""; return; }
     if(!R.length){ el.innerHTML=""; return; }
@@ -533,10 +533,10 @@
     var tarihli=function(r){ return (r.durum==="Acil"&&r.hedef)||r.istenen; }; /* SANTIYE-ISTENEN-B: EB şantiyede istenen tarihi girer, hedef = istenen − nakliye (my_plan_yaz p_istenen) */
     var eksik=R.filter(function(r){ return !tarihli(r); }).length;
     el.innerHTML='<div class="myab" style="margin-bottom:14px"><h3>SEVKE HAZIR PEM\'LER <span style="font-weight:400;font-size:12px;color:#5a6b7d">· Yurt içi'+(eksik?' · '+eksik+' satırda şantiyede istenen tarih girilmedi':'')+'</span></h3><div class="myw"><table class="mya"><thead><tr>'
-      +'<th>PEM</th><th>Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin<br>Tarihi</th><th style="min-width:112px">Şantiyede<br>İstenen Tarih</th></tr></thead><tbody>'
+      +'<th>PEM</th><th>Talep<br>Tarihi</th><th>Proje Adı</th><th>Ek Bilgi</th><th>Adet</th><th>Termin<br>Tarihi</th><th style="min-width:112px;text-align:center">Şantiyede<br>İstenen Tarih</th></tr></thead><tbody>'
       +R.map(function(r){ var ac=r.durum==="Acil"&&r.hedef;
-        var hd=ac?'<td title="Acil hedef yükleme tarihi"><b>'+fd(r.hedef)+'</b></td>':(gec(r)?'<td data-mksp="1" data-gec="1" style="color:#c62828;font-weight:700" title="Şantiyede istenen tarih ('+fd(r.istenen||r.plan)+') geçti, yükleme yapılmadı — tıklayıp şantiyede istenen yeni tarihi ve sebebini girin">'+(r.istenen?fd(r.istenen):fd(r.plan))+'</td>'
-          :r.istenen?'<td data-mksp="1" title="Şantiyede istenen tarihi değiştir · Hedef yükleme '+fd(r.plan)+'">'+fd(r.istenen)+'</td>':'<td class="mksp-tg" data-mksp="1">Tarih gir</td>');
+        var hd=ac?'<td style="text-align:center" title="Acil hedef yükleme tarihi"><b>'+fd(r.hedef)+'</b></td>':(gec(r)?'<td data-mksp="1" data-gec="1" style="text-align:center;color:#c62828;font-weight:700" title="Şantiyede istenen tarih ('+fd(r.istenen||r.plan)+') geçti, yükleme yapılmadı — tıklayıp şantiyede istenen yeni tarihi ve sebebini girin">'+(r.istenen?fd(r.istenen):fd(r.plan))+'</td>'
+          :r.istenen?'<td data-mksp="1" style="text-align:center" title="Şantiyede istenen tarihi değiştir · Hedef yükleme '+fd(r.plan)+'">'+fd(r.istenen)+'</td>':'<td class="mksp-tg" data-mksp="1" style="text-align:center">Tarih gir</td>');
         return '<tr class="my-ks" data-no="'+esc(r.no)+'"><td title="'+esc(r.no+' · '+(r.durum_erp||''))+'">'+esc(r.kod)+'</td><td>'+fd(r.talep_tarihi)+'</td><td class="w" style="max-width:29ch" title="'+esc(r.proje)+'">'+esc(r.proje)+'</td><td class="w" style="max-width:46ch" title="'+esc(r.ekbilgi)+'">'+esc(r.ekbilgi)+'</td><td style="text-align:right">'+esc(r.adet)+'</td><td>'+fd(r.tarih)+'</td>'+hd+'</tr>'; }).join("")
       +'</tbody></table></div></div>';
     el.querySelectorAll("td[data-mksp]").forEach(function(td){ td.addEventListener("click",function(){
