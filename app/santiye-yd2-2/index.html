@@ -409,6 +409,11 @@ async function anketYukle(){
     +'</tbody></table>';
   h+='<div class="ank-not">AÜP\'si 2026 öncesi projeler için anket linki <a href="../memnuniyet/" target="_blank">Müşteri Memnuniyet formundan</a> oluşturulabilir.</div>';
   el.innerHTML=h+'</details>';
+  /* YI-ANKET-ILK-DAR (26.11.2026, Melih): Yurt İçi'nde memnuniyet tablolarının ilk sütunu (proje) %30 dar; taşan ad üç nokta, tamamı üzerine gelince */
+  if(FORM_KODU==="yi"){ const dar=()=>el.querySelectorAll("details.sbant table").forEach(t=>{ if(t.dataset.dar) return; const th=t.querySelector("tr>th"); if(!th||!th.offsetWidth) return;
+      const w=Math.round(th.offsetWidth*0.7); t.dataset.dar="1";
+      t.querySelectorAll("tr").forEach(tr=>{ const c=tr.cells[0]; if(!c) return; if(!c.title) c.title=c.textContent; c.innerHTML='<div style="width:'+w+'px;max-width:'+w+'px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c.innerHTML+'</div>'; }); });
+    dar(); const d=el.querySelector("details.sbant"); if(d) d.addEventListener("toggle",dar); }
   el.querySelectorAll("button[data-kopya]").forEach(b=>b.onclick=async()=>{ const o=b.textContent; b.textContent=(await ankKopya(b.dataset.kopya))?"Kopyalandı ✓":"Kopyalanamadı"; setTimeout(()=>b.textContent=o,1800); });
   /* ANKET-SAGTIK-LINK (26.11.2026, Melih): "Link oluştur" düğmeleri kalktı; proje satırına sağ tıklayınca link oluşturulur */
   const ankOlustur=async p=>{ if(!confirm(p+" için müşteri anket linki oluşturulsun mu?\n\nLink bir kez doldurulabilir; aynı projede başka kişiye anket gerekiyorsa ayrı link oluşturun.")) return;
