@@ -410,13 +410,14 @@ async function anketYukle(){
     +(G.length?'<tr class="ank-gg" style="cursor:pointer" title="Aç / kapat"><th>'+(window.ANK_G_ACIK?'▾':'▸')+' Anketi Gönderilmemiş Proje ('+G.length+') (sağ tıkla link oluştur)</th><th>Müşteri</th><th class="c">AÜP</th></tr>'
       +G.map(a=>'<tr class="ank-g"'+(window.ANK_G_ACIK?'':' style="display:none"')+ank(a.proje)+'><td>'+esc(a.proje)+'</td><td>'+esc(a.firma||"—")+'</td><td class="c">'+fd(a.aup)+'</td></tr>').join(""):'')
     +'</tbody></table>';
-  h+='<div class="ank-not">AÜP\'si 2026 öncesi projeler için anket linki <a href="../memnuniyet/" target="_blank">Müşteri Memnuniyet formundan</a> oluşturulabilir.</div>';
+  h+='<div class="ank-not">Yukarıdaki satırı açarak AÜP tarihi 2026 yılı ve daha yeni olan projeler için link oluşturabilirsiniz. Daha eski projeler için anket linki <a href="../memnuniyet/" target="_blank">Müşteri Memnuniyet formundan</a> oluşturulabilir.</div>'; /* ANKET-NOT-261126 */
   el.innerHTML=h+'</details>';
   /* YI-ANKET-ILK-DAR (26.11.2026, Melih): Yurt İçi'nde memnuniyet tablolarının ilk sütunu (proje) %30 dar; taşan ad üç nokta, tamamı üzerine gelince */
   if(FORM_KODU==="yi"){ const dar=()=>el.querySelectorAll("details.sbant table").forEach(t=>{ if(t.dataset.dar) return; const th=t.querySelector("tr>th"); if(!th||!th.offsetWidth) return;
       const w=Math.round(th.offsetWidth*0.823); /* YI-ANKET-ILK-GENIS2 (26.11.2026): %20 daha geniş, 0,686×1,2 */ t.dataset.dar="1";
       t.style.width="auto"; t.querySelectorAll("th.c,td.c").forEach(x=>x.style.width="auto"); /* YI-ANKET-ILK-DAR-FIX: .sevk table width:100% ve %1 sütunlar ilk sütunu boşlukla şişiriyordu */
-      t.querySelectorAll("tr").forEach(tr=>{ const c=tr.cells[0]; if(!c) return; c.style.minWidth="0"; if(!c.title) c.title=c.textContent; c.innerHTML='<div style="width:'+w+'px;max-width:'+w+'px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c.innerHTML+'</div>'; }); });
+      t.querySelectorAll("tr").forEach(tr=>{ const c=tr.cells[0]; if(!c) return; c.style.minWidth="0"; if(!c.title) c.title=c.textContent; c.innerHTML='<div style="width:'+w+'px;max-width:'+w+'px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+c.innerHTML+'</div>'; });
+      const t2=t.querySelector("tr>th:nth-child(2)"); if(t2&&t2.offsetWidth){ const m2=Math.round(t2.offsetWidth*1.64); t.querySelectorAll("tr").forEach(tr=>{ const c=tr.cells[1]; if(c) c.style.minWidth=m2+"px"; }); } /* YI-ANKET-MUSTERI-GENIS (26.11.2026, Melih): Müşteri sütunu %64 geniş */ });
     dar(); setTimeout(dar,600); setTimeout(dar,2000); const d=el.querySelector("details.sbant"); if(d) d.addEventListener("toggle",dar); }
   el.querySelectorAll("tr.ank-gg").forEach(g=>g.onclick=()=>{ window.ANK_G_ACIK=!window.ANK_G_ACIK; const ac=window.ANK_G_ACIK; /* ANKET-G-BANT */
     el.querySelectorAll("tr.ank-g").forEach(r=>r.style.display=ac?"":"none"); const c=g.cells[0], d=c.querySelector("div")||c; d.innerHTML=d.innerHTML.replace(/^[▸▾]/,ac?"▾":"▸"); });
