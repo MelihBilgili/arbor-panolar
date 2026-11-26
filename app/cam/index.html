@@ -251,7 +251,7 @@ function lineY(lbl,b){lbl=String(lbl).replace(/:\s*$/,'');let L,R='<div class="l
 const bodyY=(n,k,v,pr)=>({n,k,v,pr});
 function gq(g){const p=g.k.split('|'),c=p[0].split('/'),f=p[3].split('').map(Number),P=c.map(pane);
   return{c,cav:+p[1],cu:+p[1],tg:g.tg,nlam:P.reduce((a,x)=>a+x.lam,0),pvb4:P.filter(x=>x.lam&&x.pvb>=4).length,tr:f[0],lowe:f[1],solar:f[2],fp:f[3],ac:f[4],sat:f[5],tp:f[6],xc:f[7],ar:f[8],we:f[9],cool:0,plan:0,en:0,coat:'',own:1,frm:p[2]};}
-function yakinlar(q,po,h,hasH,u){let out='';
+function yakinlar(q,po,h,hasH,u){let out='';/* CAM-LISTE-ANMA-YOK (26.11.2026, Melih): cam listesine hiçbir yerde değinilmez; 1) ve 2) gösterilmez */if(0){
   /* 1) hedef degerler: Ug/SF <= hedef (esit yoksa en yakin kucuk), TL/Rw+Ctr >= hedef (esit yoksa en yakin buyuk) */
   const L1='Cam listesindeki en yakın hedef değerler:';let _y1=null;/* CAM-YAKIN-TEKIL */
   if(!hasH)out+=lineY(L1,'<span class="lv">— hedef değer girilmedi</span>');
@@ -268,6 +268,7 @@ function yakinlar(q,po,h,hasH,u){let out='';
   if(bc&&_y1&&_y1===bc.C){const i=out.lastIndexOf('<div class="line yk">');out=out.slice(0,i);
     out+=lineY('Cam listesindeki en yakın hedef değerler ve kombinasyon:',bodyY(nmT(bc.C.komb),kalL(bc.C),bc.C,catFiyat(bc.C,u)));}
   else out+=lineY('Cam listesindeki en yakın kombinasyon:',bc?bodyY(nmT(bc.C.komb),kalL(bc.C),bc.C,catFiyat(bc.C,u)):'—');
+  }
   /* CAM-YAKIN-TEKLIF (17.11.2026, Melih): "en yakın teklif" yerine fiyatlanan kombinasyonla aynı ya da tek yönden farklı geçmiş teklifler;
      her biri için fiyatlanan kombinasyonun fiyatı: teklif alışı + (fiyatlanan − teklif kombinasyonunun model alışı), × 2,5 (CAM-TOPLAMALI 26.11.2026) */
   const YT=yakinTek(q,po,u);window._YAKIN=YT?YT.txt:[];
@@ -287,7 +288,7 @@ function yakinTek(q,P,u){const Z=P&&P.z;if(!Z||Z.R==null)return null;
     /* CAM-YAKIN-ETKI (17.11.2026, Melih): fark "<eski> → <yeni>: <etki>" biçiminde; kaplama adı türüyle (Solar Low-e N(50/33)) */
     const ka=c=>c?(KAP_AD[c]||String(c).replace(/^n(\d\d)(\d\d)$/,'N($1/$2)')):'',kad=(lw,so,c)=>so?'Solar Low-e'+(c?' '+ka(c):''):lw?'Low-E':'Kaplamasız',kco=rf[2]?(CAMF.coat(r.komb)||''):'',kcq=qf[2]?(q.coat||''):'';
     if(rf[1]!==qf[1]||rf[2]!==qf[2]||(rf[2]&&qf[2]&&kco!==kcq))fk.push(kad(rf[1],rf[2],kco)+' → '+kad(qf[1],qf[2],kcq));/* CAM-YAKIN-KAPLAMA: solar kaplama türü farklı ya da teklifte belirtilmemişse "Aynı" denmez */
-    for(const i of [4,5,6,7])if(rf[i]!==qf[i])fk.push(AD[i]+(qf[i]?' var':' yok'));
+    for(const i of [4,5,6,7])if(rf[i]!==qf[i])fk.push(AD[i]+' farkı');/* CAM-FARK-ETIKET (26.11.2026, Melih): "satin var/yok" yerine "satin farkı"; yön € işaretinde */
     if(rf[8]!==qf[8]||rf[9]!==qf[9])fk.push('Ar/WE '+(rf[8]?'Ar':'hava')+(rf[9]?'-WE':'')+' → '+(qf[8]?'Ar':'hava')+(qf[9]?'-WE':''));
     if(fk.length>1)continue;
     const Q=gq(r),zo=DB.fiyat(Q,perf(Q),u,null);/* CAM-BILESEN: teklif, model fiyatları oranıyla taşınır */
