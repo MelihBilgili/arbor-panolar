@@ -726,7 +726,7 @@ function cfIsle(w,r0){ const C0=r0.C, r={kombinasyon:C0.komb||C0.c,ug:C0.ug,lt:C
   const chk=(id,v)=>{ const e=$w(id); if(e) e.checked=!!v; };
   const tr=q.tr?1:0; sel("yapi",tr?"uclu":"cift"); sel("dis",q.c[0]); sel("ic",q.c[q.c.length-1]); if(tr&&q.c.length>2) sel("orta",q.c[1]);
   sel("cav",q.cu);
-  sel("kap",!q.lowe?"yok":(q.solar?(q.coat&&/^n\d{4}$/.test(q.coat)?"solar_"+q.coat:"solar"):"lowe"));
+  sel("kap",!q.lowe?"yok":(q.solar?(q.coat&&/^n\d{4}$/.test(q.coat)?"solar_"+q.coat:"solar"):(q.nle>=2?"lowe2":"lowe"))); /* CAM-LOWE-CIFT (27.11.2026): dış + iç Low-E */
   sel("form","duz"); $w("adet").value="10"; $w("m2").value="10.0";
   chk("argon",q.ar); chk("we",q.we); chk("acoustic",q.ac); chk("temper",q.tp); chk("satin",q.sat); chk("extraclear",q.xc);
   const e30=/e[iı]\s?30|\be30\b/i.test(String(r.kombinasyon||"")); chk("fireproof30",q.fp&&e30); chk("fireproof",q.fp&&!e30);

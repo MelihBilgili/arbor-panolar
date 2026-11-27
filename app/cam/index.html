@@ -87,7 +87,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <header class="hdl"><h1>Cam Fiyatlandırma</h1><!-- CAM-LISTE-LINK --><a class="camlink" href="../cam-listesi/" target="_blank" rel="noopener">Cam Listesi ↗</a></header>
 <div class="wrap"><div class="grid">
 <div class="card">
-  <!-- CAM-V21 DUZEN3 --><div class="row3"><div><label>Yapı</label><select id="yapi"><option value="cift">Çift cam</option><option value="uclu">Üçlü cam</option></select></div><div><label>Kaplama</label><select id="kap"><option value="yok">Kaplamasız</option><option value="lowe" selected>Low-E</option><option value="solar">Solar Low-E</option><option value="solar_n6244">Solar Low-E N(62/44)</option><option value="solar_n7037">Solar Low-E N(70/37)</option><option value="solar_n5033">Solar Low-E N(50/33)</option><option value="solar_n5025">Solar Low-E N(50/25)</option></select><!-- CAM-SECICI-KAPLAMA --></div><div><label>Form / Karolaj</label><select id="form"><option value="duz">Düz</option><option value="karolaj">Karolaj</option><option value="egrisel">Eğrisel (kemerli, dairesel dahil)</option><option value="ke">Karolaj+Eğrisel</option></select></div></div>
+  <!-- CAM-V21 DUZEN3 --><div class="row3"><div><label>Yapı</label><select id="yapi"><option value="cift">Çift cam</option><option value="uclu">Üçlü cam</option></select></div><div><label>Kaplama</label><select id="kap"><option value="yok">Kaplamasız</option><option value="lowe" selected>Low-E</option><option value="lowe2">Low-E (dış + iç cam)</option><!-- CAM-LOWE-CIFT --><option value="solar">Solar Low-E</option><option value="solar_n6244">Solar Low-E N(62/44)</option><option value="solar_n7037">Solar Low-E N(70/37)</option><option value="solar_n5033">Solar Low-E N(50/33)</option><option value="solar_n5025">Solar Low-E N(50/25)</option></select><!-- CAM-SECICI-KAPLAMA --></div><div><label>Form / Karolaj</label><select id="form"><option value="duz">Düz</option><option value="karolaj">Karolaj</option><option value="egrisel">Eğrisel (kemerli, dairesel dahil)</option><option value="ke">Karolaj+Eğrisel</option></select></div></div>
   <div class="row3"><div><label>Dış cam</label><select id="dis"><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option><option>44.1</option><option>44.2</option><option>44.4</option><option>44.6</option><option>46.2</option><option>46.4</option><option>46.6</option><option>55.1</option><option>64.6</option><option>66.1</option><option>66.2</option><option>66.6</option><option>66.8</option><option>86.6</option><option>88.6</option></select></div><div><label>Ara boşluk (mm)</label><select id="cav"><option>10</option><option>12</option><option>14</option><option selected>16</option><option>20</option></select></div><div><label>İç cam</label><select id="ic"><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option><option>44.2</option><option>44.6</option><option>55.1</option><option>64.2</option><option>66.2</option><option>66.3</option><option>68.4</option><option>88.2</option><option value="24">24 (yangın camı)</option></select></div></div>
   <div id="ortaWrap" style="display:none"><label>Orta cam kodu (üçlü)</label><select id="orta"><option>4</option><option>6</option></select></div>
   <!-- CAM-V18 DUZEN -->
@@ -117,7 +117,7 @@ for(const c0 of q.c){const c=String(c0).replace(',','.'),L=LP(c);const pl=L?[L[0
   if(L){const n=Math.min(Math.max(L[2],1),6);nl++;npv+=n;if(q.ac)nak+=n;}}
 const fr=u_.frm||u_.form||'',sol=cl(q.solar),sec=sol&&!q.rf&&V.sf!=null&&V.sf<=0.40;
 const Bp={taban:P.taban,cam:P.mm46*m46+P.mm6ust*m6-P.mm4alt*m4,pvb:P.lam*nl+P.pvb*npv,akustik:P.akustik*nak,argon:P.argon*cl(q.ar),warmedge:P.warmedge*cl(q.we),
-  lowe:P.lowe*cl(q.lowe),solar:sol?(sec?P.secici:P.solar):0,satine:P.satine*cl(q.sat),uclu:P.uclu*cl(q.tr),temper:P.temper*cl(q.tp),extraclear:P.extraclear*cl(q.xc)*npl,
+  lowe:P.lowe*cl(q.lowe)*Math.max(1,q.nle||1)/* CAM-LOWE-CIFT: her Low-E katı ayrı bileşen */,solar:sol?(sec?P.secici:P.solar):0,satine:P.satine*cl(q.sat),uclu:P.uclu*cl(q.tr),temper:P.temper*cl(q.tp),extraclear:P.extraclear*cl(q.xc)*npl,
   karolaj:P.karolaj*cl(fr==='karolaj'||fr==='ke'),egrisel:P.egrisel*cl(fr==='egrisel'||fr==='ke'||fr==='dairesel'),yangin:q.fp?P.yangin:0};
 let B=0;for(const k in Bp)B+=Bp[k];B=Math.max(B,1);
 const um2=u_.m2>0?u_.m2:10,uort=u_.ort>0?u_.ort:1,rw=V.rw;
@@ -203,7 +203,8 @@ function feats(k){k=normKomb(k);const p=parse(k),s=low(k),P=p.panes,n=P.length,o
   o.sisecam=t('şişecam.*(solar|low)');o.solar=(t('solar|sunguard|solaire|70/37|konfor')&&!o.coollite)?1:0;
   o.refl=t('reflektif');/* CAM-TERIM-ONAY */o.lowe=(t('low-?\\s?e|lowe|\\bfe\\b|planitherm|konfor')||(o.solar&&!o.refl)||o.coollite||o.energy)?1:0;
   o.extraclear=t('extra ?clear|ultra ?clear|extraclear');o.argon=t('\\bar\\b|ar-|argon|arg\\b| ar ');
-  o.we=t('\\bwe\\b|-we|warm ?edge|warmedge|swisspacer|thermix');o.swiss=s.includes('swisspacer')?1:0;return o;}
+  o.we=t('\\bwe\\b|-we|warm ?edge|warmedge|swisspacer|thermix');o.swiss=s.includes('swisspacer')?1:0;
+  /* CAM-LOWE-CIFT (27.11.2026, Melih): Low-E kaplı cam katı sayısı (dış + iç Low-E = 2) */o.nle=o.lowe?Math.max(1,low(k.split('|||')[0].replace(/,\s*u[gw]\s*=.*$/i,'')).split('/').filter(x=>/low-?\s?e|lowe|\bfe\b|konfor|cool lite/.test(x)).length):0;return o;}
 function coat(k){const s=low(k);for(const[p,nm]of[['cool ?lite|skn','coollite'],['planitherm','planitherm'],['energy','energy'],['sn ?63|63/','sn63'],['50/2[35]','n5025'],['51/28','n5128'],['50/33','n5033'],['62/44','n6244'],['70/3[78]|71/38|sn ?70','n7037'],['70/40','n7040'],['80/64','n8064'],['kumlu','kumlu'],['opaque','opaque']])if(new RegExp(p,'u').test(s))return nm;/* CAM-TERIM-ONAY: hesaplayıcı kaplama oranı (Tlg/Sg) → en yakın kod */let m=s.match(/duosol\s*t?\s*(\d\d)/u);if(m){const a=+m[1];if(a===50||a===51)return'n5025';if(a===58)return'n5033';}m=s.match(/[a-zğüşıöç]\s+(\d\d)[\/_](\d\d)/u);if(m){const a=+m[1],b=+m[2];if(a>=68&&a<=72&&b>=33&&b<=38)return'n7037';if(a>=73&&b>=40)return'n7040';if(a>=58&&a<=64&&b>=27&&b<=33)return'n6244';if(a>=48&&a<=53&&b>=22&&b<=27)return'n5025';}return'';}
 const cavui=v=>[10,12,14,16,20].reduce((a,o)=>Math.abs(o-v)<Math.abs(a-v)?o:a);
 const r=(v,d)=>v==null||!isFinite(v)?null:Math.round(v*10**d)/10**d;
@@ -213,7 +214,7 @@ function catRow(L){let F;try{F=feats(L.kombinasyon||'');}catch(e){return null;}i
   const ug=nz(L.ug),tl=pc(L.tl),sf=pc(L.sf),rw0=nz(L.rw),ctr=nz(L.ctr),rw=nz(L.rw_ctr)!=null?nz(L.rw_ctr):(rw0==null||rw0<=0||ctr==null)?null:rw0+ctr;/* CAM-LISTE-V2 rw_ctr */
   if(ug==null&&tl==null&&rw==null&&sf==null)return null;
   return{komb:String(L.kombinasyon).split(/\s+/).filter(x=>x).join(' ').slice(0,120),c:F.codes,cav:F.cav,cu:cavui(F.cav),tg:F.tg,nlam:F.nlam,pvb4:F.pvb4,tr:F.triple,
-    lowe:F.lowe,solar:(F.solar||F.sisecam)?1:0,cool:F.coollite,plan:F.planitherm,en:F.energy,sat:F.satin,xc:F.extraclear,ac:F.acoustic,kal:F.kalinlik,
+    lowe:F.lowe,nle:F.nle,solar:(F.solar||F.sisecam)?1:0,cool:F.coollite,plan:F.planitherm,en:F.energy,sat:F.satin,xc:F.extraclear,ac:F.acoustic,kal:F.kalinlik,
     fp:F.fireproof,tp:F.temper,ar:F.argon,rf:F.refl?1:0,we:(F.we||F.swiss)?1:0,sw:F.swiss,coat:coat(L.kombinasyon),ug:r(ug,2),tl:r(tl,3),rw:r(rw,0),sf:r(sf,3),
     sira:L.sira,lkal:nz(L.kalinlik),satis:nz(L.satis_eur)};}
 return{feats,catRow,coat,low};})();
@@ -250,7 +251,7 @@ function lineY(lbl,b){lbl=String(lbl).replace(/:\s*$/,'');let L,R='<div class="l
   return '<div class="line yk"><div class="yl">'+L+'</div><div class="yr">'+R+'</div></div>';}
 const bodyY=(n,k,v,pr)=>({n,k,v,pr});
 function gq(g){const p=g.k.split('|'),c=p[0].split('/'),f=p[3].split('').map(Number),P=c.map(pane);
-  return{c,cav:+p[1],cu:+p[1],tg:g.tg,nlam:P.reduce((a,x)=>a+x.lam,0),pvb4:P.filter(x=>x.lam&&x.pvb>=4).length,tr:f[0],lowe:f[1],solar:f[2],fp:f[3],ac:f[4],sat:f[5],tp:f[6],xc:f[7],ar:f[8],we:f[9],cool:0,plan:0,en:0,coat:'',own:1,frm:p[2]};}
+  return{c,cav:+p[1],cu:+p[1],tg:g.tg,nlam:P.reduce((a,x)=>a+x.lam,0),pvb4:P.filter(x=>x.lam&&x.pvb>=4).length,tr:f[0],lowe:f[1],nle:f[1]?(g.komb?CAMF.feats(String(g.komb).split('|||')[0]).nle||1:1):0/* CAM-LOWE-CIFT */,solar:f[2],fp:f[3],ac:f[4],sat:f[5],tp:f[6],xc:f[7],ar:f[8],we:f[9],cool:0,plan:0,en:0,coat:'',own:1,frm:p[2]};}
 function yakinlar(q,po,h,hasH,u){let out='';/* CAM-LISTE-ANMA-YOK (26.11.2026, Melih): cam listesine hiçbir yerde değinilmez; 1) ve 2) gösterilmez */if(0){
   /* 1) hedef degerler: Ug/SF <= hedef (esit yoksa en yakin kucuk), TL/Rw+Ctr >= hedef (esit yoksa en yakin buyuk) */
   const L1='Cam listesindeki en yakın hedef değerler:';let _y1=null;/* CAM-YAKIN-TEKIL */
@@ -288,13 +289,13 @@ function yakinTek(q,P,u){const Z=P&&P.z;if(!Z||Z.R==null)return null;
     /* CAM-YAKIN-ETKI (17.11.2026, Melih): fark "<eski> → <yeni>: <etki>" biçiminde; kaplama adı türüyle (Solar Low-e N(50/33)) */
     const ka=c=>c?(KAP_AD[c]||String(c).replace(/^n(\d\d)(\d\d)$/,'N($1/$2)')):'',kad=(lw,so,c)=>so?'Solar Low-e'+(c?' '+ka(c):''):lw?'Low-E':'Kaplamasız',kco=rf[2]?(CAMF.coat(r.komb)||''):'',kcq=qf[2]?(q.coat||''):'';
     if(rf[1]!==qf[1]||rf[2]!==qf[2]||(rf[2]&&qf[2]&&kco!==kcq))fk.push(kad(rf[1],rf[2],kco)+' → '+kad(qf[1],qf[2],kcq));/* CAM-YAKIN-KAPLAMA: solar kaplama türü farklı ya da teklifte belirtilmemişse "Aynı" denmez */
-    {const nle=rf[1]?Math.max(1,(CAMF.low(r.komb.split('|||')[0]).match(/low-?e/gu)||[]).length):0;if(rf[1]&&qf[1]&&nle!==1)fk.push('Low-E farkı ('+nle+' kat → 1 kat)');}/* CAM-LOWE-SAYI (27.11.2026, Melih): teklifte Low-E kat sayısı farklıysa "Aynı" denmez; fark € etiketiyle yazılır */
+    {const nle=rf[1]?Math.max(1,(CAMF.low(r.komb.split('|||')[0]).match(/low-?e/gu)||[]).length):0,nq=nleN(q);if(rf[1]&&qf[1]&&nle!==nq)fk.push('Low-E farkı ('+nle+' kat → '+nq+' kat)');}/* CAM-LOWE-SAYI (27.11.2026, Melih): teklifte Low-E kat sayısı farklıysa "Aynı" denmez; fark € etiketiyle yazılır */
     for(const i of [4,5,6,7])if(rf[i]!==qf[i])fk.push(AD[i]+' farkı');/* CAM-FARK-ETIKET (26.11.2026, Melih): "satin var/yok" yerine "satin farkı"; yön € işaretinde */
     if(rf[8]!==qf[8]||rf[9]!==qf[9])fk.push('Ar/WE '+(rf[8]?'Ar':'hava')+(rf[9]?'-WE':'')+' → '+(qf[8]?'Ar':'hava')+(qf[9]?'-WE':''));
     A.push({r,fk});}
   const dm=A.length?Math.max(1,Math.min(...A.map(x=>x.fk.length))):0;
   for(const {r,fk} of A){if(fk.length>dm)continue;
-    const Q=gq(r),zo=DB.fiyat(Q,perf(Q),u,null);/* CAM-BILESEN: teklif, model fiyatları oranıyla taşınır */
+    const Q=gq(r),zo=price(Q,perf(Q),u).z;/* CAM-BILESEN; CAM-YAKIN-AYNI-YOL (27.11.2026): teklif camının model alışı fiyatlananla aynı yoldan (ters sıra performans ortalaması dahil) — aynı camda düzeltme 0 */
     const fe=Z.est-zo.est,al=r.bf+fe,ay=!fk.length;/* CAM-TOPLAMALI: bileşen farkı € olarak eklenir */
     const et=[];if(Math.abs(fe)>0.005)et.push((fe<0?'−':'+')+t(Math.abs(fe))+' €');
     const s=(ay?'Aynı':fk.join(', ')+(et.length?': '+et.join(', '):''))+' · '+r.komb.split('|||')[0].trim().replace(/\s+/g,' ')+' · '+r.n+' teklif / '+r.p+' proje · ort. alış '+t(r.bf)+' €/m² → '+t(al)+' €/m² × '+f2(KAT,1)+' = '+t(al*KAT)+' €/m²';
@@ -312,18 +313,19 @@ function own(){const kap=$('kap').value,triple=$('yapi').value==='uclu'?1:0,kc=k
   const codes=triple?[$('dis').value,$('orta').value,$('ic').value]:[$('dis').value,$('ic').value];const P=codes.map(pane);
   const ar=cl($('argon').checked),we=cl($('we').checked);
   return {c:codes,cav:+$('cav').value,cu:+$('cav').value,tg:P.reduce((a,p)=>a+p.mm,0),nlam:P.reduce((a,p)=>a+p.lam,0),pvb4:P.filter(p=>p.lam&&p.pvb>=4).length,tr:triple,
-    lowe:cl(kap!=='yok'),solar:cl(kap.indexOf('solar')===0),cool:0,plan:0,en:0,sat:cl($('satin').checked),xc:cl($('extraclear').checked),ac:cl($('acoustic').checked),
+    lowe:cl(kap!=='yok'),nle:kap==='yok'?0:(kap==='lowe2'?2:1)/* CAM-LOWE-CIFT */,solar:cl(kap.indexOf('solar')===0),cool:0,plan:0,en:0,sat:cl($('satin').checked),xc:cl($('extraclear').checked),ac:cl($('acoustic').checked),
     fp:cl($('fireproof').checked||$('fireproof30').checked),tp:cl($('temper').checked),ar,we,sw:0,coat:kc,own:1};}
 /* katalogdan Ug/TL/Rw+Ctr/SF (egitimdeki atama ile ayni kural) */
 function dist(q,C,t){const m=k=>C[k]!==q[k]?1:0,d=C.c[0]!==q.c[0]?1:0,i=C.c[C.c.length-1]!==q.c[q.c.length-1]?1:0;
-  if(t==='ug')return 100*m('lowe')+100*m('tr')+3*m('ar')+Math.abs(C.cav-q.cav)/4+0.5*m('coat')+0.3*m('solar')+0.05*Math.abs(C.tg-q.tg)/4+0.2*m('fp');
-  if(t==='tl'||t==='sf')return 100*m('lowe')+50*m('solar')+50*m('cool')+50*m('plan')+50*m('en')+5*m('coat')+3*m('sat')+1.5*m('xc')+1*m('tr')+Math.abs(C.tg-q.tg)/8+0.3*m('ac')+0.3*m('fp');
+  if(t==='ug')return 100*m('lowe')+60*Math.abs(nleN(C)-nleN(q))/* CAM-LOWE-CIFT */+100*m('tr')+3*m('ar')+Math.abs(C.cav-q.cav)/4+0.5*m('coat')+0.3*m('solar')+0.05*Math.abs(C.tg-q.tg)/4+0.2*m('fp');
+  if(t==='tl'||t==='sf')return 100*m('lowe')+60*Math.abs(nleN(C)-nleN(q))+50*m('solar')+50*m('cool')+50*m('plan')+50*m('en')+5*m('coat')+3*m('sat')+1.5*m('xc')+1*m('tr')+Math.abs(C.tg-q.tg)/8+0.3*m('ac')+0.3*m('fp');
   return 100*m('tr')+3*m('ac')+1.5*d+1.5*i+Math.abs(C.tg-q.tg)/2+0.7*Math.abs(C.nlam-q.nlam)+Math.abs(C.cav-q.cav)/6+2*m('fp')+0.1*m('lowe');}
 function kalin(q){if(q.kal!=null&&!q.own)return q.kal;const P=q.c.map(pane);return P.reduce((a,p)=>a+p.mm+(p.lam?0.38*p.pvb:0),0)+q.cav*(q.c.length-1);}
 function median(a){a=a.slice().sort((x,y)=>x-y);const n=a.length;return n%2?a[(n-1)/2]:(a[n/2-1]+a[n/2])/2;}
 /* CAM-LISTE-KENDI (04.11.2026, Melih): kombinasyon Cam Listesi'nde birebir varsa Ug/Tlg/Rw+Ctr/Sfg o satır(lar)dan; yoksa en yakınların medyanı */
 const AYNI_K=['tr','lowe','solar','cool','plan','en','sat','xc','ac','fp','tp'];
-function ayni(q,C){return C.c.join('/')===q.c.join('/')&&C.cav===q.cav&&AYNI_K.every(k=>(C[k]||0)===(q[k]||0))&&(C.coat||'')===(q.coat||'');}
+const nleN=x=>x.lowe?Math.max(1,x.nle||1):0;/* CAM-LOWE-CIFT */
+function ayni(q,C){return nleN(C)===nleN(q)&&C.c.join('/')===q.c.join('/')&&C.cav===q.cav&&AYNI_K.every(k=>(C[k]||0)===(q[k]||0))&&(C.coat||'')===(q.coat||'');}
 function perf(q){const r={};for(const t of ['ug','tl','rw','sf']){const E=CAT.filter(C=>C[t]!=null&&ayni(q,C));if(E.length){r[t]=median(E.map(C=>C[t]));continue;}let mn=1e9,ds=[];for(const C of CAT){if(C[t]==null)continue;const d=dist(q,C,t);ds.push([d,C[t]]);if(d<mn)mn=d;}
   r[t]=median(ds.filter(x=>x[0]<=mn+0.25).map(x=>x[1]));}return r;}
 /* fiyat */
@@ -368,7 +370,7 @@ function refUpd(){const e=$('ref'),d=$('refdif'),pc=($('pencad')||{}).value||'',
   if(!show){big.textContent='\u2014';host.insertAdjacentHTML('beforeend','<div class="bfhint">'+(pc===''?'Pencad\'de fiyat var m\u0131? se\u00e7in':'Referans fiyat\u0131 girin')+'</div>');}
   else{big.textContent=f2(b,2)+' \u20ac/m\u00b2';if(bad)host.insertAdjacentHTML('beforeend','<div class="bfwarn">Onays\u0131z Kullanmay\u0131n\u0131z</div>');}}
 function ownName(q){const k=$('kap').value,t=q.tp?' Temperli':'',a=q.ac?' Akustik':'',sa=q.sat?' Satin':'',x=q.xc?' Extra Clear':'';
-  const p=q.c.map((c,j)=>c+(j===0?a+x+(k.indexOf('solar')===0?' Solar Low-E'+(KAP_AD[k.slice(6)]?' '+KAP_AD[k.slice(6)]:''):'')+sa:'')+t+(j===q.c.length-1?(k==='lowe'?' Low-E':'')+(q.fp?($('fireproof30').checked?' EI30':' EI60')+' Fire Proof':''):''));
+  const p=q.c.map((c,j)=>c+(j===0?a+x+(k==='lowe2'?' Low-E':'')/* CAM-LOWE-CIFT */+(k.indexOf('solar')===0?' Solar Low-E'+(KAP_AD[k.slice(6)]?' '+KAP_AD[k.slice(6)]:''):'')+sa:'')+t+(j===q.c.length-1?(k==='lowe'||k==='lowe2'?' Low-E':'')+(q.fp?($('fireproof30').checked?' EI30':' EI60')+' Fire Proof':''):''));
   /* CAM-AR-WE */const gw=[q.ar?'Ar':'',q.we?'We':''].filter(Boolean).join('-'),cav=q.cav+(gw?' '+gw:'');return q.tr?p[0]+' / '+cav+' / '+p[1]+' / '+cav+' / '+p[2]:p[0]+' / '+cav+' / '+p[1];}
 function vtxt(v,h){const c=(ok,h)=>h==null?'':(ok?' <span class="ok">✓</span>':' <span class="no">✗</span>');
   return 'Ug '+f2(v.ug,1)+c(h.ug==null||v.ug<=h.ug,h.ug)+' · Tlg '+f2(v.tl,2)+c(h.tl==null||v.tl>=h.tl,h.tl)+' · Rw+Ctr '+Math.round(v.rw)+' dB'+c(h.rw==null||v.rw>=h.rw,h.rw)+' · Sfg '+f2(v.sf,2)+c(h.sf==null||v.sf<=h.sf,h.sf);}
