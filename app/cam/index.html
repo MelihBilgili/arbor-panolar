@@ -288,6 +288,7 @@ function yakinTek(q,P,u){const Z=P&&P.z;if(!Z||Z.R==null)return null;
     /* CAM-YAKIN-ETKI (17.11.2026, Melih): fark "<eski> → <yeni>: <etki>" biçiminde; kaplama adı türüyle (Solar Low-e N(50/33)) */
     const ka=c=>c?(KAP_AD[c]||String(c).replace(/^n(\d\d)(\d\d)$/,'N($1/$2)')):'',kad=(lw,so,c)=>so?'Solar Low-e'+(c?' '+ka(c):''):lw?'Low-E':'Kaplamasız',kco=rf[2]?(CAMF.coat(r.komb)||''):'',kcq=qf[2]?(q.coat||''):'';
     if(rf[1]!==qf[1]||rf[2]!==qf[2]||(rf[2]&&qf[2]&&kco!==kcq))fk.push(kad(rf[1],rf[2],kco)+' → '+kad(qf[1],qf[2],kcq));/* CAM-YAKIN-KAPLAMA: solar kaplama türü farklı ya da teklifte belirtilmemişse "Aynı" denmez */
+    {const nle=rf[1]?Math.max(1,(CAMF.low(r.komb.split('|||')[0]).match(/low-?e/gu)||[]).length):0;if(rf[1]&&qf[1]&&nle!==1)fk.push('Low-E farkı ('+nle+' kat → 1 kat)');}/* CAM-LOWE-SAYI (27.11.2026, Melih): teklifte Low-E kat sayısı farklıysa "Aynı" denmez; fark € etiketiyle yazılır */
     for(const i of [4,5,6,7])if(rf[i]!==qf[i])fk.push(AD[i]+' farkı');/* CAM-FARK-ETIKET (26.11.2026, Melih): "satin var/yok" yerine "satin farkı"; yön € işaretinde */
     if(rf[8]!==qf[8]||rf[9]!==qf[9])fk.push('Ar/WE '+(rf[8]?'Ar':'hava')+(rf[9]?'-WE':'')+' → '+(qf[8]?'Ar':'hava')+(qf[9]?'-WE':''));
     A.push({r,fk});}
