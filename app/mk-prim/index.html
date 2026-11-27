@@ -28,6 +28,7 @@
   .prim{text-align:right;white-space:nowrap;font-weight:700;color:#0a5745}
   .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
   .colp{width:1%;white-space:nowrap}
+  .otokay{font-size:12px;color:#0a5745;background:#eaf6f1;padding:5px 14px;border-bottom:1px solid #d7ece4} input.cell.oto{background:#f6f8fa;color:#33475b;cursor:default} /* MK-OTO */
   .blkfoot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:9px 14px;background:#fbfcfe;border-top:1px solid #eef1f5}
   .btn{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer}
   .btn.sec{background:#e3edf7;color:#16324f;font-weight:600;padding:7px 12px;font-size:13px}
@@ -282,6 +283,9 @@ const BLOCKS=[
   cols:[["firma","Firma","text"],["proje","Proje","text"],["kontrat_tarihi","Kontrat Tarihi","date"],["kontrat_tutari","Kontrat Tutarı HT (€)","num"]]}
 ];
 const DATA={memnuniyet:[],ts:[],fr:[],diger:[]};
+/* MK-OTO (27.11.2026, Melih): dört prim bloğu kaynak formlardan otomatik (mk_oto_senkron); MK yalnız not alanlarını düzenler */
+const OTO_KAYNAK={memnuniyet:"Müşteri Memnuniyeti formu (yanıtlanan anket; oran = puan ÷ 4) · Kontrat: Sel-Arb",ts:"ÖB Faaliyet › TS (müşterinin onayladığı TS: Onaylandı / Avenant geldi)",fr:"Yurt Dışı Satış 1 formu (Kazandık / Üretimde)",diger:"Yurt Dışı Satış 2 formu (Kazandık / Üretimde)"};
+const OTO_NOT={memnuniyet_kriterleri:1,ts_notlari:1};
 function blankRow(b){ const o={}; b.cols.forEach(c=>o[c[0]]=""); return o; }
 
 function rowPrim(tur,r){ return PRIM[tur](r); }
@@ -289,7 +293,11 @@ function blockTotal(tur){ return DATA[tur].reduce((a,r)=>a+rowPrim(tur,r),0); }
 function grandTotal(){ return BLOCKS.reduce((a,b)=>a+blockTotal(b.tur),0); }
 function renderCell(b,i,c){
   const [f,lbl,ty]=c, r=DATA[b.tur][i], v=r[f];
-  if(ty==="ta") return '<td><textarea class="cell" data-f="'+f+'">'+esc(v)+'</textarea></td>';
+  if(ty==="ta"&&OTO_NOT[f]) return '<td><textarea class="cell" data-f="'+f+'" title="Not alanı — elle düzenlenebilir">'+esc(v)+'</textarea></td>';
+  if(ty==="ta") return '<td><textarea class="cell" readonly>'+esc(v)+'</textarea></td>';
+  if(ty==="num") return '<td class="colp num"><input class="cell oto" style="width:120px" readonly value="'+esc(v)+'"></td>';
+  if(ty==="date") return '<td class="colp"><input class="cell oto" type="date" readonly value="'+esc(v)+'"></td>';
+  return '<td><input class="cell oto" readonly value="'+esc(v)+'" title="'+esc(v)+'"></td>'; /* MK-OTO */
   if(ty==="num") return '<td class="colp num"><input class="cell" data-f="'+f+'" style="width:120px" value="'+esc(v)+'"></td>';
   if(ty==="date") return '<td class="colp"><input class="cell" type="date" data-f="'+f+'" value="'+esc(v)+'"></td>';
   if(f==="proje") return '<td><input class="cell" data-f="proje" data-sap="1" data-sap-firma="firma" readonly value="'+esc(v)+'"></td>'; /* PSEL-260930 */
@@ -308,22 +316,23 @@ function renderBlock(b){
     const eski=oncekiAy(r); if(eski) nOnc++;
     const tr='<tr data-i="'+i+'"'+(eski?' class="mk-onc"':'')+'>'+b.cols.map(c=>renderCell(b,i,c)).join("")
       +'<td class="prim" data-prim>'+eur(rowPrim(b.tur,r))+'</td>'
-      +'<td class="colp"><button class="del" title="Satırı sil">✕</button></td></tr>';
+      +'<td class="colp"></td></tr>'; /* MK-OTO: silme yok */
     if(eski) onc+=tr; else body+=tr;
   });
   if(nOnc) body+='<tr class="mk-oncbas" title="Aç / kapat"><td colspan="'+(b.cols.length+2)+'"><span class="mk-ok">'+(ONC_ACIK[b.tur]?'▾':'▸')+'</span> ÖNCEKİ AYLAR ('+nOnc+')</td></tr>'+onc;
-  if(!DATA[b.tur].length) body='<tr><td colspan="'+(b.cols.length+2)+'" style="color:#8a97a4;padding:12px 10px">Henüz satır yok — “+ satır” ile ekle.</td></tr>';
+  if(!DATA[b.tur].length) body='<tr><td colspan="'+(b.cols.length+2)+'" style="color:#8a97a4;padding:12px 10px">Bu dönem için kaynak formda kayıt yok.</td></tr>';
   return '<div class="blk '+b.cls+'" data-tur="'+b.tur+'">'
     +'<h2>'+esc(b.ad)+' <span class="formula">— '+esc(b.formula)+'</span></h2>'
+    +'<div class="otokay">⟳ Otomatik: '+esc(OTO_KAYNAK[b.tur]||"")+'</div>'
     +'<div class="tblwrap"><table'+(ONC_ACIK[b.tur]?'':' class="onc-kapali"')+'><thead><tr>'+head+'</tr></thead><tbody>'+body+'</tbody></table></div>'
-    +'<div class="blkfoot"><button class="btn sec addr">+ satır</button>'
+    +'<div class="blkfoot">'
     +'<span class="subt">Blok primi: <b data-bt>'+eur(blockTotal(b.tur))+'</b> · <span data-bc>'+DATA[b.tur].length+'</span> satır</span></div></div>';
 }
 function render(){
   document.getElementById("blocks").innerHTML=BLOCKS.map(renderBlock).join("");
   document.querySelectorAll(".blk").forEach(blk=>{
     const tur=blk.dataset.tur, b=BLOCKS.find(x=>x.tur===tur);
-    blk.querySelectorAll("[data-f]").forEach(el=>{
+    blk.querySelectorAll("textarea[data-f]").forEach(el=>{ /* MK-OTO: yalnız not alanları */
       const i=+el.closest("tr").dataset.i, f=el.dataset.f, ev=el.tagName==="TEXTAREA"?"input":(el.type==="date"?"change":"input");
       el.addEventListener(ev,()=>{ DATA[tur][i][f]=el.value; recalcRow(blk,i); });
       el.addEventListener("change",()=>{ saveRow(tur,i); });
@@ -336,7 +345,7 @@ function render(){
       DATA[tur].splice(i,1); render(); setMsg("Satır silindi.",true);
     });
     blk.querySelectorAll("tr.mk-oncbas").forEach(g=>g.addEventListener("click",()=>{ ONC_ACIK[tur]=!ONC_ACIK[tur]; const tb=g.closest("table"); if(tb) tb.classList.toggle("onc-kapali",!ONC_ACIK[tur]); const ok=g.querySelector(".mk-ok"); if(ok) ok.textContent=ONC_ACIK[tur]?"▾":"▸"; })); /* MK-ONCEKI-AY */
-    blk.querySelector(".addr").onclick=()=>{ DATA[tur].push(blankRow(b)); render(); const rows=blk.querySelectorAll("tbody input.cell"); };
+    /* MK-OTO: satır ekleme yok */
   });
   refreshTotals();
 }
@@ -367,9 +376,8 @@ function mkRow(tur,r){
     kontrat_tarihi:(r.kontrat_tarihi||"")||null, kontrat_tutari:parseNum(r.kontrat_tutari)};
 }
 async function saveRow(tur,i){
-  const r=DATA[tur][i]; if(!r) return;
-  if(!isFilled(tur,r)) return;
-  const body=mkRow(tur,r);
+  const r=DATA[tur][i]; if(!r||!r.id) return;
+  const body={memnuniyet_kriterleri:(r.memnuniyet_kriterleri||"").trim()||null, ts_notlari:(r.ts_notlari||"").trim()||null}; /* MK-OTO */
   if(r.id){
     const {error}=await sb.from("mk_faaliyet").update(body).eq("id",r.id);
     if(error){ setMsg("Kaydedilemedi: "+error.message,false); return; }
@@ -567,7 +575,7 @@ sLoadAkis();
 /* SELARB-TEK-KAYNAK: Yurt Dışı Alacak Blok 1 (arbor_alacak_kalem) kaldırıldı 21.09.2026 — Sel-Arb formu */
 
 /* Kayıtlı satırları yükle; her blokta en az bir boş satır dursun. */
-loadMK().then(()=>{ BLOCKS.forEach(b=>{ if(!DATA[b.tur].length) DATA[b.tur].push(blankRow(b)); }); render(); });
+loadMK(); /* MK-OTO: boş satır eklenmez */
 
 /* PSEL-260930: Proje/PGD hücreleri Sel-Arb projelerinden seçilir — input[data-sap="1"] tek, "m" çoklu (" + " ile birleşir).
    Kaynak view sel_arb_proje (sel_arb_guncel: sira, firma, proje). Seçimde input+change olayı tetiklenir (formun kendi kaydı çalışır).
