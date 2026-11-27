@@ -956,14 +956,14 @@ function cfoAc(L){
       for(const l of L0.slice(yi+1)){ if(!/^– /.test(l)) continue; const om=l.match(/^– Eşit ağırlıklı ortalama: ([\d.,]+) €\/m² \((.*)\)$/); if(om){oz=om;continue;}
         const m=l.match(/^– (.*?) · (.*) · (\d+) teklif(?: \/ \d+ proje)? · ort\. alış ([\d.,]+) €\/m² → ([\d.,]+) €\/m²/); if(m) Y.push(m); else ek.push(l.slice(2)); }
       if(!oz&&!Y.length) out.push(d(L0.slice(yi).join(" ")));
-      else{ out.push(d("Yakın teklifler: "+(oz?oz[1]+" €/m²":"")));
+      else{ out.push(d("Yakın teklifler: "+(oz?oz[1]+" €/m²":""))); ek.forEach(x=>out.push(a(x)));/* CFO-YAKIN-BASLIK (27.11.2026): "… yönden farklı olanlar:" başlığı listenin üstünde */
         const k=Y.length,q=String(kombAl(o)),nle=s=>(s.toLowerCase().match(/low-?e/g)||[]).length;
         const ter=Y.map((m,i)=>{const z=n(m[5])-n(m[4]);return "Teklif"+ai(i+1)+" "+m[4]+" €/m² + Düzeltme"+ai(i+1)+" "+(z<0?"−":"")+t2(Math.abs(z))+" €/m²";});
         out.push(a((oz?oz[2]+". ":"")+"Satış/Alış "+kat+" × ("+ter.join(" + ")+")/"+k));
         let b=ul;Y.forEach((m,i)=>{const lb=m[1].replace(/:\s*[+−-][\d.,]+ €$/,""),z=n(m[5])-n(m[4]);
           let ds=lb==="Aynı"?(Math.abs(z)<0.005?"yok":(nle(m[2])!==nle(q)?"Low-E farkı":"performans/metraj farkı")):lb;
           b+=li("Teklif"+ai(i+1)+": "+m[2])/* CFO-TEKLIF-SADE (27.11.2026, Melih): teklif adedi de yazılmaz *//* CFO-TEKLIF-ETIKETSIZ (27.11.2026, Melih): fark etiketi yalnız Düzeltme satırında */+li("Düzeltme"+ai(i+1)+": "+ds);});
-        ek.forEach(x=>{b+=li(x);}); out.push(b+'</ul>'); } }
+        out.push(b+'</ul>'); } }
     return out.join("");
   }catch(e){ return null; } };
   let p=document.getElementById("cfoPop"); if(p) p.remove();
