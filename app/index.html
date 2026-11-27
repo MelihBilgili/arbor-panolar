@@ -962,7 +962,7 @@ function cfoAc(L){
         out.push(a((oz?oz[2]+". ":"")+"Satış/Alış "+kat+" × ("+ter.join(" + ")+")/"+k));
         let b=ul;Y.forEach((m,i)=>{const lb=m[1].replace(/:\s*[+−-][\d.,]+ €$/,""),z=n(m[5])-n(m[4]);
           let ds=lb==="Aynı"?(Math.abs(z)<0.005?"yok":(nle(m[2])!==nle(q)?"Low-E farkı":"performans/metraj farkı")):lb;
-          b+=li("Teklif"+ai(i+1)+": "+m[3]+" teklif · "+m[2])/* CFO-TEKLIF-ETIKETSIZ (27.11.2026, Melih): fark etiketi yalnız Düzeltme satırında */+li("Düzeltme"+ai(i+1)+": "+ds);});
+          b+=li("Teklif"+ai(i+1)+": "+m[2])/* CFO-TEKLIF-SADE (27.11.2026, Melih): teklif adedi de yazılmaz *//* CFO-TEKLIF-ETIKETSIZ (27.11.2026, Melih): fark etiketi yalnız Düzeltme satırında */+li("Düzeltme"+ai(i+1)+": "+ds);});
         ek.forEach(x=>{b+=li(x);}); out.push(b+'</ul>'); } }
     return out.join("");
   }catch(e){ return null; } };
