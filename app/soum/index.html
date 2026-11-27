@@ -681,18 +681,30 @@ const dsilB=a=>' <button type="button" '+a+' title="Dosyayı formdan çıkar" st
 function dsilBagla(el){ el.querySelectorAll("[data-dsil]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.dsil; if(i>=0){ S.dosya.splice(i,1); dosyaCiz(); } });
   el.querySelectorAll("[data-pcs]").forEach(b=>b.onclick=()=>{ S.pcKayit=(S.pcKayit||[]).filter(k=>k.ad!==b.dataset.pcs); pnotCiz(); });
   el.querySelectorAll("[data-pns]").forEach(b=>b.onclick=()=>{ S.pnotKayit=(S.pnotKayit||[]).filter(k=>k.ad!==b.dataset.pns); pnotCiz(); }); }
+/* SOUM-261127-PARCA (27.11.2026, Melih — Orhan Bulut talebi): soum-teklif deposu dosya sınırı 50 MB. Forma yüklenen dosya (Pencad raporu, Sayım / Proje Notu)
+   45 MB'tan büyükse Formu kaydet'te 45 MB'lık parçalar hâlinde (<yol>.p0, .p1 …) yüklenir, kayıtta {ad,yol,parca,tip} tutulur; indirirken parçalar birleştirilip tek dosya iner. */
+const DP_PARCA=45*1024*1024;
+async function dpYukle(yol,f){ const tip=f.type||"application/octet-stream";
+  if(f.size<=DP_PARCA){ const u=await SB.storage.from("soum-teklif").upload(yol,f,{upsert:false,contentType:tip}); if(u.error) throw u.error; return {yol}; }
+  const n=Math.ceil(f.size/DP_PARCA);
+  for(let i=0;i<n;i++){ try{ durum("Büyük dosya yükleniyor: "+f.name+" — parça "+(i+1)+"/"+n+"…"); }catch(_e){}
+    const u=await SB.storage.from("soum-teklif").upload(yol+".p"+i,f.slice(i*DP_PARCA,Math.min(f.size,(i+1)*DP_PARCA)),{upsert:false,contentType:"application/octet-stream"}); if(u.error) throw u.error; }
+  return {yol,parca:n,tip}; }
+async function dpIndir(k){ if(!k.parca){ const r=await SB.storage.from("soum-teklif").download(k.yol); if(r.error) throw r.error; return r.data; }
+  const P=[]; for(let i=0;i<k.parca;i++){ const r=await SB.storage.from("soum-teklif").download(k.yol+".p"+i); if(r.error) throw r.error; P.push(r.data); }
+  return new Blob(P,{type:k.tip||"application/octet-stream"}); }
 function pcCiz(){ const el=$("pcDosya"); if(!el) return; (S._pcU||[]).forEach(u=>URL.revokeObjectURL(u)); S._pcU=[];
   const L=(S.dosya||[]).filter(d=>PC_ROL.includes(d.rol)), K=(S.pcKayit||[]).filter(k=>!L.some(d=>d.f.name===k.ad));
   if(!L.length&&!K.length){ el.innerHTML=""; return; }
   el.innerHTML='<label>Pencad raporları <span class="mini">(tıklayınca iner)</span></label>'+L.map(d=>{ const u=URL.createObjectURL(d.f); S._pcU.push(u); return '<div><a href="'+u+'" download="'+esc(d.f.name)+'">'+esc(d.f.webkitRelativePath||d.f.name)+'</a>'+dsilB('data-dsil="'+S.dosya.indexOf(d)+'"')+'</div>'; }).join("")
     +K.map((k,j)=>'<div><a href="#" data-pck="'+j+'">'+esc(k.ad)+'</a> <span class="mini">(kayıtlı formdan)</span>'+dsilB('data-pcs="'+esc(k.ad)+'"')+'</div>').join(""); dsilBagla(el);
-  el.querySelectorAll("[data-pck]").forEach(a=>a.onclick=async ev=>{ ev.preventDefault(); const k=K[+a.dataset.pck]; try{ const r=await SB.storage.from("soum-teklif").download(k.yol); if(r.error) throw r.error; indirBlob(r.data,k.ad); }catch(e){ alert("Dosya indirilemedi: "+(e.message||e)); } }); }
+  el.querySelectorAll("[data-pck]").forEach(a=>a.onclick=async ev=>{ ev.preventDefault(); const k=K[+a.dataset.pck]; try{ indirBlob(await dpIndir(k),k.ad); }catch(e){ alert("Dosya indirilemedi: "+(e.message||e)); } }); }
 function pnotCiz(){ try{ pcCiz(); }catch(_e){} kesifOku(); const el=$("pnDosya"); if(!el) return; (S._pnU||[]).forEach(u=>URL.revokeObjectURL(u)); S._pnU=[]; /* SOUM-261113-PNOT */
   const L=S.dosya.filter(d=>d.rol==="pnot"), K=(S.pnotKayit||[]).filter(k=>!L.some(d=>d.f.name===k.ad));
   if(!L.length&&!K.length){ el.innerHTML=""; return; }
   el.innerHTML='<label>Sayım / Proje Notu dosyaları <span class="mini">(tıklayınca iner)</span></label>'+L.map(d=>{ const u=URL.createObjectURL(d.f); S._pnU.push(u); return '<div><a href="'+u+'" download="'+esc(d.f.name)+'">'+esc(d.f.webkitRelativePath||d.f.name)+'</a>'+dsilB('data-dsil="'+S.dosya.indexOf(d)+'"')+'</div>'; }).join("")
     +K.map((k,j)=>'<div><a href="#" data-pnk="'+j+'">'+esc(k.ad)+'</a> <span class="mini">(kayıtlı formdan)</span>'+dsilB('data-pns="'+esc(k.ad)+'"')+'</div>').join(""); dsilBagla(el);
-  el.querySelectorAll("[data-pnk]").forEach(a=>a.onclick=async ev=>{ ev.preventDefault(); const k=K[+a.dataset.pnk]; try{ const r=await SB.storage.from("soum-teklif").download(k.yol); if(r.error) throw r.error; indirBlob(r.data,k.ad); }catch(e){ alert("Dosya indirilemedi: "+(e.message||e)); } }); }
+  el.querySelectorAll("[data-pnk]").forEach(a=>a.onclick=async ev=>{ ev.preventDefault(); const k=K[+a.dataset.pnk]; try{ indirBlob(await dpIndir(k),k.ad); }catch(e){ alert("Dosya indirilemedi: "+(e.message||e)); } }); }
 
 /* ---------------- yorumlama kuralları ---------------- */
 /* SOUM-261125-MKB8 (25.11.2026, Melike Başaran): Notes 1. satırında seri (aile) adından sonra malzeme — EN: 68s, 78s, 90s, 78t, 68p → timber; 78a, 78t-a, 58f, 68f → alu-clad. FR: aynı kural bois / bois-aluminium, SIMPLIST hariç. Alüminyum eşik yazılan pozda ayrıca denizlik satırı yazılmaz. */
@@ -1719,9 +1731,9 @@ async function formKaydet(){ if(revEksik()) return; /* SOUM-REVIZE-ARSIV */ nkGo
   hesapla(); /* SOUM-261126-ARSIV-DURUM: mükerrer kayıt engeli */ if(S.kaydKilit){ durum("Kayıt sürüyor, lütfen bekleyiniz…","uyari"); return; } const kSig=[$("f_proje").value,$("f_firma").value,$("f_ref").value,n2(H.toplam),arsivNet()].join("|"); if(S.sonKayit&&S.sonKayit.sig===kSig&&Date.now()-S.sonKayit.t<60000){ durum("Bu form az önce aynı içerikle kaydedildi (<b>F-"+S.sonKayit.no+"</b>); yeni kayıt açılmadı.","uyari"); return; } S.kaydKilit=1; { const bK=$("btnKaydet"); if(bK) bK.disabled=true; } durum("Form kaydediliyor…");
   try{ if(!SB.storage) throw new Error("depo yok");
     const z=new Date(), kok="form/"+z.toISOString().slice(0,7).replace("-","/")+"/"+z.getTime(), pnot=[];
-    for(const d of S.dosya.filter(d=>d.rol==="pnot")){ const yol=kok+"_d"+pnot.length+"_"+dosyaTem(d.f.name); const u=await SB.storage.from("soum-teklif").upload(yol,d.f,{upsert:false,contentType:d.f.type||"application/octet-stream"}); if(u.error) throw u.error; pnot.push({ad:d.f.name,yol}); }
+    for(const d of S.dosya.filter(d=>d.rol==="pnot")){ const yol=kok+"_d"+pnot.length+"_"+dosyaTem(d.f.name); pnot.push(Object.assign({ad:d.f.name},await dpYukle(yol,d.f))); }
     (S.pnotKayit||[]).forEach(k=>{ if(!pnot.some(x=>x.ad===k.ad)) pnot.push(k); });
-    const pencad=[]; for(const d of S.dosya.filter(d=>PC_ROL.includes(d.rol))){ const yol=kok+"_p"+pencad.length+"_"+dosyaTem(d.f.name); const u=await SB.storage.from("soum-teklif").upload(yol,d.f,{upsert:false,contentType:d.f.type||"application/octet-stream"}); if(u.error) throw u.error; pencad.push({ad:d.f.name,yol}); }
+    const pencad=[]; for(const d of S.dosya.filter(d=>PC_ROL.includes(d.rol))){ const yol=kok+"_p"+pencad.length+"_"+dosyaTem(d.f.name); pencad.push(Object.assign({ad:d.f.name},await dpYukle(yol,d.f))); }
     (S.pcKayit||[]).forEach(k=>{ if(!pencad.some(x=>x.ad===k.ad)) pencad.push(k); }); /* SOUM-261120-PCINDIR */
     const alan={}; document.querySelectorAll("#sonuc input[id],#sonuc select[id],#sonuc textarea[id]").forEach(e=>{ if(e.type==="file"||e.type==="checkbox") return; alan[e.id]={v:e.value,e:e.dataset.elle||""}; });
     const grup={}; FORM_GRUP.forEach(g=>grup[g]=[...document.querySelectorAll("#"+g+" input:checked")].map(x=>x.value));
