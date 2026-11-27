@@ -3980,7 +3980,7 @@ async function loadMali(){
   if(b==="ob_rapor"){ loadObrapor("mali-body"); return; }
   if(b==="bilanco"){ loadBilanco("mali-body"); return; }
   if(b==="icmal"){ loadIcmal("mali-body"); return; }
-  /* MK Faaliyet = MK prim blokları + Tıkanmış Şantiyeler (eski ayrı Şantiye sekmesi buraya taşındı) */
+  /* TIKANMIS-PROJE-SECIM (27.11.2026): başlıklar "Proje" */ /* MK Faaliyet = MK prim blokları + Tıkanmış Şantiyeler (eski ayrı Şantiye sekmesi buraya taşındı) */
   if(b==="mali_mkprim"){ document.getElementById("mali-body").innerHTML=`<div id="mkp-a"></div><div id="mkp-b"></div>`; loadMkPrim("mkp-a"); loadSantiye("mkp-b"); return; }
   /* MAASPRIM-PERSONEL (23.09.2026): Maaş-Prim panosu kaldırıldı; bilgileri Personel (eski Referans) sekmesinde */
   if(b==="ahsap"){ loadAhsap("mali-body"); return; }
@@ -4154,7 +4154,7 @@ async function loadSantiye(tgt){
       +`<td class="num"${al.det?` title="${esc(al.det)}"`:''}>${al.tutar==null?'':money(al.tutar)}</td>`
       +`<td class="tdur">${dur}</td></tr>`;
   }).join("");
-  view.innerHTML=`<h2 class="secH">Tıkanmış Şantiyeler <span class="muted" style="font-weight:400">· ${rows.length} açık · MK ${mkStamp}</span></h2>
+  view.innerHTML=`<h2 class="secH">Tıkanmış Projeler <span class="muted" style="font-weight:400">· ${rows.length} açık · MK ${mkStamp}</span></h2>
     <style>table.stik{width:auto}
       table.stik td.sb{white-space:nowrap;font-weight:700}
       table.stik .c>span{display:block;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;white-space:nowrap}
@@ -4163,7 +4163,7 @@ async function loadSantiye(tgt){
       table.stik td.tdur>.cx{display:block;width:119ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
       table.stik td.tdur>.cx::-webkit-scrollbar{display:none}</style>
     <div class="scroll"><table class="stbl stik">
-    <thead><tr><th>ŞANTİYE</th><th>MÜŞTERİ</th><th class="num">ARBOR SAS ALACAK €</th><th class="tdur">DURUM</th></tr></thead>
+    <thead><tr><th>PROJE</th><th>MÜŞTERİ</th><th class="num">ARBOR SAS ALACAK €</th><th class="tdur">DURUM</th></tr></thead>
     <tbody>${body}<tr class="itot"><td>Toplam · ${rows.length} açık</td><td></td><td class="num">${money(toplam)}</td><td></td></tr></tbody>
     </table></div>`;
 }
