@@ -759,7 +759,7 @@ function ydCols(g){ return COLS.filter(c=>YD_GIZ[g].indexOf(c.f)<0).map(c=>YD_NO
 function ydGrup(r){ return tkYasak(r)?1:2; }
 /* YD1-KAROLAJ-KILIT (26.11.2026, Melih): YD1'de Kemer/Karolaj "Yalnız karolaj" ya da "Hepsi" seçili satır, durum boş / Teklif Talebi Geldi / Teklif İncelendi / Teklif Bekleniyor iken tüm satır kırmızı ve değiştirilemez (sağ tık, not, ilgili kartı dahil). Melih (int@) kilitten muaf. */
 const KAR_BG="#f19a9a";
-function karolajKirmizi(r){ return BLOK==="YD1" && !!r && !!r.id && (r.kemer_karolaj==="Yalnız karolaj"||r.kemer_karolaj==="Hepsi") && (!r.durum || ((DURUM_SIRA[r.durum]||99)<=3)); }
+function karolajKirmizi(r){ return false; } /* YD1-KAROLAJ-KALDIR (27.11.2026, Melih): karolaj rengi ve kilidi kaldırıldı */
 function karolajKilit(r){ return karolajKirmizi(r) && window.ARB_EM!=="int@arbor.com.tr"; }
 function rowHTML(r,key,gz){
   gz=gz||ydGrup(r); const GC=ydCols(gz);
