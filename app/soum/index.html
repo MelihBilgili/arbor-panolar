@@ -1700,7 +1700,7 @@ let ARSIV=[];
 const DURUM_BG={gonderilecek:"#dcecfb",gonderildi:"#e0f5e0",kontrol:"#fff6cc",hazirlandi:"#ffffff",revizyon:"#ffe5cc",iptal:"#fadcdc"};
 const DURUM_L=[["gonderilecek","Teklif Müşteriye Gönderilmeyi Bekliyor","#2d7fc1"],["gonderildi","Müşteriye Gönderilen","#27ae60"],["kontrol","Kontrol Bekleyen","#f2c94c"],["hazirlandi","Teklif Bekleniyor","#ffffff"],["revizyon","Revizyon İstendi","#f2994a"],["iptal","İptal","#eb5757"]];
 function durumKat(r){ const d=r.durum||"hazirlandi"; return d==="onaylandi"?"gonderildi":(DURUM_L.some(x=>x[0]===d)?d:"hazirlandi"); }
-function kontrolYetki(){ return onayIzin()||(typeof ARB_EMAIL!=="undefined"&&ARB_EMAIL==="int@arbor.com.tr"); } /* SOUM-261127-MKB14 */
+function kontrolYetki(){ return true; } /* SOUM-261127-MKB14 */ /* SOUM-261127-MKB15: Kontrol edildi herkes tarafından işaretlenebilir (27.11.2026, MKB) */
 async function kontrolEdildi(r){ if(!r) return; if(!kontrolYetki()){ alert("Kontrol edildi yalnız OBL, MN ve MKB içindir."); return; } if(!r.form_yolu){ alert("Bu kaydın formu yok; önce formu kaydediniz."); return; }
   if(!confirm("F-"+formNo(r)+" "+(r.proje||"")+"\n\nTeklif kontrol edildi olarak işaretlenecek, teklif PDF'i proje maili ile gönderilecek ve kayıt «Teklif Müşteriye Gönderilmeyi Bekliyor» başlığına geçecek. Devam edilsin mi?")) return;
   if(!(await formAc(r))) return; await new Promise(z=>setTimeout(z,400));
