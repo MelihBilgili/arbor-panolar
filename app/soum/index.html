@@ -1846,16 +1846,20 @@ function dipCiz(){ const el=$("dipnot"); if(!el) return; const T=dipSec();
 function dipMetin(){ const T=dipSec(), cap=x=>x.charAt(0).toUpperCase()+x.slice(1), d=DIP.filter((x,i)=>T[i]).map(x=>x[0]), h=DIP.filter((x,i)=>!T[i]).map(x=>x[0]);
   if(!(H&&H.opIns)) h.push("heures d'insertion"); if(!(H&&H.pror)) h.push("proratas");
   return (d.length?["Compris : "+d.join(", ")+"."]:[]).concat(h.length?["Non compris : "+h.join(", ")+"."]:[]); }
+/* SOUM-261127-KAROLAJ (27.11.2026, Melih): YD formunda kemer/karolaj "Yalnız karolaj" ya da "Hepsi" ve proje Fransa'da (YD1 ya da ülke FR) ise Fransızca teklifte mevcut bölümlerin üstünde "NOTES SPÉCIFIQUES À L'OFFRE" › "Vitrages à petits bois" notu (PDF + Excel). Kaynak: RPC soum_yd_bekleyen / soum_proje_bilgi.kemer_karolaj. */
+function karolajNot(en){ const y=S.ydSec||S.yd; if(en||!y) return []; const kk=nrmTxt(y.kemer_karolaj||""), fr=String(y.blok||"").toUpperCase()==="YD1"||/^fr/i.test(String(y.ulke||"").trim());
+  if(!fr||!/karolaj|hepsi/.test(kk)) return [];
+  return [{t:"NOTES SPÉCIFIQUES À L'OFFRE",b:[{t:"Vitrages à petits bois",m:["Nous rappelons que les vitrages à petits bois de notre offre comportent des croisillons rapportés uniquement sur les faces intérieure et extérieure du vitrage. Aucun petit bois n'est intégré dans le double vitrage, ni au niveau de l'intercalaire ni par une autre baguette de séparation. Cette précision vise à éviter toute ambiguïté."]}]}]; }
 function sartGruplar(){ const en=EN(), SR=en?window.SOUM_SART_EN:window.SOUM_SART, vrVar=S.poz.some(p=>p.ozl.panjur), K=GBP()?kur():1;
   const kasa=en?pE(3250*K,0):"3 250 €", ur=String(($("f_uretim")||{}).value||"").trim()||"10";
-  return SR.gruplar.map(g=>({t:g.t,b:g.b.filter(b=>!b.vr||vrVar).map(b=>{ let m=b.m.map(t=>t.replace("{KASA}",kasa).replace("{URETIM}",ur));
+  return karolajNot(en).concat(SR.gruplar.map(g=>({t:g.t,b:g.b.filter(b=>!b.vr||vrVar).map(b=>{ let m=b.m.map(t=>t.replace("{KASA}",kasa).replace("{URETIM}",ur));
     if(!en&&m.some(t=>/^Compris :/.test(t))) return {t:b.t,m:m.filter(t=>!/^(Non c|C)ompris :/.test(t)).concat(dipMetin())}; /* SOUM-DIPNOT */
     /* SOUM-INDIRIM: insertion opsiyon, hariçlerde kalır */ if(!en&&H&&H.pror) m=m.map(t=>t.replace(" proratas,","")); if(!en&&H&&H.opIns) m=m.map(t=>t.replace(" heures d'insertion,","")); /* SOUM-ETUT */
     if(b.kapsam&&SR.kapsam){ const Kp=SR.kapsam, d=Kp.dahil_sabit.slice(), h=Kp.haric_sabit.slice(); /* SOUM-EN-KAPSAM2: denizlik/pervaz/söve seçime göre; menfez yuvası Pencad'den; iç denizlik tahtası denizlik "İç" değilse hariç */
       const sec={den:{alu:"external aluminium sills",ahs:"external timber sills",ic:"internal timber sills"},pervaz:{ic:"internal timber trims",dis:"external timber trims"},sove:{ic:"internal window jambs",dis:"external window jambs"}}, kal=Object.assign({},Kp.kalem,{sove:Kp.kalem.sove||"window jambs"});
       Object.keys(kal).forEach(k=>{ if(sec[k]){ const L=kSecL(k).map(v=>sec[k][v]).filter(Boolean); if(L.length) d.push(...L); else h.push(kal[k]); } else if(k==="myuva"||k==="menfez") (S.poz.some(p=>p.ozl.menfez)?d:h).push(kal[k]); /* SOUM-KAPSAM-COK: menfez seçimi kalktı, Pencad MNF'den */ else if(k==="icden"){ if(!kSecL("den").includes("ic")) h.push(kal[k]); } else (kapsam(k)?d:h).push(kal[k]); });
       const cap=x=>x.charAt(0).toUpperCase()+x.slice(1); m=[Kp.dahil_bas+cap(d.join(", "))+".",Kp.haric_bas+cap(h.join(", "))+"."]; }
-    return {t:b.t,m}; })})).filter(g=>g.b.length); }
+    return {t:b.t,m}; })})).filter(g=>g.b.length)); } /* SOUM-261127-KAROLAJ */
 function sartHtml(){ const ul=a=>'<ul>'+a.map(t=>'<li>'+esc(t)+'</li>').join("")+'</ul>';
   let h=''; sartGruplar().forEach(g=>{ const bl=g.b; h+='<div class="sart"><h2>'+esc(g.t)+'</h2>'+bl.map(b=>'<h3>'+esc(b.t)+'</h3>'+ul(b.m)).join("")+'</div>'; });
   return h+'<img class="sertalt" src="'+window.SOUM_IMG.sertifika+'">'; }
@@ -2213,7 +2217,6 @@ async function projeMail(){ const blok=String((S.ydSec&&S.ydSec.blok)||(S.yd&&S.
     if(r.error) throw r.error; const d=r.data||{}; if(!d.ok) throw new Error(d.hata||"gönderilemedi");
     durum("Proje maili gönderildi: "+esc((d.to||[]).join(", "))+(d.cc&&d.cc.length?" · cc "+esc(d.cc.join(", ")):"")+" (ek: PDF"+(G.length?"; "+G.length+" görsel mail metninde":"")+").","ok"); }
   catch(e){ console.error(e); durum("Proje maili gönderilemedi: "+esc(e.message||e),"hata"); } }
-
 </script>
 <!-- FORM-LINKLER --><script src="../form_linkler.js?v=261123g"></script><!-- FORM-MENU -->
 <!-- ARBOR-DRAGSCROLL -->
