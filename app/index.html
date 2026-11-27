@@ -689,7 +689,7 @@ async function grGecmisHazirsiz(){
   const ack=r=>[String(r.aciklama||"").split("\n").filter(Boolean).reverse().join("\n"),r.uretim_notu?"Üretim: "+r.uretim_notu:""].filter(Boolean).join("\n");
   const rows=L.map(r=>{ const a=ack(r), x=Object.assign({},r,{_gun:r.gecikme});
     return `<tr class="my-sh" data-tur="${esc(r.tur)}" data-no="${esc(r.no)}"><td class="w" title="${esc(r.durum_erp)}">${esc(r.durum_erp)}</td>`
-    +(window.MYACIL&&MYACIL.gorevTd?MYACIL.gorevTd(x):"<td></td><td></td><td></td>") /* GIRIS-GECMIS-GOREV */
+    +(r.tur==="PRJ"&&r.u_engel===true?grUretimGorevTd(r):window.MYACIL&&MYACIL.gorevTd?MYACIL.gorevTd(x):"<td></td><td></td><td></td>") /* GIRIS-GECMIS-GOREV · URETIM-NOT-GOREV */
     +`<td title="${esc(r.no)}">${esc(r.tur==="PEM"?"PEM "+r.kod:r.kod)}</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td>`
     +`<td style="text-align:right">${esc(r.adet)}</td><td style="color:#b40000">${fd(r.tarih)}</td><td><b>${fd(r.hedef)}</b></td>`
     +`<td class="w gg-ack" title="${esc(a)}">${esc(a.replace(/\n/g," · "))}</td></tr>`; }).join("");
@@ -697,6 +697,15 @@ async function grGecmisHazirsiz(){
     +`<th>Durum</th><th>Sorumlu</th><th>Görev</th><th title="AÜP / termin tarihinden bu yana geçen gün">Gün</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Açıklama</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   el.querySelectorAll("tr[data-no]").forEach(tr=>tr.oncontextmenu=ev=>{ ev.preventDefault(); if(window.MYACIL) MYACIL.ayrinti(sb,tr.dataset.tur,tr.dataset.no); });
   grGecmisHizala();
+  /* URETIM-NOT-GOREV (27.11.2026, Melih): değerlendirilmemiş (yeni/değişmiş) üretim notu varsa edge uretim-not-gorev bir kez çağrılır, tablo yeniden çizilir */
+  if(L.some(r=>r.u_yeni)&&!window._grUretimNotCalisti){ window._grUretimNotCalisti=true;
+    try{ const {data:d}=await sb.functions.invoke("uretim-not-gorev",{body:{}}); if(d&&d.ok&&d.yazilan) return grGecmisHazirsiz(); }catch(e){} }
+}
+/* URETIM-NOT-GOREV: projenin üretim notu sevke hazır olmamayı bir tarafa bağlıyorsa Sorumlu = o taraf (Üretim/Montaj → Semih Bey), Görev = notun özeti;
+   Semih Bey ise acil kuralı gibi kırmızı (Gün ≥ 1 → Sorumlu kırmızı zemin), dış taraf ise kırmızı yok. Gerekçe hover'da. */
+function grUretimGorevTd(r){
+  const k=r.u_kirmizi===true, st=k?' style="color:#c62828"':'', ss=(k&&Number(r.gecikme)>=1)?' style="background:#c62828;color:#fff;font-weight:600"':st, tt=` title="${esc(r.u_gerekce||"")}"`;
+  return `<td${ss}${tt}>${esc(r.u_sorumlu||"")}</td><td${st}${tt}>${esc(r.u_gorev||"")}</td><td style="text-align:right">${esc(r.gecikme)}</td>`;
 }
 /* GIRIS-GECMIS-HIZA: geçmiş tablosunun ilk 9 sütun genişliği Acil yüklemeler tablosundan alınır (acil blok çizildiğinde ve pencere boyutu değişince yeniden) */
 function grGecmisHizala(){
