@@ -481,6 +481,7 @@ async function loadGiris(){
     <div id="gr-vakit" class="gr-bxs"><span class="gr-muted">Vakitler yükleniyor…</span></div>
     <div id="gr-ozel" class="gr-bxs" style="margin:2px 0 8px"></div><div style="display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;margin:0 0 8px"><button id="gr-cfo" class="gr-onc gr-cfo" disabled>Cam Fiyat Onayı Ver</button><!-- GIRIS-CAM-ONAY --><button id="gr-iso" class="gr-onc gr-cfo" disabled>İskonto Onayı Ver</button><!-- GIRIS-ISK-ONAY --></div><!-- GIRIS-ONCELIK-BTN: kaldırıldı (YD-ONCELIK-YOK 20.11.2026) --><!-- GIRIS-BTN-ALT (17.11.2026, Melih): Cam Fiyat Onayı Ver yaklaşan özel günlerin altında -->
     <div id="gr-my"></div><!-- MY-FAALIYET / MY-ACIL-GUNDEM-UST: Acil yüklemeler MB gündemin hemen üstünde -->
+    <div id="gr-gecmis"></div><!-- GIRIS-GECMIS-HAZIRSIZ -->
     <div id="gr-gundem"></div>
     <div id="gr-agblok"></div><!-- GIRIS-GUNDEM-BANT -->
     <div id="gr-ust"></div>
@@ -491,7 +492,7 @@ async function loadGiris(){
     <div id="gr-not" style="margin-top:16px"></div><!-- GIRIS-NOT -->
   </div>`;
   const kor=f=>Promise.resolve().then(f).catch(e=>{ try{ console.warn("Giriş:",e); }catch(_){} });
-  await Promise.all([kor(grVakit),kor(grOzel),kor(grCfo),kor(grIso),kor(grGundem),kor(grAgBlok),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(grSatis),kor(grAhsap),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
+  await Promise.all([kor(grVakit),kor(grOzel),kor(grCfo),kor(grIso),kor(grGundem),kor(grGecmisHazirsiz),kor(grAgBlok),kor(()=>window.GRUST&&GRUST.render(grEl("gr-ust"),{sb:sb,ekleyen:()=>"MB",grafik:true /* GIRIS-GRAFIK-KUTU */})),kor(grSatis),kor(grAhsap),kor(()=>grEl("gr-santiye")&&loadSantiye("gr-santiye")),kor(grEgitim),kor(grNot)]);
 }
 /* GIRIS-SATIS-BANT (19.11.2026, Melih): Satış panosunun ilk bloğu (Muhtemel/Alınan özeti + Değişim + proje listeleri, satisSummary)
    Giriş'te grafiklerin hemen altında kapalı açılır bantta; Satış sekmesi kaldırıldı. Hesap loadSatis ile birebir (KUR-DONDURMA, SATIS-AYBASLANGIC). */
@@ -672,6 +673,23 @@ function grAcilSahsi(pem){
     el.querySelectorAll("tr.my-sh .ged").forEach(x=>x.onclick=ev=>{ ev.stopPropagation(); startEdit(x); });
     el.querySelectorAll("tr.my-sh button.del").forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); delGundem(b.dataset.id); });
   }});
+}
+/* GIRIS-GECMIS-HAZIRSIZ (27.11.2026, Melih): Acil yüklemeler bloğunun altında termini (PEM) / AÜP tarihi (PRJ) geçmiş ama sevke hazır olmayan
+   PEM ve projeler (tüm ülkeler; PEM durum < 3, PRJ durum < 8; İptal hariç) — rpc giris_gecmis_hazirsiz. Sıra: tarih (en eski üstte). Sağ tık → Ayrıntılar. */
+async function grGecmisHazirsiz(){
+  const el=grEl("gr-gecmis"); if(!el) return;
+  const {data,error}=await sb.rpc("giris_gecmis_hazirsiz");
+  if(error){ el.innerHTML=""; return; }
+  const L=data||[]; if(!L.length){ el.innerHTML=""; return; }
+  if(window.MYACIL) MYACIL.stil();
+  const fd=s=>{ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||"")); return m?m[3]+"."+m[2]+"."+m[1].slice(2):""; };
+  const rows=L.map(r=>`<tr class="my-sh" data-tur="${esc(r.tur)}" data-no="${esc(r.no)}"><td class="w" style="max-width:24ch" title="${esc(r.durum_erp)}">${esc(r.durum_erp)}</td>`
+    +`<td title="${esc(r.no)}">${esc(r.tur==="PEM"?"PEM "+r.kod:r.kod)}</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td>${esc(r.ulke||"")}</td>`
+    +`<td style="text-align:right">${esc(r.adet)}</td><td><b style="color:#b40000">${fd(r.tarih)}</b></td><td style="text-align:right">${esc(r.gecikme)}</td>`
+    +`<td>${fd(r.hedef)}</td><td>${r.durum==="Acil"?'<b style="color:#b0003a">Acil</b>':esc(r.durum)}</td></tr>`).join("");
+  el.innerHTML=`<div class="myab"><h3>TERMİNİ / AÜP TARİHİ GEÇMİŞ, SEVKE HAZIR OLMAYANLAR (${L.length})</h3><div class="myw"><table class="mya"><thead><tr>`
+    +`<th>Durum</th><th>No</th><th>Proje Adı</th><th>Ülke</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Gecikme<br>(gün)</th><th>Hedef<br>Yükleme Tarihi</th><th>Takip</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  el.querySelectorAll("tr[data-no]").forEach(tr=>tr.oncontextmenu=ev=>{ ev.preventDefault(); if(window.MYACIL) MYACIL.ayrinti(sb,tr.dataset.tur,tr.dataset.no); });
 }
 /* GIRIS-OB-PRIM-POP (14.11.2026, Melih): "Prim şartını sağlayan" tablosunda ÖB adına tıklayınca ÖB Faaliyet panosundaki
    "ÖB Performans Primi (<kapanan ay>)" bloğu pencerede açılır. loadObrapor pencere içindeki gizli kaba çizer, yalnız .ob-prim-blok görünür;
