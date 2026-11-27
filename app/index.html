@@ -691,7 +691,7 @@ async function grGecmisHazirsiz(){
     return `<tr class="my-sh" data-tur="${esc(r.tur)}" data-no="${esc(r.no)}"><td class="w" title="${esc(r.durum_erp)}">${esc(r.durum_erp)}</td>`
     +(window.MYACIL&&MYACIL.gorevTd?MYACIL.gorevTd(x):"<td></td><td></td><td></td>") /* GIRIS-GECMIS-GOREV */
     +`<td title="${esc(r.no)}">${esc(r.tur==="PEM"?"PEM "+r.kod:r.kod)}</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td>`
-    +`<td style="text-align:right">${esc(r.adet)}</td><td><b style="color:#b40000">${fd(r.tarih)}</b></td><td><b>${fd(r.hedef)}</b></td>`
+    +`<td style="text-align:right">${esc(r.adet)}</td><td style="color:#b40000">${fd(r.tarih)}</td><td><b>${fd(r.hedef)}</b></td>`
     +`<td class="w gg-ack" title="${esc(a)}">${esc(a.replace(/\n/g," · "))}</td></tr>`; }).join("");
   el.innerHTML=`<div class="myab"><h3>TERMİNİ / AÜP TARİHİ GEÇMİŞ, SEVKE HAZIR OLMAYANLAR (${L.length})</h3><div class="myw"><table class="mya gg-t"><thead><tr>`
     +`<th>Durum</th><th>Sorumlu</th><th>Görev</th><th title="AÜP / termin tarihinden bu yana geçen gün">Gün</th><th>No</th><th>Proje Adı</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Hedef<br>Yükleme Tarihi</th><th>Açıklama</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
@@ -705,7 +705,7 @@ function grGecmisHizala(){
   const ah=a?a.querySelectorAll("thead th"):[];
   if(ah.length<9){ t.style.tableLayout=""; t.style.width=""; th.forEach(x=>{ x.style.width=""; }); return; }
   let top=0; for(let k=0;k<9;k++){ const w=ah[k].getBoundingClientRect().width; top+=w; th[k].style.boxSizing="border-box"; th[k].style.width=w+"px"; }
-  const aw=Math.max(240,Math.round(ah[ah.length-1].getBoundingClientRect().width)); th[9].style.boxSizing="border-box"; th[9].style.width=aw+"px";
+  const aw=Math.max(240,Math.round(a.getBoundingClientRect().width-top)); /* GIRIS-GECMIS-SAG: Açıklama sağ sınırı acil tablosuyla eşit */ th[9].style.boxSizing="border-box"; th[9].style.width=aw+"px";
   t.style.tableLayout="fixed"; t.style.width=(top+aw)+"px";
   t.querySelectorAll("tbody td").forEach(td=>{ td.style.overflow="hidden"; td.style.textOverflow="ellipsis"; td.style.maxWidth="none"; });
 }
