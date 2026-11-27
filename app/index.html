@@ -2222,8 +2222,8 @@ async function loadRef(){
     if(c.t==="bld"){ const L=R.kod?BLD[R.kod]:null; return `<td class="pbld">${(L&&L.length)?L.map(esc).join(" · "):dash}</td>`; }   /* MAIL-BILDIRIM-KONU */
     if(c.t==="del") return `<td><button class="kdel pdel" ${dk} title="Sil">✕</button></td>`;
     if(c.t==="ay"){ const v=m?AY[m.id+"|"+c.f.slice(3)]:null; const ks=m?((KSMAP[m.id]||{})[c.f.slice(3)]||null):null;  /* PRIM-KESINTI */
-      if(ks){ const kt=Number(ks.t).toLocaleString('tr-TR',{maximumFractionDigits:0});
-        const ttl=ks.u?("Prim kesintisi "+kt+" TL düşüldü"+(ks.a?" — "+ks.a:"")):("Prim kesintisi "+kt+" TL — prim girilince otomatik düşülür"+(ks.a?" ("+ks.a+")":""));
+      if(ks){ const kp=(ks.p!=null&&!ks.u); /* PRIM-KESINTI-YUZDE */ const kt=kp?("%"+ks.p):Number(ks.t).toLocaleString('tr-TR',{maximumFractionDigits:0});
+        const ttl=ks.u?("Prim kesintisi "+kt+" TL düşüldü"+(ks.a?" — "+ks.a:"")):("Prim kesintisi "+kt+(kp?" (primin yüzdesi)":" TL")+" — prim girilince otomatik düşülür"+(ks.a?" ("+ks.a+")":""));
         return `<td class="num ped${c.hid?" phid":""}" data-k="${c.f}" ${dk}${hide} title="${esc(ttl)}">${fmtN(v)}${ks.u?' <span style="color:#b40000">*</span>':' <span style="color:#b40000;font-size:9.5px">−'+kt+'</span>'}</td>`; }
       return `<td class="num ped${c.hid?" phid":""}" data-k="${c.f}" ${dk}${hide}>${fmtN(v)}</td>`; }
     if(c.t==="av"){ const note=m?((AVMAP[m.id]||{})[c.f.slice(4)]||""):""; return `<td class="ped pav" data-k="${c.f}" ${dk}${hide}>${note?esc(note):dash}</td>`; }
@@ -2309,7 +2309,7 @@ async function loadRef(){
       if(error) throw new Error(error.message); return; }
     if(key.slice(0,3)==="ay:"){ const p=key.slice(3).split("-");
       const ks=(KSMAP[id]||{})[key.slice(3)]; let tut=(val===""?null:numOf(val));
-      const kes=!!(ks&&!ks.u&&tut!=null); if(kes) tut=Math.round(tut-Number(ks.t||0));   /* PRIM-KESINTI: girilen primden kesinti düşülür */
+      const kes=!!(ks&&!ks.u&&tut!=null); if(kes){ if(ks.p!=null) ks.t=Math.round(tut*Number(ks.p)/100); /* PRIM-KESINTI-YUZDE: p = primin yüzdesi */ tut=Math.round(tut-Number(ks.t||0)); }   /* PRIM-KESINTI: girilen primden kesinti düşülür */
       const {error}=await sb.from("maas_prim_ay").upsert({kisi_id:id,yil:+p[0],ay:+p[1],tutar:tut,updated_at:now()},{onConflict:"kisi_id,yil,ay"});
       if(error) throw new Error(error.message);
       if(kes){ ks.u=true; const r2=await sb.from("maas_prim_not").update({metin:noteText(),updated_at:now()}).eq("id",1); if(r2.error) throw new Error(r2.error.message); }
