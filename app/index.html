@@ -181,7 +181,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="giris_ust.js?v=261123e"></script><!-- GIRIS-IKI-YIL · GIRIS-UST-ORTAK · GIRIS-CARI-TAMSAYI · GIRIS-SELARB-TEK-EKSEN · GIRIS-YUKLEME-FT · GIRIS-GRAFIK-BIRLES · GIRIS-YEKSEN-15 · GIRIS-ALACAK-PEMBE · GIRIS-ALACAK-GRAFIK-YOK -->
-<script src="my_acil.js?v=261126m"></script><!-- MY-FAALIYET · GIRIS-YPB-ACIK · KES-GGAA-OE -->
+<script src="my_acil.js?v=261127a"></script><!-- MY-FAALIYET · GIRIS-YPB-ACIK · KES-GGAA-OE -->
 <script src="situ_yukleme.js?v=261110"></script><!-- SITU-YUKLEME -->
 <script>
 /* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
@@ -684,11 +684,12 @@ async function grGecmisHazirsiz(){
   if(window.MYACIL) MYACIL.stil();
   const fd=s=>{ const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(s||"")); return m?m[3]+"."+m[2]+"."+m[1].slice(2):""; };
   const rows=L.map(r=>`<tr class="my-sh" data-tur="${esc(r.tur)}" data-no="${esc(r.no)}"><td class="w" style="max-width:24ch" title="${esc(r.durum_erp)}">${esc(r.durum_erp)}</td>`
+    +(window.MYACIL&&MYACIL.gorevTd?MYACIL.gorevTd(r):"<td></td><td></td><td></td>") /* GIRIS-GECMIS-GOREV: acil Sorumlu/Görev/Gün kuralları */
     +`<td title="${esc(r.no)}">${esc(r.tur==="PEM"?"PEM "+r.kod:r.kod)}</td><td class="w" title="${esc(r.proje)}">${esc(r.proje)}</td><td>${esc(r.ulke||"")}</td>`
     +`<td style="text-align:right">${esc(r.adet)}</td><td><b style="color:#b40000">${fd(r.tarih)}</b></td><td style="text-align:right">${esc(r.gecikme)}</td>`
     +`<td>${fd(r.hedef)}</td><td>${r.durum==="Acil"?'<b style="color:#b0003a">Acil</b>':esc(r.durum)}</td></tr>`).join("");
   el.innerHTML=`<div class="myab"><h3>TERMİNİ / AÜP TARİHİ GEÇMİŞ, SEVKE HAZIR OLMAYANLAR (${L.length})</h3><div class="myw"><table class="mya"><thead><tr>`
-    +`<th>Durum</th><th>No</th><th>Proje Adı</th><th>Ülke</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Gecikme<br>(gün)</th><th>Hedef<br>Yükleme Tarihi</th><th>Takip</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+    +`<th>Durum</th><th>Sorumlu</th><th>Görev</th><th title="Görevin terettüp ettiği günden bu yana geçen gün">Gün</th><th>No</th><th>Proje Adı</th><th>Ülke</th><th>Adet</th><th>AÜP /<br>Termin</th><th>Gecikme<br>(gün)</th><th>Hedef<br>Yükleme Tarihi</th><th>Takip</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   el.querySelectorAll("tr[data-no]").forEach(tr=>tr.oncontextmenu=ev=>{ ev.preventDefault(); if(window.MYACIL) MYACIL.ayrinti(sb,tr.dataset.tur,tr.dataset.no); });
 }
 /* GIRIS-OB-PRIM-POP (14.11.2026, Melih): "Prim şartını sağlayan" tablosunda ÖB adına tıklayınca ÖB Faaliyet panosundaki
