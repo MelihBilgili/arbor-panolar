@@ -284,8 +284,8 @@ const BLOCKS=[
 ];
 const DATA={memnuniyet:[],ts:[],fr:[],diger:[]};
 /* MK-OTO (27.11.2026, Melih): dört prim bloğu kaynak formlardan otomatik (mk_oto_senkron); MK yalnız not alanlarını düzenler */
-const OTO_KAYNAK={memnuniyet:"Müşteri Memnuniyeti formu (yanıtlanan anket; oran = puan ÷ 4) · Kontrat: Sel-Arb",ts:"ÖB Faaliyet › TS (müşterinin onayladığı TS: Onaylandı / Avenant geldi)",fr:"Yurt Dışı Satış 1 formu (Kazandık / Üretimde)",diger:"Yurt Dışı Satış 2 formu (Kazandık / Üretimde)"};
-const OTO_NOT={memnuniyet_kriterleri:1,ts_notlari:1};
+const OTO_KAYNAK={memnuniyet:"Müşteri Memnuniyeti formu (yanıtlanan anket; kriterler ve yorum anketten, oran = puan ÷ 4) · Kontrat: Sel-Arb",ts:"ÖB Faaliyet › TS (müşterinin onayladığı TS: Onaylandı / Avenant geldi)",fr:"Yurt Dışı Satış 1 formu (Kazandık / Üretimde)",diger:"Yurt Dışı Satış 2 formu (Kazandık / Üretimde)"};
+const OTO_NOT={ts_notlari:1}; /* MK-OTO-KRITER: Memnuniyet Kriterleri anketten, kilitli */
 function blankRow(b){ const o={}; b.cols.forEach(c=>o[c[0]]=""); return o; }
 
 function rowPrim(tur,r){ return PRIM[tur](r); }
@@ -377,7 +377,7 @@ function mkRow(tur,r){
 }
 async function saveRow(tur,i){
   const r=DATA[tur][i]; if(!r||!r.id) return;
-  const body={memnuniyet_kriterleri:(r.memnuniyet_kriterleri||"").trim()||null, ts_notlari:(r.ts_notlari||"").trim()||null}; /* MK-OTO */
+  const body={ts_notlari:(r.ts_notlari||"").trim()||null}; /* MK-OTO */
   if(r.id){
     const {error}=await sb.from("mk_faaliyet").update(body).eq("id",r.id);
     if(error){ setMsg("Kaydedilemedi: "+error.message,false); return; }
