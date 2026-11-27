@@ -1,6 +1,6 @@
 // Supabase Edge Function: cam-fiyat-onay  (06.11.2026, Melih) — marker CAM-FIYAT-ONAY
 // Ürün Konfigürasyonu'nda "Fiyat kullanım talimatı al" sonucu "Onaysız Kullanmayınız" çıkınca form çağırır.
-//  islem "talep"   (cam.form@ / int@): cam_fiyat_onay'a satır + Melih'e WhatsApp (CallMeBot, sistem_anahtar 'wa_callmebot').
+//  islem "talep"   (cam.form@ / int@): cam_fiyat_onay'a satır + Melih'e WhatsApp (WA-WHAPI 18.11.2026: Whapi.Cloud, sistem_anahtar 'wa_whapi'; CallMeBot kotası bitti).
 //                  Aynı kişi + seri + cam + Pencad fiyatı için bekleyen/kararlı satır varsa yeni satır ve WA yok.
 //  islem "goruldu" (cam.form@ / int@): kullanıcının onay penceresini gördüğünü işaretler.
 // Karar (Pencad / Hesaplanan) app Giriş panosundaki "Cam Fiyat Onayı Ver" düğmesinden doğrudan tabloya yazılır (int@, RLS arb_rw).
@@ -11,6 +11,10 @@
 // CAM-ONAY-SATIS (17.11.2026, Melih, v7): kıyas yeniden girilen Pencad satış fiyatı (v6'daki alış ×2,5 kıyası kaldırıldı; hesap satırı kalır).
 // CAM-ONAY-ALIS25 + CAM-ONAY-HESAP (17.11.2026, Melih, v6): fark Pencad alış ×2,5'e göre (girilen Pencad satışı, listedeki satış/alış
 //   çarpanıyla ×2,5'e çevrilir; form "kiyas" gönderir, yoksa pencad_satir'dan hesaplanır); mesaja modelin birim fiyat hesabı ("hesap") eklenir.
+// WA-WHAPI (18.11.2026, v9): islem "wa_test" (x-my-key = sistem_anahtar 'my_takip') tek WhatsApp deneme mesajı gönderir.
+// CAM-ONAY-GUNCELLE (27.11.2026, Melih, v12): aynı kişi + seri + cam + Pencad fiyatı için BEKLEYEN talep varsa ve formun birim fiyatı
+//   değiştiyse (ör. model düzeltildi) yeni satır açılmaz; bekleyen satır yeni birim/fark/mesajla güncellenir, WhatsApp yeniden gider,
+//   form pencere görüntüsünü yeniden kaydeder (tekrar:false döner). Birim aynıysa eskisi gibi tekrar:true.
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const SB = Deno.env.get("SUPABASE_URL") || "";
@@ -38,16 +42,15 @@ async function kullanici(req: Request): Promise<string> {
   const u = await r.json();
   return String(u.email || "").toLowerCase();
 }
+// WA-WHAPI (18.11.2026): Whapi.Cloud POST /messages/text
 async function wa(text: string) {
   try {
-    const a = await rest(`sistem_anahtar?select=deger&ad=eq.wa_callmebot`);
+    const a = await rest(`sistem_anahtar?select=deger&ad=eq.wa_whapi`);
     const k = JSON.parse((a && a[0] && a[0].deger) || "{}");
-    if (!k.phone || !k.apikey) return "wa anahtarı yok";
-    // CAM-FIYAT-ONAY-WA2: encodeURIComponent ' ! ( ) * kodlamaz; CallMeBot kesme işaretini siliyordu
-    const enc = encodeURIComponent(text).replace(/[!'()*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase());
-    const u = `https://api.callmebot.com/whatsapp.php?phone=${k.phone}&apikey=${k.apikey}&text=${enc}`;
-    const r = await fetch(u); const t = await r.text();
-    return /queued|sent/i.test(t) ? "ok" : `wa ${r.status} ${t.replace(/<[^>]+>/g, " ").slice(0, 120)}`;
+    if (!k.token || !k.to) return "wa anahtarı yok";
+    const r = await fetch("https://gate.whapi.cloud/messages/text", { method: "POST", headers: { Authorization: `Bearer ${k.token}`, "Content-Type": "application/json" }, body: JSON.stringify({ to: k.to, body: text }) });
+    const t = await r.text();
+    return r.ok && /"sent"\s*:\s*true/.test(t) ? "ok" : `wa ${r.status} ${t.slice(0, 160)}`;
   } catch (e) { return "wa " + String(e); }
 }
 const sayi = (v: unknown) => { if (typeof v === "number") return isFinite(v) ? v : null; const s = String(v ?? "").trim(); const n = parseFloat(s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s); return isFinite(n) ? n : null; };
@@ -145,32 +148,47 @@ serve(async (req) => {
   try { b = await req.json(); } catch (_e) { b = {}; }
   const islem = String(b.islem || "");
   try {
+    if (islem === "wa_test") {
+      const key = req.headers.get("x-my-key") || "";
+      const a = await rest(`sistem_anahtar?select=deger&ad=eq.my_takip`);
+      if (!key || !a || !a[0] || String(a[0].deger) !== key) return json({ ok: false, hata: "yetki yok" }, 401);
+      return json({ ok: true, wa: await wa(String(b.text || "Test")) });
+    }
     const em = await kullanici(req);
     if (!IZIN.includes(em)) return json({ ok: false, hata: "yetki yok" }, 401);
     if (islem === "talep") {
       const birim = sayi(b.birim), pencad = sayi(b.pencad);
       if (!b.komb || !b.seri || !birim || !pencad) return json({ ok: false, hata: "eksik veri" }, 400);
       const kod = String(b.kisi_kod || (em === "int@arbor.com.tr" ? "MB" : ""));
-      const q = `cam_fiyat_onay?select=id,durum&kisi_kod=eq.${encodeURIComponent(kod)}&seri=eq.${encodeURIComponent(String(b.seri))}&komb=eq.${encodeURIComponent(String(b.komb))}&pencad=eq.${pencad}&goruldu=eq.false&order=id.desc&limit=1`;
+      const q = `cam_fiyat_onay?select=id,durum,birim&kisi_kod=eq.${encodeURIComponent(kod)}&seri=eq.${encodeURIComponent(String(b.seri))}&komb=eq.${encodeURIComponent(String(b.komb))}&pencad=eq.${pencad}&goruldu=eq.false&order=id.desc&limit=1`;
       const var_ = await rest(q);
-      if (var_ && var_.length) return json({ ok: true, id: var_[0].id, durum: var_[0].durum, tekrar: true });
+      // CAM-ONAY-GUNCELLE (27.11.2026): bekleyen talepte birim değiştiyse o satır güncellenir
+      const guncelle = !!(var_ && var_.length && var_[0].durum === "bekliyor" && Math.abs((sayi(var_[0].birim) || 0) - birim) > 0.005);
+      if (var_ && var_.length && !guncelle) return json({ ok: true, id: var_[0].id, durum: var_[0].durum, tekrar: true });
       let pc: Pc | null = null; try { pc = await pencadBul(String(b.komb), sayi((b.cam as Record<string, unknown> | null)?.ug)); } catch (_e) { pc = null; }
       const { text, fark } = mesajYaz({ ...b, kisi_kod: kod, pencad_satir: pc });
-      const ins = await rest("cam_fiyat_onay", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify({
-        kisi_kod: kod, kisi_ad: b.kisi_ad || null, seri: b.seri, komb: b.komb, cam: b.cam || null,
-        birim, pencad, fark, satirlar: b.satirlar || null, mesaj: text }) });
-      const id = ins && ins[0] && ins[0].id;
-      if (b.onizleme === true) return json({ ok: true, id, wa: "önizleme", mesaj: text });
-      // CAM-FIYAT-ONAY-WA2: CallMeBot kısa aralıkla gelen mesajları birleştirip kesiyor → mesajlar arası en az 75 sn; gönderim arka planda
+      const alan = { kisi_kod: kod, kisi_ad: b.kisi_ad || null, seri: b.seri, komb: b.komb, cam: b.cam || null,
+        birim, pencad, fark, satirlar: b.satirlar || null, mesaj: text };
+      let id: number;
+      if (guncelle) {
+        id = var_[0].id;
+        await rest(`cam_fiyat_onay?id=eq.${id}&durum=eq.bekliyor`, { method: "PATCH", body: JSON.stringify({ ...alan, pencere: null, created_at: new Date().toISOString() }) }); // pencere RPC'si yalnız boşsa yazar
+      } else {
+        const ins = await rest("cam_fiyat_onay", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(alan) });
+        id = ins && ins[0] && ins[0].id;
+      }
+      if (b.onizleme === true) return json({ ok: true, id, wa: "önizleme", mesaj: text, guncellendi: guncelle });
+      // CAM-FIYAT-ONAY-WA2: mesajlar arası bekleme (WA-WHAPI ile 75 sn → 5 sn); gönderim arka planda
       const son = await rest(`cam_fiyat_onay?select=wa_at&wa_at=not.is.null&order=wa_at.desc&limit=1`);
       const sonT = son && son[0] ? new Date(son[0].wa_at).getTime() : 0;
-      const at = Math.max(Date.now(), sonT + 75000), gecik = at - Date.now();
+      const at = Math.max(Date.now(), sonT + 5000), gecik = at - Date.now();
       await rest(`cam_fiyat_onay?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ wa_at: new Date(at).toISOString(), wa_durum: gecik > 0 ? "sırada" : "gönderiliyor" }) });
-      const is = (async () => { if (gecik > 0) await new Promise((r) => setTimeout(r, gecik)); const w = await wa(text);
+      const wt = guncelle ? "*Güncellendi* · " + text : text;
+      const is = (async () => { if (gecik > 0) await new Promise((r) => setTimeout(r, gecik)); const w = await wa(wt);
         await rest(`cam_fiyat_onay?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ wa_durum: w }) }); })();
       // deno-lint-ignore no-explicit-any
       const ER = (globalThis as any).EdgeRuntime; if (ER && ER.waitUntil) ER.waitUntil(is); else await is;
-      return json({ ok: true, id, wa: gecik > 0 ? "sırada" : "gönderiliyor" });
+      return json({ ok: true, id, wa: gecik > 0 ? "sırada" : "gönderiliyor", guncellendi: guncelle });
     }
     if (islem === "goruldu") {
       const id = +String(b.id || 0); if (!id) return json({ ok: false, hata: "id?" }, 400);
