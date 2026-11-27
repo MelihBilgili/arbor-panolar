@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><script>/* SERT-YENILE */(function(){try{var K='sy:'+location.pathname;function taze(){try{var t=+sessionStorage.getItem(K)||0;if(Date.now()-t<10000)return;sessionStorage.setItem(K,Date.now());}catch(e){}var u=new URL(location.href);u.searchParams.set('v',Date.now());location.replace(u.toString());}var n=performance.getEntriesByType&&performance.getEntriesByType('navigation')[0];if(n&&n.transferSize===0)taze();addEventListener('pageshow',function(e){if(e.persisted)taze();});document.addEventListener('click',function(e){var a=e.target&&e.target.closest&&e.target.closest('a[href]');if(!a||a.hasAttribute('download'))return;var h=a.getAttribute('href')||'';if(/^(#|javascript:|mailto:|tel:)/i.test(h))return;var u=new URL(a.href,location.href);if(u.origin!==location.origin||!/(\/|\.html?)$/i.test(u.pathname))return;u.searchParams.set('v',Date.now());a.href=u.toString();},true);}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BE — Cam Sipariş Formu</title>
+<style>
+  :root{color-scheme:light}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',system-ui,sans-serif;background:#f7f8fa;color:#1c2430;font-size:14px}
+  header{background:#16324f;color:#fff;padding:12px 16px}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .sub{font-size:12px;color:#cfe0f0;margin-top:3px}
+  .wrap{max-width:1120px;margin:0 auto;padding:14px 16px 70px}
+  .blk{background:#fff;border:1px solid #dde3ea;border-radius:10px;margin-bottom:16px;overflow:hidden}
+  .blk>h2{font-size:14px;margin:0;padding:10px 14px;color:#fff}
+  .blk .formula{font-size:11.5px;color:#eaf1f8;font-weight:400}
+  .b1>h2{background:#16324f}.b2>h2{background:#0a6b57}.b3>h2{background:#7a3d8f}.b4>h2{background:#b5651d}
+  .tblwrap{overflow:auto}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:640px}
+  thead th{background:#eef4fb;color:#16324f;font-weight:600;font-size:11.5px;padding:7px 9px;text-align:left;white-space:nowrap;border-bottom:2px solid #d3e0ee}
+  td{border-bottom:1px solid #eef1f5;padding:5px 7px;vertical-align:top}
+  input.cell,textarea.cell{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:5px 7px;width:100%;background:#fff}
+  input.cell:focus,textarea.cell:focus{border-color:#2e7d54;outline:none}
+  td.num input{text-align:right}
+  textarea.cell{min-height:32px;resize:vertical;min-width:160px}
+  .prim{text-align:right;white-space:nowrap;font-weight:700;color:#0a5745}
+  .del{color:#b40000;cursor:pointer;font-weight:700;border:0;background:none;font-size:16px;padding:0 4px}
+  .colp{width:1%;white-space:nowrap}
+  .blkfoot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:9px 14px;background:#fbfcfe;border-top:1px solid #eef1f5}
+  .btn{background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer}
+  .btn.sec{background:#e3edf7;color:#16324f;font-weight:600;padding:7px 12px;font-size:13px}
+  .btn:disabled{opacity:.5;cursor:default}
+  .subt{font-size:12.5px;color:#5a6b7d;margin-left:auto}
+  .subt b{color:#0a5745}
+  .totbar{position:sticky;bottom:0;background:#16324f;color:#fff;border-radius:10px;padding:12px 16px;display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:6px;box-shadow:0 -2px 10px rgba(0,0,0,.12)}
+  .totbar .big{font-size:18px;font-weight:800}
+  .totbar .msg{font-size:12.5px;font-weight:600;min-height:16px}
+  .totbar .msg.ok{color:#8ff0c2}.totbar .msg.err{color:#ffb4b4}
+  .hint{font-size:12px;color:#8a97a4;margin:2px 2px 14px}
+  .aybar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#eef4fb;border:1px solid #d3e0ee;border-radius:8px;padding:10px 12px;margin:0 0 14px}
+  .aybar .msg{font-size:12.5px;font-weight:600}
+  .aybar .msg.ok{color:#2e7d54}.aybar .msg.err{color:#b40000}
+  .aywarn{font-size:12px;color:#b25a00;margin-left:auto}
+  table.pivt{border-collapse:collapse;font-size:12.5px;width:auto;min-width:0}
+  table.pivt th,table.pivt td{border:1px solid #e3e9f0;padding:5px 8px;text-align:left}
+  table.pivt thead th{background:#eef4fb;color:#16324f;font-weight:600;font-size:11.5px;white-space:nowrap;vertical-align:bottom;position:static;border-bottom:2px solid #d3e0ee}
+  table.pivt th.grp{text-align:center;background:#dce7f3}
+  table.pivt th.mkg{background:#d7ece4;color:#0a5745}
+  table.pivt td{vertical-align:top}
+  table.pivt td.ssan,table.pivt th.ssan{white-space:nowrap;font-weight:700;color:#16324f}
+  table.pivt td.sdt,table.pivt th.sdt{white-space:nowrap;color:#5a6b7d}
+  table.pivt .sxc{display:block;width:42ch;white-space:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none}
+  table.pivt .sed{cursor:text;border:1px dashed #cdd6df;border-radius:5px;padding:2px 5px;min-height:20px}
+  table.pivt .sed:hover{border-color:#0a6b57;background:#f4fbf8}
+  table.pivt .sed.bos{color:#b7c6d6}
+  table.pivt .sed textarea{white-space:normal}
+  table.pivt .sxc::-webkit-scrollbar{display:none}
+
+html,body{max-width:100vw;overflow-x:hidden}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+</style>
+<style>/* TAM-EKRAN (20.11.2026, Melih): sayfa ekranın tamamını kullanır (eski .wrap max-width ortalı) */ .wrap{max-width:none!important;margin-left:0!important;margin-right:0!important}</style>
+<style>
+  /* BE-CAM-SIPARIS */
+  .frm{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 14px;padding:12px 14px}
+  .frm .f{min-width:0}.frm .f.wide{grid-column:1/-1}
+  .frm label{display:block;font-size:11.5px;color:#4a5a6b;margin:0 0 3px}
+  .frm input,.frm textarea{font:inherit;border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;width:100%;background:#fff}
+  .frm input:focus,.frm textarea:focus{border-color:#2e7d54;outline:none}
+  .frm .ro{padding:6px 8px;font-weight:700;color:#0a5745}
+  .camb{font-size:12px;color:#5a6b7d;margin-top:4px;min-height:15px}
+  .kiyas{margin:0 14px 12px;padding:10px 12px;border:1px solid #d3e0ee;border-radius:8px;background:#f4f8fc}
+  .kgrid{display:flex;gap:10px 26px;flex-wrap:wrap}
+  .kk .kl{font-size:11.5px;color:#5a6b7d}.kk .kv{font-size:20px;font-weight:800;color:#16324f}.kk .kv.sm{font-size:14px;font-weight:600;padding-top:5px}
+  .fok{color:#1f6b45!important}.forta{color:#b25a00!important}.fkotu{color:#c0392b!important}
+  .kn{font-size:12.5px;color:#3a4a5b;margin-top:8px;line-height:1.45}
+  .muted{color:#8a97a4;font-size:12.5px}.err{color:#b40000;font-size:12.5px}
+  .msg{font-size:12.5px;font-weight:600}.msg.ok{color:#2e7d54}.msg.err{color:#b40000}
+  th.num,td.num{text-align:right;white-space:nowrap}td.nw{white-space:nowrap}td.sm{font-size:12px;color:#3a4a5b}
+  .dr{display:inline-block;border-radius:6px;padding:2px 8px;font-size:12px;font-weight:700;white-space:nowrap}
+  .dbek{background:#fff3d6;color:#8a5a00}.dok{background:#e7f5ec;color:#1f6b45}.dred{background:#fde3e0;color:#a52a1d}.dipt{background:#eef1f5;color:#5a6b7d}
+  @media(max-width:760px){.frm{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<!-- BE-CAM-SIPARIS (27.11.2026, Melih): BE (Berat Erarslan, Satınalma) sipariş vermeyi düşündüğü camı Cam Listesi'nden seçer, tedarikçi, metraj ve
+     birim alış fiyatını girer; Cam Fiyatlandırma modeli (gizli iframe ../cam/) aynı cam + metraj için alış fiyatını hesaplar. "Onaya gönder" →
+     cam_siparis_onay (bekliyor) → CTP Faaliyet formunda "Cam Sipariş Onayı Ver". Karar burada görünür ve BE'ye mail gider (trg_cam_siparis_karar_mail).
+     Rol be.form@arbor.com.tr, giriş kişisel kodla (BE). -->
+<header>
+  <h1>BE — Cam Sipariş Formu</h1>
+  <div class="sub">Sipariş verilecek camı listeden seçiniz; tedarikçi, metraj ve birim alış fiyatını giriniz. Talep model fiyat kıyasıyla birlikte Cenk Tolga Pınarbaşı onayına gider.</div>
+</header>
+<div class="wrap">
+  <div class="blk b1"><h2>Yeni Sipariş Talebi</h2>
+    <div class="frm">
+      <div class="f wide"><label for="cam">Cam (Cam Listesi)</label><input id="cam" list="camdl" autocomplete="off" placeholder="Kombinasyon ya da stok kodu yazınız…"><datalist id="camdl"></datalist><div id="camb" class="camb"></div></div>
+      <div class="f"><label for="ted">Tedarikçi</label><input id="ted" list="teddl" autocomplete="off"><datalist id="teddl"></datalist></div>
+      <div class="f"><label for="prj">Proje</label><input id="prj" autocomplete="off"></div>
+      <div class="f s"><label for="adet">Adet</label><input id="adet" type="text" inputmode="numeric"></div>
+      <div class="f s"><label for="m2">Metraj (m²)</label><input id="m2" type="text" inputmode="decimal"></div>
+      <div class="f s"><label for="bf">Birim alış fiyatı (€/m²)</label><input id="bf" type="text" inputmode="decimal"></div>
+      <div class="f s"><label>Toplam (€)</label><div id="top" class="ro">–</div></div>
+      <div class="f wide"><label for="acik">Açıklama</label><textarea id="acik" rows="2"></textarea></div>
+    </div>
+    <div id="kiyas" class="kiyas"><div class="muted">Cam seçilince model fiyatı hesaplanır.</div></div>
+    <div class="blkfoot"><button class="btn" id="gonder" disabled>Onaya gönder</button><span id="msg" class="msg"></span></div>
+  </div>
+  <div class="blk b2"><h2>Taleplerim</h2>
+    <div class="tblwrap"><table id="tl"><thead><tr><th>Tarih</th><th>Cam</th><th>Tedarikçi</th><th>Proje</th><th class="num">m²</th><th class="num">Birim €/m²</th><th class="num">Toplam €</th><th class="num">Model alış €/m²</th><th class="num">Fark</th><th>Durum</th><th>Karar</th><th></th></tr></thead><tbody></tbody></table></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ARB-AD-YAZIM (2026-09-22, Melih): proje / müşteri / firma adları her kelimenin yalnız baş harfi büyük,
+   kısaltmalar tamamı büyük. Supabase REST (/rest/v1/) yanıtlarında ve yazma gövdelerinde (POST/PATCH/PUT)
+   proje · proje_adi · musteri · firma alanlarına (fiyat_musteri_sinif'te ad) uygulanır — tek kaynak: kod/_arb_ad_yazim.js */
+(function(){
+  if(window.ARB_AD) return;
+  var AKR=("SCI SAS SARL SA SASU EURL SNC SEM SPL SPLA ZAC PEM PST MVT AÜP OE ÖB MK MB EU UK USA TR FR AŞ LTD LLC PLC GMBH AG BV NV SPA SRL "+
+    "HLM OPH OPAC EHPAD CHU CROUS RATP SNCF IDF ICF HQE BBC CA ILM FCAI CLC CBC LCB BAT BTP TRT KDV SGDB SVM LMP RBKC MTC GTM NHS PVC "+
+    "ARGE ARB YD SÖ TOKİ İBB İTÜ ODTÜ ENSA ESSEC ENS HEC IUT CFA RTE EDF GDF CCI CMA SEMIIC SAEM SPIE CPAM CAF UGC ARS KYK TMO SGK TCDD İSKİ AVM ÖSYM THY PTT MSB TBMM YTÜ MSGSÜ").split(" ");
+  var AK={}; AKR.forEach(function(w){ AK[w]=1; });
+  var KUCUK={ST:1,MR:1,DR:1,SR:1,JR:1,MRS:1,MS:1};           /* sesli harfsiz ama kısaltma sayılmayanlar → St, Mr … */
+  var TRH=/[ğĞşŞıİçÇöÖüÜ]/, SESLI=/[aeiouyàâäéèêëîïôöùûüÿıAEIOUYÀÂÄÉÈÊËÎÏÔÖÙÛÜŸİ]/, ROMA=/^(I{1,3}|IV|VI{0,3}|IX|XI{0,3}|XIV|XV)$/;
+  function up(w,tr){ return tr?w.toLocaleUpperCase("tr"):w.toUpperCase(); }
+  function lo(w,tr){ return tr?w.toLocaleLowerCase("tr"):w.toLowerCase(); }
+  var OLAGAN={};  /* karışık metinde büyük yazılsa da kısaltma sayılmayan sık kelimeler */
+  ("LE LA LES DE DU DES SUR SOUS AUX AU ET EN UN UNE THE OF AND FOR ON IN AT TO VON DER DIE DAS UND IM AM ZUM ZUR VE İLE EVİ BEY HAN KAT LOT VIA DEL DI DA LOS EL SAN SUD NORD EST OUEST").split(" ").forEach(function(w){ OLAGAN[w]=1; });
+  function kelime(w,karisik,tr){
+    if(/\d/.test(w)) return w;                                   /* rakamlı (P19, I3F, 68s) aynen */
+    var U=up(w,tr);
+    if(AK[U]) return U;
+    if(w.length===1) return U;                                   /* tek harf (Lot F, Y Blok) */
+    if(ROMA.test(U)) return U;                                   /* III. Faz */
+    if(!SESLI.test(w) && !KUCUK[U]) return U;                    /* sesli harfsiz: SVM, LMP, RBKC */
+    if(karisik && w===U && w.length<=3 && !OLAGAN[U]) return U;                /* karışık yazılmış metinde büyük yazılmış kısa kelime = kısaltma */
+    var l=lo(w,tr); return up(l.charAt(0),tr)+l.slice(1);
+  }
+  window.ARB_AD=function(s){
+    if(s==null||typeof s!=="string") return s;
+    var t=s.replace(/\s+/g," ").trim(); if(!t) return t;
+    var harf=t.replace(/[^\p{L}]/gu,""), karisik=harf!==harf.toUpperCase()&&harf!==harf.toLowerCase(), tr=TRH.test(t);  /* Türkçe harf içeren metin → tr yerel ayarı (YAPI → Yapı) */
+    return t.replace(/[\p{L}\p{M}\p{N}]+/gu,function(w){ return kelime(w,karisik,tr); });
+  };
+  var ALAN={proje:1,proje_adi:1,musteri:1,firma:1};
+  function donus(o,tablo){
+    if(Array.isArray(o)){ for(var i=0;i<o.length;i++) donus(o[i],tablo); return o; }
+    if(o&&typeof o==="object"){ for(var k in o){ if(typeof o[k]==="string"&&(ALAN[k]||(k==="ad"&&tablo==="fiyat_musteri_sinif"))) o[k]=window.ARB_AD(o[k]); } }
+    return o;
+  }
+  window.ARB_AD_DONUS=donus;
+  var of=window.fetch.bind(window);
+  window.fetch=function(u,o){
+    var url=String((u&&u.url)||u||""), m=url.match(/\/rest\/v1\/([A-Za-z0-9_]+)/), tablo=m?m[1]:null;
+    if(!tablo) return of(u,o);
+    try{ var me=((o&&o.method)||"GET").toUpperCase();
+      if(o&&typeof o.body==="string"&&/^(POST|PATCH|PUT)$/.test(me)&&tablo!=="rpc"){ o=Object.assign({},o,{body:JSON.stringify(donus(JSON.parse(o.body),tablo))}); } }catch(e){}
+    return of(u,o).then(function(r){
+      var ct=r.headers.get("content-type")||"";
+      if(!r.ok||ct.indexOf("json")<0) return r;
+      return r.clone().text().then(function(t){ if(!t) return r;
+        try{ return new Response(JSON.stringify(donus(JSON.parse(t),tablo)),{status:r.status,statusText:r.statusText,headers:r.headers}); }catch(e){ return r; } });
+    });
+  };
+})();
+</script>
+<script>
+/* ARB-KOD-GIRIS (23.09.2026): forma giris = kisisel 6 haneli kod (App > Referans > Kisiler > Sifre).
+   form-giris edge fonksiyonu kodu dogrular, yetkiyi form_erisim'den kontrol eder, rolu otomatik secer ve
+   rol hesabi icin tek kullanimlik token doner; burada verifyOtp ile oturum acilir. Rol hesaplarinin parolasi yoktur. */
+window.ARB_FORM_YOL=(function(){ var m=/\/app\/([^\/]+)\//.exec(location.pathname); return m?m[1]+"/":""; })();
+window.ARB_KOD_GIRIS=async function(cli,kod){
+  kod=String(kod==null?"":kod).replace(/\D/g,"");
+  if(kod.length!==6) return {error:{message:"Kod 6 haneli olmal\u0131d\u0131r."}};
+  try{
+    var r=await fetch("https://zehysygpqxqmrzangvuc.supabase.co/functions/v1/form-giris",{method:"POST",cache:"no-store",
+      headers:{"Content-Type":"application/json",apikey:"sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc"},
+      body:JSON.stringify({form:window.ARB_FORM_YOL,kod:kod})});
+    var j={}; try{ j=await r.json(); }catch(e){}
+    if(!r.ok||!j.ok||!j.token_hash) return {error:{message:j.hata||"Kod hatal\u0131."}};
+    var v=await cli.auth.verifyOtp({token_hash:j.token_hash,type:"magiclink"});
+    if(v.error) return {error:{message:"Giri\u015f a\u00e7\u0131lamad\u0131: "+v.error.message}};
+    try{ localStorage.setItem("arb_kisi_"+window.ARB_FORM_YOL,JSON.stringify({kod:j.kisi,ad:j.ad,rol:j.rol})); }catch(e){}
+    return {error:null,data:j};
+  }catch(e){ return {error:{message:"Ba\u011flant\u0131 hatas\u0131."}}; }
+};
+window.ARB_KISI_AL=function(em){ try{ var k=JSON.parse(localStorage.getItem("arb_kisi_"+window.ARB_FORM_YOL)||"null"); return (k&&(!em||k.rol===em))?k:null; }catch(e){ return null; } };
+</script>
+<script>
+/* ===== ARBOR FORM KAPISI (2026-08-20) — anon erisim kapali, rol hesabiyla giris ===== */
+const ARB_ROLE_EMAIL = "be.form@arbor.com.tr";
+const ARB_STORE = "arbform_" + ARB_ROLE_EMAIL.split("@")[0].replace(/\./g, "_");
+const ARB_GATE_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc",{auth:{persistSession:true,autoRefreshToken:true,storageKey:ARB_STORE}});
+const ARB_MB = "int@arbor.com.tr";
+/* panolarin varsayilan oturumu (ayni origin, varsayilan storageKey) */
+const ARB_MB_SB = supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+var ARB_ACTIVE = ARB_GATE_SB;
+/* form kodu kendi createClient cagirsa bile aktif oturumlu istemci doner */
+supabase.createClient = function(){ return ARB_ACTIVE; };
+function arbGateUI(msg){
+  var d=document.createElement("div"); d.id="arb-gate";
+  d.style.cssText="position:fixed;inset:0;background:#16324f;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif";
+  d.innerHTML='<div style="background:#fff;color:#1c2430;padding:22px;border-radius:12px;width:310px;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
+    +'<div style="font-weight:700;font-size:16px;margin-bottom:3px">Arbor — Form Girisi</div>'
+    +'<div style="font-size:12px;color:#5a6b7d;margin-bottom:10px">Kişisel giriş kodunuzu giriniz. Rolünüz koda göre otomatik belirlenir.</div>'
+    +'<input id="arb-pw" type="password" placeholder="6 haneli giriş kodu" autocomplete="off" inputmode="numeric" maxlength="6" style="width:100%;font:inherit;padding:9px;border:1px solid #cdd6df;border-radius:8px">'
+    +'<button id="arb-go" style="width:100%;margin-top:10px;font:inherit;font-weight:600;background:#2e7d54;color:#fff;border:0;border-radius:8px;padding:9px;cursor:pointer">Giris</button>'
+    +'<div id="arb-msg" style="font-size:12px;color:#b40000;min-height:16px;margin-top:8px">'+(msg||"")+'</div></div>';
+  document.body.appendChild(d);
+  var go=async function(){
+    var pw=document.getElementById("arb-pw").value;
+    document.getElementById("arb-msg").style.color="#5a6b7d";
+    document.getElementById("arb-msg").textContent="Giris yapiliyor...";
+    var r=await ARB_KOD_GIRIS(ARB_GATE_SB,pw);
+    if(r.error){ document.getElementById("arb-msg").style.color="#b40000"; document.getElementById("arb-msg").textContent=((r.error&&r.error.message)||"Kod hatalı."); return; }
+    location.reload();
+  };
+  document.getElementById("arb-go").onclick=go;
+  document.getElementById("arb-pw").onkeydown=function(e){ if(e.key==="Enter"){ e.preventDefault(); go(); } };
+  setTimeout(function(){ var i=document.getElementById("arb-pw"); if(i) i.focus(); },50);
+}
+function ARB_BOOT(){ (async function(){
+  var s=await ARB_GATE_SB.auth.getSession();
+  var em=(s && s.data && s.data.session && s.data.session.user && s.data.session.user.email || "").toLowerCase();
+  if(em!==ARB_ROLE_EMAIL){
+    var m=await ARB_MB_SB.auth.getSession();
+    var mem=(m && m.data && m.data.session && m.data.session.user && m.data.session.user.email || "").toLowerCase();
+    if(mem===ARB_MB){ ARB_ACTIVE=ARB_MB_SB; em=mem; }
+  }
+  if(em===ARB_ROLE_EMAIL || em===ARB_MB){ (0,eval)(document.getElementById("arbmain").textContent); }
+  else { arbGateUI(); }
+})(); }
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ARB_BOOT); else ARB_BOOT();
+</script>
+<script>
+/* FORM-ENGEL-IZ (2026-09-22): güncelleme düğmesi bir kontrol yüzünden durdurulursa (uyarı penceresi) form_engel'e kayıt → Formlar panosunda uyarı */
+(function(){ var FK="be_cam_siparis", oa=window.alert.bind(window);
+  window.alert=function(m){ try{ var t=String(m==null?"":m);
+    if(/G[üu]ncelle(me)?\s+(yap[ıi]la|tamamlana)/i.test(t) && typeof ARB_ACTIVE!=="undefined" && ARB_ACTIVE)
+      ARB_ACTIVE.from("form_engel").insert({form_key:FK, mesaj:t.slice(0,600)}).then(function(){},function(){});
+  }catch(e){} return oa(m); };
+})();
+</script>
+<script type="text/plain" id="arbmain">
+const sb=supabase.createClient("https://zehysygpqxqmrzangvuc.supabase.co","sb_publishable_ZCcDv4S7qH1hc9tuiv4__A_YVxmIpWc");
+/* BE-CAM-SIPARIS (27.11.2026, Melih) — ana kod */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const num=s=>{ s=String(s==null?"":s).trim().replace(/\s/g,""); if(!s) return null; if(s.indexOf(",")>=0) s=s.replace(/\./g,"").replace(",","."); const v=parseFloat(s); return isFinite(v)?v:null; };
+const f2=(v,d=2)=>v==null||!isFinite(+v)?"–":(+v).toLocaleString("tr-TR",{minimumFractionDigits:d,maximumFractionDigits:d});
+const trT=t=>t?new Date(t).toLocaleDateString("tr-TR")+" "+new Date(t).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}):"";
+const KISI=()=>{ if(ARB_ACTIVE===ARB_MB_SB) return {kod:"MB",ad:"Melih Bilgili"}; const k=window.ARB_KISI_AL&&ARB_KISI_AL(ARB_ROLE_EMAIL); return k&&k.kod?{kod:k.kod,ad:k.ad}:{kod:"BE",ad:"Berat Erarslan"}; };
+const mmSil=s=>String(s||"").replace(/ · \d+(?:[.,]\d+)? mm/g,"");
+let LST=[], SEC=null, MOD=null, PEN=null, _tm=null, _no=0;
+
+async function listeYukle(){
+  const {data,error}=await sb.from("cam_listesi").select("id,sira,stok_kodu,kombinasyon,ug,tl,rw,ctr,rw_ctr,sf,kalinlik,satis_eur,alis_eur,fiyat_tarihi").order("sira");
+  if(error){ $("kiyas").innerHTML='<div class="err">Cam listesi okunamadı: '+esc(error.message)+'</div>'; return; }
+  const gor=new Set(); LST=[];
+  (data||[]).forEach(x=>{ let e=x.kombinasyon+(x.stok_kodu?" · "+x.stok_kodu:""); if(gor.has(e)) e+=" · #"+x.id; gor.add(e); x._et=e; LST.push(x); });
+  $("camdl").innerHTML=LST.map(x=>'<option value="'+esc(x._et)+'"></option>').join("");
+  try{ const t=await sb.from("cam_siparis_onay").select("tedarikci").order("id",{ascending:false}).limit(500);
+    const S=[...new Set((t.data||[]).map(r=>String(r.tedarikci||"").trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"tr"));
+    $("teddl").innerHTML=S.map(s=>'<option value="'+esc(s)+'"></option>').join(""); }catch(e){}
+}
+
+/* Cam Fiyatlandırma modeli: gizli iframe'de ../cam/ (Ürün Konfigürasyonu URUN-KONFIG-CAMFIYAT ile aynı yol) */
+let CFP=null;
+function modelYukle(){ if(CFP) return CFP;
+  CFP=new Promise((ok,no)=>{ const f=document.createElement("iframe");
+    f.style.cssText="position:absolute;left:-9999px;top:0;width:1200px;height:800px;visibility:hidden"; f.src="../cam/index.html";
+    f.onload=()=>{ try{ const w=f.contentWindow, sp=w.Storage.prototype.setItem;
+        w.Storage.prototype.setItem=function(k,v){ if(k==="arb_cam_form_v1") return; return sp.call(this,k,v); };
+        const bekle=n=>{ try{ if(typeof w.calc==="function"&&w.eval("typeof CAMF")==="object"){ if(LST.length){ w.__L=LST; try{ w.eval("CAT=buildCat(window.__L)"); }catch(e){} } return ok(w); } }catch(e){}
+          if(n>150) return no(new Error("model yüklenemedi")); setTimeout(()=>bekle(n+1),100); };
+        bekle(0); }catch(e){ no(e); } };
+    f.onerror=no; document.body.appendChild(f); });
+  return CFP; }
+function isle(w,x,adet,m2){ const d=w.document, $w=id=>d.getElementById(id), n=v=>v==null||v===""?null:+v;
+  w._OZEL_AD=String(x.kombinasyon||"");
+  const q=w.eval("CAMF").catRow({kombinasyon:x.kombinasyon,ug:n(x.ug),tl:n(x.tl),sf:n(x.sf)});
+  if(!q) return false;
+  const sel=(id,v)=>{ const e=$w(id); if(!e) return; v=String(v); if(![...e.options].some(o=>o.value===v)){ const o=d.createElement("option"); o.value=v; o.textContent=v; e.appendChild(o); } e.value=v; };
+  const chk=(id,v)=>{ const e=$w(id); if(e) e.checked=!!v; };
+  const tr=q.tr?1:0; sel("yapi",tr?"uclu":"cift"); sel("dis",q.c[0]); sel("ic",q.c[q.c.length-1]); if(tr&&q.c.length>2) sel("orta",q.c[1]);
+  sel("cav",q.cu);
+  sel("kap",!q.lowe?"yok":(q.solar?(q.coat&&/^n\d{4}$/.test(q.coat)?"solar_"+q.coat:"solar"):(q.nle>=2?"lowe2":"lowe")));
+  sel("form","duz"); $w("adet").value=String(adet); $w("m2").value=String(m2);
+  chk("argon",q.ar); chk("we",q.we); chk("acoustic",q.ac); chk("temper",q.tp); chk("satin",q.sat); chk("extraclear",q.xc);
+  const e30=/e[iı]\s?30|\be30\b/i.test(String(x.kombinasyon||"")); chk("fireproof30",q.fp&&e30); chk("fireproof",q.fp&&!e30);
+  const sv=(id,v,dg)=>{ const e=$w(id); if(e) e.value=v==null||v===""?"":(+v).toFixed(dg); };
+  sv("h_ug",x.ug,2); sv("h_tl",x.tl,2); sv("h_rw",x.rw_ctr,0); sv("h_sf",x.sf,2);
+  $w("pencad").value=""; $w("ref").value="";
+  w.__KENDI=true; w.__KENDI_V={ug:n(x.ug),tl:n(x.tl),sf:n(x.sf),rw:n(x.rw_ctr)}; w.__KENDI_PL={npo:q.npo||0,npx:q.npx||0};
+  { const pn=String(x.kombinasyon||"").split("|||")[0].split("/").filter((t,i)=>i%2===0), si=pn.findIndex(t=>/satin|kumlu|buzlu/i.test(t)); w.__KENDI_SATI=si>=0?si:null; }
+  w.calc(); return true; }
+
+function camBul(){ const v=String($("cam").value||"").trim(); return LST.find(x=>x._et===v)||null; }
+async function camSec(){ const x=camBul(); if(x===SEC) return; SEC=x; PEN=null; MOD=null;
+  if(!x){ $("camb").innerHTML=""; kiyasCiz(); return; }
+  const v=(a,d)=>a==null||a===""?"–":f2(+a,d);
+  $("camb").innerHTML='Ug '+v(x.ug,1)+' · Tlg '+v(x.tl,2)+' · Sfg '+v(x.sf,2)+' · Rw+Ctr '+v(x.rw_ctr,0)+' dB'+(x.stok_kodu?' · stok '+esc(x.stok_kodu):'');
+  if(x.stok_kodu){ try{ const {data}=await sb.from("pencad_cam").select("stok_kodu,maliyet,satis,liste_tarih").eq("stok_kodu",x.stok_kodu).maybeSingle(); if(SEC===x) PEN=data||null; }catch(e){} }
+  hesapla(); }
+function hesapla(){ clearTimeout(_tm); _tm=setTimeout(hesapla0,400); }
+async function hesapla0(){
+  const x=SEC, no=++_no; topla();
+  if(!x){ MOD=null; kiyasCiz(); return; }
+  const m2=num($("m2").value), adet=num($("adet").value);
+  $("kiyas").innerHTML='<div class="muted">Model fiyatı hesaplanıyor…</div>';
+  let w; try{ w=await modelYukle(); }catch(e){ MOD={hata:"Cam Fiyatlandırma modeli açılamadı."}; kiyasCiz(); return; }
+  if(no!==_no) return;
+  try{
+    if(!isle(w,x,adet>0?Math.round(adet):10,m2>0?m2:10)){ MOD={hata:"Bu kombinasyon Cam Fiyatlandırma modeline işlenemedi."}; kiyasCiz(); return; }
+    const d=w.document, o=d.getElementById("out"), K=+w.eval("KAT")||2.5, sat=+w._BF;
+    const fk=o&&o.querySelector(".komb b"), Y=w._YAKIN;
+    MOD={satis:sat>0?sat:null, alis:sat>0?sat/K:null, kat:K, ozel:!!w._OZEL,
+      fiyatlanan:fk?mmSil(fk.textContent).trim():"", hesap:String(w._HESAP||""),
+      yakin:(Array.isArray(Y)?Y.map(String):(Y?String(Y).split("\n"):[])).map(t=>t.replace(/\s*×\s*[\d,]+\s*=\s*[\d.,]+\s*€\/m²\.?$/,"")) /* yalnız alış */,
+      satirlar:o?mmSil([...o.querySelectorAll(".hdfw,.line.yk")].map(e=>e.outerHTML).join("")):"" };
+  }catch(e){ MOD={hata:"Model hesabı yapılamadı ("+e.message+")."}; }
+  if(no===_no) kiyasCiz();
+}
+function topla(){ const m2=num($("m2").value), bf=num($("bf").value); $("top").textContent=m2>0&&bf>0?f2(m2*bf)+" €":"–"; dugme(); }
+function farkY(){ const bf=num($("bf").value); return MOD&&MOD.alis>0&&bf>0?(bf-MOD.alis)/MOD.alis*100:null; }
+const farkSinif=f=>f==null?"":f<=5?"fok":f<=15?"forta":"fkotu";
+function hesapKisa(h){ return String(h||"").replace(/\s*×\s*[\d,]+\s*=\s*birim\s*[\d.,]+\s*€\/m²\.?$/,"."); }
+function kiyasCiz(){
+  const k=$("kiyas"), x=SEC;
+  if(!x){ k.innerHTML='<div class="muted">Cam seçilince model fiyatı hesaplanır.</div>'; dugme(); return; }
+  if(MOD&&MOD.hata){ k.innerHTML='<div class="err">'+esc(MOD.hata)+' Talep yine de gönderilebilir; onayda model kıyası olmaz.</div>'; dugme(); return; }
+  if(!MOD){ k.innerHTML='<div class="muted">Model fiyatı hesaplanıyor…</div>'; dugme(); return; }
+  const bf=num($("bf").value), f=farkY(), la=+x.alis_eur>0?+x.alis_eur:null;
+  let h='<div class="kgrid">';
+  h+='<div class="kk"><div class="kl">Girilen alış</div><div class="kv">'+(bf>0?f2(bf)+' €/m²':'–')+'</div></div>';
+  h+='<div class="kk"><div class="kl">Model alış'+(MOD.ozel?' (bu cam modelle fiyatlanmaz)':'')+'</div><div class="kv">'+(MOD.alis?f2(MOD.alis)+' €/m²':'–')+'</div></div>';
+  h+='<div class="kk"><div class="kl">Fark</div><div class="kv '+farkSinif(f)+'">'+(f==null?'–':(f>0?'+':'')+f2(f,1)+' %')+'</div></div>';
+  h+='<div class="kk"><div class="kl">Cam Listesi alış</div><div class="kv sm">'+(la?f2(la)+' €/m²'+(x.fiyat_tarihi?' · '+new Date(x.fiyat_tarihi).toLocaleDateString("tr-TR"):''):'–')+'</div></div>';
+  h+='<div class="kk"><div class="kl">Pencad maliyet</div><div class="kv sm">'+(PEN&&+PEN.maliyet>0?f2(+PEN.maliyet)+' €/m²'+(PEN.liste_tarih?' · liste '+esc(PEN.liste_tarih):''):'–')+'</div></div>';
+  h+='</div>';
+  if(MOD.fiyatlanan) h+='<div class="kn">Fiyatlanan kombinasyon: <b>'+esc(MOD.fiyatlanan)+'</b> · '+f2(num($("m2").value)||10,2)+' m² / '+(num($("adet").value)||10)+' adet bağlamında</div>';
+  if(MOD.hesap) h+='<div class="kn">'+esc(hesapKisa(MOD.hesap))+'</div>';
+  if(MOD.yakin&&MOD.yakin.length) h+='<div class="kn"><b>Yakın teklifler</b><br>'+MOD.yakin.map(esc).join("<br>")+'</div>';
+  k.innerHTML=h; dugme();
+}
+function dugme(){ const ok=!!SEC&&String($("ted").value).trim()&&num($("m2").value)>0&&num($("bf").value)>0&&!(SEC&&!MOD); $("gonder").disabled=!ok; }
+function msg(t,c){ const m=$("msg"); m.textContent=t||""; m.className="msg"+(c?" "+c:""); }
+async function gonder(){
+  const x=SEC; if(!x) return; const k=KISI(), m2=num($("m2").value), bf=num($("bf").value), adet=num($("adet").value), f=farkY();
+  if(!(m2>0&&bf>0)) return msg("Metraj ve birim fiyatı giriniz.","err");
+  if(!String($("ted").value).trim()) return msg("Tedarikçiyi giriniz.","err");
+  $("gonder").disabled=true; msg("Gönderiliyor…");
+  const M=MOD&&!MOD.hata?MOD:{};
+  const row={kisi_kod:k.kod,kisi_ad:k.ad,cam_id:x.id,stok_kodu:x.stok_kodu||null,komb:x.kombinasyon,
+    cam:{ug:x.ug,tl:x.tl,sf:x.sf,rw:x.rw,ctr:x.ctr,rw_ctr:x.rw_ctr,kalinlik:x.kalinlik},
+    tedarikci:String($("ted").value).trim(),proje:String($("prj").value).trim()||null,adet:adet>0?adet:null,m2,birim_eur:bf,toplam_eur:Math.round(m2*bf*100)/100,
+    aciklama:String($("acik").value).trim()||null,
+    model_alis:M.alis?Math.round(M.alis*100)/100:null,model_satis:M.satis?Math.round(M.satis*100)/100:null,fark_yuzde:f==null?null:Math.round(f*10)/10,
+    liste_alis:+x.alis_eur>0?+x.alis_eur:null,liste_tarih:x.fiyat_tarihi||null,pencad_maliyet:PEN&&+PEN.maliyet>0?+PEN.maliyet:null,
+    fiyatlanan:M.fiyatlanan||null,hesap:M.hesap?hesapKisa(M.hesap):null,yakin:M.yakin||null,pencere:M.satirlar||null};
+  const {error}=await sb.from("cam_siparis_onay").insert(row);
+  if(error){ msg("Gönderilemedi: "+error.message,"err"); dugme(); return; }
+  msg("Talep Cenk Tolga Pınarbaşı onayına gönderildi. Karar bu formda görünür ve size mail gelir.","ok");
+  ["cam","ted","prj","adet","m2","bf","acik"].forEach(i=>$(i).value=""); $("camb").innerHTML=""; SEC=null; MOD=null; PEN=null; kiyasCiz(); topla();
+  listele(); listeYukle();
+}
+const DURUM={bekliyor:['Onay bekliyor','dbek'],onaylandi:['Onaylandı','dok'],reddedildi:['Onaylanmadı','dred'],iptal:['Geri çekildi','dipt']};
+async function listele(){
+  const tb=document.querySelector("#tl tbody");
+  const {data,error}=await sb.from("cam_siparis_onay").select("id,created_at,komb,stok_kodu,tedarikci,proje,m2,adet,birim_eur,toplam_eur,model_alis,fark_yuzde,durum,karar_not,karar_kisi,karar_at").order("id",{ascending:false}).limit(300);
+  if(error){ tb.innerHTML='<tr><td colspan="12" class="err">Okunamadı: '+esc(error.message)+'</td></tr>'; return; }
+  if(!(data||[]).length){ tb.innerHTML='<tr><td colspan="12" class="muted">Henüz talep yok.</td></tr>'; return; }
+  const KK={CTP:"Cenk Tolga Pınarbaşı",MB:"Melih Bilgili",BE:"Berat Erarslan"};
+  tb.innerHTML=data.map(r=>{ const D=DURUM[r.durum]||[r.durum,""];
+    return '<tr><td class="nw">'+esc(trT(r.created_at))+'</td><td>'+esc(r.komb)+(r.stok_kodu?' <span class="muted">'+esc(r.stok_kodu)+'</span>':'')+'</td><td>'+esc(r.tedarikci)+'</td><td>'+esc(r.proje||'')+'</td>'
+      +'<td class="num">'+f2(r.m2)+'</td><td class="num">'+f2(r.birim_eur)+'</td><td class="num">'+f2(r.toplam_eur)+'</td><td class="num">'+f2(r.model_alis)+'</td>'
+      +'<td class="num '+farkSinif(r.fark_yuzde==null?null:+r.fark_yuzde)+'">'+(r.fark_yuzde==null?'–':(+r.fark_yuzde>0?'+':'')+f2(+r.fark_yuzde,1)+' %')+'</td>'
+      +'<td><span class="dr '+D[1]+'">'+D[0]+'</span></td>'
+      +'<td class="sm">'+(r.karar_at&&r.durum!=='bekliyor'&&r.durum!=='iptal'?esc((KK[r.karar_kisi]||r.karar_kisi||'')+' · '+trT(r.karar_at)):'')+(r.karar_not?'<div>'+esc(r.karar_not)+'</div>':'')+'</td>'
+      +'<td>'+(r.durum==='bekliyor'?'<button class="btn sec iptal" data-id="'+r.id+'">Geri çek</button>':'')+'</td></tr>'; }).join("");
+}
+document.querySelector("#tl").addEventListener("click",async e=>{ const b=e.target.closest("button.iptal"); if(!b) return;
+  if(!confirm("Bu talep geri çekilsin mi?")) return; b.disabled=true;
+  const {error}=await sb.rpc("cam_siparis_iptal",{p_id:+b.dataset.id}); if(error){ alert("Geri çekilemedi: "+error.message); b.disabled=false; return; } listele(); });
+$("cam").addEventListener("input",camSec); $("cam").addEventListener("change",camSec);
+["adet","m2"].forEach(i=>$(i).addEventListener("input",()=>{ topla(); hesapla(); }));
+$("bf").addEventListener("input",()=>{ topla(); kiyasCiz(); });
+$("ted").addEventListener("input",dugme);
+$("gonder").onclick=gonder;
+(async()=>{ await listeYukle(); listele(); modelYukle().catch(()=>{}); setInterval(listele,60000); })();
+</script>
+<!-- FORM-LINKLER --><script src="../form_linkler.js?v=261123g"></script><!-- FORM-MENU -->
+<!-- ARB-EXCEL-BTN -->
+<script>
+/* ARB-EXCEL-BTN (EXCEL-MAIL, 06.10.2026) — TEK KAYNAK: kod/_excel_btn.js, sayfalara kod/_excel_btn_inject.py ile girer.
+   Her gorunur tablonun ust sagina "Excel" dugmesi (sayfa duzenine dokunmayan, position:fixed katman).
+   Basinca tablo (gorunen hali; input/select degerleri dahil, birlesik hucreler korunur) xlsx'e cevrilir ve
+   edge 'tablo-excel-mail' ile giris yapan kullaniciya mail eki olarak gider. Tablo haric tutmak icin: data-noexcel. */
+(function () {
+  if (window.ARB_XL_INIT) return; window.ARB_XL_INIT = 1;
+  var SB = "https://zehysygpqxqmrzangvuc.supabase.co";
+  var XLSX_URL = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+  var st = document.createElement("style");
+  st.textContent = ".arb-xl-btn{position:fixed;z-index:40;font:600 10.5px/1 system-ui,'Segoe UI',Arial,sans-serif;padding:3px 7px;" +
+    "border:1px solid #1d6f42;color:#1d6f42;background:#fff;border-radius:5px;cursor:pointer;opacity:.8;display:none;white-space:nowrap}" +
+    ".arb-xl-btn:hover{opacity:1;background:#1d6f42;color:#fff}.arb-xl-btn.koyu{background:transparent;color:#fff;border-color:rgba(255,255,255,.6)}.arb-xl-btn.koyu:hover{background:rgba(255,255,255,.18);color:#fff}" + /* XL-ZEMIN */
+    ".arb-xl-btn[disabled]{opacity:.55;cursor:wait}@media print{.arb-xl-btn{display:none!important}}";
+  document.head.appendChild(st);
+  var BTN = []; // {t, b}
+
+  function uygun(t) {
+    if (!t.isConnected || (t.parentElement && t.parentElement.closest("table"))) return false;
+    if (t.closest("[data-noexcel]")) return false;
+    var r = t.rows; if (!r || r.length < 2) return false;
+    var mx = 0; for (var i = 0; i < Math.min(r.length, 6); i++) mx = Math.max(mx, r[i].cells.length);
+    return mx >= 2;
+  }
+  function tara() {
+    var ts = document.querySelectorAll("table");
+    for (var i = 0; i < ts.length; i++) {
+      var t = ts[i]; if (t.__arbxl || !uygun(t)) continue;
+      var b = document.createElement("button"); b.type = "button"; b.className = "arb-xl-btn"; b.textContent = "Excel";
+      b.title = "Tablonun Excel halini e-posta ile gönder";
+      (function (tt, bb) { bb.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); gonder(tt, bb); }); })(t, b);
+      document.body.appendChild(b); t.__arbxl = b; BTN.push({ t: t, b: b });
+    }
+    for (var j = BTN.length - 1; j >= 0; j--) if (!BTN[j].t.isConnected) { BTN[j].b.remove(); BTN.splice(j, 1); }
+    yerlestir();
+  }
+  function gorunurSag(t, rc) {
+    var right = Math.min(rc.right, window.innerWidth), top = rc.top, el = t.parentElement;
+    while (el && el !== document.body && el !== document.documentElement) {
+      var cs = getComputedStyle(el);
+      if (cs.overflowX !== "visible" || cs.overflowY !== "visible") { var pr = el.getBoundingClientRect(); right = Math.min(right, pr.right); top = Math.max(top, pr.top); }
+      el = el.parentElement;
+    }
+    return { right: right, top: top };
+  }
+  function dolu(x, y, w, h) { /* dugmenin konacagi alanda tiklanabilir/yazili oge var mi */
+    var pts = [[x + 2, y + 2], [x + w - 2, y + 2], [x + 2, y + h - 2], [x + w - 2, y + h - 2], [x + w / 2, y + h / 2]];
+    for (var i = 0; i < pts.length; i++) {
+      var es = document.elementsFromPoint(pts[i][0], pts[i][1]);
+      for (var j = 0; j < es.length; j++) {
+        var e = es[j]; if (e.classList && e.classList.contains("arb-xl-btn")) continue;
+        if (e.closest && e.closest("button,input,select,textarea,a,label,[onclick]")) return true;
+        break;
+      }
+    }
+    return false;
+  }
+  function zeminKoyu(x, y) { /* XL-ZEMIN: dugmenin altindaki gercek arka plan koyu mu */
+    var es = document.elementsFromPoint(x, y), e = null;
+    for (var j = 0; j < es.length; j++) if (!(es[j].classList && es[j].classList.contains("arb-xl-btn"))) { e = es[j]; break; }
+    while (e && e.nodeType === 1) {
+      var m = (getComputedStyle(e).backgroundColor || "").match(/[\d.]+/g);
+      if (m && m.length >= 3 && (m.length < 4 || +m[3] > 0.3)) return (0.299 * m[0] + 0.587 * m[1] + 0.114 * m[2]) / 255 < 0.5;
+      e = e.parentElement;
+    }
+    return false;
+  }
+  function metinKutulari(tr) { /* satirdaki yazilarin ekran kutulari */
+    var out = [], w = document.createTreeWalker(tr, NodeFilter.SHOW_TEXT, null), n, rg = document.createRange();
+    while ((n = w.nextNode())) {
+      if (!n.nodeValue.trim()) continue;
+      rg.selectNodeContents(n); var rs = rg.getClientRects();
+      for (var k = 0; k < rs.length; k++) if (rs[k].width > 0) out.push(rs[k]);
+    }
+    return out;
+  }
+  function cakisir(ks, x, y, w, h) {
+    for (var k = 0; k < ks.length; k++) { var r = ks[k]; if (x < r.right + 4 && x + w > r.left - 4 && y < r.bottom && y + h > r.top) return true; }
+    return false;
+  }
+  function sabitUst(x, y, t) { /* XL-ZEMIN: tablonun ustu sabit menu/sekme cubugu mu (tabloyu icermeyen nav/header/fixed/sticky) */
+    var es = document.elementsFromPoint(x, y), e = null;
+    for (var j = 0; j < es.length; j++) if (!(es[j].classList && es[j].classList.contains("arb-xl-btn"))) { e = es[j]; break; }
+    for (var u = e; u && u.nodeType === 1 && u !== document.body; u = u.parentElement) {
+      if (u.contains(t)) return false;
+      var ps = getComputedStyle(u).position;
+      if (ps === "fixed" || ps === "sticky" || /^(NAV|HEADER)$/.test(u.tagName) || u.getAttribute("role") === "navigation") return true;
+    }
+    return false;
+  }
+  function yerlestir() {
+    for (var i = 0; i < BTN.length; i++) {
+      var t = BTN[i].t, b = BTN[i].b, goster = false;
+      var rc = t.getBoundingClientRect();
+      if (rc.width > 100 && rc.height > 10 && rc.bottom > 0 && rc.top < window.innerHeight) {
+        var g = gorunurSag(t, rc), x = g.right - 6, y = Math.max(rc.top, g.top, 0) + 4;
+        if (x > rc.left + 40 && y < rc.bottom) {
+          var h = document.elementFromPoint(x, y);
+          goster = !!h && (t.contains(h) || (h.classList && h.classList.contains("arb-xl-btn")));
+          if (goster) {
+            var bw = b.offsetWidth || 44, bh = b.offsetHeight || 18;
+            var bx = g.right - bw, by = rc.top - bh - 2;
+            if (by < 0 || dolu(bx, by, bw, bh) || sabitUst(bx + bw / 2, by + bh / 2, t)) { /* ustte bos yer yoksa: ilk satirda yazi ve dugme olmayan en sagdaki yer */
+              var tr0 = null; for (var q = 0; q < t.rows.length; q++) if (t.rows[q].getClientRects().length) { tr0 = t.rows[q]; break; }
+              var rr = tr0 ? tr0.getBoundingClientRect() : rc;
+              by = Math.max(rr.top, 0) + Math.max(1, (Math.min(rr.height, 40) - bh) / 2);
+              var ks = tr0 ? metinKutulari(tr0) : [], x0 = bx - 4;
+              while (x0 > rc.left + 4 && (cakisir(ks, x0, by, bw, bh) || dolu(x0, by, bw, bh))) x0 -= 6;
+              bx = x0 > rc.left + 4 ? x0 : bx - 4;
+            }
+            b.classList.toggle("koyu", zeminKoyu(bx + bw / 2, by + bh / 2));
+            b.style.left = Math.round(bx) + "px"; b.style.top = Math.round(by) + "px";
+          }
+        }
+      }
+      var d = goster ? "block" : "none"; if (b.style.display !== d) b.style.display = d;
+    }
+  }
+  var raf = 0; function yp() { if (!raf) raf = requestAnimationFrame(function () { raf = 0; yerlestir(); }); }
+  var to = 0; function tp() { clearTimeout(to); to = setTimeout(tara, 350); }
+  window.addEventListener("scroll", yp, true); window.addEventListener("resize", yp);
+  document.addEventListener("click", function () { setTimeout(yp, 60); }, true);
+  function basla() {
+    tara();
+    new MutationObserver(function (ms) {
+      for (var i = 0; i < ms.length; i++) { var n = ms[i].target; if (!(n.classList && n.classList.contains("arb-xl-btn"))) { tp(); return; } }
+    }).observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class", "hidden"] });
+    setInterval(yp, 1500);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", basla); else basla();
+
+  // ---------- tablo → hucre degerleri
+  function gizli(el) { return !(el.offsetParent || el.getClientRects().length); }
+  function metin(n) {
+    if (n.nodeType === 3) return n.nodeValue;
+    if (n.nodeType !== 1) return "";
+    var tg = n.tagName;
+    if (tg === "SCRIPT" || tg === "STYLE" || tg === "BUTTON" || (n.classList && n.classList.contains("arb-xl-btn"))) return "";
+    if (gizli(n) && tg !== "BR") return "";
+    if (tg === "BR") return "\n";
+    if (tg === "SELECT") { var o = n.options[n.selectedIndex]; return o && o.value !== "" ? o.text : ""; }
+    if (tg === "INPUT") {
+      var ty = (n.type || "").toLowerCase();
+      if (ty === "checkbox") return n.checked ? "✓" : "";
+      if (ty === "radio") return n.checked ? (n.value || "✓") : "";
+      if (ty === "hidden" || ty === "button" || ty === "submit" || ty === "file") return "";
+      return n.value || "";
+    }
+    if (tg === "TEXTAREA") return n.value || "";
+    var s = "", blok = /^(DIV|P|LI|TR|H\d)$/.test(tg);
+    for (var c = n.firstChild; c; c = c.nextSibling) s += metin(c);
+    return blok ? "\n" + s + "\n" : s;
+  }
+  function hucre(c) {
+    var s = metin(c).replace(/\u00a0/g, " ").replace(/[ \t]+/g, " ").replace(/\s*\n\s*/g, "\n").trim();
+    var ti = (c.getAttribute("title") || "").trim();
+    if (ti && /(…|\.\.\.)$/.test(s) && ti.length > s.length) s = ti;
+    if (s === "✕" || s === "×") s = "";
+    return s;
+  }
+  function sayi(s) {
+    var x = s.replace(/\s/g, "").replace(/[€$£₺]$/, "").replace(/^[€$£₺]/, "");
+    if (!x || x.length > 16 || /^-?0\d/.test(x)) return null;
+    if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(x) || /^-?\d+(,\d+)?$/.test(x)) {
+      var v = parseFloat(x.replace(/\./g, "").replace(",", ".")); return isFinite(v) ? v : null;
+    }
+    return null;
+  }
+  function matris(t) {
+    var rows = [], merges = [], occ = {}, ri = 0, basSatir = 0;
+    for (var i = 0; i < t.rows.length; i++) {
+      var tr = t.rows[i]; if (gizli(tr)) continue;
+      var ci = 0, row = rows[ri] || (rows[ri] = []), hepTh = true, var1 = false, m0 = merges.length;
+      for (var j = 0; j < tr.cells.length; j++) {
+        var c = tr.cells[j]; if (gizli(c)) continue;
+        while (occ[ri + ":" + ci]) ci++;
+        var v = hucre(c), n = sayi(v), cs = Math.max(1, c.colSpan || 1), rs = Math.max(1, c.rowSpan || 1);
+        if (c.tagName !== "TH") hepTh = false; if (v) var1 = true;
+        row[ci] = n === null ? v : n;
+        if (cs > 1 || rs > 1) {
+          merges.push({ s: { r: ri, c: ci }, e: { r: ri + rs - 1, c: ci + cs - 1 } });
+          for (var a = 0; a < rs; a++) for (var b2 = 0; b2 < cs; b2++) if (a || b2) occ[(ri + a) + ":" + (ci + b2)] = 1;
+        }
+        ci += cs;
+      }
+      if (!var1 && merges.length === m0 && !Object.keys(occ).some(function (q) { return q.indexOf(ri + ":") === 0; })) { rows.length = ri; continue; }
+      if (ri === basSatir && (hepTh || (tr.parentElement && tr.parentElement.tagName === "THEAD"))) basSatir = ri + 1;
+      ri++;
+    }
+    var w = 0; rows.forEach(function (r) { w = Math.max(w, r.length); });
+    rows = rows.map(function (r) { var o = []; for (var k = 0; k < w; k++) o.push(r[k] === undefined ? "" : r[k]); return o; });
+    return { rows: rows, merges: merges, bas: basSatir };
+  }
+  function temiz(x) { /* emoji/simge basini ve ' · ' sonrasini at */
+    x = String(x || '').split(' · ')[0].replace(/^[^0-9A-Za-zÀ-ɏ]+/, '').trim(); return x || 'Tablo';
+  }
+  function baslik(t) { return temiz(baslik0(t)); }
+  function baslik0(t) {
+    if (t.caption && t.caption.textContent.trim()) return t.caption.textContent.trim();
+    var el = t;
+    for (var lv = 0; lv < 6 && el && el !== document.body; lv++) {
+      var p = el.previousElementSibling, k = 0;
+      while (p && k < 4) {
+        if (!gizli(p) && p.tagName !== "TABLE" && p.tagName !== "SCRIPT" && p.tagName !== "STYLE") {
+          var tx = (p.innerText || "").trim().split("\n")[0].trim();
+          var fw = parseInt(getComputedStyle(p).fontWeight, 10) || 400;
+          if (tx.length >= 2 && tx.length <= 90 && (/^H[1-6]$/.test(p.tagName) || fw >= 600 || /tit|bas|head|hdr|bh/i.test(p.className || ""))) return tx;
+        }
+        p = p.previousElementSibling; k++;
+      }
+      el = el.parentElement;
+    }
+    var th = t.querySelector("th"); return th && th.textContent.trim() ? th.textContent.trim().slice(0, 60) : "Tablo";
+  }
+
+  // ---------- oturum: formda kisi kodu girisi (arb_kisi_<yol>) + rol hesabi; panoda int@
+  function formYol() {
+    if (window.ARB_FORM_YOL) return String(window.ARB_FORM_YOL);
+    var m = location.pathname.match(/\/app\/([^\/]+)\/?/); return m ? m[1] + "/" : "";
+  }
+  function oturumlar() {
+    var out = [];
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i), v; try { v = JSON.parse(localStorage.getItem(k)); } catch (e) { continue; }
+      if (v && v.currentSession) v = v.currentSession;
+      if (v && v.access_token && v.user && v.user.email) out.push({ em: String(v.user.email).toLowerCase(), tok: v.access_token, exp: (v.expires_at || 0) * 1000 });
+    }
+    return out;
+  }
+  function oturumSec() {
+    var yol = formYol(), ks = null, ss = oturumlar(), simdi = Date.now() + 20000, sec = null;
+    try { ks = JSON.parse(localStorage.getItem("arb_kisi_" + yol) || "null"); } catch (e) { }
+    function bul(em) { for (var i = 0; i < ss.length; i++) if (ss[i].em === em && ss[i].exp > simdi) return ss[i]; return null; }
+    if (ks && ks.rol) { sec = bul(String(ks.rol).toLowerCase()); if (sec) return { s: sec, kisi: ks.kod, form: yol }; }
+    if (window.ARB_EM) { sec = bul(String(window.ARB_EM).toLowerCase()); if (sec) return { s: sec, kisi: ks && ks.kod, form: yol }; }
+    sec = bul("int@arbor.com.tr"); if (sec) return { s: sec, kisi: "MB", form: yol };
+    for (var j = 0; j < ss.length; j++) if (ss[j].exp > simdi && /@arbor\.com\.tr$/.test(ss[j].em)) return { s: ss[j], kisi: ks && ks.kod, form: yol };
+    return null;
+  }
+  function yukle() {
+    return new Promise(function (ok, no) {
+      if (window.XLSX && window.XLSX.write) return ok();
+      var s = document.createElement("script"); s.src = XLSX_URL; s.onload = function () { ok(); };
+      s.onerror = function () { no(new Error("Excel kütüphanesi yüklenemedi.")); }; document.head.appendChild(s);
+    });
+  }
+  function ascii(s) {
+    var M = { "ç": "c", "Ç": "C", "ğ": "g", "Ğ": "G", "ı": "i", "İ": "I", "ö": "o", "Ö": "O", "ş": "s", "Ş": "S", "ü": "u", "Ü": "U" };
+    return s.replace(/[çÇğĞıİöÖşŞüÜ]/g, function (c) { return M[c]; }).replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  }
+  function gonder(t, b) {
+    if (b.disabled) return;
+    var ot = oturumSec();
+    if (!ot) { alert("Excel gönderilemedi.\n\nSebep: Oturum bulunamadı ya da süresi doldu. Sayfayı yenileyip tekrar deneyiniz."); return; }
+    var bas = baslik(t), sayfa = (document.title || "Arbor").replace(/\s+/g, " ").trim();
+    var m = matris(t);
+    if (!m.rows.length) { alert("Excel gönderilemedi.\n\nSebep: Tablo boş."); return; }
+    b.disabled = true; b.textContent = "Gönderiliyor…";
+    yukle().then(function () {
+      var X = window.XLSX, ws = X.utils.aoa_to_sheet(m.rows);
+      if (m.merges.length) ws["!merges"] = m.merges;
+      ws["!cols"] = (m.rows[0] || []).map(function (_, c) {
+        var w = 6; m.rows.forEach(function (r) { String(r[c]).split("\n").forEach(function (l) { w = Math.max(w, l.length + 2); }); });
+        return { wch: Math.min(w, 60) };
+      });
+      if (m.bas > 0 && m.rows.length > m.bas) ws["!autofilter"] = { ref: X.utils.encode_range({ s: { r: m.bas - 1, c: 0 }, e: { r: m.rows.length - 1, c: m.rows[0].length - 1 } }) };
+      var wb = X.utils.book_new();
+      X.utils.book_append_sheet(wb, ws, (bas.replace(/[\[\]:*?\/\\]/g, " ").trim() || "Tablo").slice(0, 31));
+      var b64 = X.write(wb, { bookType: "xlsx", type: "base64" });
+      var d = new Date(), gun = ("0" + d.getDate()).slice(-2) + ("0" + (d.getMonth() + 1)).slice(-2) + String(d.getFullYear()).slice(-2);
+      var dosya = (ascii(bas).slice(0, 60) || "Tablo") + "_" + gun + ".xlsx";
+      return fetch(SB + "/functions/v1/tablo-excel-mail", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + ot.s.tok },
+        body: JSON.stringify({ b64: b64, dosya: dosya, baslik: bas, sayfa: sayfa, form: ot.form, kisi: ot.kisi || "" })
+      }).then(function (r) { return r.json().catch(function () { return { ok: false, hata: "HTTP " + r.status }; }); });
+    }).then(function (j) {
+      if (j && j.ok) alert("Excel dosyası e-posta ile gönderildi.\n\nAlıcı: " + j.to + "\nTablo: " + bas);
+      else alert("Excel gönderilemedi.\n\nSebep: " + ((j && (j.hata || j.message || j.msg)) || "bilinmeyen hata"));
+    }).catch(function (e) {
+      alert("Excel gönderilemedi.\n\nSebep: " + (e && e.message ? e.message : e));
+    }).then(function () { b.disabled = false; b.textContent = "Excel"; });
+  }
+})();
+</script>
+
+</body>
+</html>

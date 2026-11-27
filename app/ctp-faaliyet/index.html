@@ -70,6 +70,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <div class="sub">Acil yüklemeler, alınan projeler (&gt; 75.000 €), satış ve Etüt DK1 göstergeleri, eğitim özeti. Takip notları ilgili satış formuna yazılır.</div>
 </header>
 <div class="wrap">
+  <div id="cso"></div><!-- CTP-CAM-SIPARIS-ONAY (27.11.2026, Melih): BE Cam Sipariş talepleri -->
   <div id="my-acil" data-mod="ctp"></div><!-- CTP-ACIL-GRAFIK (14.11.2026, Melih): Giriş'teki Acil Yüklemeler bloğu, salt-okur (app/my_acil.js) -->
   <div id="gr-ust"></div>
   <div id="euv"><div id="view"></div></div><!-- EU-CTP-KOPYA (25.11.2026, Melih): EU Faaliyet formunun tüm içeriği (tek kaynak app/eu-faaliyet, çalışma anında okunur); acil satırlar yukarıdaki Acil Yüklemeler'de olduğu için tekrar gösterilmez -->
@@ -229,6 +230,85 @@ else document.getElementById("gr-ust").textContent="İçerik yüklenemedi.";
     window.EU_GOMULU=true;
     (0,eval)("(function(){"+kod+"\n})()");
   }catch(e){ v.innerHTML='<div style="padding:20px;color:#b40000">EU içeriği yüklenemedi: '+String(e&&e.message||e).replace(/</g,"&lt;")+'</div>'; }
+})();
+/* CTP-CAM-SIPARIS-ONAY (27.11.2026, Melih): BE Cam Sipariş formundan gelen talepler (cam_siparis_onay durum='bekliyor').
+   "Cam Sipariş Onayı Ver" düğmesi (bekleyen yoksa pasif) → pencere: talep + model fiyat kıyası (Cam Fiyat Onayı gibi) + not →
+   rpc cam_siparis_karar (onaylandi/reddedildi; ret için not zorunlu). Karar BE formunda görünür, BE'ye mail gider (trg_cam_siparis_karar_mail). */
+(function(){
+  const host=document.getElementById("cso"); if(!host) return;
+  const es=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const f2=(v,d=2)=>v==null||!isFinite(+v)?"–":(+v).toLocaleString("tr-TR",{minimumFractionDigits:d,maximumFractionDigits:d});
+  const trT=t=>t?new Date(t).toLocaleDateString("tr-TR")+" "+new Date(t).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"}):"";
+  const fs=f=>f==null?"":+f<=5?"ok":+f<=15?"orta":"kotu";
+  const st=document.createElement("style");
+  st.textContent="#cso{margin:0 0 12px}#cso .csob{background:#e3edf7;color:#16324f;border:0;border-radius:8px;padding:8px 14px;font:600 13px 'Segoe UI',system-ui,sans-serif;cursor:pointer}"
+    +"#cso .csob.var{background:#c0392b;color:#fff;font-weight:700}#cso .csob:disabled{opacity:.55;cursor:default}"
+    +"#csoPop{position:fixed;inset:0;background:rgba(10,25,40,.4);z-index:5000;display:flex;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto;font-family:'Segoe UI',system-ui,sans-serif}"
+    +"#csoPop .k{background:#fff;border-radius:12px;width:min(820px,100%);box-shadow:0 10px 40px rgba(0,0,0,.3)}"
+    +"#csoPop .h{display:flex;justify-content:space-between;align-items:center;background:#16324f;color:#fff;padding:10px 14px;border-radius:12px 12px 0 0}#csoPop .h b{font-size:15px}"
+    +"#csoPop .x{background:none;border:0;color:#cfe0f0;font-size:20px;cursor:pointer}"
+    +"#csoPop .r{padding:12px 14px;border-bottom:1px solid #e3e9f0;font-size:13px;color:#1c2430}#csoPop .r:last-child{border-bottom:0}"
+    +"#csoPop .t{font-size:14px;margin-bottom:6px}#csoPop .m{color:#5a6b7d;font-size:12px}"
+    +"#csoPop table.i{border-collapse:collapse;margin:6px 0;font-size:13px;display:table;min-width:0;width:auto}#csoPop table.i td{border:0;padding:2px 14px 2px 0;vertical-align:top}#csoPop table.i td:first-child{color:#5a6b7d;white-space:nowrap}"
+    +"#csoPop .g{display:flex;gap:8px 24px;flex-wrap:wrap;background:#f4f8fc;border:1px solid #d3e0ee;border-radius:8px;padding:8px 12px;margin:8px 0}"
+    +"#csoPop .g .l{font-size:11.5px;color:#5a6b7d}#csoPop .g .v{font-size:19px;font-weight:800;color:#16324f}#csoPop .g .v.s{font-size:14px;font-weight:600;padding-top:4px}"
+    +"#csoPop .ok{color:#1f6b45!important}#csoPop .orta{color:#b25a00!important}#csoPop .kotu{color:#c0392b!important}"
+    +"#csoPop .n{font-size:12.5px;color:#3a4a5b;margin-top:6px;line-height:1.45}"
+    +"#csoPop textarea{font:inherit;width:100%;border:1px solid #cdd6df;border-radius:6px;padding:6px 8px;margin-top:8px;min-height:44px}"
+    +"#csoPop .bb{display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap}#csoPop .bb button{border:0;border-radius:7px;padding:8px 16px;font:700 13px 'Segoe UI',system-ui,sans-serif;cursor:pointer;color:#fff}"
+    +"#csoPop .bb .on{background:#2e7d54}#csoPop .bb .red{background:#c0392b}#csoPop .bb button:disabled{opacity:.5}#csoPop .s{font-size:12.5px;font-weight:600}";
+  document.head.appendChild(st);
+  host.innerHTML='<button class="csob" id="csoBtn" disabled>Cam Sipariş Onayı Ver</button>';
+  const B=document.getElementById("csoBtn"); let L=[];
+  async function yukle(){
+    const {data,error}=await sb.from("cam_siparis_onay").select("*").eq("durum","bekliyor").order("id");
+    L=error?[]:(data||[]);
+    B.disabled=!L.length; B.classList.toggle("var",L.length>0);
+    B.textContent="Cam Sipariş Onayı Ver"+(L.length>1?" ("+L.length+")":"");
+    B.title=L.length?L.length+" cam siparişi onay bekliyor":"Onay bekleyen cam siparişi yok";
+  }
+  function satir(o){
+    const f=o.fark_yuzde==null?null:+o.fark_yuzde;
+    let h='<div class="r" data-id="'+o.id+'"><div class="t"><b>'+es(o.komb)+'</b>'+(o.stok_kodu?' <span class="m">'+es(o.stok_kodu)+'</span>':'')+'</div>'
+      +'<div class="m">'+es(o.kisi_ad||o.kisi_kod||"")+' · '+es(trT(o.created_at))+'</div>'
+      +'<table class="i"><tr><td>Tedarikçi</td><td><b>'+es(o.tedarikci)+'</b></td></tr>'
+      +(o.proje?'<tr><td>Proje</td><td>'+es(o.proje)+'</td></tr>':'')
+      +'<tr><td>Metraj</td><td>'+f2(o.m2)+' m²'+(o.adet?' · '+f2(o.adet,0)+' adet':'')+'</td></tr>'
+      +'<tr><td>Toplam</td><td>'+f2(o.toplam_eur)+' €</td></tr>'
+      +(o.aciklama?'<tr><td>Açıklama</td><td>'+es(o.aciklama)+'</td></tr>':'')+'</table>'
+      +'<div class="g"><div><div class="l">Talep edilen alış</div><div class="v">'+f2(o.birim_eur)+' €/m²</div></div>'
+      +'<div><div class="l">Model alış</div><div class="v">'+(o.model_alis!=null?f2(o.model_alis)+' €/m²':'–')+'</div></div>'
+      +'<div><div class="l">Fark</div><div class="v '+fs(f)+'">'+(f==null?'–':(f>0?'+':'')+f2(f,1)+' %')+'</div></div>'
+      +'<div><div class="l">Cam Listesi alış</div><div class="v s">'+(o.liste_alis!=null?f2(o.liste_alis)+' €/m²'+(o.liste_tarih?' · '+new Date(o.liste_tarih).toLocaleDateString("tr-TR"):''):'–')+'</div></div>'
+      +'<div><div class="l">Pencad maliyet</div><div class="v s">'+(o.pencad_maliyet!=null?f2(o.pencad_maliyet)+' €/m²':'–')+'</div></div></div>';
+    if(o.fiyatlanan) h+='<div class="n">Fiyatlanan kombinasyon: <b>'+es(o.fiyatlanan)+'</b> ('+f2(o.m2)+' m²'+(o.adet?' / '+f2(o.adet,0)+' adet':'')+' bağlamında)</div>';
+    if(o.hesap) h+='<div class="n">'+es(o.hesap)+'</div>';
+    if(Array.isArray(o.yakin)&&o.yakin.length) h+='<div class="n"><b>Yakın teklifler</b><br>'+o.yakin.map(es).join("<br>")+'</div>';
+    if(o.model_alis==null) h+='<div class="n kotu">Model fiyatı hesaplanamadı; kıyas yok.</div>';
+    h+='<textarea placeholder="Not (onaylamıyorsanız gerekçe zorunlu)"></textarea>'
+      +'<div class="bb"><button class="on" data-k="onaylandi">Onayla</button><button class="red" data-k="reddedildi">Onaylama</button><span class="s"></span></div></div>';
+    return h;
+  }
+  function ac(){
+    let p=document.getElementById("csoPop"); if(p) p.remove();
+    p=document.createElement("div"); p.id="csoPop";
+    p.innerHTML='<div class="k"><div class="h"><b>Cam Sipariş Onayı</b><button class="x" title="Kapat">✕</button></div>'+L.map(satir).join("")+'</div>';
+    document.body.appendChild(p);
+    const kapat=()=>{ p.remove(); yukle(); };
+    p.addEventListener("click",async e=>{
+      if(e.target===p||e.target.closest(".x")) return kapat();
+      const bt=e.target.closest("button[data-k]"); if(!bt) return;
+      const R=bt.closest(".r"), S=R.querySelector(".s"), nt=R.querySelector("textarea").value.trim(), id=+R.dataset.id;
+      if(bt.dataset.k==="reddedildi"&&!nt){ S.style.color="#b40000"; S.textContent="Gerekçeyi Not alanına yazınız."; return; }
+      R.querySelectorAll("button").forEach(x=>x.disabled=true); S.style.color="#5a6b7d"; S.textContent="Kaydediliyor…";
+      const {error}=await sb.rpc("cam_siparis_karar",{p_id:id,p_durum:bt.dataset.k,p_not:nt||null});
+      if(error){ S.style.color="#b40000"; S.textContent="Kaydedilemedi: "+error.message; R.querySelectorAll("button").forEach(x=>x.disabled=false); return; }
+      S.style.color=bt.dataset.k==="onaylandi"?"#1f6b45":"#c0392b"; S.textContent=(bt.dataset.k==="onaylandi"?"Onaylandı":"Onaylanmadı")+"; talep edene mail gönderildi.";
+      L=L.filter(o=>o.id!==id); if(!L.length) setTimeout(kapat,1200);
+    });
+  }
+  B.onclick=()=>{ if(L.length) ac(); };
+  yukle(); setInterval(yukle,120000);
 })();
 </script>
 <!-- FORM-LINKLER --><script src="../form_linkler.js?v=261123g"></script><!-- FORM-MENU -->
